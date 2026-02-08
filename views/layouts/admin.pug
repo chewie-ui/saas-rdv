@@ -1,0 +1,21 @@
+doctype html
+html(lang="fr")
+    head
+        meta(name="viewport" content="width=device-width, initial-scale=1.0")
+        meta(charset="UTF-8")
+        title= title || 'admin'
+        link(rel="shortcut icon", href="/images/icon.svg", type="image/x-icon")
+        link(rel="stylesheet", href="/css/import.css")
+        link(rel="stylesheet", href="/css/layouts/admin.css")
+        block links
+    body
+        div.layout
+            include ../common/sidebar
+            .main
+                .admin-nav
+                    h2= pageName || "Undefined page"
+                .main-wrapper
+                    block content
+
+        block scripts
+            

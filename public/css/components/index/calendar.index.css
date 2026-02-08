@@ -1,0 +1,148 @@
+.calendar-wrapper .calendar {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  box-shadow: var(--shadow);
+}
+
+.calendar-wrapper .calendar .calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.calendar-wrapper .calendar .calendar-header h2 {
+  font-size: 14px;
+}
+
+.calendar-wrapper .calendar .calendar-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.calendar-wrapper .calendar .calendar-body .weekdays,
+.calendar-wrapper .calendar .calendar-header {
+  display: flex;
+  gap: 7px;
+}
+
+.calendar-wrapper .calendar .calendar-body .days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 7px;
+}
+
+.calendar-wrapper .calendar .calendar-body .days {
+  flex-wrap: wrap;
+}
+
+.calendar-wrapper .calendar .calendar-body .weekdays .weekday {
+  width: calc((100% - (7px * 6)) / 7);
+  font-weight: 600;
+}
+
+.calendar-wrapper .calendar .calendar-body .weekdays .weekday,
+.calendar-wrapper .calendar .calendar-body .days .day {
+  height: 35px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.calendar-wrapper .calendar .calendar-body .days .day {
+  outline: 1px solid grey;
+  cursor: var(--cursor-pointer);
+  transition: 0.3s;
+}
+
+.calendar-wrapper .calendar .calendar-body .days .day.empty {
+  opacity: 0.6;
+  cursor: var(--cursor-notAllowed);
+}
+
+.calendar-wrapper .calendar .calendar-body .days .day:hover,
+.calendar-wrapper .calendar .calendar-body .days .day.today {
+  background-color: var(--green-primary);
+  color: var(--color-white);
+}
+
+.schedule-wrapper,
+.booking-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  backdrop-filter: blur(3px);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.schedule-wrapper.show,
+.booking-wrapper.show {
+  display: flex;
+}
+
+.schedule-wrapper .schedule,
+.booking-wrapper .booking {
+  background-color: var(--color-white);
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.schedule-wrapper .schedule .schedule-header,
+.booking-wrapper .booking .booking-header {
+  font-size: 14px;
+}
+
+.schedule-wrapper .schedule .schedule-body,
+.booking-wrapper .booking .booking-body {
+  display: flex;
+  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.schedule-wrapper .schedule .schedule-body .back-btn,
+.booking-wrapper .booking .booking-body .back-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--green-primary);
+  width: 35px;
+  height: 35px;
+  cursor: var(--cursor-pointer);
+}
+
+.schedule-wrapper .schedule .schedule-body .schedule-rows {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+.schedule-wrapper .schedule .schedule-body .schedule-rows .row {
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+  font-weight: 600;
+  border: 1px solid var(--green-primary);
+  cursor: var(--cursor-pointer);
+  transition: 0.3s;
+}
+
+.schedule-wrapper .schedule .schedule-body .schedule-rows .row:hover {
+  background-color: var(--green-primary);
+  color: var(--color-white);
+}
+
+.schedule-wrapper .schedule .schedule-body .schedule-rows .row.reserved {
+  background-color: grey;
+  border: 1px solid grey;
+  color: white;
+}

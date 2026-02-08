@@ -1,0 +1,50 @@
+extends layouts/index
+
+block links
+    link(rel="stylesheet", href="/css/layouts/index.css")
+
+block content
+    .content-wrapper
+        .calendar-wrapper.container
+            .calendar
+                .calendar-header
+                    .prev-month
+                        button.btn#prevMonthBtn Prev
+                    .this-month
+                        h2
+                    .next-month
+                        button.btn#nextMonthBtn Next
+                .calendar-body
+                    .weekdays
+                        //- Injected from JS
+                    .days
+                        //- Injected from JS
+
+        .schedule-wrapper#scheduleWrapper
+            .schedule
+                .schedule-header
+                    h2 Choose a schedule
+                .schedule-body
+                    .back-btn
+                        svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                            path(d="M640-200 200-480l440-280v560Zm-80-280Zm0 134v-268L350-480l210 134Z")
+                    .schedule-rows
+                        .row 06:00
+                        .row 07:00
+                        .row 08:00
+                        .row 09:00
+                        .row 10:00
+                        .row 11:00
+                        .row 12:00
+        .booking-wrapper#bookingWrapper
+            .booking
+                .booking-header
+                    h2 Confirm your booking
+                .booking-body
+                    .back-btn
+                        svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                            path(d="M640-200 200-480l440-280v560Zm-80-280Zm0 134v-268L350-480l210 134Z")
+                    .booking-button
+                        button.btn#confirmBooking Confirm
+block scripts
+    script(src="/js/layouts/index.js" type="module") 
