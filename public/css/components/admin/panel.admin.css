@@ -67,7 +67,6 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-
 }
 
 .stats-section .stats-card .stats-card__content .stats-item .stats-item__label {
@@ -80,26 +79,85 @@
   gap: 5px;
 }
 
-.stats-section .stats-card .stats-card__content .stats-item .stats-item__body .stats-item__numbers {
+.stats-section
+  .stats-card
+  .stats-card__content
+  .stats-item
+  .stats-item__body
+  .stats-item__numbers {
   display: flex;
   justify-content: flex-start;
   gap: 10px;
   align-items: flex-end;
 }
 
-.stats-section .stats-card .stats-card__content .stats-item .stats-item__body .stats-item__numbers .stats-item__value {
+.stats-section
+  .stats-card
+  .stats-card__content
+  .stats-item
+  .stats-item__body
+  .stats-item__numbers
+  .stats-item__value {
   font-size: 18px;
 }
 
 .stats-item__trend--up {
-  color: #10B978;
+  color: #10b978;
 }
 
 .stats-item__trend--down {
-  color: #FF4D4D;
+  color: #ff4d4d;
 }
 
-.stats-section .stats-card .stats-card__content .stats-item .stats-item__body .stats-item__period {
+.stats-section
+  .stats-card
+  .stats-card__content
+  .stats-item
+  .stats-item__body
+  .stats-item__period {
   font-size: 12px;
   color: var(--grey-primary);
+}
+
+.notifications-section .notifications-section__body,
+.appointments-section .appointments-section__body {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--grey-soft) var(--color-white);
+}
+
+.notifications-section .notifications-section__body .notification-card,
+.appointments-section .appointments-section__body .appointments-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: var(--border);
+}
+
+.notifications-section
+  .notifications-section__body
+  .notification-card
+  .notification-card__content,
+.appointments-section
+  .appointments-section__body
+  .appointments-card
+  .appointments-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.notifications-section
+  .notifications-section__body
+  .notification-card
+  .notification-card__content
+  .notification-card__content-informations,
+.appointments-section__body
+  .appointments-card
+  .appointments-card__content
+  .appointments-card__content-informations {
+  font-weight: 500;
 }

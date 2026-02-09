@@ -52,5 +52,63 @@ block content
                             .stats-item__value $34,120
                             .stats-item__trend.stats-item__trend--up +12%
                         .stats-item__period vs. last period
-                        
+
+    .block-section__row.height-100
+        .appointments-section.section__container  
+            .appointments-section__header.section__container-header
+                .section__container-header__name
+                    .flex-c
+                        svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                            path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z")
+                    h3 Today's Appointments
+                .section__container-header__options
+                    .select All clients
+            .appointments-section__body
+                if appointments
+                    each appointment in appointments
+                        .appointments-card
+                            .appointments-card__content
+                                .appointments-card__content-type.xs-comment= appointment.time 
+                                .appointments-card__content-informations Garcia, Benjamin - Today at 14:30
+                            .appointments-card__date.grey-light= appointment.displayDate
+        .notifications-section.section__container  
+            .notifications-section__header.section__container-header
+                .section__container-header__name
+                    .flex-c
+                        svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                            path(d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z")
+                    h3 Latest Activity
+            .notifications-section__body
+                
+                .notification-card
+                    .notification-card__content
+                        .notification-card__content-type.xs-comment Appointment cancelled
+                        .notification-card__content-informations Garcia, Benjamin - Today at 14:30
+                    .notification-card__date.grey-light 2min ago
+                .notification-card
+                    .notification-card__content
+                        .notification-card__content-type.xs-comment Appointment cancelled
+                        .notification-card__content-informations Garcia, Benjamin - Today at 14:30
+                    .notification-card__date.grey-light 2min ago
+                .notification-card
+                    .notification-card__content
+                        .notification-card__content-type.xs-comment Appointment cancelled
+                        .notification-card__content-informations Garcia, Benjamin - Today at 14:30
+                    .notification-card__date.grey-light 2min ago
+                .notification-card
+                    .notification-card__content
+                        .notification-card__content-type.xs-comment Appointment cancelled
+                        .notification-card__content-informations Garcia, Benjamin - Today at 14:30
+                    .notification-card__date.grey-light 2min ago
+                .notification-card
+                    .notification-card__content
+                        .notification-card__content-type.xs-comment Appointment cancelled
+                        .notification-card__content-informations Garcia, Benjamin - Today at 14:30
+                    .notification-card__date.grey-light 2min ago
+                .notification-card
+                    .notification-card__content
+                        .notification-card__content-type.xs-comment Appointment cancelled
+                        .notification-card__content-informations Garcia, Benjamin - Today at 14:30
+                    .notification-card__date.grey-light 2min ago
+
 block scripts

@@ -136,7 +136,7 @@ export default function () {
   }
 
   scheduleWrapper.addEventListener("click", (e) => {
-    const row = e.target.closest(".row");
+    const row = e.target.closest(".row:not(.reserved)");
     if (!row) return;
 
     schedulePicked = row.textContent;
@@ -160,7 +160,7 @@ export default function () {
 
     const response = await request.json();
     if (response.success) {
-      alert("all is ok");
+      // alert("all is ok");
     } else {
       alert("you ve got an error, please retry");
     }

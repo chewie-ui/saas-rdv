@@ -1,0 +1,43 @@
+.calendar-section {
+  background-color: var(--color-white);
+  overflow-y: scroll;
+}
+
+.calendar-section .grid-section {
+  display: grid;
+  grid-template-columns: minmax(60px, 90px) repeat(7, 1fr);
+}
+
+.calendar-section .grid-section .cell {
+  height: 120px;
+  border-bottom: var(--border);
+  border-right: var(--border);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.calendar-section .grid-section .cell.time {
+  padding: 8px;
+}
+
+.calendar-section .grid-section .cell.time-header,
+.calendar-section .grid-section .cell.day-header {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  height: 45px;
+  display: grid;
+  gap: 0;
+}
+
+.calendar-section .grid-section .cell .appointment {
+  min-height: calc((100% - 7px) / 2);
+  background-color: var(--green-soft);
+  border-left: 3px solid var(--green-primary);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}

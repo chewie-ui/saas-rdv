@@ -2,7 +2,7 @@
 
 .layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
 }
 
 svg {
@@ -15,6 +15,10 @@ svg {
 
 .main-wrapper {
   padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: calc(100% - 52px);
 }
 
 .main .admin-nav {
@@ -31,4 +35,40 @@ svg {
   background-color: var(--color-white);
   padding: 14px;
   border-radius: 10px;
+}
+
+.block-section__row {
+  display: flex;
+  gap: 24px;
+}
+
+.block-section__row .section__container {
+  width: calc((100% - 24px) / 2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.section__container .section__container-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 14px;
+  border-bottom: var(--border);
+}
+
+.section__container
+  .section__container-header
+  .section__container-header__name {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.section__container
+  .section__container-header
+  .section__container-header__name
+  h3 {
+  font-weight: 500;
+  line-height: 31px;
 }

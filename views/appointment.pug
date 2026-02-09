@@ -1,0 +1,25 @@
+extends layouts/admin
+
+block links
+    link(rel="stylesheet", href="/css/components/admin/appointment.admin.css")
+
+block content
+    .calendar-section
+        .grid-section
+            .cell.time-header GMT-5
+            each weekday in weekDays
+                .cell.day-header #{weekday.label}, #{weekday.date}
+
+            each hour in hours
+                .cell.time= hour
+                each day, dayIndex in weekDays
+                    .cell.day
+                        each appointment in appointments
+                            if appointment.weekday === dayIndex && appointment.startHour === hour
+                                .appointment
+                                    .appointment-name= appointment.name
+                                    .appointment-time.xs-comment 
+                                        | #{appointment.startHour} - #{appointment.endHour}
+
+
+block scripts
