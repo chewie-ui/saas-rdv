@@ -1,0 +1,37 @@
+extends ../../layouts/index
+
+block links 
+    link(rel="stylesheet", href="/css/components/index/auth.index.css")
+block content
+    .content-wrapper
+        .auth-wrapper
+            .auth-image       
+                img(src='/images/auth-bg.webp' alt="Men writing on computer")
+                .image-content
+            .auth-form.flex
+                .auth-form__container.flex.col
+                    .company
+                        .logo
+                            img(src="/images/icon.svg")
+                        h2 Skelio.
+                    .form-body.flex.col
+                        .form-title.flex.col
+                            h1 Create your admin account
+                            p You’ll use this account to manage your clinic and invite your team.
+                        form.form-fields.flex.col(action="/register" method="POST")
+                            .field-container.flex.col
+                                p Full Name
+                                input.input(placeholder="John Doe" type="text" name="fullname")
+                            .field-container.flex.col
+                                p Work Email
+                                input.input(placeholder="business@example.com" type="text" name="email")
+                            .field-container.flex.col
+                                p Password
+                                input.input(placeholder="**************" type="password" name="password")
+                            .field-container.flex.col
+                                p Confirm Password
+                                input.input(placeholder="**************" type="password" name="conformPassword")
+                            button.btn(type="submit") Continue
+                        if error
+                            p.xs-comment.error= error
+block scripts       

@@ -9,3 +9,7 @@ exports.getAppointments = () => {
     date: 1,
   });
 };
+
+exports.GetAllAppointments = () => {
+  return Booking.find({});
+};

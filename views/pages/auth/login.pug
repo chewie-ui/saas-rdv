@@ -1,0 +1,30 @@
+extends ../../layouts/index
+
+block links 
+    link(rel="stylesheet", href="/css/components/index/auth.index.css")
+block content
+    .content-wrapper
+        .auth-wrapper
+            .auth-image       
+                img(src='/images/auth-bg.webp' alt="Men writing on computer")
+                .image-content
+            .auth-form.flex
+                .auth-form__container
+                    .form-body.flex.col
+                        .form-title.flex.col
+                            h1 Welcome back
+                            p Dive back into your world with a simple sign-in. Your next adventure awaits – let's get started!
+                        form.form-fields.flex.col(action="/login" method="POST")
+                            .field-container.flex.col
+                                p Email
+                                input.input(placeholder="Email" type="text" name="email")
+                            .field-container.flex.col
+                                p Password
+                                input.input(placeholder="**************" type="password" name="password")
+                                a(href="/") Forgot password?
+                            button.btn(type="submit") Log in
+                        .no-acc.flex Don't have account?
+                            a(href="/register") Register now!
+                        if error
+                            p.xs-comment.error= error
+block scripts       

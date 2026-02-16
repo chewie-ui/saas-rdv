@@ -1,0 +1,31 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet", href="/css/components/admin/client.admin.css")
+
+block content
+    .client-section.flex.col
+        .client-section__header.flex
+            .header-search
+                input.input(placeholder="Search")
+            .header-actions.flex
+                button.btn.secondary Filters
+                button.btn Add employee
+        .client-section__body
+            table.client-table 
+                thead
+                    tr 
+                        th
+                        th Employee Name
+                        th ID
+                        th Role
+                        th Phone
+                        th Email
+                        th Actions
+                tbody
+                    each employee in employees
+                        tr 
+                            td
+                            td= employee.fullName
+
+block scripts

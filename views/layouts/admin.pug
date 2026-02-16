@@ -16,6 +16,15 @@ html(lang="fr")
                     h2= pageName || "Undefined page"
                 .main-wrapper
                     block content
-
+        script(src="/socket.io/socket.io.js")
+        script.
+            const socket = io();
         block scripts
+
+        script.
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "x" || e.key === "X") {
+                     document.body.classList.toggle("debug");
+                }
+            })
             

@@ -5,8 +5,14 @@ const bookingSchema = new schema(
   {
     user: {
       type: schema.Types.ObjectId,
-      ref: "user",
+      ref: "User",
       required: false,
+    },
+
+    company: {
+      type: schema.Types.ObjectId,
+      ref: "User",
+      required: true
     },
 
     date: {

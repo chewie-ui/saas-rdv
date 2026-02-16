@@ -3,11 +3,13 @@ const { getAppointments } = require("../queries/booking.queries");
 
 exports.createBooking = async (req, res) => {
   try {
-    const { date, time } = req.body;
+    const { date, time, company } = req.body;
+    console.log(company);
 
     await Booking.create({
       date: new Date(date),
       time,
+      company,
     });
 
     res.json({ success: true });

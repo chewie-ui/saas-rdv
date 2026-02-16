@@ -1,4 +1,4 @@
-extends layouts/admin
+extends ../../layouts/admin
 
 block links
     link(rel="stylesheet", href="/css/components/admin/panel.admin.css")
@@ -7,10 +7,17 @@ block content
     .client-card
         .client-card__main
             .client-card__icon.flex-c
-                svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                    path(d="M540-80q-108 0-184-76t-76-184v-23q-86-14-143-80.5T80-600v-240h120v-40h80v160h-80v-40h-40v160q0 66 47 113t113 47q66 0 113-47t47-113v-160h-40v40h-80v-160h80v40h120v240q0 90-57 156.5T360-363v23q0 75 52.5 127.5T540-160q75 0 127.5-52.5T720-340v-67q-35-12-57.5-43T640-520q0-50 35-85t85-35q50 0 85 35t35 85q0 39-22.5 70T800-407v67q0 108-76 184T540-80Zm248.5-411.5Q800-503 800-520t-11.5-28.5Q777-560 760-560t-28.5 11.5Q720-537 720-520t11.5 28.5Q743-480 760-480t28.5-11.5ZM760-520Z")
+                if currentCompany.informations && currentCompany.informations.services && currentCompany.informations.services.toLowerCase() === 'haircut'
+                    svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                        path(d="M200-80 40-520l200-120v-240h160v240l200 120L440-80H200Zm480 0q-17 0-28.5-11.5T640-120q0-17 11.5-28.5T680-160h120v-80H680q-17 0-28.5-11.5T640-280q0-17 11.5-28.5T680-320h120v-80H680q-17 0-28.5-11.5T640-440q0-17 11.5-28.5T680-480h120v-80H680q-17 0-28.5-11.5T640-600q0-17 11.5-28.5T680-640h120v-80H680q-17 0-28.5-11.5T640-760q0-17 11.5-28.5T680-800h160q33 0 56.5 23.5T920-720v560q0 33-23.5 56.5T840-80H680Zm-424-80h128l118-326-124-74H262l-124 74 118 326Zm64-200Z")
+                else if currentCompany.informations && currentCompany.informations.services && currentCompany.informations.services.toLowerCase() === 'coaching'
+                    svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                        path(d="M440-200q-100 0-170-70t-70-170q0-11 1-22t3-22q-5 2-12 3t-12 1q-42 0-71-29t-29-71q0-42 27.5-71t69.5-29q33 0 59.5 18.5T274-614q33-30 75.5-48t90.5-18h440v160H680v80q0 100-70 170t-170 70ZM208.5-551.5Q220-563 220-580t-11.5-28.5Q197-620 180-620t-28.5 11.5Q140-597 140-580t11.5 28.5Q163-540 180-540t28.5-11.5ZM539-341q41-41 41-99t-41-99q-41-41-99-41t-99 41q-41 41-41 99t41 99q41 41 99 41t99-41Zm-42.5-42.5Q520-407 520-440t-23.5-56.5Q473-520 440-520t-56.5 23.5Q360-473 360-440t23.5 56.5Q407-360 440-360t56.5-23.5ZM440-440Z")
+                else
+                    svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                        path(d="M540-80q-108 0-184-76t-76-184v-23q-86-14-143-80.5T80-600v-240h120v-40h80v160h-80v-40h-40v160q0 66 47 113t113 47q66 0 113-47t47-113v-160h-40v40h-80v-160h80v40h120v240q0 90-57 156.5T360-363v23q0 75 52.5 127.5T540-160q75 0 127.5-52.5T720-340v-67q-35-12-57.5-43T640-520q0-50 35-85t85-35q50 0 85 35t35 85q0 39-22.5 70T800-407v67q0 108-76 184T540-80Zm248.5-411.5Q800-503 800-520t-11.5-28.5Q777-560 760-560t-28.5 11.5Q720-537 720-520t11.5 28.5Q743-480 760-480t28.5-11.5ZM760-520Z")
             .client-card__content
-                .client-card__name Fring Medical Center
+                .client-card__name= currentCompany.name || "Skelio app"
                 .client-card__meta Tue, June 19 - 09:21 AM
                     span ☀️
         .client-card__actions

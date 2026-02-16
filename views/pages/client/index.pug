@@ -1,7 +1,6 @@
-extends layouts/index
+extends ../../layouts/index
 
 block links
-    link(rel="stylesheet", href="/css/layouts/index.css")
 
 block content
     .content-wrapper
@@ -29,22 +28,16 @@ block content
                         svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                             path(d="M640-200 200-480l440-280v560Zm-80-280Zm0 134v-268L350-480l210 134Z")
                     .schedule-rows
-                        .row 06:00
-                        .row 07:00
-                        .row 08:00
-                        .row 09:00
-                        .row 10:00
-                        .row 11:00
-                        .row 12:00
-                        .row 13:00
-                        .row 14:00
-                        .row 15:00
-                        .row 16:00
-                        .row 17:00
-                        .row 18:00
-                        .row 19:00
-                        .row 20:00
-        .booking-wrapper#bookingWrapper
+                        each day in schedule
+                            if !day.dayOff
+                                each slot in day.slots
+                                    .row= slot
+
+
+
+                                   
+
+        .booking-wrapper#bookingWrapper(data-company-id=company)
             .booking
                 .booking-header
                     h2 Confirm your booking
@@ -54,5 +47,7 @@ block content
                             path(d="M640-200 200-480l440-280v560Zm-80-280Zm0 134v-268L350-480l210 134Z")
                     .booking-button
                         button.btn#confirmBooking Confirm
+
 block scripts
     script(src="/js/layouts/index.js" type="module") 
+    

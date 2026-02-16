@@ -9,7 +9,20 @@ html(lang="fr")
         block links
     body
         include ../common/topbar
-
+        p USEELESS
+        p USEELESS
+        p USEELESS
+        p USEELESS
         block content
+        p USEELESS
 
         block scripts
+
+        script(src="/js/import.js")
+
+        script.
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "x" || e.key === "X") {
+                     document.body.classList.toggle("debug");
+                }
+            })

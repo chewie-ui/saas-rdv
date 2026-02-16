@@ -1,0 +1,49 @@
+extends ../../layouts/index
+
+block links 
+    link(rel="stylesheet", href="/css/components/index/auth.index.css")
+block content
+    .content-wrapper
+        .auth-wrapper
+            .auth-image       
+                img(src='/images/auth-bg.webp' alt="Men writing on computer")
+                .image-content
+            .auth-form.flex
+                .auth-form__container
+                    .form-body.flex.col.schedule
+                        .form-title.flex.col
+                            h1 Set Default Working Hours
+                            p Choose the days and working hours for your clinic. You can update these later for each location or staff member.
+                        form.form-container__schedule.flex.col(action="/company-schedule" method="POST")
+                            .form-schedule__fields
+                                    .schedule-col.flex.col
+                                        .schedule-row__header.flex
+                                            .col-day Day
+                                            .col-working-hours Working Hours
+                                        .schedule-row__body.flex.col
+                                            each weekday in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                                                .row-schedule.flex
+                                                    .row-day
+                                                        .col-days.flex
+                                                            .row-day__switcher
+                                                                label.switch
+                                                                    input(type="checkbox")
+                                                                    span.slider
+                                                            .weekday-name= weekday
+                                                    .row-working-hours.flex-c
+                                                        .hours-field
+                                                            input.input(value="9:00am")
+                                                        p -
+                                                        .hours-field
+                                                            input.input(value="5:00pm")
+                                                        .hours-options.flex
+                                                            .hours-options__btn +
+                                                            .hours-options__btn -
+                                                    
+                            .form-actions
+                                button.btn.secondary Back
+                                button.btn Continue
+                        if error
+                            p.xs-comment.error= error
+                        
+block scripts        

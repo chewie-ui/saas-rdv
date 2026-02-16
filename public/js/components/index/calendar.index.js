@@ -100,6 +100,16 @@ export default function () {
       day.textContent = i;
       day.className = "day";
 
+      const currentDate = new Date(currentYear, currentMonth, i);
+      currentDate.setHours(0, 0, 0, 0);
+
+      const todayClean = new Date(realToday);
+      todayClean.setHours(0, 0, 0, 0);
+
+      if (currentDate < todayClean) {
+        day.classList.add("empty");
+      }
+
       if (
         i === realToday.getDate() &&
         currentMonth === realToday.getMonth() &&
@@ -111,6 +121,7 @@ export default function () {
       calendarDays.appendChild(day);
 
       day.addEventListener("click", async () => {
+        if (day.classList.contains("empty")) return false;
         datePicked = new Date(currentYear, currentMonth, i);
 
         const result = await fetch(
@@ -155,6 +166,9 @@ export default function () {
       body: JSON.stringify({
         date: datePicked.toISOString(),
         time: schedulePicked,
+        company: document
+          .getElementById("bookingWrapper")
+          .getAttribute("data-company-id"),
       }),
     });
 

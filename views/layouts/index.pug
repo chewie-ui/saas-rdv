@@ -6,10 +6,23 @@ html(lang="fr")
         title= title || 'title undefined'
         link(rel="shortcut icon", href="/images/icon.svg", type="image/x-icon")
         link(rel="stylesheet", href="/css/import.css")
+        link(rel="stylesheet", href="/css/layouts/index.css")
+
         block links
     body
+    
+        include ../common/topbar
 
         block content
 
         block scripts
+
+        script(src="/js/import.js")
+
             
+        script.
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "x" || e.key === "X") {
+                     document.body.classList.toggle("debug");
+                }
+            })

@@ -1,0 +1,32 @@
+extends ../../layouts/index
+
+block links 
+    link(rel="stylesheet", href="/css/components/index/auth.index.css")
+block content
+    .content-wrapper
+        .auth-wrapper
+            .auth-image       
+                img(src='/images/auth-bg.webp' alt="Men writing on computer")
+                .image-content
+            .auth-form.flex
+                .auth-form__container
+                    .form-body.flex.col
+                        .form-title.flex.col
+                            h1 Add Location
+                            p Where is your clinic located? You can add additional locations after setup. Let’s start with one.
+                        form.form-fields.flex.col(action="/company-address" method="POST")
+                            .field-container.flex.col
+                                p Street Address
+                                input.input(placeholder="ex: Full Street Address" type="text" name="street")
+                            .field-container.flex.col
+                                p City
+                                input.input(name="city" placeholder="City" type="text")
+
+                            .field-container.flex.col
+                                p ZIP or Postal Code
+                                input.input(placeholder="ZIP or Postal Code" name="zip" type="number")
+                            button.btn(type="submit") Continue
+                        if error
+                            p.xs-comment.error= error
+                        
+block scripts       

@@ -30,7 +30,6 @@
 }
 
 * {
-  outline: 1px ridge rgba(255, 0, 0, 0.1);
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -44,6 +43,10 @@ body {
   background-color: var(--bg-app);
 }
 
+body.debug * {
+  outline: 1px ridge rgba(255, 0, 0, 0.1);
+}
+
 button {
   cursor: var(--cursor-pointer);
 }
@@ -53,13 +56,22 @@ a {
   color: var(--color-black);
 }
 
-.btn {
-  padding: 6px 8px;
+.btn,
+.btn.primary {
+  padding: 10px 12px;
   background-color: var(--green-primary);
   color: var(--color-white);
   border: 1px solid transparent;
   font-weight: 500;
-  border-radius: 6px;
+  border-radius: 10px;
+  color: var(--color-white);
+  text-align: center;
+}
+
+.btn.secondary {
+  background-color: var(--color-white);
+  outline: var(--border);
+  color: var(--grey-light);
 }
 
 .flex-c {
@@ -78,10 +90,16 @@ svg {
 }
 
 .select {
-  background-color: var(--grey-soft);
-  padding: 0 6px;
-  border-radius: 6px;
-  line-height: 31px;
+  padding: 9px 10px 9px 12px;
+  border-radius: 10px;
+  border: var(--border);
+  box-shadow: var(--shadow);
+  outline: none;
+  background: none;
+}
+
+.select:invalid {
+  color: var(--grey-primary);
 }
 
 .height-100 {
@@ -98,6 +116,10 @@ svg {
   color: var(--grey-light);
 }
 
+.space-b {
+  justify-content: space-between;
+}
+
 h1,
 h2,
 h3,
@@ -105,4 +127,88 @@ h4,
 h5,
 h6 {
   font-family: var(--family-secondary);
+}
+
+img {
+  width: 100%;
+  display: block;
+  height: 100%;
+}
+
+.flex {
+  display: flex;
+}
+
+.col {
+  flex-direction: column;
+}
+
+.input {
+  padding: 10px 10px 10px 12px;
+  border-radius: 10px;
+  border: var(--border);
+  box-shadow: var(--shadow);
+  outline: none;
+  background: none;
+}
+
+label.switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+
+label.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+label.switch .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 34px;
+}
+
+label.switch .slider::before {
+  content: "";
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background-color: var(--color-white);
+  transition: 0.4s;
+  left: 2px;
+  bottom: 2px;
+}
+
+label.switch input:checked + .slider {
+  background-color: var(--green-light);
+}
+
+label.switch input:focus + .slider {
+  box-shadow: var(--shadow);
+}
+
+label.switch input:checked + .slider::before {
+  transform: translateX(16px);
+}
+
+@media all and (min-width: 820px) {
+  .container {
+    max-width: 800px;
+  }
+}
+
+@media all and (min-width: 1280px) {
+  .container {
+    max-width: 1200px;
+  }
 }

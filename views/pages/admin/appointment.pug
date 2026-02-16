@@ -1,4 +1,4 @@
-extends layouts/admin
+extends ../../layouts/admin
 
 block links
     link(rel="stylesheet", href="/css/components/admin/appointment.admin.css")
@@ -8,7 +8,7 @@ block content
         .grid-section
             .cell.time-header GMT-5
             each weekday in weekDays
-                .cell.day-header #{weekday.label}, #{weekday.date}
+                .cell.day-header(class=weekday.isToday ? "today" : "") #{weekday.label}, #{weekday.date}
 
             each hour in hours
                 .cell.time= hour
