@@ -1,4 +1,5 @@
 const Booking = require("../db/models/book.model");
+const Company = require("../db/models/company/company.model");
 const { getAppointments } = require("../queries/booking.queries");
 
 exports.createBooking = async (req, res) => {
@@ -95,4 +96,48 @@ exports.renderAppointments = async (req, res, next) => {
 
   req.appointments = futureAppointments;
   next();
+};
+
+exports.getSchedule = async (req, res) => {
+  const { index, COMPANY_ID } = req.body;
+
+  const company = await Company.findById(COMPANY_ID).select("schedule");
+  const result = await company.schedule;
+
+  const target = result[index];
+  console.log("target", target);
+
+  const workingHours = target.workingHours[0];
+  console.log("workingHours", workingHours);
+
+  const start = workingHours.start; // "08:00"
+  const end = workingHours.end;
+  const slots = [];
+
+  let [startHour, startMin] = start.split(":").map(Number);
+  let [endHour, endMin] = end.split(":").map(Number);
+
+  let current = new Date();
+  current.setHours(startHour, startMin, 0, 0);
+
+  const endTime = new Date();
+  endTime.setHours(endHour, endMin, 0, 0);
+
+  while (current < endTime) {
+    const hour = String(current.getHours()).padStart(2, "0");
+    const min = String(current.getMinutes()).padStart(2, "0");
+
+    slots.push(`${hour}:${min}`);
+
+    current.setMinutes(current.getMinutes() + 30);
+  }
+
+  res.json({ slots });
+};
+
+exports.getDaysOff = async (req, res) => {
+  const { COMPANY_ID } = req.body;
+  const result = await Company.findById(COMPANY_ID).select("schedule");
+
+  return res.json({ result });
 };

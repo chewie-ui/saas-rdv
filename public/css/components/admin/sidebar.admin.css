@@ -19,6 +19,40 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 12px;
+  position: relative;
+}
+
+.sidebar .sidebar-wrapper .sidebar-header .button-company {
+  cursor: pointer;
+}
+
+.sidebar .sidebar-wrapper .sidebar-header .sidebar-header__panel {
+  position: absolute;
+  top: 100%;
+  left: 1%;
+  background-color: var(--color-white);
+  box-shadow: var(--shadow);
+  border: var(--border);
+  border-radius: 7px;
+  width: 100%;
+  display: none;
+}
+
+.sidebar .sidebar-wrapper .sidebar-header .sidebar-header__panel.show {
+  display: initial;
+}
+
+.sidebar .sidebar-wrapper .sidebar-header .sidebar-header__panel .company {
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.sidebar
+  .sidebar-wrapper
+  .sidebar-header
+  .sidebar-header__panel
+  .company:hover {
+  background-color: var(--grey-soft);
 }
 
 .sidebar .sidebar-wrapper .sidebar-header .header-company {
@@ -29,6 +63,7 @@
 
 .sidebar .sidebar-wrapper .sidebar-header .header-company h2 {
   font-size: 16px;
+  font-weight: 500;
 }
 
 .sidebar .sidebar-wrapper .sidebar-body .sidebar-nav {
@@ -62,6 +97,13 @@
   gap: 7px;
   align-items: center;
   padding: 7px 10px;
+  border-radius: 7px;
+}
+
+.sidebar .sidebar-wrapper .sidebar-body .sidebar-nav .nav-row .row-body {
+  display: flex;
+  gap: 3px;
+  flex-direction: column;
 }
 
 .sidebar

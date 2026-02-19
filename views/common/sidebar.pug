@@ -1,6 +1,6 @@
 aside.sidebar#sidebar
     .sidebar-wrapper
-        .sidebar-header
+        .sidebar-header#switchCompany
             .header-company
                 .icon.flex-c.prime
                     svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
@@ -10,6 +10,13 @@ aside.sidebar#sidebar
             .button-company
                 svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                     path(d="M480-120 300-300l58-58 122 122 122-122 58 58-180 180ZM358-598l-58-58 180-180 180 180-58 58-122-122-122 122Z")
+            .sidebar-header__panel
+                if companies && companies.length
+                    each company in companies
+                        .company(data-id=company._id)= company
+                else
+                    .company No other companies
+                    
         .sidebar-body
             .sidebar-nav
                 if currentCompany

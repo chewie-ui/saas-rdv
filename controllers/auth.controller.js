@@ -1,7 +1,7 @@
 const User = require("../db/models/user.model");
 const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
-const Company = require("../db/models/company.model");
+const Company = require("../db/models/company/company.model");
 
 exports.createUser = async (req, res) => {
   const { fullname, email, password, conformPassword } = req.body;

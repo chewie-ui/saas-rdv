@@ -1,6 +1,6 @@
 // // check if user has company
 
-const Company = require("../db/models/company.model");
+const Company = require("../db/models/company/company.model");
 
 module.exports = async (req, res, next) => {
   if (!req.user) return res.redirect("/login");
@@ -20,7 +20,7 @@ module.exports = async (req, res, next) => {
   }
 
   if (!company) {
-    return res.redirect("/create-company");
+    return res.redirect("/set-company");
   }
 
   res.locals.currentCompany = company;

@@ -66,7 +66,7 @@ export default function () {
     });
   }
 
-  function renderCalendar() {
+  async function renderCalendar() {
     calendarDays.innerHTML = "";
 
     const currentMonth = today.getMonth();
@@ -94,6 +94,16 @@ export default function () {
       addEmptyCell(daysInPrevMonth - i);
     }
 
+    const daysOff = await fetch("/get-days-off", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ COMPANY_ID }),
+    });
+
+    const resultDaysOff = await daysOff.json();
+
+    const dayOffArray = resultDaysOff.result.schedule;
+
     // Current month days
     for (let i = 1; i <= daysInMonth; i++) {
       const day = document.createElement("div");
@@ -101,6 +111,12 @@ export default function () {
       day.className = "day";
 
       const currentDate = new Date(currentYear, currentMonth, i);
+
+      const weekdayIndex = (currentDate.getDay() + 6) % 7;
+
+      const dayConfig = dayOffArray.find(
+        (d) => d.weekdayIndex === weekdayIndex,
+      );
       currentDate.setHours(0, 0, 0, 0);
 
       const todayClean = new Date(realToday);
@@ -108,6 +124,13 @@ export default function () {
 
       if (currentDate < todayClean) {
         day.classList.add("empty");
+      } else {
+        day.dataset.weekdayIndex = weekdayIndex;
+      }
+
+      if (dayConfig && dayConfig.dayOff) {
+        day.classList.add("empty");
+        day.dataset.disabled = "true";
       }
 
       if (
@@ -121,6 +144,23 @@ export default function () {
       calendarDays.appendChild(day);
 
       day.addEventListener("click", async () => {
+        const index = day.dataset.weekdayIndex;
+
+        const slots = await fetch("/get-schedule", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ index, COMPANY_ID }),
+        });
+        const slotsToAdd = await slots.json();
+        scheduleWrapper.querySelector(".schedule-rows").innerHTML = "";
+
+        slotsToAdd.slots.forEach((slot) => {
+          const div = document.createElement("div");
+          div.className = "row";
+          div.textContent = slot;
+          scheduleWrapper.querySelector(".schedule-rows").appendChild(div);
+        });
+
         if (day.classList.contains("empty")) return false;
         datePicked = new Date(currentYear, currentMonth, i);
 

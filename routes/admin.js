@@ -13,6 +13,8 @@ const {
   availability,
   toggleDay,
   editAvailabilty,
+  setCompany,
+  joinCompany,
 } = require("../controllers/admin.controller");
 
 const hasCompany = require("../middlewares/hasCompany");
@@ -33,5 +35,8 @@ router.post("/company-address", secondSetupCompany);
 
 router.post("/toggle-day", toggleDay);
 router.post("/edit-availability", editAvailabilty);
+
+router.get("/set-company", setCompany);
+router.get("/join-company", isAuth, joinCompany);
 
 module.exports = router;

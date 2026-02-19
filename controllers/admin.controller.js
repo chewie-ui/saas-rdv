@@ -142,7 +142,7 @@ exports.createCompany = (req, res) => {
   });
 };
 
-const Company = require("../db/models/company.model");
+const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
 
 exports.companySchedule = (req, res) => {
@@ -214,7 +214,7 @@ exports.secondSetupCompany = async (req, res) => {
       },
     });
 
-    res.redirect("company-schedule");
+    res.redirect("/panel");
   } catch (err) {
     res.json({ err });
   }
@@ -300,4 +300,12 @@ exports.editAvailabilty = async (req, res) => {
   );
 
   res.json({ success: true });
+};
+
+exports.setCompany = (req, res) => {
+  res.render("admin/set-company");
+};
+
+exports.joinCompany = (req, res) => {
+  res.render("admin/join-company");
 };

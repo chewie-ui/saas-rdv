@@ -3,14 +3,15 @@
         .company
             .logo
                 img(src="/images/icon.svg")
-            .name Skelio
+            .name Bookelio
         .menu
-            a(href="/") Home
-            a(href="/") Contact us
+            a(href="/join-company") Join
+            a(href="/create-company") Create
             .actions
                 if user 
                     //- a(href="/logout").btn.secondary Logout
-                    a(href="/panel").btn.primary Dashboard
+                    a(href="/panel").btn.secondary Dashboard
+                    a(href="/logout").btn.primary Logout
                 else
                     a(href="/login").btn.secondary Login
                     a(href="/register").btn.primary Register
