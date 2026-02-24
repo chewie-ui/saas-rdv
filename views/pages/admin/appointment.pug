@@ -16,7 +16,7 @@ block content
                     .cell.day
                         each appointment in appointments
                             if appointment.weekday === dayIndex && appointment.startHour === hour
-                                .appointment
+                                a.appointment(href=`/appointement/${appointment._id}`)
                                     .appointment-name= appointment.name
                                     .appointment-time.xs-comment 
                                         | #{appointment.startHour} - #{appointment.endHour}

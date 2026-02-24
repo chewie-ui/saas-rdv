@@ -20,6 +20,27 @@ html(lang="fr")
         script(src="/js/layouts/admin.js" type="module")
         script.
             const socket = io();
+
+            socket.on("fired", (element) => {
+                console.log(element);
+            });
+
+            document.querySelectorAll(".sidebar-header__panel .company")
+                .forEach(el => {
+                    el.addEventListener("click", async () => {
+                    const companyId = el.dataset.id;
+
+                    await fetch("/switch-company", {
+                        method: "POST",
+                        headers: {
+                        "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ companyId })
+                    });
+
+                    location.reload();
+                    });
+                });
         block scripts
 
         script.
@@ -28,4 +49,6 @@ html(lang="fr")
                      document.body.classList.toggle("debug");
                 }
             })
+
+
             

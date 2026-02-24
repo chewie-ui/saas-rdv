@@ -10,6 +10,6 @@ exports.getAppointments = () => {
   });
 };
 
-exports.GetAllAppointments = () => {
-  return Booking.find({});
+exports.GetAllAppointments = async (companyId) => {
+  return await Booking.find({ company: companyId });
 };

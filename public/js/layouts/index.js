@@ -5,3 +5,4 @@ import initBooking from "../components/index/booking.index.js";
 initBooking();
 initSchedule();
 initCalendar();
+

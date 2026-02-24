@@ -20,6 +20,7 @@
   --bg-app: #f8fafc;
   --danger: #ef4444;
   --warning: #f59e0b;
+  --success: #10b978;
 
   --grey-primary: #637083;
   --grey-light: #344051;
@@ -199,6 +200,54 @@ label.switch input:focus + .slider {
 
 label.switch input:checked + .slider::before {
   transform: translateX(16px);
+}
+
+tr th,
+tr td {
+  text-align: left;
+  background-color: var(--color-white);
+  padding: 10px 12px;
+}
+
+.icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--grey-soft);
+  border-radius: 7px;
+  width: 35px;
+  height: 35px;
+  border: none;
+}
+
+select option {
+  text-transform: capitalize;
+}
+
+td.actions {
+  gap: 7px;
+  display: flex;
+}
+
+.s-btn {
+  padding: 4px 6px;
+  font-size: 12px;
+  border: none;
+  border-radius: 7px;
+  color: #fff;
+  font-weight: 700;
+}
+
+.field-container {
+  gap: 7px;
+}
+
+.s-btn.approve {
+  background-color: var(--success);
+}
+
+.s-btn.reject {
+  background-color: var(--danger);
 }
 
 @media all and (min-width: 820px) {

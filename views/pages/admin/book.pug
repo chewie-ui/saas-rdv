@@ -1,0 +1,35 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet", href="/css/components/admin/availability.admin.css")
+
+
+block content
+    .section__container.flex.col
+        .availability-section.flex.col
+            .availability-section__header
+                h3 Manage this appointment
+            .availability-section__body.flex
+                .book-container
+                    .book-title
+                        h2 Appointement #{user._id}
+                    .book-row
+                        .book-info
+                            p Date
+                            p= user.date
+                        .book-info
+                            p Time
+                            p #{user.startHour} #{user.endHour}
+                    .book-row
+                        .book-info
+                            p Client name
+                            p #{user.name || "User not found."} #{user.surname}
+                        .book-info
+                            p Client email
+                            p #{user.email || "User not found."}
+                        .book-info
+                            p Client phone
+                            p #{user.phone || "User not found."}
+                        .book-info
+                            p Client message
+                            p #{user.message || "User not found."}

@@ -1,29 +1,48 @@
-// // check if user has company
-
 const Company = require("../db/models/company/company.model");
 
 module.exports = async (req, res, next) => {
   if (!req.user) return res.redirect("/login");
 
-  const activeCompanies = req.user.companies.filter(
-    (c) => c.status === "active",
-  );
+  // 🔥 1️⃣ Toutes les companies où il est owner
+  const ownedCompanies = await Company.find({
+    owner: req.user._id,
+  }).lean();
 
-  let company = null;
+  // 🔥 2️⃣ Toutes les companies où il est employee
+  const employeeCompanies = await Company.find({
+    "employees.user": req.user._id,
+  }).lean();
 
-  for (const c of activeCompanies) {
-    const found = await Company.findById(c.company);
-    if (found) {
-      company = found;
-      break;
-    }
-  }
+  // 🔥 3️⃣ Fusion + éviter doublons
+  const allCompaniesMap = new Map();
 
-  if (!company) {
+  [...ownedCompanies, ...employeeCompanies].forEach((c) => {
+    allCompaniesMap.set(c._id.toString(), c);
+  });
+
+  const allCompanies = Array.from(allCompaniesMap.values());
+
+  if (!allCompanies.length) {
     return res.redirect("/set-company");
   }
 
-  res.locals.currentCompany = company;
+  // 🔥 4️⃣ Company active
+  let currentCompany;
+
+  if (req.session.companyId) {
+    currentCompany = allCompanies.find(
+      (c) => c._id.toString() === req.session.companyId
+    );
+  }
+
+  if (!currentCompany) {
+    currentCompany = allCompanies[0];
+    req.session.companyId = currentCompany._id;
+  }
+
+  // 🔥 5️⃣ Injecter dans toutes les vues
+  res.locals.currentCompany = currentCompany;
+  res.locals.companies = allCompanies;
   res.locals.currentUser = req.user;
 
   next();

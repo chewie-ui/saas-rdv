@@ -15,13 +15,16 @@ exports.createUser = async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
-    await User.create({
+    const user = await User.create({
       fullName: fullname,
       email,
       password: hashedPassword,
     });
 
-    res.redirect("/panel");
+    req.login(user, (err) => {
+      console.error(err);
+      return res.redirect("/panel");
+    });
   } catch (err) {
     if (err.code === 11000) {
       return res.render("auth/register", {

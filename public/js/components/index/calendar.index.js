@@ -209,6 +209,11 @@ export default function () {
         company: document
           .getElementById("bookingWrapper")
           .getAttribute("data-company-id"),
+        name: document.getElementById("bookingName").value,
+        surname: document.getElementById("bookingSurname").value,
+        email: document.getElementById("bookingEmail").value,
+        phone: document.getElementById("bookingPhone").value,
+        message: document.getElementById("bookingMsg").value,
       }),
     });
 

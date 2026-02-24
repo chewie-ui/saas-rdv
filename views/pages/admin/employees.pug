@@ -1,31 +1,66 @@
 extends ../../layouts/admin
 
 block links
-    link(rel="stylesheet", href="/css/components/admin/client.admin.css")
+    link(rel="stylesheet", href="/css/components/admin/employee.admin.css")
 
 block content
-    .client-section.flex.col
-        .client-section__header.flex
+    .employee-section.flex.col
+        .employee-section__header.flex-c.space-b
             .header-search
                 input.input(placeholder="Search")
             .header-actions.flex
-                button.btn.secondary Filters
-                button.btn Add employee
-        .client-section__body
-            table.client-table 
+                button.btn.secondary#requestSwitcher Requests
+                button.btn#addEmployeeSwitcher Employee
+        .employee-section__body
+            table.employee-table#tableShowing
                 thead
                     tr 
-                        th
+                        th #
                         th Employee Name
                         th ID
                         th Role
-                        th Phone
                         th Email
-                        th Actions
+                        th Action
                 tbody
-                    each employee in employees
-                        tr 
+                    each employee, index in employees
+                        tr(data-id=employee.user._id)
+                            td= index + 1
+                            td= employee.user.fullName
+                            td= employee.user._id
                             td
-                            td= employee.fullName
-
+                                select.select(disabled=(employee.grade === "owner"))
+                                    option(disabled)= employee.grade
+                                    option(value="owner" selected=(employee.grade === "owner")) Owner
+                                    option(value="admin" selected=(employee.grade === "admin")) Admin
+                                    option(value="staff" selected=(employee.grade === "staff")) Staff
+                            td= employee.user.email
+                            td
+                                button.s-btn.reject.fire-btn Fire
+            template#employeeHeadTemplate
+                tr 
+                    th
+                    th Employee Name
+                    th ID
+                    th Role
+                    th Email
+                    th Action
+            template#requestHeaderTemplate
+                tr
+                    th #
+                    th Name
+                    th Status
+                    th Email
+                    th Actions
+            template#requestRowTemplate
+                tr
+                    td.index
+                    td.fullName
+                    td.status
+                    td.email
+                    td.actions
+                        button.s-btn.approve Approve
+                        button.s-btn.reject Reject
 block scripts
+    script.
+        const companyId = "#{currentCompany._id}";
+    script(type="module" src="/js/layouts/employees.js")

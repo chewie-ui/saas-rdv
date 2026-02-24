@@ -15,11 +15,24 @@ const {
   editAvailabilty,
   setCompany,
   joinCompany,
+  requestsEmployees,
+  approveRequestEmployee,
+  rejectRequestEmployee,
+  fireRequestEmployee,
+  editSlotTime,
+  book,
 } = require("../controllers/admin.controller");
 
 const hasCompany = require("../middlewares/hasCompany");
 const isAuth = require("../middlewares/isAuth");
 
+router.get(
+  "/appointement/:bookId",
+  isAuth,
+  hasCompany,
+  renderAppointments,
+  book,
+);
 router.get("/panel", isAuth, hasCompany, renderAppointments, panel);
 router.get("/appointment", isAuth, hasCompany, appointment);
 router.get("/availability", isAuth, hasCompany, availability);
@@ -38,5 +51,13 @@ router.post("/edit-availability", editAvailabilty);
 
 router.get("/set-company", setCompany);
 router.get("/join-company", isAuth, joinCompany);
+
+router.get("/employees/requests", requestsEmployees);
+
+router.patch("/employees/requests/:id/approve", approveRequestEmployee);
+router.delete("/employees/requests/:id/reject", rejectRequestEmployee);
+router.delete("/employees/requests/:id/fire", fireRequestEmployee);
+
+router.patch("/edit-interval", editSlotTime);
 
 module.exports = router;

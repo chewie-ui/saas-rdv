@@ -9,10 +9,16 @@ const bookingSchema = new schema(
       required: false,
     },
 
+    surname: String,
+    name: String,
+    email: String,
+    phone: String,
+    message: String,
+
     company: {
       type: schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
     },
 
     date: {

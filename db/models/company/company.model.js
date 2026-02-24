@@ -16,10 +16,33 @@ const companySchema = schema({
 
   employees: [
     {
-      type: schema.Types.ObjectId,
-      ref: "User",
+      user: {
+        type: schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+
+      grade: {
+        type: String,
+        enum: ["owner", "admin", "staff"],
+        default: "staff",
+      },
+
+      jobTitle: {
+        type: String,
+      },
+
+      joinedAt: {
+        type: Date,
+        default: Date.now,
+      },
     },
   ],
+
+  slotTime: {
+    type: Number,
+    default: 30
+  },
 
   schedule: [
     {

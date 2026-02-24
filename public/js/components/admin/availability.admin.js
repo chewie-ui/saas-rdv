@@ -9,7 +9,39 @@ document.addEventListener("click", async (event) => {
   const hourItem = event.target.closest(".hour");
   const insideAvailability = event.target.closest(".body-weekly-hour");
 
+  const timeslotPanel = event.target.closest("#timeslotPanel");
+  const slotTime = event.target.closest(".time");
   const allPanels = document.querySelectorAll(".panel-availability");
+
+  if (timeslotPanel) {
+    document
+      .getElementById("timeslotPanel")
+      .querySelector(".panel")
+      .classList.toggle("open");
+  } else {
+    document
+      .getElementById("timeslotPanel")
+      .querySelector(".panel")
+      .classList.remove("open");
+  }
+
+  if (slotTime) {
+    const slot = Number(slotTime.dataset.time);
+
+    await fetch("/edit-interval", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slot,
+      }),
+    });
+
+    document
+      .getElementById("timeslotPanel")
+      .querySelector(".input").textContent = `${slot}min`;
+
+    return;
+  }
 
   // 🔥 Si on clique sur une heure dans le panel
   if (hourItem) {

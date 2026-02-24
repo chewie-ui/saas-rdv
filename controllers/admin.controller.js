@@ -10,6 +10,20 @@ exports.panel = (req, res) => {
   });
 };
 
+const Booking = require("../db/models/book.model");
+
+exports.book = async (req, res) => {
+  const { bookId } = req.params;
+  console.log(bookId);
+
+  const user = await Booking.findById(bookId);
+
+  res.render("admin/book", {
+    pageName: "Book",
+    user,
+  });
+};
+
 function getWeekDays(startDate = new Date()) {
   const week = [];
   const monday = new Date(startDate);
@@ -45,7 +59,7 @@ function getWeekDays(startDate = new Date()) {
 }
 
 exports.appointment = async (req, res) => {
-  const apps = await GetAllAppointments();
+  const apps = await GetAllAppointments(req.session.companyId);
   console.log(apps);
 
   const formatted = apps.map((appointment) => {
@@ -60,8 +74,12 @@ exports.appointment = async (req, res) => {
     endDate.setHours(endDate.getHours() + 1);
 
     return {
-      name: "Docteur Fring",
-
+      _id: appointment._id,
+      name: appointment.name,
+      surname: appointment.surname,
+      email: appointment.email,
+      phone: appointment.phone,
+      message: appointment.message,
       weekday: (startDate.getDay() + 6) % 7, // ✅ FIX
 
       date: startDate.toLocaleDateString("fr-BE", {
@@ -85,6 +103,12 @@ exports.appointment = async (req, res) => {
   res.render("admin/appointment", {
     pageName: "Appointment",
     hours: [
+      "00:00",
+      "01:00",
+      "02:00",
+      "03:00",
+      "04:00",
+      "05:00",
       "06:00",
       "07:00",
       "08:00",
@@ -100,6 +124,9 @@ exports.appointment = async (req, res) => {
       "18:00",
       "19:00",
       "20:00",
+      "21:00",
+      "22:00",
+      "23:00",
     ],
     weekDays: getWeekDays(),
 
@@ -168,7 +195,12 @@ exports.firstSetupCompany = async (req, res) => {
         services: services,
       },
       schedule: generateDefaultSchedule(),
-      employees: req.user._id,
+      employees: [
+        {
+          user: req.user._id,
+          grade: "owner",
+        },
+      ],
     });
     req.session.companyId = company._id;
 
@@ -229,7 +261,9 @@ exports.client = (req, res) => {
 exports.employees = async (req, res) => {
   console.log("company from controller", res.locals);
 
-  const thisCompany = await Company.findById(res.locals.currentCompany);
+  const thisCompany = await Company.findById(
+    res.locals.currentCompany,
+  ).populate("employees.user");
 
   const employees = thisCompany.employees;
 
@@ -239,11 +273,20 @@ exports.employees = async (req, res) => {
   });
 };
 
-exports.availability = (req, res) => {
+async function getSlotTime(companyId) {
+  const res = await Company.findById(companyId).select("slotTime").lean();
+  console.log(res.slotTime);
+
+  return res?.slotTime;
+}
+
+exports.availability = async (req, res) => {
   res.render("admin/availability", {
     pageName: "Availability",
     title: "Availability",
-    hours: generateHours(30), // permettre a user de changer l'intervale
+    timeSlot: [10, 15, 20, 25, 30, 45, 60, 90, 120, 180],
+    hours: generateHours(10),
+    currentSlotTime: await getSlotTime(req.session.companyId),
   });
 };
 
@@ -308,4 +351,86 @@ exports.setCompany = (req, res) => {
 
 exports.joinCompany = (req, res) => {
   res.render("admin/join-company");
+};
+
+const CompanyRequest = require("../db/models/company/companyRequest.model");
+
+exports.requestsEmployees = async (req, res) => {
+  const { companyId } = req.query;
+
+  const result = await CompanyRequest.find({
+    company: companyId,
+    status: "pending",
+  })
+    .populate("user", "fullName email")
+    .lean();
+  res.json({ success: true, result });
+};
+
+exports.approveRequestEmployee = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const request = await CompanyRequest.findById(id);
+
+    if (!request) {
+      return res.status(404).json({ error: "id not found" });
+    }
+
+    await Company.findByIdAndUpdate(request.company, {
+      $push: {
+        employees: {
+          user: request.user,
+          grade: "staff",
+        },
+      },
+    });
+
+    await CompanyRequest.findByIdAndDelete(id);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+exports.rejectRequestEmployee = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await CompanyRequest.findByIdAndDelete(id);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+exports.fireRequestEmployee = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { companyId } = req.query;
+
+    await Company.findByIdAndUpdate(companyId, {
+      $pull: { employees: { user: id } },
+    });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.log(err);
+    return res.json({ error: err });
+  }
+};
+
+exports.editSlotTime = async (req, res) => {
+  try {
+    const { slot } = req.body;
+    const { companyId } = req.session;
+
+    await Company.findByIdAndUpdate(companyId, {
+      slotTime: slot,
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ error: err });
+  }
 };

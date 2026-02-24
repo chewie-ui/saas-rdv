@@ -113,7 +113,12 @@
   .weekly-hour__time
   .time-slot
   .slot-hour
-  .panel-availability.open {
+  .panel-availability.open,
+.availability-section
+  .availability-section__body
+  .time-slot__container
+  .slot-input__container
+  .panel.open {
   display: initial;
 }
 
@@ -125,7 +130,13 @@
   .time-slot
   .slot-hour
   .panel-availability
-  .hour {
+  .hour,
+.availability-section
+  .availability-section__body
+  .time-slot__container
+  .slot-input__container
+  .panel
+  .time {
   padding: 10px 60px 10px 8px;
   cursor: pointer;
 }
@@ -138,6 +149,39 @@
   .time-slot
   .slot-hour
   .panel-availability
-  .hour:hover {
+  .hour:hover,
+.availability-section
+  .availability-section__body
+  .time-slot__container
+  .slot-input__container
+  .panel
+  .time:hover {
   background-color: var(--grey-soft);
+}
+
+.availability-section
+  .availability-section__body
+  .time-slot__container
+  .slot-input__container {
+  position: relative;
+  width: 125px;
+}
+
+.availability-section
+  .availability-section__body
+  .time-slot__container
+  .slot-input__container
+  .panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: var(--color-white);
+  box-shadow: var(--shadow);
+  border: var(--border);
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-radius: 7px;
+  display: none;
+  height: 130px;
+  z-index: 10;
 }
