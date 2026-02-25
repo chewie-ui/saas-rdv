@@ -21,6 +21,8 @@ const {
   fireRequestEmployee,
   editSlotTime,
   book,
+  deleteBooking,
+  cancelBooking,
 } = require("../controllers/admin.controller");
 
 const hasCompany = require("../middlewares/hasCompany");
@@ -59,5 +61,8 @@ router.delete("/employees/requests/:id/reject", rejectRequestEmployee);
 router.delete("/employees/requests/:id/fire", fireRequestEmployee);
 
 router.patch("/edit-interval", editSlotTime);
+
+router.delete("/appointment/:bookId/delete", deleteBooking);
+router.patch("/appointment/:id/cancel", cancelBooking);
 
 module.exports = router;

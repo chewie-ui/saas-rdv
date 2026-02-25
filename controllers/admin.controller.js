@@ -14,9 +14,9 @@ const Booking = require("../db/models/book.model");
 
 exports.book = async (req, res) => {
   const { bookId } = req.params;
-  console.log(bookId);
 
   const user = await Booking.findById(bookId);
+  console.log(user);
 
   res.render("admin/book", {
     pageName: "Book",
@@ -80,7 +80,8 @@ exports.appointment = async (req, res) => {
       email: appointment.email,
       phone: appointment.phone,
       message: appointment.message,
-      weekday: (startDate.getDay() + 6) % 7, // ✅ FIX
+      weekday: (startDate.getDay() + 6) % 7,
+      status: appointment.status,
 
       date: startDate.toLocaleDateString("fr-BE", {
         day: "2-digit",
@@ -259,17 +260,23 @@ exports.client = (req, res) => {
 };
 
 exports.employees = async (req, res) => {
-  console.log("company from controller", res.locals);
-
   const thisCompany = await Company.findById(
     res.locals.currentCompany,
   ).populate("employees.user");
 
   const employees = thisCompany.employees;
 
+  const userId = req.user._id;
+  console.log(thisCompany.employees);
+
+  const thisEmployee = employees.find(
+    (r) => r.user._id.toString() === userId.toString(),
+  );
+
   res.render("admin/employees", {
     pageName: "Employees",
     employees,
+    thisEmployee,
   });
 };
 
@@ -433,4 +440,21 @@ exports.editSlotTime = async (req, res) => {
   } catch (err) {
     res.json({ error: err });
   }
+};
+
+exports.deleteBooking = async (req, res) => {
+  const { bookId } = req.params;
+
+  const data = await Booking.findByIdAndDelete(bookId);
+
+  res.json({ data });
+};
+
+exports.cancelBooking = async (req, res) => {
+  const { id } = req.params;
+  await Booking.findByIdAndUpdate(id, {
+    status: "canceled",
+  });
+
+  res.json({ success: true });
 };

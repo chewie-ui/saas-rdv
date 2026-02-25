@@ -47,13 +47,35 @@
   gap: 7px;
   cursor: pointer;
   transition: 0.3s;
+  position: relative;
+}
+
+.calendar-section .grid-section .cell .appointment .appointment-canceled {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: grey;
+  font-size: 12px;
 }
 
 .calendar-section .grid-section .cell .appointment:hover {
   background-color: var(--green-light);
 }
 
-.calendar-section .grid-section .cell .appointment:hover .xs-comment,
-.calendar-section .grid-section .cell .appointment:hover .appointment-name {
+.calendar-section
+  .grid-section
+  .cell
+  .appointment:not(.canceled):hover
+  .xs-comment,
+.calendar-section
+  .grid-section
+  .cell
+  .appointment:not(.canceled):hover
+  .appointment-name {
   color: white;
+}
+
+.calendar-section .grid-section .cell .appointment.canceled {
+  background-color: var(--grey-soft);
+  border-left: 3px solid var(--grey-primary);
 }

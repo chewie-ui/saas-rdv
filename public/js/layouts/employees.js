@@ -11,12 +11,32 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   if (!headerActions || !tableBody || !template) return;
 
+  tableBody.addEventListener("change", async (e) => {
+    const selectRole = e.target.closest(".select-role");
+    if (!selectRole) return;
+
+    const row = selectRole.closest("tr");
+    const userId = row.dataset.id;
+    const newRole = selectRole.value;
+
+    try {
+      await fetch(`/employees/${userId}/role`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole }),
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  });
+
   tableBody.addEventListener("click", async (e) => {
     const approveBtn = e.target.closest(".approve");
     const rejectBtn = e.target.closest(".reject:not(.fire-btn)");
     const fireBtn = e.target.closest(".fire-btn");
+    const selectRole = e.target.closest(".select-role");
 
-    if (!approveBtn && !rejectBtn && !fireBtn) return;
+    if (!approveBtn && !rejectBtn && !fireBtn && !selectRole) return;
 
     const row = e.target.closest("tr");
     const requestId = row.dataset.id;
@@ -34,8 +54,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         row.remove();
       }
-
-   
 
       if (fireBtn) {
         // const res = await fetch(

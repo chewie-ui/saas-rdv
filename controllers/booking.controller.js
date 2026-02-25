@@ -16,6 +16,7 @@ exports.createBooking = async (req, res) => {
       email,
       phone,
       message,
+      status: "confirmed"
     });
 
     res.json({ success: true });

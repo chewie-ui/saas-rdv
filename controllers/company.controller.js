@@ -48,4 +48,19 @@ exports.requestCompany = async (req, res) => {
   }
 };
 
-// Quand jaffiche les resultats, bloquer si user a deja envoyer une demande
+exports.swapRole = async (req, res) => {
+  const { id } = req.params;
+  const { companyId } = req.session;
+  const { role } = req.body;
+
+  const updated = await Company.findOneAndUpdate(
+    { _id: companyId, "employees.user": id },
+    { $set: { "employees.$.grade": role } },
+    { new: true },
+  );
+  if (!updated)
+    return res
+      .status(404)
+      .json({ success: false, message: "Employee not found" });
+  return res.json({ success: true });
+};
