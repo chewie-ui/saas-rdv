@@ -19,7 +19,7 @@ block content
                                         input.input-weekday(type="checkbox" data-weekday-index=day.weekdayIndex data-company=currentCompany._id checked=!day.dayOff)
                                         span.slider
                                 .weekly-hour__weekday= weekday[day.weekdayIndex] 
-                            .weekly-hour__time.flex
+                            .weekly-hour__time.flex.col
                                 if day.workingHours.length > 0
                                     each slot in day.workingHours
                                         .time-slot.flex-c
@@ -37,27 +37,28 @@ block content
                                                         .hour= hour
                                 else 
                                     .time-slot.flex-c
-                                            .start-hour.slot-hour
-                                                .input.hour-container(data-hours="start") 08:00
-                                                .panel-availability
-                                                    each hour in hours
-                                                        .hour= hour
+                                        .start-hour.slot-hour
+                                            .input.hour-container(data-hours="start") 08:00
+                                            .panel-availability
+                                                each hour in hours
+                                                    .hour= hour
 
-                                            div -
-                                            .end-hour.slot-hour
-                                                .input.hour-container(data-hours="end") 17:00
-                                                .panel-availability
-                                                    each hour in hours
-                                                        .hour= hour
+                                        div -
+                                        .end-hour.slot-hour
+                                            .input.hour-container(data-hours="end") 17:00
+                                            .panel-availability
+                                                each hour in hours
+                                                    .hour= hour
                             .weekly-hour__options.flex-c
-                                .option.flex-c
+                                .option.flex-c.option-add-plage
                                     svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                         path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+
                                 .option.flex-c
                                     svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                         path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z")
 
-                .body-specific-hour
+                //- .body-specific-hour
         .availability-section.flex.col
             .availability-section__header
                 h3 Set your slot time per booking
@@ -68,6 +69,20 @@ block content
                         .panel
                             each time in timeSlot
                                 .time(data-time=time) #{time}min
+    template#plageTemplate
+        .time-slot.flex-c
+            .start-hour.slot-hour
+                .input.hour-container(data-hours="start") 08:00
+                .panel-availability
+                    each hour in hours
+                        .hour= hour
+
+            div -
+            .end-hour.slot-hour
+                .input.hour-container(data-hours="end") 17:00
+                .panel-availability
+                    each hour in hours
+                        .hour= hour
                    
 
 

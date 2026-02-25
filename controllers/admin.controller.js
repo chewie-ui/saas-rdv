@@ -60,7 +60,9 @@ function getWeekDays(startDate = new Date()) {
 
 exports.appointment = async (req, res) => {
   const apps = await GetAllAppointments(req.session.companyId);
-  console.log(apps);
+
+  const rowTime = await Company.findById(req.session.companyId).select("slotTime").lean();
+  const slotTime = rowTime.slotTime;
 
   const formatted = apps.map((appointment) => {
     const [h, m] = appointment.time.split(":").map(Number);
@@ -83,6 +85,8 @@ exports.appointment = async (req, res) => {
       weekday: (startDate.getDay() + 6) % 7,
       status: appointment.status,
 
+      slotTime: appointment.slotTime,
+
       date: startDate.toLocaleDateString("fr-BE", {
         day: "2-digit",
         month: "2-digit",
@@ -100,9 +104,10 @@ exports.appointment = async (req, res) => {
       }),
     };
   });
-
+  
   res.render("admin/appointment", {
     pageName: "Appointment",
+    slotTime,
     hours: [
       "00:00",
       "01:00",
@@ -130,7 +135,6 @@ exports.appointment = async (req, res) => {
       "23:00",
     ],
     weekDays: getWeekDays(),
-
     appointments: formatted,
   });
 };

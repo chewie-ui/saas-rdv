@@ -56,17 +56,17 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (fireBtn) {
-        // const res = await fetch(
-        //   `/employees/requests/${requestId}/fire?companyId=${companyId}`,
-        //   {
-        //     method: "DELETE",
-        //   },
-        // );
+        const res = await fetch(
+          `/employees/requests/${requestId}/fire?companyId=${companyId}`,
+          {
+            method: "DELETE",
+          },
+        );
 
-        // const response = await res.json();
-        // if (response.success) {
-        //   row.remove();
-        // }
+        const response = await res.json();
+        if (response.success) {
+          row.remove();
+        }
 
         socket.emit("fired");
       }

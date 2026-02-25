@@ -107,14 +107,13 @@ exports.renderAppointments = async (req, res, next) => {
 exports.getSchedule = async (req, res) => {
   const { index, COMPANY_ID } = req.body;
 
-  const company = await Company.findById(COMPANY_ID).select("schedule");
+  const company = await Company.findById(COMPANY_ID).select("schedule slotTime");
   const result = await company.schedule;
+  const slotTime = await company.slotTime;
 
   const target = result[index];
-  console.log("target", target);
 
   const workingHours = target.workingHours[0];
-  console.log("workingHours", workingHours);
 
   const start = workingHours.start; // "08:00"
   const end = workingHours.end;
@@ -135,7 +134,7 @@ exports.getSchedule = async (req, res) => {
 
     slots.push(`${hour}:${min}`);
 
-    current.setMinutes(current.getMinutes() + 30);
+    current.setMinutes(current.getMinutes() + slotTime);
   }
 
   res.json({ slots });

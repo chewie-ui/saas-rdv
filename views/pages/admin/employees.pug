@@ -35,7 +35,7 @@ block content
                                     option(value="staff" selected=(employee.grade === "staff")) Staff
                             td= employee.user.email
                             td
-                                button.s-btn.reject.fire-btn(disabled=(thisEmployee.grade === "staff")) Fire
+                                button.s-btn.reject.fire-btn(disabled=(thisEmployee.grade === "staff" || employee.grade === "owner")) Fire
             template#employeeHeadTemplate
                 tr 
                     th

@@ -148,3 +148,26 @@ inputsWeekday.forEach((input) => {
     console.log(data);
   });
 });
+
+const rowOptions = document.querySelector(
+  ".availability-section .availability-section__body .body-weekly-hour",
+);
+
+if (rowOptions) {
+  rowOptions.addEventListener("click", (event) => {
+    console.log("ertyu");
+    
+    const addPlageBtn = event.target.closest(".option-add-plage");
+
+    if (!addPlageBtn) return;
+
+    if (addPlageBtn) {
+      const row = addPlageBtn.closest(".row-weekday");
+      const plagesWrapper = row.querySelector(".weekly-hour__time");
+      const template = document.getElementById("plageTemplate");
+      const clone = template.content.cloneNode(true);
+
+      plagesWrapper.appendChild(clone);
+    }
+  });
+}

@@ -17,7 +17,8 @@ block content
                         each appointment in appointments
                             if appointment.weekday === dayIndex && appointment.startHour === hour
                                 a.appointment(href=`/appointement/${appointment._id}` class={ canceled: appointment.status === 'canceled' })
-                                    .appointment-canceled Canceled
+                                    if appointment.status === "canceled"
+                                        .appointment-canceled Canceled
                                     .appointment-name= appointment.name
                                     .appointment-time.xs-comment 
                                         | #{appointment.startHour} - #{appointment.endHour}
