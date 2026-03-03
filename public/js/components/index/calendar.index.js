@@ -1,9 +1,10 @@
 export default function () {
-  const calendar = document.querySelector(
-    ".content-wrapper .calendar-wrapper .calendar",
-  );
-  const bookingWrapper = document.getElementById("bookingWrapper");
-  const scheduleWrapper = document.getElementById("scheduleWrapper");
+  const calendar = document.querySelector(".calendar-wrapper .calendar");
+  const bookingWrapper = document.getElementById("bookingWrapper") || undefined;
+  const scheduleWrapper =
+    document.getElementById("scheduleWrapper") || undefined;
+  console.log(calendar);
+
   const calendarHeader = calendar.querySelector(".calendar-header");
   const calendarBody = calendar.querySelector(".calendar-body");
   const currentMonthTarget = calendarHeader.querySelector(".this-month h2");
@@ -186,47 +187,51 @@ export default function () {
     }
   }
 
-  scheduleWrapper.addEventListener("click", (e) => {
-    const row = e.target.closest(".row:not(.reserved)");
-    if (!row) return;
+  if (scheduleWrapper) {
+    scheduleWrapper.addEventListener("click", (e) => {
+      const row = e.target.closest(".row:not(.reserved)");
+      if (!row) return;
 
-    schedulePicked = row.textContent;
+      schedulePicked = row.textContent;
 
-    scheduleWrapper.classList.remove("show");
-    bookingWrapper.classList.add("show");
-  });
-
-  bookingWrapper.addEventListener("click", async (e) => {
-    const button = e.target.closest("button#confirmBooking");
-    if (!button) return;
-
-    const request = await fetch("/create-booking", {
-      method: "post",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date: datePicked.toISOString(),
-        time: schedulePicked,
-        company: document
-          .getElementById("bookingWrapper")
-          .getAttribute("data-company-id"),
-        name: document.getElementById("bookingName").value,
-        surname: document.getElementById("bookingSurname").value,
-        email: document.getElementById("bookingEmail").value,
-        phone: document.getElementById("bookingPhone").value,
-        message: document.getElementById("bookingMsg").value,
-      }),
+      scheduleWrapper.classList.remove("show");
+      bookingWrapper.classList.add("show");
     });
+  }
 
-    const response = await request.json();
-    if (response.success) {
-      // alert("all is ok");
-    } else {
-      alert("you ve got an error, please retry");
-    }
+  if (bookingWrapper) {
+    bookingWrapper.addEventListener("click", async (e) => {
+      const button = e.target.closest("button#confirmBooking");
+      if (!button) return;
 
-    scheduleWrapper.classList.remove("show");
-    bookingWrapper.classList.remove("show");
-  });
+      const request = await fetch("/create-booking", {
+        method: "post",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: datePicked.toISOString(),
+          time: schedulePicked,
+          company: document
+            .getElementById("bookingWrapper")
+            .getAttribute("data-company-id"),
+          name: document.getElementById("bookingName").value,
+          surname: document.getElementById("bookingSurname").value,
+          email: document.getElementById("bookingEmail").value,
+          phone: document.getElementById("bookingPhone").value,
+          message: document.getElementById("bookingMsg").value,
+        }),
+      });
+
+      const response = await request.json();
+      if (response.success) {
+        // alert("all is ok");
+      } else {
+        alert("you ve got an error, please retry");
+      }
+
+      scheduleWrapper.classList.remove("show");
+      bookingWrapper.classList.remove("show");
+    });
+  }
 
   prevMonthBtn.addEventListener("click", () => {
     today.setMonth(today.getMonth() - 1);

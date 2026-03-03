@@ -23,6 +23,7 @@ const {
   book,
   deleteBooking,
   cancelBooking,
+  getWeekData,
 } = require("../controllers/admin.controller");
 
 const hasCompany = require("../middlewares/hasCompany");
@@ -64,5 +65,7 @@ router.patch("/edit-interval", editSlotTime);
 
 router.delete("/appointment/:bookId/delete", deleteBooking);
 router.patch("/appointment/:id/cancel", cancelBooking);
+router.get("/appointment/week-data", getWeekData);
 
 module.exports = router;
+// ───

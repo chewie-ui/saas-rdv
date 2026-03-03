@@ -1,5 +1,6 @@
 const Company = require("../db/models/company/company.model");
 const CompanyRequest = require("../db/models/company/companyRequest.model");
+const DaysOff = require("../db/models/company/daysOff.model");
 
 exports.searchCompany = async (req, res) => {
   const { name } = req.query;
@@ -62,5 +63,61 @@ exports.swapRole = async (req, res) => {
     return res
       .status(404)
       .json({ success: false, message: "Employee not found" });
+  return res.json({ success: true });
+};
+
+exports.getDaysOff = async (req, res) => {
+  const result = await DaysOff.findOne({ company: req.session.companyId });
+  return res.json(result);
+};
+
+exports.addDaysOff = async (req, res) => {
+  const { dateKey } = req.body;
+  await DaysOff.findOneAndUpdate(
+    { company: req.session.companyId },
+    {
+      $addToSet: {
+        dates: { date: dateKey },
+      },
+    },
+    { upsert: true, new: true },
+  );
+  return res.json({ success: true });
+};
+
+exports.removeDaysOff = async (req, res) => {
+  const { dateKey } = req.body;
+
+  const cleanDate = new Date(dateKey);
+  cleanDate.setHours(0, 0, 0, 0);
+
+  await DaysOff.updateOne(
+    { company: req.session.companyId },
+    {
+      $pull: {
+        dates: { date: cleanDate },
+      },
+    },
+  );
+
+  res.json({ success: true });
+};
+
+exports.removeDayOff = async (req, res) => {
+  const { dayId } = req.params;
+  console.log("ID", dayId);
+  console.log(req.session.companyId);
+
+  await DaysOff.updateOne(
+    {
+      company: req.session.companyId,
+    },
+    {
+      $pull: {
+        dates: { _id: dayId },
+      },
+    },
+  );
+
   return res.json({ success: true });
 };

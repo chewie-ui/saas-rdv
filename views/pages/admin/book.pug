@@ -14,8 +14,8 @@ block content
                     h3 Appointment ##{user._id}
                 .appointment-header__top-actions.flex
                     //- button(data-link=`/appointment/${user._id}/edit` data-method="").btn.secondary.flex-c.appointment-action Edit
-                    button(data-link=`/appointment/${user._id}/cancel` data-method="PATCH").btn.secondary.appointment-action#cancelAppointment Cancel
-                    button(data-link=`/appointment/${user._id}/delete` data-method="DELETE").btn.secondary.appointment-action#deleteAppointment Delete
+                    button(data-link=`/appointment/${user._id}/cancel` data-method="PATCH" disabled=(grade === 'staff')).btn.secondary.appointment-action#cancelAppointment Cancel
+                    button(data-link=`/appointment/${user._id}/delete` data-method="DELETE" disabled=(grade === 'staff')).btn.secondary.appointment-action#deleteAppointment Delete
                     button(data-link=`/appointment/${user._id}/send-reminder`).btn.appointment-actionccccccccccccccccc Send reminder
             .appointment-header__bottom.flex.col
                 .appointment-header__bottom-col.flex.col

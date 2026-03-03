@@ -16,7 +16,7 @@ exports.createBooking = async (req, res) => {
       email,
       phone,
       message,
-      status: "confirmed"
+      status: "confirmed",
     });
 
     res.json({ success: true });
@@ -107,37 +107,38 @@ exports.renderAppointments = async (req, res, next) => {
 exports.getSchedule = async (req, res) => {
   const { index, COMPANY_ID } = req.body;
 
-  const company = await Company.findById(COMPANY_ID).select("schedule slotTime");
-  const result = await company.schedule;
-  const slotTime = await company.slotTime;
+  const company = await Company.findById(COMPANY_ID)
+    .select("schedule slotTime")
+    .lean();
 
-  const target = result[index];
+  const target = company.schedule[index];
 
-  const workingHours = target.workingHours[0];
-
-  const start = workingHours.start; // "08:00"
-  const end = workingHours.end;
-  const slots = [];
-
-  let [startHour, startMin] = start.split(":").map(Number);
-  let [endHour, endMin] = end.split(":").map(Number);
-
-  let current = new Date();
-  current.setHours(startHour, startMin, 0, 0);
-
-  const endTime = new Date();
-  endTime.setHours(endHour, endMin, 0, 0);
-
-  while (current < endTime) {
-    const hour = String(current.getHours()).padStart(2, "0");
-    const min = String(current.getMinutes()).padStart(2, "0");
-
-    slots.push(`${hour}:${min}`);
-
-    current.setMinutes(current.getMinutes() + slotTime);
+  if (!target || target.dayOff) {
+    return res.json({ slots: [] });
   }
 
-  res.json({ slots });
+  let allSlots = [];
+
+  target.workingHours.forEach((period) => {
+    const [startH, startM] = period.start.split(":").map(Number);
+    const [endH, endM] = period.end.split(":").map(Number);
+
+    let current = startH * 60 + startM;
+    const endTotal = endH * 60 + endM;
+
+    while (current + company.slotTime <= endTotal) {
+      const h = Math.floor(current / 60);
+      const m = current % 60;
+
+      allSlots.push(
+        `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
+      );
+
+      current += company.slotTime;
+    }
+  });
+
+  res.json({ slots: allSlots });
 };
 
 exports.getDaysOff = async (req, res) => {

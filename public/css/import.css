@@ -57,6 +57,10 @@ a {
   color: var(--color-black);
 }
 
+.main {
+  overflow-y: scroll;
+}
+
 .btn,
 .btn.primary {
   padding: 10px 12px;
@@ -79,6 +83,11 @@ a {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.btn:disabled {
+  background-color: var(--grey-soft);
+  cursor: initial;
 }
 
 svg {
@@ -207,6 +216,9 @@ tr td {
   text-align: left;
   background-color: var(--color-white);
   padding: 10px 12px;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .icon {

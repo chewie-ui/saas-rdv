@@ -16,15 +16,8 @@ html(lang="fr")
                     h2= pageName || "Undefined page"
                 .main-wrapper
                     block content
-        script(src="/socket.io/socket.io.js")
         script(src="/js/layouts/admin.js" type="module")
         script.
-            const socket = io();
-
-            socket.on("fired", (element) => {
-                console.log(element);
-            });
-
             document.querySelectorAll(".sidebar-header__panel .company")
                 .forEach(el => {
                     el.addEventListener("click", async () => {
@@ -49,6 +42,8 @@ html(lang="fr")
                      document.body.classList.toggle("debug");
                 }
             })
+            const COMPANY_ID = !{company ? `"${company._id}"` : "null"};
+
 
 
             

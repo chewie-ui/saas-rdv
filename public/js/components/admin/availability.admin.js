@@ -8,6 +8,7 @@ document.addEventListener("click", async (event) => {
   const slot = event.target.closest(".slot-hour");
   const hourItem = event.target.closest(".hour");
   const insideAvailability = event.target.closest(".body-weekly-hour");
+  const addDaysOffBtn = event.target.closest("#addDaysOffBtn");
 
   const timeslotPanel = event.target.closest("#timeslotPanel");
   const slotTime = event.target.closest(".time");
@@ -125,6 +126,37 @@ document.addEventListener("click", async (event) => {
   else if (!insideAvailability) {
     allPanels.forEach((panel) => panel.classList.remove("open"));
   }
+
+  if (addDaysOffBtn) {
+    const renderCalendar = document.querySelector("#renderCalendar");
+    const actionCalendar = renderCalendar.querySelector(".calendar-action");
+    renderCalendar.classList.add("show");
+    actionCalendar.classList.add("show");
+    getDaysOff();
+  }
+  const dayOffBtnDelete = event.target.closest(".days-off__button.delete-btn");
+
+  if (dayOffBtnDelete) {
+    console.log("yes sir");
+    const row = dayOffBtnDelete.closest(".days-off__row");
+    const attribute = JSON.parse(row.dataset.date);
+    const id = attribute._id;
+    console.log(attribute);
+    console.log(attribute._id);
+
+    const result = await fetch(`/company/days-off/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const data = await result.json();
+    console.log(data);
+    if (data) {
+      row.remove();
+    }
+
+    return;
+  }
 });
 
 const inputsWeekday = document.querySelectorAll(".input-weekday");
@@ -152,12 +184,16 @@ inputsWeekday.forEach((input) => {
 const rowOptions = document.querySelector(
   ".availability-section .availability-section__body .body-weekly-hour",
 );
-
 if (rowOptions) {
   rowOptions.addEventListener("click", (event) => {
-    console.log("ertyu");
-    
+    const deleteBtn = event.target.closest(".delete-time-slot");
     const addPlageBtn = event.target.closest(".option-add-plage");
+
+    if (deleteBtn) {
+      const row = deleteBtn.closest(".time-slot");
+
+      row.remove();
+    }
 
     if (!addPlageBtn) return;
 
@@ -171,3 +207,56 @@ if (rowOptions) {
     }
   });
 }
+const dayOffRowTemplate = document.getElementById("dayOffRow");
+const holidaysBody = document.getElementById("holidaysBody");
+const calendar = document.querySelector(".calendar");
+let daysOffArray = [];
+
+async function getDaysOff() {
+  const res = await fetch("/company/get-days-off");
+  const data = await res.json();
+
+  if (data?.dates) {
+    daysOffArray = data.dates.map(
+      (d) => new Date(d.date).toISOString().split("T")[0],
+    );
+  }
+}
+
+getDaysOff();
+import { getDays, addDay, removeDay } from "/js/components/calendarState.js";
+calendar.addEventListener("click", async (event) => {
+  const dayEl = event.target.closest(".day:not(.empty)");
+  if (!dayEl) return;
+
+  const { day, month, year } = dayEl.dataset;
+
+  const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+  const isAlreadyOff = getDays().includes(dateKey);
+
+  if (isAlreadyOff) {
+    await fetch("/company/remove-days-off", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dateKey }),
+    });
+
+    removeDay(dateKey);
+    dayEl.classList.remove("clicked");
+  } else {
+    await fetch("/company/add-days-off", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dateKey }),
+    });
+
+    addDay(dateKey);
+    dayEl.classList.add("clicked");
+
+    const clone = dayOffRowTemplate.content.cloneNode(true);
+    clone.querySelector("p.input").textContent =
+      `${day}/${month.padStart(2, "0")}/${year}`;
+    holidaysBody.appendChild(clone);
+  }
+});

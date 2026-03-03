@@ -7,13 +7,7 @@ const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
 
-io.on("connection", (socket) => {
-  // console.log(socket.id, "connected");
-
-  socket.on("fired", () => {
-    io.emit("fired", "Zgegou");
-  });
-});
+io.on("connection", (socket) => {});
 
 server.listen(3000, () => {
   console.log("server on");

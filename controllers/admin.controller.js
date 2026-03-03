@@ -11,16 +11,31 @@ exports.panel = (req, res) => {
 };
 
 const Booking = require("../db/models/book.model");
+const DaysOff = require("../db/models/company/daysOff.model");
 
 exports.book = async (req, res) => {
   const { bookId } = req.params;
 
   const user = await Booking.findById(bookId);
-  console.log(user);
+  console.log(req.session);
+  console.log(user._id);
+  const company = await Company.findOne(
+    {
+      _id: req.session.companyId,
+      "employees.user": req.user._id,
+    },
+    {
+      "employees.$": 1,
+    },
+  ).lean();
+
+  const grade = company?.employees[0]?.grade;
+  console.log(grade);
 
   res.render("admin/book", {
     pageName: "Book",
     user,
+    grade,
   });
 };
 
@@ -58,22 +73,46 @@ function getWeekDays(startDate = new Date()) {
   return week;
 }
 
+function generateTimeSlots(startHour, endHour, slotTime) {
+  const slots = [];
+
+  for (let hour = startHour; hour < endHour; hour++) {
+    for (let minute = 0; minute < 60; minute += slotTime) {
+      const h = String(hour).padStart(2, "0");
+      const m = String(minute).padStart(2, "0");
+
+      slots.push(`${h}:${m}`);
+    }
+  }
+
+  return slots;
+}
+
 exports.appointment = async (req, res) => {
   const apps = await GetAllAppointments(req.session.companyId);
 
-  const rowTime = await Company.findById(req.session.companyId).select("slotTime").lean();
+  const rowTime = await Company.findById(req.session.companyId)
+    .select("slotTime")
+    .lean();
   const slotTime = rowTime.slotTime;
 
   const formatted = apps.map((appointment) => {
     const [h, m] = appointment.time.split(":").map(Number);
 
     // reconstruire la date complète
-    const startDate = new Date(appointment.date);
-    startDate.setHours(h, m, 0, 0);
+    const startDate = new Date(
+      appointment.date.getFullYear(),
+      appointment.date.getMonth(),
+      appointment.date.getDate(),
+      h,
+      m,
+      0,
+      0,
+    );
 
     // end = +1h (pour l’instant)
     const endDate = new Date(startDate);
-    endDate.setHours(endDate.getHours() + 1);
+    endDate.setMinutes(endDate.getMinutes() + slotTime);
 
     return {
       _id: appointment._id,
@@ -104,37 +143,14 @@ exports.appointment = async (req, res) => {
       }),
     };
   });
-  
+  const referenceDate = req.query.date ? new Date(req.query.date) : new Date();
+
   res.render("admin/appointment", {
     pageName: "Appointment",
     slotTime,
-    hours: [
-      "00:00",
-      "01:00",
-      "02:00",
-      "03:00",
-      "04:00",
-      "05:00",
-      "06:00",
-      "07:00",
-      "08:00",
-      "09:00",
-      "10:00",
-      "11:00",
-      "12:00",
-      "13:00",
-      "14:00",
-      "15:00",
-      "16:00",
-      "17:00",
-      "18:00",
-      "19:00",
-      "20:00",
-      "21:00",
-      "22:00",
-      "23:00",
-    ],
-    weekDays: getWeekDays(),
+    hours: generateTimeSlots(4, 22, slotTime),
+
+    weekDays: getWeekDays(referenceDate),
     appointments: formatted,
   });
 };
@@ -251,7 +267,7 @@ exports.secondSetupCompany = async (req, res) => {
       },
     });
 
-    res.redirect("/panel");
+    res.redirect("/appointment");
   } catch (err) {
     res.json({ err });
   }
@@ -291,8 +307,15 @@ async function getSlotTime(companyId) {
   return res?.slotTime;
 }
 
+async function getDaysOff(companyId) {
+  const dates = await DaysOff.findOne({ company: companyId }).select("dates");
+  console.log(await dates);
+
+  return await dates;
+}
 exports.availability = async (req, res) => {
   res.render("admin/availability", {
+    daysOff: await getDaysOff(req.session.companyId),
     pageName: "Availability",
     title: "Availability",
     timeSlot: [10, 15, 20, 25, 30, 45, 60, 90, 120, 180],
@@ -461,4 +484,17 @@ exports.cancelBooking = async (req, res) => {
   });
 
   res.json({ success: true });
+};
+
+exports.getWeekData = async (req, res) => {
+  const referenceDate = new Date(req.query.date);
+
+  const weekDays = getWeekDays(referenceDate);
+
+  const apps = await GetAllAppointments(req.session.companyId);
+
+  res.json({
+    weekDays,
+    appointments: apps,
+  });
 };

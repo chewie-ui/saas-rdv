@@ -23,7 +23,7 @@ exports.createUser = async (req, res) => {
 
     req.login(user, (err) => {
       console.error(err);
-      return res.redirect("/panel");
+      return res.redirect("/appointment");
     });
   } catch (err) {
     if (err.code === 11000) {

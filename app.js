@@ -20,7 +20,9 @@ app.use(require("./config/session"));
 
 app.use(passport.initialize());
 app.use(passport.session());
+const injectCompanyRole = require("./middlewares/companyRole");
 
+app.use(injectCompanyRole);
 app.use((req, res, next) => {
   res.locals.user = req.user;
   next();

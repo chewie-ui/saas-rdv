@@ -6,8 +6,8 @@ block links
 block content
     .employee-section.flex.col
         .employee-section__header.flex-c.space-b
-            .header-search
-                input.input(placeholder="Search")
+            //- .header-search
+            //-     input.input(placeholder="Search")
             .header-actions.flex
                 button.btn.secondary#requestSwitcher Requests
                 button.btn#addEmployeeSwitcher Employee
@@ -28,14 +28,14 @@ block content
                             td= employee.user.fullName
                             td= employee.user._id
                             td  
-                                select.select.select-role(disabled=(employee.grade === "owner"|| thisEmployee.grade === "staff"))
+                                select.select.select-role(disabled=(employee.grade === "owner"|| thisEmployee.grade === "staff" || user._id.toString() === employee.user._id.toString()))
                                     option(disabled)= employee.grade
                                     option(value="owner" selected=(employee.grade === "owner")) Owner
                                     option(value="admin" selected=(employee.grade === "admin")) Admin
                                     option(value="staff" selected=(employee.grade === "staff")) Staff
                             td= employee.user.email
                             td
-                                button.s-btn.reject.fire-btn(disabled=(thisEmployee.grade === "staff" || employee.grade === "owner")) Fire
+                                button.s-btn.reject.fire-btn(disabled=(thisEmployee.grade === "staff" || employee.grade === "owner" || user._id.toString() === employee.user._id.toString())) Fire
             template#employeeHeadTemplate
                 tr 
                     th
