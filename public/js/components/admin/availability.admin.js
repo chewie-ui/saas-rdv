@@ -185,12 +185,26 @@ const rowOptions = document.querySelector(
   ".availability-section .availability-section__body .body-weekly-hour",
 );
 if (rowOptions) {
-  rowOptions.addEventListener("click", (event) => {
+  rowOptions.addEventListener("click", async (event) => {
     const deleteBtn = event.target.closest(".delete-time-slot");
     const addPlageBtn = event.target.closest(".option-add-plage");
 
     if (deleteBtn) {
       const row = deleteBtn.closest(".time-slot");
+      const slotId = deleteBtn.dataset.id;
+
+      const weekdayIndex = row.dataset.weekdayIndex;
+
+      const result = await fetch(`/company/time-slot`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slotId,
+          weekdayIndex,
+        }),
+      });
+      const data = await result.json();
+      console.log(data);
 
       row.remove();
     }
@@ -202,6 +216,19 @@ if (rowOptions) {
       const plagesWrapper = row.querySelector(".weekly-hour__time");
       const template = document.getElementById("plageTemplate");
       const clone = template.content.cloneNode(true);
+
+      const endHour = row
+        .querySelector(".hour-container.end-hour-")
+        .textContent.trim();
+
+      const [hour] = endHour.split(":");
+      const nextHour = parseInt(hour, 10) + 1;
+
+      const cloneStartHour = clone.querySelector(".hour-container.start-hour-");
+      const cloneEndHour = clone.querySelector(".hour-container.end-hour-");
+
+      cloneStartHour.textContent = endHour
+      cloneEndHour.textContent = `${String(nextHour).padStart(2, "0")}:00`;
 
       plagesWrapper.appendChild(clone);
     }

@@ -121,3 +121,33 @@ exports.removeDayOff = async (req, res) => {
 
   return res.json({ success: true });
 };
+
+exports.deleteTimeSlot = async (req, res) => {
+  try {
+    const { weekdayIndex, slotId } = req.body;
+    const companyId = req.session.companyId;
+
+    console.log(weekdayIndex);
+    console.log(slotId);
+    
+
+    await Company.updateOne(
+      {
+        _id: companyId,
+        "schedule.weekdayIndex": weekdayIndex,
+      },
+      {
+        $pull: {
+          "schedule.$.workingHours": {
+            _id: slotId,
+          },
+        },
+      }
+    );
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
