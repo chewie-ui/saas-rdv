@@ -27,12 +27,15 @@ block content
                             td= index + 1
                             td= employee.user.fullName
                             td= employee.user._id
-                            td  
+                            td.flex
                                 select.select.select-role(disabled=(employee.grade === "owner"|| thisEmployee.grade === "staff" || user._id.toString() === employee.user._id.toString()))
                                     option(disabled)= employee.grade
-                                    option(value="owner" selected=(employee.grade === "owner")) Owner
                                     option(value="admin" selected=(employee.grade === "admin")) Admin
                                     option(value="staff" selected=(employee.grade === "staff")) Staff
+                                button.s-btn.flex-c.warning
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFF")
+                                        path(d="M200-160v-80h560v80H200Zm0-140-51-321q-2 0-4.5.5t-4.5.5q-25 0-42.5-17.5T80-680q0-25 17.5-42.5T140-740q25 0 42.5 17.5T200-680q0 7-1.5 13t-3.5 11l125 56 125-171q-11-8-18-21t-7-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820q0 15-7 28t-18 21l125 171 125-56q-2-5-3.5-11t-1.5-13q0-25 17.5-42.5T820-740q25 0 42.5 17.5T880-680q0 25-17.5 42.5T820-620q-2 0-4.5-.5t-4.5-.5l-51 321H200Zm68-80h424l26-167-105 46-133-183-133 183-105-46 26 167Zm212 0Z")
+                                    |Set new owner
                             td= employee.user.email
                             td
                                 button.s-btn.reject.fire-btn(disabled=(thisEmployee.grade === "staff" || employee.grade === "owner" || user._id.toString() === employee.user._id.toString())) Fire
