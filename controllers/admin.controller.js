@@ -17,8 +17,6 @@ exports.book = async (req, res) => {
   const { bookId } = req.params;
 
   const user = await Booking.findById(bookId);
-  console.log(req.session);
-  console.log(user._id);
   const company = await Company.findOne(
     {
       _id: req.session.companyId,
@@ -30,7 +28,6 @@ exports.book = async (req, res) => {
   ).lean();
 
   const grade = company?.employees[0]?.grade;
-  console.log(grade);
 
   res.render("admin/book", {
     pageName: "Book",
@@ -90,7 +87,6 @@ function generateTimeSlots(startHour, endHour, slotTime) {
 
 exports.appointment = async (req, res) => {
   const apps = await GetAllAppointments(req.session.companyId);
-
   const rowTime = await Company.findById(req.session.companyId)
     .select("slotTime")
     .lean();
@@ -125,7 +121,7 @@ exports.appointment = async (req, res) => {
       status: appointment.status,
 
       slotTime: appointment.slotTime,
-
+      isoDate: startDate.toISOString().split("T")[0],
       date: startDate.toLocaleDateString("fr-BE", {
         day: "2-digit",
         month: "2-digit",
@@ -144,14 +140,24 @@ exports.appointment = async (req, res) => {
     };
   });
   const referenceDate = req.query.date ? new Date(req.query.date) : new Date();
+  const firstDay = getWeekDays(referenceDate)[0];
+  const lastDay = getWeekDays(referenceDate)[6];
+  const weekLabel = `${firstDay.label} ${firstDay.date} - ${lastDay.label} ${lastDay.date}`;
+  const hoursList = formatted.map((a) => {
+    const [h] = a.startHour.split(":").map(Number);
+    return h;
+  });
 
+  const minHour = Math.min(...hoursList);
+  const maxHour = Math.max(...hoursList) + 1;
   res.render("admin/appointment", {
     pageName: "Appointment",
     slotTime,
-    hours: generateTimeSlots(4, 22, slotTime),
+    hours: generateTimeSlots(minHour, maxHour, slotTime),
 
     weekDays: getWeekDays(referenceDate),
     appointments: formatted,
+    weekLabel,
   });
 };
 
@@ -474,7 +480,17 @@ exports.deleteBooking = async (req, res) => {
 
   const data = await Booking.findByIdAndDelete(bookId);
 
-  res.json({ data });
+  res.json({ success: true, data });
+};
+
+exports.restoreBooking = async (req, res) => {
+  const { bookId } = req.params;
+
+  await Booking.findByIdAndUpdate(bookId, {
+    status: "confirmed",
+  });
+
+  res.json({ success: true });
 };
 
 exports.cancelBooking = async (req, res) => {

@@ -3,7 +3,6 @@ export default function () {
   const bookingWrapper = document.getElementById("bookingWrapper") || undefined;
   const scheduleWrapper =
     document.getElementById("scheduleWrapper") || undefined;
-  console.log(calendar);
 
   const calendarHeader = calendar.querySelector(".calendar-header");
   const calendarBody = calendar.querySelector(".calendar-body");

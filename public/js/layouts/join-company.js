@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const results = await fetch(`/companies/search?name=${value}`);
       const companies = await results.json();
-      console.log(companies);
 
       if (!companies.length) {
         resultsWrapper.innerHTML = `<p class='result-msg'>No results yet. Start searching to find a company.</div>`;

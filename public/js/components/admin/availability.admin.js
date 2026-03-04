@@ -45,6 +45,77 @@ document.addEventListener("click", async (event) => {
   }
 
   // 🔥 Si on clique sur une heure dans le panel
+  // if (hourItem) {
+  //   const panel = hourItem.closest(".panel-availability");
+  //   const slotParent = hourItem.closest(".slot-hour");
+  //   const display = slotParent.querySelector(".hour-container");
+  //   const container = hourItem.closest(".time-slot");
+
+  //   function timeToMinutes(time) {
+  //     const [hours, minutes] = time.split(":").map(Number);
+  //     return hours * 60 + minutes;
+  //   }
+
+  //   let startMinutes;
+  //   let endMinutes;
+  //   let endHourText;
+
+  //   if (slotParent.classList.contains("start-hour")) {
+  //     endHourText = container
+  //       .querySelector(".end-hour .hour-container")
+  //       .textContent.trim();
+
+  //     startMinutes = timeToMinutes(hourItem.textContent);
+  //     endMinutes = timeToMinutes(endHourText);
+  //   } else {
+  //     endHourText = container
+  //       .querySelector(".start-hour .hour-container")
+  //       .textContent.trim();
+
+  //     endMinutes = timeToMinutes(hourItem.textContent);
+  //     startMinutes = timeToMinutes(endHourText);
+  //   }
+
+  //   if (startMinutes >= endMinutes) {
+  //     console.log("❌ L'heure de début doit être avant l'heure de fin");
+  //   } else {
+  //     console.log("✅ Horaire valide");
+  //     display.textContent = hourItem.textContent;
+
+  //     const row = hourItem.closest(".row-weekday");
+  //     const switcherInput = row.querySelector(".switch input");
+  //     const weekdayIndex = switcherInput.getAttribute("data-weekday-index");
+  //     const companyId = switcherInput.getAttribute("data-company");
+  //     const timeSlots = row.querySelectorAll(".time-slot");
+
+  //     const workingHours = [];
+
+  //     timeSlots.forEach((slot) => {
+  //       const start = slot
+  //         .querySelector(".start-hour .hour-container")
+  //         .textContent.trim();
+  //       const end = slot
+  //         .querySelector(".end-hour .hour-container")
+  //         .textContent.trim();
+
+  //       workingHours.push({ start, end });
+  //     });
+
+  //     await fetch("/edit-availability", {
+  //       headers: { "Content-Type": "application/json" },
+  //       method: "POST",
+  //       body: JSON.stringify({
+  //         companyId,
+  //         weekdayIndex,
+  //         workingHours,
+  //       }),
+  //     });
+  //   }
+
+  //   panel.classList.remove("open");
+  //   return; // IMPORTANT → on stop ici
+  // }
+
   if (hourItem) {
     const panel = hourItem.closest(".panel-availability");
     const slotParent = hourItem.closest(".slot-hour");
@@ -56,61 +127,115 @@ document.addEventListener("click", async (event) => {
       return hours * 60 + minutes;
     }
 
+    function validateWorkingHours(workingHours) {
+      const slots = workingHours
+        .map((s) => ({
+          start: s.start,
+          end: s.end,
+          startMin: timeToMinutes(s.start),
+          endMin: timeToMinutes(s.end),
+        }))
+        .sort((a, b) => a.startMin - b.startMin);
+
+      // 1) start < end pour chaque slot
+      for (const s of slots) {
+        if (s.startMin >= s.endMin) {
+          return {
+            ok: false,
+            reason: `Créneau invalide: ${s.start} - ${s.end}`,
+          };
+        }
+      }
+
+      // 2) pas de chevauchement + slot2.start >= slot1.end
+      for (let i = 1; i < slots.length; i++) {
+        const prev = slots[i - 1];
+        const curr = slots[i];
+
+        if (curr.startMin < prev.endMin) {
+          return {
+            ok: false,
+            reason: `Le créneau ${curr.start}-${curr.end} doit commencer après ${prev.end}`,
+          };
+        }
+      }
+
+      return {
+        ok: true,
+        sorted: slots.map(({ start, end }) => ({ start, end })),
+      };
+    }
+
+    // ---- Validation du slot courant (start < end) ----
     let startMinutes;
     let endMinutes;
-    let endHourText;
+    let otherHourText;
 
     if (slotParent.classList.contains("start-hour")) {
-      endHourText = container
+      otherHourText = container
         .querySelector(".end-hour .hour-container")
         .textContent.trim();
 
-      startMinutes = timeToMinutes(hourItem.textContent);
-      endMinutes = timeToMinutes(endHourText);
+      startMinutes = timeToMinutes(hourItem.textContent.trim());
+      endMinutes = timeToMinutes(otherHourText);
     } else {
-      endHourText = container
+      otherHourText = container
         .querySelector(".start-hour .hour-container")
         .textContent.trim();
 
-      endMinutes = timeToMinutes(hourItem.textContent);
-      startMinutes = timeToMinutes(endHourText);
+      endMinutes = timeToMinutes(hourItem.textContent.trim());
+      startMinutes = timeToMinutes(otherHourText);
     }
 
     if (startMinutes >= endMinutes) {
       console.log("❌ L'heure de début doit être avant l'heure de fin");
-    } else {
-      console.log("✅ Horaire valide");
-      display.textContent = hourItem.textContent;
-
-      const row = hourItem.closest(".row-weekday");
-      const switcherInput = row.querySelector(".switch input");
-      const weekdayIndex = switcherInput.getAttribute("data-weekday-index");
-      const companyId = switcherInput.getAttribute("data-company");
-      const timeSlots = row.querySelectorAll(".time-slot");
-
-      const workingHours = [];
-
-      timeSlots.forEach((slot) => {
-        const start = slot
-          .querySelector(".start-hour .hour-container")
-          .textContent.trim();
-        const end = slot
-          .querySelector(".end-hour .hour-container")
-          .textContent.trim();
-
-        workingHours.push({ start, end });
-      });
-
-      await fetch("/edit-availability", {
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-        body: JSON.stringify({
-          companyId,
-          weekdayIndex,
-          workingHours,
-        }),
-      });
+      panel.classList.remove("open");
+      return;
     }
+
+    // ---- On applique visuellement, mais on garde l'ancienne valeur pour rollback ----
+    const previousValue = display.textContent.trim();
+    display.textContent = hourItem.textContent.trim();
+
+    // ---- Rebuild + validation globale (slot2 après slot1, pas de chevauchement) ----
+    const row = hourItem.closest(".row-weekday");
+    const switcherInput = row.querySelector(".switch input");
+    const weekdayIndex = switcherInput.getAttribute("data-weekday-index");
+    const companyId = switcherInput.getAttribute("data-company");
+    const timeSlots = row.querySelectorAll(".time-slot");
+
+    const workingHours = [];
+    timeSlots.forEach((slot) => {
+      const start = slot
+        .querySelector(".start-hour .hour-container")
+        .textContent.trim();
+      const end = slot
+        .querySelector(".end-hour .hour-container")
+        .textContent.trim();
+      workingHours.push({ start, end });
+    });
+
+    const check = validateWorkingHours(workingHours);
+
+    if (!check.ok) {
+      // rollback si invalide (ex: slot2 commence avant la fin du slot1)
+      display.textContent = previousValue;
+      console.log("❌", check.reason);
+
+      panel.classList.remove("open");
+      return;
+    }
+
+    // ---- Envoi backend (trié propre) ----
+    await fetch("/edit-availability", {
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+      body: JSON.stringify({
+        companyId,
+        weekdayIndex,
+        workingHours: check.sorted,
+      }),
+    });
 
     panel.classList.remove("open");
     return; // IMPORTANT → on stop ici
@@ -137,12 +262,9 @@ document.addEventListener("click", async (event) => {
   const dayOffBtnDelete = event.target.closest(".days-off__button.delete-btn");
 
   if (dayOffBtnDelete) {
-    console.log("yes sir");
     const row = dayOffBtnDelete.closest(".days-off__row");
     const attribute = JSON.parse(row.dataset.date);
     const id = attribute._id;
-    console.log(attribute);
-    console.log(attribute._id);
 
     const result = await fetch(`/company/days-off/${id}`, {
       method: "DELETE",
@@ -150,12 +272,19 @@ document.addEventListener("click", async (event) => {
     });
 
     const data = await result.json();
-    console.log(data);
     if (data) {
       row.remove();
     }
 
     return;
+  }
+
+  // 🔥 Fermer tous les panels si on clique en dehors
+  if (
+    !event.target.closest(".slot-hour") &&
+    !event.target.closest(".panel-availability")
+  ) {
+    allPanels.forEach((panel) => panel.classList.remove("open"));
   }
 });
 
@@ -227,7 +356,7 @@ if (rowOptions) {
       const cloneStartHour = clone.querySelector(".hour-container.start-hour-");
       const cloneEndHour = clone.querySelector(".hour-container.end-hour-");
 
-      cloneStartHour.textContent = endHour
+      cloneStartHour.textContent = endHour;
       cloneEndHour.textContent = `${String(nextHour).padStart(2, "0")}:00`;
 
       plagesWrapper.appendChild(clone);

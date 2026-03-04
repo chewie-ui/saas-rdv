@@ -14,9 +14,14 @@ block content
                     h3 Appointment ##{user._id}
                 .appointment-header__top-actions.flex
                     //- button(data-link=`/appointment/${user._id}/edit` data-method="").btn.secondary.flex-c.appointment-action Edit
-                    button(data-link=`/appointment/${user._id}/cancel` data-method="PATCH" disabled=(grade === 'staff')).btn.secondary.appointment-action#cancelAppointment Cancel
+                    if user.status === "confirmed"
+                        button(data-link=`/appointment/${user._id}/cancel` data-method="PATCH" disabled=(grade === 'staff')).btn.secondary.appointment-action#cancelAppointment Cancel
                     button(data-link=`/appointment/${user._id}/delete` data-method="DELETE" disabled=(grade === 'staff')).btn.secondary.appointment-action#deleteAppointment Delete
-                    button(data-link=`/appointment/${user._id}/send-reminder`).btn.appointment-actionccccccccccccccccc Send reminder
+                    if user.status === "confirmed"
+                        button(data-link=`/appointment/${user._id}/send-reminder`).btn.appointment-action Send reminder
+                    else 
+                        button(data-link=`/appointment/${user._id}/restore` data-method="PATCH" disabled=(grade === 'staff')).btn.appointment-action#restoreAppointment Restore
+                   
             .appointment-header__bottom.flex.col
                 .appointment-header__bottom-col.flex.col
                     .appointment-header__bottom-col-element.flex
@@ -26,7 +31,10 @@ block content
                     .appointment-header__bottom-col-element.flex
                         p.name-element Time:
                         p #{user.time}
-
+                .appointment-header__bottom-col.flex.col
+                    .appointment-header__bottom-col-element.flex
+                        p.name-element Status:
+                        p #{user.status.charAt(0).toUpperCase() + user.status.slice(1)}
         .appointment-details.appointment-details__client.page--appointment-block.page--block-3
             .appointment-details__header.flex
                 svg(

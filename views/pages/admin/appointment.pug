@@ -11,10 +11,11 @@ block content
                     //- Let this empty 
                 .calendar__section.calendar__section--center
                     .calendar__date.flex-c
+                        a.calendar__today-btn.btn(href="/appointment") Today
                         .calendar__date-btn.calendar__date-btn--previous.flex-c(data-direction="prev")
                             svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                 path(d="M400-80 0-480l400-400 71 71-329 329 329 329-71 71Z")
-                        .calendar__date-text Jun 16 - Jun 22
+                        .calendar__date-text= weekLabel
                         .calendar__date-btn.calendar__date-btn--next.flex-c(data-direction="next")
                             svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                 path(d="m321-80-71-71 329-329-329-329 71-71 400 400L321-80Z")
@@ -33,7 +34,7 @@ block content
                 each day, dayIndex in weekDays
                     .cell.day
                         each appointment in appointments
-                            if appointment.weekday === dayIndex && appointment.startHour === hour
+                            if appointment.isoDate === day.iso.split("T")[0] && appointment.startHour === hour
                                 a.appointment(href=`/appointement/${appointment._id}` class={ canceled: appointment.status === 'canceled' })
                                     if appointment.status === "canceled"
                                         .appointment-canceled Canceled

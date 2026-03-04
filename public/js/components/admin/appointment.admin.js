@@ -24,29 +24,26 @@ export const initCalendarHeader = function () {
   const calendar = document.querySelector(".calendar");
   if (!calendar) return console.log("no calendar");
 
-  let currentDate = new Date();
-  calendar.addEventListener("click", async (e) => {
+  const params = new URLSearchParams(window.location.search);
+
+  let currentDate = params.get("date")
+    ? new Date(params.get("date"))
+    : new Date();
+
+  calendar.addEventListener("click", (e) => {
     const directionBtn = e.target.closest(".calendar__date-btn");
-    console.log("no direction btn");
     if (!directionBtn) return;
 
     const direction = directionBtn.dataset.direction;
 
     if (direction === "prev") {
       currentDate.setDate(currentDate.getDate() - 7);
-    } else if (direction === "next") {
+    }
+
+    if (direction === "next") {
       currentDate.setDate(currentDate.getDate() + 7);
     }
 
-    window.location.search = `?date=${currentDate.toISOString()}`;
-
-    // const res = await fetch(
-    //   `/appointment/week-data?date=${currentDate.toISOString()}`,
-    // );
-    // const data = await res.json();
-
-    // updateCalendar(data);
-
-    // console.log(currentDate);
+    window.location.search = `?date=${currentDate.toISOString().split("T")[0]}`;
   });
 };

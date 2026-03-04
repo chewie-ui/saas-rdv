@@ -24,6 +24,7 @@ const {
   deleteBooking,
   cancelBooking,
   getWeekData,
+  restoreBooking,
 } = require("../controllers/admin.controller");
 
 const hasCompany = require("../middlewares/hasCompany");
@@ -64,6 +65,7 @@ router.delete("/employees/requests/:id/fire", fireRequestEmployee);
 router.patch("/edit-interval", editSlotTime);
 
 router.delete("/appointment/:bookId/delete", deleteBooking);
+router.patch("/appointment/:bookId/restore", restoreBooking);
 router.patch("/appointment/:id/cancel", cancelBooking);
 router.get("/appointment/week-data", getWeekData);
 

@@ -114,7 +114,6 @@ async function initCalendar() {
     }
 
     const totalCells = days.children.length;
-    console.log(totalCells);
 
     const remainingCells = 7 * 6 - totalCells;
 
