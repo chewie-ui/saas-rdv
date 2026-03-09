@@ -305,6 +305,24 @@ export default function () {
         return;
       }
 
+      const popup = document.querySelector(".confirm-popup");
+
+      const newPopup = popup.cloneNode(true);
+      newPopup.classList.add("show");
+      newPopup.querySelector(".confirm-popup__title").textContent =
+        "Your booking has been confirmed !";
+      ((newPopup.querySelector(".confirm-popup__description").textContent =
+        "You have received an email in your inbox "),
+        email);
+
+      newPopup.classList.add("show");
+      document.body.appendChild(newPopup);
+
+      newPopup.querySelector(".confirm-btn").onclick = () => {
+        onConfirm();
+        newPopup.remove();
+      };
+
       const request = await fetch("/create-booking", {
         method: "post",
         headers: { "Content-Type": "application/json" },
@@ -324,7 +342,7 @@ export default function () {
 
       const response = await request.json();
       if (response.success) {
-        // alert("all is ok");
+        // envoie email + popup
       } else {
         alert("you ve got an error, please retry");
       }

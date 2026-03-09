@@ -1,6 +1,9 @@
 extends ../../layouts/index
 
+include ../../templates/confirm-popup.pug
+
 block links
+    link(rel="stylesheet", href="/css/templates/confirm-popup.css")
 
 block content
     .content-wrapper
@@ -60,6 +63,7 @@ block content
                             input.input(placeholder="Write something..." id="bookingMsg")
                     .booking-button
                         button.btn#confirmBooking Confirm
+    +confirmPopup()
 
 block scripts
 

@@ -1,13 +1,49 @@
-div(style="font-family: sans-serif; text-align: center; padding: 20px;")
-  h1(style="color: #000000;") Appointment confirmed !
-  p
-    | Votre nouveau créneau est fixé à
-    strong #{hour}
+//- Pour l'email, on utilise des styles en ligne pour une compatibilité max
+div(style="background-color: #f8fbf9; padding: 40px 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #2d3436;")
+  div(style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05);")
+    
+    //- Header avec Cercle de validation (comme sur ton image d'inspi)
+    div(style="padding: 40px 20px; text-align: center;")
+      div(style="width: 60px; height: 60px; background-color: #4CAF50; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;")
+        span(style="color: white; font-size: 30px; line-height: 60px;") ✓
+      
+      h1(style="margin: 0; font-size: 24px; color: #1e272e;") Appointment Confirmed
+      p(style="margin-top: 10px; color: #636e72;") Your appointment has been successfully scheduled. 
+      p(style="margin: 0; color: #636e72;") Here are the details:
 
-  br
+    //- Carte de détails (Zone Grise)
+    div(style="padding: 0 40px 40px;")
+      div(style="background-color: #f1f8f4; border-radius: 10px; padding: 25px;")
+        
+        //- Ligne Date
+        div(style="display: flex; align-items: center; margin-bottom: 20px;")
+          span(style="font-size: 20px; margin-right: 15px;") 📅
+          div
+            p(style="margin: 0; font-weight: bold; color: #2d3436;") #{date}
+            p(style="margin: 0; font-size: 14px; color: #636e72;") #{startHour} — #{endHour}
 
-  a(
-    href="http://localhost:3000/dashboard"
-    style="background-color:#4CAF50;color:white;padding:12px 25px;text-decoration:none;border-radius:5px;font-weight:bold;"
-  )
-    | Voir mon planning
+        //- Ligne Service (Consultation)
+        div(style="display: flex; align-items: center; margin-bottom: 20px;")
+          span(style="font-size: 20px; margin-right: 15px;") 📋
+          div
+            p(style="margin: 0; font-weight: bold; color: #2d3436;") Consultation Meeting
+            p(style="margin: 0; font-size: 14px; color: #636e72;") duration: #{slotTime} min
+
+        //- Ligne Message (si présent)
+        if message && message.length > 0
+          div(style="display: flex; align-items: center;")
+            span(style="font-size: 20px; margin-right: 15px;") 💬
+            div
+              p(style="margin: 0; font-size: 14px; color: #636e72;") "#{message}"
+
+      //- Bouton d'action
+      div(style="text-align: center; margin-top: 30px;")
+        a(href="http://localhost:3000/appointment" style="background-color: #55a0af; color: white; padding: 15px 35px; text-decoration: none; border-radius: 30px; font-weight: bold; display: inline-block; transition: background 0.3s;") View in Calendar
+        a(
+    href=`http://localhost:3000/cancel-booking/${bookingId}` 
+    style="background-color: #f1f2f6; color: #a4b0be; padding: 15px 35px; text-decoration: none; border-radius: 30px; font-weight: bold; display: inline-block; margin: 5px; font-size: 14px; border: 1px solid #dfe4ea;"
+  ) Cancel Booking
+    //- Footer
+    div(style="text-align: center; padding: 20px; background-color: #fafafa; border-top: 1px solid #f1f1f1;")
+      p(style="font-size: 14px; color: #b2bec3; margin: 0;") Looking forward to seeing you!
+      p(style="font-size: 12px; color: #dfe6e9; margin-top: 10px;") © 2026 Your Company Name. All rights reserved.

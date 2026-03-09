@@ -2,6 +2,10 @@ const Booking = require("../db/models/book.model");
 const Company = require("../db/models/company/company.model");
 const DaysOff = require("../db/models/company/daysOff.model");
 const { getAppointments } = require("../queries/booking.queries");
+const pug = require("pug");
+const path = require("path");
+
+const { sendEmail } = require("../utils/mailer");
 
 exports.createBooking = async (req, res) => {
   try {
@@ -38,6 +42,22 @@ exports.createBooking = async (req, res) => {
       endTime,
       status: "confirmed",
     });
+
+    const htmlTemplate = pug.renderFile(
+      path.join(__dirname, "../views/templates/emails/booking-confirmed.pug"),
+      {
+        name,
+        surname,
+        date,
+        startHour: startTime,
+        endHour: startTime,
+        slotTime: startTime,
+      },
+    );
+
+    await sendEmail(email, "Appointement Confirmation", htmlTemplate);
+
+    // envoi de mail ici
 
     res.json({ success: true });
   } catch (err) {
