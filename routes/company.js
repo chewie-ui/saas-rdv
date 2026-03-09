@@ -1,5 +1,7 @@
 const router = require("express").Router();
 
+const isAdmin = require("../middlewares/IsAdmin");
+
 const {
   searchCompany,
   requestCompany,
@@ -8,7 +10,10 @@ const {
   getDaysOff,
   removeDaysOff,
   removeDayOff,
-  deleteTimeSlot
+  deleteTimeSlot,
+  transferOwner,
+  scheduleDayOff,
+  setScheduleDayOff,
 } = require("../controllers/company.controller");
 
 router.get("/companies/search", searchCompany);
@@ -26,6 +31,10 @@ router.patch("/company/remove-days-off", removeDaysOff);
 
 router.delete("/company/days-off/:dayId", removeDayOff);
 
-router.delete("/company/time-slot", deleteTimeSlot)
+router.delete("/company/time-slot", deleteTimeSlot);
+router.patch("/company/transfer-owner", isAdmin, transferOwner);
+
+router.patch("/company/schedule-day-off", scheduleDayOff);
+router.patch("/company/set-schedule-day-off", setScheduleDayOff);
 
 module.exports = router;

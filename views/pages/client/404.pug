@@ -1,9 +1,21 @@
 extends ../../layouts/index
 
 block links
+    link(rel="stylesheet", href="/css/layouts/404.css")
 
 block content
-    .content-wrapper
-        .error-404-section
-block scripts
-    script(src="/js/layouts/index.js" type="module") 
+    .error-404
+        .error-404__wrapper
+            .error-404__big-404 404
+            .error-404__title
+                h2 We lost this page
+                p.description The page you are looking for doesn't exist or has been moved.
+            .error-404__body
+                .error-404__search-wrapper
+                    input.input(placeholder="Search companies...")
+                    button.btn.secondary Search
+                .error-404__search-actions
+                    button.btn.secondary Go back
+                    button.btn Go home
+block scripts       
+    script(src="/js/layouts/index.js" type="module")

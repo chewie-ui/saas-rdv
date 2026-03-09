@@ -368,6 +368,80 @@ const holidaysBody = document.getElementById("holidaysBody");
 const calendar = document.querySelector(".calendar");
 let daysOffArray = [];
 
+if (holidaysBody) {
+  holidaysBody.addEventListener("click", async (e) => {
+    const deleteTimeSlot = e.target.closest(".delete-time-slot");
+    const scheduleBtn = e.target.closest(".schedule-btn");
+    const newHour = e.target.closest(".hour");
+    const row = e.target.closest(".days-off__row");
+    const container = row.querySelector(".days-off__schedule");
+    const attributeRow = row.dataset.date;
+    const dateId = JSON.parse(attributeRow)._id;
+
+    if (deleteTimeSlot) {
+      container.innerHTML = `<p>Day off</p>`;
+      await fetch(`/company/schedule-day-off`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dateId,
+          schedule: [],
+        }),
+      });
+      return;
+    }
+
+    if (newHour) {
+      newHour.closest(".panel-availability").classList.remove("open");
+
+      const wrapper = newHour.closest(".slot-hour");
+      const container = wrapper.querySelector(".hour-container");
+      console.log(container);
+
+      const typeHour = container.dataset.hours;
+      const setNewHour = newHour.textContent;
+      console.log(typeHour);
+      console.log(setNewHour);
+
+      await fetch(`/company/set-schedule-day-off`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: typeHour,
+          dateId,
+          time: setNewHour,
+        }),
+      });
+
+      return;
+    }
+
+    if (scheduleBtn) {
+      const template = document.querySelector("#plageTemplate");
+      const clone = template.content.cloneNode(true);
+      container.innerHTML = ``;
+      container.appendChild(clone);
+
+      const startHour = row.querySelector(".start-hour-").textContent;
+      const endHour = row.querySelector(".end-hour-").textContent;
+      const schedule = { start: startHour, end: endHour };
+      console.log(schedule);
+
+      const scheduleDayOff = await fetch(`/company/schedule-day-off`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dateId,
+          schedule,
+        }),
+      });
+
+      console.log(await scheduleDayOff.json());
+      return;
+    }
+  });
+}
+
 async function getDaysOff() {
   const res = await fetch("/company/get-days-off");
   const data = await res.json();
@@ -382,7 +456,7 @@ async function getDaysOff() {
 getDaysOff();
 import { getDays, addDay, removeDay } from "/js/components/calendarState.js";
 calendar.addEventListener("click", async (event) => {
-  const dayEl = event.target.closest(".day:not(.empty)");
+  const dayEl = event.target.closest(".day:not(.empty):not(.clicked)");
   if (!dayEl) return;
 
   const { day, month, year } = dayEl.dataset;
@@ -401,7 +475,7 @@ calendar.addEventListener("click", async (event) => {
     removeDay(dateKey);
     dayEl.classList.remove("clicked");
   } else {
-    await fetch("/company/add-days-off", {
+    const response = await fetch("/company/add-days-off", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dateKey }),

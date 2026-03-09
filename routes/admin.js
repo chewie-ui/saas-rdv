@@ -29,6 +29,7 @@ const {
 
 const hasCompany = require("../middlewares/hasCompany");
 const isAuth = require("../middlewares/isAuth");
+const isAdmin = require("../middlewares/IsAdmin");
 
 router.get(
   "/appointement/:bookId",
@@ -64,9 +65,9 @@ router.delete("/employees/requests/:id/fire", fireRequestEmployee);
 
 router.patch("/edit-interval", editSlotTime);
 
-router.delete("/appointment/:bookId/delete", deleteBooking);
-router.patch("/appointment/:bookId/restore", restoreBooking);
-router.patch("/appointment/:id/cancel", cancelBooking);
+router.delete("/appointment/:bookId/delete", isAdmin, deleteBooking);
+router.patch("/appointment/:bookId/restore", isAdmin, restoreBooking);
+router.patch("/appointment/:id/cancel", isAdmin, cancelBooking);
 router.get("/appointment/week-data", getWeekData);
 
 module.exports = router;
