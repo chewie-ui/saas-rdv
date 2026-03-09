@@ -6,10 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const requestHeaderTemplate = document.getElementById(
     "requestHeaderTemplate",
   );
-  const employeeHeaderTemplate = document.getElementById(
-    "employeeHeadTemplate",
-  );
-  if (!headerActions || !tableBody || !template) return;
+
+  if (!headerActions || !tableBody) return;
 
   tableBody.addEventListener("change", async (e) => {
     const selectRole = e.target.closest(".select-role");
@@ -31,12 +29,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   tableBody.addEventListener("click", async (e) => {
+    const setNewOwner = e.target.closest(".set-new-owner");
     const approveBtn = e.target.closest(".approve");
     const rejectBtn = e.target.closest(".reject:not(.fire-btn)");
     const fireBtn = e.target.closest(".fire-btn");
     const selectRole = e.target.closest(".select-role");
+    console.log(e.target);
 
-    if (!approveBtn && !rejectBtn && !fireBtn && !selectRole) return;
+    if (!approveBtn && !rejectBtn && !fireBtn && !selectRole && !setNewOwner)
+      return;
 
     const row = e.target.closest("tr");
     const requestId = row.dataset.id;
@@ -56,19 +57,30 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (fireBtn) {
-        const res = await fetch(
-          `/employees/requests/${requestId}/fire?companyId=${companyId}`,
-          {
-            method: "DELETE",
-          },
-        );
-
-        const response = await res.json();
-        if (response.success) {
+        const confirmPopup = document.querySelector(".confirm-popup");
+        confirmPopup.dataset.type = "fire-employee";
+        confirmPopup.dataset.requestId = row.dataset.id;
+        confirmPopup.classList.add("show");
+        confirmPopup.querySelector(".confirm-popup__title").innerHTML =
+          `Terminate Employee Account?`;
+        confirmPopup.querySelector(".confirm-popup__description").innerHTML =
+          `This action cannot be undone. All associated data and access for this user will be permanently revoked.`;
+        confirmPopup.addEventListener("click", (e) => {
+          if (confirmPopup.querySelector(".confirm-btn").contains(e.target))
+            confirmPopup.classList.remove("show");
           row.remove();
-        }
+        });
+      }
 
-        socket.emit("fired");
+      if (setNewOwner) {
+        const confirmPopup = document.querySelector(".confirm-popup");
+        confirmPopup.dataset.type = "transfer-owner";
+        confirmPopup.dataset.userId = row.dataset.id;
+        confirmPopup.classList.add("show");
+        confirmPopup.querySelector(".confirm-popup__title").innerHTML =
+          `Transfer company ownership?`;
+        confirmPopup.querySelector(".confirm-popup__description").innerHTML =
+          `This action will transfer ownership of the company to another user. You will no longer be the owner and your role will change to admin, which may limit your permissions.`;
       }
     } catch (err) {
       console.error(er);

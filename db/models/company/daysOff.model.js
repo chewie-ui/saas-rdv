@@ -15,6 +15,8 @@ const daysOffSchema = new schema({
         type: Date,
         required: true,
       },
+      workingHours: [{ start: String, end: String }],
+      dayOff: Boolean,
     },
   ],
 });

@@ -43,22 +43,11 @@
   position: relative;
 }
 
-.availability-section
-  .availability-section__body
-  .body-weekly-hour
-  .row-weekday
-  .weekly-hour__time
-  .time-slot
-  .hour-container {
+.time-slot .hour-container {
   width: 125px;
 }
 
-.availability-section
-  .availability-section__body
-  .body-weekly-hour
-  .row-weekday
-  .weekly-hour__time
-  .time-slot,
+.time-slot,
 .availability-section
   .availability-section__body
   .body-weekly-hour
@@ -85,25 +74,12 @@
   cursor: pointer;
 }
 
-.availability-section
-  .availability-section__body
-  .body-weekly-hour
-  .row-weekday
-  .weekly-hour__time
-  .time-slot
-  .slot-hour {
+.time-slot .slot-hour {
   position: relative;
   cursor: pointer;
 }
 
-.availability-section
-  .availability-section__body
-  .body-weekly-hour
-  .row-weekday
-  .weekly-hour__time
-  .time-slot
-  .slot-hour
-  .panel-availability {
+.time-slot .slot-hour .panel-availability {
   position: absolute;
   top: 100%;
   left: 0;
@@ -118,72 +94,28 @@
   z-index: 10;
 }
 
-.availability-section
-  .availability-section__body
-  .body-weekly-hour
-  .row-weekday
-  .weekly-hour__time
-  .time-slot
-  .slot-hour
-  .panel-availability.open,
-.availability-section
-  .availability-section__body
-  .time-slot__container
-  .slot-input__container
-  .panel.open {
+.time-slot .slot-hour .panel-availability.open,
+.time-slot__container .slot-input__container .panel.open {
   display: initial;
 }
 
-.availability-section
-  .availability-section__body
-  .body-weekly-hour
-  .row-weekday
-  .weekly-hour__time
-  .time-slot
-  .slot-hour
-  .panel-availability
-  .hour,
-.availability-section
-  .availability-section__body
-  .time-slot__container
-  .slot-input__container
-  .panel
-  .time {
+.time-slot .slot-hour .panel-availability .hour,
+.time-slot__container .slot-input__container .panel .time {
   padding: 10px 60px 10px 8px;
   cursor: pointer;
 }
 
-.availability-section
-  .availability-section__body
-  .body-weekly-hour
-  .row-weekday
-  .weekly-hour__time
-  .time-slot
-  .slot-hour
-  .panel-availability
-  .hour:hover,
-.availability-section
-  .availability-section__body
-  .time-slot__container
-  .slot-input__container
-  .panel
-  .time:hover {
+.time-slot .slot-hour .panel-availability .hour:hover,
+.time-slot__container .slot-input__container .panel .time:hover {
   background-color: var(--grey-soft);
 }
 
-.availability-section
-  .availability-section__body
-  .time-slot__container
-  .slot-input__container {
+.time-slot__container .slot-input__container {
   position: relative;
   width: 125px;
 }
 
-.availability-section
-  .availability-section__body
-  .time-slot__container
-  .slot-input__container
-  .panel {
+.time-slot__container .slot-input__container .panel {
   position: absolute;
   top: 100%;
   left: 0;
@@ -202,22 +134,11 @@
   gap: 7px;
 }
 
-.availability-section
-  .availability-section__body
-  .body-weekly-hour
-  .row-weekday
-  .weekly-hour__time
-  .time-slot {
+.time-slot {
   position: relative;
 }
 
-.availability-section
-  .availability-section__body
-  .body-weekly-hour
-  .row-weekday
-  .weekly-hour__time
-  .time-slot
-  .delete-time-slot {
+.time-slot .delete-time-slot {
   position: absolute;
   left: 106%;
   cursor: pointer;
@@ -253,15 +174,12 @@
 
 .availability-section .days-off__wrapper {
   gap: 5px;
+  align-items: flex-start;
 }
 
 .availability-section .days-off__wrapper .days-off__row {
-  gap: 20px;
+  gap: 45px;
   user-select: none;
-}
-
-.availability-section .days-off__wrapper .days-off__row .input {
-  text-align: center;
 }
 
 .availability-section .days-off__wrapper .days-off__row .days-off__schedule p {

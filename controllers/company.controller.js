@@ -129,7 +129,6 @@ exports.deleteTimeSlot = async (req, res) => {
 
     console.log(weekdayIndex);
     console.log(slotId);
-    
 
     await Company.updateOne(
       {
@@ -142,12 +141,100 @@ exports.deleteTimeSlot = async (req, res) => {
             _id: slotId,
           },
         },
-      }
+      },
     );
 
     return res.json({ success: true });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Server error" });
+  }
+};
+
+exports.transferOwner = async (req, res) => {
+  try {
+    const { newOwnerId } = req.body;
+    const companyId = req.session.companyId;
+    const currentUserId = req.user._id;
+
+    const company = await Company.findById(companyId);
+
+    // changer owner
+    company.owner = newOwnerId;
+
+    // ancien owner -> admin
+    const oldOwner = company.employees.find(
+      (e) => e.user.toString() === currentUserId.toString(),
+    );
+
+    if (oldOwner) oldOwner.grade = "admin";
+
+    // nouveau owner
+    const newOwner = company.employees.find(
+      (e) => e.user.toString() === newOwnerId,
+    );
+
+    if (newOwner) newOwner.grade = "owner";
+
+    await company.save();
+
+    return res.json({ success: true });
+  } catch (e) {
+    return res.json({ error: e.message });
+  }
+};
+
+exports.scheduleDayOff = async (req, res) => {
+  try {
+    const { companyId } = req.session;
+    const { schedule, dateId } = req.body;
+
+    await DaysOff.findOneAndUpdate(
+      { company: companyId, "dates._id": dateId },
+      {
+        $set: {
+          "dates.$.workingHours": [
+            { start: schedule.start, end: schedule.end },
+          ],
+        },
+      },
+    );
+    return res.json({ success: true });
+  } catch (err) {
+    return res.json(err);
+  }
+};
+
+
+exports.setScheduleDayOff = async (req, res) => {
+  try {
+
+    const { companyId } = req.session;
+    const { dateId, time, type } = req.body;
+
+    if (!["start", "end"].includes(type)) {
+      return res.status(400).json({ success: false, error: "Type undefined" });
+    }
+
+    const path = `dates.$.workingHours.0.${type}`;
+
+    const updated = await DaysOff.findOneAndUpdate(
+      { company: companyId, "dates._id": dateId },
+      {
+        $set: {
+          [path]: time,
+        },
+      },
+      { new: true },
+    );
+
+    if (!updated) {
+      return res.status(404).json({ success: false, error: "Date not found" });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: "Server error" });
   }
 };

@@ -31,7 +31,7 @@ module.exports = async (req, res, next) => {
 
   if (req.session.companyId) {
     currentCompany = allCompanies.find(
-      (c) => c._id.toString() === req.session.companyId
+      (c) => c._id.toString() === req.session.companyId,
     );
   }
 

@@ -2,8 +2,9 @@ const {
   getAppointments,
   GetAllAppointments,
 } = require("../queries/booking.queries");
+const { sendEmail } = require("../utils/mailer");
 
-exports.panel = (req, res) => {
+exports.panel = async (req, res) => {
   res.render("admin/panel", {
     pageName: "Dashboard",
     appointments: req.appointments,
@@ -12,7 +13,17 @@ exports.panel = (req, res) => {
 
 const Booking = require("../db/models/book.model");
 const DaysOff = require("../db/models/company/daysOff.model");
-
+const htmlTemplate = `
+  <div style="font-family: sans-serif; text-align: center; padding: 20px;">
+    <h1 style="color: #4CAF50;">Horaire modifié !</h1>
+    <p>Votre nouveau créneau est fixé à <strong>223</strong>.</p>
+    <br>
+    <a href="http://localhost:3000/dashboard" 
+       style="background-color: #4CAF50; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+       Voir mon planning
+    </a>
+  </div>
+`;
 exports.book = async (req, res) => {
   const { bookId } = req.params;
 
@@ -34,6 +45,7 @@ exports.book = async (req, res) => {
     user,
     grade,
   });
+  await sendEmail("quentin.rennies@gmail.com", "MAJ Horraire", htmlTemplate);
 };
 
 function getWeekDays(startDate = new Date()) {
@@ -314,10 +326,18 @@ async function getSlotTime(companyId) {
 }
 
 async function getDaysOff(companyId) {
-  const dates = await DaysOff.findOne({ company: companyId }).select("dates");
-  console.log(await dates);
+  const doc = await DaysOff.findOne({ company: companyId }).select("dates");
 
-  return await dates;
+  if (!doc) return { dates: [] };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // ignore l'heure
+
+  doc.dates = doc.dates
+    .filter((d) => new Date(d.date) >= today) // garde seulement futur / aujourd'hui
+    .sort((a, b) => new Date(a.date) - new Date(b.date)); // tri proche → loin
+
+  return doc;
 }
 exports.availability = async (req, res) => {
   res.render("admin/availability", {
@@ -447,7 +467,7 @@ exports.rejectRequestEmployee = async (req, res) => {
 exports.fireRequestEmployee = async (req, res) => {
   try {
     const { id } = req.params;
-    const { companyId } = req.query;
+    const { companyId } = req.session;
 
     await Company.findByIdAndUpdate(companyId, {
       $pull: { employees: { user: id } },

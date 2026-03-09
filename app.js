@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const passport = require("passport");
@@ -29,7 +30,10 @@ app.use((req, res, next) => {
 });
 
 require("./config/passport");
-
+app.use((req, res, next) => {
+  console.log("REQUEST:", req.method, req.url);
+  next();
+});
 app.use(routes);
 
 module.exports = app;
