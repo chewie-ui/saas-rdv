@@ -25,8 +25,18 @@ const bookingSchema = new schema(
       type: Date,
       required: true,
     },
-    time: {
+    startTime: {
       type: String,
+      required: true,
+    },
+
+    endTime: {
+      type: String,
+      required: true,
+    },
+
+    slotTime: {
+      type: Number,
       required: true,
     },
 
@@ -39,7 +49,7 @@ const bookingSchema = new schema(
   { timestamps: true },
 );
 
-bookingSchema.index({ date: 1, time: 1 }, { unique: true });
+bookingSchema.index({ date: 1, startTime: 1 }, { unique: true });
 
 const Booking = mongoose.model("Booking", bookingSchema);
 

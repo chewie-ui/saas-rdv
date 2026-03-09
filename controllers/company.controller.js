@@ -2,6 +2,12 @@ const Company = require("../db/models/company/company.model");
 const CompanyRequest = require("../db/models/company/companyRequest.model");
 const DaysOff = require("../db/models/company/daysOff.model");
 
+exports.companyInfos = async (req, res) => {
+  const { companyId } = req.params;
+  const doc = await Company.findById(companyId);
+  return res.json(doc);
+};
+
 exports.searchCompany = async (req, res) => {
   const { name } = req.query;
 
@@ -205,10 +211,8 @@ exports.scheduleDayOff = async (req, res) => {
   }
 };
 
-
 exports.setScheduleDayOff = async (req, res) => {
   try {
-
     const { companyId } = req.session;
     const { dateId, time, type } = req.body;
 

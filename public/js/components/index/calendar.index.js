@@ -55,6 +55,7 @@ export default function () {
 
     rows.forEach((row) => {
       const time = row.textContent.trim();
+      console.log(time);
 
       if (bookedTimes.includes(time)) {
         row.classList.add("reserved");
@@ -100,10 +101,32 @@ export default function () {
       body: JSON.stringify({ COMPANY_ID }),
     });
 
+    const disabledDays = await fetch(`/get-disabled-days/${COMPANY_ID}`);
+    const arrayDisabledDays = await disabledDays.json();
+
     const resultDaysOff = await daysOff.json();
 
     const dayOffArray = resultDaysOff.result.schedule;
 
+    const responseBookings = await fetch(`/get-booking/${COMPANY_ID}`);
+    const specificExceptions = await responseBookings.json();
+    console.log(specificExceptions);
+    function countPossibleSlots(workingHours, slotTime) {
+      if (!workingHours || workingHours.length === 0) return 0;
+      let count = 0;
+      workingHours.forEach((period) => {
+        const [startH, startM] = period.start.split(":").map(Number);
+        const [endH, endM] = period.end.split(":").map(Number);
+        const totalMinutes = endH * 60 + endM - (startH * 60 + startM);
+        count += Math.floor(totalMinutes / slotTime);
+      });
+      return count;
+    }
+    const companyInfos = await fetch(`/company/get-infos/${COMPANY_ID}`);
+    const res = await companyInfos.json();
+    console.log(res);
+
+    const slotTime = res.slotTime;
     // Current month days
     for (let i = 1; i <= daysInMonth; i++) {
       const day = document.createElement("div");
@@ -111,21 +134,72 @@ export default function () {
       day.className = "day";
 
       const currentDate = new Date(currentYear, currentMonth, i);
+      currentDate.setHours(0, 0, 0, 0);
 
       const weekdayIndex = (currentDate.getDay() + 6) % 7;
+      const todayClean = new Date(realToday);
+      todayClean.setHours(0, 0, 0, 0);
+
+      const exception = arrayDisabledDays.find((d) => {
+        const dDate = new Date(d.date);
+        dDate.setHours(0, 0, 0, 0);
+        return dDate.getTime() === currentDate.getTime();
+      });
+
+      const isFull = specificExceptions.find((d) => {
+        const dDate = new Date(d.date);
+        dDate.setHours(0, 0, 0, 0);
+        return dDate.getTime() === currentDate.getTime() && d.isFull === true;
+      });
+
+      if (isFull) {
+        day.classList.add("over-booked");
+        day.dataset.disabled = "true";
+      }
 
       const dayConfig = dayOffArray.find(
         (d) => d.weekdayIndex === weekdayIndex,
       );
-      currentDate.setHours(0, 0, 0, 0);
-
-      const todayClean = new Date(realToday);
-      todayClean.setHours(0, 0, 0, 0);
 
       if (currentDate < todayClean) {
         day.classList.add("empty");
+      } else if (exception) {
+        if (!exception.workingHours || exception.workingHours.length === 0) {
+          day.classList.add("empty");
+          day.dataset.disabled = "true";
+        } else {
+          day.dataset.weekdayIndex = weekdayIndex;
+          day.classList.add("special-day");
+        }
+      } else if (dayConfig && dayConfig.dayOff) {
+        day.classList.add("empty"); // Repos hebdomadaire normal
+        day.dataset.disabled = "true";
       } else {
         day.dataset.weekdayIndex = weekdayIndex;
+      }
+
+      let activeWorkingHours = [];
+      if (exception && exception.workingHours) {
+        activeWorkingHours = exception.workingHours;
+      } else if (dayConfig && !dayConfig.dayOff) {
+        activeWorkingHours = dayConfig.workingHours;
+      }
+
+      // 2. Calculer le nombre maximum de créneaux possibles
+      const maxSlots = countPossibleSlots(activeWorkingHours, slotTime);
+
+      // 3. Compter combien de réservations existent déjà pour ce jour i
+      // Note : specificExceptions doit contenir TOUS les bookings renvoyés par ton serveur
+      const existingBookingsCount = specificExceptions.filter((booking) => {
+        const bDate = new Date(booking.date);
+        bDate.setHours(0, 0, 0, 0);
+        return bDate.getTime() === currentDate.getTime();
+      }).length;
+
+      // 4. Si c'est plein, on ajoute la classe over-booked
+      if (maxSlots > 0 && existingBookingsCount >= maxSlots) {
+        day.classList.add("over-booked");
+        day.dataset.disabled = "true";
       }
 
       if (dayConfig && dayConfig.dayOff) {
@@ -144,12 +218,20 @@ export default function () {
       calendarDays.appendChild(day);
 
       day.addEventListener("click", async () => {
+        if (day.dataset.disabled === "true") return;
         const index = day.dataset.weekdayIndex;
+        const clickedDate = new Date(currentYear, currentMonth, i);
+        datePicked = clickedDate;
 
+        const dateIso = clickedDate.toISOString();
         const slots = await fetch("/get-schedule", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ index, COMPANY_ID }),
+          body: JSON.stringify({
+            index,
+            COMPANY_ID,
+            date: dateIso,
+          }),
         });
         const slotsToAdd = await slots.json();
         scheduleWrapper.querySelector(".schedule-rows").innerHTML = "";
@@ -162,13 +244,11 @@ export default function () {
         });
 
         if (day.classList.contains("empty")) return false;
-        datePicked = new Date(currentYear, currentMonth, i);
 
-        const result = await fetch(
-          `/get-booking?date=${datePicked.toISOString()}`,
-        );
+        const result = await fetch(`/get-booking?date=${dateIso}`);
 
         const response = await result.json();
+        console.log(response);
 
         renderSchedules(response.bookedTimes);
 
@@ -202,21 +282,43 @@ export default function () {
     bookingWrapper.addEventListener("click", async (e) => {
       const button = e.target.closest("button#confirmBooking");
       if (!button) return;
+      const name = document.getElementById("bookingName");
+      const surname = document.getElementById("bookingSurname");
+      const email = document.getElementById("bookingEmail");
+      const phone = document.getElementById("bookingPhone");
+      const message = document.getElementById("bookingMsg");
+
+      const fields = [name, surname, email, phone, message];
+      let isFormValid = true;
+
+      fields.forEach((field) => {
+        if (field.value.trim() === "") {
+          field.classList.add("empty-field");
+          isFormValid = false; // On lève un drapeau d'erreur
+        } else {
+          field.classList.remove("empty-field"); // On enlève le rouge s'il a corrigé
+        }
+      });
+
+      if (!isFormValid) {
+        // Optionnel : un petit message ou scroll vers le haut
+        return;
+      }
 
       const request = await fetch("/create-booking", {
         method: "post",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: datePicked.toISOString(),
-          time: schedulePicked,
+          startTime: schedulePicked,
           company: document
             .getElementById("bookingWrapper")
             .getAttribute("data-company-id"),
-          name: document.getElementById("bookingName").value,
-          surname: document.getElementById("bookingSurname").value,
-          email: document.getElementById("bookingEmail").value,
-          phone: document.getElementById("bookingPhone").value,
-          message: document.getElementById("bookingMsg").value,
+          name: name.value,
+          surname: surname.value,
+          email: email.value,
+          phone: phone.value,
+          message: message.value,
         }),
       });
 

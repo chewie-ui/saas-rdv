@@ -13,17 +13,12 @@ exports.panel = async (req, res) => {
 
 const Booking = require("../db/models/book.model");
 const DaysOff = require("../db/models/company/daysOff.model");
-const htmlTemplate = `
-  <div style="font-family: sans-serif; text-align: center; padding: 20px;">
-    <h1 style="color: #4CAF50;">Horaire modifié !</h1>
-    <p>Votre nouveau créneau est fixé à <strong>223</strong>.</p>
-    <br>
-    <a href="http://localhost:3000/dashboard" 
-       style="background-color: #4CAF50; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">
-       Voir mon planning
-    </a>
-  </div>
-`;
+const pug = require("pug");
+const path = require("path");
+const htmlTemplate = pug.renderFile(
+  path.join(__dirname, "../views/templates/emails/booking-confirmed.pug"),
+  { hour: "22:30" },
+);
 exports.book = async (req, res) => {
   const { bookId } = req.params;
 
@@ -105,7 +100,7 @@ exports.appointment = async (req, res) => {
   const slotTime = rowTime.slotTime;
 
   const formatted = apps.map((appointment) => {
-    const [h, m] = appointment.time.split(":").map(Number);
+    const [h, m] = appointment.startTime.split(":").map(Number);
 
     // reconstruire la date complète
     const startDate = new Date(

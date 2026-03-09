@@ -14,7 +14,10 @@ const {
   transferOwner,
   scheduleDayOff,
   setScheduleDayOff,
+  companyInfos,
 } = require("../controllers/company.controller");
+
+router.get("/company/get-infos/:companyId", companyInfos);
 
 router.get("/companies/search", searchCompany);
 router.post("/companies/send-request", requestCompany);

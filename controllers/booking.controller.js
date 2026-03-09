@@ -1,21 +1,41 @@
 const Booking = require("../db/models/book.model");
 const Company = require("../db/models/company/company.model");
+const DaysOff = require("../db/models/company/daysOff.model");
 const { getAppointments } = require("../queries/booking.queries");
 
 exports.createBooking = async (req, res) => {
   try {
-    const { date, time, company, name, surname, email, phone, message } =
+    const { date, startTime, company, name, surname, email, phone, message } =
       req.body;
 
+    const response = await Company.findById(company);
+    const slotTime = response.slotTime;
+    const [hours, minutes] = startTime.split(":").map(Number);
+    const startTimeInMinutes = hours * 60 + minutes;
+
+    // 2. Ajouter le slotTime
+    const endTimeInMinutes = startTimeInMinutes + slotTime;
+
+    // 3. Reconvertir en format HH:MM
+    const endHours = Math.floor(endTimeInMinutes / 60);
+    const endMinutes = endTimeInMinutes % 60;
+
+    // 4. Formater avec des zéros devant (ex: "09:05")
+    const endTime = `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
+
+    console.log("Start:", startTime); // "08:30"
+    console.log("End:", endTime);
     await Booking.create({
       date: new Date(date),
-      time,
+      startTime,
       company,
       name,
       surname,
       email,
       phone,
       message,
+      slotTime,
+      endTime,
       status: "confirmed",
     });
 
@@ -31,10 +51,10 @@ exports.getBooking = async (req, res) => {
 
   const bookings = await Booking.find({
     date: new Date(date),
-  }).select("time -_id");
+  }).select("startTime -_id");
 
   res.json({
-    bookedTimes: bookings.map((b) => b.time),
+    bookedTimes: bookings.map((b) => b.startTime),
   });
 };
 
@@ -83,7 +103,7 @@ exports.renderAppointments = async (req, res, next) => {
   const now = new Date();
 
   appointments.forEach((appointment) => {
-    const [h, m] = appointment.time.split(":").map(Number);
+    const [h, m] = appointment.startTime.split(":").map(Number);
 
     const appointmentDate = new Date(appointment.date);
     appointmentDate.setHours(h, m, 0, 0);
@@ -105,20 +125,44 @@ exports.renderAppointments = async (req, res, next) => {
 };
 
 exports.getSchedule = async (req, res) => {
-  const { index, COMPANY_ID } = req.body;
+  const { index, COMPANY_ID, date } = req.body;
 
+  // 1. Récupérer la config de base (pour le slotTime et les horaires par défaut)
   const company = await Company.findById(COMPANY_ID)
     .select("schedule slotTime")
     .lean();
 
-  const target = company.schedule[index];
+  // 2. CHERCHER UNE EXCEPTION (DaysOff)
+  // On nettoie la date reçue pour comparer uniquement Jour/Mois/Année
+  const searchDate = new Date(date);
+  searchDate.setHours(0, 0, 0, 0);
 
-  if (!target || target.dayOff) {
+  const exceptionsDoc = await DaysOff.findOne({ company: COMPANY_ID });
+  let target = company.schedule[index]; // Par défaut
+
+  if (exceptionsDoc && exceptionsDoc.dates) {
+    const specificDate = exceptionsDoc.dates.find((d) => {
+      const dDate = new Date(d.date);
+      dDate.setHours(0, 0, 0, 0);
+      return dDate.getTime() === searchDate.getTime();
+    });
+
+    // Si on a trouvé une exception (comme ton 25 mars), on remplace le "target"
+    if (specificDate) {
+      target = specificDate;
+    }
+  }
+
+  // 3. GENERATION DES SLOTS (Ta logique actuelle, mais avec le bon "target")
+  if (
+    !target ||
+    target.dayOff ||
+    (target.workingHours && target.workingHours.length === 0)
+  ) {
     return res.json({ slots: [] });
   }
 
   let allSlots = [];
-
   target.workingHours.forEach((period) => {
     const [startH, startM] = period.start.split(":").map(Number);
     const [endH, endM] = period.end.split(":").map(Number);
@@ -129,11 +173,9 @@ exports.getSchedule = async (req, res) => {
     while (current + company.slotTime <= endTotal) {
       const h = Math.floor(current / 60);
       const m = current % 60;
-
       allSlots.push(
         `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
       );
-
       current += company.slotTime;
     }
   });
@@ -146,4 +188,21 @@ exports.getDaysOff = async (req, res) => {
   const result = await Company.findById(COMPANY_ID).select("schedule");
 
   return res.json({ result });
+};
+
+exports.getDisabledDays = async (req, res) => {
+  const { companyId } = req.params;
+
+  const doc = await DaysOff.findOne({ company: companyId }).select("dates");
+  return res.json(doc ? doc.dates : []);
+};
+
+exports.getBookingC = async (req, res) => {
+  const { companyId } = req.params;
+
+  const doc = await Booking.find({
+    company: companyId,
+  });
+
+  res.json(doc);
 };
