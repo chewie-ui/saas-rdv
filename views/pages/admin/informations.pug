@@ -1,0 +1,69 @@
+extends ../../layouts/admin
+
+
+block links
+    link(rel="stylesheet", href="/css/layouts/informations.css")
+
+block content
+    .wrapper.account
+        .account__container
+            .account__left
+                .account__avatar
+                    img(alt="Profile picture" src=user.profilePicture || "/images/no-user.webp" id="avatarPreview")
+                .account__avatar-btn
+                    input#fileInput(type="file" style="display:none" accept="image/*")
+                    button.btn.secondary#uploadBtn Upload New Photo
+            .account__right
+                h2 Profile Informations
+                .account__form
+                    .field
+                        label(for="fullname") FullName
+                        input#fullname.input(value=user.fullName name="fullName")
+                    .field
+                        label(for="email") Email Address
+                        input#email.input(value=user.email name="email")
+                    .field
+                        label(for="phone") Phone Number 
+                        input#phone.input(value=user.phone name="phone") 
+                    .field
+                        label(for="password") Password
+                        input#password.input(placeholder="●●●●●●●●●●●" disabled)
+                        a.more(href="#") Change password
+                    .account__actions
+                        button#saveChanges.btn Save Changes
+                        a(href="#").danger Delete account
+        .social
+            .social__container
+                .social__box(data-name="instagramLink")
+                    .social__logo
+                        img(src="/images/logos/instagram-logo.webp" alt="Instagram logo")
+                    .social__title Instagram
+                    .social__field
+                        input.input(placeholder="Enter your link page" value=user.instagramLink || "")
+                        button.btn.btn__social-save Save
+                .social__box(data-name="whatsappLink")
+                    .social__logo
+                        img(src="/images/logos/whatsapp-logo.webp" alt="Whatsapp logo")
+                    .social__title Whatsapp
+                    .social__field
+                        input.input(placeholder="Enter your link page" value=user.whatsappLink || "")
+                        button.btn.btn__social-save Save
+                .social__box(data-name="facebookLink")
+                    .social__logo
+                        img(src="/images/logos/facebook-logo.webp" alt="Facebook logo")
+                    .social__title Facebook
+                    .social__field
+                        input.input(placeholder="Enter your link page" value=user.facebookLink || "")
+                        button.btn.btn__social-save Save
+                .social__box(data-name="website")
+                    .social__logo
+                        img(src="/images/logos/website-logo.webp" alt="Website logo")
+                    .social__title Website
+                    .social__field
+                        input.input(placeholder="Enter your link page" value=user.website || "")
+                        button.btn.btn__social-save Save
+                    
+
+
+block scripts
+    script(src='/js/layouts/informations.js')

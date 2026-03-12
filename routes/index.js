@@ -6,6 +6,8 @@ router.use(require("./auth"));
 router.use(require("./company"));
 router.use(require("./admin"));
 router.use(require("./booking"));
+router.use("/api", require("./api"));
+router.use("/account", require("./user/account"));
 
 router.get("/", (req, res) => {
   res.render("client/landing-page", {
@@ -13,7 +15,7 @@ router.get("/", (req, res) => {
   });
 });
 
-router.get("/company/:company", async (req, res) => {
+router.get("/:company", async (req, res) => {
   const company = await getCompanyIfExist(req.params.company);
 
   if (!company) {

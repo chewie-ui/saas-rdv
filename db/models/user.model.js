@@ -23,6 +23,7 @@ const userSchema = schema(
         role: {
           type: String,
           enum: ["owner", "employee"],
+          required: true,
         },
         company: {
           type: schema.Types.ObjectId,
@@ -36,12 +37,37 @@ const userSchema = schema(
         },
       },
     ],
-    createdAt: {
-      type: Date,
-      default: Date.now,
+
+    profilePicture: {
+      type: String,
+      default: "/images/no-user.webp",
+    },
+
+    phone: {
+      type: String,
+    },
+
+    instagramLink: {
+      type: String,
+    },
+
+    facebookLink: {
+      type: String,
+    },
+
+    bio: String,
+    location: String,
+    calendarColor: String,
+
+    whatsappLink: {
+      type: String,
+    },
+
+    website: {
+      type: String,
     },
   },
-  { timestamp: true },
+  { timestamps: true },
 );
 
 const User = mongoose.model("User", userSchema);

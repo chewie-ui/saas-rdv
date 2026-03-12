@@ -93,11 +93,16 @@ function generateTimeSlots(startHour, endHour, slotTime) {
 }
 
 exports.appointment = async (req, res) => {
-  const apps = await GetAllAppointments(req.session.companyId);
-  const rowTime = await Company.findById(req.session.companyId)
+  const currentCompany = res.locals.currentCompany;
+
+  if (!currentCompany) {
+    return res.redirect("/set-company");
+  }
+  const apps = await GetAllAppointments(currentCompany);
+  const rowTime = await Company.findById(currentCompany)
     .select("slotTime")
     .lean();
-  const slotTime = rowTime.slotTime;
+  const slotTime = rowTime.slotTime || 60;
 
   const formatted = apps.map((appointment) => {
     const [h, m] = appointment.startTime.split(":").map(Number);
@@ -292,27 +297,6 @@ exports.client = (req, res) => {
   });
 };
 
-exports.employees = async (req, res) => {
-  const thisCompany = await Company.findById(
-    res.locals.currentCompany,
-  ).populate("employees.user");
-
-  const employees = thisCompany.employees;
-
-  const userId = req.user._id;
-  console.log(thisCompany.employees);
-
-  const thisEmployee = employees.find(
-    (r) => r.user._id.toString() === userId.toString(),
-  );
-
-  res.render("admin/employees", {
-    pageName: "Employees",
-    employees,
-    thisEmployee,
-  });
-};
-
 async function getSlotTime(companyId) {
   const res = await Company.findById(companyId).select("slotTime").lean();
   console.log(res.slotTime);
@@ -408,73 +392,6 @@ exports.joinCompany = (req, res) => {
   res.render("admin/join-company");
 };
 
-const CompanyRequest = require("../db/models/company/companyRequest.model");
-
-exports.requestsEmployees = async (req, res) => {
-  const { companyId } = req.query;
-
-  const result = await CompanyRequest.find({
-    company: companyId,
-    status: "pending",
-  })
-    .populate("user", "fullName email")
-    .lean();
-  res.json({ success: true, result });
-};
-
-exports.approveRequestEmployee = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const request = await CompanyRequest.findById(id);
-
-    if (!request) {
-      return res.status(404).json({ error: "id not found" });
-    }
-
-    await Company.findByIdAndUpdate(request.company, {
-      $push: {
-        employees: {
-          user: request.user,
-          grade: "staff",
-        },
-      },
-    });
-
-    await CompanyRequest.findByIdAndDelete(id);
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-  }
-};
-
-exports.rejectRequestEmployee = async (req, res) => {
-  try {
-    const { id } = req.params;
-    await CompanyRequest.findByIdAndDelete(id);
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-  }
-};
-
-exports.fireRequestEmployee = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { companyId } = req.session;
-
-    await Company.findByIdAndUpdate(companyId, {
-      $pull: { employees: { user: id } },
-    });
-
-    return res.json({ success: true });
-  } catch (err) {
-    console.log(err);
-    return res.json({ error: err });
-  }
-};
-
 exports.editSlotTime = async (req, res) => {
   try {
     const { slot } = req.body;
@@ -527,5 +444,11 @@ exports.getWeekData = async (req, res) => {
   res.json({
     weekDays,
     appointments: apps,
+  });
+};
+
+exports.informationsPage = (req, res) => {
+  res.render("admin/informations", {
+    pageName: "Informations",
   });
 };

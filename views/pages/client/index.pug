@@ -3,10 +3,37 @@ extends ../../layouts/index
 include ../../templates/confirm-popup.pug
 
 block links
+    link(rel="stylesheet", href="/css/layouts/index-calendar.css")
     link(rel="stylesheet", href="/css/templates/confirm-popup.css")
 
 block content
     .content-wrapper
+        .informations
+            .informations__container
+                .informations__top
+                    .informations__user
+                        h2 Coach informations
+                        .informations__user-wrapper
+                            .user__image
+                                img.cover(alt="Profile Picture" src="/images/no-user.webp")
+                            .user__name
+                                .user__name-row
+                                    h3 Quentin Rennies
+                                .user__name-row
+                                    p quentin.rennies@gmail.com
+                                .user__name-row
+                                    p +32 477 44 39 88
+
+                .informations__bottom
+                    .informations__links
+                        h2 Links
+                        .informations__links-wrapper
+                            a(href="#" target="_blank").links__row
+                                .links__row-logo
+                                    img(alt="Instagram logo" src="/images/logos/instagram-logo.webp")
+                                .links__row-name
+                                    h3 Instagram
+
         .calendar-wrapper.container
             .calendar
                 .calendar-header
