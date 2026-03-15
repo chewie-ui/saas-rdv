@@ -1,4 +1,5 @@
 const Booking = require("../db/models/book.model");
+const User = require("../db/models/user.model");
 const Company = require("../db/models/company/company.model");
 const DaysOff = require("../db/models/company/daysOff.model");
 const { getAppointments } = require("../queries/booking.queries");
@@ -6,6 +7,7 @@ const pug = require("pug");
 const path = require("path");
 
 const { sendEmail } = require("../utils/mailer");
+const { log } = require("console");
 
 exports.createBooking = async (req, res) => {
   try {
@@ -27,9 +29,7 @@ exports.createBooking = async (req, res) => {
     // 4. Formater avec des zéros devant (ex: "09:05")
     const endTime = `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
 
-    console.log("Start:", startTime); // "08:30"
-    console.log("End:", endTime);
-    await Booking.create({
+    const newBooking = await Booking.create({
       date: new Date(date),
       startTime,
       company,
@@ -50,8 +50,10 @@ exports.createBooking = async (req, res) => {
         surname,
         date,
         startHour: startTime,
-        endHour: startTime,
-        slotTime: startTime,
+        endHour: endTime,
+        slotTime: slotTime,
+        bookingId: newBooking._id,
+        cancelToken: newBooking.cancelToken,
       },
     );
 
@@ -225,4 +227,18 @@ exports.getBookingC = async (req, res) => {
   });
 
   res.json(doc);
+};
+
+exports.cancelBooking = async (req, res) => {
+  const { userId } = req.params;
+  const { token } = req.query;
+  const companyId = await Booking.findById(userId); // recup infos ici
+  const company = await Company.findById(companyId.company);
+  const coach = await User.findById(company.owner);
+
+  res.render("client/index.pug", {
+    cancelBooking: true,
+    company,
+    coach,
+  });
 };

@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const schema = mongoose.Schema;
+const crypto = require("crypto");
 
 const bookingSchema = new schema(
   {
@@ -44,6 +45,12 @@ const bookingSchema = new schema(
       type: String,
       enum: ["canceled", "confirmed"],
       required: true,
+    },
+
+    cancelToken: {
+      type: String,
+      unique: true,
+      default: () => crypto.randomBytes(32).toString("hex"),
     },
   },
   { timestamps: true },

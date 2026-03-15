@@ -6,3 +6,13 @@ initBooking();
 initSchedule();
 initCalendar();
 
+const cancelBooking = document.getElementById("cancelBooking");
+
+if (cancelBooking) {
+  cancelBooking.addEventListener("click", (e) => {
+    const button = e.target.closest("button");
+    if (button) {
+      location.href = `/${cancelBooking.dataset.id}`;
+    }
+  });
+}

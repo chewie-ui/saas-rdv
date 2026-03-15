@@ -15,12 +15,12 @@
 }
 
 .availability-section .availability-section__body .body-weekly-hour {
-  gap: 7px;
+  gap: 25px;
 }
 
 .availability-section .availability-section__body .body-weekly-hour,
 .availability-section .availability-section__body .body-specific-hour {
-  width: 50%;
+  width: 100%;
 }
 
 .availability-section
@@ -29,6 +29,7 @@
   .row-weekday {
   gap: 17.5px;
   align-items: flex-start;
+  flex-wrap: wrap;
 }
 
 .availability-section
@@ -44,7 +45,7 @@
 }
 
 .time-slot .hour-container {
-  width: 125px;
+  width: 100px;
 }
 
 .time-slot,
@@ -140,7 +141,7 @@
 
 .time-slot .delete-time-slot {
   position: absolute;
-  left: 106%;
+  left: 101%;
   cursor: pointer;
 }
 
@@ -184,6 +185,7 @@
 
 .availability-section .days-off__wrapper .days-off__row .days-off__schedule p {
   color: var(--grey-primary);
+  white-space: nowrap;
 }
 
 .availability-section .days-off__wrapper .days-off__row .days-off__actions {
@@ -196,4 +198,34 @@
   .days-off__actions
   .days-off__button {
   cursor: pointer;
+}
+
+.availability-section
+  .days-off__wrapper
+  .days-off__row
+  .days-off__actions
+  .days-off__button.schedule-btn {
+  display: none;
+}
+
+@media all and (min-width: 820px) {
+}
+
+@media all and (min-width: 1280px) {
+  .availability-section .availability-section__body .body-weekly-hour,
+  .availability-section .availability-section__body .body-specific-hour {
+    width: 50%;
+  }
+
+  .time-slot .hour-container {
+    width: 125px;
+  }
+
+  .availability-section .availability-section__body .body-weekly-hour {
+    gap: 7px;
+  }
+
+  .time-slot .delete-time-slot {
+    left: 106%;
+  }
 }

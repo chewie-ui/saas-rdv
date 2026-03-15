@@ -25,7 +25,7 @@ exports.book = async (req, res) => {
   const user = await Booking.findById(bookId);
   const company = await Company.findOne(
     {
-      _id: req.session.companyId,
+      _id: res.locals.currentCompany._id,
       "employees.user": req.user._id,
     },
     {
@@ -94,7 +94,6 @@ function generateTimeSlots(startHour, endHour, slotTime) {
 
 exports.appointment = async (req, res) => {
   const currentCompany = res.locals.currentCompany;
-
   if (!currentCompany) {
     return res.redirect("/set-company");
   }
@@ -173,123 +172,9 @@ exports.appointment = async (req, res) => {
   });
 };
 
-const countries = require("i18n-iso-countries");
-countries.registerLocale(require("i18n-iso-countries/langs/en.json"));
-const countryList = countries.getNames("en", { select: "official" });
-const moment = require("moment-timezone");
-
-const timezones = moment.tz.names().map((tz) => {
-  const offset = moment.tz(tz).format("Z"); // -05:00
-  return {
-    name: tz,
-    label: `(GMT ${offset}) - ${tz}`,
-  };
-});
-
-function generateDefaultSchedule() {
-  return Array.from({ length: 7 }, (_, i) => ({
-    weekdayIndex: i,
-    dayOff: i === 0, // dimanche OFF
-    workingHours: [
-      {
-        start: "08:00",
-        end: "17:00",
-      },
-    ],
-  }));
-}
-
-exports.createCompany = (req, res) => {
-  res.render("admin/create-company", {
-    countries: countryList,
-    timezones,
-    defaultCountry: "Belgium",
-    defaultTimezone: "Europe/Brussels",
-  });
-};
-
 const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
 
-exports.companySchedule = (req, res) => {
-  res.render("admin/company-schedule");
-};
-
-exports.companyAddress = (req, res) => {
-  res.render("admin/company-address");
-};
-
-exports.firstSetupCompany = async (req, res) => {
-  console.log(generateDefaultSchedule());
-
-  try {
-    const { name, country, timezone, services } = req.body;
-
-    const company = await Company.create({
-      name,
-      owner: req.user._id,
-      informations: {
-        country,
-        timezone,
-        services: services,
-      },
-      schedule: generateDefaultSchedule(),
-      employees: [
-        {
-          user: req.user._id,
-          grade: "owner",
-        },
-      ],
-    });
-    req.session.companyId = company._id;
-
-    await User.findByIdAndUpdate(req.user._id, {
-      $push: {
-        companies: {
-          role: "owner",
-          company: company._id,
-          status: "active",
-        },
-      },
-    });
-
-    res.redirect("company-address");
-  } catch (err) {
-    console.error(err);
-
-    if (err.code === 11000) {
-      return res.render("admin/create-company", {
-        countries: countryList,
-        timezones,
-        defaultCountry: "Belgium",
-        defaultTimezone: "Europe/Brussels",
-        error: "Company name already used",
-      });
-    }
-    res.redirect("/create-company");
-  }
-};
-
-exports.secondSetupCompany = async (req, res) => {
-  try {
-    const { street, city, zip } = req.body;
-    const companyId = req.session.companyId;
-
-    await Company.findByIdAndUpdate(companyId, {
-      $set: {
-        "informations.address": {
-          street,
-          city,
-          zip,
-        },
-      },
-    });
-
-    res.redirect("/appointment");
-  } catch (err) {
-    res.json({ err });
-  }
-};
 
 exports.client = (req, res) => {
   res.render("admin/client", {
@@ -319,13 +204,17 @@ async function getDaysOff(companyId) {
   return doc;
 }
 exports.availability = async (req, res) => {
+  const currentCompany = res.locals.currentCompany;
+  if (!currentCompany) {
+    return res.redirect("/set-company");
+  }
   res.render("admin/availability", {
-    daysOff: await getDaysOff(req.session.companyId),
+    daysOff: await getDaysOff(currentCompany),
     pageName: "Availability",
     title: "Availability",
     timeSlot: [10, 15, 20, 25, 30, 45, 60, 90, 120, 180],
     hours: generateHours(10),
-    currentSlotTime: await getSlotTime(req.session.companyId),
+    currentSlotTime: await getSlotTime(currentCompany),
   });
 };
 
@@ -395,7 +284,7 @@ exports.joinCompany = (req, res) => {
 exports.editSlotTime = async (req, res) => {
   try {
     const { slot } = req.body;
-    const { companyId } = req.session;
+    const companyId = res.locals.currentCompany._id;
 
     await Company.findByIdAndUpdate(companyId, {
       slotTime: slot,
@@ -435,11 +324,15 @@ exports.cancelBooking = async (req, res) => {
 };
 
 exports.getWeekData = async (req, res) => {
+  const currentCompany = res.locals.currentCompany;
+  if (!currentCompany) {
+    return res.redirect("/set-company");
+  }
   const referenceDate = new Date(req.query.date);
 
   const weekDays = getWeekDays(referenceDate);
 
-  const apps = await GetAllAppointments(req.session.companyId);
+  const apps = await GetAllAppointments(currentCompany);
 
   res.json({
     weekDays,

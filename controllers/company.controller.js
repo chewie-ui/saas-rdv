@@ -8,14 +8,16 @@ exports.companyInfos = async (req, res) => {
 };
 
 exports.getDaysOff = async (req, res) => {
-  const result = await DaysOff.findOne({ company: req.session.companyId });
+  const result = await DaysOff.findOne({
+    company: res.locals.currentCompany._id,
+  });
   return res.json(result);
 };
 
 exports.addDaysOff = async (req, res) => {
   const { dateKey } = req.body;
   await DaysOff.findOneAndUpdate(
-    { company: req.session.companyId },
+    { company: res.locals.currentCompany._id },
     {
       $addToSet: {
         dates: { date: dateKey },
@@ -33,7 +35,7 @@ exports.removeDaysOff = async (req, res) => {
   cleanDate.setHours(0, 0, 0, 0);
 
   await DaysOff.updateOne(
-    { company: req.session.companyId },
+    { company: res.locals.currentCompany._id },
     {
       $pull: {
         dates: { date: cleanDate },
@@ -47,11 +49,11 @@ exports.removeDaysOff = async (req, res) => {
 exports.removeDayOff = async (req, res) => {
   const { dayId } = req.params;
   console.log("ID", dayId);
-  console.log(req.session.companyId);
+  console.log(res.locals.currentCompany._id);
 
   await DaysOff.updateOne(
     {
-      company: req.session.companyId,
+      company: res.locals.currentCompany._id,
     },
     {
       $pull: {
@@ -66,10 +68,11 @@ exports.removeDayOff = async (req, res) => {
 exports.deleteTimeSlot = async (req, res) => {
   try {
     const { weekdayIndex, slotId } = req.body;
-    const companyId = req.session.companyId;
+    const companyId = res.locals.currentCompany._id;
 
     console.log(weekdayIndex);
     console.log(slotId);
+    console.log(companyId);
 
     await Company.updateOne(
       {

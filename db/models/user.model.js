@@ -63,8 +63,34 @@ const userSchema = schema(
       type: String,
     },
 
+    emailPro: String,
+    phonePro: String,
+
     website: {
       type: String,
+    },
+
+    subscription: {
+      plan: {
+        type: String,
+        enum: ["basic", "pro"],
+        default: "basic",
+      },
+
+      stripeCustomerId: String,
+
+      stripeSubscriptionId: String,
+
+      status: {
+        type: String,
+        enum: ["active", "inactive", "cancelled"],
+        default: "inactive",
+      },
+    },
+
+    isPremium: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true },

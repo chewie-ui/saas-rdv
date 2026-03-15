@@ -1,6 +1,7 @@
 const router = require("express").Router();
 
 const { getCompanyIfExist } = require("../controllers/auth.controller");
+const User = require("../db/models/user.model");
 
 router.use(require("./auth"));
 router.use(require("./company"));
@@ -22,9 +23,13 @@ router.get("/:company", async (req, res) => {
     return res.status(404).render("client/404");
   }
 
+  const ID = company.owner;
+  const coach = await User.findById(ID);
+
   res.render("client/index", {
-    title: company.name,
+    title: `Coach ${coach.fullName}`,
     company,
+    coach,
   });
 });
 

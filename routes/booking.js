@@ -6,6 +6,7 @@ const {
   getDaysOff,
   getDisabledDays,
   getBookingC,
+  cancelBooking
 } = require("../controllers/booking.controller");
 router.use((req, res, next) => {
   console.log("BOOKING ROUTER HIT");
@@ -18,5 +19,6 @@ router.post("/get-days-off", getDaysOff);
 router.get("/get-disabled-days/:companyId", getDisabledDays);
 
 router.get("/get-booking/:companyId", getBookingC);
+router.get("/cancel-booking/:userId", cancelBooking)
 
 module.exports = router;

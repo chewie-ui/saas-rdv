@@ -6,6 +6,7 @@ const {
   editProfilePicture,
   updateAccountInfo,
   updateAccountSocial,
+  createCheckout,
 } = require("../../controllers/account.controller");
 
 router.patch(
@@ -16,5 +17,7 @@ router.patch(
 
 router.patch("/update-info", updateAccountInfo);
 router.patch("/update-social", updateAccountSocial);
+
+router.post("/create-checkout", createCheckout);
 
 module.exports = router;

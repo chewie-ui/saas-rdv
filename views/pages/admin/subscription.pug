@@ -1,0 +1,172 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet", href="/css/layouts/subscription.css")
+
+block content
+    .subscription
+        .subscription__top
+            .subscription__plan
+                .plan__header
+                    .plan__title
+                        h2 Basic
+                    .plan__price.flex
+                        p Free
+                .plan__body
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p Email confirmation booking
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p Customization options
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p Priority support
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p URL with name and no with ID
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p Mail reminder
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p Mail canceling process
+                    .plan__advantage.advantage__statut-disabled
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                        .plan__advantage-text
+                            p Infinite appointements
+                    if user && !user.isPremium
+                        button.btn(disabled) Current Plan
+                    else 
+                        button.btn#getFreePlan Get Plan
+            .subscription__plan
+                .plan__recommanded ⭐ Most popular
+                .plan__header
+                    .plan__title
+                        h2 Pro
+                    .plan__price.flex
+                        p 12€/mois
+                .plan__body
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p Email confirmation booking
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p Customization options
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p Priority support
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p URL with name and no with ID
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p Mail reminder
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p Mail canceling process
+                    .plan__advantage.advantage__statut-disabled
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                        .plan__advantage-text
+                            p Infinite appointements
+                    if user && user.isPremium
+                        button.btn(disabled) Current plan
+                        a(href='#') Cancel subscription
+                    else 
+                        button.btn#getProPlan Get plan
+            .subscription__plan
+                .plan__header
+                    .plan__title
+                        h2 Soon
+                    .plan__price.flex
+                        p Soon
+                .plan__body
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p Email confirmation booking
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p Customization options
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p Priority support
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p URL with name and no with ID
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p Mail reminder
+                    .plan__advantage.advantage__statut-active
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .plan__advantage-text
+                            p Mail canceling process
+                    .plan__advantage.advantage__statut-disabled
+                        .plan__advantage-icon.flex-c
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                        .plan__advantage-text
+                            p Infinite appointements
+                        
+                    button.btn(disabled) Coming soon
+        .subscription__bottom
+            .subscription__payments
+            .subscription__help
+block scripts
+    script(src="/js/layouts/subscription.js")

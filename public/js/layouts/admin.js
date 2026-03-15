@@ -22,3 +22,17 @@
 //     }
 //   });
 // });
+
+const openMenu = document.getElementById("openMenu");
+const closeSidebar = document.getElementById("closeSidebar");
+const sidebar = document.querySelector(".sidebar");
+
+if (openMenu && sidebar && closeSidebar) {
+  openMenu.onclick = function (e) {
+    sidebar.classList.add("open");
+  };
+
+  closeSidebar.onclick = function () {
+    sidebar.classList.remove("open");
+  };
+}

@@ -14,7 +14,7 @@ block content
                     input#fileInput(type="file" style="display:none" accept="image/*")
                     button.btn.secondary#uploadBtn Upload New Photo
             .account__right
-                h2 Profile Informations
+                h2 Profile Informations (Private)
                 .account__form
                     .field
                         label(for="fullname") FullName
@@ -34,6 +34,20 @@ block content
                         a(href="#").danger Delete account
         .social
             .social__container
+                .social__box(data-name="emailPro")
+                    .social__logo
+                        img(src="/images/logos/email-logo.webp" alt="Email logo")
+                    .social__title Email (professional)
+                    .social__field
+                        input.input(placeholder="Enter your link page" value=user.emailPro || "")
+                        button.btn.btn__social-save Save
+                .social__box(data-name="phonePro")
+                    .social__logo
+                        img(src="/images/logos/phone-logo.webp" alt="Phone logo")
+                    .social__title Phone (professional)
+                    .social__field
+                        input.input(placeholder="Enter your link page" value=user.phonePro || "")
+                        button.btn.btn__social-save Save
                 .social__box(data-name="instagramLink")
                     .social__logo
                         img(src="/images/logos/instagram-logo.webp" alt="Instagram logo")

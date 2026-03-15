@@ -8,17 +8,21 @@ const {
   deleteTimeSlot,
   scheduleDayOff,
   setScheduleDayOff,
+  companyInfos,
 } = require("../controllers/company.controller");
+const injectCompany = require("../middlewares/injectCompany");
 
-router.get("/company/get-days-off", getDaysOff);
-router.patch("/company/add-days-off", addDaysOff);
-router.patch("/company/remove-days-off", removeDaysOff);
+router.get("/company/get-infos/:companyId", injectCompany, companyInfos);
 
-router.delete("/company/days-off/:dayId", removeDayOff);
+router.get("/company/get-days-off", injectCompany, getDaysOff);
+router.patch("/company/add-days-off", injectCompany, addDaysOff);
+router.patch("/company/remove-days-off", injectCompany, removeDaysOff);
 
-router.delete("/company/time-slot", deleteTimeSlot);
+router.delete("/company/days-off/:dayId", injectCompany, removeDayOff);
 
-router.patch("/company/schedule-day-off", scheduleDayOff);
-router.patch("/company/set-schedule-day-off", setScheduleDayOff);
+router.delete("/company/time-slot", injectCompany, deleteTimeSlot);
+
+router.patch("/company/schedule-day-off", injectCompany, scheduleDayOff);
+router.patch("/company/set-schedule-day-off", injectCompany, setScheduleDayOff);
 
 module.exports = router;

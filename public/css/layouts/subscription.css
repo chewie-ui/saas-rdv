@@ -1,0 +1,102 @@
+.subscription .subscription__top {
+  display: flex;
+  gap: 20px;
+}
+
+.subscription .subscription__top .subscription__plan {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-white);
+  border-radius: 15px;
+  box-shadow: var(--shadow);
+  border: var(--border);
+  overflow: hidden;
+  width: calc((100% - (20px * 2)) / 3);
+  position: relative;
+}
+
+.subscription .subscription__top .subscription__plan .plan__recommanded {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  /* background-color: var(--green-primary); */
+  border: 2px solid var(--green-primary);
+  padding: 10px;
+  border-radius: 10px;
+  /* color: var(--color-white); */
+  font-weight: 500;
+}
+
+.subscription .subscription__top .subscription__plan .plan__header {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  gap: 20px;
+  background: rgba(0, 0, 0, 0.015);
+}
+
+.subscription .subscription__top .subscription__plan .plan__body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+}
+
+.subscription
+  .subscription__top
+  .subscription__plan
+  .plan__header
+  .plan__title
+  h2 {
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.subscription
+  .subscription__top
+  .subscription__plan
+  .plan__header
+  .plan__price
+  p {
+  background-color: var(--grey-soft);
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 500;
+  font-size: 20px;
+}
+
+.subscription
+  .subscription__top
+  .subscription__plan
+  .plan__body
+  .plan__advantage {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+
+.subscription
+  .subscription__top
+  .subscription__plan
+  .plan__body
+  .plan__advantage.advantage__statut-disabled {
+  color: var(--grey-primary);
+}
+
+.subscription
+  .subscription__top
+  .subscription__plan
+  .plan__body
+  .plan__advantage.advantage__statut-disabled
+  svg {
+  fill: var(--grey-primary);
+}
+
+.subscription
+  .subscription__top
+  .subscription__plan
+  .plan__body
+  .plan__advantage.advantage__statut-active
+  svg {
+  fill: var(--success);
+}

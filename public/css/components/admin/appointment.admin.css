@@ -81,7 +81,7 @@
 }
 
 .calendar .calendar__menu .calendar__sections .calendar__section {
-  width: 30%;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -100,6 +100,12 @@
   .calendar__section.calendar__section--center
   .calendar__date {
   gap: 10px;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.calendar__today-btn {
+  width: 100%;
 }
 
 .calendar
@@ -118,4 +124,52 @@
   .calendar__date
   .calendar__date-btn {
   cursor: pointer;
+}
+
+.calendar
+  .calendar__menu
+  .calendar__sections
+  .calendar__section.calendar__section--left,
+.calendar
+  .calendar__menu
+  .calendar__sections
+  .calendar__section.calendar__section--right {
+  display: none;
+}
+
+.calendar
+  .calendar__menu
+  .calendar__sections
+  .calendar__section.calend.availability-section .availability-section__body .body-weekly-hourar__section--center
+  .calendar__date
+  .calendar__date-text {
+  width: 70%;
+}
+
+@media all and (min-width: 820px) {
+}
+
+@media all and (min-width: 1280px) {
+  .calendar
+    .calendar__menu
+    .calendar__sections
+    .calendar__section.calendar__section--center
+    .calendar__date {
+    flex-direction: row;
+  }
+
+  .calendar
+    .calendar__menu
+    .calendar__sections
+    .calendar__section.calendar__section--left,
+  .calendar
+    .calendar__menu
+    .calendar__sections
+    .calendar__section.calendar__section--right {
+    display: flex;
+  }
+
+  .calendar__today-btn {
+    width: auto;
+  }
 }

@@ -8,6 +8,20 @@ block links
 
 block content
     .content-wrapper
+        if cancelBooking
+            #cancelBooking(data-id=company._id)
+                .cancel__container 
+                    .cancel__top
+                        .cancel__icon
+                            svg //- icon ici 
+                        .cancel__title
+                            h2 Your booking has been cancled with success
+                    .cancel__middle
+                        .cancel__description
+                    .cancel__bottom
+                        .cancel__action
+                            button.btn Close
+
         .informations
             .informations__container
                 .informations__top
@@ -15,24 +29,47 @@ block content
                         h2 Coach informations
                         .informations__user-wrapper
                             .user__image
-                                img.cover(alt="Profile Picture" src="/images/no-user.webp")
+                                img.cover(alt="Profile Picture" src=(coach.profilePicture || "/images/no-user.webp"))
                             .user__name
                                 .user__name-row
-                                    h3 Quentin Rennies
+                                    h3= coach.fullName || ""
                                 .user__name-row
-                                    p quentin.rennies@gmail.com
+                                    p= coach.emailPro || ""
                                 .user__name-row
-                                    p +32 477 44 39 88
+                                    p= coach.phonePro || ""
 
                 .informations__bottom
                     .informations__links
-                        h2 Links
-                        .informations__links-wrapper
-                            a(href="#" target="_blank").links__row
-                                .links__row-logo
-                                    img(alt="Instagram logo" src="/images/logos/instagram-logo.webp")
-                                .links__row-name
-                                    h3 Instagram
+                        if coach.instagramLink || coach.facebookLink || coach.whatsappLink || coach.website
+                            h2 Links
+                            if coach.instagramLink
+                                .informations__links-wrapper
+                                    a(href=coach.instagramLink target="_blank").links__row
+                                        .links__row-logo
+                                            img(alt="Instagram logo" src="/images/logos/instagram-logo.webp")
+                                        .links__row-name
+                                            h3 Instagram
+                            if coach.facebookLink
+                                .informations__links-wrapper
+                                    a(href=coach.facebookLink target="_blank").links__row
+                                        .links__row-logo
+                                            img(alt="Facebook logo" src="/images/logos/facebook-logo.webp")
+                                        .links__row-name
+                                            h3 Facebook
+                            if coach.whatsappLink
+                                .informations__links-wrapper
+                                    a(href=coach.whatsappLink target="_blank").links__row
+                                        .links__row-logo
+                                            img(alt="Whatsapp logo" src="/images/logos/whatsapp-logo.webp")
+                                        .links__row-name
+                                            h3 Whatsapp
+                            if coach.website
+                                .informations__links-wrapper
+                                    a(href=coach.website target="_blank").links__row
+                                        .links__row-logo
+                                            img(alt="Website logo" src="/images/logos/website-logo.webp")
+                                        .links__row-name
+                                            h3 Website
 
         .calendar-wrapper.container
             .calendar

@@ -10,6 +10,7 @@
   gap: 30px;
   align-items: flex-start;
   position: relative;
+  flex-direction: column-reverse;
 }
 
 .account .account__container .account__left {
@@ -20,7 +21,7 @@
   background-color: var(--color-white);
   box-shadow: var(--shadow);
   border-radius: 7px;
-  width: 30%;
+  width: 100%;
   justify-content: center;
   align-items: center;
   position: sticky;
@@ -28,7 +29,7 @@
 }
 
 .account .account__container .account__right {
-  width: 70%;
+  width: 100%;
   background-color: var(--color-white);
   box-shadow: var(--shadow);
   border-radius: 7px;
@@ -80,7 +81,7 @@
 }
 
 .social .social__container .social__box {
-  width: calc((100% - (20px * 4)) / 3);
+  width: 100%;
   background-color: var(--color-white);
   display: flex;
   justify-content: center;
@@ -105,8 +106,34 @@
   width: 100%;
   display: flex;
   gap: 10px;
+  flex-direction: column;
 }
 
 .social .social__container .social__box .social__field .input {
   width: 100%;
+}
+
+@media all and (min-width: 820px) {
+}
+
+@media all and (min-width: 1280px) {
+  .account .account__container {
+    flex-direction: row;
+  }
+
+  .account .account__container .account__right {
+    width: 70%;
+  }
+
+  .account .account__container .account__left {
+    width: 30%;
+  }
+
+  .social .social__container .social__box {
+    width: calc((100% - (20px * 4)) / 3);
+  }
+
+  .social .social__container .social__box .social__field {
+    flex-direction: row;
+  }
 }
