@@ -73,6 +73,14 @@ export default function () {
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
 
+    const isCurrentMonth =
+      currentYear === realToday.getFullYear() &&
+      currentMonth === realToday.getMonth();
+    prevMonthBtn.disabled = isCurrentMonth;
+    // Optionnel : ajoute une classe pour le style CSS
+    prevMonthBtn.style.opacity = isCurrentMonth ? "0.5" : "1";
+    prevMonthBtn.style.cursor = isCurrentMonth ? "not-allowed" : "pointer";
+
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
@@ -319,7 +327,7 @@ export default function () {
       document.body.appendChild(newPopup);
 
       newPopup.querySelector(".confirm-btn").onclick = () => {
-        onConfirm();
+        // onConfirm();
         newPopup.remove();
       };
 
@@ -353,8 +361,16 @@ export default function () {
   }
 
   prevMonthBtn.addEventListener("click", () => {
-    today.setMonth(today.getMonth() - 1);
-    renderCalendar();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    if (
+      currentYear > realToday.getFullYear() ||
+      currentMonth > realToday.getMonth()
+    ) {
+      today.setMonth(today.getMonth() - 1);
+      renderCalendar();
+    }
   });
 
   nextMonthBtn.addEventListener("click", () => {

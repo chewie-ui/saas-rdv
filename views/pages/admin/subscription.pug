@@ -111,7 +111,10 @@ block content
                             p Infinite appointements
                     if user && user.isPremium
                         button.btn(disabled) Current plan
-                        a(href='#') Cancel subscription
+                        if autoRenew
+                            .small-text.danger#cancelSubscriptionPro Cancel subscription
+                        .small-text Jours restant: 
+                            strong #{daysLeft} jours 
                     else 
                         button.btn#getProPlan Get plan
             .subscription__plan

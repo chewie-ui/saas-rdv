@@ -18,26 +18,10 @@ const userSchema = schema(
       type: String,
       required: true,
     },
-    companies: [
-      {
-        role: {
-          type: String,
-          enum: ["owner", "employee"],
-          required: true,
-        },
-        company: {
-          type: schema.Types.ObjectId,
-          required: true,
-          ref: "Company",
-        },
-        status: {
-          type: String,
-          enum: ["fired", "active"],
-          default: "active",
-        },
-      },
-    ],
-
+    company: {
+      type: schema.Types.ObjectId,
+      required: true,
+    },
     profilePicture: {
       type: String,
       default: "/images/no-user.webp",

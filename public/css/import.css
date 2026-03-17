@@ -77,6 +77,13 @@ a {
   position: relative;
 }
 
+.get__premium {
+  background-color: #64748b;
+  padding: 6px;
+  border-radius: 4px;
+  color: var(--color-white);
+}
+
 .btn.secondary {
   background-color: var(--color-white);
   outline: var(--border);
@@ -165,6 +172,10 @@ img {
   box-shadow: var(--shadow);
   outline: none;
   background: none;
+}
+
+.input[disabled] {
+  background: var(--grey-soft);
 }
 
 .empty-field {
@@ -268,6 +279,7 @@ td.actions {
 
 .more {
   color: var(--green-primary);
+  cursor: pointer;
 }
 
 .field-container {
@@ -307,6 +319,47 @@ td.actions {
 .field label {
   color: var(--grey-primary);
   font-weight: 400;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.form-group label {
+  font-weight: 500;
+}
+
+.success {
+  color: var(--success);
+  font-size: 12px;
+  opacity: 0;
+  animation: fadeInOut 7s forwards;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.small-text {
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 1;
+  }
+  99% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 @media all and (min-width: 820px) {

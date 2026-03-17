@@ -69,19 +69,33 @@ block content
         .availability-section.flex.col
             .availability-section__header
                 h3 Set your slot time per booking
-            .availability-section__body.flex
-                .time-slot__container
-                    .slot-input__container#timeslotPanel
-                        .input #{currentSlotTime || "30"}min
-                        .panel
-                            each time in timeSlot
-                                .time(data-time=time) #{time}min
+            .availability-section__body.flex.col
+                if !user.isPremium
+                    a(href="/subscription").get__premium Get premium
+                if user && user.isPremium
+                    .time-slot__container
+                        .slot-input__container#timeslotPanel
+                            .input #{currentSlotTime || "30"}min
+                            .panel
+                                each time in timeSlot
+                                    .time(data-time=time) #{time}min
+                else
+                    .time-slot__container
+                        .slot-input__container
+                            .input(disabled) #{currentSlotTime || "30"}min
+                
 
         .availability-section.flex.col
             .availability-section__header
                 h3 Set your holidays in a click
             .availability-section__body.flex.col
-                button.btn#addDaysOffBtn Add days off
+                if !user.isPremium
+                    a(href="/subscription").get__premium Get premium
+                if user && user.isPremium
+                    button.btn.btn-primary#addDaysOffBtn(type="button") Add days off
+                else
+                    button.btn.btn-secondary(disabled title="Reserved for Premium members") Add days off
+                
                 #holidaysBody.days-off__wrapper.flex.col
                     if daysOff
                         each day in daysOff.dates

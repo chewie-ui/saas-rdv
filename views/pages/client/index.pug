@@ -33,44 +33,51 @@ block content
                             .user__name
                                 .user__name-row
                                     h3= coach.fullName || ""
-                                .user__name-row
-                                    p= coach.emailPro || ""
-                                .user__name-row
-                                    p= coach.phonePro || ""
+                                if coach.isPremium
+                                    .user__name-row
+                                        p= coach.emailPro || ""
+                                    .user__name-row
+                                        p= coach.phonePro || ""
 
                 .informations__bottom
-                    .informations__links
-                        if coach.instagramLink || coach.facebookLink || coach.whatsappLink || coach.website
-                            h2 Links
-                            if coach.instagramLink
-                                .informations__links-wrapper
-                                    a(href=coach.instagramLink target="_blank").links__row
-                                        .links__row-logo
-                                            img(alt="Instagram logo" src="/images/logos/instagram-logo.webp")
-                                        .links__row-name
-                                            h3 Instagram
-                            if coach.facebookLink
-                                .informations__links-wrapper
-                                    a(href=coach.facebookLink target="_blank").links__row
-                                        .links__row-logo
-                                            img(alt="Facebook logo" src="/images/logos/facebook-logo.webp")
-                                        .links__row-name
-                                            h3 Facebook
-                            if coach.whatsappLink
-                                .informations__links-wrapper
-                                    a(href=coach.whatsappLink target="_blank").links__row
-                                        .links__row-logo
-                                            img(alt="Whatsapp logo" src="/images/logos/whatsapp-logo.webp")
-                                        .links__row-name
-                                            h3 Whatsapp
-                            if coach.website
-                                .informations__links-wrapper
-                                    a(href=coach.website target="_blank").links__row
-                                        .links__row-logo
-                                            img(alt="Website logo" src="/images/logos/website-logo.webp")
-                                        .links__row-name
-                                            h3 Website
+                    if coach.isPremium
 
+                        .informations__links
+                            if coach.instagramLink || coach.facebookLink || coach.whatsappLink || coach.website
+                                h2 Links
+                                if coach.instagramLink
+                                    .informations__links-wrapper
+                                        a(href=coach.instagramLink target="_blank").links__row
+                                            .links__row-logo
+                                                img(alt="Instagram logo" src="/images/logos/instagram-logo.webp")
+                                            .links__row-name
+                                                h3 Instagram
+                                if coach.facebookLink
+                                    .informations__links-wrapper
+                                        a(href=coach.facebookLink target="_blank").links__row
+                                            .links__row-logo
+                                                img(alt="Facebook logo" src="/images/logos/facebook-logo.webp")
+                                            .links__row-name
+                                                h3 Facebook
+                                if coach.whatsappLink
+                                    .informations__links-wrapper
+                                        a(href=coach.whatsappLink target="_blank").links__row
+                                            .links__row-logo
+                                                img(alt="Whatsapp logo" src="/images/logos/whatsapp-logo.webp")
+                                            .links__row-name
+                                                h3 Whatsapp
+                                if coach.website
+                                    .informations__links-wrapper
+                                        a(href=coach.website target="_blank").links__row
+                                            .links__row-logo
+                                                img(alt="Website logo" src="/images/logos/website-logo.webp")
+                                            .links__row-name
+                                                h3 Website
+                    else 
+                        .informations__links
+                            h2 Join us    
+                            button.btn Register
+                            button.btn.secondary Login
         .calendar-wrapper.container
             .calendar
                 .calendar-header
@@ -132,4 +139,5 @@ block content
 block scripts
 
     script(src="/js/layouts/index.js" type="module") 
+    script(src="/js/templates/confirm-popup.template.js")
     

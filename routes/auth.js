@@ -1,5 +1,9 @@
 const router = require("express").Router();
-const { createUser, logout } = require("../controllers/auth.controller");
+const {
+  createUser,
+  logout,
+  forgotPasswordVerifyCode,
+} = require("../controllers/auth.controller");
 const passport = require("passport");
 
 router.get("/register", (req, res) => {
@@ -31,5 +35,11 @@ router.post("/login", (req, res, next) => {
 });
 
 router.get("/logout", logout);
+
+router.get("/forgot-password", (req, res) => {
+  res.render("auth/forgot-password");
+});
+
+router.post("/forgot-password/verify-code", forgotPasswordVerifyCode);
 
 module.exports = router;

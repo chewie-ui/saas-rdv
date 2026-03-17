@@ -1,8 +1,12 @@
 extends ../../layouts/admin
 
+include ../../templates/change-password.pug
+include ../../templates/edit-email.pug
 
 block links
     link(rel="stylesheet", href="/css/layouts/informations.css")
+    link(rel="stylesheet", href="/css/templates/change-password.css")
+    link(rel="stylesheet", href="/css/templates/edit-email.css")
 
 block content
     .wrapper.account
@@ -21,63 +25,81 @@ block content
                         input#fullname.input(value=user.fullName name="fullName")
                     .field
                         label(for="email") Email Address
-                        input#email.input(value=user.email name="email")
+                        input#email.input(disabled value=user.email name="email")
+                        div(style="width:fit-content")
+                            .more#emailOpen Edit email
                     .field
                         label(for="phone") Phone Number 
                         input#phone.input(value=user.phone name="phone") 
                     .field
                         label(for="password") Password
                         input#password.input(placeholder="●●●●●●●●●●●" disabled)
-                        a.more(href="#") Change password
+                        .more#passwordOpen Change password
+                        .success= success
                     .account__actions
                         button#saveChanges.btn Save Changes
                         a(href="#").danger Delete account
         .social
             .social__container
                 .social__box(data-name="emailPro")
+                    if !user.isPremium
+                        a(href="/subscription").get__premium Get premium
                     .social__logo
                         img(src="/images/logos/email-logo.webp" alt="Email logo")
                     .social__title Email (professional)
                     .social__field
-                        input.input(placeholder="Enter your link page" value=user.emailPro || "")
+                        input.input(placeholder="Enter your link page" value=user.emailPro || "" disabled=(!user.isPremium))
                         button.btn.btn__social-save Save
                 .social__box(data-name="phonePro")
+                    if !user.isPremium
+                        a(href="/subscription").get__premium Get premium
                     .social__logo
                         img(src="/images/logos/phone-logo.webp" alt="Phone logo")
                     .social__title Phone (professional)
                     .social__field
-                        input.input(placeholder="Enter your link page" value=user.phonePro || "")
+                        input.input(placeholder="Enter your link page" value=user.phonePro || "" disabled=(!user.isPremium))
                         button.btn.btn__social-save Save
                 .social__box(data-name="instagramLink")
+                    if !user.isPremium
+                        a(href="/subscription").get__premium Get premium
                     .social__logo
                         img(src="/images/logos/instagram-logo.webp" alt="Instagram logo")
                     .social__title Instagram
                     .social__field
-                        input.input(placeholder="Enter your link page" value=user.instagramLink || "")
+                        input.input(placeholder="Enter your link page" value=user.instagramLink || "" disabled=(!user.isPremium))
                         button.btn.btn__social-save Save
                 .social__box(data-name="whatsappLink")
+                    if !user.isPremium
+                        a(href="/subscription").get__premium Get premium
                     .social__logo
                         img(src="/images/logos/whatsapp-logo.webp" alt="Whatsapp logo")
                     .social__title Whatsapp
                     .social__field
-                        input.input(placeholder="Enter your link page" value=user.whatsappLink || "")
+                        input.input(placeholder="Enter your link page" value=user.whatsappLink || "" disabled=(!user.isPremium))
                         button.btn.btn__social-save Save
                 .social__box(data-name="facebookLink")
+                    if !user.isPremium
+                        a(href="/subscription").get__premium Get premium
                     .social__logo
                         img(src="/images/logos/facebook-logo.webp" alt="Facebook logo")
                     .social__title Facebook
                     .social__field
-                        input.input(placeholder="Enter your link page" value=user.facebookLink || "")
+                        input.input(placeholder="Enter your link page" value=user.facebookLink || "" disabled=(!user.isPremium))
                         button.btn.btn__social-save Save
                 .social__box(data-name="website")
+                    if !user.isPremium
+                        a(href="/subscription").get__premium Get premium
                     .social__logo
                         img(src="/images/logos/website-logo.webp" alt="Website logo")
                     .social__title Website
                     .social__field
-                        input.input(placeholder="Enter your link page" value=user.website || "")
+                        input.input(placeholder="Enter your link page" value=user.website || "" disabled=(!user.isPremium))
                         button.btn.btn__social-save Save
-                    
+    +editPwd()  
+    +editEmail()      
 
 
 block scripts
     script(src='/js/layouts/informations.js')
+    script(src='/js/templates/change-password.js')
+    script(src='/js/templates/edit-email.js')

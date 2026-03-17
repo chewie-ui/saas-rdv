@@ -175,7 +175,6 @@ exports.appointment = async (req, res) => {
 const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
 
-
 exports.client = (req, res) => {
   res.render("admin/client", {
     pageName: "Clients",
@@ -273,10 +272,6 @@ exports.editAvailabilty = async (req, res) => {
   res.json({ success: true });
 };
 
-exports.setCompany = (req, res) => {
-  res.render("admin/set-company");
-};
-
 exports.joinCompany = (req, res) => {
   res.render("admin/join-company");
 };
@@ -343,5 +338,6 @@ exports.getWeekData = async (req, res) => {
 exports.informationsPage = (req, res) => {
   res.render("admin/informations", {
     pageName: "Informations",
+    success: req.query.success,
   });
 };
