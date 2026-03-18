@@ -344,6 +344,45 @@ button:disabled {
   pointer-events: none;
 }
 
+.none {
+  display: none;
+}
+
+.input-error {
+  border: 1px solid var(--danger);
+  background-color: rgb(239 68 68 / 7%);
+}
+
+.input-error-repeat {
+  animation: forwards shaking 0.3s;
+}
+
+@keyframes shaking {
+  from {
+    transform: translateX(-2px);
+  }
+
+  20% {
+    transform: translateX(2px);
+  }
+
+  40% {
+    transform: translateX(-2px);
+  }
+
+  60% {
+    transform: translateX(2px);
+  }
+
+  80% {
+    transform: translateX(-2px);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
 .small-text {
   font-size: 12px;
   cursor: pointer;

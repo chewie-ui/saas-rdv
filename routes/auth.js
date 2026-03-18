@@ -3,6 +3,8 @@ const {
   createUser,
   logout,
   forgotPasswordVerifyCode,
+  checkCodePwd,
+  newPwd,
 } = require("../controllers/auth.controller");
 const passport = require("passport");
 
@@ -41,5 +43,6 @@ router.get("/forgot-password", (req, res) => {
 });
 
 router.post("/forgot-password/verify-code", forgotPasswordVerifyCode);
-
+router.post("/forgot-password/check-code", checkCodePwd);
+router.patch("/forgot-password/new-password", newPwd);
 module.exports = router;

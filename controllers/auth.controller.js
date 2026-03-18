@@ -7,15 +7,35 @@ const { sendEmail } = require("../utils/mailer");
 exports.createUser = async (req, res) => {
   const { fullname, email, password, conformPassword } = req.body;
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.render("auth/register", {
+      error: "Please enter a valid email address.",
+    });
+  }
+
+  // 2. Vérifier si l'email est déjà pris en base de données
+  const checkEmail = await User.findOne({ email }).lean();
+  if (checkEmail) {
+    return res.render("auth/register", {
+      error: "This email is already in use.",
+    });
+  }
+
   if (password.trim() !== conformPassword.trim()) {
     return res.render("auth/register", {
       error: "Passwords do not match",
     });
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  if (password.trim().length < 8) {
+    return res.render("auth/register", {
+      error: "Password must be at least 8 characters long.",
+    });
+  }
 
   try {
+    const hashedPassword = await bcrypt.hash(password, 10);
     const companyId = new mongoose.Types.ObjectId();
 
     const user = await User.create({
@@ -44,6 +64,8 @@ exports.createUser = async (req, res) => {
       return res.redirect("/appointment");
     });
   } catch (err) {
+    console.log(err);
+
     if (err.code === 11000) {
       return res.render("auth/register", {
         error: "Email already in use",
@@ -75,6 +97,8 @@ exports.forgotPasswordVerifyCode = async (req, res) => {
   try {
     const { value } = req.body;
     const code = Math.floor(100000 + Math.random() * 900000);
+    console.log(code);
+
     req.session.forgotPwdCode = code;
     await sendEmail(value, "SUBJECT", String(code));
     return res.json({ success: true });
@@ -82,4 +106,36 @@ exports.forgotPasswordVerifyCode = async (req, res) => {
     console.error(err);
     return res.json({ err });
   }
+};
+
+exports.checkCodePwd = (req, res) => {
+  const codeA = req.session.forgotPwdCode;
+  const { code } = req.body;
+
+  if (Number(codeA) === Number(code)) {
+    return res.json({ success: true });
+  }
+
+  return res.json({ success: false, error: "code doesn' match" });
+};
+
+exports.newPwd = async (req, res) => {
+  const { email, password } = req.body;
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  const user = await User.findOneAndUpdate(
+    { email },
+    { password: hashedPassword },
+    { new: true }, // renvoie le user mis a jour
+  );
+
+  console.log(user);
+
+  if (!user) {
+    return res.status(404).json({ success: false, message: "User not found" });
+  }
+
+  res.json({ success: true });
 };

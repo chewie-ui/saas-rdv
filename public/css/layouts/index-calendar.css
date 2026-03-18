@@ -59,6 +59,7 @@
   display: flex;
   gap: 15px;
   align-items: stretch;
+  overflow: hidden;
 }
 
 .informations
@@ -70,6 +71,16 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-start;
+  width: calc(100% - 70px - 15px);
+}
+
+.informations
+  .informations__container
+  .informations__top
+  .informations__user
+  .user__name
+  .user__name-row {
+  width: 100%;
 }
 
 .informations
@@ -87,6 +98,8 @@
   h3 {
   font-weight: 500;
   font-size: 16px;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .informations
@@ -103,6 +116,7 @@
   .informations__top
   .informations__user
   .user__image {
+  min-width: 70px;
   width: 70px;
   height: 70px;
   border-radius: 50%;

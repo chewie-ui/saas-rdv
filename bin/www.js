@@ -1,5 +1,6 @@
 const http = require("http");
 const https = require("https");
+const PORT = process.env.PORT || 3000;
 
 const app = require("../app.js");
 const server = http.createServer(app);
@@ -9,6 +10,6 @@ const io = new Server(server);
 
 io.on("connection", (socket) => {});
 
-server.listen(3000, () => {
+server.listen(PORT, () => {
   console.log("server on");
 });

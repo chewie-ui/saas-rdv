@@ -295,7 +295,13 @@ export default function () {
       const email = document.getElementById("bookingEmail");
       const phone = document.getElementById("bookingPhone");
       const message = document.getElementById("bookingMsg");
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+      if (!emailPattern.test(email)) {
+        alert("Veuillez entrer une adresse email valide.");
+        bookingEmail.style.border = "1px solid red"; // Petit feedback visuel
+        return; // On "dégage" : le reste du code n'est pas exécuté
+      }
       const fields = [name, surname, email, phone, message];
       let isFormValid = true;
 
