@@ -1,5 +1,5 @@
-
 module.exports = {
-    dbUri: "mongodb+srv://chewieondreams_db_user:e7L0uq0eP6XMnYNs@local.i3na84y.mongodb.net/?appName=local",
-    port: 3000
-}
+  dbUri:
+    "mongodb+srv://quentinrennies_db_user:DYnhkn6QfJ5Q2kU7@cluster0.1rxmxow.mongodb.net/?appName=Cluster0",
+  port: 3000,
+};
