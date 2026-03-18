@@ -9,6 +9,7 @@ const { Server } = require("socket.io");
 const io = new Server(server);
 
 io.on("connection", (socket) => {});
+console.log(PORT);
 
 server.listen(PORT, () => {
   console.log("server on");
