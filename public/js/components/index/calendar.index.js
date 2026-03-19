@@ -297,7 +297,7 @@ export default function () {
       const message = document.getElementById("bookingMsg");
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-      if (!emailPattern.test(email).value) {
+      if (!emailPattern.test(email.value)) {
         alert("Veuillez entrer une adresse email valide.");
         bookingEmail.style.border = "1px solid red"; // Petit feedback visuel
         return; // On "dégage" : le reste du code n'est pas exécuté
@@ -358,7 +358,7 @@ export default function () {
       if (response.success) {
         // envoie email + popup
       } else {
-        alert("you ve got an error, please retry");
+        alert("mail down for the moment...");
       }
 
       scheduleWrapper.classList.remove("show");
