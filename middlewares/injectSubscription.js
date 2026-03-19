@@ -19,12 +19,12 @@ module.exports = async (req, res, next) => {
       res.locals.subscription = subscription;
       res.locals.isPro = subscription.status === "active";
       res.locals.daysLeft = diffDays > 0 ? diffDays : 0;
+      res.locals.autoRenew = subscription.autoRenew;
     } else {
       res.locals.isPro = false;
       res.locals.subscription = null;
+      res.locals.autoRenew = false;
     }
-
-    res.locals.autoRenew = subscription.autoRenew;
 
     next();
   } catch (error) {
