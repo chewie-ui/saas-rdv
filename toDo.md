@@ -24,3 +24,7 @@ TO DO
 - forgot pwd if email not exist, dont go next AND psasword 8 minimum
 - bloquer les trucs si pas abonnement pro
 - bug rdv saffichent partout cote client ?
+- si user prime mais 0 info cache carre blanc
+- clic copier infos coach
+- voir bug si spam clique jour...
+- mail bug prise de rdv

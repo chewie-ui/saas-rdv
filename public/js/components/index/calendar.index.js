@@ -297,7 +297,7 @@ export default function () {
       const message = document.getElementById("bookingMsg");
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-      if (!emailPattern.test(email)) {
+      if (!emailPattern.test(email).value) {
         alert("Veuillez entrer une adresse email valide.");
         bookingEmail.style.border = "1px solid red"; // Petit feedback visuel
         return; // On "dégage" : le reste du code n'est pas exécuté
