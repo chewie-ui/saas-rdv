@@ -1,6 +1,6 @@
 .header
     .header-container.container
-        .company
+        a.company(href="/")
             .logo
                 img(src="/images/icon.webp")
             .name Gymio
@@ -8,8 +8,8 @@
             .actions
                 if user 
                     //- a(href="/logout").btn.secondary Logout
-                    a(href="/panel").btn.secondary Dashboard
-                    a(href="/logout").btn.primary Logout
+                    a(href="/panel").btn.secondary= t.header.dashboard
+                    a(href="/logout").btn.primary= t.header.logout
                 else
-                    a(href="/login").btn.secondary Login
-                    a(href="/register").btn.primary Register
+                    a(href="/login").btn.secondary= t.header.login
+                    a(href="/register").btn.primary= t.header.register

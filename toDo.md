@@ -4,14 +4,17 @@ CURRENTLY
 <!-- - popup prise de rdv email oblige valide sinon refuser -->
 <!-- - Publier v1 en ligne -->
 
-- landing page
+<!-- - landing page -->
+
+- footer
+- ajouter btn pour langue et systeme
+
+TO DO
+
 - Langues et texte
 - points plans a faire
 - responsive ALL
 - VERIFICATION BUG ALL
-
-TO DO
-
 - set company redirection bug si regsiter ou pas company
 - nom valide (pas le meme)
 - changer mdp rediriger forgot pwd
