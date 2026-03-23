@@ -2,16 +2,19 @@ CURRENTLY
 
 <!-- - A la creation verifier si email est reel -->
 <!-- - popup prise de rdv email oblige valide sinon refuser -->
+<!-- - Publier v1 en ligne -->
 
+- landing page
+- Langues et texte
+- points plans a faire
+- responsive ALL
+- VERIFICATION BUG ALL
 
 TO DO
 
-- Langues et texte
-- Publier v1 en ligne
 - set company redirection bug si regsiter ou pas company
 - nom valide (pas le meme)
 - changer mdp rediriger forgot pwd
-- landing page
 - page moyen de paiement en dessous des abonnemetns
 - emailing rappel
 - faire les templates emails
@@ -28,3 +31,5 @@ TO DO
 - clic copier infos coach
 - voir bug si spam clique jour...
 - mail bug prise de rdv
+- lien avec nom pour les premiums
+- logo gymio

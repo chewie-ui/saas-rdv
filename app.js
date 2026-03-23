@@ -90,6 +90,20 @@ app.use((req, res, next) => {
   next();
 });
 
+const fs = require("fs");
+
+app.use((req, res, next) => {
+  const lang = req.query.lang || "fr"; // ?lang=en
+
+  const filePath = path.join(__dirname, `./locales/${lang}.json`);
+  const translations = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+
+  res.locals.t = translations;
+  res.locals.lang = lang;
+
+  next();
+});
+
 require("./config/passport");
 app.use((req, res, next) => {
   console.log("REQUEST:", req.method, req.url);
