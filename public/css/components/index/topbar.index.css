@@ -48,3 +48,47 @@
   display: flex;
   align-items: center;
 }
+
+.header .header-container .menu .actions .lang__selector img {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+}
+
+.header .header-container .menu .actions .lang__selector {
+  position: relative;
+  border: var(--border);
+  border-radius: 6px;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.header .header-container .menu .actions .lang__selector .lang__main {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.header .header-container .menu .actions .lang__selector .lang__panel {
+  opacity: 0;
+  visibility: hidden;
+  position: absolute;
+  top: 103%;
+  left: 0;
+  border: var(--border);
+  border-radius: 6px;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  transition: 0.3s;
+}
+
+.header .header-container .menu .actions .lang__selector .lang__panel div {
+  padding: 5px;
+}
+
+.header .header-container .menu .actions .lang__selector .lang__panel.open {
+  opacity: 1;
+  visibility: visible;
+}

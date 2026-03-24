@@ -5,7 +5,7 @@ CURRENTLY
 <!-- - Publier v1 en ligne -->
 <!-- - landing page -->
 
-- FINIR FOOTER
+<!-- - FINIR FOOTER -->
 
 - ajouter btn pour langue et systeme
 

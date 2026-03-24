@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const passport = require("passport");
-
+const cookieParser = require("cookie-parser");
 require("./db");
 
 const routes = require("./routes");
@@ -13,6 +13,8 @@ app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views", "pages"));
 
 app.use(express.static(path.join(__dirname, "public")));
+
+app.use(cookieParser());
 
 const User = require("./db/models/user.model");
 const Subscription = require("./db/models/subscription.model");
@@ -93,7 +95,7 @@ app.use((req, res, next) => {
 const fs = require("fs");
 
 app.use((req, res, next) => {
-  const lang = req.query.lang || "fr"; // ?lang=en
+  const lang = req.cookies.user_lang || "fr";
 
   const filePath = path.join(__dirname, `./locales/${lang}.json`);
   const translations = JSON.parse(fs.readFileSync(filePath, "utf-8"));

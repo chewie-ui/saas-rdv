@@ -13,3 +13,16 @@
                 else
                     a(href="/login").btn.secondary= t.header.login
                     a(href="/register").btn.primary= t.header.register
+
+                .lang__selector.flex-c
+                    .lang__main
+                        img(src=`/images/${lang === "en" ? 'en.jpg' : 'fr.webp'}`)
+                    .lang__panel
+                        div(onclick="changeLanguage('fr')")
+                            img(src="/images/fr.webp")    
+                        div(onclick="changeLanguage('en')")
+                            img(src="/images/en.jpg")                    
+
+                    //- Faire un beau menu pour les langues
+                    //- Enregistrer les langues en cookie et bdd
+                    //- https://www.youtube.com/watch?v=poNC8zTaT1I
