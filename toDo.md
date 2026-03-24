@@ -3,10 +3,10 @@ CURRENTLY
 <!-- - A la creation verifier si email est reel -->
 <!-- - popup prise de rdv email oblige valide sinon refuser -->
 <!-- - Publier v1 en ligne -->
-
 <!-- - landing page -->
 
-- footer
+- FINIR FOOTER
+
 - ajouter btn pour langue et systeme
 
 TO DO
