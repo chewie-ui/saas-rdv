@@ -15,18 +15,21 @@ TO DO
 - bug rdv saffichent partout cote client ?
 - clic copier infos coach
 - mail avec possibilite dannule et fonctionnel voir comment
-
+- mail si rdv annuler
 - lien avec nom pour les premiums
 - faire un cote admin et un cote espace client, client peut voir ces rdvs etc et admin peut creer calendrier avec horraire etc
+
+- mieux faire dev et prod et .env
 
 - faire les templates emails
 - VERIFICATION BUG ALL
 - verifier tout le site et fonctionnalite puis chercher client
 - option payer a lavance en ligne (later)
 
-Ameliorations: 
+Ameliorations:
 
 - Prise h du rdv design
 
-Bug : 
+Bug :
+
 - Saturday no schedule

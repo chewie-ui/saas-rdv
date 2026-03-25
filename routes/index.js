@@ -18,13 +18,18 @@ router.get("/", (req, res) => {
 
 router.get("/:company", async (req, res) => {
   const company = await getCompanyIfExist(req.params.company);
+  console.log(req.params.company);
 
   if (!company) {
     return res.status(404).render("client/404");
   }
 
   const ID = company.owner;
+  console.log(ID);
+
   const coach = await User.findById(ID);
+
+  console.log(coach);
 
   res.render("client/index", {
     title: `Coach ${coach.fullName}`,
