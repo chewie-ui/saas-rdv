@@ -10,7 +10,6 @@ if (passwordClose) {
 
 if (passwordOpen) {
   passwordOpen.onclick = function () {
-    password__editor.classList.add("open");
+    location.href = "/forgot-password";
   };
 }
-

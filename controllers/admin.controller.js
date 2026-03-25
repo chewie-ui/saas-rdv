@@ -95,7 +95,7 @@ function generateTimeSlots(startHour, endHour, slotTime) {
 exports.appointment = async (req, res) => {
   const currentCompany = res.locals.currentCompany;
   if (!currentCompany) {
-    return res.redirect("/set-company");
+    return res.redirect("/register");
   }
   const apps = await GetAllAppointments(currentCompany);
   const rowTime = await Company.findById(currentCompany)
@@ -205,7 +205,7 @@ async function getDaysOff(companyId) {
 exports.availability = async (req, res) => {
   const currentCompany = res.locals.currentCompany;
   if (!currentCompany) {
-    return res.redirect("/set-company");
+    return res.redirect("/register");
   }
   res.render("admin/availability", {
     daysOff: await getDaysOff(currentCompany),
@@ -321,7 +321,7 @@ exports.cancelBooking = async (req, res) => {
 exports.getWeekData = async (req, res) => {
   const currentCompany = res.locals.currentCompany;
   if (!currentCompany) {
-    return res.redirect("/set-company");
+    return res.redirect("/register");
   }
   const referenceDate = new Date(req.query.date);
 

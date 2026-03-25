@@ -78,7 +78,7 @@ export default function () {
       currentMonth === realToday.getMonth();
     prevMonthBtn.disabled = isCurrentMonth;
     // Optionnel : ajoute une classe pour le style CSS
-    prevMonthBtn.style.opacity = isCurrentMonth ? "0.5" : "1";
+    // prevMonthBtn.style.opacity = isCurrentMonth ? "0.5" : "1";
     prevMonthBtn.style.cursor = isCurrentMonth ? "not-allowed" : "pointer";
 
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
@@ -367,8 +367,16 @@ export default function () {
   }
 
   prevMonthBtn.addEventListener("click", () => {
+    prevMonthBtn.style.pointerEvents = "none"; // Empêche le clic
+    prevMonthBtn.style.opacity = "0.5";
+
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
+
+    setTimeout(() => {
+      prevMonthBtn.style.pointerEvents = "all";
+      prevMonthBtn.style.opacity = "1";
+    }, 500);
 
     if (
       currentYear > realToday.getFullYear() ||
@@ -380,8 +388,14 @@ export default function () {
   });
 
   nextMonthBtn.addEventListener("click", () => {
+    nextMonthBtn.style.pointerEvents = "none"; // Empêche le clic
+    nextMonthBtn.style.opacity = "0.5";
     today.setMonth(today.getMonth() + 1);
     renderCalendar();
+    setTimeout(() => {
+      nextMonthBtn.style.pointerEvents = "all";
+      nextMonthBtn.style.opacity = "1";
+    }, 500);
   });
 
   renderCalendar();

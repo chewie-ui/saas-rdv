@@ -17,8 +17,8 @@ module.exports = async (req, res, next) => {
     // 3. Si l'utilisateur est un "Pro" mais n'a pas encore de profil Company
     if (!currentCompany && req.user.role === "admin") {
       // On évite de rediriger si on est déjà sur la page de création
-      if (req.path === "/set-company") return next();
-      return res.redirect("/set-company");
+      if (req.path === "/register") return next();
+      return res.redirect("/register");
     }
 
     // 4. On injecte dans res.locals

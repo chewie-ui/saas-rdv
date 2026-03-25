@@ -1,38 +1,32 @@
-CURRENTLY
-
-<!-- - A la creation verifier si email est reel -->
-<!-- - popup prise de rdv email oblige valide sinon refuser -->
-<!-- - Publier v1 en ligne -->
-<!-- - landing page -->
-
-<!-- - FINIR FOOTER -->
-
-- ajouter btn pour langue et systeme
-
 TO DO
 
-- Langues et texte
-- points plans a faire
+- Mettre annuler et gerer les rdvs pour pro
+
+- si user prime mais 0 info cache carre blanc
+- Langues et texte PANEL
 - responsive ALL
-- VERIFICATION BUG ALL
-- set company redirection bug si regsiter ou pas company
 - nom valide (pas le meme)
-- changer mdp rediriger forgot pwd
 - page moyen de paiement en dessous des abonnemetns
 - emailing rappel
-- faire les templates emails
-- faire un cote admin et un cote espace client, client peut voir ces rdvs etc et admin peut creer calendrier avec horraire etc
-- option payer a lavance en ligne (later)
 - sur book.pug ajouter les notes, admin peut ecrire une note sur un client
 - faire historique des rdvs, cote admin (tout les cleitns) et cote client (juste lui)
 - voir comment rendre responsive le calendrier
-- verifier tout le site et fonctionnalite puis chercher client
 - forgot pwd if email not exist, dont go next AND psasword 8 minimum
-- bloquer les trucs si pas abonnement pro
 - bug rdv saffichent partout cote client ?
-- si user prime mais 0 info cache carre blanc
 - clic copier infos coach
-- voir bug si spam clique jour...
-- mail bug prise de rdv
+- mail avec possibilite dannule et fonctionnel voir comment
+
 - lien avec nom pour les premiums
-- logo gymio
+- faire un cote admin et un cote espace client, client peut voir ces rdvs etc et admin peut creer calendrier avec horraire etc
+
+- faire les templates emails
+- VERIFICATION BUG ALL
+- verifier tout le site et fonctionnalite puis chercher client
+- option payer a lavance en ligne (later)
+
+Ameliorations: 
+
+- Prise h du rdv design
+
+Bug : 
+- Saturday no schedule
