@@ -56,6 +56,7 @@ exports.createBooking = async (req, res) => {
         cancelToken: newBooking.cancelToken,
       },
     );
+    console.log(process.env.MAIL_PASS);
 
     await sendEmail(email, "Appointement Confirmation", htmlTemplate);
 

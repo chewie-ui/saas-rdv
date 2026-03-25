@@ -1,32 +1,38 @@
-const nodemailer = require("nodemailer");
+// const nodemailer = require("nodemailer");
 
-const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_HOST,
-  port: process.env.MAIL_PORT,
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
-});
+// const transporter = nodemailer.createTransport({
+//   host: process.env.MAIL_HOST,
+//   port: process.env.MAIL_PORT,
+//   auth: {
+//     user: process.env.MAIL_USER,
+//     pass: process.env.MAIL_PASS,
+//   },
+// });
 
-exports.sendEmail = async (to, subject, htmlContent) => {
-  console.log(process.env.MAIL_HOST);
-  console.log(process.env.MAIL_PORT);
-  console.log(process.env.MAIL_USER);
-  console.log(process.env.MAIL_PASS);
+const SibApiV3Sdk = require("sib-api-v3-sdk");
 
+const client = SibApiV3Sdk.ApiClient.instance;
+const apiKey = client.authentications["api-key"];
+apiKey.apiKey = process.env.MAIL_PASS;
+
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+
+const sendEmail = async (to, subject, html) => {
   try {
-    const info = await transporter.sendMail({
-      from: '"Mon app" <noreply@monsite.com>',
-      to,
+    await apiInstance.sendTransacEmail({
+      sender: {
+        email: "noreply@gymio.be",
+        name: "Gymio",
+      },
+      to: [{ email: to }],
       subject,
-      html: htmlContent,
+      htmlContent: html,
     });
-    console.log(info);
 
-    return info;
-  } catch (error) {
-    console.error(error);
-    throw error;
+    console.log("Email envoyé ✅");
+  } catch (err) {
+    console.error("Erreur email ❌", err);
   }
 };
+
+module.exports = { sendEmail };
