@@ -40,8 +40,6 @@ exports.updateAccountInfo = async (req, res) => {
       return res.json({ same: true });
     }
 
-    console.log({ user: req.user._id, fullName, email, phone });
-
     await User.findByIdAndUpdate(req.user._id, {
       fullName,
       email,
@@ -87,8 +85,6 @@ exports.createCheckout = async (req, res) => {
 };
 
 exports.updatePassword = async (req, res) => {
-  console.log(res.locals.currentCompany);
-
   try {
     const userId = req.user._id;
     const { oldPassword, newPassword } = req.body;

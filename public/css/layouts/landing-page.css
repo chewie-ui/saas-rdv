@@ -43,7 +43,7 @@
 }
 
 .landing-page .landing-page__container h1 {
-  font-size: 50px;
+  font-size: 34px;
   font-weight: 500;
   color: var(--color-white);
 }
@@ -51,13 +51,17 @@
 .landing-page .landing-page__container .landing-page__description p {
   font-weight: 400;
   color: var(--color-white);
-  font-size: 16px;
-  width: 65%;
-  text-align: center;
+  width: 98%;
+  line-height: 26px;
+  font-size: 15px;
+  text-align: left;
 }
 
 .landing-page .landing-page__container .landing-page__actions {
   gap: 10px;
+  width: 100%;
+  justify-content: flex-start;
+  padding-left: 10px;
 }
 
 .features .features__container {
@@ -67,12 +71,12 @@
 }
 
 .features .features__container .features__box {
-  width: calc((100% - (30px * 2)) / 3);
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 17px;
   background-color: #f6f6f7;
-  padding: 40px 50px;
+  padding: 30px 40px;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: var(--shadow);
@@ -93,7 +97,7 @@
 }
 
 .features .features__container .features__box .box__title h2 {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   line-height: 24px;
 }
@@ -132,7 +136,8 @@
 }
 
 .promotion .promotion__container .promotion__title h2 {
-  font-size: 34px;
+  font-size: 28px;
+  text-align: center;
   font-weight: 500;
 }
 
@@ -163,9 +168,11 @@
 .functionalities__row {
   display: flex;
   align-items: center;
-  padding: 50px;
-  border-radius: 55px;
+  flex-direction: column;
+  padding: 30px;
+  border-radius: 25px;
   background: var(--grey-bg);
+  gap: 50px;
 }
 
 .functionalities__row.second {
@@ -174,7 +181,7 @@
 }
 
 .functionalities__row .row__left {
-  width: 50%;
+  width: 100%;
   display: flex;
   gap: 50px;
   flex-direction: column;
@@ -182,7 +189,7 @@
 
 .functionalities__row .row__right {
   width: 50%;
-  display: flex;
+  display: none;
   justify-content: center;
 }
 
@@ -197,13 +204,13 @@
 }
 
 .functionalities__row .row__left .row__body .row__title h2 {
-  font-size: 38px;
+  font-size: 28px;
   font-weight: 500;
 }
 
 .functionalities__row .row__left .row__body .row__description p {
   color: var(--grey-primary);
-  font-size: 16px;
+  font-size: 14px;
   line-height: 26px;
 }
 
@@ -235,6 +242,7 @@
 .functionalities__row .row__left .row__actions {
   display: flex;
   gap: 10px;
+  justify-content: center;
 }
 
 .faq .faq__container {
@@ -253,7 +261,7 @@
 }
 
 .faq .faq__container .faq__title h2 {
-  font-size: 38px;
+  font-size: 28px;
   font-weight: 500;
 }
 
@@ -266,7 +274,7 @@
 .faq .faq__container .faq__body {
   display: flex;
   flex-direction: column;
-  width: 50%;
+  width: 100%;
 }
 
 .faq .faq__container .faq__body .faq__question {
@@ -291,7 +299,7 @@
   .faq__question
   .faq__answer-container
   .faq__answer {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 500;
 }
 
@@ -334,4 +342,79 @@
   opacity: 1;
   visibility: visible;
   padding-bottom: 15px;
+}
+
+@media all and (min-width: 820px) {
+  .functionalities__row .row__right {
+    display: flex;
+  }
+}
+
+@media all and (min-width: 1280px) {
+  .functionalities__row .row__left .row__body .row__title h2 {
+    font-size: 38px;
+  }
+
+  .landing-page .landing-page__container h1 {
+    font-size: 50px;
+  }
+
+  .landing-page .landing-page__container .landing-page__description p {
+    width: 65%;
+    text-align: center;
+    font-size: 16px;
+  }
+
+  .landing-page .landing-page__container .landing-page__actions {
+    width: auto;
+    padding: auto;
+  }
+
+  .features .features__container .features__box {
+    padding: 40px 50px;
+    width: calc((100% - (30px * 2)) / 3);
+  }
+
+  .features .features__container .features__box .box__title h2 {
+    font-size: 20px;
+  }
+
+  .promotion .promotion__container .promotion__title h2 {
+    font-size: 36px;
+  }
+
+  .functionalities__row {
+    flex-direction: row;
+    padding: 50px;
+    border-radius: 55px;
+  }
+
+  .functionalities__row .row__left {
+    width: 50%;
+  }
+
+  .functionalities__row .row__left .row__body .row__description p {
+    font-size: 16px;
+  }
+
+  .functionalities__row .row__left .row__actions {
+    justify-content: flex-start;
+  }
+
+  .faq .faq__container .faq__title h2 {
+    font-size: 38px;
+  }
+
+  .faq .faq__container .faq__body {
+    width: 100%;
+  }
+
+  .faq
+    .faq__container
+    .faq__body
+    .faq__question
+    .faq__answer-container
+    .faq__answer {
+    font-size: 20px;
+  }
 }

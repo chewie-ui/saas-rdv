@@ -242,6 +242,8 @@ export default function () {
           }),
         });
         const slotsToAdd = await slots.json();
+        console.log(slotsToAdd);
+
         scheduleWrapper.querySelector(".schedule-rows").innerHTML = "";
 
         slotsToAdd.slots.forEach((slot) => {

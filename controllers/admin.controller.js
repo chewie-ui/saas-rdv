@@ -183,7 +183,6 @@ exports.client = (req, res) => {
 
 async function getSlotTime(companyId) {
   const res = await Company.findById(companyId).select("slotTime").lean();
-  console.log(res.slotTime);
 
   return res?.slotTime;
 }
@@ -232,7 +231,6 @@ function generateHours(step = 60) {
 
 exports.toggleDay = async (req, res) => {
   const { weekdayIndex, companyId, dayOff } = req.body;
-  console.log(dayOff);
 
   await Company.updateOne(
     {

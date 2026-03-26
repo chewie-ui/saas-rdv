@@ -1,10 +1,12 @@
 TO DO
 
-- Mettre annuler et gerer les rdvs pour pro
-
-- si user prime mais 0 info cache carre blanc
-- Langues et texte PANEL
+- Settings language
 - responsive ALL
+- Langues et texte PANEL
+
+
+- Mettre annuler et gerer les rdvs pour pro
+- si user prime mais 0 info cache carre blanc
 - nom valide (pas le meme)
 - page moyen de paiement en dessous des abonnemetns
 - emailing rappel

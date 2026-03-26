@@ -56,7 +56,6 @@ exports.createBooking = async (req, res) => {
         cancelToken: newBooking.cancelToken,
       },
     );
-    console.log(process.env.MAIL_PASS);
 
     await sendEmail(email, "Appointement Confirmation", htmlTemplate);
 
@@ -205,6 +204,8 @@ exports.getSchedule = async (req, res) => {
 
   res.json({ slots: allSlots });
 };
+
+// - Saturday no schedule
 
 exports.getDaysOff = async (req, res) => {
   const { COMPANY_ID } = req.body;
