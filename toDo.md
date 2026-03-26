@@ -1,37 +1,51 @@
 TO DO
 
-- Settings language
-- responsive ALL
-- Langues et texte PANEL
+🐛 Bugs urgents
 
-
-- Mettre annuler et gerer les rdvs pour pro
+- bug rdv saffichent partout cote client ✅ OK
+- Saturday no schedule ✅ OK
+- forgot pwd if email not exist, dont go next AND password 8 minimum ✅ OK
+- nom valide (pas le meme) ✅ OK
 - si user prime mais 0 info cache carre blanc
-- nom valide (pas le meme)
-- page moyen de paiement en dessous des abonnemetns
-- emailing rappel
-- sur book.pug ajouter les notes, admin peut ecrire une note sur un client
-- faire historique des rdvs, cote admin (tout les cleitns) et cote client (juste lui)
-- voir comment rendre responsive le calendrier
-- forgot pwd if email not exist, dont go next AND psasword 8 minimum
-- bug rdv saffichent partout cote client ?
-- clic copier infos coach
-- mail avec possibilite dannule et fonctionnel voir comment
-- mail si rdv annuler
+
+🔐 Auth / Compte
+
 - lien avec nom pour les premiums
-- faire un cote admin et un cote espace client, client peut voir ces rdvs etc et admin peut creer calendrier avec horraire etc
 
-- mieux faire dev et prod et .env
+📅 Calendrier / RDV
 
-- faire les templates emails
-- VERIFICATION BUG ALL
-- verifier tout le site et fonctionnalite puis chercher client
-- option payer a lavance en ligne (later)
-
-Ameliorations:
-
+- voir comment rendre responsive le calendrier
+- Mettre annuler et gerer les rdvs pour pro
+- faire historique des rdvs, cote admin (tout les clients) et cote client (juste lui)
 - Prise h du rdv design
 
-Bug :
+📧 Emailing
 
-- Saturday no schedule
+- faire les templates emails
+- emailing rappel
+- mail avec possibilite dannule et fonctionnel voir comment
+- mail si rdv annuler
+
+⚙️ Settings / UI
+
+- SSave btn informations a faire
+- Settings language
+- Langues et texte PANEL
+- page moyen de paiement en dessous des abonnements
+- clic copier infos coach
+- sur book.pug ajouter les notes, admin peut ecrire une note sur un client
+- responsive ALL
+
+🏗️ Technique / Infra
+
+- mieux faire dev et prod et .env
+- faire un cote admin et un cote espace client, client peut voir ces rdvs etc et admin peut creer calendrier avec horraire etc
+
+✅ Validation finale
+
+- VERIFICATION BUG ALL
+- verifier tout le site et fonctionnalite puis chercher client
+
+🕐 Later
+
+- option payer a lavance en ligne

@@ -69,9 +69,10 @@ exports.createBooking = async (req, res) => {
 };
 
 exports.getBooking = async (req, res) => {
-  const { date } = req.query;
+  const { date, companyId } = req.query;
 
   const bookings = await Booking.find({
+    company: companyId,
     date: new Date(date),
   }).select("startTime -_id");
 
@@ -148,7 +149,7 @@ exports.renderAppointments = async (req, res, next) => {
 
 exports.getSchedule = async (req, res) => {
   const { index, COMPANY_ID, date } = req.body;
-
+  const jsWeekdayIndex = (parseInt(index) + 1) % 7;
   // 1. Récupérer la config de base (pour le slotTime et les horaires par défaut)
   const company = await Company.findById(COMPANY_ID)
     .select("schedule slotTime")
@@ -160,7 +161,7 @@ exports.getSchedule = async (req, res) => {
   searchDate.setHours(0, 0, 0, 0);
 
   const exceptionsDoc = await DaysOff.findOne({ company: COMPANY_ID });
-  let target = company.schedule[index]; // Par défaut
+  let target = company.schedule.find((d) => d.weekdayIndex === jsWeekdayIndex);
 
   if (exceptionsDoc && exceptionsDoc.dates) {
     const specificDate = exceptionsDoc.dates.find((d) => {

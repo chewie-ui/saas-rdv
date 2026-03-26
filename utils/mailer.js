@@ -29,8 +29,9 @@ const sendEmail = async (to, subject, html) => {
       htmlContent: html,
     });
 
-    console.log("Email envoyé ✅");
+    return true;
   } catch (err) {
+    return false;
     console.error("Erreur email ❌", err);
   }
 };

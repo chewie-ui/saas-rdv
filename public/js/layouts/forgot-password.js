@@ -8,21 +8,28 @@ const digitalCode = document.getElementById("digitalCode");
 let emailValue;
 if (forgotPwdSendCode && forgotPwdEmail) {
   forgotPwdSendCode.onclick = async function () {
-    firstForm.style.display = "none";
-
-    const template = secondFormTemplate.content.cloneNode(true);
-    container.appendChild(template);
-
     const value = forgotPwdEmail.value;
+    if (value.trim() === "") return alert("Veuillez entrer un email valide...");
     emailValue = value;
 
-    await fetch(`/forgot-password/verify-code`, {
+    const response = await fetch(`/forgot-password/verify-code`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         value,
       }),
     });
+
+    const data = await response.json();
+    console.log(data);
+    if (data.success) {
+      firstForm.style.display = "none";
+
+      const template = secondFormTemplate.content.cloneNode(true);
+      container.appendChild(template);
+    } else {
+      return alert("Veuillez entrer un email valide...");
+    }
   };
 }
 
@@ -66,19 +73,48 @@ container.addEventListener("click", async (e) => {
     const parent2 = btn2.closest(".form-body");
     const newPwd = document.getElementById("password");
     const conformPwd = document.getElementById("conformPassword");
+    newPwd.style.border = "";
+    conformPwd.style.border = "";
 
-    if (newPwd.value === conformPwd.value) {
-      const response = await fetch(`/forgot-password/new-password`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: newPwd.value, email: emailValue }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        location.href = "/login";
+    if (newPwd.value.length < 8) {
+      let error = parent2.querySelector(".error-msg"); // 👈
+      if (!error) {
+        error = document.createElement("p");
+        error.className = "error"; // 👈 même classe
+        parent2.appendChild(error);
       }
+      error.textContent = "Password must be at least 8 characters.";
+      newPwd.style.border = "1px solid red";
+      return;
+    }
+
+    if (newPwd.value !== conformPwd.value) {
+      let error = parent2.querySelector(".error-msg");
+      if (!error) {
+        error = document.createElement("p");
+        error.className = "error-msg";
+        parent2.appendChild(error);
+      }
+      error.textContent = "Passwords do not match.";
+      conformPwd.style.border = "1px solid red";
+      return;
+    }
+
+    const response = await fetch(`/forgot-password/new-password`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: newPwd.value, email: emailValue }),
+    });
+
+    const data = await response.json();
+    console.log(data);
+
+    if (data.error === 404) {
+      return alert("Aucun compte trouvé avec cet email.");
+    }
+
+    if (data.success) {
+      location.href = "/login";
     }
   }
 });

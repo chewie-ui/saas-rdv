@@ -14,6 +14,12 @@ exports.createUser = async (req, res) => {
     });
   }
 
+  const checkName = await User.findOne({ fullName: fullname }).lean();
+  if (checkName) {
+    return res.render("auth/register", {
+      error: "This name is already in use.",
+    });
+  }
   // 2. Vérifier si l'email est déjà pris en base de données
   const checkEmail = await User.findOne({ email }).lean();
   if (checkEmail) {
@@ -100,8 +106,13 @@ exports.forgotPasswordVerifyCode = async (req, res) => {
     console.log(code);
 
     req.session.forgotPwdCode = code;
-    await sendEmail(value, "SUBJECT", String(code));
-    return res.json({ success: true });
+    const isSent = await sendEmail(value, "SUBJECT", String(code));
+    console.log(isSent);
+    if (isSent) {
+      return res.json({ success: true });
+    } else {
+      return res.json({ success: false });
+    }
   } catch (err) {
     console.error(err);
     return res.json({ err });
@@ -121,6 +132,8 @@ exports.checkCodePwd = (req, res) => {
 
 exports.newPwd = async (req, res) => {
   const { email, password } = req.body;
+  console.log(password);
+  console.log(email);
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
@@ -133,8 +146,8 @@ exports.newPwd = async (req, res) => {
 
   console.log(user);
 
-  if (!user) {
-    return res.status(404).json({ success: false, message: "User not found" });
+  if (!user || user == null || user == "null") {
+    return res.json({ error: 404, success: false, message: "User not found" });
   }
 
   res.json({ success: true });

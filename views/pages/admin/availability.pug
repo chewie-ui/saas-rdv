@@ -13,8 +13,9 @@ block content
                 h3 Set Default Working Hours
             .availability-section__body.flex
                 .body-weekly-hour.flex.col
-                    - const weekday = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-                    each day in currentCompany.schedule
+                    - const weekday = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+                    - const sortedSchedule = [...currentCompany.schedule].sort((a, b) => { const order = i => i === 0 ? 7 : i; return order(a.weekdayIndex) - order(b.weekdayIndex); })
+                    each day in sortedSchedule
                         .row-weekday.flex
                             .weekday-toggle.flex
                                 .weekly-switcher

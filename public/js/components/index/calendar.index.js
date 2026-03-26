@@ -118,7 +118,7 @@ export default function () {
 
     const responseBookings = await fetch(`/get-booking/${COMPANY_ID}`);
     const specificExceptions = await responseBookings.json();
-    console.log(specificExceptions);
+
     function countPossibleSlots(workingHours, slotTime) {
       if (!workingHours || workingHours.length === 0) return 0;
       let count = 0;
@@ -132,7 +132,6 @@ export default function () {
     }
     const companyInfos = await fetch(`/company/get-infos/${COMPANY_ID}`);
     const res = await companyInfos.json();
-    console.log(res);
 
     const slotTime = res.slotTime;
     // Current month days
@@ -144,7 +143,9 @@ export default function () {
       const currentDate = new Date(currentYear, currentMonth, i);
       currentDate.setHours(0, 0, 0, 0);
 
-      const weekdayIndex = (currentDate.getDay() + 6) % 7;
+      const weekdayIndex = (currentDate.getDay() + 6) % 7; // garde pour le positionnement visuel
+      const jsWeekdayIndex =
+        currentDate.getDay() === 0 ? 0 : currentDate.getDay(); // pour la DB
       const todayClean = new Date(realToday);
       todayClean.setHours(0, 0, 0, 0);
 
@@ -166,7 +167,7 @@ export default function () {
       }
 
       const dayConfig = dayOffArray.find(
-        (d) => d.weekdayIndex === weekdayIndex,
+        (d) => d.weekdayIndex === jsWeekdayIndex, // 👈
       );
 
       if (currentDate < todayClean) {
@@ -236,7 +237,7 @@ export default function () {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            index,
+            index: (parseInt(index) + 1) % 7,
             COMPANY_ID,
             date: dateIso,
           }),
@@ -255,7 +256,9 @@ export default function () {
 
         if (day.classList.contains("empty")) return false;
 
-        const result = await fetch(`/get-booking?date=${dateIso}`);
+        const result = await fetch(
+          `/get-booking?date=${dateIso}&companyId=${COMPANY_ID}`,
+        );
 
         const response = await result.json();
         console.log(response);
