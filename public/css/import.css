@@ -22,6 +22,13 @@
   --warning: #f59e0b;
   --success: #10b978;
 
+  --color-primary-50: rgb(255, 87, 51, 0.05);
+  --color-primary-75: rgb(255, 87, 51, 0.075);
+  --color-primary-100: rgb(255, 87, 51, 0.1);
+  --color-primary-200: rgb(255, 87, 51, 0.2);
+  --color-primary-300: rgb(255, 87, 51, 0.3);
+  --color-primary-400: rgb(255, 87, 51, 0.4);
+
   --grey-bg: #f6f6f7;
   --grey-primary: #637083;
   --grey-light: #344051;
@@ -236,7 +243,7 @@ tr th,
 tr td {
   text-align: left;
   background-color: var(--color-white);
-  padding: 10px 12px;
+  padding: 16px 1.5rem;
   max-width: 500px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -362,6 +369,91 @@ button:disabled {
   animation: forwards shaking 0.3s;
 }
 
+.selectmenu {
+  position: relative;
+  min-width: 200px;
+}
+
+.selectmenu .selectmenu__header {
+  background-color: var(--color-white);
+  padding: 7px 12px;
+  cursor: pointer;
+  border-radius: 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #e3e3e3;
+}
+
+.selectmenu .selectmenu__header:hover {
+  border: 1px solid var(--green-primary);
+}
+
+.selectmenu .selectmenu__panel {
+  display: none;
+  flex-direction: column;
+  background-color: var(--color-white);
+  border: var(--border);
+  position: absolute;
+  top: 115%;
+  left: 0;
+  width: 100%;
+  padding: 5px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 10px 16px -4px rgba(28, 28, 28, 0.1),
+    0 4px 6px -2px rgba(28, 28, 28, 0.04);
+}
+
+.selectmenu.open .selectmenu__panel {
+  display: flex;
+}
+
+.selectmenu .selectmenu__panel .selectmenu__row {
+  padding: 7px 12px;
+  cursor: pointer;
+  font-weight: 400;
+  transition: 0.3s;
+}
+
+.selectmenu .selectmenu__panel .selectmenu__row:hover {
+  background-color: var(--color-primary-75);
+}
+
+.searchmenu {
+  position: relative;
+  min-width: 200px;
+  border-radius: 13px;
+  border: 1px solid #e3e3e3;
+  padding: 7px 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+}
+
+.searchmenu svg {
+  fill: var(--grey-primary);
+}
+
+.searchmenu input {
+  border: none;
+  background: none;
+  outline: none;
+}
+
+.searchmenu .searchmenu__drop-icon {
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.searchmenu .searchmenu__drop-icon.show {
+  visibility: visible;
+  opacity: 1;
+}
+
 @keyframes shaking {
   from {
     transform: translateX(-2px);
@@ -396,6 +488,100 @@ button:disabled {
 
 .padding-d {
   padding: 100px 0;
+}
+
+.table__schema {
+  border-collapse: separate;
+  border-spacing: 0;
+  display: block;
+  white-space: nowrap;
+  width: 100%;
+  border-color: gray;
+  position: relative;
+}
+
+.table__schema thead {
+  position: sticky;
+  top: 16px;
+  display: block;
+  width: 100%;
+}
+
+.table__schema thead tr {
+  border-top-left-radius: var(--sib-border-radius_lg, 1rem);
+  border-top-right-radius: var(--sib-border-radius_lg, 1rem);
+  border: 1px solid #e3e3e3;
+  display: flex;
+  overflow: hidden;
+}
+
+.table__schema tbody {
+  border: 1px solid #e3e3e3;
+  border-top: 0;
+  display: block;
+}
+
+.table__schema tbody tr {
+  display: flex;
+  overflow: hidden;
+}
+
+.table__schema thead tr th,
+.table__schema tbody tr td {
+  width: stretch;
+}
+
+.table__schema tbody tr:hover td {
+  background-color: rgb(250, 250, 250);
+}
+
+.table__schema tbody tr td {
+  position: relative;
+  border-bottom: 1px solid #e3e3e3;
+}
+
+.table__schema tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table__schema tbody tr td .hover-content {
+  position: absolute;
+  top: 105%;
+  left: 0;
+}
+
+.table__schema tfoot {
+  display: block;
+  border: 1px solid #e3e3e3;
+  border-top: 0;
+  border-bottom-left-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+  overflow: hidden;
+}
+
+.table__schema tfoot tr {
+  display: flex;
+  justify-content: flex-end;
+  background-color: white;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  padding: 8px;
+  border-radius: 1rem;
+}
+
+.j-start {
+  justify-content: flex-start;
+}
+
+.btn-icon:hover {
+  background-color: var(--green-soft);
+}
+
+.table__schema tbody tr td.btn-td {
+  padding: 4px 1.5rem;
 }
 
 @keyframes fadeInOut {

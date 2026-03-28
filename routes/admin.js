@@ -14,6 +14,7 @@ const {
   getWeekData,
   restoreBooking,
   informationsPage,
+  historyInit
 } = require("../controllers/admin.controller");
 
 const isAuth = require("../middlewares/isAuth");
@@ -26,6 +27,9 @@ router.get(
   renderAppointments,
   book,
 );
+
+const isVerified = [isAuth, injectCompany];
+
 router.get("/panel", isAuth, injectCompany, renderAppointments, panel);
 router.get("/appointment", isAuth, injectCompany, appointment);
 router.get("/availability", isAuth, injectCompany, availability);
@@ -37,6 +41,8 @@ router.get("/subscription", isAuth, injectCompany, (req, res) => {
     title: "Plans",
   });
 });
+
+router.get("/history", isVerified, historyInit);
 
 router.post("/toggle-day", toggleDay);
 router.post("/edit-availability", editAvailabilty);

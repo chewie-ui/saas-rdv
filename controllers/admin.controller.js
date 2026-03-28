@@ -40,7 +40,7 @@ exports.book = async (req, res) => {
     user,
     grade,
   });
-  await sendEmail("quentin.rennies@gmail.com", "MAJ Horraire", htmlTemplate);
+  // await sendEmail("quentin.rennies@gmail.com", "MAJ Horraire", htmlTemplate);
 };
 
 function getWeekDays(startDate = new Date()) {
@@ -338,4 +338,40 @@ exports.informationsPage = (req, res) => {
     pageName: "Informations",
     success: req.query.success,
   });
+};
+
+exports.historyInit = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 13;
+    const skip = (page - 1) * limit;
+
+    const now = new Date();
+    const query = {
+      company: res.locals.currentCompany._id,
+      // date: { $lt: now },
+    };
+
+    const history = await Booking.find(query)
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("user");
+
+    const totalBookings = await Booking.countDocuments(query);
+    const totalPages = Math.ceil(totalBookings / limit);
+    console.log(`totalBookings: ${totalBookings}`);
+    console.log(`totalPages: ${totalPages}`);
+
+    return res.render("admin/history", {
+      pageName: "History",
+      history,
+      currentPage: page,
+      totalBookings,
+      totalPages,
+    });
+  } catch (err) {
+    console.log(history);
+    return res.send(err);
+  }
 };

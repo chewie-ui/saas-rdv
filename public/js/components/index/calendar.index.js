@@ -333,7 +333,7 @@ export default function () {
       ((newPopup.querySelector(".confirm-popup__description").textContent =
         "You have received an email in your inbox "),
         email);
-
+      newPopup.querySelector(".cancel-btn").style.display = "none";
       newPopup.classList.add("show");
       document.body.appendChild(newPopup);
 

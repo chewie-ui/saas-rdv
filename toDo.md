@@ -6,7 +6,7 @@ TO DO
 - Saturday no schedule ✅ OK
 - forgot pwd if email not exist, dont go next AND password 8 minimum ✅ OK
 - nom valide (pas le meme) ✅ OK
-- si user prime mais 0 info cache carre blanc
+- si user prime mais 0 info cache carre blanc ✅ OK
 
 🔐 Auth / Compte
 
@@ -48,4 +48,36 @@ TO DO
 
 🕐 Later
 
+- option payer a lavance en ligne
+
+//
+
+✅ Indispensable pour vendre
+
+- Mettre annuler et gerer les rdvs pour pro ✅ OK
+
+- prendre des notes sur booking client (v pro unqieuemnt)
+- emailing rappel
+- mail si rdv annuler
+- Save btn informations
+- responsive ALL
+- mieux faire dev et prod et .env
+- VERIFICATION BUG ALL
+- Vrai moyen de paiement
+- faire historique des rdvs, cote admin et cote client
+- Landing page 'je suis coach' et 'client'
+- mail verif et bienvenue regsiter
+- email si rdv canceled
+
+//
+
+🕐 Après / Nice to have
+
+- lien avec nom pour les premiums
+- Settings language / Langues et texte PANEL
+- page moyen de paiement
+- clic copier infos coach
+- notes admin sur un client
+- mail avec lien d'annulation
+- Prise h du rdv design
 - option payer a lavance en ligne

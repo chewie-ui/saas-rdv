@@ -27,12 +27,18 @@ const sendEmail = async (to, subject, html) => {
       to: [{ email: to }],
       subject,
       htmlContent: html,
+      tags: ["transactional"], // 👈
+      headers: {
+        "X-Mailin-no-track-link": "1", // 👈
+      },
     });
+
+    console.log(to);
 
     return true;
   } catch (err) {
-    return false;
     console.error("Erreur email ❌", err);
+    return false;
   }
 };
 

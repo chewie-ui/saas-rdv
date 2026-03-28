@@ -106,7 +106,20 @@ exports.forgotPasswordVerifyCode = async (req, res) => {
     console.log(code);
 
     req.session.forgotPwdCode = code;
-    const isSent = await sendEmail(value, "SUBJECT", String(code));
+    const isSent = await sendEmail(
+      value,
+      `Your verification code: ${code}`,
+      `<html>
+    <body style="font-family: Arial, sans-serif;">
+      <h2>Bonjour,</h2>
+      <p>Voici votre code de vérification pour changer votre mot de passe :</p>
+      <div style="font-size: 24px; font-weight: bold; color: #ff4757; padding: 10px; border: 1px solid #ddd; display: inline-block;">
+        ${code}
+      </div>
+      <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
+    </body>
+  </html>`,
+    );
     console.log(isSent);
     if (isSent) {
       return res.json({ success: true });
