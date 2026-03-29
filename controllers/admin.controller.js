@@ -375,3 +375,19 @@ exports.historyInit = async (req, res) => {
     return res.send(err);
   }
 };
+
+exports.historyDeleteRow = async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    const response = await Booking.findByIdAndDelete(id);
+    console.log(response);
+    if (response) {
+      return res.json({ success: true });
+    } else {
+      return res.json({ success: false });
+    }
+  } catch (err) {
+    return res.json({ err });
+  }
+};

@@ -1,3 +1,6 @@
+
+include ../templates/modals/dialog.pug
+
 doctype html
 html(lang="fr")
     head
@@ -29,6 +32,7 @@ html(lang="fr")
                             path(d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z")
                 .main-wrapper
                     block content
+        +dialog()
         script(src="/js/layouts/admin.js" type="module")
         script.
             document.querySelectorAll(".sidebar-header__panel .company")

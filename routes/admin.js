@@ -14,7 +14,8 @@ const {
   getWeekData,
   restoreBooking,
   informationsPage,
-  historyInit
+  historyInit,
+  historyDeleteRow,
 } = require("../controllers/admin.controller");
 
 const isAuth = require("../middlewares/isAuth");
@@ -43,6 +44,7 @@ router.get("/subscription", isAuth, injectCompany, (req, res) => {
 });
 
 router.get("/history", isVerified, historyInit);
+router.delete("/history", historyDeleteRow);
 
 router.post("/toggle-day", toggleDay);
 router.post("/edit-availability", editAvailabilty);
