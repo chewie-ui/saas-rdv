@@ -39,6 +39,7 @@ exports.book = async (req, res) => {
     pageName: "Book",
     user,
     grade,
+    isPremium: res.locals.user.isPremium
   });
   // await sendEmail("quentin.rennies@gmail.com", "MAJ Horraire", htmlTemplate);
 };

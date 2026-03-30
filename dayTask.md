@@ -8,7 +8,10 @@ PETIT : bouton save informations 👌👌👌
 Jour 2
 
 GROS : Historique des RDV (client)
-PETIT : fix bug simple
+PETIT : faire page booking
+    - ajouter notes
+    - account created etc
+    - ispremium bug
 
 Jour 3
 
@@ -40,7 +43,7 @@ panel cote client voir futures et passer rdv
 plan free get plan
 settings et langue
 responsive
-faire page booking (bug premium et fonctionnalite etc)
+
 edit history
 page paiement valide
 

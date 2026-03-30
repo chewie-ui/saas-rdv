@@ -14,12 +14,12 @@ block content
                     h3 Appointment ##{user._id}
                 .appointment-header__top-actions.flex
                     //- button(data-link=`/appointment/${user._id}/edit` data-method="").btn.secondary.flex-c.appointment-action Edit
-                    if !user.isPremium 
+                    if !isPremium 
                         a(href="/subscription" style="display:flex; align-items:center;").get__premium Get premium
 
                     if user.status === "confirmed"
-                        button(data-link=`/appointment/${user._id}/cancel` data-method="PATCH" disabled=(grade === 'staff' || !user.isPremium)).btn.secondary.appointment-action#cancelAppointment Cancel
-                    button(data-link=`/appointment/${user._id}/delete` data-method="DELETE" disabled=(grade === 'staff' || !user.isPremium)).btn.appointment-action#deleteAppointment Delete
+                        button(data-link=`/appointment/${user._id}/cancel` data-method="PATCH" disabled=(grade === 'staff' || !isPremium)).btn.secondary.appointment-action#cancelAppointment Cancel
+                    button(data-link=`/appointment/${user._id}/delete` data-method="DELETE" disabled=(grade === 'staff' || !isPremium)).btn.appointment-action#deleteAppointment Delete
                     if user.status === "confirmed"
                         //- button(data-link=`/appointment/${user._id}/send-reminder`).btn.appointment-action Send reminder
                     else 
@@ -29,11 +29,11 @@ block content
                 .appointment-header__bottom-col.flex.col
                     .appointment-header__bottom-col-element.flex
                         p.name-element Date:
-                        p= user.date
+                        p= user.date.toLocaleDateString("fr-FR")
                 .appointment-header__bottom-col.flex.col
                     .appointment-header__bottom-col-element.flex
-                        p.name-element Time:
-                        p #{user.startTime}
+                        p.name-element Schedule:
+                        p #{user.startTime} - #{user.endTime}
                 .appointment-header__bottom-col.flex.col
                     .appointment-header__bottom-col-element.flex
                         p.name-element Status:
