@@ -1,50 +1,32 @@
 When finished : 👌
 
-Jour 1
-
 GROS : Historique des RDV (admin) 👌👌👌
+
+30-03-26
+
+GROS : Settings et langues
 PETIT : bouton save informations 👌👌👌
-
-Jour 2
-
-GROS : Historique des RDV (client)
-PETIT : faire page booking
-    - ajouter notes
-    - account created etc
-    - ispremium bug
-
-Jour 3
+PETIT : faire page booking 👌👌👌
+PETIT : Plan free get plan
+PETIT : Page paiement valide
 
 GROS : Paiement Stripe
-PETIT : email test
-
-Jour 4
 
 GROS : Paiement (webhook + status)
-PETIT : bug fix
+PETIT : email test
 
-Jour 5
+GROS : Historique des RDV (client)
+PETIT : edit history
 
-GROS : Responsive pages principales
+GROS : Responsive all
 PETIT : 1 page secondaire
-
-Jour 6
 
 GROS : BUG ALL (gros debug)
 PETIT : détails UI
 
-Jour 7
+GROS : Panel cote client voir futures et passer rdv
+PETIT : Rendre plus beau page prendre rdv
 
 Repos OU léger (emailing rappel)
-
----
-
-panel cote client voir futures et passer rdv
-plan free get plan
-settings et langue
-responsive
-
-edit history
-page paiement valide
 
 publier

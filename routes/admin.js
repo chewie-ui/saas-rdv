@@ -18,6 +18,7 @@ const {
   historyDeleteRow,
   historySearch,
   historyEditRow,
+  settingsInit,
 } = require("../controllers/admin.controller");
 
 const isAuth = require("../middlewares/isAuth");
@@ -45,6 +46,7 @@ router.get("/subscription", isAuth, injectCompany, (req, res) => {
   });
 });
 
+router.get("/settings", isVerified, settingsInit);
 router.get("/history/edit/:id", isVerified, historyEditRow);
 router.get("/history", isVerified, historyInit);
 router.delete("/history", historyDeleteRow);

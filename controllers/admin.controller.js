@@ -39,7 +39,7 @@ exports.book = async (req, res) => {
     pageName: "Book",
     user,
     grade,
-    isPremium: res.locals.user.isPremium
+    isPremium: res.locals.user.isPremium,
   });
   // await sendEmail("quentin.rennies@gmail.com", "MAJ Horraire", htmlTemplate);
 };
@@ -430,4 +430,13 @@ exports.historyEditRow = async (req, res) => {
     console.error(err);
     return res.json({ err });
   }
+};
+
+exports.settingsInit = async (req, res) => {
+  console.log({ path: "admin/settings" });
+
+  return res.render("admin/settings", {
+    pageName: "Settings",
+    title: "Settings",
+  });
 };

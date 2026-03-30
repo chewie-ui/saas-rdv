@@ -17,16 +17,25 @@ html(lang="fr")
             .main
                 .admin-nav
                     h2= pageName || "Undefined page"
-                    //- .admin__menu
-                    //-     .admin__lang
-                    //-         .admin__lang-active
-                    //-         .admin__lang-panel
-                    //-             .lang English
-                    //-             .lang French
-                    //-             .lang Dutch
-                    //-     .admin__profile
-                    //-         .admin__profile-image
-                    //-         .admin__profile-name
+                    .admin__menu
+                        .admin__lang#langSelector
+                            .admin__lang-active
+                                p #{lang === 'fr' ? "Francais" : "English"}
+                                img(src=`/images/${lang === "en" ? 'en.jpg' : 'fr.webp'}`)
+                            .admin__lang-panel
+                                .lang(onclick="changeLanguage('fr')")
+                                    p French
+                                    img(src="/images/fr.webp")
+                                .lang(onclick="changeLanguage('en')")
+                                    p English
+                                    img(src="/images/en.jpg")
+                        .admin__profile
+                            .admin__profile-image
+                                img(src=user.profilePicture)
+                            .admin__profile-name= user.fullName.split(" ")
+                            if user.isPremium
+                                .admin__profile-premium--icon.flex-c
+                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffe600"><path d="M200-160v-80h560v80H200Zm0-140-51-321q-2 0-4.5.5t-4.5.5q-25 0-42.5-17.5T80-680q0-25 17.5-42.5T140-740q25 0 42.5 17.5T200-680q0 7-1.5 13t-3.5 11l125 56 125-171q-11-8-18-21t-7-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820q0 15-7 28t-18 21l125 171 125-56q-2-5-3.5-11t-1.5-13q0-25 17.5-42.5T820-740q25 0 42.5 17.5T880-680q0 25-17.5 42.5T820-620q-2 0-4.5-.5t-4.5-.5l-51 321H200Zm68-80h424l26-167-105 46-133-183-133 183-105-46 26 167Zm212 0Z"/></svg>
                     #openMenu.flex-c
                         svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                             path(d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z")
@@ -34,31 +43,11 @@ html(lang="fr")
                     block content
         +dialog()
         script(src="/js/layouts/admin.js" type="module")
-        script.
-            document.querySelectorAll(".sidebar-header__panel .company")
-                .forEach(el => {
-                    el.addEventListener("click", async () => {
-                    const companyId = el.dataset.id;
-
-                    await fetch("/switch-company", {
-                        method: "POST",
-                        headers: {
-                        "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({ companyId })
-                    });
-
-                    location.reload();
-                    });
-                });
+        
         block scripts
 
         script.
-            document.addEventListener("keydown", (e) => {
-                if (e.key === "x" || e.key === "X") {
-                     document.body.classList.toggle("debug");
-                }
-            })
+            
             const COMPANY_ID = !{company ? `"${company._id}"` : "null"};
 
 

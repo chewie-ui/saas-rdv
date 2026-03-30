@@ -1,0 +1,23 @@
+extends ../../layouts/admin
+
+include ../../templates/change-password.pug
+include ../../templates/edit-email.pug
+
+block links
+    link(rel="stylesheet", href="/css/layouts/informations.css")
+    link(rel="stylesheet", href="/css/templates/change-password.css")
+    link(rel="stylesheet", href="/css/templates/edit-email.css")
+
+block content
+    .page.page__settings
+        .settings
+            .settings__navigation
+                .settings__navigation-link Information
+            .settings__body
+                .settings_infos
+                .settings_forms
+
+block scripts
+    script(src='/js/layouts/informations.js')
+    script(src='/js/templates/change-password.js')
+    script(src='/js/templates/edit-email.js')

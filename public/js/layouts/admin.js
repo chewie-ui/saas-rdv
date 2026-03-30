@@ -40,6 +40,11 @@ if (openMenu && sidebar && closeSidebar) {
 document.addEventListener("click", (event) => {
   const isSelectMenu = event.target.closest(".selectmenu");
   const isSearchMenu = event.target.closest(".searchmenu");
+  const langSelector = event.target.closest("#langSelector");
+
+  if (langSelector) {
+    langSelector.classList.toggle("open");
+  }
 
   if (isSearchMenu) {
     isSearchMenu.querySelector("input").addEventListener("input", () => {
@@ -66,9 +71,17 @@ document.addEventListener("click", (event) => {
     isSelectMenu.classList.toggle("open");
   }
 
-  document.querySelectorAll(".selectmenu").forEach((selectmenu) => {
-    if (selectmenu !== isSelectMenu) {
-      selectmenu.classList.remove("open");
+  document.querySelectorAll(".selectmenu, #langSelector").forEach((menu) => {
+    if (menu !== isSelectMenu && menu !== langSelector) {
+      menu.classList.remove("open");
     }
   });
 });
+
+function changeLanguage(lang) {
+  console.log(lang);
+
+  document.cookie = `user_lang=${lang}; path=/; max-age=${60 * 60 * 24 * 365}`;
+  window.location.reload();
+}
+window.changeLanguage = changeLanguage;
