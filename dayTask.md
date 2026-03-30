@@ -34,12 +34,14 @@ Jour 7
 
 Repos OU léger (emailing rappel)
 
-
---------
+---
 
 panel cote client voir futures et passer rdv
-annuler abonnements
+plan free get plan
 settings et langue
 responsive
+faire page booking (bug premium et fonctionnalite etc)
+edit history
+page paiement valide
 
 publier
