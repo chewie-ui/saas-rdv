@@ -63,3 +63,25 @@ if (searchClient) {
     console.log(data);
   });
 }
+
+const saveBtnEdit = document.getElementById("saveBtnEdit");
+
+if (saveBtnEdit) {
+  saveBtnEdit.addEventListener("click", async () => {
+    const id = window.location.pathname.split("/").pop();
+    const response = await fetch(`/history/edit/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fullName: document.getElementById("fullName").value,
+        email: document.getElementById("email").value,
+        phone: document.getElementById("phone").value,
+        message: document.getElementById("message").value,
+      }),
+    });
+    const data = await response.json();
+    if (data.success) {
+      location.reload();
+    }
+  });
+}

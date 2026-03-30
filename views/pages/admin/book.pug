@@ -7,37 +7,36 @@ block links
 block content
 
     .page.page--appointment
-
         .appointment-header.page--appointment-block.page--block-1
             .appointment-header__top
                 .appointment-header__top-name
-                    h3 Appointment ##{user._id}
+                    h3 Appointment ##{client._id}
                 .appointment-header__top-actions.flex
                     //- button(data-link=`/appointment/${user._id}/edit` data-method="").btn.secondary.flex-c.appointment-action Edit
                     if !isPremium 
                         a(href="/subscription" style="display:flex; align-items:center;").get__premium Get premium
 
-                    if user.status === "confirmed"
-                        button(data-link=`/appointment/${user._id}/cancel` data-method="PATCH" disabled=(grade === 'staff' || !isPremium)).btn.secondary.appointment-action#cancelAppointment Cancel
-                    button(data-link=`/appointment/${user._id}/delete` data-method="DELETE" disabled=(grade === 'staff' || !isPremium)).btn.appointment-action#deleteAppointment Delete
-                    if user.status === "confirmed"
+                    if client.status === "confirmed"
+                        button(data-link=`/appointment/${client._id}/cancel` data-method="PATCH" disabled=(grade === 'staff' || !isPremium)).btn.secondary.appointment-action#cancelAppointment Cancel
+                    button(data-link=`/appointment/${client._id}/delete` data-method="DELETE" disabled=(grade === 'staff' || !isPremium)).btn.appointment-action#deleteAppointment Delete
+                    if client.status === "confirmed"
                         //- button(data-link=`/appointment/${user._id}/send-reminder`).btn.appointment-action Send reminder
                     else 
-                        button(data-link=`/appointment/${user._id}/restore` data-method="PATCH" disabled=(grade === 'staff')).btn.appointment-action#restoreAppointment Restore
+                        button(data-link=`/appointment/${client._id}/restore` data-method="PATCH" disabled=(grade === 'staff')).btn.appointment-action#restoreAppointment Restore
                    
             .appointment-header__bottom.flex.col
                 .appointment-header__bottom-col.flex.col
                     .appointment-header__bottom-col-element.flex
                         p.name-element Date:
-                        p= user.date.toLocaleDateString("fr-FR")
+                        p= client.date.toLocaleDateString("fr-FR")
                 .appointment-header__bottom-col.flex.col
                     .appointment-header__bottom-col-element.flex
                         p.name-element Schedule:
-                        p #{user.startTime} - #{user.endTime}
+                        p #{client.startTime} - #{client.endTime}
                 .appointment-header__bottom-col.flex.col
                     .appointment-header__bottom-col-element.flex
                         p.name-element Status:
-                        p #{user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                        p #{client.status.charAt(0).toUpperCase() + client.status.slice(1)}
         .appointment-details.appointment-details__client.page--appointment-block.page--block-3
             .appointment-details__header.flex
                 svg(
@@ -52,11 +51,11 @@ block content
                 .client-details.flex.col
                     .client-details__main.flex
                         .client-details__main-picture
-                            img(src=user.avatar || "/images/no-user.webp" alt="user picture")
+                            img(src=client.avatar || "/images/no-user.webp" alt="user picture")
                         .client-details__main-locals.flex.col.space-b
-                            h4 #{user.surname} #{user.name} 
-                            p= user.email
-                            p= user.phone
+                            h4 #{client.surname} #{client.name} 
+                            p= client.email
+                            p= client.phone
 
                     //- .client-details__second
                     //-     .client-details__second-createdAt.flex
@@ -73,7 +72,7 @@ block content
                 h3 Notes
             .appointment-details__separator
             .appointment-details__body
-                p - #{user.message} 
+                p - #{client.message} 
         .appointment-details.appointment-details__service.page--appointment-block.page--block-3
             .appointment-details__header.flex
                 svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")

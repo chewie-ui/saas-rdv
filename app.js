@@ -19,7 +19,7 @@ app.use(cookieParser());
 const User = require("./db/models/user.model");
 const Subscription = require("./db/models/subscription.model");
 const Stripe = require("stripe");
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY); // Assure-toi que la clé est dans ton .env
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY_ONLINE); // Assure-toi que la clé est dans ton .env
 const injectSubscription = require("./middlewares/injectSubscription");
 // Middleware spécial pour Stripe qui a besoin du body "raw" pour vérifier la signature
 app.post(

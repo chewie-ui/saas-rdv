@@ -12,20 +12,20 @@ block content
                 .form__wrapper
                     .form-group
                         label Name & Surname
-                        input.input(value=`${results.name} ${results.surname}`)
+                        input.input(value=`${results.name} ${results.surname}` id="fullName")
                     .form-group
                         label Email
-                        input.input(value=`${results.email}`)
+                        input.input(value=`${results.email}` id="email")
                     .form-group
                         label Phone
-                        input.input(value=`${results.phone}`)
+                        input.input(value=`${results.phone}` id="phone")
                     .form-group
                         label Notes
-                        input.input(value=`${results.message}`)
+                        input.input(value=`${results.message}` id="message")
             .history__edit-actions
                 .actions__buttons
-                    button.btn.secondary Back
-                    button.btn Save
+                    button.btn.secondary(onclick="history.back()") Back
+                    button.btn#saveBtnEdit Save
                 .actions__text
                     a(href="#") Delete this row in the history
 block scripts

@@ -22,7 +22,9 @@ const htmlTemplate = pug.renderFile(
 exports.book = async (req, res) => {
   const { bookId } = req.params;
 
-  const user = await Booking.findById(bookId);
+  const client = await Booking.findById(bookId);
+  console.log(client);
+
   const company = await Company.findOne(
     {
       _id: res.locals.currentCompany._id,
@@ -32,12 +34,14 @@ exports.book = async (req, res) => {
       "employees.$": 1,
     },
   ).lean();
+  console.log(company);
 
   const grade = company?.employees[0]?.grade;
+  console.log(grade);
 
   res.render("admin/book", {
     pageName: "Book",
-    user,
+    client,
     grade,
     isPremium: res.locals.user.isPremium,
   });
@@ -439,4 +443,29 @@ exports.settingsInit = async (req, res) => {
     pageName: "Settings",
     title: "Settings",
   });
+};
+
+exports.historyEditRowPatch = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fullName, email, phone, message } = req.body;
+    const parts = fullName.trim().split(" ");
+    const name = parts[0];
+    const surname = parts.slice(1).join(" ") || "";
+
+    const response = await Booking.findByIdAndUpdate(id, {
+      name,
+      surname,
+      phone,
+      email,
+      message,
+    });
+
+    if (response) {
+      return res.json({ success: true });
+    }
+  } catch (err) {
+    console.error(err);
+    return res.json({ err });
+  }
 };
