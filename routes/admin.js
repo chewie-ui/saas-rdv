@@ -16,6 +16,8 @@ const {
   informationsPage,
   historyInit,
   historyDeleteRow,
+  historySearch,
+  historyEditRow,
 } = require("../controllers/admin.controller");
 
 const isAuth = require("../middlewares/isAuth");
@@ -43,8 +45,10 @@ router.get("/subscription", isAuth, injectCompany, (req, res) => {
   });
 });
 
+router.get("/history/edit/:id", isVerified, historyEditRow);
 router.get("/history", isVerified, historyInit);
 router.delete("/history", historyDeleteRow);
+router.get("/history/search", historySearch);
 
 router.post("/toggle-day", toggleDay);
 router.post("/edit-availability", editAvailabilty);

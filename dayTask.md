@@ -2,8 +2,8 @@ When finished : 👌
 
 Jour 1
 
-GROS : Historique des RDV (admin)
-PETIT : bouton save informations
+GROS : Historique des RDV (admin) 👌👌👌
+PETIT : bouton save informations 👌👌👌
 
 Jour 2
 
@@ -33,3 +33,13 @@ PETIT : détails UI
 Jour 7
 
 Repos OU léger (emailing rappel)
+
+
+--------
+
+panel cote client voir futures et passer rdv
+annuler abonnements
+settings et langue
+responsive
+
+publier

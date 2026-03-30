@@ -5,7 +5,31 @@
 
 .calendar-section .grid-section {
   display: grid;
+  position: relative;
   grid-template-columns: minmax(60px, 90px) repeat(7, 1fr);
+}
+
+.calendar-timeline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #ea4335;
+  z-index: 100;
+  pointer-events: none;
+  /* On l'aligne sur les colonnes des jours (on saute la colonne GMT) */
+  grid-column: 2 / -1;
+  display: none; /* On l'affiche via JS seulement si on est sur la semaine actuelle */
+}
+
+.timeline-circle {
+  position: absolute;
+  left: -6px;
+  top: -5px;
+  width: 12px;
+  height: 12px;
+  background-color: #ea4335;
+  border-radius: 50%;
 }
 
 .calendar-section .grid-section .cell {
@@ -140,7 +164,9 @@
 .calendar
   .calendar__menu
   .calendar__sections
-  .calendar__section.calend.availability-section .availability-section__body .body-weekly-hourar__section--center
+  .calendar__section.calend.availability-section
+  .availability-section__body
+  .body-weekly-hourar__section--center
   .calendar__date
   .calendar__date-text {
   width: 70%;

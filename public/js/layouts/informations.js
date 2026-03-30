@@ -121,7 +121,34 @@ if (socialContainer) {
         body: JSON.stringify({ fieldName: name, fieldValue: value }),
       });
 
-      console.log(await response);
+      const data = await response.json();
+
+      if (data.success) {
+        const box = button.closest(".social__box");
+        let msg = box.querySelector(".status-msg");
+
+        if (!msg) {
+          // 2. S'il n'existe pas, on le crée
+          msg = document.createElement("span");
+          msg.className = "status-msg";
+          msg.textContent = "Modifications enregistrées !";
+          box.appendChild(msg);
+        }
+
+        // 3. On gère l'affichage (on reset l'animation/opacité)
+        msg.classList.remove("visible");
+        void msg.offsetWidth; // "Magic trick" pour forcer le navigateur à reset l'animation
+        msg.classList.add("visible");
+
+        // 4. On nettoie après 3 secondes (en vérifiant l'ID du timer pour éviter les bugs)
+        if (box.timer) clearTimeout(box.timer);
+
+        box.timer = setTimeout(() => {
+          msg.classList.remove("visible");
+          // Optionnel : on le supprime du DOM après la transition CSS (ex: 300ms)
+          setTimeout(() => msg.remove(), 300);
+        }, 3000);
+      }
     }
   };
 }

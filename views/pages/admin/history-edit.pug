@@ -1,0 +1,32 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet", href="/css/layouts/history.css")
+
+block content
+    .page.page--history-edit
+        .history__edit
+            .history__edit-form
+                .form__title
+                    h2 Editing the booking of #{results.date.toLocaleDateString("fr-FR")} #{results.startTime} - #{results.endTime}
+                .form__wrapper
+                    .form-group
+                        label Name & Surname
+                        input.input(value=`${results.name} ${results.surname}`)
+                    .form-group
+                        label Email
+                        input.input(value=`${results.email}`)
+                    .form-group
+                        label Phone
+                        input.input(value=`${results.phone}`)
+                    .form-group
+                        label Notes
+                        input.input(value=`${results.message}`)
+            .history__edit-actions
+                .actions__buttons
+                    button.btn.secondary Back
+                    button.btn Save
+                .actions__text
+                    a(href="#") Delete this row in the history
+block scripts
+    script(src="/js/layouts/history.js" type="module")

@@ -57,6 +57,8 @@ exports.updateAccountSocial = async (req, res) => {
     await User.findByIdAndUpdate(req.user._id, {
       [fieldName]: fieldValue,
     });
+
+    return res.json({ success: true });
   } catch (err) {
     return res.json(err);
   }

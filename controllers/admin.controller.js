@@ -174,6 +174,7 @@ exports.appointment = async (req, res) => {
 
 const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
+const { search } = require("../routes/admin");
 
 exports.client = (req, res) => {
   res.render("admin/client", {
@@ -353,7 +354,7 @@ exports.historyInit = async (req, res) => {
     };
 
     const history = await Booking.find(query)
-      .sort({ date: -1 })
+      .sort({ date: -1, startTime: 1 })
       .skip(skip)
       .limit(limit)
       .populate("user");
@@ -388,6 +389,44 @@ exports.historyDeleteRow = async (req, res) => {
       return res.json({ success: false });
     }
   } catch (err) {
+    return res.json({ err });
+  }
+};
+
+exports.historySearch = async (req, res) => {
+  const { client } = req.query;
+  try {
+    const searchRegex = new RegExp(client, "i");
+
+    const results = await Booking.find({
+      $or: [
+        { name: searchRegex },
+        { surname: searchRegex },
+        { email: searchRegex },
+        { phone: searchRegex },
+        { message: searchRegex },
+      ],
+    });
+    return res.json({ success: true, results });
+  } catch (err) {
+    return res.json({ err });
+  }
+};
+
+exports.historyEditRow = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const results = await Booking.findById(id);
+
+    return res.render("admin/history-edit", {
+      rowId: id,
+      pageName: "History",
+      title: "History edit",
+      results,
+    });
+  } catch (err) {
+    console.error(err);
     return res.json({ err });
   }
 };

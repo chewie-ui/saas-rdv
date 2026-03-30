@@ -29,6 +29,9 @@ block content
             each weekday in weekDays
                 .cell.day-header(class=weekday.isToday ? "today" : "") #{weekday.label}, #{weekday.date}
 
+            #current-time-line.calendar-timeline
+                .timeline-circle
+
             each hour in hours
                 .cell.time= hour
                 each day, dayIndex in weekDays

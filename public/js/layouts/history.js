@@ -3,8 +3,13 @@ const templateDialog = document.getElementById("templateDialog");
 import { initDialog } from "../templates/dialog.js";
 let idTransfer;
 document.addEventListener("click", async (event) => {
-  const button = event.target.closest(".btn-icon");
+  const button = event.target.closest(".btn-icon.btn-panel");
   const rowDelete = event.target.closest(".history__actions-row.delete");
+  const rowEdit = event.target.closest(".history__actions-row.edit");
+
+  if (rowEdit) {
+    location.href = `/history/edit/${idTransfer}`;
+  }
 
   if (rowDelete) {
     const tmp = templateDialog.content.cloneNode(true);
@@ -44,3 +49,17 @@ document.addEventListener("click", async (event) => {
     return;
   }
 });
+
+const searchClient = document.getElementById("searchClient");
+
+if (searchClient) {
+  searchClient.addEventListener("input", async () => {
+    const v = searchClient.value.trim();
+
+    const response = await fetch(
+      `/history/search?client=${encodeURIComponent(v)}`,
+    );
+    const data = await response.json();
+    console.log(data);
+  });
+}
