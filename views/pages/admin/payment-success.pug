@@ -1,0 +1,35 @@
+html
+    head
+        link(rel="stylesheet", href="/css/import.css")
+        link(rel="stylesheet", href="/css/layouts/success-page.css")
+    body
+        .page.page--payment-success
+            .payment__success
+                .payment__success-wrapper
+                    .payment__success-icon
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg>
+                    .payment__success-content
+                        .payment__success-title
+                            h2 Votre achat a ete confirmer
+                        .payment__success-description 
+                            p Lorem ipsum dolor sit amet consectetur adipisicing elit. Quibusdam, ducimus!
+                        .payment__success-action.flex
+                            a(href="/appointment").btn Go to dashboard
+
+        script(src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js")
+        script.
+            // Explosion automatique au chargement
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: .6 }
+            });
+
+            // Bonus : petite explosion quand on clique sur le bouton dashboard
+            document.getElementById('dashboard-btn').onclick = function() {
+                confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.9 }
+                });
+            };

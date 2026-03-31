@@ -64,8 +64,8 @@ router.patch("/appointment/:bookId/restore", restoreBooking);
 router.patch("/appointment/:id/cancel", cancelBooking);
 router.get("/appointment/week-data", getWeekData);
 
-router.get("/subscription/success", (req, res) => {
-  res.send("TY FOR YOUR MONEY");
+router.get("/subscription/success", isVerified, (req, res) => {
+  res.render("admin/payment-success");
 });
 
 module.exports = router;

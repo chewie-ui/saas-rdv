@@ -9,17 +9,17 @@ PETIT : bouton save informations 👌👌👌
 PETIT : faire page booking 👌👌👌
 PETIT : edit history 👌👌👌
 PETIT : Plan free get plan 👌👌👌
+GROS : Paiement Stripe 👌👌👌
 
-PETIT : Creer bon envirnnment
-PETIT : Page paiement valide
-GROS : Paiement Stripe
+31-03-26
 
 GROS : Paiement (webhook + status)
+GROS : Responsive all
+PETIT : Page paiement valide
+PETIT : Creer bon envirnnment
+
 PETIT : email test
 
-GROS : Historique des RDV (client)
-
-GROS : Responsive all
 PETIT : 1 page secondaire
 
 GROS : BUG ALL (gros debug)
