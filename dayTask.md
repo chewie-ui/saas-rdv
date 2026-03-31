@@ -13,9 +13,10 @@ GROS : Paiement Stripe 👌👌👌
 
 31-03-26
 
-GROS : Paiement (webhook + status)
+GROS : Paiement (webhook + status) 👌👌👌
 GROS : Responsive all
-PETIT : Page paiement valide
+PETIT : Page paiement valide 👌👌👌
+PETIT : Page paiement valide (si pas achat valide pas mettre succes)
 PETIT : Creer bon envirnnment
 
 PETIT : email test
