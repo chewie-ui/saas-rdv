@@ -72,7 +72,7 @@ exports.createCheckout = async (req, res) => {
 
     line_items: [
       {
-        price: "price_1TGgzzP0Iejo2BflJWsDiQNt",
+        price: "price_1TGzw7KBy9u2w1HpuEnmgRwH",
         quantity: 1,
       },
     ],
