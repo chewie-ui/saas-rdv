@@ -1,4 +1,7 @@
 require("dotenv").config();
+const env = require(`./environment/${process.env.NODE_ENV}`);
+console.log("TEST STRIPE KEY:", process.env.STRIPE_SECRET_KEY_LOCAL);
+
 const express = require("express");
 const path = require("path");
 const passport = require("passport");
@@ -19,7 +22,7 @@ app.use(cookieParser());
 const User = require("./db/models/user.model");
 const Subscription = require("./db/models/subscription.model");
 const Stripe = require("stripe");
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY_ONLINE); // Assure-toi que la clé est dans ton .env
+const stripe = Stripe(env.stripeSecretKey); // Assure-toi que la clé est dans ton .env
 const injectSubscription = require("./middlewares/injectSubscription");
 // Middleware spécial pour Stripe qui a besoin du body "raw" pour vérifier la signature
 app.post(

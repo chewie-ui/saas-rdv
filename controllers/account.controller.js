@@ -1,7 +1,8 @@
+const env = require(`../environment/${process.env.NODE_ENV}`);
 const User = require("../db/models/user.model");
 const Subscription = require("../db/models/subscription.model");
 const Stripe = require("stripe");
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY_ONLINE);
+const stripe = new Stripe(env.stripeSecretKey);
 const bcrypt = require("bcrypt");
 const { sendEmail } = require("../utils/mailer");
 
@@ -72,7 +73,7 @@ exports.createCheckout = async (req, res) => {
 
     line_items: [
       {
-        price: "price_1TGzw7KBy9u2w1HpuEnmgRwH",
+        price: env.stripePricePlanPro,
         quantity: 1,
       },
     ],
