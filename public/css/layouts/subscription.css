@@ -1,6 +1,7 @@
 .subscription .subscription__top {
   display: flex;
   gap: 20px;
+  flex-direction: column;
 }
 
 .subscription .subscription__top .subscription__plan {
@@ -11,8 +12,8 @@
   box-shadow: var(--shadow);
   border: var(--border);
   overflow: hidden;
-  width: calc((100% - (20px * 2)) / 3);
   position: relative;
+  width: 100%;
 }
 
 .subscription .subscription__top .subscription__plan .plan__recommanded {
@@ -104,4 +105,33 @@
   .plan__advantage.advantage__statut-active
   svg {
   fill: var(--success);
+}
+
+.subscription {
+  padding-bottom: 24px;
+}
+
+.subscription .subscription__top .subscription__plan:last-child {
+  display: none;
+}
+
+@media all and (min-width: 820px) {
+}
+
+@media all and (min-width: 1280px) {
+  .subscription {
+    padding: 0;
+  }
+
+  .subscription .subscription__top {
+    flex-direction: row;
+  }
+
+  .subscription .subscription__top .subscription__plan {
+    width: calc((100% - (20px * 2)) / 3);
+  }
+
+  .subscription .subscription__top .subscription__plan:last-child {
+    display: flex;
+  }
 }

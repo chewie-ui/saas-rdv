@@ -1,16 +1,18 @@
-.header {
+.header,
+.header-phone {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   background-color: var(--color-white);
   padding: 6px 0;
-  display: flex;
+  display: none;
   justify-content: center;
   z-index: 99;
 }
 
-.header .header-container {
+.header .header-container,
+.header-phone .header-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -24,7 +26,8 @@
   cursor: pointer;
 }
 
-.header .header-container .company .logo {
+.header .header-container .company .logo,
+.header-phone .header-container a img {
   width: 40px;
 }
 
@@ -34,13 +37,22 @@
   display: none;
 }
 
-.header .header-container .menu {
+.header .header-container .menu,
+.header-phone .header-container .menu {
   display: flex;
   gap: 25px;
 }
 
 .header .header-container .menu .actions {
   display: flex;
+  gap: 10px;
+}
+
+.header-phone .header-container .menu a svg {
+  fill: #333;
+}
+
+.header-phone .header-container .menu {
   gap: 10px;
 }
 
@@ -94,13 +106,21 @@
   visibility: visible;
 }
 
+.header-phone {
+  display: flex;
+}
+
 @media all and (min-width: 820px) {
   .container {
     max-width: 800px;
   }
 
-  .header .header-container .company .name {
-    display: initial;
+  .header {
+    display: flex;
+  }
+
+  .header-phone {
+    display: none;
   }
 }
 

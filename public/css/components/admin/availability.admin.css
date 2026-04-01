@@ -27,8 +27,8 @@
   .availability-section__body
   .body-weekly-hour
   .row-weekday {
-  gap: 17.5px;
-  align-items: flex-start;
+  gap: 5px;
+  align-items: center;
   flex-wrap: wrap;
 }
 
@@ -37,18 +37,18 @@
   .body-weekly-hour
   .row-weekday
   .weekday-toggle {
-  width: 120px;
-  gap: 10px;
+  width: auto;
+  gap: 5px;
   align-items: center;
-  top: 10px;
+  /* top: 10px; */
   position: relative;
 }
 
 .time-slot .hour-container {
-  width: 100px;
+  width: auto;
+  padding: 4px;
 }
 
-.time-slot,
 .availability-section
   .availability-section__body
   .body-weekly-hour
@@ -57,12 +57,16 @@
   gap: 12.5px;
 }
 
+.time-slot {
+  gap: 3px;
+}
+
 .availability-section
   .availability-section__body
   .body-weekly-hour
   .row-weekday
   .weekly-hour__options {
-  top: 10px;
+  /* top: 10px; */
   position: relative;
 }
 
@@ -209,6 +213,52 @@
 }
 
 @media all and (min-width: 820px) {
+  .time-slot .hour-container {
+    width: 100px;
+  }
+
+  .availability-section
+    .availability-section__body
+    .body-weekly-hour
+    .row-weekday
+    .weekday-toggle {
+    width: 120px;
+  }
+
+  .time-slot {
+    gap: 13px;
+  }
+
+  .availability-section
+    .availability-section__body
+    .body-weekly-hour
+    .row-weekday {
+    gap: 15px;
+  }
+
+  .availability-section
+    .availability-section__body
+    .body-weekly-hour
+    .row-weekday
+    .weekday-toggle {
+    gap: 10px;
+    top: 10px;
+  }
+
+  .availability-section
+    .availability-section__body
+    .body-weekly-hour
+    .row-weekday {
+    align-items: flex-start;
+  }
+
+  .availability-section
+    .availability-section__body
+    .body-weekly-hour
+    .row-weekday
+    .weekly-hour__options {
+    top: 10px;
+  }
 }
 
 @media all and (min-width: 1280px) {

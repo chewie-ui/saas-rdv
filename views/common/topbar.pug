@@ -26,3 +26,15 @@
                     //- Faire un beau menu pour les langues
                     //- Enregistrer les langues en cookie et bdd
                     //- https://www.youtube.com/watch?v=poNC8zTaT1I
+
+.header-phone
+    .header-container
+        a(href='/')
+            img(src="/images/icon.webp")
+        .menu
+            if user
+                a.btn.secondary(src='/logout') Logout
+                a.btn(href='/appointment') Dashboard
+            else
+                a.flex-c(href="/register").btn.secondary Register
+                a.flex-c(href="/login").btn Login
