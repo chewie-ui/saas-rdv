@@ -1,6 +1,6 @@
 require("dotenv").config();
 const env = require(`./environment/${process.env.NODE_ENV}`);
-console.log("TEST STRIPE KEY:", process.env.STRIPE_SECRET_KEY_LOCAL);
+console.log("TEST STRIPE KEY:", process.env.STRIPE_SECRET_KEY_SERVER);
 
 const express = require("express");
 const path = require("path");
