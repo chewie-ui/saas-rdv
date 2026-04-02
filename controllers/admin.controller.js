@@ -1,5 +1,7 @@
 const Stripe = require("stripe");
 let stripe;
+console.log(process.env.NODE_ENV);
+
 if (process.env.NODE_ENV === "prodution") {
   stripe = new Stripe(process.env.STRIPE_SECRET_KEY_SERVER)
 } else {
