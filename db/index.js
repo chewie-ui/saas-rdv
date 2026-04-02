@@ -1,4 +1,3 @@
-require("dotenv").config();
 const mongoose = require("mongoose");
 
 const env = require(`../environment/${process.env.NODE_ENV}`);

@@ -92,9 +92,9 @@ block content
                         .plan__advantage-text
                             p= t.subscription.opt_2_13
                     if user && !user.isPremium
-                        button.btn(disabled) Current Plan
+                        button.btn(disabled)= t.subscription.btn_1_1
                     else 
-                        button.btn#getFreePlan Back to free plan 
+                        button.btn#getFreePlan= t.subscription.btn_1_2  
             .subscription__plan
                 .plan__recommanded ⭐ Most popular
                 .plan__header
@@ -182,13 +182,13 @@ block content
                         .plan__advantage-text
                             p= t.subscription.opt_2_13
                     if user && user.isPremium
-                        button.btn(disabled) Current plan
+                        button.btn(disabled)= t.subscription.btn_1_1
                         if autoRenew
-                            .small-text.danger#cancelSubscriptionPro Cancel subscription
-                        .small-text Jours restant: 
-                            strong #{daysLeft} jours 
+                            .small-text.danger#cancelSubscriptionPro= t.subscription.btn_2
+                        .small-text #{t.subscription.days_left}: 
+                            strong #{daysLeft} #{t.subscription.days} 
                     else 
-                        button.btn#getProPlan Get plan
+                        button.btn#getProPlan= t.subscription.btn_2_1
             .subscription__plan
                 .plan__header
                     .plan__title

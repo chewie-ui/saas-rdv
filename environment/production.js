@@ -2,7 +2,6 @@ const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
 const env = process.env;
 
-console.log(env);
 
 module.exports = {
   stripeWebhookKey: env.STRIPE_WEBHOOK_KEY_SERVER,

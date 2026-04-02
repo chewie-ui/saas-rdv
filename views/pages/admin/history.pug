@@ -9,13 +9,13 @@ block content
             .history__container.flex.col
                 .history__nav.flex-c.space-b
                     .flex
-                        .selectmenu
-                            .selectmenu__header
-                                span Filters
-                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-528 296-344l-56-56 240-240 240 240-56 56-184-184Z"/></svg>
-                            .selectmenu__panel
-                                .selectmenu__row Past
-                                .selectmenu__row Future
+                        //- .selectmenu
+                        //-     .selectmenu__header
+                        //-         span Filters
+                        //-         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-528 296-344l-56-56 240-240 240 240-56 56-184-184Z"/></svg>
+                        //-     .selectmenu__panel
+                        //-         .selectmenu__row Past
+                        //-         .selectmenu__row Future
                     .flex
                         .searchmenu
                             <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M779.38-153.85 528.92-404.31q-30 25.54-69 39.54t-78.38 14q-95.92 0-162.58-66.65-66.65-66.66-66.65-162.58 0-95.92 66.65-162.58 66.66-66.65 162.58-66.65 95.92 0 162.58 66.65 66.65 66.66 66.65 162.58 0 41.69-14.77 80.69t-38.77 66.69l250.46 250.47-28.31 28.3ZM381.54-390.77q79.61 0 134.42-54.81 54.81-54.8 54.81-134.42 0-79.62-54.81-134.42-54.81-54.81-134.42-54.81-79.62 0-134.42 54.81-54.81 54.8-54.81 134.42 0 79.62 54.81 134.42 54.8 54.81 134.42 54.81Z"/></svg>
@@ -26,22 +26,25 @@ block content
                 table.table__schema.history__table
                     thead 
                         tr
-                            th Id 
-                            th Nom & Prenom
-                            th Email
-                            th Numero
-                            th Date et horraire
-                            th Notes
-                            th Actions
+                            //- th Id 
+                            th= t.hist.table.name
+                            th= t.hist.table.email
+                            th= t.hist.table.phone
+                            th= t.hist.table.date
+                            th= t.hist.table.notes
+                            th= t.hist.table.status
+                            th= t.hist.table.actions
                     tbody
                         each h in history
                             tr(data-id=h._id)
-                                td= h._id.toString().slice(0, 10)
+                                //- td= h._id.toString().slice(0, 10)
                                 td #{h.name} #{h.surname}
                                 td #{h.email}
                                 td #{h.phone}
                                 td #{h.date.toLocaleDateString('fr-FR')} | #{h.startTime}-#{h.endTime}
                                 td #{h.message}
+                                td(style='padding:8px 1.5rem')
+                                    div(class=h.status) #{h.status}
                                 td.btn-td.flex-c.j-start
                                     button.btn-icon.flex-c.btn-panel
                                         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-160q-33 0-56.5-23.5T400-240q0-33 23.5-56.5T480-320q33 0 56.5 23.5T560-240q0 33-23.5 56.5T480-160Zm0-240q-33 0-56.5-23.5T400-480q0-33 23.5-56.5T480-560q33 0 56.5 23.5T560-480q0 33-23.5 56.5T480-400Zm0-240q-33 0-56.5-23.5T400-720q0-33 23.5-56.5T480-800q33 0 56.5 23.5T560-720q0 33-23.5 56.5T480-640Z"/></svg>
@@ -63,11 +66,11 @@ block content
                 .history__actions-row.edit
                     .row__icon.flex-c
                         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M200-200h50.46l409.46-409.46-50.46-50.46L200-250.46V-200Zm-60 60v-135.38l527.62-527.39q9.07-8.24 20.03-12.73 10.97-4.5 23-4.5t23.3 4.27q11.28 4.27 19.97 13.58l48.85 49.46q9.31 8.69 13.27 20 3.96 11.31 3.96 22.62 0 12.07-4.12 23.03-4.12 10.97-13.11 20.04L275.38-140H140Zm620.38-570.15-50.23-50.23 50.23 50.23Zm-126.13 75.9-24.79-25.67 50.46 50.46-25.67-24.79Z"/></svg>
-                    .row__text Edit
+                    .row__text= t.hist.edit
                 .history__actions-row.delete
                     .row__icon.flex-c
                         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M292.31-140q-29.92 0-51.12-21.19Q220-182.39 220-212.31V-720h-40v-60h180v-35.38h240V-780h180v60h-40v507.69Q740-182 719-161q-21 21-51.31 21H292.31ZM680-720H280v507.69q0 5.39 3.46 8.85t8.85 3.46h375.38q4.62 0 8.46-3.85 3.85-3.84 3.85-8.46V-720ZM376.16-280h59.99v-360h-59.99v360Zm147.69 0h59.99v-360h-59.99v360ZM280-720v520-520Z"/></svg>
-                    .row__text Delete
+                    .row__text= t.hist.del
 
 block scripts
     script(src="/js/layouts/history.js" type="module")

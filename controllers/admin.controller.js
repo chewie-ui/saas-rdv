@@ -1,3 +1,7 @@
+const env = require(`../environment/${process.env.NODE_ENV}`);
+const Stripe = require("stripe");
+const stripe = new Stripe(env.stripeSecretKey);
+
 const {
   getAppointments,
   GetAllAppointments,
@@ -468,4 +472,20 @@ exports.historyEditRowPatch = async (req, res) => {
     console.error(err);
     return res.json({ err });
   }
+};
+
+exports.paymentVerification = async (req, res) => {
+  const { session_id } = req.query;
+
+  if (!session_id) return res.redirect("/subscription");
+  try {
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    if (session.payment_status === "paid") {
+      return res.render("admin/payment-success");
+    } else {
+      return res.redirect("/subscription");
+    }
+  } catch (err) {}
+  return res.redirect("/subscription");
 };

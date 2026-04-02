@@ -16,85 +16,85 @@ block content
                     img(alt="Profile picture" src=user.profilePicture || "/images/no-user.webp" id="avatarPreview")
                 .account__avatar-btn
                     input#fileInput(type="file" style="display:none" accept="image/*")
-                    button.btn.secondary#uploadBtn Upload New Photo
+                    button.btn.secondary#uploadBtn= t.profile.upload_photo
             .account__right
-                h2 Profile Informations (Private)
+                h2= t.profile.title
                 .account__form
                     .field
-                        label(for="fullname") FullName
+                        label(for="fullname")= t.profile.fullname
                         input#fullname.input(value=user.fullName name="fullName")
                     .field
-                        label(for="email") Email Address
+                        label(for="email")= t.profile.email
                         input#email.input(disabled value=user.email name="email")
                         div(style="width:fit-content")
-                            .more#emailOpen Edit email
+                            .more#emailOpen= t.profile.edit_email
                     .field
-                        label(for="phone") Phone Number 
+                        label(for="phone")= t.profile.phone
                         input#phone.input(value=user.phone name="phone") 
                     .field
-                        label(for="password") Password
+                        label(for="password")= t.profile.password
                         input#password.input(placeholder="●●●●●●●●●●●" disabled)
-                        .more#passwordOpen Change password
+                        .more#passwordOpen= t.profile.change_pwd
                         .success= success
                     .account__actions
-                        button#saveChanges.btn Save Changes
-                        a(href="#").danger Delete account
+                        button#saveChanges.btn= t.profile.save
+                        a(href="#").danger= t.profile.delete_account
         .social
             .social__container
                 .social__box(data-name="emailPro")
                     if !user.isPremium
-                        a(href="/subscription").get__premium Get premium
+                        a(href="/subscription").get__premium= t.profile.get_premium
                     .social__logo
                         img(src="/images/logos/email-logo.webp" alt="Email logo")
-                    .social__title Email (professional)
+                    .social__title= t.profile.social.email_pro
                     .social__field
                         input.input(placeholder="Enter your link page" value=user.emailPro || "" disabled=(!user.isPremium))
-                        button.btn.btn__social-save Save
+                        button.btn.btn__social-save= t.avail.save
                 .social__box(data-name="phonePro")
                     if !user.isPremium
-                        a(href="/subscription").get__premium Get premium
+                        a(href="/subscription").get__premium= t.profile.get_premium
                     .social__logo
                         img(src="/images/logos/phone-logo.webp" alt="Phone logo")
-                    .social__title Phone (professional)
+                    .social__title= t.profile.social.phone_pro
                     .social__field
                         input.input(placeholder="Enter your link page" value=user.phonePro || "" disabled=(!user.isPremium))
-                        button.btn.btn__social-save Save
+                        button.btn.btn__social-save= t.avail.save
                 .social__box(data-name="instagramLink")
                     if !user.isPremium
-                        a(href="/subscription").get__premium Get premium
+                        a(href="/subscription").get__premium= t.profile.get_premium
                     .social__logo
                         img(src="/images/logos/instagram-logo.webp" alt="Instagram logo")
-                    .social__title Instagram
+                    .social__title= t.profile.social.instagram
                     .social__field
                         input.input(placeholder="Enter your link page" value=user.instagramLink || "" disabled=(!user.isPremium))
-                        button.btn.btn__social-save Save
+                        button.btn.btn__social-save= t.avail.save
                 .social__box(data-name="whatsappLink")
                     if !user.isPremium
-                        a(href="/subscription").get__premium Get premium
+                        a(href="/subscription").get__premium= t.profile.get_premium
                     .social__logo
                         img(src="/images/logos/whatsapp-logo.webp" alt="Whatsapp logo")
-                    .social__title Whatsapp
+                    .social__title= t.profile.social.whatsapp
                     .social__field
                         input.input(placeholder="Enter your link page" value=user.whatsappLink || "" disabled=(!user.isPremium))
-                        button.btn.btn__social-save Save
+                        button.btn.btn__social-save= t.avail.save
                 .social__box(data-name="facebookLink")
                     if !user.isPremium
-                        a(href="/subscription").get__premium Get premium
+                        a(href="/subscription").get__premium= t.profile.get_premium
                     .social__logo
                         img(src="/images/logos/facebook-logo.webp" alt="Facebook logo")
-                    .social__title Facebook
+                    .social__title= t.profile.social.facebook
                     .social__field
                         input.input(placeholder="Enter your link page" value=user.facebookLink || "" disabled=(!user.isPremium))
-                        button.btn.btn__social-save Save
+                        button.btn.btn__social-save= t.avail.save
                 .social__box(data-name="website")
                     if !user.isPremium
-                        a(href="/subscription").get__premium Get premium
+                        a(href="/subscription").get__premium= t.profile.get_premium
                     .social__logo
                         img(src="/images/logos/website-logo.webp" alt="Website logo")
-                    .social__title Website
+                    .social__title= t.profile.social.website
                     .social__field
                         input.input(placeholder="Enter your link page" value=user.website || "" disabled=(!user.isPremium))
-                        button.btn.btn__social-save Save
+                        button.btn.btn__social-save= t.avail.save
     +editPwd()  
     +editEmail()      
 

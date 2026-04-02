@@ -10,10 +10,10 @@ block content
     .section__container.flex.col
         .availability-section.flex.col
             .availability-section__header
-                h3 Set Default Working Hours
+                h3= t.avail.t1
             .availability-section__body.flex
                 .body-weekly-hour.flex.col
-                    - const weekday = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+                    - const weekday = [t.days.sunday, t.days.monday, t.days.tuesday, t.days.wednesday, t.days.thursday, t.days.friday, t.days.saturday]
                     - const sortedSchedule = [...currentCompany.schedule].sort((a, b) => { const order = i => i === 0 ? 7 : i; return order(a.weekdayIndex) - order(b.weekdayIndex); })
                     each day in sortedSchedule
                         .row-weekday.flex
@@ -66,7 +66,7 @@ block content
                                
         .availability-section.flex.col
             .availability-section__header
-                h3 Set your slot time per booking
+                h3= t.avail.t2
             .availability-section__body.flex.col
                 if !user.isPremium
                     a(href="/subscription").get__premium Get premium
@@ -85,14 +85,14 @@ block content
 
         .availability-section.flex.col
             .availability-section__header
-                h3 Set your holidays in a click
+                h3= t.avail.t3
             .availability-section__body.flex.col
                 if !user.isPremium
                     a(href="/subscription").get__premium Get premium
                 if user && user.isPremium
-                    button.btn.btn-primary#addDaysOffBtn(type="button") Add days off
+                    button.btn.btn-primary#addDaysOffBtn(type="button")= t.avail.btn1
                 else
-                    button.btn.btn-secondary(disabled title="Reserved for Premium members") Add days off
+                    button.btn.btn-secondary(disabled title="Reserved for Premium members")= t.avail.btn1
                 
                 #holidaysBody.days-off__wrapper.flex.col
                     if daysOff

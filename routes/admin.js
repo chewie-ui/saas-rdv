@@ -20,6 +20,7 @@ const {
   historyEditRow,
   settingsInit,
   historyEditRowPatch,
+  paymentVerification
 } = require("../controllers/admin.controller");
 
 const isAuth = require("../middlewares/isAuth");
@@ -64,8 +65,6 @@ router.patch("/appointment/:bookId/restore", restoreBooking);
 router.patch("/appointment/:id/cancel", cancelBooking);
 router.get("/appointment/week-data", getWeekData);
 
-router.get("/subscription/success", isVerified, (req, res) => {
-  res.render("admin/payment-success");
-});
+router.get("/subscription/success", isVerified, paymentVerification);
 
 module.exports = router;
