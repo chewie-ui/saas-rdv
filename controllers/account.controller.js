@@ -1,14 +1,7 @@
-const Stripe = require("stripe");
-let stripe;
-if (process.env.NODE_ENV === "prodution") {
-  stripe = new Stripe(process.env.STRIPE_SECRET_KEY_SERVER)
-} else {
-  const env = require(`../environment/${process.env.NODE_ENV}`);
-  stripe = new Stripe(env.stripeSecretKey);
-}
-
 const User = require("../db/models/user.model");
 const Subscription = require("../db/models/subscription.model");
+const Stripe = require("stripe");
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY_ONLINE);
 const bcrypt = require("bcrypt");
 const { sendEmail } = require("../utils/mailer");
 
@@ -79,14 +72,14 @@ exports.createCheckout = async (req, res) => {
 
     line_items: [
       {
-        price: env.stripePricePlanPro,
+        price: "price_1TGzw7KBy9u2w1HpuEnmgRwH",
         quantity: 1,
       },
     ],
 
     client_reference_id: req.user._id.toString(),
 
-    success_url: `https://www.gymio.be/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+    success_url: "https://www.gymio.be/subscription/success",
     cancel_url: "https://www.gymio.be/subscription",
   });
 

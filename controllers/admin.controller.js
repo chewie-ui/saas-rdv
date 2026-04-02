@@ -1,18 +1,7 @@
+const env = require(`../environment/${process.env.NODE_ENV}`);
 const Stripe = require("stripe");
-let stripe;
-console.log(process.env.NODE_ENV);
 
-if (process.env.NODE_ENV === "prodution") {
-  stripe = new Stripe(process.env.STRIPE_SECRET_KEY_SERVER)
-} else {
-  const env = require(`../environment/${process.env.NODE_ENV}`);
-  stripe = new Stripe(env.stripeSecretKey);
-}
-
-
-console.log(`ENV: ${JSON.stringify(env)}`);
-console.log(`ENV avec la key: ${env.stripeSecretKey}`);
-
+const stripe = new Stripe(env.stripeSecretKey);
 
 const {
   getAppointments,
