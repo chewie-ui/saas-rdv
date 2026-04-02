@@ -1,7 +1,7 @@
 const User = require("../db/models/user.model");
 const Subscription = require("../db/models/subscription.model");
 const Stripe = require("stripe");
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY_ONLINE);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY_SERVER);
 const bcrypt = require("bcrypt");
 const { sendEmail } = require("../utils/mailer");
 
