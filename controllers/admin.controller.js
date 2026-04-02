@@ -1,7 +1,7 @@
 const env = require(`../environment/${process.env.NODE_ENV}`);
 const Stripe = require("stripe");
 
-console.log(`ENV: ${env}`);
+console.log(`ENV: ${JSON.stringify(env)}`);
 console.log(`ENV avec la key: ${env.stripeSecretKey}`);
 
 const stripe = new Stripe(env.stripeSecretKey);
