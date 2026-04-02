@@ -1,6 +1,7 @@
 const env = require(`../environment/${process.env.NODE_ENV}`);
 const Stripe = require("stripe");
-const stripe = new Stripe(env.stripeSecretKey);
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY_SERVER; 
+const stripe = new Stripe(stripeSecretKey);
 
 const {
   getAppointments,
