@@ -33,7 +33,8 @@ PETIT : Finir les textes et langues 👌👌👌
 GROS : ‼️‼️bug prise de rdv decaler de un jour ‼️‼️ 👌👌👌
 GROS : ‼️‼️Email 24h avant rappel‼️‼️
 PETIT : ‼️‼️Si client annule faire beau message et redirection‼️‼️ 👌👌👌
-PETIT : ‼️‼️Verifier si annuler rdv fonctionne‼️‼️
+PETIT : ‼️‼️Verifier si annuler rdv fonctionne‼️‼️ 👌👌👌
+PETIT : ‼️‼️Si rdv cancel repermette de repdnre rdv‼️‼️
 PETIT : détails UI
 PETIT : Admin recoit mail si client annule
 PETIT : Refaire le mail conrifmlation (message et btns) 👌👌👌
@@ -41,7 +42,6 @@ PETIT : Refaire le mail conrifmlation (message et btns) 👌👌👌
 BUGS :
 
 - CALENDRIER:
-  - PETIT : ‼️‼️Si rdv cancel repermette de repdnre rdv‼️‼️
   - PETIT : Si clique prendre rdv sans aucune info alerte moche
   - PETIT : Si clique rdv mauvais email alerte moche
   - PETIT : CLic contactez nous fais rien
