@@ -244,6 +244,15 @@ exports.cancelBooking = async (req, res) => {
     { status: "canceled" },
     { new: true },
   ); // recup infos ici
+
+  if (!companyId) {
+    return res.status(404).render("client/404.pug", {
+      message: "Lien d'annulation invalide ou déjà utilisé.",
+    });
+  }
+
+  console.log(companyId);
+
   const company = await Company.findById(companyId.company);
   const coach = await User.findById(company.owner);
 
