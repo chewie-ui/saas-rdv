@@ -19,7 +19,7 @@ div(style="background-color: #f8fbf9; padding: 40px 20px; font-family: 'Segoe UI
         div(style="display: flex; align-items: center; margin-bottom: 20px;")
           span(style="font-size: 20px; margin-right: 15px;") 📅
           div
-            p(style="margin: 0; font-weight: bold; color: #2d3436;") #{date.toLocaleString('fr-FR')}
+            p(style="margin: 0; font-weight: bold; color: #2d3436;")= new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
             p(style="margin: 0; font-size: 14px; color: #636e72;") #{startHour} — #{endHour}
 
         //- Ligne Service (Consultation)

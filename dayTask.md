@@ -35,7 +35,7 @@ GROS : ‼️‼️Email 24h avant rappel‼️‼️
 PETIT : ‼️‼️Si client annule faire beau message‼️‼️
 PETIT : détails UI
 PETIT : Admin recoit mail si client annule
-PETIT : Refaire le mail conrifmlation
+PETIT : Refaire le mail conrifmlation (message et btns) 👌👌👌
 
 BUGS :
 
