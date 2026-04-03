@@ -240,7 +240,7 @@ exports.cancelBooking = async (req, res) => {
   console.log(userId);
 
   const companyId = await Booking.findOneAndUpdate(
-    { _id: userId, token },
+    { _id: userId, cancelToken: token },
     { status: "canceled" },
     { new: true },
   ).lean(); // recup infos ici
