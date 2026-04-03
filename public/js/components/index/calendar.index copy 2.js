@@ -115,6 +115,7 @@ export default function () {
     const resultDaysOff = await daysOff.json();
 
     const dayOffArray = resultDaysOff.result.schedule;
+
     const responseBookings = await fetch(`/get-booking/${COMPANY_ID}`);
     const specificExceptions = await responseBookings.json();
 
@@ -142,8 +143,9 @@ export default function () {
       const currentDate = new Date(currentYear, currentMonth, i);
       currentDate.setHours(0, 0, 0, 0);
 
-      const weekdayIndex = currentDate.getDay(); // garde pour le positionnement visuel
-      const jsWeekdayIndex = currentDate.getDay(); // pour la DB
+      const weekdayIndex = (currentDate.getDay() + 6) % 7; // garde pour le positionnement visuel
+      const jsWeekdayIndex =
+        currentDate.getDay() === 0 ? 0 : currentDate.getDay(); // pour la DB
       const todayClean = new Date(realToday);
       todayClean.setHours(0, 0, 0, 0);
 
@@ -227,23 +229,21 @@ export default function () {
       day.addEventListener("click", async () => {
         if (day.dataset.disabled === "true") return;
         const index = day.dataset.weekdayIndex;
-        console.log(index);
-
         const clickedDate = new Date(currentYear, currentMonth, i);
         datePicked = clickedDate;
 
         const dateIso = clickedDate.toISOString();
-
         const slots = await fetch("/get-schedule", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            index: index,
+            index: (parseInt(index) + 1) % 7,
             COMPANY_ID,
             date: dateIso,
           }),
         });
         const slotsToAdd = await slots.json();
+        console.log(slotsToAdd);
 
         scheduleWrapper.querySelector(".schedule-rows").innerHTML = "";
 
@@ -261,6 +261,7 @@ export default function () {
         );
 
         const response = await result.json();
+        console.log(response);
 
         renderSchedules(response.bookedTimes);
 

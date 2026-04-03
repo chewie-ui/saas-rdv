@@ -149,7 +149,7 @@ exports.renderAppointments = async (req, res, next) => {
 
 exports.getSchedule = async (req, res) => {
   const { index, COMPANY_ID, date } = req.body;
-  const jsWeekdayIndex = (parseInt(index) + 1) % 7;
+  const jsWeekdayIndex = parseInt(index);
   // 1. Récupérer la config de base (pour le slotTime et les horaires par défaut)
   const company = await Company.findById(COMPANY_ID)
     .select("schedule slotTime")

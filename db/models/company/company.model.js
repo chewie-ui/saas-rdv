@@ -26,12 +26,10 @@ const companySchema = schema(
           type: Boolean,
           default: false,
         },
-        workingHours: [
-          {
-            start: String,
-            end: String,
-          },
-        ],
+        workingHours: {
+          type: [{ start: String, end: String }],
+          default: [{ start: "08:00", end: "16:00" }],
+        },
       },
     ],
   },

@@ -31,6 +31,8 @@ PETIT : Finir les textes et langues
 
 3-04-26
 
+‼️‼️bug prise de rdv decaler de un jour ‼️‼️
+
 BUGS :
 
 - CALENDRIER:
@@ -64,3 +66,6 @@ FULL CLEAN REPONSIVE :
 - Index (calendar) 👌👌👌
 - Informations 👌👌👌
 - Appointment !!
+- Book 👌👌👌
+- History 👌👌👌
+- History edit 👌👌👌
