@@ -251,7 +251,7 @@ exports.cancelBooking = async (req, res) => {
     });
   }
 
-  console.log(companyId);
+  console.log("booking infos" : companyId);
 
   const company = await Company.findById(companyId.company);
   const coach = await User.findById(company.owner);
