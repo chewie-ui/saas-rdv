@@ -26,17 +26,21 @@ PETIT : Creer bon envirnnment 👌👌👌
 GROS : BUG ALL (gros debug) NOTER TOUT LES BUGS ou amelioration 👌👌👌
 PETIT : Add state in hitsory ['confirmed-cancel'] 👌👌👌
 PETIT : Page paiement valide (si pas achat valide pas mettre succes) 👌👌
-PETIT : détails UI
-PETIT : Finir les textes et langues
+PETIT : Finir les textes et langues 👌👌👌
 
 3-04-26
 
-‼️‼️bug prise de rdv decaler de un jour ‼️‼️
+GROS : ‼️‼️bug prise de rdv decaler de un jour ‼️‼️ 👌👌👌
+GROS : ‼️‼️Email 24h avant rappel‼️‼️
+PETIT : ‼️‼️Si client annule faire beau message‼️‼️
+PETIT : détails UI
+PETIT : Admin recoit mail si client annule
+PETIT : Refaire le mail conrifmlation
 
 BUGS :
 
 - CALENDRIER:
-  - PETIT : Si rdv cancel repermette de repdnre rdv
+  - PETIT : ‼️‼️Si rdv cancel repermette de repdnre rdv‼️‼️
   - PETIT : Si clique prendre rdv sans aucune info alerte moche
   - PETIT : Si clique rdv mauvais email alerte moche
   - PETIT : CLic contactez nous fais rien
@@ -47,12 +51,10 @@ BUGS :
   - PETIT : Langue du mail en fonction de langue client
   - PETIT : Barre de lheure a retirer pour le moment
 
-GROS : Faire page contact
-PETIT : Annuler rdv beau msg
+GROS : ‼️‼️Faire page contact‼️‼️
 GROS : 1 page client et une page admin ?
 GROS : Panel cote client voir futures et passer rdv ?
 PETIT : email bienvenue creation ?
-PETIT : Envoie dun rappel 24h avant le rdv ?
 
 Repos OU léger (emailing rappel)
 
@@ -69,3 +71,9 @@ FULL CLEAN REPONSIVE :
 - Book 👌👌👌
 - History 👌👌👌
 - History edit 👌👌👌
+
+GROS : Refaire calendrier plus prorpe :
+
+- Ligne de lheure actuelle
+- Responsive mettre 1 jour
+- Si cancel plus afficher
