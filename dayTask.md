@@ -29,6 +29,8 @@ PETIT : Page paiement valide (si pas achat valide pas mettre succes) 👌👌
 PETIT : détails UI
 PETIT : Finir les textes et langues
 
+3-04-26
+
 BUGS :
 
 - CALENDRIER:
@@ -44,7 +46,7 @@ BUGS :
   - PETIT : Barre de lheure a retirer pour le moment
 
 GROS : Faire page contact
-
+PETIT : Annuler rdv beau msg
 GROS : 1 page client et une page admin ?
 GROS : Panel cote client voir futures et passer rdv ?
 PETIT : email bienvenue creation ?
@@ -53,3 +55,7 @@ PETIT : Envoie dun rappel 24h avant le rdv ?
 Repos OU léger (emailing rappel)
 
 publier
+
+
+FULL CLEAN REPONSIVE : 
+  - Landing Page 👌👌👌

@@ -1,7 +1,10 @@
+
+const env = require(`../environment/${process.env.NODE_ENV}`)
+
 const User = require("../db/models/user.model");
 const Subscription = require("../db/models/subscription.model");
 const Stripe = require("stripe");
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY_SERVER);
+const stripe = new Stripe(env.stripeSecretKey);
 const bcrypt = require("bcrypt");
 const { sendEmail } = require("../utils/mailer");
 

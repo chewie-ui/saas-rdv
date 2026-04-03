@@ -14,17 +14,14 @@
                     a(href="/login").btn.secondary= t.header.login
                     a(href="/register").btn.primary= t.header.register
 
-                .lang__selector.flex-c
-                    .lang__main
-                        img(src=`/images/${lang === "en" ? 'en.jpg' : 'fr.webp'}`)
-                    .lang__panel
-                        div(onclick="changeLanguage('fr')")
-                            img(src="/images/fr.webp")    
-                        div(onclick="changeLanguage('en')")
-                            img(src="/images/en.jpg")                    
+                .selectmenu(style="min-width: 120px;")
+                    .selectmenu__header(style="height:100%")
+                        span #{lang === 'fr' ? "Francais" : "English"}
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-528 296-344l-56-56 240-240 240 240-56 56-184-184Z"/></svg>
+                    .selectmenu__panel
+                        .selectmenu__row(onclick="changeLanguage('fr')") French
+                        .selectmenu__row(onclick="changeLanguage('en')") English                    
 
-                    //- Faire un beau menu pour les langues
-                    //- Enregistrer les langues en cookie et bdd
                     //- https://www.youtube.com/watch?v=poNC8zTaT1I
 
 .header-phone
