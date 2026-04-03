@@ -34,8 +34,10 @@ GROS : ‼️‼️bug prise de rdv decaler de un jour ‼️‼️ 👌👌👌
 GROS : ‼️‼️Email 24h avant rappel‼️‼️
 PETIT : ‼️‼️Si client annule faire beau message et redirection‼️‼️ 👌👌👌
 PETIT : ‼️‼️Verifier si annuler rdv fonctionne‼️‼️ 👌👌👌
-PETIT : ‼️‼️Si rdv cancel repermette de repdnre rdv‼️‼️
-PETIT : détails UI
+PETIT : ‼️‼️Si rdv cancel repermette de repdnre rdv‼️‼️ 👌👌👌
+PETIT : détails UI :
+  - Rdv heure et input
+  - Icon et sidebar
 PETIT : Admin recoit mail si client annule
 PETIT : Refaire le mail conrifmlation (message et btns) 👌👌👌
 
