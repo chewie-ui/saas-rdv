@@ -56,7 +56,13 @@ const bookingSchema = new schema(
   { timestamps: true },
 );
 
-bookingSchema.index({ date: 1, startTime: 1 }, { unique: true });
+bookingSchema.index(
+  { date: 1, startTime: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: "confirmed" },
+  },
+);
 
 const Booking = mongoose.model("Booking", bookingSchema);
 
