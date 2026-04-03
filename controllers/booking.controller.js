@@ -75,6 +75,7 @@ exports.getBooking = async (req, res) => {
   const bookings = await Booking.find({
     company: companyId,
     date: new Date(date),
+    status: { $ne: "canceled" },
   }).select("startTime -_id");
 
   res.json({
@@ -228,6 +229,7 @@ exports.getBookingC = async (req, res) => {
 
   const doc = await Booking.find({
     company: companyId,
+    status: { $ne: "canceled" },
   });
 
   res.json(doc);
@@ -244,14 +246,13 @@ exports.cancelBooking = async (req, res) => {
     { status: "canceled" },
     { new: true },
   ).lean(); // recup infos ici
-  console.log({"booking infos" : companyId});
+  console.log({ "booking infos": companyId });
 
   if (!companyId) {
     return res.status(404).render("client/404.pug", {
       message: "Lien d'annulation invalide ou déjà utilisé.",
     });
   }
-
 
   const company = await Company.findById(companyId.company);
   const coach = await User.findById(company.owner);

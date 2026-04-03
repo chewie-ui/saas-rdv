@@ -36,22 +36,15 @@ block content
                 .cell.time= hour
                 each day, dayIndex in weekDays
                     .cell.day
-                        //- 1. On filtre les RDV qui matchent ce créneau précis
-                        - const slotApps = appointments.filter(a => a.isoDate === day.iso.split("T")[0] && a.startHour === hour)
-                        
-                        //- 2. On cherche s'il y en a un qui n'est PAS annulé (prioritaire)
-                        - const activeApp = slotApps.find(a => a.status !== 'canceled')
-                        
-                        //- 3. On choisit quoi afficher : l'actif en priorité, sinon le premier de la liste (le annulé)
-                        - const displayApp = activeApp || slotApps[0]
+                        each appointment in appointments
+                            if appointment.isoDate === day.iso.split("T")[0] && appointment.startHour === hour
+                                a.appointment(href=`/appointement/${appointment._id}` class={ canceled: appointment.status === 'canceled' })
+                                    if appointment.status === "canceled"
+                                        .appointment-canceled Canceled
+                                    .appointment-name= appointment.name
+                                    .appointment-time.xs-comment 
+                                        | #{appointment.startHour} - #{appointment.endHour}
 
-                        if displayApp
-                        a.appointment(href=`/appointement/${displayApp._id}` class={ canceled: displayApp.status === 'canceled' })
-                            if displayApp.status === "canceled"
-                            .appointment-canceled Canceled
-                            .appointment-name= displayApp.name
-                            .appointment-time.xs-comment 
-                            | #{displayApp.startHour} - #{displayApp.endHour}
 
 block scripts
     script(src="/js/layouts/appointment.js" type="module")

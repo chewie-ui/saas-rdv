@@ -175,7 +175,6 @@ exports.appointment = async (req, res) => {
     pageName: "Appointment",
     slotTime,
     hours: generateTimeSlots(minHour, maxHour, slotTime),
-
     weekDays: getWeekDays(referenceDate),
     appointments: formatted,
     weekLabel,

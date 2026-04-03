@@ -10,5 +10,8 @@ exports.getAppointments = () => {
 };
 
 exports.GetAllAppointments = async (companyId) => {
-  return await Booking.find({ company: companyId });
+  return await Booking.find({
+    company: companyId,
+    status: { $ne: "canceled" },
+  });
 };
