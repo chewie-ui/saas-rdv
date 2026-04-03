@@ -243,7 +243,7 @@ exports.cancelBooking = async (req, res) => {
     { _id: userId, token },
     { status: "canceled" },
     { new: true },
-  ); // recup infos ici
+  ).lean(); // recup infos ici
 
   if (!companyId) {
     return res.status(404).render("client/404.pug", {

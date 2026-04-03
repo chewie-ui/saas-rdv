@@ -9,7 +9,10 @@ block content
             .error-404__big-404 404
             .error-404__title
                 h2 We lost this page
-                p.description The page you are looking for doesn't exist or has been moved.
+                if message
+                    p.description= message
+                else 
+                    p.description The page you are looking for doesn't exist or has been moved.
             .error-404__body
                 .error-404__search-wrapper
                     input.input(placeholder="Search companies...")
