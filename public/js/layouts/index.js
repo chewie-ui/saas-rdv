@@ -28,11 +28,9 @@ document.addEventListener("DOMContentLoaded", () => {
     tmp.querySelector(".dialog__btn1").style.display = "none";
     tmp.querySelector(".dialog__btn2").textContent = "Close";
     console.log(tmp.querySelector(".dialog__wrapper"));
-
+    const dataID = tmp.querySelector(".dialog__wrapper").dataset.id;
     tmp.querySelector(".dialog__btn2").onclick = function () {
-      console.log(tmp.querySelector(".dialog__wrapper"));
-
-      location.href = "/" + tmp.querySelector(".dialog__wrapper").dataset.id;
+      location.href = "/" + dataID;
     };
 
     document.querySelector("body").appendChild(tmp);
