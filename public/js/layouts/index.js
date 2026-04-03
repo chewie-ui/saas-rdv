@@ -22,11 +22,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if (templateDialog) {
     const tmp = templateDialog.content.cloneNode(true);
 
-    tmp.querySelector("h2").textContent = "Delete confirmation";
+    tmp.querySelector("h2").textContent = "Booking Cancelled";
     tmp.querySelector(".dialog__p").textContent =
-      "If you confoirm this is gonna be derelteld and you dgonna have no backup";
-    tmp.querySelector(".dialog__btn1").textContent = "Cancel";
-    tmp.querySelector(".dialog__btn2").textContent = "Confirm delete";
+      "Your appointment has been successfully cancelled. If this was a mistake, you can easily book a new session anytime.";
+    tmp.querySelector(".dialog__btn1").style.display = "none";
+    tmp.querySelector(".dialog__btn2").textContent = "Close";
 
     document.querySelector("body").appendChild(tmp);
   }
