@@ -319,13 +319,8 @@ exports.restoreBooking = async (req, res) => {
 };
 
 exports.cancelBooking = async (req, res) => {
-  const { bookingId } = req.params;
-  const { token } = req.query;
-  console.log(token);
-
-  console.log(bookingId);
-
-  await Booking.findByIdAndUpdate(bookingId, {
+  const { id } = req.params;
+  await Booking.findByIdAndUpdate(id, {
     status: "canceled",
   });
 

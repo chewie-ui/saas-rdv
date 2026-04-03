@@ -236,6 +236,9 @@ exports.getBookingC = async (req, res) => {
 exports.cancelBooking = async (req, res) => {
   const { userId } = req.params;
   const { token } = req.query;
+  console.log(token);
+  console.log(userId);
+
   const companyId = await Booking.findById(userId); // recup infos ici
   const company = await Company.findById(companyId.company);
   const coach = await User.findById(company.owner);
