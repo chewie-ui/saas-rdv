@@ -28,6 +28,10 @@ document.addEventListener("DOMContentLoaded", () => {
     tmp.querySelector(".dialog__btn1").style.display = "none";
     tmp.querySelector(".dialog__btn2").textContent = "Close";
 
+    tmp.querySelector(".dialog__btn2").onclick = function () {
+      location.href = "/" + tmp.querySelector(".dialog__wrapper").dataset.id;
+    };
+
     document.querySelector("body").appendChild(tmp);
   }
 });
