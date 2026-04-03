@@ -32,7 +32,7 @@ PETIT : Finir les textes et langues 👌👌👌
 
 GROS : ‼️‼️bug prise de rdv decaler de un jour ‼️‼️ 👌👌👌
 GROS : ‼️‼️Email 24h avant rappel‼️‼️
-PETIT : ‼️‼️Si client annule faire beau message‼️‼️ 👌👌👌
+PETIT : ‼️‼️Si client annule faire beau message et redirection‼️‼️ 👌👌👌
 PETIT : ‼️‼️Verifier si annuler rdv fonctionne‼️‼️
 PETIT : détails UI
 PETIT : Admin recoit mail si client annule

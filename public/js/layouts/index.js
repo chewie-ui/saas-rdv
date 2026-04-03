@@ -27,8 +27,11 @@ document.addEventListener("DOMContentLoaded", () => {
       "Your appointment has been successfully cancelled. If this was a mistake, you can easily book a new session anytime.";
     tmp.querySelector(".dialog__btn1").style.display = "none";
     tmp.querySelector(".dialog__btn2").textContent = "Close";
+    console.log(tmp.querySelector(".dialog__wrapper"));
 
     tmp.querySelector(".dialog__btn2").onclick = function () {
+      console.log(tmp.querySelector(".dialog__wrapper"));
+
       location.href = "/" + tmp.querySelector(".dialog__wrapper").dataset.id;
     };
 
