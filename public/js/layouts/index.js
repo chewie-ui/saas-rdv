@@ -17,6 +17,21 @@ if (cancelBooking) {
   });
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+  const templateDialog = document.getElementById("templateDialog");
+  if (templateDialog) {
+    const tmp = templateDialog.content.cloneNode(true);
+
+    tmp.querySelector("h2").textContent = "Delete confirmation";
+    tmp.querySelector(".dialog__p").textContent =
+      "If you confoirm this is gonna be derelteld and you dgonna have no backup";
+    tmp.querySelector(".dialog__btn1").textContent = "Cancel";
+    tmp.querySelector(".dialog__btn2").textContent = "Confirm delete";
+
+    document.querySelector("body").appendChild(tmp);
+  }
+});
+
 document.addEventListener("click", (event) => {
   const isSelectMenu = event.target.closest(".selectmenu");
   const isSearchMenu = event.target.closest(".searchmenu");
