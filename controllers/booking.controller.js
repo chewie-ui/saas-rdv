@@ -50,6 +50,7 @@ exports.createBooking = async (req, res) => {
         surname,
         date,
         startHour: startTime,
+        message,
         endHour: endTime,
         slotTime: slotTime,
         bookingId: newBooking._id,
