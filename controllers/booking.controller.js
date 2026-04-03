@@ -239,7 +239,11 @@ exports.cancelBooking = async (req, res) => {
   console.log(token);
   console.log(userId);
 
-  const companyId = await Booking.findById(userId); // recup infos ici
+  const companyId = await Booking.findOneAndUpdate(
+    { _id: userId, token },
+    { status: "canceled" },
+    { new: true },
+  ); // recup infos ici
   const company = await Company.findById(companyId.company);
   const coach = await User.findById(company.owner);
 
