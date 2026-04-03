@@ -30,7 +30,11 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log(tmp.querySelector(".dialog__wrapper"));
     const dataID = tmp.querySelector(".dialog__wrapper").dataset.id;
     tmp.querySelector(".dialog__btn2").onclick = function () {
-      location.href = "/" + dataID;
+      if (dataID) {
+        location.href = "/" + dataID;
+      } else {
+        location.href = "/";
+      }
     };
 
     document.querySelector("body").appendChild(tmp);

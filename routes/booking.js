@@ -16,6 +16,6 @@ router.post("/get-days-off", getDaysOff);
 router.get("/get-disabled-days/:companyId", getDisabledDays);
 
 router.get("/get-booking/:companyId", getBookingC);
-router.get("/cancel-booking/:userId", cancelBooking);
+router.get("/cancel-booking/:bookingId", cancelBooking);
 
 module.exports = router;
