@@ -1,6 +1,6 @@
 .content-wrapper {
   padding-top: 25vh;
-  align-items: flex-start;
+  align-items: center;
   flex-direction: column;
 }
 
@@ -162,15 +162,23 @@
 }
 
 @media all and (min-width: 820px) {
+  .content-wrapper {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .calendar-wrapper .calendar {
+    width: 410px;
+  }
 }
 
 @media all and (min-width: 1280px) {
-  .content-wrapper {
-    flex-direction: row;
-  }
-
   .informations .informations__container .informations__top,
   .informations .informations__container .informations__bottom {
     width: 350px;
+  }
+
+  .calendar-wrapper .calendar {
+    width: 500px;
   }
 }

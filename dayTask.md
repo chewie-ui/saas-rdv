@@ -56,6 +56,11 @@ Repos OU léger (emailing rappel)
 
 publier
 
+FULL CLEAN REPONSIVE :
 
-FULL CLEAN REPONSIVE : 
-  - Landing Page 👌👌👌
+- Landing Page 👌👌👌
+- Subscription 👌👌👌
+- Availability 👌👌👌
+- Index (calendar) 👌👌👌
+- Informations 👌👌👌
+- Appointment !!
