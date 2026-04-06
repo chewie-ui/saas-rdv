@@ -11,6 +11,7 @@ module.exports = session({
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 jours
     secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
   },
   store: MongoStore.create({
     mongoUrl: env.dbUri || "mongodb://localhost:27017/rdv",
