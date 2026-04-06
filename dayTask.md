@@ -43,10 +43,11 @@ PETIT : Refaire le mail conrifmlation (message et btns) 👌👌👌
 6-04-26
 
 GROS : Creer le systeme de session 👌👌👌
+GROS : ‼️‼️Bug annuler plan‼️‼️ 👌👌👌
 PETIT : Bug double import 👌👌👌
-GROS : ‼️‼️Bug annuler plan‼️‼️
 GROS : ‼️‼️Email 24h avant rappel‼️‼️
 GROS : Creer des notifs pour ladmin si client annule rdv
+PETIT : Reprendre le plan si annuler
 PETIT : Design edit email popup
 PETIT : Rdv heure et input (Design)
 PETIT : Icon et sidebar (Design)
@@ -81,6 +82,5 @@ GROS : Refaire calendrier plus prorpe :
 - Ligne de lheure actuelle
 - Responsive mettre 1 jour
 - Si cancel plus afficher
-
 
 GROS : Publier sur OVH avec le SSL

@@ -119,10 +119,9 @@ exports.updatePassword = async (req, res) => {
 };
 
 exports.cancelSubscription = async (req, res) => {
-  const subscription = await Subscription.findOne({ user: req.user._id });
-
-  console.log({ subscription });
   try {
+    const subscription = await Subscription.findOne({ user: req.user._id });
+
     if (!subscription.stripeSubscriptionId) {
       return res.status(400).json({ error: "No active subscription found." });
     }

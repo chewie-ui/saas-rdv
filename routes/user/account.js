@@ -31,5 +31,4 @@ router.post("/cancel-subscription", cancelSubscription);
 router.post("/edit-email-confirmation", editEmailConfirmation);
 router.post("/check-digital-code", checkDigitalCode);
 
-
 module.exports = router;

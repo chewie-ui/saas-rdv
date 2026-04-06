@@ -1,6 +1,7 @@
 const getProPlan = document.getElementById("getProPlan");
 const cancelSubscriptionPro = document.getElementById("cancelSubscriptionPro");
 const getFreePlan = document.getElementById("getFreePlan");
+const retakeSubscription = document.getElementById("retakeSubscription");
 
 if (getProPlan) {
   getProPlan.onclick = async function () {
@@ -47,3 +48,20 @@ const handleSubscriptionCancel = async function (e) {
 if (cancelSubscriptionPro)
   cancelSubscriptionPro.onclick = handleSubscriptionCancel;
 if (getFreePlan) getFreePlan.onclick = handleSubscriptionCancel;
+
+if (retakeSubscription) {
+  retakeSubscription.onclick = async function (e) {
+    e.preventDefault();
+
+    if (confirm("Confirm that you want to resume your subscritpion please")) {
+      const response = await fetch(`/subscription/resume`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      console.log(data);
+    }
+  };
+}

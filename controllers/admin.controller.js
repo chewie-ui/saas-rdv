@@ -487,3 +487,31 @@ exports.paymentVerification = async (req, res) => {
   } catch (err) {}
   return res.redirect("/subscription");
 };
+
+const Subscription = require("../db/models/subscription.model");
+
+exports.resumeSubscription = async (req, res) => {
+  try {
+    const subscription = await Subscription.findOne({ user: req.user._id });
+
+    if (!subscription || !subscription.stripeSubscriptionId) {
+      return res.status(404).json({ error: "Abonnement introuvable." });
+    }
+
+    await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+      cancel_at_period_end: false,
+    });
+
+    subscription.autoRenew = true;
+    subscription.status = "active";
+    await subscription.save();
+
+    return res.json({
+      success: true,
+      message: "Abonnement réactivé avec succès.",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.json({ err });
+  }
+};
