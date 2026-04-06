@@ -1,9 +1,7 @@
-const env = process.env.NODE_ENV;
+const env = require(`./environment/${process.env.NODE_ENV}`);
+
 const session = require("express-session");
 const MongoStore = require("connect-mongo").default;
-
-console.log(env.dbUri);
-console.log(process.env.NODE_ENV);
 
 module.exports = session({
   secret: env.sessionSecret || "une_phrase_tres_secrete",
