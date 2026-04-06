@@ -37,7 +37,7 @@ if (saveChanges && accountForm) {
 
     try {
       const fullNameInput = document.getElementById("fullname");
-      const emailInput = document.getElementById("email");
+      // const emailInput = document.getElementById("email");
       const phoneInput = document.getElementById("phone");
 
       const response = await fetch(`/account/update-info`, {
@@ -45,7 +45,7 @@ if (saveChanges && accountForm) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fullName: fullNameInput.value,
-          email: emailInput.value,
+          // email: emailInput.value,
           phone: phoneInput.value,
         }),
       });

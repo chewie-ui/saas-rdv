@@ -1,4 +1,4 @@
-#dialogWrp {
+.dialog {
   position: fixed;
   top: 0;
   left: 0;
@@ -13,7 +13,7 @@
   align-items: flex-start;
 }
 
-#dialogWrp .dialog__wrapper {
+.dialog .dialog__wrapper {
   background-color: var(--color-white);
   padding: 5px 0;
   max-width: 600px;
@@ -31,34 +31,43 @@
   justify-content: space-between;
 }
 
-#dialogWrp .dialog__wrapper .dialog__top {
+.dialog .dialog__wrapper .dialog__top {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 32px;
 }
 
-#dialogWrp .dialog__wrapper .dialog__top .dialog__title h2 {
+.dialog .dialog__wrapper .dialog__top .dialog__title h2 {
   font-size: 24px;
   font-weight: 500;
 }
 
-#dialogWrp .dialog__wrapper .dialog__top .dialog__icon svg {
+.dialog .dialog__wrapper .dialog__top .dialog__icon {
+  cursor: pointer;
+}
+
+.dialog .dialog__wrapper .dialog__top .dialog__icon svg {
   width: 28px;
   height: 28px;
 }
 
-#dialogWrp .dialog__wrapper .dialog__description {
+.dialog .dialog__wrapper .dialog__description,
+.dialog .dialog__wrapper .dialog__field {
   padding: 32px;
 }
 
-#dialogWrp .dialog__wrapper .dialog__description p {
+.dialog .dialog__wrapper .dialog__field input {
+  width: 100%;
+}
+
+.dialog .dialog__wrapper .dialog__description p {
   color: #1b1b1b;
   line-height: 26px;
   font-size: 16px;
 }
 
-#dialogWrp .dialog__wrapper .dialog__actions {
+.dialog .dialog__wrapper .dialog__actions {
   padding: 32px;
   display: flex;
   flex-direction: row;
@@ -67,7 +76,7 @@
   align-items: center;
 }
 
-#dialogWrp .dialog__wrapper .dialog__actions .dialog__btn1 {
+.dialog .dialog__wrapper .dialog__actions .dialog__btn1 {
   background: none;
   color: var(--green-primary);
   font-size: 16px;
@@ -76,7 +85,7 @@
   outline: none;
 }
 
-#dialogWrp .dialog__wrapper .dialog__actions .dialog__btn2 {
+.dialog .dialog__wrapper .dialog__actions .dialog__btn2 {
   padding: 8px 15px;
   border-radius: 0.85rem;
   font-weight: 600;
@@ -84,4 +93,8 @@
   background-color: var(--danger);
   border: 0;
   font-size: 16px;
+}
+
+.dialog.dialog__prompt .dialog__wrapper .dialog__actions .dialog__btn2 {
+  background-color: var(--green-primary);
 }

@@ -342,9 +342,13 @@ exports.getWeekData = async (req, res) => {
 };
 
 exports.informationsPage = (req, res) => {
+  const email = req.user.email;
+  const maskEmail = email.replace(/^(..)(.*)(?=@)/, "$1...");
+
   res.render("admin/informations", {
     pageName: "Informations",
     success: req.query.success,
+    maskEmail
   });
 };
 

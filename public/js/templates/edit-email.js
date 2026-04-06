@@ -5,6 +5,7 @@ const emailClose = document.getElementById("emailClose");
 const email__editor = document.querySelector(".email__editor");
 const emailInput = document.getElementById("email");
 const templateDialog = document.getElementById("templateDialog");
+const templatePrompt = document.getElementById("templatePrompt");
 
 emailInput.onblur = function () {
   setTimeout(() => {
@@ -32,33 +33,74 @@ if (validDigitalCode && digitalCode) {
 
 if (emailOpen) {
   emailOpen.onclick = async function () {
-    console.log("click 1");
     try {
-      console.log("click 2");
-
-      const tmp = templateDialog.content.cloneNode(true);
-
-      tmp.querySelector("h2").textContent = "Delete confirmation";
+      const tmp = templatePrompt.content.cloneNode(true);
+      const dialogField = tmp.querySelector(".dialog__field");
+      const parentPrompt = tmp.querySelector("#promptWrp");
+      tmp.querySelector("h2").textContent = "Confirm your email";
       tmp.querySelector(".dialog__p").textContent =
-        "If you confoirm this is gonna be derelteld and you dgonna have no backup";
+        "Confirm youir emai land we gonna send you un code de verificatyion pour valdier ovotre identite";
       tmp.querySelector(".dialog__btn1").textContent = "Cancel";
-      tmp.querySelector(".dialog__btn2").textContent = "Confirm delete";
-
-      document.querySelector("body").appendChild(tmp);
-      const response = await fetch("/account/edit-email-confirmation", {
-        method: "POST", // Plus sécurisé pour déclencher un envoi
-        headers: { "Content-Type": "application/json" },
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        document.querySelector(".email__editor").classList.add("active");
-      } else {
-        alert({ error: data.message });
+      tmp.querySelector(".dialog__btn2").textContent = "Send code";
+      function closePrompt() {
+        parentPrompt.remove();
       }
+      tmp.querySelector(".dialog__icon").onclick = closePrompt;
+      tmp.querySelector(".dialog__btn1").onclick = closePrompt;
+      const email = tmp.querySelector("input");
+
+      tmp.querySelector(".dialog__btn2").onclick = async function () {
+        console.log(email.value);
+        const response = await fetch("/account/edit-email-confirmation", {
+          method: "POST", // Plus sécurisé pour déclencher un envoi
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.value }),
+        });
+        const data = await response.json();
+        console.log(data);
+
+        if (data.success) {
+          const existingError = document.querySelector(".error");
+          if (existingError) {
+            document.querySelector(".error").remove();
+          }
+          // document.querySelector(".email__editor").classList.add("active");
+          closePrompt();
+          const tmp = templatePrompt.content.cloneNode(true);
+          const secparentPrompt = tmp.querySelector("#promptWrp");
+
+          tmp.querySelector("h2").textContent = "Enter verification code";
+          tmp.querySelector(".dialog__p").textContent =
+            "Completet your verificationb code please";
+          tmp.querySelector(".dialog__btn1").textContent = "Cancel";
+          tmp.querySelector(".dialog__btn2").textContent = "Confirm";
+          function closePrompt() {
+            secparentPrompt.remove();
+          }
+          tmp.querySelector(".dialog__icon").onclick = closePrompt;
+          tmp.querySelector(".dialog__btn1").onclick = closePrompt;
+
+          document.querySelector("body").appendChild(tmp);
+        } else {
+          const existingError = document.querySelector(".error");
+
+          // 2. Si elle existe, on l'enlève
+          if (existingError) {
+            existingError.remove();
+          }
+
+          // 3. On crée la nouvelle erreur
+          const errorEl = document.createElement("div");
+          errorEl.classList.add("error");
+          errorEl.textContent = data.message;
+
+          // 4. On l'affiche
+          dialogField.after(errorEl);
+        }
+      };
+      document.querySelector("body").appendChild(tmp);
     } catch (error) {
-      console.error("Erreur réseau :", err);
+      console.error("Erreur réseau :", error);
     }
   };
 }

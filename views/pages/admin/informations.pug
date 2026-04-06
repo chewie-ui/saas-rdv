@@ -2,6 +2,7 @@ extends ../../layouts/admin
 
 include ../../templates/change-password.pug
 include ../../templates/modals/dialog.pug
+include ../../templates/modals/prompt.pug
 
 block links
     link(rel="stylesheet", href="/css/layouts/informations.css")
@@ -25,7 +26,7 @@ block content
                         input#fullname.input(value=user.fullName name="fullName")
                     .field
                         label(for="email")= t.profile.email
-                        input#email.input(disabled value=user.email name="email")
+                        input#email.input(disabled value=maskEmail name="email")
                         div(style="width:fit-content")
                             .more#emailOpen= t.profile.edit_email
                     .field
@@ -97,10 +98,11 @@ block content
                         button.btn.btn__social-save= t.avail.save
     +editPwd()  
     +dialog()   
+    +prompt()   
 
 
 block scripts
     script(src='/js/layouts/informations.js')
     script(src='/js/templates/change-password.js')
-    script(src='/js/templates/dialog.js')
+    script(src='/js/templates/dialog.js' type="module")
     script(src='/js/templates/edit-email.js')

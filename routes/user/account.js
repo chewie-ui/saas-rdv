@@ -28,7 +28,7 @@ router.post("/create-checkout", createCheckout);
 router.post("/update-password", isAuth, injectCompany, updatePassword);
 router.post("/cancel-subscription", cancelSubscription);
 
-router.post("/edit-email-confirmation", editEmailConfirmation);
+router.post("/edit-email-confirmation", isAuth, editEmailConfirmation);
 router.post("/check-digital-code", checkDigitalCode);
 
 module.exports = router;

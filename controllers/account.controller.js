@@ -24,18 +24,16 @@ exports.editProfilePicture = async (req, res) => {
 
 exports.updateAccountInfo = async (req, res) => {
   try {
-    const { fullName, email, phone } = req.body;
+    const { fullName, phone } = req.body;
 
     const user = req.user;
     const updates = {};
     const changes = {
       fullName: user.fullName !== fullName,
-      email: user.email !== email,
       phone: user.phone !== phone,
     };
 
     if (changes.fullName) updates.fullName = fullName;
-    if (changes.email) updates.email = email;
     if (changes.phone) updates.phone = phone;
 
     if (Object.keys(updates).length === 0) {
@@ -44,7 +42,6 @@ exports.updateAccountInfo = async (req, res) => {
 
     await User.findByIdAndUpdate(req.user._id, {
       fullName,
-      email,
       phone,
     });
     return res.json({ success: true, changes });
@@ -147,15 +144,28 @@ exports.cancelSubscription = async (req, res) => {
 
 exports.editEmailConfirmation = async (req, res) => {
   try {
+    const { email } = req.body;
+    console.log(email);
+
+    const user = await User.findById(req.user._id).select("email");
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Utilisateur non trouvé" });
+    }
+    console.log(user.email.trim());
+    console.log(email.trim());
+
+    if (user.email.trim() !== email.trim()) {
+      return res.json({ success: false, message: "Invalid email" });
+    }
+
     // 1. Générer un code (ex: 6 chiffres)
     const verificationCode = Math.floor(100000 + Math.random() * 900000);
     req.session.emailVerificationCode = verificationCode;
     // req.session.pendingEmail = req.body.newEmail;
-    await sendEmail(
-      "quentin.rennies@gmail.com",
-      "Digital code",
-      String(verificationCode),
-    );
+    await sendEmail(email, "Digital code", String(verificationCode));
 
     res.json({ success: true });
   } catch (err) {
