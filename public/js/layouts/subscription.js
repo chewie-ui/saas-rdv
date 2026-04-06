@@ -61,7 +61,11 @@ if (retakeSubscription) {
         },
       });
       const data = await response.json();
-      console.log(data);
+      
+      if (data.success) {
+        alert(data.message);
+        location.reload();
+      }
     }
   };
 }
