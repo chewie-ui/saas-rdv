@@ -43,6 +43,7 @@ PETIT : Refaire le mail conrifmlation (message et btns) 👌👌👌
 6-04-26
 
 GROS : Creer le systeme de session 👌👌👌
+PETIT : Bug double import 👌👌👌
 GROS : ‼️‼️Bug annuler plan‼️‼️
 GROS : ‼️‼️Email 24h avant rappel‼️‼️
 GROS : Creer des notifs pour ladmin si client annule rdv
@@ -52,7 +53,6 @@ PETIT : Icon et sidebar (Design)
 PETIT : Alerte moche -> Popup beau (Design)
 PETIT : ‼️‼️Restore btn dans historique‼️‼️
 PETIT : Admin recoit mail si client annule
-PETIT : Bug double import
 
 BUGS :
 
