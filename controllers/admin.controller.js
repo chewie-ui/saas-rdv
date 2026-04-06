@@ -182,8 +182,6 @@ exports.appointment = async (req, res) => {
 };
 
 const Company = require("../db/models/company/company.model");
-const User = require("../db/models/user.model");
-const { search } = require("../routes/admin");
 
 exports.client = (req, res) => {
   res.render("admin/client", {
