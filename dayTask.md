@@ -37,11 +37,14 @@ PETIT : ‼️‼️Si rdv cancel repermette de repdnre rdv‼️‼️ 👌👌
 PETIT : Refaire le mail conrifmlation (message et btns) 👌👌👌
 
 4-04-26
-
 5-04-26
 
+6-04-26
+
+PETIT : Bug annuler plan
 GROS : ‼️‼️Email 24h avant rappel‼️‼️
 PETIT : détails UI :
+
 - Rdv heure et input
 - Icon et sidebar
 - Alerte moche -> Popup beau

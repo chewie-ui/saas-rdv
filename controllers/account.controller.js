@@ -121,7 +121,10 @@ exports.updatePassword = async (req, res) => {
 exports.cancelSubscription = async (req, res) => {
   try {
     const subscription = await Subscription.findOne({ user: req.user._id });
-
+    const debugSub = await stripe.subscriptions.retrieve(
+      "sub_1TGc2o0wC6a6C3eSgdErZHms",
+    );
+    console.log("Stripe voit l'abonnement :", debugSub.id);
     console.log({ subscription });
 
     if (!subscription.stripeSubscriptionId) {
