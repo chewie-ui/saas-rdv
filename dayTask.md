@@ -30,6 +30,7 @@ PETIT : Finir les textes et langues 👌👌👌
 
 3-04-26
 
+GROS: FULL REPONSIVE 👌👌👌
 GROS : ‼️‼️bug prise de rdv decaler de un jour ‼️‼️ 👌👌👌
 PETIT : ‼️‼️Si client annule faire beau message et redirection‼️‼️ 👌👌👌
 PETIT : ‼️‼️Verifier si annuler rdv fonctionne‼️‼️ 👌👌👌
@@ -41,6 +42,7 @@ PETIT : Refaire le mail conrifmlation (message et btns) 👌👌👌
 
 6-04-26
 
+GROS : Creer le systeme de session 👌👌👌
 PETIT : Bug annuler plan
 GROS : ‼️‼️Email 24h avant rappel‼️‼️
 PETIT : détails UI :
@@ -75,20 +77,11 @@ Repos OU léger (emailing rappel)
 
 publier
 
-FULL CLEAN REPONSIVE :
-
-- Landing Page 👌👌👌
-- Subscription 👌👌👌
-- Availability 👌👌👌
-- Index (calendar) 👌👌👌
-- Informations 👌👌👌
-- Appointment !!
-- Book 👌👌👌
-- History 👌👌👌
-- History edit 👌👌👌
-
 GROS : Refaire calendrier plus prorpe :
 
 - Ligne de lheure actuelle
 - Responsive mettre 1 jour
 - Si cancel plus afficher
+
+
+GROS : Publier sur OVH avec le SSL
