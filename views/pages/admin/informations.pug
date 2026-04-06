@@ -1,12 +1,12 @@
 extends ../../layouts/admin
 
 include ../../templates/change-password.pug
-include ../../templates/edit-email.pug
+include ../../templates/modals/dialog.pug
 
 block links
     link(rel="stylesheet", href="/css/layouts/informations.css")
     link(rel="stylesheet", href="/css/templates/change-password.css")
-    link(rel="stylesheet", href="/css/templates/edit-email.css")
+    link(rel="stylesheet", href="/css/templates/dialog.css")
 
 block content
     .wrapper.account
@@ -96,10 +96,11 @@ block content
                         input.input(placeholder="Enter your link page" value=user.website || "" disabled=(!user.isPremium))
                         button.btn.btn__social-save= t.avail.save
     +editPwd()  
-    +editEmail()      
+    +dialog()   
 
 
 block scripts
     script(src='/js/layouts/informations.js')
     script(src='/js/templates/change-password.js')
+    script(src='/js/templates/dialog.js')
     script(src='/js/templates/edit-email.js')

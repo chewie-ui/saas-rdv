@@ -4,6 +4,7 @@ const emailOpen = document.getElementById("emailOpen");
 const emailClose = document.getElementById("emailClose");
 const email__editor = document.querySelector(".email__editor");
 const emailInput = document.getElementById("email");
+const templateDialog = document.getElementById("templateDialog");
 
 emailInput.onblur = function () {
   setTimeout(() => {
@@ -31,8 +32,19 @@ if (validDigitalCode && digitalCode) {
 
 if (emailOpen) {
   emailOpen.onclick = async function () {
+    console.log("click 1");
     try {
-      email__editor.classList.add("open");
+      console.log("click 2");
+
+      const tmp = templateDialog.content.cloneNode(true);
+
+      tmp.querySelector("h2").textContent = "Delete confirmation";
+      tmp.querySelector(".dialog__p").textContent =
+        "If you confoirm this is gonna be derelteld and you dgonna have no backup";
+      tmp.querySelector(".dialog__btn1").textContent = "Cancel";
+      tmp.querySelector(".dialog__btn2").textContent = "Confirm delete";
+
+      document.querySelector("body").appendChild(tmp);
       const response = await fetch("/account/edit-email-confirmation", {
         method: "POST", // Plus sécurisé pour déclencher un envoi
         headers: { "Content-Type": "application/json" },
