@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const env = require(`../environment/${process.env.NODE_ENV}`);
+const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
 
 mongoose
   .connect(env.dbUri)

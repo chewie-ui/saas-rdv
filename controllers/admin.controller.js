@@ -1,4 +1,4 @@
-const env = require(`../environment/${process.env.NODE_ENV}`);
+const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
 const Stripe = require("stripe");
 
 const stripe = new Stripe(env.stripeSecretKey);

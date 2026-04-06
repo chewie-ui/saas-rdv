@@ -43,17 +43,16 @@ PETIT : Refaire le mail conrifmlation (message et btns) 👌👌👌
 6-04-26
 
 GROS : Creer le systeme de session 👌👌👌
-PETIT : Bug annuler plan
+GROS : ‼️‼️Bug annuler plan‼️‼️
 GROS : ‼️‼️Email 24h avant rappel‼️‼️
-PETIT : détails UI :
-
-- Rdv heure et input
-- Icon et sidebar
-- Alerte moche -> Popup beau
-- modif email
-  PETIT : ‼️‼️Restore btn dans historique‼️‼️
-  PETIT : Admin recoit mail si client annule
-  GROS : Creer des notifs pour ladmin si client annule rdv
+GROS : Creer des notifs pour ladmin si client annule rdv
+PETIT : Design edit email popup
+PETIT : Rdv heure et input (Design)
+PETIT : Icon et sidebar (Design)
+PETIT : Alerte moche -> Popup beau (Design)
+PETIT : ‼️‼️Restore btn dans historique‼️‼️
+PETIT : Admin recoit mail si client annule
+PETIT : Bug double import
 
 BUGS :
 

@@ -1,5 +1,5 @@
 require("dotenv").config();
-const env = require(`./environment/${process.env.NODE_ENV}`);
+const env = require(`./environment/${process.env.NODE_ENV || "development"}`);
 
 const express = require("express");
 const path = require("path");
@@ -83,6 +83,7 @@ app.post(
     res.json({ received: true });
   },
 );
+require("./config/passport");
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -110,7 +111,6 @@ app.use((req, res, next) => {
   next();
 });
 
-require("./config/passport");
 app.use((req, res, next) => {
   next();
 });
