@@ -119,33 +119,44 @@ exports.updatePassword = async (req, res) => {
 };
 
 exports.cancelSubscription = async (req, res) => {
-  const subscription = await Subscription.findOne({ user: req.user._id });
-  const debugSub = await stripe.subscriptions.retrieve(
-    "sub_1TGc2o0wC6a6C3eSgdErZHms",
-  );
-  console.log("Stripe voit l'abonnement :", debugSub.id);
-  console.log({ subscription });
   try {
-    if (!subscription.stripeSubscriptionId) {
-      return res.status(400).json({ error: "No active subscription found." });
+    // 1. On cherche l'abo de l'utilisateur en BDD
+    const subscription = await Subscription.findOne({ user: req.user._id });
+    
+    // LOG DE DEBUG 1 : On voit ce qu'on a en base
+    console.log("Ma BDD dit pour cet utilisateur :", subscription);
+
+    if (!subscription || !subscription.stripeSubscriptionId) {
+      return res.status(400).json({ error: "No active subscription found in DB." });
     }
 
-    await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
-      cancel_at_period_end: true,
-    });
+    // 2. On tente de voir ce que Stripe en pense
+    try {
+        const stripeSub = await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId);
+        console.log("Stripe confirme l'existence de :", stripeSub.id);
+        
+        // 3. On demande l'annulation (fin de période)
+        await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+          cancel_at_period_end: true,
+        });
+    } catch (stripeErr) {
+        // Si Stripe ne le trouve pas, on log l'erreur mais on ne crash pas le reste !
+        console.error("Stripe ne connaît pas cet ID ou erreur API :", stripeErr.message);
+    }
 
+    // 4. Quoi qu'il arrive, on met à jour NOTRE base de données
     subscription.autoRenew = false;
+    subscription.status = 'canceled';
     await subscription.save();
 
     res.json({
       success: true,
-      message: "Subscription will be canceled at the end of the period.",
+      message: "Subscription updated (canceled).",
     });
+
   } catch (err) {
-    console.error("Stripe Cancel Error:", err);
-    res
-      .status(500)
-      .json({ error: "An error occurred while canceling your subscription." });
+    console.error("Global Cancel Error:", err);
+    res.status(500).json({ error: "An error occurred." });
   }
 };
 
