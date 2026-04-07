@@ -48,6 +48,9 @@ PETIT : Bug double import 👌👌👌
 PETIT : Reprendre le plan si annuler 👌👌👌
 PETIT : Cacher email qu...@gmail.com 👌👌👌
 PETIT : ‼️‼️Design edit email popup & ‼️‼️ 👌👌👌
+
+7-04-26
+
 PETIT : ‼️‼️code verifiaction et modif fonctionnel‼️‼️
 PETIT : ‼️‼️Restore btn dans historique‼️‼️
 GROS : ‼️‼️Email 24h avant rappel‼️‼️⏳⏳

@@ -185,3 +185,18 @@ exports.checkDigitalCode = async (req, res) => {
 
   return res.json({ success: false });
 };
+
+exports.verificationCode = (req, res) => {
+  try {
+    const { emailVerificationCode } = req.session;
+    const { val } = req.body;
+    if (val.trim() !== emailVerificationCode.trim()) {
+      return res.json({ success: true, message: "Code invalid" });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.json({ err });
+  }
+};

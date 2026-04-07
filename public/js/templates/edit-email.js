@@ -64,23 +64,39 @@ if (emailOpen) {
           if (existingError) {
             document.querySelector(".error").remove();
           }
-          // document.querySelector(".email__editor").classList.add("active");
+
           closePrompt();
-          const tmp = templatePrompt.content.cloneNode(true);
-          const secparentPrompt = tmp.querySelector("#promptWrp");
 
-          tmp.querySelector("h2").textContent = "Enter verification code";
-          tmp.querySelector(".dialog__p").textContent =
+          const tmp2 = templatePrompt.content.cloneNode(true);
+          const secparentPrompt2 = tmp2.querySelector("#promptWrp");
+
+          tmp2.querySelector("h2").textContent = "Enter verification code";
+          tmp2.querySelector(".dialog__p").textContent =
             "Completet your verificationb code please";
-          tmp.querySelector(".dialog__btn1").textContent = "Cancel";
-          tmp.querySelector(".dialog__btn2").textContent = "Confirm";
-          function closePrompt() {
-            secparentPrompt.remove();
-          }
-          tmp.querySelector(".dialog__icon").onclick = closePrompt;
-          tmp.querySelector(".dialog__btn1").onclick = closePrompt;
+          tmp2.querySelector(".dialog__btn1").textContent = "Cancel";
+          tmp2.querySelector(".dialog__btn2").textContent = "Confirm";
+          const closePrompt2 = () => {
+            if (secparentPrompt2) {
+              secparentPrompt2.remove();
+            }
+          };
+          tmp2.querySelector(".dialog__icon").onclick = closePrompt2;
+          tmp2.querySelector(".dialog__btn1").onclick = closePrompt2;
+          const val = tmp2.querySelector("input").value;
+          tmp2.querySelector(".dialog__btn2").onclick = async function () {
+            const response = await fetch("/account/verification/code", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ val: val.value }),
+            });
 
-          document.querySelector("body").appendChild(tmp);
+            const data = await response.json();
+            if (data.success) {
+              alert("Tout ok");
+            }
+          };
+
+          document.querySelector("body").appendChild(tmp2);
         } else {
           const existingError = document.querySelector(".error");
 

@@ -11,6 +11,7 @@ const {
   updatePassword,
   editEmailConfirmation,
   checkDigitalCode,
+  verificationCode
 } = require("../../controllers/account.controller");
 const injectCompany = require("../../middlewares/injectCompany");
 const isAuth = require("../../middlewares/isAuth");
@@ -30,5 +31,6 @@ router.post("/cancel-subscription", cancelSubscription);
 
 router.post("/edit-email-confirmation", isAuth, editEmailConfirmation);
 router.post("/check-digital-code", checkDigitalCode);
+router.post("/verification/code", verificationCode)
 
 module.exports = router;
