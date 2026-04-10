@@ -40,6 +40,39 @@ block content
                     .account__actions
                         button#saveChanges.btn= t.profile.save
                         a(href="#").danger= t.profile.delete_account
+
+        .location__container
+            .location__map(id="mapContainer")
+                if user.location.iframeUrl
+                    iframe(src=user.location.iframeUrl height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade")
+                else
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1299500.656531456!2d3.147172292480064!3d50.495334442699736!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c17d64edf39797%3A0x47ebf2b439e60ff2!2sBelgique!5e0!3m2!1sfr!2sbe!4v1775722964111!5m2!1sfr!2sbe" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            .location__form
+                h2 Location informations 
+                .location__form-body
+                    input(type="hidden", id="latInput")
+                    input(type="hidden", id="lonInput")
+                    .form__top
+                        .form-group
+                            label Rechercher votre adresse
+                            input.input(placeholder="Taper pour chercher" id="addressInput" autocomplete="chrome-off")
+                            #results.results
+                    .form__bottom
+                        .form-group 
+                            label Adresse
+                            input.input(id='streetInput' value=user.location.address || "")
+                        .form-group 
+                            label Code postal
+                            input.input(id='zipInput' value=user.location.zip || "")
+                        .form-group 
+                            label Ville
+                            input.input(id='cityInput' value=user.location.city || "")
+                        .form-group 
+                            label Pays
+                            input.input(id='countryInput' value=user.location.country || "")
+                    .form-action
+                        button.btn(id="confirmLocation") Confirmer
+                        p Service en ligne uniquement (pas besoin dadresse)
         .social
             .social__container
                 .social__box(data-name="emailPro")

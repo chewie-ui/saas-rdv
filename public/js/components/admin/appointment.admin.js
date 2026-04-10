@@ -12,7 +12,7 @@ export const initDeleteAppointment = function () {
       if (data.success) {
         location.href = "/appointment";
       } else {
-        console.error("error");
+        alert(data.message);
       }
     } catch (err) {
       console.error("Network error", err);

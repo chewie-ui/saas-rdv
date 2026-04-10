@@ -306,13 +306,28 @@ exports.deleteBooking = async (req, res) => {
 };
 
 exports.restoreBooking = async (req, res) => {
-  const { bookId } = req.params;
+  try {
+    const { bookId } = req.params;
 
-  await Booking.findByIdAndUpdate(bookId, {
-    status: "confirmed",
-  });
+    await Booking.findByIdAndUpdate(bookId, {
+      status: "confirmed",
+    });
 
-  res.json({ success: true });
+    res.json({ success: true });
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.json({
+        success: false,
+        message:
+          "Impossible de restaurer : ce créneau horaire est déjà occupé par une autre réservation.",
+      });
+    }
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: "Une erreur est survenue lors de la restauration.",
+    });
+  }
 };
 
 exports.cancelBooking = async (req, res) => {
@@ -348,7 +363,7 @@ exports.informationsPage = (req, res) => {
   res.render("admin/informations", {
     pageName: "Informations",
     success: req.query.success,
-    maskEmail
+    maskEmail,
   });
 };
 

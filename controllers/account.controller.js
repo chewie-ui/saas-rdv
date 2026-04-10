@@ -163,6 +163,8 @@ exports.editEmailConfirmation = async (req, res) => {
 
     // 1. Générer un code (ex: 6 chiffres)
     const verificationCode = Math.floor(100000 + Math.random() * 900000);
+    console.log(verificationCode);
+
     req.session.emailVerificationCode = verificationCode;
     // req.session.pendingEmail = req.body.newEmail;
     await sendEmail(email, "Digital code", String(verificationCode));
@@ -187,10 +189,12 @@ exports.checkDigitalCode = async (req, res) => {
 };
 
 exports.verificationCode = (req, res) => {
+  console.log("OK");
+
   try {
     const { emailVerificationCode } = req.session;
     const { val } = req.body;
-    if (val.trim() !== emailVerificationCode.trim()) {
+    if (val !== emailVerificationCode) {
       return res.json({ success: true, message: "Code invalid" });
     }
 
@@ -198,5 +202,58 @@ exports.verificationCode = (req, res) => {
   } catch (err) {
     console.error(err);
     return res.json({ err });
+  }
+};
+
+exports.editEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email)
+      return res.json({ success: false, message: "Email is required" });
+
+    const isEmail = await User.findOne({ email });
+
+    if (isEmail)
+      return res.json({
+        success: false,
+        message: "This email is already taken by another account",
+      });
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        email: email.toLowerCase(),
+      },
+      { new: true },
+    );
+    return res.json({ success: true, user: updatedUser });
+  } catch (err) {
+    console.error(err);
+    return res.json(err);
+  }
+};
+
+exports.updateLocation = async (req, res) => {
+  try {
+    const { street, zip, city, country, iframeUrl, lat, lon } = req.body;
+    console.log({ street, zip, city, country });
+
+    await User.findByIdAndUpdate(req.user._id, {
+      location: {
+        address: street,
+        city,
+        zip,
+        country,
+        iframeUrl,
+        lat,
+        lon,
+      },
+    });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.json(err);
   }
 };

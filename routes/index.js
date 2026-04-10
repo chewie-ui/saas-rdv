@@ -2,6 +2,7 @@ const router = require("express").Router();
 
 const { getCompanyIfExist } = require("../controllers/auth.controller");
 const User = require("../db/models/user.model");
+const Companies = require("../db/models/company/company.model");
 
 router.use(require("./auth"));
 router.use(require("./company"));
@@ -10,9 +11,22 @@ router.use(require("./booking"));
 router.use("/api", require("./api"));
 router.use("/account", require("./user/account"));
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
+  const coachs = await Companies.find({})
+    .populate("owner")
+    .sort({ "owner.isPremium": -1 })
+    .limit(10);
+
   res.render("client/landing-page", {
     title: "Calendar",
+    coachs,
+  });
+});
+
+router.get("/become-coach", (req, res) => {
+  res.render("client/become-coach", {
+    title: "Calendar",
+    becomeCoach: true,
   });
 });
 

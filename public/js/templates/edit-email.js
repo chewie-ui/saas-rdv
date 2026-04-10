@@ -84,6 +84,7 @@ if (emailOpen) {
           tmp2.querySelector(".dialog__btn1").onclick = closePrompt2;
           const val = tmp2.querySelector("input").value;
           tmp2.querySelector(".dialog__btn2").onclick = async function () {
+            closePrompt2();
             const response = await fetch("/account/verification/code", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -92,7 +93,45 @@ if (emailOpen) {
 
             const data = await response.json();
             if (data.success) {
-              alert("Tout ok");
+              const editEmailPopup = templatePrompt.content.cloneNode(true);
+              const parent = editEmailPopup.querySelector("#promptWrp");
+              const email = editEmailPopup.querySelector("input");
+              const clsPrmp = () => {
+                if (parent) {
+                  parent.remove();
+                }
+              };
+
+              editEmailPopup.querySelector("h2").textContent =
+                "Enter new email";
+              editEmailPopup.querySelector(".dialog__p").textContent =
+                "enter your new email and it wiill be chagned";
+              editEmailPopup.querySelector(".dialog__btn1").textContent =
+                "Cancel";
+              editEmailPopup.querySelector(".dialog__btn2").textContent =
+                "Confirm";
+
+              editEmailPopup.querySelector(".dialog__btn1").onclick = clsPrmp;
+              editEmailPopup.querySelector(".dialog__icon").onclick = clsPrmp;
+
+              editEmailPopup.querySelector(".dialog__btn2").onclick =
+                async function () {
+                  const response = await fetch("/account/edit/email", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: email.value }),
+                  });
+
+                  const data = await response.json();
+
+                  if (data.success) {
+                    location.reload();
+                  } else {
+                    
+                  }
+                };
+
+              document.querySelector("body").appendChild(editEmailPopup);
             }
           };
 

@@ -34,7 +34,7 @@
 }
 
 .calendar-section .grid-section .cell {
-  height: 120px;
+  height: 65px;
   border-bottom: var(--border);
   border-right: var(--border);
   padding: 4px;
@@ -45,6 +45,23 @@
 
 .calendar-section .grid-section .cell.time {
   padding: 8px;
+  position: sticky;
+  left: 0;
+  background-color: white;
+  z-index: 100;
+}
+
+.calendar-section .grid-section .cell.time-header {
+  position: sticky;
+  left: 0;
+  background-color: white;
+}
+
+.calendar-section .grid-section .cell.day-header {
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 100;
 }
 
 .calendar-section .grid-section .cell.time-header,
@@ -198,5 +215,15 @@
 
   .calendar__today-btn {
     width: auto;
+  }
+
+  .calendar-section .grid-section .cell.time {
+    left: auto;
+    position: relative;
+  }
+
+  .calendar-section .grid-section .cell.time-header {
+    top: 0;
+    z-index: 101;
   }
 }
