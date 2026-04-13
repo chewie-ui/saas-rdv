@@ -215,5 +215,7 @@ FAIRE LA PAGE ONLY SEARCH
 bug important :
 
 quand on est deco la langue peut pas etre modifiee
+/ pas de langue
 changer les plans et mettre vrais points
 ajouter adresse (mail, admin, client, ...)
+topbar a changer car texte blanch
