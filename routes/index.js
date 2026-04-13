@@ -23,6 +23,56 @@ router.get("/", async (req, res) => {
   });
 });
 
+router.get("/search", async (req, res) => {
+  try {
+    const { name, location } = req.query;
+    let userQuery = {};
+
+    if (name) {
+      // On fait la même chose pour le nom au cas où (ex: Jean-Pierre)
+      const flexibleName = name.trim().replace(/[\s\-\']/g, ".*");
+      userQuery.fullName = { $regex: flexibleName, $options: "i" };
+    }
+
+    if (location) {
+      // On remplace les espaces, tirets et apostrophes par ".*" (n'importe quoi)
+      // "Grez Doiceau" devient "Grez.*Doiceau"
+      const flexibleLocation = location.trim().replace(/[\s\-\']/g, ".*");
+
+      const locationFilters = [
+        { "location.city": { $regex: flexibleLocation, $options: "i" } },
+        { "location.address": { $regex: flexibleLocation, $options: "i" } },
+      ];
+
+      const zipValue = parseInt(location);
+      if (!isNaN(zipValue)) {
+        locationFilters.push({ "location.zip": zipValue });
+      }
+
+      userQuery.$or = locationFilters;
+    }
+
+    // Le reste de ta logique Companies.find().populate()...
+    const coachs = await Companies.find({})
+      .populate({
+        path: "owner",
+        match: userQuery,
+      })
+      .limit(20);
+
+    const filteredCoachs = coachs.filter((coach) => coach.owner !== null);
+
+    res.render("client/landing-page", {
+      coachs: filteredCoachs,
+      searchName: name,
+      searchLocation: location,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Erreur serveur");
+  }
+});
+
 router.get("/become-coach", (req, res) => {
   res.render("client/become-coach", {
     title: "Calendar",

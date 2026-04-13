@@ -211,3 +211,9 @@ AJOUTER PRIX
 AJOUTER SERVICES
 ENTRER MANUELLEMENT ADRESSE
 FAIRE LA PAGE ONLY SEARCH
+
+bug important :
+
+quand on est deco la langue peut pas etre modifiee
+changer les plans et mettre vrais points
+ajouter adresse (mail, admin, client, ...)

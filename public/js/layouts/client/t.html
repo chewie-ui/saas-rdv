@@ -1,209 +1,106 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autocomplete adresse Belgique</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recherche Belgique - Full Data</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 30px;
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #f9f9f9;
-        }
-
-        h2 { color: #333; }
-
-        .address-box {
-            position: relative;
-            margin-bottom: 20px;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            box-sizing: border-box;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-        }
-
-        .results {
-            position: absolute;
-            top: 48px;
-            left: 0;
-            width: 100%;
-            background: white;
-            border: 1px solid #ccc;
-            border-radius: 0 0 6px 6px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            max-height: 220px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none; /* Caché par défaut */
-        }
-
-        .results.active {
-            display: block;
-        }
-
-        .result-item {
-            padding: 10px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-            font-size: 14px;
-        }
-
-        .result-item:hover {
-            background: #f5f5f5;
-        }
-
-        #mapContainer {
-            margin-top: 20px;
-            width: 100%;
-            height: 300px;
-            background: #eee;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #ddd;
-        }
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #121212;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 50px;
+      }
+      .search-box {
+        background: #1e1e1e;
+        padding: 25px;
+        border-radius: 12px;
+        width: 400px;
+        border: 1px solid #333;
+      }
+      h3 {
+        margin-top: 0;
+        color: #00cfb4;
+      }
+      input {
+        width: 100%;
+        padding: 12px;
+        border-radius: 6px;
+        border: 1px solid #444;
+        background: #252525;
+        color: white;
+        box-sizing: border-box;
+        font-size: 16px;
+      }
+      .status {
+        margin-top: 10px;
+        font-size: 0.8em;
+        color: #888;
+      }
     </style>
-</head>
-<body>
-
-    <h2>Localisation</h2>
-
-    <div class="address-box">
-        <input
-            type="text"
-            id="addressInput"
-            placeholder="Tapez une adresse en Belgique..."
-            autocomplete="chrome-off"
-        />
-        <div class="results" id="results"></div>
-    </div>
-
-    <div style="display: grid; grid-template-columns: 3fr 1fr; gap: 10px;">
-        <input type="text" id="street" placeholder="Rue + numéro" />
-        <input type="text" id="zip" placeholder="CP" />
-    </div>
-    <input type="text" id="city" placeholder="Ville" />
-    <input type="text" id="country" placeholder="Pays" />
-
-    <div id="mapContainer">
-        <p style="text-align:center; padding-top:130px; color:#888;">La carte s'affichera ici</p>
+  </head>
+  <body>
+    <div class="search-box">
+      <h3>Localités Belges</h3>
+      <input
+        type="text"
+        id="cityInput"
+        placeholder="Ex: Grez, 1390, Bruxelles..."
+        list="all-cities"
+        autocomplete="off"
+      />
+      <datalist id="all-cities"></datalist>
+      <div id="status" class="status">Chargement des 2700+ localités...</div>
     </div>
 
     <script>
-        const addressInput = document.getElementById("addressInput");
-        const results = document.getElementById("results");
-        const streetInput = document.getElementById("street");
-        const zipInput = document.getElementById("zip");
-        const cityInput = document.getElementById("city");
-        const countryInput = document.getElementById("country");
-        const mapContainer = document.getElementById("mapContainer");
+      const input = document.getElementById("cityInput");
+      const datalist = document.getElementById("all-cities");
+      const status = document.getElementById("status");
+      let allCities = [];
 
-        let debounceTimer;
-
-        addressInput.addEventListener("input", () => {
-            clearTimeout(debounceTimer);
-            const query = addressInput.value.trim();
-
-            if (query.length < 3) {
-                results.innerHTML = "";
-                results.classList.remove("active");
-                return;
-            }
-
-            debounceTimer = setTimeout(async () => {
-                try {
-                    const url = "https://nominatim.openstreetmap.org/search?" + 
-                        new URLSearchParams({
-                            q: query,
-                            format: "jsonv2",
-                            addressdetails: "1",
-                            countrycodes: "be",
-                            limit: "5",
-                        });
-
-                    const response = await fetch(url, {
-                        headers: {
-                            "Accept-Language": "fr",
-                            // User-Agent obligatoire pour Nominatim (évite le blocage)
-                            "User-Agent": "MonAppRDV/1.0 (contact: test@example.com)"
-                        },
-                    });
-
-                    const data = await response.json();
-
-                    results.innerHTML = "";
-                    if (!data.length) {
-                        results.innerHTML = `<div class="result-item">Aucun résultat</div>`;
-                        results.classList.add("active");
-                        return;
-                    }
-
-                    data.forEach((item) => {
-                        const div = document.createElement("div");
-                        div.className = "result-item";
-                        div.textContent = item.display_name;
-
-                        div.addEventListener("click", () => {
-                            const address = item.address || {};
-
-                            // Format Belge : Rue Numéro
-                            streetInput.value = [address.road, address.house_number]
-                                .filter(Boolean)
-                                .join(" ");
-
-                            zipInput.value = address.postcode || "";
-                            cityInput.value = address.city || address.town || address.village || "";
-                            countryInput.value = address.country || "Belgique";
-
-                            addressInput.value = item.display_name;
-                            results.innerHTML = "";
-                            results.classList.remove("active");
-
-                            // MISE À JOUR DE LA CARTE
-                            updateMap(item.display_name);
-                        });
-
-                        results.appendChild(div);
-                    });
-                    results.classList.add("active");
-
-                } catch (error) {
-                    console.error("Erreur Nominatim :", error);
-                }
-            }, 500);
-        });
-
-        // Fonction pour générer l'iframe Google Maps
-        function updateMap(fullAddress) {
-            const encoded = encodeURIComponent(fullAddress);
-            // On utilise l'URL embed gratuite de Google (q= est crucial pour centrer)
-            const mapUrl = `https://maps.google.com/maps?q=${encoded}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-            
-            mapContainer.innerHTML = `
-                <iframe 
-                    width="100%" 
-                    height="100%" 
-                    frameborder="0" 
-                    src="${mapUrl}" 
-                    style="border:0;" 
-                    allowfullscreen>
-                </iframe>`;
+      // On télécharge une liste complète des villes belges une seule fois au chargement
+      // Source : Base de données open-data Belgique
+      async function loadCities() {
+        try {
+          const response = await fetch(
+            "https://raw.githubusercontent.com/lucas-f-dev/belgium-cities-json/main/belgium_cities.json",
+          );
+          allCities = await response.json();
+          status.innerText = "Données prêtes (Toute la Belgique chargée)";
+          status.style.color = "#00cfb4";
+        } catch (err) {
+          status.innerText = "Erreur de chargement des données.";
+          console.error(err);
         }
+      }
 
-        // Fermer la liste si on clique ailleurs
-        document.addEventListener("click", (e) => {
-            if (!e.target.closest(".address-box")) {
-                results.innerHTML = "";
-                results.classList.remove("active");
-            }
+      input.addEventListener("input", (e) => {
+        const val = e.target.value.toLowerCase().trim();
+        datalist.innerHTML = "";
+
+        if (val.length < 2) return;
+
+        // On filtre dans la base complète chargée en mémoire
+        const matches = allCities
+          .filter(
+            (c) =>
+              c.zip.toString().startsWith(val) ||
+              c.name.toLowerCase().includes(val),
+          )
+          .slice(0, 15); // On limite à 15 pour pas faire ramer le navigateur
+
+        matches.forEach((city) => {
+          const option = document.createElement("option");
+          option.value = `${city.name} (${city.zip})`;
+          datalist.appendChild(option);
         });
+      });
+
+      loadCities();
     </script>
-</body>
+  </body>
 </html>

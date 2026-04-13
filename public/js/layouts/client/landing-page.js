@@ -105,6 +105,55 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchBtn = document.getElementById("searchBtn");
   const inputName = document.getElementById("inputName");
   const inputLocation = document.getElementById("inputLocation");
+  const resultsLocation = document.querySelector(".menu-locations");
+
+  let debounceTimer; // On crée une variable pour stocker le "chrono"
+
+  if (inputLocation) {
+    inputLocation.addEventListener("input", () => {
+      // 1. On annule le chrono précédent à chaque fois qu'on tape une lettre
+      clearTimeout(debounceTimer);
+
+      const val = inputLocation.value.trim();
+
+      // 2. On lance un nouveau chrono de 300 millisecondes
+      debounceTimer = setTimeout(async () => {
+        if (val.length < 2) {
+          resultsLocation.classList.remove("active");
+          resultsLocation.innerHTML = "";
+          return;
+        }
+
+        try {
+          const res = await fetch(
+            `https://belgiumcities-api.onrender.com/api/search?name=${val}`,
+          );
+
+          if (!res.ok) throw new Error("Erreur API");
+
+          const data = await res.json();
+
+          // On vide le menu AVANT d'afficher les nouveaux résultats
+          resultsLocation.innerHTML = "";
+          resultsLocation.classList.add("active");
+
+          if (data.length === 0) {
+            const div = document.createElement("div");
+            div.textContent = "Aucun resultat";
+            resultsLocation.appendChild(div);
+            return;
+          }
+          data.forEach((el) => {
+            const div = document.createElement("div");
+            div.textContent = el.name;
+            resultsLocation.appendChild(div);
+          });
+        } catch (err) {
+          console.error("Erreur de fetch :", err);
+        }
+      }, 300); // 300ms de délai
+    });
+  }
 
   if (searchBtn) {
     searchBtn.addEventListener("click", () => {
