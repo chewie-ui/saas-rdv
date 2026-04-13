@@ -152,3 +152,144 @@ if (socialContainer) {
     }
   };
 }
+function generateMapIframe(fullAddress) {
+  const encodedAddress = encodeURIComponent(fullAddress);
+  const iframeHtml = `
+        <iframe 
+            width="100%" 
+            height="300" 
+            frameborder="0" 
+            scrolling="no" 
+            marginheight="0" 
+            marginwidth="0" 
+            src="https://maps.google.com/maps?q=${encodedAddress}&t=&z=15&ie=UTF8&iwloc=&output=embed">
+        </iframe>`;
+
+  document.getElementById("mapContainer").innerHTML = iframeHtml;
+}
+const confirmLocation = document.getElementById("confirmLocation");
+const addressInput = document.getElementById("addressInput");
+const results = document.getElementById("results");
+
+const streetInput = document.getElementById("streetInput");
+const zipInput = document.getElementById("zipInput");
+const cityInput = document.getElementById("cityInput");
+const latInput = document.getElementById("latInput");
+const lonInput = document.getElementById("lonInput");
+const countryInput = document.getElementById("countryInput");
+let debounceTimer;
+
+if (addressInput && confirmLocation) {
+  confirmLocation.addEventListener("click", async (event) => {
+    const encodedAddress = encodeURIComponent(addressInput.value);
+    const iframeUrl = `https://maps.google.com/maps?q=${encodedAddress}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+
+    const response = await fetch(`/account/location`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        street: streetInput.value,
+        zip: zipInput.value,
+        city: cityInput.value,
+        country: countryInput.value,
+        iframeUrl,
+        lat: latInput.value,
+        lon: lonInput.value,
+      }),
+    });
+
+    const data = await response.json();
+
+    console.log(data);
+    generateMapIframe(addressInput.value);
+  });
+
+  addressInput.addEventListener("input", () => {
+    clearTimeout(debounceTimer);
+
+    const query = addressInput.value.trim();
+
+    if (query.length < 3) {
+      results.innerHTML = "";
+      results.classList.remove("active");
+      return;
+    }
+
+    debounceTimer = setTimeout(async () => {
+      try {
+        const url =
+          "https://nominatim.openstreetmap.org/search?" +
+          new URLSearchParams({
+            q: query,
+            format: "jsonv2",
+            addressdetails: "1",
+            countrycodes: "be",
+            limit: "5",
+          });
+
+        const response = await fetch(url, {
+          headers: {
+            "Accept-Language": "fr",
+            "User-Agent":
+              "MonAppRDV/1.0 (contact: quentin.rennies@gmail.com) STUDENT",
+          },
+        });
+
+        const data = await response.json();
+
+        if (!data.length) {
+          results.innerHTML = `<div class="result-item">Aucun résultat</div>`;
+          results.classList.add("active");
+          return;
+        }
+
+        results.innerHTML = "";
+        results.classList.remove("active");
+
+        data.forEach((item) => {
+          const div = document.createElement("div");
+          div.className = "result-item";
+          div.textContent = item.display_name;
+
+          div.addEventListener("click", () => {
+            latInput.value = item.lat || "";
+            lonInput.value = item.lon || "";
+
+            const address = item.address || {};
+
+            streetInput.value = [address.road, address.house_number]
+              .filter(Boolean)
+              .join(" ");
+            zipInput.value = address.postcode || "";
+
+            cityInput.value =
+              address.city ||
+              address.town ||
+              address.village ||
+              address.municipality ||
+              "";
+            countryInput.value = address.country || "Belgique";
+
+            addressInput.value = item.display_name;
+            results.innerHTML = "";
+            results.classList.remove("active");
+          });
+
+          results.appendChild(div);
+          results.classList.add("active");
+        });
+      } catch (err) {
+        console.error("Erreur Nominatim :", err);
+        results.innerHTML = `<div class="result-item">Erreur lors de la recherche</div>`;
+        results.classList.add("active");
+      }
+    }, 500);
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".address-box")) {
+      results.innerHTML = "";
+      results.classList.remove("active");
+    }
+  });
+}

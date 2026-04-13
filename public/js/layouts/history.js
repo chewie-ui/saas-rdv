@@ -6,9 +6,14 @@ document.addEventListener("click", async (event) => {
   const button = event.target.closest(".btn-icon.btn-panel");
   const rowDelete = event.target.closest(".history__actions-row.delete");
   const rowEdit = event.target.closest(".history__actions-row.edit");
+  const rowShow = event.target.closest(".history__actions-row.show");
 
   if (rowEdit) {
     location.href = `/history/edit/${idTransfer}`;
+  }
+
+  if (rowShow) {
+    location.href = `/appointement/${idTransfer}`;
   }
 
   if (rowDelete) {
@@ -51,17 +56,53 @@ document.addEventListener("click", async (event) => {
 });
 
 const searchClient = document.getElementById("searchClient");
+const tbody = document.querySelector(".history__table tbody");
+let debounceTimer;
 
 if (searchClient) {
   searchClient.addEventListener("input", async () => {
+    clearTimeout(debounceTimer);
     const v = searchClient.value.trim();
+    debounceTimer = setTimeout(async () => {
+      const response = await fetch(
+        `/history/search?client=${encodeURIComponent(v)}`,
+      );
+      const data = await response.json();
 
-    const response = await fetch(
-      `/history/search?client=${encodeURIComponent(v)}`,
-    );
-    const data = await response.json();
-    console.log(data);
+      renderData(data.results);
+    }, 300);
   });
+}
+
+function renderData(appointments) {
+  console.log(appointments);
+
+  if (appointments.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;max-width: none;">Aucun client trouvé</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = appointments
+    .map(
+      (h) => `
+        <tr data-id="${h._id}">
+            <td>${h.name} ${h.surname}</td>
+            <td>${h.email}</td>
+            <td>${h.phone}</td>
+            <td>${new Date(h.date).toLocaleDateString("fr-FR")} | ${h.startTime}-${h.endTime}</td>
+            <td>${h.message || ""}</td>
+            <td style="padding:8px 1.5rem">
+                <div class="${h.status}">${h.status}</div>
+            </td>
+            <td class="btn-td flex-c j-start">
+                <button class="btn-icon flex-c btn-panel">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-160q-33 0-56.5-23.5T400-240q0-33 23.5-56.5T480-320q33 0 56.5 23.5T560-240q0 33-23.5 56.5T480-160Zm0-240q-33 0-56.5-23.5T400-480q0-33 23.5-56.5T480-560q33 0 56.5 23.5T560-480q0 33-23.5 56.5T480-400Zm0-240q-33 0-56.5-23.5T400-720q0-33 23.5-56.5T480-800q33 0 56.5 23.5T560-720q0 33-23.5 56.5T480-640Z"/></svg>
+                </button>
+            </td>
+        </tr>
+    `,
+    )
+    .join("");
 }
 
 const saveBtnEdit = document.getElementById("saveBtnEdit");

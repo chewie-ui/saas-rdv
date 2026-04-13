@@ -1,36 +1,39 @@
 const router = require("express").Router();
 
 const upload = require("../../config/multer");
+const accountController = require("../../controllers/account.controller");
 
-const {
-  editProfilePicture,
-  updateAccountInfo,
-  updateAccountSocial,
-  createCheckout,
-  cancelSubscription,
-  updatePassword,
-  editEmailConfirmation,
-  checkDigitalCode,
-  verificationCode
-} = require("../../controllers/account.controller");
 const injectCompany = require("../../middlewares/injectCompany");
 const isAuth = require("../../middlewares/isAuth");
 router.patch(
   "/profile-picture",
   upload.single("profilePicture"),
-  editProfilePicture,
+  accountController.editProfilePicture,
 );
 
-router.patch("/update-info", updateAccountInfo);
-router.patch("/update-social", updateAccountSocial);
+router.patch("/update-info", accountController.updateAccountInfo);
+router.patch("/update-social", accountController.updateAccountSocial);
 
-router.post("/create-checkout", createCheckout);
+router.post("/create-checkout", accountController.createCheckout);
 
-router.post("/update-password", isAuth, injectCompany, updatePassword);
-router.post("/cancel-subscription", cancelSubscription);
+router.post(
+  "/update-password",
+  isAuth,
+  injectCompany,
+  accountController.updatePassword,
+);
+router.post("/cancel-subscription", accountController.cancelSubscription);
 
-router.post("/edit-email-confirmation", isAuth, editEmailConfirmation);
-router.post("/check-digital-code", checkDigitalCode);
-router.post("/verification/code", verificationCode)
+router.post(
+  "/edit-email-confirmation",
+  isAuth,
+  accountController.editEmailConfirmation,
+);
+router.post("/check-digital-code", accountController.checkDigitalCode);
+router.post("/verification/code", accountController.verificationCode);
+
+router.patch("/edit/email", accountController.editEmail);
+
+router.patch("/location", accountController.updateLocation);
 
 module.exports = router;

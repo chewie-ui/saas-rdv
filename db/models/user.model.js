@@ -76,6 +76,16 @@ const userSchema = schema(
       type: Boolean,
       default: false,
     },
+
+    location: {
+      address: String,
+      city: String,
+      country: String,
+      zip: Number,
+      iframeUrl: String,
+      lat: String,
+      lon: String
+    },
   },
   { timestamps: true },
 );
