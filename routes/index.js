@@ -18,7 +18,7 @@ router.get("/", async (req, res) => {
     .limit(10);
 
   res.render("client/landing-page", {
-    title: "Calendar",
+    title: `Gymio - ${res.locals.t.titles.home}`,
     coachs,
   });
 });
@@ -75,7 +75,7 @@ router.get("/search", async (req, res) => {
 
 router.get("/become-coach", (req, res) => {
   res.render("client/become-coach", {
-    title: "Calendar",
+    title: res.locals.t.titles.becomeCoach,
     becomeCoach: true,
   });
 });

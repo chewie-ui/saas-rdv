@@ -214,6 +214,14 @@ FAIRE LA PAGE ONLY SEARCH
 
 bug important :
 
-quand on est deco la langue peut pas etre modifiee
+quand on est deco la langue peut pas etre modifiee 👌👌👌
 changer les plans et mettre vrais points
 ajouter adresse (mail, admin, client, ...)
+instructions dans le mail
+Clique sur adresse ca la met dans linput / Clique ailleurs ca ferme popup ( page : /, RECHERCHE Lieu)
+faire responsive
+page / faire si 0 resultat
+faire favicon et title
+faire les langues partout
+plus afficher les rdvs du passer dans le calendar
+griser jours passer, plus revenier semaine en arriere en desssou de NOW

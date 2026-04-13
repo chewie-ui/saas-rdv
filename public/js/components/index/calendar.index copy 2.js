@@ -1,5 +1,6 @@
 export default function () {
   const calendar = document.querySelector(".calendar-wrapper .calendar");
+
   const bookingWrapper = document.getElementById("bookingWrapper") || undefined;
   const scheduleWrapper =
     document.getElementById("scheduleWrapper") || undefined;

@@ -46,6 +46,7 @@ exports.book = async (req, res) => {
 
   res.render("admin/book", {
     pageName: "Book",
+    title: res.locals.t.titles.book,
     client,
     grade,
     isPremium: res.locals.user.isPremium,
@@ -173,6 +174,7 @@ exports.appointment = async (req, res) => {
   const maxHour = Math.max(...hoursList) + 1;
   res.render("admin/appointment", {
     pageName: "Appointment",
+    title: res.locals.t.titles.book,
     slotTime,
     hours: generateTimeSlots(minHour, maxHour, slotTime),
     weekDays: getWeekDays(referenceDate),
@@ -217,7 +219,7 @@ exports.availability = async (req, res) => {
   res.render("admin/availability", {
     daysOff: await getDaysOff(currentCompany),
     pageName: "Availability",
-    title: "Availability",
+    title: res.locals.t.titles.avail,
     timeSlot: [10, 15, 20, 25, 30, 45, 60, 90, 120, 180],
     hours: generateHours(10),
     currentSlotTime: await getSlotTime(currentCompany),
@@ -276,10 +278,6 @@ exports.editAvailabilty = async (req, res) => {
   );
 
   res.json({ success: true });
-};
-
-exports.joinCompany = (req, res) => {
-  res.render("admin/join-company");
 };
 
 exports.editSlotTime = async (req, res) => {
@@ -363,6 +361,7 @@ exports.informationsPage = (req, res) => {
   res.render("admin/informations", {
     pageName: "Informations",
     success: req.query.success,
+    title: res.locals.t.titles.infos,
     maskEmail,
   });
 };
@@ -392,6 +391,7 @@ exports.historyInit = async (req, res) => {
 
     return res.render("admin/history", {
       pageName: "History",
+      title: res.locals.t.titles.history,
       history,
       currentPage: page,
       totalBookings,
@@ -448,7 +448,7 @@ exports.historyEditRow = async (req, res) => {
     return res.render("admin/history-edit", {
       rowId: id,
       pageName: "History",
-      title: "History edit",
+      title: res.locals.t.titles.history,
       results,
     });
   } catch (err) {
