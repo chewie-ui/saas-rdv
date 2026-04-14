@@ -10,3 +10,4 @@ ToDo
 
 - Bonnes heures de rdv !
 - Choisir le temps par creneau
+# haircut-booking
