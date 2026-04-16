@@ -16,7 +16,7 @@ app.set("trust proxy", 1);
 app.set("view engine", "pug");
 
 app.set("view options", {
-  compileDebug: true
+  compileDebug: true,
 });
 
 app.set("views", path.join(__dirname, "views", "pages"));
@@ -113,6 +113,11 @@ app.use((req, res, next) => {
   res.locals.t = translations;
   res.locals.lang = lang;
 
+  next();
+});
+
+app.use((req, res, next) => {
+  console.log("REQ =>", req.method, req.originalUrl);
   next();
 });
 
