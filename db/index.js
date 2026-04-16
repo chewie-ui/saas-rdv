@@ -6,7 +6,7 @@ console.log("MONGO_URI_SERVER =", process.env.MONGO_URI_SERVER);
 mongoose
   .connect(env.dbUri)
   .then(() => {
-    console.log("DB CONNECTED TO:", mongoose.connection.name);
+    console.log("DB CONNECTED 2:", mongoose.connection.name);
   })
   .catch((err) => {
     console.error(err);
