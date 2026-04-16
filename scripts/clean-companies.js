@@ -4,9 +4,10 @@ const Companies = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
 
 async function clean() {
-  await mongoose.connect(
-retryWrites=true&w=majority",
-  );
+  await mongoose
+    .connect
+    // retryWrites=true&w=majority",
+    ();
 
   const companies = await Companies.find({}).populate("owner");
 
