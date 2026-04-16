@@ -5,7 +5,7 @@ const User = require("../db/models/user.model");
 
 async function clean() {
   await mongoose.connect(
-    "mongodb+srv://quentinrennies_db_user:kguTLGEdeMDwj3M3@cluster0.1rxmxow.mongodb.net/rdv?retryWrites=true&w=majority",
+retryWrites=true&w=majority",
   );
 
   const companies = await Companies.find({}).populate("owner");
