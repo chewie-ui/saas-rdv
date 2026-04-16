@@ -14,8 +14,10 @@ router.use("/account", require("./user/account"));
 router.get("/", async (req, res) => {
   const coachs = await Companies.find({})
     .populate("owner")
-    .sort({ "owner.isPremium": -1 })
+    .sort({ "owner.isPremium": 1 })
     .limit(10);
+
+  console.log(coachs);
 
   const validCoachs = coachs.filter((c) => c.owner);
 
