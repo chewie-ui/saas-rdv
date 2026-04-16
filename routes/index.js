@@ -17,11 +17,11 @@ router.get("/", async (req, res) => {
     .sort({ "owner.isPremium": -1 })
     .limit(10);
 
-  console.log(coachs);
+  const validCoachs = coachs.filter((c) => c.owner);
 
   res.render("client/landing-page", {
     title: `Gymio - ${res.locals.t.titles.home}`,
-    coachs,
+    coachs: validCoachs,
   });
 });
 
