@@ -1,11 +1,9 @@
 const mongoose = require("mongoose");
-require("dotenv").config();
-const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
 
 const Companies = require("../db/models/company/company.model");
 
 async function clean() {
-  await mongoose.connect(env.dbUri);
+  await mongoose.connect("mongodb+srv://quentinrennies_db_user:kguTLGEdeMDwj3M3@cluster0.1rxmxow.mongodb.net/rdv?retryWrites=true&w=majority");
 
   const companies = await Companies.find({}).populate("owner");
 
