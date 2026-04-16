@@ -1,23 +1,31 @@
 const mongoose = require("mongoose");
 
 const Companies = require("../db/models/company/company.model");
+const User = require("../db/models/user.model");
 
 async function clean() {
-  await mongoose.connect("mongodb+srv://quentinrennies_db_user:kguTLGEdeMDwj3M3@cluster0.1rxmxow.mongodb.net/rdv?retryWrites=true&w=majority");
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
 
-  const companies = await Companies.find({}).populate("owner");
+    console.log("✅ Connecté à Mongo");
 
-  const orphans = companies.filter((c) => !c.owner);
+    const companies = await Companies.find({}).populate("owner");
 
-  console.log("A supprimer:", orphans.length);
+    const orphans = companies.filter((c) => !c.owner);
 
-  for (const c of orphans) {
-    console.log("DELETE:", c._id.toString());
-    await Companies.findByIdAndDelete(c._id);
+    console.log("🗑️ A supprimer:", orphans.length);
+
+    for (const c of orphans) {
+      console.log("DELETE:", c._id.toString());
+      await Companies.findByIdAndDelete(c._id);
+    }
+
+    console.log("✅ Terminé");
+    process.exit(0);
+  } catch (err) {
+    console.error("❌ Erreur:", err);
+    process.exit(1);
   }
-
-  console.log("Terminé");
-  process.exit();
 }
 
 clean();
