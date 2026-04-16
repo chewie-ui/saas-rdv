@@ -12,10 +12,11 @@ router.use("/api", require("./api"));
 router.use("/account", require("./user/account"));
 
 router.get("/", async (req, res) => {
-  const coachs = await Companies.find({
-    isPremium: 1,
-  })
-    .populate("owner")
+  const coachs = await Companies.find({})
+    .populate({
+      path: "owner",
+      match: { isPremium: true },
+    })
     .limit(10);
 
   console.log(coachs);
