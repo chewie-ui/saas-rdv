@@ -18,6 +18,8 @@ if (cancelBooking) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  
+
   const templateDialog = document.getElementById("templateDialog");
   if (templateDialog) {
     const tmp = templateDialog.content.cloneNode(true);

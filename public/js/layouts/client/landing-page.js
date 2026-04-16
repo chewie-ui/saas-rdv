@@ -79,7 +79,6 @@ async function fetchNearbyCommerces(lat, lng) {
     );
     const commerces = await response.json();
 
-    // TODO: C'est ici que tu mets à jour ton calendrier ou ta liste de commerces
     console.log("Commerces trouvés :", commerces);
     // updateUI(commerces);
   } catch (err) {
@@ -88,9 +87,16 @@ async function fetchNearbyCommerces(lat, lng) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const header = document.querySelector(".header");
+
+  window.addEventListener("scroll", (e) => {
+    header.classList.toggle("sticky", window.scrollY > 0);
+  });
+
   document.addEventListener("click", (e) => {
     const formGrp = e.target.closest(".form-group");
     const citySearchClicked = e.target.closest(".menu-search div");
+    const menuSearch = document.querySelector(".menu-search");
 
     if (citySearchClicked) {
       const grp = citySearchClicked.closest(".form-group");
@@ -98,6 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
       input.value = citySearchClicked.textContent;
       const menuSearch = citySearchClicked.closest(".menu-search");
       menuSearch.classList.remove("active");
+      return;
     }
 
     if (formGrp) {
@@ -108,6 +115,10 @@ document.addEventListener("DOMContentLoaded", () => {
       input.onblur = function () {
         formGrp.classList.remove("active");
       };
+    } else {
+      document.querySelectorAll(".form-group, .menu-search").forEach((el) => {
+        el.classList.remove("active");
+      });
     }
   });
 

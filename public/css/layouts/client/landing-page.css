@@ -35,7 +35,7 @@ body {
 
 .landing__client .hero .hero__container h1 {
   color: white;
-  font-size: 50px;
+  font-size: 32px;
   font-weight: 400;
   text-align: center;
   text-shadow: 1px 1px 12px #00000069;
@@ -67,7 +67,7 @@ body {
 
 .hero__form .hero__form-container {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: 10px;
   border: var(--border);
   box-shadow: var(--shadow);
@@ -373,4 +373,17 @@ body {
   .informations__left
   a {
   color: var(--green-primary);
+}
+
+@media all and (min-width: 820px) {
+}
+
+@media all and (min-width: 1280px) {
+  .hero__form .hero__form-container {
+    flex-direction: row;
+  }
+
+  .landing__client .hero .hero__container h1 {
+    font-size: 50px;
+  }
 }
