@@ -90,6 +90,15 @@ async function fetchNearbyCommerces(lat, lng) {
 document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("click", (e) => {
     const formGrp = e.target.closest(".form-group");
+    const citySearchClicked = e.target.closest(".menu-search div");
+
+    if (citySearchClicked) {
+      const grp = citySearchClicked.closest(".form-group");
+      const input = grp.querySelector("input");
+      input.value = citySearchClicked.textContent;
+      const menuSearch = citySearchClicked.closest(".menu-search");
+      menuSearch.classList.remove("active");
+    }
 
     if (formGrp) {
       const input = formGrp.querySelector("input");
@@ -126,7 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
           const res = await fetch(
-            `https://belgiumcities-api.onrender.com/api/search?name=${val}`,
+            `https://quentin-project.site/api/search?name=${val}`,
           );
 
           if (!res.ok) throw new Error("Erreur API");
