@@ -88,9 +88,11 @@ async function fetchNearbyCommerces(lat, lng) {
 
 document.addEventListener("DOMContentLoaded", () => {
   const header = document.querySelector(".header");
+  const headerPhone = document.querySelector(".header-phone");
 
   window.addEventListener("scroll", (e) => {
     header.classList.toggle("sticky", window.scrollY > 0);
+    headerPhone.classList.toggle("sticky", window.scrollY > 0);
   });
 
   document.addEventListener("click", (e) => {

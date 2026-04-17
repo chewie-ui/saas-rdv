@@ -145,7 +145,7 @@ body {
 .landing__client .hero__form .hero__suggestions .suggestions__row {
   display: flex;
   width: 100%;
-  flex-direction: row;
+  flex-direction: column;
   align-items: stretch;
   border: var(--border);
   border-radius: 1rem;
@@ -154,7 +154,7 @@ body {
 }
 
 .landing__client .hero__form .hero__suggestions .suggestions__row .row__avatar {
-  width: 25%;
+  width: 100%;
   height: 300px;
 }
 
@@ -163,9 +163,9 @@ body {
   .hero__suggestions
   .suggestions__row
   .row__informations {
-  width: 75%;
+  width: 100%;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
 }
 
 .landing__client
@@ -188,8 +188,9 @@ body {
   justify-content: space-between;
   align-items: flex-start;
   flex-direction: column;
-  width: 70%;
+  width: 100%;
   padding: 1.5rem;
+  gap: 20px;
 }
 
 .landing__client
@@ -199,8 +200,9 @@ body {
   .row__informations
   .informations__right {
   display: flex;
-  width: 30%;
-  flex-direction: column;
+  width: 100%;
+  flex-direction: row;
+  align-items: center;
   justify-content: space-between;
   padding: 1.5rem;
 }
@@ -385,5 +387,47 @@ body {
 
   .landing__client .hero .hero__container h1 {
     font-size: 50px;
+  }
+
+  .landing__client .hero__form .hero__suggestions .suggestions__row {
+    flex-direction: row;
+  }
+
+  .landing__client
+    .hero__form
+    .hero__suggestions
+    .suggestions__row
+    .row__avatar {
+    width: 25%;
+  }
+
+  .landing__client
+    .hero__form
+    .hero__suggestions
+    .suggestions__row
+    .row__informations {
+    width: 75%;
+    flex-direction: row;
+  }
+
+  .landing__client
+    .hero__form
+    .hero__suggestions
+    .suggestions__row
+    .row__informations
+    .informations__left {
+    width: 70%;
+    gap: 0;
+  }
+
+  .landing__client
+    .hero__form
+    .hero__suggestions
+    .suggestions__row
+    .row__informations
+    .informations__right {
+    width: 30%;
+    flex-direction: column;
+    align-items: flex-end;
   }
 }
