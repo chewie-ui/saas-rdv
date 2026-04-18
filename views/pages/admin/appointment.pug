@@ -12,18 +12,27 @@ block content
                 .calendar__section.calendar__section--center
                     .calendar__date.flex-c
                         a.calendar__today-btn.btn(href="/appointment")= t.bk.today
-                        .calendar__date-btn.calendar__date-btn--previous.flex-c(data-direction="prev")
+                        .calendar__date-btn.calendar__date-btn--previous.flex-c(data-direction="prev" aria-label="Previous")
                             svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                 path(d="M400-80 0-480l400-400 71 71-329 329 329 329-71 71Z")
                         .calendar__date-text.calendar__date-text--week= weekLabel
-                        .calendar__date-text.calendar__date-text--day= dayLabel
-                        .calendar__date-btn.calendar__date-btn--next.flex-c(data-direction="next")
+                        .calendar__date-text.calendar__date-text--day
+                            span.calendar__date-text-weekday= focusedDayName
+                            span.calendar__date-text-date= focusedDayDate
+                        .calendar__date-btn.calendar__date-btn--next.flex-c(data-direction="next" aria-label="Next")
                             svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                 path(d="m321-80-71-71 329-329-329-329 71-71 400 400L321-80Z")
                 .calendar__section.calendar__section--right
                     .calendar__actions.flex
                         //- .calendar__actions-btn.btn.secondary Tools
                         //- .calendar__actions-btn.btn New appointment
+
+        .calendar__week-strip
+            each weekday in weekDays
+                a.calendar__week-day(href=`/appointment?date=${weekday.isoDate}` class=[weekday.isToday && "today", weekday.isFocused && "focused"])
+                    span.calendar__week-day-label= weekday.initial
+                    span.calendar__week-day-number= weekday.dayNumber
+
     .calendar-section
         .grid-section
             .cell.time-header GMT-5
@@ -36,13 +45,4 @@ block content
                     .cell.day(class=day.isFocused ? "focused" : "")
                         each appointment in appointments
                             if appointment.isoDate === day.iso.split("T")[0] && appointment.startHour === hour
-                                a.appointment(href=`/appointement/${appointment._id}` class={ canceled: appointment.status === 'canceled' })
-                                    if appointment.status === "canceled"
-                                        .appointment-canceled Canceled
-                                    .appointment-name= appointment.name
-                                    .appointment-time.xs-comment
-                                        | #{appointment.startHour} - #{appointment.endHour}
-
-
-block scripts
-    script(src="/js/layouts/appointment.js" type="module")
+                                a.appointment(href=`/

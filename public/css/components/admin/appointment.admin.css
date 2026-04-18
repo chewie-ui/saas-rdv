@@ -1,139 +1,12 @@
-.calendar-section {
-  background-color: var(--color-white);
-  overflow-y: scroll;
-}
+/* ============================================================
+   Appointment calendar — mobile-first, pro design
+   ============================================================ */
 
-.calendar-section .grid-section {
-  display: grid;
-  position: relative;
-  grid-template-columns: minmax(60px, 90px) 1fr;
-  min-width: 0;
-}
-
-/* Mobile: only show the focused day column */
-.calendar-section .grid-section .cell.day-header:not(.focused),
-.calendar-section .grid-section .cell.day:not(.focused) {
-  display: none;
-}
-
-/* Show day label on mobile, hide the week range label */
-.calendar__date-text--week {
-  display: none;
-}
-.calendar__date-text--day {
-  display: block;
-}
-
-.calendar-timeline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: #ea4335;
-  z-index: 100;
-  pointer-events: none;
-  /* On l'aligne sur les colonnes des jours (on saute la colonne GMT) */
-  grid-column: 2 / -1;
-  display: none; /* On l'affiche via JS seulement si on est sur la semaine actuelle */
-}
-
-.timeline-circle {
-  position: absolute;
-  left: -6px;
-  top: -5px;
-  width: 12px;
-  height: 12px;
-  background-color: #ea4335;
-  border-radius: 50%;
-}
-
-.calendar-section .grid-section .cell {
-  height: 65px;
-  border-bottom: var(--border);
-  border-right: var(--border);
-  padding: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.calendar-section .grid-section .cell.time {
-  padding: 8px;
-  position: sticky;
-  left: 0;
-  background-color: white;
-  z-index: 100;
-}
-
-.calendar-section .grid-section .cell.time-header {
-  position: sticky;
-  left: 0;
-  background-color: white;
-}
-
-.calendar-section .grid-section .cell.day-header {
-  position: sticky;
-  top: 0;
-  background-color: white;
-  z-index: 100;
-}
-
-.calendar-section .grid-section .cell.time-header,
-.calendar-section .grid-section .cell.day-header {
-  display: flex;
-  align-items: center;
-  padding: 0 8px;
-  height: 45px;
-  display: grid;
-  gap: 0;
-}
-
-.calendar-section .grid-section .cell.day-header.today {
-  background-color: var(--green-soft);
-}
-
-.calendar-section .grid-section .cell .appointment {
-  min-height: 100%;
-  /* min-height: calc((100% - 7px) / 2); */
-  background-color: var(--green-soft);
-  border-left: 3px solid var(--green-primary);
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  cursor: pointer;
-  transition: 0.3s;
-  position: relative;
-}
-
-.calendar-section .grid-section .cell .appointment .appointment-canceled {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  color: grey;
-  font-size: 12px;
-}
-
-.calendar-section .grid-section .cell .appointment:hover {
-  background-color: var(--green-light);
-}
-
-.calendar-section
-  .grid-section
-  .cell
-  .appointment:not(.canceled):hover
-  .xs-comment,
-.calendar-section
-  .grid-section
-  .cell
-  .appointment:not(.canceled):hover
-  .appointment-name {
-  color: white;
-}
-
-.calendar-section .grid-section .cell .appointment.canceled {
-  background-color: var(--grey-soft);
-  border-left: 3px solid var(--grey-primary);
+/* -------- Top menu (today btn + date nav) -------- */
+.calendar .calendar__menu {
+  background-color: #fff;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .calendar .calendar__menu .calendar__sections .calendar__section {
@@ -155,24 +28,53 @@
   .calendar__sections
   .calendar__section.calendar__section--center
   .calendar__date {
-  gap: 10px;
+  gap: 8px;
   flex-direction: row;
-  flex-wrap: wrap;
-}
-
-.calendar__today-btn {
+  flex-wrap: nowrap;
+  justify-content: space-between;
   width: 100%;
 }
 
+.calendar__today-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+/* Labels */
 .calendar
   .calendar__menu
   .calendar__sections
   .calendar__section.calendar__section--center
   .calendar__date
   .calendar__date-text {
-  font-size: 18px;
+  font-size: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
 }
 
+.calendar__date-text-weekday {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.calendar__date-text-date {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* Prev / Next buttons */
 .calendar
   .calendar__menu
   .calendar__sections
@@ -180,8 +82,38 @@
   .calendar__date
   .calendar__date-btn {
   cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background-color: var(--grey-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.2s;
 }
 
+.calendar
+  .calendar__menu
+  .calendar__sections
+  .calendar__section.calendar__section--center
+  .calendar__date
+  .calendar__date-btn:hover {
+  background-color: var(--border-light);
+}
+
+.calendar
+  .calendar__menu
+  .calendar__sections
+  .calendar__section.calendar__section--center
+  .calendar__date
+  .calendar__date-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: var(--text-primary);
+}
+
+/* Hide side sections on mobile */
 .calendar
   .calendar__menu
   .calendar__sections
@@ -193,72 +125,133 @@
   display: none;
 }
 
-.calendar
-  .calendar__menu
-  .calendar__sections
-  .calendar__section.calend.availability-section
-  .availability-section__body
-  .body-weekly-hourar__section--center
-  .calendar__date
-  .calendar__date-text {
-  width: 70%;
+/* Show single-day label on mobile, hide week range */
+.calendar__date-text--week {
+  display: none;
+}
+.calendar__date-text--day {
+  display: flex;
 }
 
-@media all and (min-width: 820px) {
-  /* Restore full week view on tablet+ */
-  .calendar-section .grid-section {
-    grid-template-columns: minmax(60px, 90px) repeat(7, 1fr);
-    min-width: 1000px;
-  }
-
-  .calendar-section .grid-section .cell.day-header:not(.focused),
-  .calendar-section .grid-section .cell.day:not(.focused) {
-    display: flex;
-  }
-
-  .calendar-section .grid-section .cell.day-header:not(.focused) {
-    display: grid;
-  }
-
-  .calendar__date-text--week {
-    display: block;
-  }
-  .calendar__date-text--day {
-    display: none;
-  }
+/* -------- Week strip (mobile only, Google-Calendar style) -------- */
+.calendar__week-strip {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px 14px;
+  background-color: #fff;
+  border-bottom: 1px solid var(--border-light);
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
-@media all and (min-width: 1280px) {
-  .calendar
-    .calendar__menu
-    .calendar__sections
-    .calendar__section.calendar__section--center
-    .calendar__date {
-    flex-direction: row;
-  }
-
-  .calendar
-    .calendar__menu
-    .calendar__sections
-    .calendar__section.calendar__section--left,
-  .calendar
-    .calendar__menu
-    .calendar__sections
-    .calendar__section.calendar__section--right {
-    display: flex;
-  }
-
-  .calendar__today-btn {
-    width: auto;
-  }
-
-  .calendar-section .grid-section .cell.time {
-    left: auto;
-    position: relative;
-  }
-
-  .calendar-section .grid-section .cell.time-header {
-    top: 0;
-    z-index: 101;
-  }
+.calendar__week-day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 2px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+  color: var(--text-primary);
+  text-decoration: none;
+  min-width: 0;
 }
+
+.calendar__week-day-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+.calendar__week-day-number {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  transition: color 0.2s ease;
+  line-height: 1;
+}
+
+.calendar__week-day.today .calendar__week-day-number {
+  color: var(--green-primary);
+}
+
+.calendar__week-day.focused {
+  background-color: var(--green-primary);
+  box-shadow: 0 4px 12px rgba(255, 87, 51, 0.25);
+}
+
+.calendar__week-day.focused .calendar__week-day-label,
+.calendar__week-day.focused .calendar__week-day-number {
+  color: #fff;
+}
+
+/* -------- Grid section (hours + day columns) -------- */
+.calendar-section {
+  background-color: #fff;
+  overflow-y: auto;
+  padding-bottom: 24px;
+}
+
+.calendar-section .grid-section {
+  display: grid;
+  position: relative;
+  grid-template-columns: 56px 1fr;
+  min-width: 0;
+}
+
+/* Mobile: only show the focused day column */
+.calendar-section .grid-section .cell.day-header:not(.focused),
+.calendar-section .grid-section .cell.day:not(.focused) {
+  display: none;
+}
+
+/* Hide headers on mobile (week strip replaces them) */
+.calendar-section .grid-section .cell.time-header,
+.calendar-section .grid-section .cell.day-header {
+  display: none;
+}
+
+.calendar-timeline {
+  position: absolute;
+  left: 56px;
+  right: 0;
+  height: 2px;
+  background-color: #ea4335;
+  z-index: 40;
+  pointer-events: none;
+  display: none;
+}
+
+.timeline-circle {
+  position: absolute;
+  left: -6px;
+  top: -5px;
+  width: 12px;
+  height: 12px;
+  background-color: #ea4335;
+  border-radius: 50%;
+}
+
+/* Cell (one hour row) */
+.calendar-section .grid-section .cell {
+  height: 68px;
+  border-bottom: 1px solid var(--border-light);
+  border-right: none;
+  padding: 4px 10px 4px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  position: relative;
+}
+
+/* Time labels — muted, small, hanging above the line */
+.calendar-section .grid-section .cel

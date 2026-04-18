@@ -76,11 +76,15 @@ function getWeekDays(startDate = new Date()) {
 
     week.push({
       label: d.toLocaleDateString("en-US", { weekday: "short" }),
+      initial: d.toLocaleDateString("en-US", { weekday: "narrow" }),
+      longLabel: d.toLocaleDateString("en-US", { weekday: "long" }),
       date: d.toLocaleDateString("en-US", {
         day: "numeric",
         month: "long",
       }),
+      dayNumber: d.getDate(),
       iso: d.toISOString(),
+      isoDate: d.toISOString().split("T")[0],
       isToday, // 👈 AJOUT IMPORTANT
     });
   }
@@ -172,6 +176,8 @@ exports.appointment = async (req, res) => {
   const weekLabel = `${firstDay.label} ${firstDay.date} - ${lastDay.label} ${lastDay.date}`;
   const focusedDay = weekDays.find((d) => d.isFocused) || weekDays[0];
   const dayLabel = `${focusedDay.label} ${focusedDay.date}`;
+  const focusedDayName = focusedDay.longLabel;
+  const focusedDayDate = focusedDay.date;
   const hoursList = formatted.map((a) => {
     const [h] = a.startHour.split(":").map(Number);
     return h;
@@ -188,6 +194,8 @@ exports.appointment = async (req, res) => {
     appointments: formatted,
     weekLabel,
     dayLabel,
+    focusedDayName,
+    focusedDayDate,
   });
 };
 
@@ -525,20 +533,4 @@ exports.resumeSubscription = async (req, res) => {
       return res.status(404).json({ error: "Abonnement introuvable." });
     }
 
-    await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
-      cancel_at_period_end: false,
-    });
-
-    subscription.autoRenew = true;
-    subscription.status = "active";
-    await subscription.save();
-
-    return res.json({
-      success: true,
-      message: "Abonnement réactivé avec succès.",
-    });
-  } catch (error) {
-    console.error(error);
-    return res.json({ err });
-  }
-};
+    await stripe.subscriptions.update(subscription.stripeSubscripti
