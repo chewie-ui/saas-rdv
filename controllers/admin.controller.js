@@ -533,4 +533,20 @@ exports.resumeSubscription = async (req, res) => {
       return res.status(404).json({ error: "Abonnement introuvable." });
     }
 
-    await stripe.subscriptions.update(subscription.stripeSubscripti
+    await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+      cancel_at_period_end: false,
+    });
+
+    subscription.autoRenew = true;
+    subscription.status = "active";
+    await subscription.save();
+
+    return res.json({
+      success: true,
+      message: "Abonnement réactivé avec succès.",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.json({ err });
+  }
+};
