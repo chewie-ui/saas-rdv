@@ -6,8 +6,22 @@
 .calendar-section .grid-section {
   display: grid;
   position: relative;
-  grid-template-columns: minmax(60px, 90px) repeat(7, 1fr);
-  min-width: 1000px;
+  grid-template-columns: minmax(60px, 90px) 1fr;
+  min-width: 0;
+}
+
+/* Mobile: only show the focused day column */
+.calendar-section .grid-section .cell.day-header:not(.focused),
+.calendar-section .grid-section .cell.day:not(.focused) {
+  display: none;
+}
+
+/* Show day label on mobile, hide the week range label */
+.calendar__date-text--week {
+  display: none;
+}
+.calendar__date-text--day {
+  display: block;
 }
 
 .calendar-timeline {
@@ -191,6 +205,27 @@
 }
 
 @media all and (min-width: 820px) {
+  /* Restore full week view on tablet+ */
+  .calendar-section .grid-section {
+    grid-template-columns: minmax(60px, 90px) repeat(7, 1fr);
+    min-width: 1000px;
+  }
+
+  .calendar-section .grid-section .cell.day-header:not(.focused),
+  .calendar-section .grid-section .cell.day:not(.focused) {
+    display: flex;
+  }
+
+  .calendar-section .grid-section .cell.day-header:not(.focused) {
+    display: grid;
+  }
+
+  .calendar__date-text--week {
+    display: block;
+  }
+  .calendar__date-text--day {
+    display: none;
+  }
 }
 
 @media all and (min-width: 1280px) {

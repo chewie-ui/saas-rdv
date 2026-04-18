@@ -36,12 +36,16 @@ export const initCalendarHeader = function () {
 
     const direction = directionBtn.dataset.direction;
 
+    // Mobile = 1 day step, Desktop (>=820px) = 7 day step (full week)
+    const isMobile = window.matchMedia("(max-width: 819px)").matches;
+    const step = isMobile ? 1 : 7;
+
     if (direction === "prev") {
-      currentDate.setDate(currentDate.getDate() - 7);
+      currentDate.setDate(currentDate.getDate() - step);
     }
 
     if (direction === "next") {
-      currentDate.setDate(currentDate.getDate() + 7);
+      currentDate.setDate(currentDate.getDate() + step);
     }
 
     window.location.search = `?date=${currentDate.toISOString().split("T")[0]}`;

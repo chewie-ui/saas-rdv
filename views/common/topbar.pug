@@ -1,13 +1,17 @@
 .header
+    input#headerNavToggle.header__toggle-input(type="checkbox" aria-hidden="true")
     .header-container.container
         a.company(href="/")
             .logo
-                img(src="/images/icon.webp")
+                img(src="/images/icon.webp", alt="Gymio")
             .name Gymio
-        .menu
+        label.header__burger(for="headerNavToggle" aria-label="Menu" role="button" tabindex="0")
+            span
+            span
+            span
+        nav.menu
             .actions
-                if user 
-                    //- a(href="/logout").btn.secondary Logout
+                if user
                     a(href="/appointment").btn.secondary= t.header.dashboard
                     a(href="/logout").btn.primary= t.header.logout
                 else
@@ -17,23 +21,12 @@
                     else
                         a(href="/login").btn.secondary= t.header.login
                         a(href="/become-coach").btn.primary Devenir coach
-                .selectmenu(style="min-width: 120px;")
-                    .selectmenu__header(style="height:100%")
-                        span #{lang === 'fr' ? "Francais" : "English"}
-                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-528 296-344l-56-56 240-240 240 240-56 56-184-184Z"/></svg>
-                    .selectmenu__panel
-                        .selectmenu__row(onclick="changeLanguage('fr')") French
-                        .selectmenu__row(onclick="changeLanguage('en')") English                    
-
-                    //- https://www.youtube.com/watch?v=poNC8zTaT1I
-
-.header-phone
-    .header-container
-        a(href='/').name Gymio
-        .menu
-            if user
-                a.btn.secondary(src='/logout') Logout
-                a.btn(href='/appointment') Dashboard
-            else
-                a.flex-c(href="/register").btn.secondary Register
-                a.flex-c(href="/login").btn Login
+            .selectmenu(style="min-width: 120px;")
+                .selectmenu__header(style="height:100%")
+                    span #{lang === 'fr' ? "Francais" : "English"}
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-528 296-344l-56-56 240-240 240 240-56 56-184-184Z"/></svg>
+                .selectmenu__panel
+                    .selectmenu__row(onclick="changeLanguage('fr')") French
+                    .selectmenu__row(onclick="changeLanguage('en')") English
+    label.header__backdrop(for="headerNavToggle" aria-hidden="true")
+     a.flex-c(href="/login").btn Login

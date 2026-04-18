@@ -162,9 +162,16 @@ exports.appointment = async (req, res) => {
     };
   });
   const referenceDate = req.query.date ? new Date(req.query.date) : new Date();
-  const firstDay = getWeekDays(referenceDate)[0];
-  const lastDay = getWeekDays(referenceDate)[6];
+  const focusedIso = referenceDate.toISOString().split("T")[0];
+  const weekDays = getWeekDays(referenceDate).map((d) => ({
+    ...d,
+    isFocused: d.iso.split("T")[0] === focusedIso,
+  }));
+  const firstDay = weekDays[0];
+  const lastDay = weekDays[6];
   const weekLabel = `${firstDay.label} ${firstDay.date} - ${lastDay.label} ${lastDay.date}`;
+  const focusedDay = weekDays.find((d) => d.isFocused) || weekDays[0];
+  const dayLabel = `${focusedDay.label} ${focusedDay.date}`;
   const hoursList = formatted.map((a) => {
     const [h] = a.startHour.split(":").map(Number);
     return h;
@@ -177,9 +184,10 @@ exports.appointment = async (req, res) => {
     title: res.locals.t.titles.book,
     slotTime,
     hours: generateTimeSlots(minHour, maxHour, slotTime),
-    weekDays: getWeekDays(referenceDate),
+    weekDays,
     appointments: formatted,
     weekLabel,
+    dayLabel,
   });
 };
 

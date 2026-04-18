@@ -8,14 +8,15 @@ block content
         .calendar__menu
             .calendar__sections.flex-c.space-b
                 .calendar__section.calendar__section--left
-                    //- Let this empty 
+                    //- Let this empty
                 .calendar__section.calendar__section--center
                     .calendar__date.flex-c
                         a.calendar__today-btn.btn(href="/appointment")= t.bk.today
                         .calendar__date-btn.calendar__date-btn--previous.flex-c(data-direction="prev")
                             svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                 path(d="M400-80 0-480l400-400 71 71-329 329 329 329-71 71Z")
-                        .calendar__date-text= weekLabel
+                        .calendar__date-text.calendar__date-text--week= weekLabel
+                        .calendar__date-text.calendar__date-text--day= dayLabel
                         .calendar__date-btn.calendar__date-btn--next.flex-c(data-direction="next")
                             svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                 path(d="m321-80-71-71 329-329-329-329 71-71 400 400L321-80Z")
@@ -27,19 +28,19 @@ block content
         .grid-section
             .cell.time-header GMT-5
             each weekday in weekDays
-                .cell.day-header(class=weekday.isToday ? "today" : "") #{weekday.label}, #{weekday.date}
+                .cell.day-header(class=[weekday.isToday && "today", weekday.isFocused && "focused"]) #{weekday.label}, #{weekday.date}
 
             each hour in hours
                 .cell.time= hour
                 each day, dayIndex in weekDays
-                    .cell.day
+                    .cell.day(class=day.isFocused ? "focused" : "")
                         each appointment in appointments
                             if appointment.isoDate === day.iso.split("T")[0] && appointment.startHour === hour
                                 a.appointment(href=`/appointement/${appointment._id}` class={ canceled: appointment.status === 'canceled' })
                                     if appointment.status === "canceled"
                                         .appointment-canceled Canceled
                                     .appointment-name= appointment.name
-                                    .appointment-time.xs-comment 
+                                    .appointment-time.xs-comment
                                         | #{appointment.startHour} - #{appointment.endHour}
 
 

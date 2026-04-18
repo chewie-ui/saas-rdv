@@ -91,9 +91,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const headerPhone = document.querySelector(".header-phone");
 
   window.addEventListener("scroll", (e) => {
-    header.classList.toggle("sticky", window.scrollY > 0);
-    headerPhone.classList.toggle("sticky", window.scrollY > 0);
+    if (header) header.classList.toggle("sticky", window.scrollY > 0);
+    if (headerPhone) headerPhone.classList.toggle("sticky", window.scrollY > 0);
   });
+
+  // Close mobile nav when a link inside is clicked
+  const headerNavToggle = document.getElementById("headerNavToggle");
+  if (headerNavToggle) {
+    document.querySelectorAll(".header .menu a").forEach((link) => {
+      link.addEventListener("click", () => {
+        headerNavToggle.checked = false;
+      });
+    });
+  }
 
   document.addEventListener("click", (e) => {
     const formGrp = e.target.closest(".form-group");
