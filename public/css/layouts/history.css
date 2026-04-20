@@ -1,9 +1,11 @@
 .history .history__container {
   gap: 17.5px;
+  padding-bottom: 75px;
 }
 
+/* ---- Actions panel (desktop 3-dot menu) ---- */
 .history__actions-panel {
-  position: absolute;
+  position: fixed;
   background: white;
   padding: 5px 0;
   border-radius: 12px;
@@ -11,10 +13,10 @@
   box-shadow:
     0 10px 16px -4px rgba(28, 28, 28, 0.1),
     0 4px 6px -2px rgba(28, 28, 28, 0.04);
-  z-index: 10;
+  z-index: 1000;
   border: var(--border);
   display: none;
-  min-width: 200px;
+  min-width: 180px;
   flex-direction: column;
 }
 
@@ -35,6 +37,7 @@
 .history__actions-panel .history__actions-row .row__text {
   font-weight: 400;
   transition: 0.3s;
+  color: grey;
 }
 
 .history__actions-panel .history__actions-row:hover .row__text {
@@ -49,6 +52,41 @@
   fill: var(--danger);
 }
 
+/* ---- Pagination ---- */
+.table__schema-pagination,
+.history__cards-pagination {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 10px 0;
+}
+
+.pagination__showing {
+  font-size: 13px;
+  color: var(--grey-primary);
+}
+
+.pagination__btns {
+  gap: 4px;
+}
+
+.btn-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ---- Desktop table ---- */
+.desktop-table {
+  display: table;
+}
+
+.mobile-cards {
+  display: none;
+}
+
+/* ---- History edit page ---- */
 .page--history-edit .history__edit {
   display: flex;
   justify-content: space-between;
@@ -87,4 +125,97 @@
 
 .page--history-edit .history__edit .history__edit-actions .actions__text a {
   text-decoration: underline;
+}
+
+/* ==============================
+   MOBILE CARDS
+   ============================== */
+@media (max-width: 819px) {
+  .desktop-table {
+    display: none;
+  }
+
+  .mobile-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .history__card {
+    background: var(--color-white);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 280px;
+  }
+
+  .history__card span {
+    word-break: break-all;
+  }
+
+  .history__card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .history__card-name {
+    font-weight: 600;
+    font-size: 15px;
+  }
+
+  .history__card-status {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+
+  .history__card-status.confirmed {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+
+  .history__card-status.canceled {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  .history__card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .history__card-row {
+    display: flex;
+    gap: 8px;
+    font-size: 13px;
+    align-items: baseline;
+  }
+
+  .history__card-label {
+    color: var(--grey-primary);
+    min-width: 48px;
+    font-size: 12px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .history__card-actions {
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid var(--grey-soft, #f0f0f0);
+    padding-top: 8px;
+  }
+
+  .history__cards-pagination {
+    justify-content: center;
+    padding: 16px 0 4px;
+  }
 }

@@ -41,6 +41,14 @@ document.addEventListener("click", (event) => {
   const isSelectMenu = event.target.closest(".selectmenu");
   const isSearchMenu = event.target.closest(".searchmenu");
   const langSelector = event.target.closest("#langSelector");
+  const headerLang = event.target.closest(".header__lang");
+
+  if (headerLang) {
+    headerLang.classList.toggle("open");
+  }
+  document.querySelectorAll(".header__lang").forEach((el) => {
+    if (el !== headerLang) el.classList.remove("open");
+  });
 
   if (langSelector) {
     langSelector.classList.toggle("open");

@@ -10,6 +10,7 @@ exports.createUser = async (req, res) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.render("auth/register", {
+      alwaysSticky: true,
       error: "Please enter a valid email address.",
     });
   }
@@ -17,6 +18,7 @@ exports.createUser = async (req, res) => {
   const checkName = await User.findOne({ fullName: fullname }).lean();
   if (checkName) {
     return res.render("auth/register", {
+      alwaysSticky: true,
       error: "This name is already in use.",
     });
   }
@@ -24,18 +26,21 @@ exports.createUser = async (req, res) => {
   const checkEmail = await User.findOne({ email }).lean();
   if (checkEmail) {
     return res.render("auth/register", {
+      alwaysSticky: true,
       error: "This email is already in use.",
     });
   }
 
   if (password.trim() !== conformPassword.trim()) {
     return res.render("auth/register", {
+      alwaysSticky: true,
       error: "Passwords do not match",
     });
   }
 
   if (password.trim().length < 8) {
     return res.render("auth/register", {
+      alwaysSticky: true,
       error: "Password must be at least 8 characters long.",
     });
   }
@@ -78,6 +83,7 @@ exports.createUser = async (req, res) => {
       });
     }
     return res.render("auth/register", {
+      alwaysSticky: true,
       error: err,
     });
   }

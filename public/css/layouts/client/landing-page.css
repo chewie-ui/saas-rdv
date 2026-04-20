@@ -1,5 +1,5 @@
 body {
-  background-color: white;
+  background-color: var(--color-white);
 }
 .landing__client {
   display: flex;
@@ -99,8 +99,13 @@ body {
   border: none;
   outline: none;
   box-shadow: none;
+  background: transparent;
   padding: 0.2rem 0;
   font-size: 16px;
+}
+
+.hero__form .hero__form-container input.input::placeholder {
+  color: var(--text-primary);
 }
 
 .hero__form .hero__form-container .form-group .menu-locations {
@@ -108,12 +113,13 @@ body {
   top: 110%;
   display: none;
   flex-direction: column;
-  background: white;
+  background: var(--color-white);
   box-shadow: var(--shadow-p);
   left: 0;
   border-radius: 0.6rem;
   overflow: hidden;
   border: var(--border);
+  z-index: 100;
   width: 100%;
 }
 
@@ -128,7 +134,7 @@ body {
 }
 
 .hero__form .hero__form-container .form-group .menu-locations div:hover {
-  background-color: rgb(250, 250, 250);
+  background-color: var(--color-card);
 }
 
 .hero__form .hero__form-container input::placeholder {

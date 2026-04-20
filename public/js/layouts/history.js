@@ -41,13 +41,17 @@ document.addEventListener("click", async (event) => {
   if (button) {
     history__actionsPanel.style.display = "flex";
 
-    idTransfer = button.closest("tr").dataset.id;
+    const row = button.closest("tr") || button.closest(".history__card");
+    idTransfer = row.dataset.id;
 
     const rect = button.getBoundingClientRect();
-    const panelWidth = history__actionsPanel.offsetWidth;
-    history__actionsPanel.style.top = `${rect.bottom + window.scrollY + 5}px`;
+    const panelWidth = 200; // min-width du panel
+    history__actionsPanel.style.top = `${rect.bottom + 5}px`;
 
-    history__actionsPanel.style.left = `${rect.right + window.scrollX - panelWidth}px`;
+    // Eviter que le panel sorte à droite de l'écran
+    const rawLeft = rect.right - panelWidth;
+    const safeLeft = Math.max(8, Math.min(rawLeft, window.innerWidth - panelWidth - 8));
+    history__actionsPanel.style.left = `${safeLeft}px`;
     return;
   } else {
     history__actionsPanel.style.display = `none`;

@@ -8,8 +8,12 @@ const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
 
+const reminderScheduler = require("../utils/reminderScheduler");
+
 io.on("connection", (socket) => {});
 
 server.listen(PORT, () => {
   console.log("server on");
+  // Démarre le système de rappels 24h avant chaque rdv
+  reminderScheduler.start();
 });

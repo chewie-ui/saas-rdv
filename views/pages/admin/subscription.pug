@@ -1,7 +1,10 @@
 extends ../../layouts/admin
 
+include ../../templates/modals/dialog.pug
+
 block links
     link(rel="stylesheet", href="/css/layouts/subscription.css")
+    link(rel="stylesheet", href="/css/templates/dialog.css")
 
 block content
     .subscription
@@ -92,9 +95,9 @@ block content
                         .plan__advantage-text
                             p= t.subscription.opt_2_13
                     if user && !user.isPremium
-                        button.btn(disabled)= t.subscription.btn_1_1
+                        button.btn.sec(disabled)= t.subscription.btn_1_1
                     else 
-                        button.btn#getFreePlan= t.subscription.btn_1_2  
+                        button.btn#getFreePlan.sec= t.subscription.btn_1_2  
             .subscription__plan
                 .plan__recommanded ⭐ Most popular
                 .plan__header
@@ -182,7 +185,7 @@ block content
                         .plan__advantage-text
                             p= t.subscription.opt_2_13
                     if user && user.isPremium
-                        button.btn(disabled)= t.subscription.btn_1_1
+                        button.btn.sec(disabled)= t.subscription.btn_1_1
                         if !autoRenew
                             .small-text.danger#retakeSubscription Retake plan
                         if autoRenew
@@ -191,7 +194,7 @@ block content
                             strong #{daysLeft} #{t.subscription.days} 
                     
                     else 
-                        button.btn#getProPlan= t.subscription.btn_2_1
+                        button.btn#getProPlan.sec= t.subscription.btn_2_1
             .subscription__plan
                 .plan__header
                     .plan__title
@@ -206,9 +209,11 @@ block content
                         .plan__advantage-text
                             p= t.subscription.soon
                         
-                    button.btn(disabled)= t.subscription.soon
+                    button.btn.sec(disabled)= t.subscription.soon
         .subscription__bottom
             .subscription__payments
             .subscription__help
+    +dialog()
 block scripts
+    script(src="/js/templates/dialog.js")
     script(src="/js/layouts/subscription.js")

@@ -14,11 +14,11 @@ block content
                 else 
                     p.description The page you are looking for doesn't exist or has been moved.
             .error-404__body
-                .error-404__search-wrapper
-                    input.input(placeholder="Search companies...")
-                    button.btn.secondary Search
+                //- .error-404__search-wrapper
+                //-     input.input(placeholder="Search companies...")
+                //-     button.btn.secondary Search
                 .error-404__search-actions
-                    button.btn.secondary Go back
-                    button.btn Go home
+                    button.btn.secondary(onclick="history.back()") Go back
+                    a.btn(href='/') Go home
 block scripts       
     script(src="/js/layouts/index.js" type="module")

@@ -16,16 +16,31 @@ exports.getDaysOff = async (req, res) => {
 
 exports.addDaysOff = async (req, res) => {
   const { dateKey } = req.body;
-  await DaysOff.findOneAndUpdate(
+
+  const result = await DaysOff.findOneAndUpdate(
     { company: res.locals.currentCompany._id },
     {
-      $addToSet: {
-        dates: { date: dateKey },
+      $push: {
+        dates: { date: new Date(dateKey), workingHours: [], dayOff: true },
       },
     },
     { upsert: true, new: true },
   );
-  return res.json({ success: true });
+
+  // Find the newly added date entry to return its _id
+  const searchDate = new Date(dateKey);
+  searchDate.setHours(0, 0, 0, 0);
+
+  const newEntry = result.dates
+    .slice()
+    .reverse()
+    .find((d) => {
+      const dDate = new Date(d.date);
+      dDate.setHours(0, 0, 0, 0);
+      return dDate.getTime() === searchDate.getTime();
+    });
+
+  return res.json({ success: true, dateEntry: newEntry });
 };
 
 exports.removeDaysOff = async (req, res) => {
@@ -97,41 +112,50 @@ exports.deleteTimeSlot = async (req, res) => {
 
 exports.scheduleDayOff = async (req, res) => {
   try {
-    const { companyId } = req.session;
+    const companyId = res.locals.currentCompany._id;
     const { schedule, dateId } = req.body;
 
-    await DaysOff.findOneAndUpdate(
-      { company: companyId, "dates._id": dateId },
-      {
-        $set: {
-          "dates.$.workingHours": [
-            { start: schedule.start, end: schedule.end },
-          ],
+    if (!schedule || !schedule.start) {
+      // Supprimer les horaires (remettre en congé total)
+      await DaysOff.findOneAndUpdate(
+        { company: companyId, "dates._id": dateId },
+        { $set: { "dates.$.workingHours": [], "dates.$.dayOff": true } },
+      );
+    } else {
+      await DaysOff.findOneAndUpdate(
+        { company: companyId, "dates._id": dateId },
+        {
+          $set: {
+            "dates.$.workingHours": [{ start: schedule.start, end: schedule.end }],
+            "dates.$.dayOff": false,
+          },
         },
-      },
-    );
+      );
+    }
     return res.json({ success: true });
   } catch (err) {
+    console.error(err);
     return res.json(err);
   }
 };
 
 exports.setScheduleDayOff = async (req, res) => {
   try {
-    const { companyId } = req.session;
+    const companyId = res.locals.currentCompany._id;
     const { dateId, time, type } = req.body;
 
     if (!["start", "end"].includes(type)) {
       return res.status(400).json({ success: false, error: "Type undefined" });
     }
 
-    const path = `dates.$.workingHours.0.${type}`;
+    const fieldPath = `dates.$.workingHours.0.${type}`;
 
     const updated = await DaysOff.findOneAndUpdate(
       { company: companyId, "dates._id": dateId },
       {
         $set: {
-          [path]: time,
+          [fieldPath]: time,
+          "dates.$.dayOff": false,
         },
       },
       { new: true },

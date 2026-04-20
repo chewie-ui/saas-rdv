@@ -31,6 +31,52 @@
 
 .sidebar .sidebar-wrapper .sidebar-bottom .sidebar-language {
   padding: 10px;
+  position: relative;
+}
+.sidebar .sidebar-wrapper .sidebar-bottom .sidebar-language span {
+  color: var(--text-primary);
+}
+
+.sidebar .sidebar-wrapper .sidebar-bottom .sidebar-language img {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+}
+
+.sidebar .sidebar-wrapper .sidebar-bottom .sidebar-language svg {
+  fill: var(--text-primary);
+  width: 24px;
+  height: 24px;
+}
+.header__lang-btn {
+  border: var(--border);
+}
+.sidebar
+  .sidebar-wrapper
+  .sidebar-bottom
+  .sidebar-language
+  .header__lang-panel {
+  display: none;
+  top: auto;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  right: auto;
+  left: 50%;
+  position: absolute;
+  flex-direction: column;
+  background-color: var(--color-white);
+  border: var(--border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.sidebar
+  .sidebar-wrapper
+  .sidebar-bottom
+  .sidebar-language
+  .header__lang.open
+  .header__lang-panel {
+  display: flex;
 }
 
 .sidebar .sidebar-wrapper .sidebar-bottom .sidebar-profile {
@@ -115,7 +161,7 @@
 .sidebar .sidebar-wrapper .sidebar-header .header-company h2 {
   font-size: 18px;
   font-weight: 500;
-  color: black;
+  color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 10px;
   font-family: var(--family-primary);
@@ -211,6 +257,8 @@
   .row-link
   p {
   font-weight: 500;
+  font-size: 14px;
+  color: var(--text-primary);
 }
 
 .admin-nav .admin__menu {
@@ -227,7 +275,7 @@
   padding: 8px;
   border: var(--border);
   cursor: pointer;
-  background-color: white;
+  background-color: var(--color-white);
   border-radius: 13px;
 }
 
@@ -311,6 +359,100 @@
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
+}
+
+/* ── Dark mode toggle (sidebar) ── */
+.theme-toggle--sidebar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: calc(100% - 20px);
+  margin: 0 10px 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--color-surface-2);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.theme-toggle--sidebar:hover {
+  background: var(--orange-pale);
+  color: var(--orange);
+  border-color: var(--orange-border);
+}
+
+.theme-toggle--sidebar svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle--sidebar__moon {
+  fill: currentColor;
+  stroke: none;
+}
+.theme-toggle--sidebar:hover svg {
+  transform: rotate(20deg);
+}
+
+.theme-toggle__label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── Admin nav dark mode toggle (desktop header) ── */
+.admin-nav .theme-toggle {
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--color-surface-2);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+  padding: 1rem;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.admin-nav .theme-toggle:hover {
+  background: var(--orange-pale);
+  color: var(--orange);
+  border-color: var(--orange-border);
+  transform: rotate(20deg);
+}
+
+.admin-nav .theme-toggle svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-nav .theme-toggle .theme-toggle__moon {
+  fill: currentColor;
+  stroke: none;
 }
 
 @media all and (min-width: 820px) {

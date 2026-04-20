@@ -122,6 +122,14 @@ document.addEventListener("click", async (event) => {
     const display = slotParent.querySelector(".hour-container");
     const container = hourItem.closest(".time-slot");
 
+    // Si le clic vient d'une ligne de congé, le handler holidaysBody gère l'API
+    // On se contente de mettre à jour l'affichage et fermer le panel
+    if (hourItem.closest("#holidaysBody")) {
+      display.textContent = hourItem.textContent.trim();
+      panel.classList.remove("open");
+      return;
+    }
+
     function timeToMinutes(time) {
       const [hours, minutes] = time.split(":").map(Number);
       return hours * 60 + minutes;
@@ -263,8 +271,16 @@ document.addEventListener("click", async (event) => {
 
   if (dayOffBtnDelete) {
     const row = dayOffBtnDelete.closest(".days-off__row");
-    const attribute = JSON.parse(row.dataset.date);
-    const id = attribute._id;
+    let id;
+    try {
+      id = row.dataset.date ? JSON.parse(row.dataset.date)._id : null;
+    } catch { id = null; }
+
+    if (!id) {
+      // Fallback: supprimer via dateKey si data-date absent (ne devrait pas arriver)
+      row.remove();
+      return;
+    }
 
     const result = await fetch(`/company/days-off/${id}`, {
       method: "DELETE",
@@ -374,9 +390,22 @@ if (holidaysBody) {
     const scheduleBtn = e.target.closest(".schedule-btn");
     const newHour = e.target.closest(".hour");
     const row = e.target.closest(".days-off__row");
+    if (!row) return;
     const container = row.querySelector(".days-off__schedule");
     const attributeRow = row.dataset.date;
-    const dateId = JSON.parse(attributeRow)._id;
+
+    // Protéger contre les lignes sans data-date (ne devrait plus arriver mais sécurité)
+    let dateId;
+    try {
+      dateId = attributeRow ? JSON.parse(attributeRow)._id : null;
+    } catch {
+      dateId = null;
+    }
+
+    if (!dateId && (deleteTimeSlot || scheduleBtn || newHour)) {
+      console.warn("Impossible d'identifier ce congé (pas de dateId)");
+      return;
+    }
 
     if (deleteTimeSlot) {
       container.innerHTML = `<p>Day off</p>`;
@@ -395,14 +424,14 @@ if (holidaysBody) {
       newHour.closest(".panel-availability").classList.remove("open");
 
       const wrapper = newHour.closest(".slot-hour");
-      const container = wrapper.querySelector(".hour-container");
-      console.log(container);
+      const displayEl = wrapper.querySelector(".hour-container");
+      const typeHour = displayEl.dataset.hours;
+      const setNewHour = newHour.textContent.trim();
 
-      const typeHour = container.dataset.hours;
-      const setNewHour = newHour.textContent;
-      console.log(typeHour);
-      console.log(setNewHour);
+      // Mettre à jour l'affichage
+      displayEl.textContent = setNewHour;
 
+      // Sauvegarder en BDD
       await fetch(`/company/set-schedule-day-off`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -422,21 +451,17 @@ if (holidaysBody) {
       container.innerHTML = ``;
       container.appendChild(clone);
 
-      const startHour = row.querySelector(".start-hour-").textContent;
-      const endHour = row.querySelector(".end-hour-").textContent;
+      // Lire les heures par défaut du clone qu'on vient d'insérer
+      const startHour = container.querySelector(".start-hour-").textContent.trim();
+      const endHour = container.querySelector(".end-hour-").textContent.trim();
       const schedule = { start: startHour, end: endHour };
-      console.log(schedule);
 
-      const scheduleDayOff = await fetch(`/company/schedule-day-off`, {
+      await fetch(`/company/schedule-day-off`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dateId,
-          schedule,
-        }),
+        body: JSON.stringify({ dateId, schedule }),
       });
 
-      console.log(await scheduleDayOff.json());
       return;
     }
   });
@@ -481,12 +506,21 @@ calendar.addEventListener("click", async (event) => {
       body: JSON.stringify({ dateKey }),
     });
 
+    const data = await response.json();
+
     addDay(dateKey);
     dayEl.classList.add("clicked");
 
     const clone = dayOffRowTemplate.content.cloneNode(true);
     clone.querySelector("p.input").textContent =
       `${day}/${month.padStart(2, "0")}/${year}`;
+
+    // Stocker le dateEntry (avec _id) pour pouvoir supprimer/éditer ensuite
+    const rowEl = clone.querySelector(".days-off__row");
+    if (rowEl && data.dateEntry) {
+      rowEl.dataset.date = JSON.stringify(data.dateEntry);
+    }
+
     holidaysBody.appendChild(clone);
   }
 });

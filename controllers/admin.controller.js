@@ -550,3 +550,17 @@ exports.resumeSubscription = async (req, res) => {
     return res.json({ err });
   }
 };
+
+exports.saveAdminNotes = async (req, res) => {
+  try {
+    const { bookId } = req.params;
+    const { adminNotes } = req.body;
+
+    await Booking.findByIdAndUpdate(bookId, { adminNotes });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false, err });
+  }
+};

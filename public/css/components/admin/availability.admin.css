@@ -209,7 +209,7 @@
   .days-off__row
   .days-off__actions
   .days-off__button.schedule-btn {
-  display: none;
+  display: flex;
 }
 
 @media all and (min-width: 820px) {
@@ -278,5 +278,75 @@
 
   .time-slot .delete-time-slot {
     left: 106%;
+  }
+}
+
+/* ---- Responsive mobile availability ---- */
+@media all and (max-width: 819px) {
+  .availability-section .availability-section__body .body-weekly-hour {
+    width: 100%;
+    gap: 16px;
+  }
+
+  .availability-section
+    .availability-section__body
+    .body-weekly-hour
+    .row-weekday {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: var(--border);
+  }
+
+  .availability-section
+    .availability-section__body
+    .body-weekly-hour
+    .row-weekday
+    .weekday-toggle {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  .weekly-hour__time {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .time-slot {
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .time-slot .hour-container {
+    width: 90px;
+    padding: 8px;
+    font-size: 13px;
+  }
+
+  .time-slot .delete-time-slot {
+    position: static;
+    left: auto;
+  }
+
+  .availability-section
+    .availability-section__body
+    .body-weekly-hour
+    .row-weekday
+    .weekly-hour__options {
+    top: 0;
+    margin-left: 0;
+  }
+
+  /* Days off rows on mobile */
+  .availability-section .days-off__wrapper .days-off__row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .availability-section .days-off__wrapper .days-off__row .days-off__schedule {
+    flex-wrap: wrap;
   }
 }

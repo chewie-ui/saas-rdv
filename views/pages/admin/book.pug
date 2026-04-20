@@ -5,6 +5,7 @@ block links
 
 
 block content
+    - const isPast = new Date(client.date) < new Date(new Date().setHours(0,0,0,0))
 
     .page.page--appointment
         .appointment-header.page--appointment-block.page--block-1
@@ -12,18 +13,20 @@ block content
                 .appointment-header__top-name
                     h3 Appointment ##{client._id}
                 .appointment-header__top-actions.flex
-                    //- button(data-link=`/appointment/${user._id}/edit` data-method="").btn.secondary.flex-c.appointment-action Edit
-                    if !isPremium 
+                    if !isPremium
                         a(href="/subscription" style="display:flex; align-items:center;").get__premium Get premium
 
+                    if isPast
+                        span.badge-past Rendez-vous passé
+
                     if client.status === "confirmed"
-                        button(data-link=`/appointment/${client._id}/cancel` data-method="PATCH" disabled=(grade === 'staff' || !isPremium)).btn.secondary.appointment-action#cancelAppointment Cancel
-                    button(data-link=`/appointment/${client._id}/delete` data-method="DELETE" disabled=(grade === 'staff' || !isPremium)).btn.appointment-action#deleteAppointment Delete
+                        button(data-link=`/appointment/${client._id}/cancel` data-method="PATCH" disabled=(grade === 'staff' || !isPremium || isPast)).btn.secondary.appointment-action#cancelAppointment Cancel
+                    button(data-link=`/appointment/${client._id}/delete` data-method="DELETE" disabled=(grade === 'staff' || !isPremium)).btn.appointment-action#deleteAppointment.sec Delete
                     if client.status === "confirmed"
                         //- button(data-link=`/appointment/${user._id}/send-reminder`).btn.appointment-action Send reminder
-                    else 
-                        button(data-link=`/appointment/${client._id}/restore` data-method="PATCH" disabled=(grade === 'staff')).btn.appointment-action#restoreAppointment Restore
-                   
+                    else
+                        button.sec(data-link=`/appointment/${client._id}/restore` data-method="PATCH" disabled=(grade === 'staff' || isPast)).btn.appointment-action#restoreAppointment Restore
+
             .appointment-header__bottom.flex.col
                 .appointment-header__bottom-col.flex.col
                     .appointment-header__bottom-col-element.flex
@@ -36,7 +39,8 @@ block content
                 .appointment-header__bottom-col.flex.col
                     .appointment-header__bottom-col-element.flex
                         p.name-element Status:
-                        p #{client.status.charAt(0).toUpperCase() + client.status.slice(1)}
+                        p(class=isPast && client.status === 'confirmed' ? 'status-past' : '') #{client.status.charAt(0).toUpperCase() + client.status.slice(1)}
+
         .appointment-details.appointment-details__client.page--appointment-block.page--block-3
             .appointment-details__header.flex
                 svg(
@@ -53,34 +57,52 @@ block content
                         .client-details__main-picture
                             img(src=client.avatar || "/images/no-user.webp" alt="user picture")
                         .client-details__main-locals.flex.col.space-b
-                            h4 #{client.surname} #{client.name} 
+                            h4 #{client.surname} #{client.name}
                             p= client.email
                             p= client.phone
 
-                    //- .client-details__second
-                    //-     .client-details__second-createdAt.flex
-                    //-         svg.icon
-                    //-         p Account created at: X
-                    //-     .client-details__second-createdAt.flex
-                    //-         svg.icon
-                    //-         p Total booking: X
-                    //- button.btn.secondary Show profile
         .appointment-details.appointment-details__notes.page--appointment-block.page--block-3
             .appointment-details__header.flex
                 svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                     path(d="M120-240v-80h480v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z")
-                h3 Notes
+                h3 Notes client
             .appointment-details__separator
             .appointment-details__body
-                p - #{client.message} 
-        .appointment-details.appointment-details__service.page--appointment-block.page--block-3
+                p= client.message || '—'
+
+        .appointment-details.appointment-details__admin-notes.page--appointment-block.page--block-3
             .appointment-details__header.flex
                 svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                    path(d="m720-430 80 80v190q0 33-23.5 56.5T720-80H160q-33 0-56.5-23.5T80-160v-560q0-33 23.5-56.5T160-800h220q-8 18-12 38.5t-6 41.5H160v560h560v-270Zm52-174 128 128-56 56-128-128q-21 12-45 20t-51 8q-75 0-127.5-52.5T440-700q0-75 52.5-127.5T620-880q75 0 127.5 52.5T800-700q0 27-8 51t-20 45Zm-81-25q29-29 29-71t-29-71q-29-29-71-29t-71 29q-29 29-29 71t29 71q29 29 71 29t71-29ZM160-430v270-560 280-12 22Z")
-                h3 Coming soon
+                    path(d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z")
+                h3 Notes coach (privées)
             .appointment-details__separator
-            .appointment-details__body 
-                p Coming Soon...
+            .appointment-details__body
+                textarea#adminNotesInput.textarea(placeholder="Vos notes privées sur ce rendez-vous..." rows="4")= client.adminNotes || ''
+                .admin-notes__actions
+                    span#adminNotesSaved.admin-notes__saved(style="display:none") ✓ Sauvegardé
+                    button#saveAdminNotes.btn.btn-sm.sec Sauvegarder
 
 block scripts
     script(src="/js/layouts/appointment.js" type="module")
+    script.
+        (function() {
+            const textarea = document.getElementById('adminNotesInput');
+            const saveBtn = document.getElementById('saveAdminNotes');
+            const savedMsg = document.getElementById('adminNotesSaved');
+            const bookId = '!{client._id}';
+
+            if (saveBtn && textarea) {
+                saveBtn.addEventListener('click', async () => {
+                    const res = await fetch(`/appointement/${bookId}/admin-notes`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ adminNotes: textarea.value })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        savedMsg.style.display = 'inline';
+                        setTimeout(() => { savedMsg.style.display = 'none'; }, 2500);
+                    }
+                });
+            }
+        })();

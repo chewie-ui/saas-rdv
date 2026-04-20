@@ -1,4 +1,5 @@
 export default function () {
+  const templateDialog = document.getElementById("templateDialog");
   const calendar = document.querySelector(".calendar-wrapper .calendar");
   const bookingWrapper = document.getElementById("bookingWrapper") || undefined;
   const scheduleWrapper =
@@ -302,7 +303,18 @@ export default function () {
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
       if (!emailPattern.test(email.value)) {
-        alert("Veuillez entrer une adresse email valide.");
+        const tmp = templateDialog.content.cloneNode(true);
+        const parent = tmp.querySelector("#dialogWrp");
+        function rmvParent() {
+          parent.remove();
+        }
+        tmp.querySelector(".dialog__h2").textContent = "Email invalide";
+        tmp.querySelector(".dialog__p").textContent =
+          "Veuillez modifier lemail et mettre un email valide svp";
+        tmp.querySelector(".dialog__icon").onclick = rmvParent;
+        tmp.querySelector(".dialog__btn2").textContent = "Fermer";
+        tmp.querySelector(".dialog__btn2").onclick = rmvParent;
+        document.querySelector("body").appendChild(tmp);
         bookingEmail.style.border = "1px solid red"; // Petit feedback visuel
         return; // On "dégage" : le reste du code n'est pas exécuté
       }

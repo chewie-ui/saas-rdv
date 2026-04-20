@@ -2,14 +2,32 @@ aside.sidebar#sidebar
     .sidebar-wrapper
 
         .sidebar-bottom
+            button.theme-toggle.theme-toggle--sidebar(type="button" aria-label="Passer en mode sombre" title="Changer le thème")
+                svg.theme-toggle__moon(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor")
+                    path(d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z")
+                svg.theme-toggle__sun.hidden(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor")
+                    circle(cx="12" cy="12" r="5")
+                    line(x1="12" y1="1" x2="12" y2="3")
+                    line(x1="12" y1="21" x2="12" y2="23")
+                    line(x1="4.22" y1="4.22" x2="5.64" y2="5.64")
+                    line(x1="18.36" y1="18.36" x2="19.78" y2="19.78")
+                    line(x1="1" y1="12" x2="3" y2="12")
+                    line(x1="21" y1="12" x2="23" y2="12")
+                    line(x1="4.22" y1="19.78" x2="5.64" y2="18.36")
+                    line(x1="18.36" y1="5.64" x2="19.78" y2="4.22")
+                span.theme-toggle__label Mode sombre
             .sidebar-language
-                .selectmenu
-                    .selectmenu__header
-                        span #{lang === 'fr' ? "Francais" : "English"}
-                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-528 296-344l-56-56 240-240 240 240-56 56-184-184Z"/></svg>
-                    .selectmenu__panel
-                        .selectmenu__row(onclick="changeLanguage('fr')") French
-                        .selectmenu__row(onclick="changeLanguage('en')") English
+                .header__lang#sidebarLang
+                    button.header__lang-btn(type="button" aria-label="Langue")
+                        img.header__lang-img(src=(lang === 'fr' ? '/images/fr.webp' : "/images/en.jpg"))
+                        span.header__lang-code= lang === 'fr' ? 'FR' : 'EN'
+                    .header__lang-panel
+                        button.header__lang-option(type="button" onclick="changeLanguage('fr')")
+                            img(src='/images/fr.webp')
+                            span Français
+                        button.header__lang-option(type="button" onclick="changeLanguage('en')")
+                            img(src='/images/en.jpg')
+                            span English
             .sidebar-profile
                 .profile-image
                     img(src=user.profilePicture)

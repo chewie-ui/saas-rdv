@@ -1,32 +1,105 @@
-.header
-    input#headerNavToggle.header__toggle-input(type="checkbox" aria-hidden="true")
-    .header-container.container
-        a.company(href="/")
-            .logo
-                img(src="/images/icon.webp", alt="Gymio")
-            .name Gymio
-        label.header__burger(for="headerNavToggle" aria-label="Menu" role="button" tabindex="0")
-            span
-            span
-            span
-        nav.menu
-            .actions
+.header(class=alwaysSticky ? 'sticky' : '')
+    input#headerNav.header__cb(type="checkbox" aria-hidden="true")
+
+    .header__bar.container
+        //- Logo
+        a.header__logo(href="/")
+            .header__logo-img
+                img(src="/images/icon.webp" alt="Gymio")
+            span.header__logo-name Gymio
+
+        //- Right side
+        .header__right
+            //- Boutons nav (desktop inline, mobile dans le panel)
+            nav.header__nav
                 if user
-                    a(href="/appointment").btn.secondary= t.header.dashboard
-                    a(href="/logout").btn.primary= t.header.logout
+                    a.btn.sec.header__btn--ghost(href="/appointment")= t.header.dashboard
+                    a.btn.header__btn--primary(href="/logout")= t.header.logout
                 else
                     if becomeCoach
-                        a(href="/login").btn.secondary= t.header.login
-                        a(href="/register").btn.primary= t.header.register
+                        a.btn.sec.header__btn--ghost(href="/login")= t.header.login
+                        a.btn.header__btn--primary(href="/register")= t.header.register
                     else
-                        a(href="/login").btn.secondary= t.header.login
-                        a(href="/become-coach").btn.primary Devenir coach
-            .selectmenu(style="min-width: 120px;")
-                .selectmenu__header(style="height:100%")
-                    span #{lang === 'fr' ? "Francais" : "English"}
-                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-528 296-344l-56-56 240-240 240 240-56 56-184-184Z"/></svg>
-                .selectmenu__panel
-                    .selectmenu__row(onclick="changeLanguage('fr')") French
-                    .selectmenu__row(onclick="changeLanguage('en')") English
-    label.header__backdrop(for="headerNavToggle" aria-hidden="true")
-     a.flex-c(href="/login").btn Login
+                        a.btn.sec.header__btn--ghost(href="/login")= t.header.login
+                        a.btn.header__btn--primary(href="/become-coach") Devenir coach
+
+            //- Séparateur desktop
+            .header__sep
+
+            //- Toggle thème
+            button.theme-toggle.header__theme(type="button" aria-label="Changer le thème" title="Changer le thème")
+                svg.theme-toggle__moon(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")
+                    path(d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z")
+                svg.theme-toggle__sun.hidden(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")
+                    circle(cx="12" cy="12" r="5")
+                    line(x1="12" y1="1" x2="12" y2="3")
+                    line(x1="12" y1="21" x2="12" y2="23")
+                    line(x1="4.22" y1="4.22" x2="5.64" y2="5.64")
+                    line(x1="18.36" y1="18.36" x2="19.78" y2="19.78")
+                    line(x1="1" y1="12" x2="3" y2="12")
+                    line(x1="21" y1="12" x2="23" y2="12")
+                    line(x1="4.22" y1="19.78" x2="5.64" y2="18.36")
+                    line(x1="18.36" y1="5.64" x2="19.78" y2="4.22")
+
+            //- Sélecteur de langue
+            .header__lang#headerLang
+                button.header__lang-btn(type="button" aria-label="Langue")
+                    img.header__lang-img(src=(lang === 'fr' ? '/images/fr.webp' : "/images/en.jpg"))
+                    span.header__lang-code= lang === 'fr' ? 'FR' : 'EN'
+                    svg.header__lang-chevron(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")
+                        path(d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none")
+                .header__lang-panel
+                    button.header__lang-option(type="button" onclick="changeLanguage('fr')")
+                        img(src='/images/fr.webp')
+                        span Français
+                    button.header__lang-option(type="button" onclick="changeLanguage('en')")
+                        img(src='/images/en.jpg')
+                        span English
+
+            //- Burger (mobile seulement)
+            label.header__burger(for="headerNav" aria-label="Menu")
+                span
+                span
+                span
+
+    //- Backdrop mobile
+    label.header__backdrop(for="headerNav" aria-hidden="true")
+
+    //- Panel mobile (slide-in)
+    .header__panel
+        nav.header__panel-nav
+            if user
+                a.btn.header__btn--primary(href="/appointment")= t.header.dashboard
+                a.btn.header__btn--ghost.sec(href="/logout")= t.header.logout
+            else
+                if becomeCoach
+                    a.btn.header__btn--primary(href="/login")= t.header.login
+                    a.btn.header__btn--ghost.sec(href="/register")= t.header.register
+                else
+                    a.btn.header__btn--primary(href="/login")= t.header.login
+                    a.btn.header__btn--ghost.sec(href="/become-coach") Devenir coach
+
+        .header__panel-bottom
+            //- Langue dans le panel
+            .header__panel-lang
+                button.header__panel-lang-btn(type="button" onclick="changeLanguage('fr')" class=lang === 'fr' ? 'active' : '')
+                    img(src='/images/fr.webp')
+                    span Français
+                button.header__panel-lang-btn(type="button" onclick="changeLanguage('en')" class=lang === 'en' ? 'active' : '')
+                    img(src='/images/en.jpg')
+                    span English
+            //- Thème dans le panel
+            button.theme-toggle.header__panel-theme(type="button")
+                svg.theme-toggle__moon(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")
+                    path(d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z")
+                svg.theme-toggle__sun.hidden(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")
+                    circle(cx="12" cy="12" r="5")
+                    line(x1="12" y1="1" x2="12" y2="3")
+                    line(x1="12" y1="21" x2="12" y2="23")
+                    line(x1="4.22" y1="4.22" x2="5.64" y2="5.64")
+                    line(x1="18.36" y1="18.36" x2="19.78" y2="19.78")
+                    line(x1="1" y1="12" x2="3" y2="12")
+                    line(x1="21" y1="12" x2="23" y2="12")
+                    line(x1="4.22" y1="19.78" x2="5.64" y2="18.36")
+                    line(x1="18.36" y1="5.64" x2="19.78" y2="4.22")
+                span Changer le thème

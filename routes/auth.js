@@ -9,11 +9,11 @@ const {
 const passport = require("passport");
 
 router.get("/register", (req, res) => {
-  res.render("auth/register");
+  res.render("auth/register", { alwaysSticky: true });
 });
 
 router.get("/login", (req, res) => {
-  res.render("auth/login", { becomeCoach: true });
+  res.render("auth/login", { becomeCoach: true, alwaysSticky: true });
 });
 
 router.post("/register", createUser);
@@ -26,6 +26,7 @@ router.post("/login", (req, res, next) => {
       return res.render("auth/login", {
         error: "Invalid email or password",
         errorField: "email",
+        alwaysSticky: true,
       });
     }
 
@@ -39,7 +40,7 @@ router.post("/login", (req, res, next) => {
 router.get("/logout", logout);
 
 router.get("/forgot-password", (req, res) => {
-  res.render("auth/forgot-password");
+  res.render("auth/forgot-password", { alwaysSticky: true });
 });
 
 router.post("/forgot-password/verify-code", forgotPasswordVerifyCode);

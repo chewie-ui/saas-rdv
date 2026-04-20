@@ -90,7 +90,7 @@ block content
                 if !user.isPremium
                     a(href="/subscription").get__premium Get premium
                 if user && user.isPremium
-                    button.btn.btn-primary#addDaysOffBtn(type="button")= t.avail.btn1
+                    button.btn.btn-primary#addDaysOffBtn.sec(type="button" style='width:auto')= t.avail.btn1
                 else
                     button.btn.btn-secondary(disabled title="Reserved for Premium members")= t.avail.btn1
                 
@@ -123,7 +123,7 @@ block content
                                     .days-off__button.schedule-btn
                                         svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                             path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
-                                    .days-off__button.delete-btn
+                                    .days-off__button.delete-btn.flex-c
                                         svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                             path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
 
@@ -154,12 +154,12 @@ block content
             .days-off__schedule.flex-c
                 p.schedule-status Day off
             .days-off__actions.flex-c
-                .days-off__button.schedule-btn   
+                .days-off__button.schedule-btn
                     svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                         path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
                 .days-off__button.delete-btn
                     svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                        path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+                        path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
 
 
 

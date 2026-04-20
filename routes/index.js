@@ -3,6 +3,9 @@ const router = require("express").Router();
 const { getCompanyIfExist } = require("../controllers/auth.controller");
 const User = require("../db/models/user.model");
 const Companies = require("../db/models/company/company.model");
+const pug = require("pug");
+const path = require("path");
+const { sendEmail } = require("../utils/mailer");
 
 router.use(require("./auth"));
 router.use(require("./company"));
@@ -76,6 +79,44 @@ router.get("/search", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send("Erreur serveur");
+  }
+});
+
+router.get("/contact", (req, res) => {
+  res.render("client/contact", { title: "Contact — Gymio" });
+});
+
+router.post("/contact", async (req, res) => {
+  const { name, surname, email, subject, message } = req.body;
+
+  if (!name || !surname || !email || !subject || !message) {
+    return res.render("client/contact", {
+      title: "Contact — Gymio",
+      error: "Veuillez remplir tous les champs.",
+      formData: req.body,
+    });
+  }
+
+  try {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const html = pug.renderFile(
+      path.join(__dirname, "../views/templates/emails/contact.pug"),
+      { name, surname, email, subject, message }
+    );
+
+    await sendEmail(adminEmail, `[Contact Gymio] ${subject}`, html);
+
+    return res.render("client/contact", {
+      title: "Contact — Gymio",
+      success: true,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.render("client/contact", {
+      title: "Contact — Gymio",
+      error: "Une erreur est survenue. Veuillez réessayer.",
+      formData: req.body,
+    });
   }
 });
 

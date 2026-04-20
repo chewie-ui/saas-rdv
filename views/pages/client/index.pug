@@ -21,14 +21,16 @@ block content
                         .informations__user-wrapper
                             .user__image
                                 img.cover(alt="Profile Picture" src=(coach.profilePicture || "/images/no-user.webp"))
-                            .user__name
+                            .user__name(class=(coach.isPremium && (coach.emailPro || coach.phonePro) ? "" : "not-premium"))
                                 .user__name-row
                                     h3= coach.fullName || ""
                                 if coach.isPremium
-                                    .user__name-row
-                                        p= coach.emailPro || ""
-                                    .user__name-row
-                                        p= coach.phonePro || ""
+                                    if coach.emailPro
+                                        .user__name-row
+                                            p= coach.emailPro
+                                    if coach.phonePro
+                                        .user__name-row
+                                            p= coach.phonePro
                 
                 .informations__bottom
                     if coach.isPremium
@@ -67,21 +69,21 @@ block content
                             else 
                                 .informations__links
                                     p Besoin de support ? 
-                                        a(href="#") Contactez-nous.
+                                        a(href="/contact") Contactez-nous.
                     else    
                         .informations__links
                             h2 Join us    
-                            button.btn Register
-                            button.btn.secondary Login
+                            a.btn(href="/register") Register
+                            a.btn.secondary(href="/login") Login
         .calendar-wrapper
             .calendar
                 .calendar-header
                     .prev-month
-                        button.btn#prevMonthBtn Prev
+                        button.btn#prevMonthBtn.sec Prev
                     .this-month
                         h2
                     .next-month
-                        button.btn#nextMonthBtn Next
+                        button.btn#nextMonthBtn.sec Next
                 .calendar-body
                     .weekdays
                         //- Injected from JS
@@ -128,12 +130,14 @@ block content
                             p Message
                             input.input(placeholder="Write something..." id="bookingMsg")
                     .booking-button
-                        button.btn#confirmBooking Confirm
+                        button.btn#confirmBooking.btn.sec Confirm
     +confirmPopup()
+    +dialog()
 
 block scripts
 
     script(src="/js/layouts/index.js" type="module") 
     script(src="/js/templates/confirm-popup.template.js")
     script(src="/js/templates/dialog.js")
+    script(src="/js/components/topbar.js")
     

@@ -27,6 +27,11 @@ const userSchema = schema(
       default: "/images/no-user.webp",
     },
 
+    description: {
+      type: String,
+      maxlength: [230, "La description ne peut pas dépasser 230 caractères."],
+    },
+
     phone: {
       type: String,
     },
@@ -84,7 +89,8 @@ const userSchema = schema(
       zip: Number,
       iframeUrl: String,
       lat: String,
-      lon: String
+      lon: String,
+      serviceType: { type: String, enum: ["sur_place", "en_ligne"], default: "sur_place" },
     },
   },
   { timestamps: true },

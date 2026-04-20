@@ -1,20 +1,20 @@
-//- Pour l'email, on utilise des styles en ligne pour une compatibilité max
+//- Email de rappel envoyé ~24h avant le rdv
 div(style="background-color: #f8fbf9; padding: 40px 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #2d3436;")
   div(style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05);")
-    
-    //- Header avec Cercle de validation (comme sur ton image d'inspi)
+
+    //- Header avec cercle horloge (rappel)
     div(style="padding: 40px 20px; text-align: center;")
-      div(style="width: 60px; height: 60px; background-color: #4CAF50; border-radius: 50%; margin: 0 auto 20px; display: flow-root;")
-        span(style="color: white; font-size: 30px; line-height: 60px; justify-content: center;") ✓
-      
-      h1(style="margin: 0; font-size: 24px; color: #1e272e;") Appointment Confirmed
-      p(style="margin-top: 10px; color: #636e72;") Your appointment has been successfully scheduled. 
+      div(style="width: 60px; height: 60px; background-color: #FFA726; border-radius: 50%; margin: 0 auto 20px; display: flow-root;")
+        span(style="color: white; font-size: 30px; line-height: 60px; justify-content: center;") ⏰
+
+      h1(style="margin: 0; font-size: 24px; color: #1e272e;") Appointment Reminder
+      p(style="margin-top: 10px; color: #636e72;") Hi #{name}, this is a friendly reminder that your appointment is coming up in less than 24 hours.
       p(style="margin: 0; color: #636e72;") Here are the details:
 
-    //- Carte de détails (Zone Grise)
+    //- Carte de détails
     div(style="padding: 0 40px 40px;")
-      div(style="background-color: #f1f8f4; border-radius: 10px; padding: 25px;")
-        
+      div(style="background-color: #fff8ec; border-radius: 10px; padding: 25px;")
+
         //- Ligne Date
         div(style="display: flex; align-items: center; margin-bottom: 20px;")
           span(style="font-size: 20px; margin-right: 15px;") 📅
@@ -22,7 +22,7 @@ div(style="background-color: #f8fbf9; padding: 40px 20px; font-family: 'Segoe UI
             p(style="margin: 0; font-weight: bold; color: #2d3436;")= new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
             p(style="margin: 0; font-size: 14px; color: #636e72;") #{startHour} — #{endHour}
 
-        //- Ligne Service (Consultation)
+        //- Ligne Service
         div(style="display: flex; align-items: center; margin-bottom: 20px;")
           span(style="font-size: 20px; margin-right: 15px;") 📋
           div
@@ -37,12 +37,13 @@ div(style="background-color: #f8fbf9; padding: 40px 20px; font-family: 'Segoe UI
               p(style="margin: 0; font-weight: bold; color: #2d3436;") Message
               p(style="margin: 0; font-size: 14px; color: #636e72;") "#{message}"
 
-      //- Bouton d'action
+      //- Bouton d'action : annuler si besoin
       div(style="text-align: center; margin-top: 30px;")
         a(
-    href=`https://www.gymio.be/cancel-booking/${bookingId}?token=${cancelToken}` 
+    href=`https://www.gymio.be/cancel-booking/${bookingId}?token=${cancelToken}`
     style="background-color: #f1f2f6; color: #313439; padding: 15px 35px; text-decoration: none; border-radius: 30px; font-weight: bold; display: inline-block; margin: 5px; font-size: 14px; border: 1px solid #dfe4ea;"
   ) Cancel Booking
+
     //- Footer
     div(style="text-align: center; padding: 20px; background-color: #fafafa; border-top: 1px solid #f1f1f1;")
       p(style="font-size: 14px; color: #b2bec3; margin: 0;") Looking forward to seeing you!

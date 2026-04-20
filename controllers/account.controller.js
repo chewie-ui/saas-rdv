@@ -236,8 +236,7 @@ exports.editEmail = async (req, res) => {
 
 exports.updateLocation = async (req, res) => {
   try {
-    const { street, zip, city, country, iframeUrl, lat, lon } = req.body;
-    console.log({ street, zip, city, country });
+    const { street, zip, city, country, iframeUrl, lat, lon, serviceType } = req.body;
 
     await User.findByIdAndUpdate(req.user._id, {
       location: {
@@ -248,6 +247,7 @@ exports.updateLocation = async (req, res) => {
         iframeUrl,
         lat,
         lon,
+        serviceType: serviceType || "sur_place",
       },
     });
 
@@ -255,5 +255,74 @@ exports.updateLocation = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.json(err);
+  }
+};
+
+exports.editDescription = async (req, res) => {
+  try {
+    const { _id } = req.user;
+    const { description } = req.body;
+    await User.findByIdAndUpdate(_id, {
+      description,
+    });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false });
+  }
+};
+
+exports.sendDeleteCode = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("email");
+    if (!user) return res.status(404).json({ success: false });
+
+    const code = Math.floor(100000 + Math.random() * 900000);
+    req.session.deleteAccountCode = code;
+
+    await sendEmail(user.email, "Suppression de compte - Code de confirmation", String(code));
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Erreur envoi du code" });
+  }
+};
+
+exports.deleteAccount = async (req, res) => {
+  try {
+    const { code } = req.body;
+    const { deleteAccountCode } = req.session;
+
+    if (!deleteAccountCode || Number(code) !== Number(deleteAccountCode)) {
+      return res.json({ success: false, message: "Code invalide" });
+    }
+
+    const userId = req.user._id;
+
+    // Delete related data
+    const Company = require("../db/models/company/company.model");
+    const DaysOff = require("../db/models/company/daysOff.model");
+    const Booking = require("../db/models/book.model");
+
+    const company = await Company.findOne({ owner: userId });
+    if (company) {
+      await Booking.deleteMany({ company: company._id });
+      await DaysOff.deleteMany({ company: company._id });
+      await Company.findByIdAndDelete(company._id);
+    }
+
+    await Subscription.findOneAndDelete({ user: userId });
+    await User.findByIdAndDelete(userId);
+
+    delete req.session.deleteAccountCode;
+
+    req.logout(() => {
+      res.json({ success: true });
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Erreur suppression" });
   }
 };

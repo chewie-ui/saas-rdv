@@ -3,6 +3,16 @@ document.addEventListener("click", (event) => {
   const isSearchMenu = event.target.closest(".searchmenu");
   const langSelector = event.target.closest("#langSelector");
 
+  // ── Dropdown langue (topbar + sidebar) ──
+  const headerLang = event.target.closest(".header__lang");
+  if (headerLang) {
+    headerLang.classList.toggle("open");
+  }
+  // Fermer si clic ailleurs
+  document.querySelectorAll(".header__lang").forEach(el => {
+    if (el !== headerLang) el.classList.remove("open");
+  });
+
   if (langSelector) {
     langSelector.classList.toggle("open");
   }

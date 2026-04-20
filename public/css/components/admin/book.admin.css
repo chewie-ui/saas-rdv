@@ -9,11 +9,20 @@
 }
 
 .page--block-2 {
-  width: calc(100% - (20px * 2));
+  width: 100%;
 }
 
 .page--block-3 {
-  width: calc((100% - (20px * 2)) / 3);
+  width: 100%;
+}
+
+@media (min-width: 820px) {
+  .page--block-2 {
+    width: calc(100% - (20px * 2));
+  }
+  .page--block-3 {
+    width: calc((100% - (20px * 2)) / 3);
+  }
 }
 
 .page--appointment .page--appointment-block {
@@ -105,6 +114,7 @@
   .client-details
   .client-details__main {
   align-items: stretch;
+  flex-direction: column;
 }
 
 .page--appointment
@@ -188,4 +198,83 @@
 .page--appointment .appointment-details__notes .appointment-details__body p {
   word-break: break-all;
   line-height: 26px;
+}
+
+/* Responsive: header actions stack on mobile */
+@media (max-width: 819px) {
+  .page--appointment .appointment-header__top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .page--appointment .appointment-header__top-actions {
+    flex-wrap: wrap;
+    gap: 8px !important;
+  }
+  .page--appointment .appointment-header__bottom {
+    flex-direction: column;
+  }
+}
+
+/* Badge passé */
+.badge-past {
+  display: flex;
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+  white-space: nowrap;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Admin notes section */
+.appointment-details__admin-notes .appointment-details__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.appointment-details__admin-notes .appointment-details__body textarea {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 10px;
+  border: var(--border);
+  border-radius: 7px;
+  background: var(--color-white);
+  color: inherit;
+}
+
+.admin-notes__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-notes__saved {
+  font-size: 13px;
+  color: var(--success, #22c55e);
+  font-weight: 500;
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 13px;
+  width: auto;
+}
+
+@media all and (min-width: 800px) {
+  .page--appointment
+    .page--appointment-block.appointment-details
+    .appointment-details__body
+    .client-details
+    .client-details__main {
+    flex-direction: row;
+  }
 }

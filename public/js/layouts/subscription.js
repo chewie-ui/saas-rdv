@@ -3,6 +3,8 @@ const cancelSubscriptionPro = document.getElementById("cancelSubscriptionPro");
 const getFreePlan = document.getElementById("getFreePlan");
 const retakeSubscription = document.getElementById("retakeSubscription");
 
+const templateDialog = document.getElementById("templateDialog");
+
 if (getProPlan) {
   getProPlan.onclick = async function () {
     const response = await fetch(`/account/create-checkout`, {
@@ -20,7 +22,32 @@ if (getProPlan) {
 const handleSubscriptionCancel = async function (e) {
   e.preventDefault();
 
-  if (!confirm("Are you sure you want to cancel your Pro plan?")) return;
+  const confirmCancel = () => {
+    return new Promise((resolve) => {
+      const tmp = templateDialog.content.cloneNode(true);
+      const parentTmp = tmp.querySelector("#dialogWrp");
+      const close = (value) => {
+        parentTmp.remove();
+        resolve(value); // On "répond" à la promesse avec true ou false
+      };
+
+      tmp.querySelector(".dialog__h2").textContent = "Stop pro plan";
+      tmp.querySelector(".dialog__p").textContent =
+        "Are you sure you want to stop your pro plan?";
+      tmp.querySelector(".dialog__btn2").textContent = "Confirm";
+      tmp.querySelector(".dialog__btn1").textContent = "Close";
+      tmp.querySelector(".dialog__btn1").onclick = () => close(false);
+      tmp.querySelector(".dialog__icon").onclick = () => close(false);
+
+      tmp.querySelector(".dialog__btn2").onclick = () => close(true);
+
+      document.querySelector("body").appendChild(tmp);
+    });
+  };
+
+  const isConfirmed = await confirmCancel();
+
+  if (!isConfirmed) return;
 
   try {
     const response = await fetch("/account/cancel-subscription", {
@@ -53,7 +80,33 @@ if (retakeSubscription) {
   retakeSubscription.onclick = async function (e) {
     e.preventDefault();
 
-    if (confirm("Confirm that you want to resume your subscritpion please")) {
+    const confirmRestore = () => {
+      return new Promise((resolve) => {
+        const tmp = templateDialog.content.cloneNode(true);
+        const parent = tmp.querySelector("#dialogWrp");
+
+        const close = (value) => {
+          parent.remove();
+          resolve(true);
+        };
+
+        tmp.querySelector(".dialog__h2").textContent = "Restore pro plan";
+        tmp.querySelector(".dialog__p").textContent =
+          "Are you sure you want to restore your pro plan?";
+        tmp.querySelector(".dialog__btn2").textContent = "Confirm";
+        tmp.querySelector(".dialog__btn1").textContent = "Close";
+        tmp.querySelector(".dialog__btn1").onclick = () => close(false);
+        tmp.querySelector(".dialog__icon").onclick = () => close(false);
+
+        tmp.querySelector(".dialog__btn2").onclick = () => close(true);
+
+        document.querySelector("body").appendChild(tmp);
+      });
+    };
+
+    const ifConfirmed = await confirmRestore();
+
+    if (ifConfirmed) {
       const response = await fetch(`/subscription/resume`, {
         method: "POST",
         headers: {
@@ -61,7 +114,7 @@ if (retakeSubscription) {
         },
       });
       const data = await response.json();
-      
+
       if (data.success) {
         alert(data.message);
         location.reload();

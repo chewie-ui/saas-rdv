@@ -52,6 +52,16 @@ const bookingSchema = new schema(
       unique: true,
       default: () => crypto.randomBytes(32).toString("hex"),
     },
+
+    reminderSent: {
+      type: Boolean,
+      default: false,
+    },
+
+    adminNotes: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true },
 );

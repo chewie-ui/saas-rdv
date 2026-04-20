@@ -172,9 +172,15 @@ exports.getSchedule = async (req, res) => {
       return dDate.getTime() === searchDate.getTime();
     });
 
-    // Si on a trouvé une exception (comme ton 25 mars), on remplace le "target"
     if (specificDate) {
-      target = specificDate;
+      // Si l'exception a des horaires spécifiques → utiliser ces horaires (journée partielle)
+      // Si l'exception est dayOff sans horaires → jour bloqué complètement
+      if (specificDate.workingHours && specificDate.workingHours.length > 0 &&
+          specificDate.workingHours[0].start) {
+        target = specificDate; // Journée avec horaires spéciaux
+      } else {
+        return res.json({ slots: [] }); // Jour complètement bloqué
+      }
     }
   }
 
