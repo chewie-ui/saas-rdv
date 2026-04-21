@@ -146,6 +146,7 @@ router.get("/:company", async (req, res) => {
     title: `Coach ${coach.fullName}`,
     company,
     coach,
+    alwaysSticky: true,
   });
 });
 

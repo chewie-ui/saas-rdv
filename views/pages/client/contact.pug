@@ -7,8 +7,8 @@ block content
     .contact-page
         .contact-page__container.container
             .contact-page__header
-                h1.contact-page__title Contactez-nous
-                p.contact-page__subtitle Une question ? Un problème ? On vous répond dès que possible.
+                h1.contact-page__title= t.contact_page.title
+                p.contact-page__subtitle= t.contact_page.desc
 
             .contact-page__body
                 .contact-card
@@ -17,9 +17,9 @@ block content
                             .contact-success__icon
                                 svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor")
                                     path(d="m422.46-323.69 255.85-255.85L650-607.85 422.46-380.31l-114-114L280.15-466l142.31 142.31ZM480.13-120q-74.67 0-140.41-28.34-65.73-28.34-114.36-76.92-48.63-48.58-76.99-114.26Q120-405.19 120-479.87q0-74.67 28.34-140.41 28.34-65.73 76.92-114.36 48.58-48.63 114.26-76.99Q405.19-840 479.87-840q74.67 0 140.41 28.34 65.73 28.34 114.36 76.92 48.63 48.58 76.99 114.26Q840-554.81 840-480.13q0 74.67-28.34 140.41-28.34 65.73-76.92 114.36-48.58 48.63-114.26 76.99Q554.81-120 480.13-120Zm-.13-40q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z" transform="scale(0.025) translate(-120, -120)")
-                            h2 Message envoyé !
-                            p Merci de nous avoir contactés. Nous reviendrons vers vous rapidement.
-                            a.btn(href="/") Retour à l'accueil
+                            h2= t.contact_page.success_title
+                            p= t.contact_page.success_desc
+                            a.btn(href="/")= t.contact_page.back_home
 
                     else
                         if error
@@ -29,54 +29,54 @@ block content
                         form.contact-form(method="POST" action="/contact")
                             .contact-form__row
                                 .field
-                                    label(for="name") Prénom
+                                    label(for="name")= t.contact_page.firstname
                                     input#name.input(
                                         type="text"
                                         name="name"
-                                        placeholder="Jean"
+                                        placeholder=t.contact_page.firstname_ph
                                         required
                                         value=formData ? formData.name : ''
                                     )
                                 .field
-                                    label(for="surname") Nom
+                                    label(for="surname")= t.contact_page.lastname
                                     input#surname.input(
                                         type="text"
                                         name="surname"
-                                        placeholder="Dupont"
+                                        placeholder=t.contact_page.lastname_ph
                                         required
                                         value=formData ? formData.surname : ''
                                     )
 
                             .field
-                                label(for="email") Email
+                                label(for="email")= t.contact_page.email
                                 input#email.input(
                                     type="email"
                                     name="email"
-                                    placeholder="jean.dupont@email.com"
+                                    placeholder=t.contact_page.email_ph
                                     required
                                     value=formData ? formData.email : ''
                                 )
 
                             .field
-                                label(for="subject") Sujet
+                                label(for="subject")= t.contact_page.subject
                                 input#subject.input(
                                     type="text"
                                     name="subject"
-                                    placeholder="Question sur mon compte..."
+                                    placeholder=t.contact_page.subject_ph
                                     required
                                     value=formData ? formData.subject : ''
                                 )
 
                             .field
-                                label(for="message") Message
+                                label(for="message")= t.contact_page.message
                                 textarea#message.input(
                                     name="message"
                                     rows="6"
-                                    placeholder="Décrivez votre demande..."
+                                    placeholder=t.contact_page.message_ph
                                     required
                                 )= formData ? formData.message : ''
 
-                            button.btn.primary(type="submit") Envoyer le message
+                            button.btn.primary(type="submit")= t.contact_page.send
 
                 .contact-infos
                     .contact-info-card
@@ -84,7 +84,7 @@ block content
                             svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor")
                                 path(d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z")
                         .contact-info-card__body
-                            h3 Email
+                            h3= t.contact_page.email
                             p support@gymio.be
 
                     .contact-info-card
@@ -92,5 +92,5 @@ block content
                             svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor")
                                 path(d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z")
                         .contact-info-card__body
-                            h3 Temps de réponse
-                            p Sous 24–48h ouvrables
+                            h3= t.contact_page.response_label
+                            p= t.contact_page.response_val

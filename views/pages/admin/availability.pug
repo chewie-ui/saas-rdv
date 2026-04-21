@@ -69,7 +69,7 @@ block content
                 h3= t.avail.t2
             .availability-section__body.flex.col
                 if !user.isPremium
-                    a(href="/subscription").get__premium Get premium
+                    a(href="/subscription").get__premium= t.avail.get_premium
                 if user && user.isPremium
                     .time-slot__container
                         .slot-input__container#timeslotPanel
@@ -88,11 +88,11 @@ block content
                 h3= t.avail.t3
             .availability-section__body.flex.col
                 if !user.isPremium
-                    a(href="/subscription").get__premium Get premium
+                    a(href="/subscription").get__premium= t.avail.get_premium
                 if user && user.isPremium
                     button.btn.btn-primary#addDaysOffBtn.sec(type="button" style='width:auto')= t.avail.btn1
                 else
-                    button.btn.btn-secondary(disabled title="Reserved for Premium members")= t.avail.btn1
+                    button.btn.btn-secondary(disabled title=t.avail.premium_only)= t.avail.btn1
                 
                 #holidaysBody.days-off__wrapper.flex.col
                     if daysOff
@@ -118,7 +118,7 @@ block content
                                                 svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                                     path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
                                     else
-                                        p Day off
+                                        p= t.avail.day_off
                                 .days-off__actions.flex-c
                                     .days-off__button.schedule-btn
                                         svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
@@ -152,7 +152,7 @@ block content
         .days-off__row.flex-c
             p.input
             .days-off__schedule.flex-c
-                p.schedule-status Day off
+                p.schedule-status= t.avail.day_off
             .days-off__actions.flex-c
                 .days-off__button.schedule-btn
                     svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")

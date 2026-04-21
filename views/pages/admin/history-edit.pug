@@ -8,24 +8,24 @@ block content
         .history__edit
             .history__edit-form
                 .form__title
-                    h2 Editing the booking of #{results.date.toLocaleDateString("fr-FR")} #{results.startTime} - #{results.endTime}
+                    h2 #{t.hist_edit.title} #{results.date.toLocaleDateString("fr-FR")} #{results.startTime} - #{results.endTime}
                 .form__wrapper
                     .form-group
-                        label Name & Surname
+                        label= t.hist_edit.full_name
                         input.input(value=`${results.name} ${results.surname}` id="fullName")
                     .form-group
-                        label Email
+                        label= t.hist_edit.email
                         input.input(value=`${results.email}` id="email")
                     .form-group
-                        label Phone
+                        label= t.hist_edit.phone
                         input.input(value=`${results.phone}` id="phone")
                     .form-group
-                        label Notes
+                        label= t.hist_edit.notes
                         input.input(value=`${results.message}` id="message")
             .history__edit-actions
                 .actions__buttons
-                    button.btn.secondary(onclick="history.back()") Back
-                    button.btn#saveBtnEdit.sec Save
+                    button.btn.secondary(onclick="history.back()")= t.hist_edit.back
+                    button.btn#saveBtnEdit.sec= t.hist_edit.save
 
 block scripts
     script(src="/js/layouts/history.js" type="module")

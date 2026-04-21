@@ -135,6 +135,9 @@ export default function () {
 
     const slotTime = res.slotTime;
     // Current month days
+    // Helper : extrait la partie YYYY-MM-DD d'une date en UTC (évite les décalages de fuseau)
+    const toUTCDateStr = (d) => new Date(d).toISOString().split("T")[0];
+
     for (let i = 1; i <= daysInMonth; i++) {
       const day = document.createElement("div");
       day.textContent = i;
@@ -143,22 +146,19 @@ export default function () {
       const currentDate = new Date(currentYear, currentMonth, i);
       currentDate.setHours(0, 0, 0, 0);
 
+      // Chaîne YYYY-MM-DD locale pour le jour en cours (pas de timezone)
+      const currentDateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
+
       const weekdayIndex = currentDate.getDay(); // garde pour le positionnement visuel
       const jsWeekdayIndex = currentDate.getDay(); // pour la DB
       const todayClean = new Date(realToday);
       todayClean.setHours(0, 0, 0, 0);
 
-      const exception = arrayDisabledDays.find((d) => {
-        const dDate = new Date(d.date);
-        dDate.setHours(0, 0, 0, 0);
-        return dDate.getTime() === currentDate.getTime();
-      });
+      const exception = arrayDisabledDays.find((d) => toUTCDateStr(d.date) === currentDateStr);
 
-      const isFull = specificExceptions.find((d) => {
-        const dDate = new Date(d.date);
-        dDate.setHours(0, 0, 0, 0);
-        return dDate.getTime() === currentDate.getTime() && d.isFull === true;
-      });
+      const isFull = specificExceptions.find(
+        (d) => toUTCDateStr(d.date) === currentDateStr && d.isFull === true,
+      );
 
       if (isFull) {
         day.classList.add("over-booked");
@@ -198,11 +198,9 @@ export default function () {
 
       // 3. Compter combien de réservations existent déjà pour ce jour i
       // Note : specificExceptions doit contenir TOUS les bookings renvoyés par ton serveur
-      const existingBookingsCount = specificExceptions.filter((booking) => {
-        const bDate = new Date(booking.date);
-        bDate.setHours(0, 0, 0, 0);
-        return bDate.getTime() === currentDate.getTime();
-      }).length;
+      const existingBookingsCount = specificExceptions.filter(
+        (booking) => toUTCDateStr(booking.date) === currentDateStr,
+      ).length;
 
       // 4. Si c'est plein, on ajoute la classe over-booked
       if (maxSlots > 0 && existingBookingsCount >= maxSlots) {

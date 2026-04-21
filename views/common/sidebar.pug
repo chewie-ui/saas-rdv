@@ -15,12 +15,12 @@ aside.sidebar#sidebar
                     line(x1="21" y1="12" x2="23" y2="12")
                     line(x1="4.22" y1="19.78" x2="5.64" y2="18.36")
                     line(x1="18.36" y1="5.64" x2="19.78" y2="4.22")
-                span.theme-toggle__label Mode sombre
+                span.theme-toggle__label= t.common.dark_mode
             .sidebar-language
                 .header__lang#sidebarLang
                     button.header__lang-btn(type="button" aria-label="Langue")
-                        img.header__lang-img(src=(lang === 'fr' ? '/images/fr.webp' : "/images/en.jpg"))
-                        span.header__lang-code= lang === 'fr' ? 'FR' : 'EN'
+                        img.header__lang-img(src=(lang === 'fr' ? '/images/fr.webp' : lang === 'nl' ? '/images/nl.jpg' : "/images/en.jpg"))
+                        span.header__lang-code= lang === 'fr' ? 'FR' : lang === 'nl' ? 'NL' : 'EN'
                     .header__lang-panel
                         button.header__lang-option(type="button" onclick="changeLanguage('fr')")
                             img(src='/images/fr.webp')
@@ -28,6 +28,9 @@ aside.sidebar#sidebar
                         button.header__lang-option(type="button" onclick="changeLanguage('en')")
                             img(src='/images/en.jpg')
                             span English
+                        button.header__lang-option(type="button" onclick="changeLanguage('nl')")
+                            img(src='/images/nl.jpg')
+                            span Nederlands
             .sidebar-profile
                 .profile-image
                     img(src=user.profilePicture)
@@ -82,7 +85,7 @@ aside.sidebar#sidebar
                             p= t.sidebar.a_4
                 .nav-row
                     .row-header
-                        p Admin
+                        p= t.sidebar.title_3
                     .row-body
                         //- a(href="/settings" class=pageName === "Settings" ? "active" : "").row-link
                         //-     .icon.flex-c

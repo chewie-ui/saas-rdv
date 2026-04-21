@@ -44,21 +44,20 @@ block content
             .delete-account-modal__overlay#deleteAccountOverlay
             .delete-account-modal__box
                 .delete-account-modal__header
-                    h3 Supprimer le compte
+                    h3= t.info.delete_title
                     button.delete-account-modal__close#closeDeleteModal
                         svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor")
                             path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
                 .delete-account-modal__body
                     .delete-account-step#deleteStep1
-                        p.delete-account-modal__desc
-                            | Cette action est <strong>irréversible</strong>. Tous vos rendez-vous, disponibilités et données seront supprimés définitivement.
-                        p.delete-account-modal__desc Un code de vérification sera envoyé à votre adresse email.
-                        button#sendDeleteCode.btn.danger(type="button") Envoyer le code de vérification
+                        p.delete-account-modal__desc!= t.info.delete_desc1
+                        p.delete-account-modal__desc= t.info.delete_desc2
+                        button#sendDeleteCode.btn.danger(type="button")= t.info.send_code
                         .delete-account-modal__status#deleteCodeStatus
                     .delete-account-step#deleteStep2(style="display:none")
-                        p.delete-account-modal__desc Entrez le code reçu par email :
-                        input#deleteCodeInput.input(type="text" placeholder="Code à 6 chiffres" maxlength="6")
-                        button#confirmDeleteAccount.btn.danger(type="button") Confirmer la suppression
+                        p.delete-account-modal__desc= t.info.enter_code
+                        input#deleteCodeInput.input(type="text" placeholder=t.info.code_placeholder maxlength="6")
+                        button#confirmDeleteAccount.btn.danger(type="button")= t.info.confirm_delete
                         .delete-account-modal__status#deleteConfirmStatus
 
         .location__container
@@ -68,7 +67,7 @@ block content
                 else
                     <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1299500.656531456!2d3.147172292480064!3d50.495334442699736!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c17d64edf39797%3A0x47ebf2b439e60ff2!2sBelgique!5e0!3m2!1sfr!2sbe!4v1775722964111!5m2!1sfr!2sbe" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
             .location__form
-                h2 Location informations
+                h2= t.info.location_title
                 .location__form-body
                     input(type="hidden", id="latInput")
                     input(type="hidden", id="lonInput")
@@ -78,49 +77,49 @@ block content
                                 input(id='onlineService' type="radio" name="serviceType" checked=(user.location.serviceType !== 'en_ligne'))
                                 label(for="onlineService")
                                     span.custom-radio
-                                    | Service sur place
+                                    = t.info.on_site
                             .radio-item
                                 input(id='homeService' type="radio" name="serviceType" checked=(user.location.serviceType === 'en_ligne'))
                                 label(for="homeService")
                                     span.custom-radio
-                                    | Service en ligne
+                                    = t.info.online_svc
                     //- Shown for "Service sur place" (full address)
                     .form__top#addressSearchBlock
                         .form-group
-                            label Rechercher votre adresse
-                            input.input(placeholder="Taper pour chercher" id="addressInput" autocomplete="chrome-off")
+                            label= t.info.search_addr
+                            input.input(placeholder=t.info.addr_placeholder id="addressInput" autocomplete="chrome-off")
                             #results.results
                     .form__bottom#fullAddressBlock
                         .form-group
-                            label Adresse
+                            label= t.info.address
                             input.input(id='streetInput' value=user.location.address || "")
                         .form-group
-                            label Code postal
+                            label= t.info.zip
                             input.input(id='zipInput' value=user.location.zip || "")
                         .form-group
-                            label Ville
+                            label= t.info.city
                             input.input(id='cityInput' value=user.location.city || "")
                         .form-group
-                            label Pays
+                            label= t.info.country
                             input.input(id='countryInput' value=user.location.country || "")
                     //- Shown for "Service en ligne" (only country + optional city)
                     .form__bottom#onlineAddressBlock(style="display:none")
                         .form-group
-                            label Pays
+                            label= t.info.country
                             input.input(id='countryInputOnline' value=user.location.country || "")
                         .form-group
-                            label Ville (optionnel)
+                            label= t.info.city_optional
                             input.input(id='cityInputOnline' value=user.location.city || "")
                     .form-action
-                        button.btn(id="confirmLocation" style="width:auto").sec Confirmer
+                        button.btn(id="confirmLocation" style="width:auto").sec= t.info.confirm_location
         .description
             .description__container
                 .form-group
-                    label Description
+                    label= t.info.description
                     textarea.textarea(maxlength=230 id="descriptionCoach")= user.description || ''
 
                 .description__action
-                    button.btn#saveDescription.sec(style='width:auto') Save
+                    button.btn#saveDescription.sec(style='width:auto')= t.info.save
         .social
             .social__container
                 .social__box(data-name="emailPro")
@@ -130,7 +129,7 @@ block content
                         img(src="/images/logos/email-logo.webp" alt="Email logo")
                     .social__title= t.profile.social.email_pro
                     .social__field
-                        input.input(placeholder="Enter your link page" value=user.emailPro || "" disabled=(!user.isPremium))
+                        input.input(placeholder=t.info.link_placeholder value=user.emailPro || "" disabled=(!user.isPremium))
                         button.btn.sec.btn__social-save= t.avail.save
                 .social__box(data-name="phonePro")
                     if !user.isPremium
@@ -139,7 +138,7 @@ block content
                         img(src="/images/logos/phone-logo.webp" alt="Phone logo")
                     .social__title= t.profile.social.phone_pro
                     .social__field
-                        input.input(placeholder="Enter your link page" value=user.phonePro || "" disabled=(!user.isPremium))
+                        input.input(placeholder=t.info.link_placeholder value=user.phonePro || "" disabled=(!user.isPremium))
                         button.btn.btn__social-save.sec= t.avail.save
                 .social__box(data-name="instagramLink")
                     if !user.isPremium
@@ -148,7 +147,7 @@ block content
                         img(src="/images/logos/instagram-logo.webp" alt="Instagram logo")
                     .social__title= t.profile.social.instagram
                     .social__field
-                        input.input(placeholder="Enter your link page" value=user.instagramLink || "" disabled=(!user.isPremium))
+                        input.input(placeholder=t.info.link_placeholder value=user.instagramLink || "" disabled=(!user.isPremium))
                         button.btn.btn__social-save.sec= t.avail.save
                 .social__box(data-name="whatsappLink")
                     if !user.isPremium
@@ -157,7 +156,7 @@ block content
                         img(src="/images/logos/whatsapp-logo.webp" alt="Whatsapp logo")
                     .social__title= t.profile.social.whatsapp
                     .social__field
-                        input.input(placeholder="Enter your link page" value=user.whatsappLink || "" disabled=(!user.isPremium))
+                        input.input(placeholder=t.info.link_placeholder value=user.whatsappLink || "" disabled=(!user.isPremium))
                         button.btn.btn__social-save.sec= t.avail.save
                 .social__box(data-name="facebookLink")
                     if !user.isPremium
@@ -166,7 +165,7 @@ block content
                         img(src="/images/logos/facebook-logo.webp" alt="Facebook logo")
                     .social__title= t.profile.social.facebook
                     .social__field
-                        input.input(placeholder="Enter your link page" value=user.facebookLink || "" disabled=(!user.isPremium))
+                        input.input(placeholder=t.info.link_placeholder value=user.facebookLink || "" disabled=(!user.isPremium))
                         button.btn.btn__social-save.sec= t.avail.save
                 .social__box(data-name="website")
                     if !user.isPremium
@@ -175,7 +174,7 @@ block content
                         img(src="/images/logos/website-logo.webp" alt="Website logo")
                     .social__title= t.profile.social.website
                     .social__field
-                        input.input(placeholder="Enter your link page" value=user.website || "" disabled=(!user.isPremium))
+                        input.input(placeholder=t.info.link_placeholder value=user.website || "" disabled=(!user.isPremium))
                         button.btn.btn__social-save.sec= t.avail.save
     +dialog()
     +prompt()

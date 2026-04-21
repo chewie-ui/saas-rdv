@@ -115,7 +115,9 @@
   box-shadow: var(--shadow);
   border-radius: 10px;
 }
-
+.schedule-wrapper .schedule {
+  width: 100%;
+}
 .schedule-wrapper .schedule .schedule-header,
 .booking-wrapper .booking .booking-header {
   font-size: 14px;
@@ -148,7 +150,7 @@
 
 .schedule-wrapper .schedule .schedule-body .schedule-rows {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   width: 100%;
 }
@@ -191,6 +193,13 @@
 }
 
 @media all and (min-width: 820px) {
+  .schedule-wrapper .schedule {
+    width: auto;
+  }
+
+  .schedule-wrapper .schedule .schedule-body .schedule-rows {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
 @media all and (min-width: 1280px) {

@@ -25,13 +25,13 @@ block content
                                         path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
                             .mini-cal-grid
                                 .mini-cal-daynames
-                                    span L
-                                    span M
-                                    span M
-                                    span J
-                                    span V
-                                    span S
-                                    span D
+                                    span= t.days_abbr.monday
+                                    span= t.days_abbr.tuesday
+                                    span= t.days_abbr.wednesday
+                                    span= t.days_abbr.thursday
+                                    span= t.days_abbr.friday
+                                    span= t.days_abbr.saturday
+                                    span= t.days_abbr.sunday
                                 .mini-cal-days#miniCalDays
 
                 .calendar__section.calendar__section--center
@@ -73,7 +73,7 @@ block content
                             if appointment.isoDate === day.iso.split("T")[0] && appointment.startHour === hour
                                 a.appointment(href=`/appointement/${appointment._id}` class={ canceled: appointment.status === 'canceled' })
                                     if appointment.status === "canceled"
-                                        .appointment-canceled Canceled
+                                        .appointment-canceled= t.appt.canceled
                                     .appointment-name= appointment.name
                                     .appointment-time.xs-comment
                                         | #{appointment.startHour} - #{appointment.endHour}

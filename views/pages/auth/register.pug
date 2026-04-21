@@ -16,22 +16,22 @@ block content
                         h2 Gymio
                     .form-body.flex.col
                         .form-title.flex.col
-                            h1 Create your admin account
-                            p You’ll use this account to manage your clinic and invite your team.
+                            h1= t.auth.register_title
+                            p= t.auth.register_desc
                         form.form-fields.flex.col(action="/register" method="POST")
                             .field-container.flex.col
-                                p Full Name
+                                p= t.auth.full_name
                                 input.input(placeholder="John Doe" type="text" name="fullname")
                             .field-container.flex.col
-                                p Work Email
+                                p= t.auth.work_email
                                 input.input(placeholder="business@example.com" type="text" name="email")
                             .field-container.flex.col
-                                p Password
+                                p= t.auth.password
                                 input.input(placeholder="**************" type="password" name="password")
                             .field-container.flex.col
-                                p Confirm Password
+                                p= t.auth.confirm_pwd2
                                 input.input(placeholder="**************" type="password" name="conformPassword")
-                            button.btn(type="submit").sec Continue
+                            button.btn(type="submit").sec= t.auth.continue
                         if error
                             p.xs-comment.error= error
 block scripts       

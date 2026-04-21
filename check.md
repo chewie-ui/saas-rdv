@@ -19,3 +19,9 @@ header
 
 Buttons
 Inputs
+
+ajouter drapeau flamand
+verifier tout
+couleurs : 
+    - Panel heure
+    - topbar /

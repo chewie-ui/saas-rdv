@@ -21,7 +21,7 @@
                         a.btn.header__btn--primary(href="/register")= t.header.register
                     else
                         a.btn.sec.header__btn--ghost(href="/login")= t.header.login
-                        a.btn.header__btn--primary(href="/become-coach") Devenir coach
+                        a.btn.header__btn--primary(href="/become-coach")= t.common.become_coach
 
             //- Séparateur desktop
             .header__sep
@@ -44,8 +44,8 @@
             //- Sélecteur de langue
             .header__lang#headerLang
                 button.header__lang-btn(type="button" aria-label="Langue")
-                    img.header__lang-img(src=(lang === 'fr' ? '/images/fr.webp' : "/images/en.jpg"))
-                    span.header__lang-code= lang === 'fr' ? 'FR' : 'EN'
+                    img.header__lang-img(src=(lang === 'fr' ? '/images/fr.webp' : lang === 'nl' ? '/images/nl.jpg' : "/images/en.jpg"))
+                    span.header__lang-code= lang === 'fr' ? 'FR' : lang === 'nl' ? 'NL' : 'EN'
                     svg.header__lang-chevron(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")
                         path(d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none")
                 .header__lang-panel
@@ -55,6 +55,9 @@
                     button.header__lang-option(type="button" onclick="changeLanguage('en')")
                         img(src='/images/en.jpg')
                         span English
+                    button.header__lang-option(type="button" onclick="changeLanguage('nl')")
+                        img(src='/images/nl.jpg')
+                        span Nederlands
 
             //- Burger (mobile seulement)
             label.header__burger(for="headerNav" aria-label="Menu")
@@ -88,6 +91,9 @@
                 button.header__panel-lang-btn(type="button" onclick="changeLanguage('en')" class=lang === 'en' ? 'active' : '')
                     img(src='/images/en.jpg')
                     span English
+                button.header__panel-lang-btn(type="button" onclick="changeLanguage('nl')" class=lang === 'nl' ? 'active' : '')
+                    img(src='/images/nl.jpg')
+                    span Nederlands
             //- Thème dans le panel
             button.theme-toggle.header__panel-theme(type="button")
                 svg.theme-toggle__moon(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")

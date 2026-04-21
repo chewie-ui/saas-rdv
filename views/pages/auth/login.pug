@@ -12,19 +12,19 @@ block content
                 .auth-form__container
                     .form-body.flex.col
                         .form-title.flex.col
-                            h1 Welcome back
-                            p Dive back into your world with a simple sign-in. Your next adventure awaits – let's get started!
+                            h1= t.auth.login_title
+                            p= t.auth.login_desc
                         form.form-fields.flex.col(action="/login" method="POST")
                             .field-container.flex.col
-                                p Email
+                                p= t.auth.email
                                 input.input(placeholder="Email" type="text" name="email")
                             .field-container.flex.col
-                                p Password
+                                p= t.auth.password
                                 input.input(placeholder="**************" type="password" name="password")
-                                a(href="/forgot-password") Forgot password?
-                            button.btn(type="submit").sec Log in
-                        .no-acc.flex Don't have account?
-                            a(href="/register") Register now!
+                                a(href="/forgot-password")= t.auth.forgot_link
+                            button.btn(type="submit").sec= t.auth.login_btn
+                        .no-acc.flex= t.auth.no_account
+                            a(href="/register")= t.auth.register_link
                         if error
                             p.xs-comment.error= error
 block scripts       
