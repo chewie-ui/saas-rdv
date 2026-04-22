@@ -36,7 +36,7 @@ block content
                                 td #{h.date.toLocaleDateString('fr-FR')} | #{h.startTime}-#{h.endTime}
                                 td #{h.message}
                                 td(style='padding:8px 1.5rem')
-                                    div(class=h.status) #{h.status}
+                                    div(class=h.status) #{h.status === 'canceled' ? t.appt.canceled : t.appt.confirmed}
                                 td.btn-td.flex-c.j-start
                                     button.btn-icon.flex-c.btn-panel
                                         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-160q-33 0-56.5-23.5T400-240q0-33 23.5-56.5T480-320q33 0 56.5 23.5T560-240q0 33-23.5 56.5T480-160Zm0-240q-33 0-56.5-23.5T400-480q0-33 23.5-56.5T480-560q33 0 56.5 23.5T560-480q0 33-23.5 56.5T480-400Zm0-240q-33 0-56.5-23.5T400-720q0-33 23.5-56.5T480-800q33 0 56.5 23.5T560-720q0 33-23.5 56.5T480-640Z"/></svg>
@@ -65,13 +65,13 @@ block content
                         .history__card(data-id=h._id)
                             .history__card-top
                                 .history__card-name #{h.name} #{h.surname}
-                                div(class=`history__card-status ${h.status}`) #{h.status}
+                                div(class=`history__card-status ${h.status}`) #{h.status === 'canceled' ? t.appt.canceled : t.appt.confirmed}
                             .history__card-body
                                 .history__card-row
                                     span.history__card-label= t.hist_page.date
                                     span #{h.date.toLocaleDateString('fr-FR')} #{h.startTime}-#{h.endTime}
                                 .history__card-row
-                                    span.history__card-label Email
+                                    span.history__card-label= t.hist.table.email
                                     span #{h.email}
                                 if h.phone
                                     .history__card-row

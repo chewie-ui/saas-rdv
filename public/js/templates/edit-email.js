@@ -37,11 +37,10 @@ if (emailOpen) {
       const tmp = templatePrompt.content.cloneNode(true);
       const dialogField = tmp.querySelector(".dialog__field");
       const parentPrompt = tmp.querySelector("#promptWrp");
-      tmp.querySelector("h2").textContent = "Confirm your email";
-      tmp.querySelector(".dialog__p").textContent =
-        "Confirm youir emai land we gonna send you un code de verificatyion pour valdier ovotre identite";
-      tmp.querySelector(".dialog__btn1").textContent = "Cancel";
-      tmp.querySelector(".dialog__btn2").textContent = "Send code";
+      tmp.querySelector("h2").textContent = window.__t.email_confirm_title;
+      tmp.querySelector(".dialog__p").textContent = window.__t.email_confirm_desc;
+      tmp.querySelector(".dialog__btn1").textContent = window.__t.cancel;
+      tmp.querySelector(".dialog__btn2").textContent = window.__t.confirm;
       function closePrompt() {
         parentPrompt.remove();
       }
@@ -70,11 +69,10 @@ if (emailOpen) {
           const tmp2 = templatePrompt.content.cloneNode(true);
           const secparentPrompt2 = tmp2.querySelector("#promptWrp");
 
-          tmp2.querySelector("h2").textContent = "Enter verification code";
-          tmp2.querySelector(".dialog__p").textContent =
-            "Completet your verificationb code please";
-          tmp2.querySelector(".dialog__btn1").textContent = "Cancel";
-          tmp2.querySelector(".dialog__btn2").textContent = "Confirm";
+          tmp2.querySelector("h2").textContent = window.__t.email_verify_title;
+          tmp2.querySelector(".dialog__p").textContent = window.__t.email_verify_desc;
+          tmp2.querySelector(".dialog__btn1").textContent = window.__t.cancel;
+          tmp2.querySelector(".dialog__btn2").textContent = window.__t.confirm;
           const closePrompt2 = () => {
             if (secparentPrompt2) {
               secparentPrompt2.remove();
@@ -102,14 +100,10 @@ if (emailOpen) {
                 }
               };
 
-              editEmailPopup.querySelector("h2").textContent =
-                "Enter new email";
-              editEmailPopup.querySelector(".dialog__p").textContent =
-                "enter your new email and it wiill be chagned";
-              editEmailPopup.querySelector(".dialog__btn1").textContent =
-                "Cancel";
-              editEmailPopup.querySelector(".dialog__btn2").textContent =
-                "Confirm";
+              editEmailPopup.querySelector("h2").textContent = window.__t.email_new_title;
+              editEmailPopup.querySelector(".dialog__p").textContent = window.__t.email_new_desc;
+              editEmailPopup.querySelector(".dialog__btn1").textContent = window.__t.cancel;
+              editEmailPopup.querySelector(".dialog__btn2").textContent = window.__t.confirm;
 
               editEmailPopup.querySelector(".dialog__btn1").onclick = clsPrmp;
               editEmailPopup.querySelector(".dialog__icon").onclick = clsPrmp;

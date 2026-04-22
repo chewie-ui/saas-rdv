@@ -11,7 +11,7 @@ exports.createUser = async (req, res) => {
   if (!emailRegex.test(email)) {
     return res.render("auth/register", {
       alwaysSticky: true,
-      error: "Please enter a valid email address.",
+      error: res.locals.t?.auth?.error_invalid_email || "Veuillez entrer une adresse email valide.",
     });
   }
 
@@ -19,29 +19,28 @@ exports.createUser = async (req, res) => {
   if (checkName) {
     return res.render("auth/register", {
       alwaysSticky: true,
-      error: "This name is already in use.",
+      error: res.locals.t?.auth?.error_name_taken || "Ce nom est déjà utilisé.",
     });
   }
-  // 2. Vérifier si l'email est déjà pris en base de données
   const checkEmail = await User.findOne({ email }).lean();
   if (checkEmail) {
     return res.render("auth/register", {
       alwaysSticky: true,
-      error: "This email is already in use.",
+      error: res.locals.t?.auth?.error_email_taken || "Cette adresse email est déjà utilisée.",
     });
   }
 
   if (password.trim() !== conformPassword.trim()) {
     return res.render("auth/register", {
       alwaysSticky: true,
-      error: "Passwords do not match",
+      error: res.locals.t?.auth?.error_pwd_match || "Les mots de passe ne correspondent pas.",
     });
   }
 
   if (password.trim().length < 8) {
     return res.render("auth/register", {
       alwaysSticky: true,
-      error: "Password must be at least 8 characters long.",
+      error: res.locals.t?.auth?.error_pwd_length || "Le mot de passe doit contenir au moins 8 caractères.",
     });
   }
 
@@ -114,15 +113,20 @@ exports.forgotPasswordVerifyCode = async (req, res) => {
     req.session.forgotPwdCode = code;
     const isSent = await sendEmail(
       value,
-      `Your verification code: ${code}`,
+      `Code de réinitialisation de votre mot de passe`,
       `<html>
-    <body style="font-family: Arial, sans-serif;">
-      <h2>Bonjour,</h2>
-      <p>Voici votre code de vérification pour changer votre mot de passe :</p>
-      <div style="font-size: 24px; font-weight: bold; color: #ff4757; padding: 10px; border: 1px solid #ddd; display: inline-block;">
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #1e272e;">Bonjour,</h2>
+      <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
+      <p>Voici votre code de vérification à 6 chiffres :</p>
+      <div style="font-size: 32px; font-weight: bold; color: #ff4757; padding: 15px 25px; border: 2px solid #ff4757; display: inline-block; border-radius: 8px; letter-spacing: 6px; margin: 10px 0;">
         ${code}
       </div>
-      <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
+      <p>Merci de saisir ce code sur le site pour poursuivre la procédure.</p>
+      <p>Ce code est valable pendant une durée limitée. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email en toute sécurité.</p>
+      <p>Pour des raisons de sécurité, ne partagez jamais ce code avec qui que ce soit.</p>
+      <p>Si vous avez besoin d'aide, n'hésitez pas à nous contacter.</p>
+      <p>Cordialement,<br><strong>L'équipe Gymio</strong></p>
     </body>
   </html>`,
     );

@@ -19,11 +19,10 @@ document.addEventListener("click", async (event) => {
   if (rowDelete) {
     const tmp = templateDialog.content.cloneNode(true);
 
-    tmp.querySelector("h2").textContent = "Delete confirmation";
-    tmp.querySelector(".dialog__p").textContent =
-      "If you confoirm this is gonna be derelteld and you dgonna have no backup";
-    tmp.querySelector(".dialog__btn1").textContent = "Cancel";
-    tmp.querySelector(".dialog__btn2").textContent = "Confirm delete";
+    tmp.querySelector("h2").textContent = window.__t.delete_confirm_title;
+    tmp.querySelector(".dialog__p").textContent = window.__t.delete_confirm_desc;
+    tmp.querySelector(".dialog__btn1").textContent = window.__t.cancel;
+    tmp.querySelector(".dialog__btn2").textContent = window.__t.confirm_delete;
 
     document.querySelector("body").appendChild(tmp);
 
@@ -96,7 +95,7 @@ function renderData(appointments) {
             <td>${new Date(h.date).toLocaleDateString("fr-FR")} | ${h.startTime}-${h.endTime}</td>
             <td>${h.message || ""}</td>
             <td style="padding:8px 1.5rem">
-                <div class="${h.status}">${h.status}</div>
+                <div class="${h.status}">${h.status === 'canceled' ? window.__t.status_canceled : window.__t.status_confirmed}</div>
             </td>
             <td class="btn-td flex-c j-start">
                 <button class="btn-icon flex-c btn-panel">
@@ -122,6 +121,8 @@ if (saveBtnEdit) {
         email: document.getElementById("email").value,
         phone: document.getElementById("phone").value,
         message: document.getElementById("message").value,
+        date: document.getElementById("editDate")?.value,
+        startTime: document.getElementById("editStartTime")?.value,
       }),
     });
     const data = await response.json();

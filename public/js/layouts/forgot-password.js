@@ -58,7 +58,7 @@ container.addEventListener("click", async (e) => {
     } else {
       input.classList.add("input-error");
       errorTxt.classList.remove("none");
-      errorTxt.textContent = "Invalid code, please retry";
+      errorTxt.textContent = window.__t.invalid_code;
 
       errorTxt.classList.add("input-error-repeat");
       errorTxt.addEventListener("animationend", () => {
@@ -83,7 +83,7 @@ container.addEventListener("click", async (e) => {
         error.className = "error"; // 👈 même classe
         parent2.appendChild(error);
       }
-      error.textContent = "Password must be at least 8 characters.";
+      error.textContent = window.__t.pwd_min_8;
       newPwd.style.border = "1px solid red";
       return;
     }
@@ -95,7 +95,7 @@ container.addEventListener("click", async (e) => {
         error.className = "error-msg";
         parent2.appendChild(error);
       }
-      error.textContent = "Passwords do not match.";
+      error.textContent = window.__t.pwd_no_match;
       conformPwd.style.border = "1px solid red";
       return;
     }

@@ -19,7 +19,7 @@ html(lang="fr")
             include ../common/sidebar
             .main
                 .admin-nav
-                    h2= pageName || "Undefined page"
+                    h2= title || pageName || "Undefined page"
                     .admin__menu
                         .admin__lang#langSelector
                             .admin__lang-active
@@ -67,8 +67,8 @@ html(lang="fr")
         block scripts
 
         script.
-            
             const COMPANY_ID = !{company ? `"${company._id}"` : "null"};
+            window.__t = !{JSON.stringify(t.js)};
 
 
 

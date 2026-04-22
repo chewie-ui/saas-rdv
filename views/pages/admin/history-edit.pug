@@ -20,6 +20,12 @@ block content
                         label= t.hist_edit.phone
                         input.input(value=`${results.phone}` id="phone")
                     .form-group
+                        label= t.hist_edit.date
+                        input.input(type="date" value=results.date.toISOString().split('T')[0] id="editDate")
+                    .form-group
+                        label= t.hist_edit.start_time
+                        input.input(type="time" value=results.startTime id="editStartTime")
+                    .form-group
                         label= t.hist_edit.notes
                         input.input(value=`${results.message}` id="message")
             .history__edit-actions

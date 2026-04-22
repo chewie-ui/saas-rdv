@@ -54,13 +54,12 @@ exports.book = async (req, res) => {
   // await sendEmail("quentin.rennies@gmail.com", "MAJ Horraire", htmlTemplate);
 };
 
-function getWeekDays(startDate = new Date()) {
+function getWeekDays(startDate = new Date(), locale = "fr-FR") {
   const week = [];
   const monday = new Date(startDate);
 
-  const today = new Date(); // 👈 aujourd'hui
+  const today = new Date();
 
-  // Revenir au lundi
   const day = monday.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   monday.setDate(monday.getDate() + diff);
@@ -75,17 +74,17 @@ function getWeekDays(startDate = new Date()) {
       d.getFullYear() === today.getFullYear();
 
     week.push({
-      label: d.toLocaleDateString("en-US", { weekday: "short" }),
-      initial: d.toLocaleDateString("en-US", { weekday: "narrow" }),
-      longLabel: d.toLocaleDateString("en-US", { weekday: "long" }),
-      date: d.toLocaleDateString("en-US", {
+      label: d.toLocaleDateString(locale, { weekday: "short" }),
+      initial: d.toLocaleDateString(locale, { weekday: "narrow" }),
+      longLabel: d.toLocaleDateString(locale, { weekday: "long" }),
+      date: d.toLocaleDateString(locale, {
         day: "numeric",
         month: "long",
       }),
       dayNumber: d.getDate(),
       iso: d.toISOString(),
       isoDate: d.toISOString().split("T")[0],
-      isToday, // 👈 AJOUT IMPORTANT
+      isToday,
     });
   }
 
@@ -114,7 +113,7 @@ exports.appointment = async (req, res) => {
   }
   const apps = await GetAllAppointments(currentCompany);
   const rowTime = await Company.findById(currentCompany)
-    .select("slotTime")
+    .select("slotTime schedule")
     .lean();
   const slotTime = rowTime.slotTime || 60;
 
@@ -167,7 +166,8 @@ exports.appointment = async (req, res) => {
   });
   const referenceDate = req.query.date ? new Date(req.query.date) : new Date();
   const focusedIso = referenceDate.toISOString().split("T")[0];
-  const weekDays = getWeekDays(referenceDate).map((d) => ({
+  const locale = res.locals.lang === "nl" ? "nl-NL" : res.locals.lang === "en" ? "en-US" : "fr-FR";
+  const weekDays = getWeekDays(referenceDate, locale).map((d) => ({
     ...d,
     isFocused: d.iso.split("T")[0] === focusedIso,
   }));
@@ -178,16 +178,41 @@ exports.appointment = async (req, res) => {
   const dayLabel = `${focusedDay.label} ${focusedDay.date}`;
   const focusedDayName = focusedDay.longLabel;
   const focusedDayDate = focusedDay.date;
+  const activeSchedule = (rowTime.schedule || []).filter((d) => !d.dayOff);
+  const scheduleHours = activeSchedule.flatMap((d) => d.workingHours || []);
+
+  const scheduleMin =
+    scheduleHours.length > 0
+      ? Math.min(...scheduleHours.map((wh) => parseInt(wh.start.split(":")[0], 10)))
+      : null;
+  const scheduleMax =
+    scheduleHours.length > 0
+      ? Math.max(...scheduleHours.map((wh) => parseInt(wh.end.split(":")[0], 10)))
+      : null;
+
   const hoursList = formatted.map((a) => {
     const [h] = a.startHour.split(":").map(Number);
     return h;
   });
 
-  const minHour = Math.min(...hoursList);
-  const maxHour = Math.max(...hoursList) + 1;
+  const apptMin = hoursList.length > 0 ? Math.min(...hoursList) : null;
+  const apptMax = hoursList.length > 0 ? Math.max(...hoursList) + 1 : null;
+
+  const minHour =
+    scheduleMin !== null
+      ? Math.min(scheduleMin, apptMin !== null ? apptMin : scheduleMin)
+      : apptMin !== null
+      ? apptMin
+      : 8;
+  const maxHour =
+    scheduleMax !== null
+      ? Math.max(scheduleMax, apptMax !== null ? apptMax : scheduleMax)
+      : apptMax !== null
+      ? apptMax
+      : 18;
   res.render("admin/appointment", {
     pageName: "Appointment",
-    title: res.locals.t.titles.book,
+    title: res.locals.t.titles.calendar,
     slotTime,
     hours: generateTimeSlots(minHour, maxHour, slotTime),
     weekDays,
@@ -485,18 +510,16 @@ exports.settingsInit = async (req, res) => {
 exports.historyEditRowPatch = async (req, res) => {
   try {
     const { id } = req.params;
-    const { fullName, email, phone, message } = req.body;
+    const { fullName, email, phone, message, date, startTime } = req.body;
     const parts = fullName.trim().split(" ");
     const name = parts[0];
     const surname = parts.slice(1).join(" ") || "";
 
-    const response = await Booking.findByIdAndUpdate(id, {
-      name,
-      surname,
-      phone,
-      email,
-      message,
-    });
+    const updateFields = { name, surname, phone, email, message };
+    if (date) updateFields.date = new Date(date);
+    if (startTime) updateFields.startTime = startTime;
+
+    const response = await Booking.findByIdAndUpdate(id, updateFields);
 
     if (response) {
       return res.json({ success: true });
