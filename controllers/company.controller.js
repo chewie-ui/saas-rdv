@@ -16,7 +16,7 @@ exports.getDaysOff = async (req, res) => {
 
 exports.addDaysOff = async (req, res) => {
   const { dateKey } = req.body;
-  const safeDate = new Date(`${dateKey}T12:00:00Z`);
+
   const result = await DaysOff.findOneAndUpdate(
     { company: res.locals.currentCompany._id },
     {
@@ -28,16 +28,16 @@ exports.addDaysOff = async (req, res) => {
   );
 
   // Find the newly added date entry to return its _id
-  // const searchDate = new Date(dateKey);
-  // searchDate.setHours(0, 0, 0, 0);
+  const searchDate = new Date(dateKey);
+  searchDate.setHours(0, 0, 0, 0);
 
   const newEntry = result.dates
     .slice()
     .reverse()
     .find((d) => {
-      const dDate = new Date(`${d.date}T12:00:00Z`);
-      // dDate.setHours(0, 0, 0, 0);
-      return dDate.getTime() === safeDate.getTime();
+      const dDate = new Date(d.date);
+      dDate.setHours(0, 0, 0, 0);
+      return dDate.getTime() === searchDate.getTime();
     });
 
   return res.json({ success: true, dateEntry: newEntry });
@@ -45,15 +45,15 @@ exports.addDaysOff = async (req, res) => {
 
 exports.removeDaysOff = async (req, res) => {
   const { dateKey } = req.body;
-  const safeDate = new Date(`${dateKey}T12:00:00Z`);
-  // const cleanDate = new Date(dateKey);
-  // cleanDate.setHours(0, 0, 0, 0);
+
+  const cleanDate = new Date(dateKey);
+  cleanDate.setHours(0, 0, 0, 0);
 
   await DaysOff.updateOne(
     { company: res.locals.currentCompany._id },
     {
       $pull: {
-        dates: { date: safeDate },
+        dates: { date: cleanDate },
       },
     },
   );
