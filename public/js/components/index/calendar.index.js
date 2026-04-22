@@ -228,10 +228,10 @@ export default function () {
         const index = day.dataset.weekdayIndex;
         console.log(index);
 
-        const clickedDate = new Date(currentYear, currentMonth, i);
-        datePicked = clickedDate;
+        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
+        datePicked = dateStr;
 
-        const dateIso = clickedDate.toISOString();
+        const dateIso = dateStr;
 
         const slots = await fetch("/get-schedule", {
           method: "POST",
@@ -355,7 +355,7 @@ export default function () {
         method: "post",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          date: datePicked.toISOString(),
+          date: datePicked,
           startTime: schedulePicked,
           company: document
             .getElementById("bookingWrapper")

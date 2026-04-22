@@ -28,17 +28,12 @@ exports.addDaysOff = async (req, res) => {
   );
 
   // Find the newly added date entry to return its _id
-  const searchDate = new Date(dateKey);
-  searchDate.setHours(0, 0, 0, 0);
+  const searchDateStr = new Date(dateKey).toISOString().split("T")[0];
 
   const newEntry = result.dates
     .slice()
     .reverse()
-    .find((d) => {
-      const dDate = new Date(d.date);
-      dDate.setHours(0, 0, 0, 0);
-      return dDate.getTime() === searchDate.getTime();
-    });
+    .find((d) => new Date(d.date).toISOString().split("T")[0] === searchDateStr);
 
   return res.json({ success: true, dateEntry: newEntry });
 };
@@ -47,7 +42,6 @@ exports.removeDaysOff = async (req, res) => {
   const { dateKey } = req.body;
 
   const cleanDate = new Date(dateKey);
-  cleanDate.setHours(0, 0, 0, 0);
 
   await DaysOff.updateOne(
     { company: res.locals.currentCompany._id },
@@ -173,3 +167,6 @@ exports.setScheduleDayOff = async (req, res) => {
     return res.status(500).json({ success: false, error: "Server error" });
   }
 };
+
+
+// PROMPT :

@@ -158,19 +158,16 @@ exports.getSchedule = async (req, res) => {
     .lean();
 
   // 2. CHERCHER UNE EXCEPTION (DaysOff)
-  // On nettoie la date reçue pour comparer uniquement Jour/Mois/Année
-  const searchDate = new Date(date);
-  searchDate.setHours(0, 0, 0, 0);
+  // Comparaison par date ISO UTC → timezone-safe quel que soit le serveur
+  const searchDateStr = new Date(date).toISOString().split("T")[0];
 
   const exceptionsDoc = await DaysOff.findOne({ company: COMPANY_ID });
   let target = company.schedule.find((d) => d.weekdayIndex === jsWeekdayIndex);
 
   if (exceptionsDoc && exceptionsDoc.dates) {
-    const specificDate = exceptionsDoc.dates.find((d) => {
-      const dDate = new Date(d.date);
-      dDate.setHours(0, 0, 0, 0);
-      return dDate.getTime() === searchDate.getTime();
-    });
+    const specificDate = exceptionsDoc.dates.find((d) =>
+      new Date(d.date).toISOString().split("T")[0] === searchDateStr
+    );
 
     if (specificDate) {
       // Si l'exception a des horaires spécifiques → utiliser ces horaires (journée partielle)
