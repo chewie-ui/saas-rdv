@@ -60,7 +60,12 @@ const bookingSchema = new schema(
 
     adminNotes: {
       type: String,
-      default: '',
+      default: "",
+    },
+
+    googleEventId: {
+      type: String,
+      default: "",
     },
   },
   { timestamps: true },

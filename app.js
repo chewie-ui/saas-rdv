@@ -7,6 +7,7 @@ const passport = require("passport");
 const cookieParser = require("cookie-parser");
 require("./db");
 
+const googleCalendarRoutes = require("./routes/googleCalendar.routes");
 const routes = require("./routes");
 
 const app = express();
@@ -126,6 +127,7 @@ app.use((req, res, next) => {
 });
 app.use(injectSubscription);
 
+app.use(googleCalendarRoutes);
 app.use(routes);
 
 module.exports = app;

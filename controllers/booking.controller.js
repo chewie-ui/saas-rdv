@@ -1,6 +1,7 @@
 const Booking = require("../db/models/book.model");
 const User = require("../db/models/user.model");
 const Company = require("../db/models/company/company.model");
+const { addEventToCalendar, deleteEventFromCalendar } = require("../utils/googleCalendarSync");
 const DaysOff = require("../db/models/company/daysOff.model");
 const { getAppointments } = require("../queries/booking.queries");
 const pug = require("pug");
@@ -60,7 +61,18 @@ exports.createBooking = async (req, res) => {
 
     await sendEmail(email, "Appointement Confirmation", htmlTemplate);
 
-    // envoi de mail ici
+    // Sync Google Calendar
+    try {
+      const companyOwner = await User.findById(response.owner);
+      if (companyOwner?.googleCalendar?.connected && companyOwner.googleCalendar.refreshToken) {
+        const eventId = await addEventToCalendar(companyOwner.googleCalendar.refreshToken, newBooking);
+        if (eventId) {
+          await Booking.findByIdAndUpdate(newBooking._id, { googleEventId: eventId });
+        }
+      }
+    } catch (gcalErr) {
+      console.error("Google Calendar sync error (create):", gcalErr.message);
+    }
 
     res.json({ success: true });
   } catch (err) {
@@ -244,21 +256,32 @@ exports.cancelBooking = async (req, res) => {
   console.log(token);
   console.log(userId);
 
-  const companyId = await Booking.findOneAndUpdate(
+  const canceledBooking = await Booking.findOneAndUpdate(
     { _id: userId, cancelToken: token },
     { status: "canceled" },
-    { new: true },
-  ).lean(); // recup infos ici
-  console.log({ "booking infos": companyId });
+    { new: false },
+  ).lean();
+  console.log({ "booking infos": canceledBooking });
 
-  if (!companyId) {
+  if (!canceledBooking) {
     return res.status(404).render("client/404.pug", {
       message: "Lien d'annulation invalide ou déjà utilisé.",
     });
   }
 
-  const company = await Company.findById(companyId.company);
+  const company = await Company.findById(canceledBooking.company);
   const coach = await User.findById(company.owner);
+
+  // Sync Google Calendar
+  if (canceledBooking.googleEventId) {
+    try {
+      if (coach?.googleCalendar?.connected && coach.googleCalendar.refreshToken) {
+        await deleteEventFromCalendar(coach.googleCalendar.refreshToken, canceledBooking.googleEventId);
+      }
+    } catch (gcalErr) {
+      console.error("Google Calendar sync error (public cancel):", gcalErr.message);
+    }
+  }
 
   res.render("client/index.pug", {
     cancelBooking: true,

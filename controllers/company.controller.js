@@ -33,7 +33,9 @@ exports.addDaysOff = async (req, res) => {
   const newEntry = result.dates
     .slice()
     .reverse()
-    .find((d) => new Date(d.date).toISOString().split("T")[0] === searchDateStr);
+    .find(
+      (d) => new Date(d.date).toISOString().split("T")[0] === searchDateStr,
+    );
 
   return res.json({ success: true, dateEntry: newEntry });
 };
@@ -167,6 +169,3 @@ exports.setScheduleDayOff = async (req, res) => {
     return res.status(500).json({ success: false, error: "Server error" });
   }
 };
-
-
-// PROMPT :

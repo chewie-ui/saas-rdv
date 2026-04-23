@@ -120,6 +120,14 @@ router.post("/contact", async (req, res) => {
   }
 });
 
+router.get("/confidentialite", (req, res) => {
+  res.render("client/confidentialite", { title: "Politique de confidentialité — Gymio" });
+});
+
+router.get("/conditions-utilisation", (req, res) => {
+  res.render("client/conditions-utilisation", { title: "Conditions d'utilisation — Gymio" });
+});
+
 router.get("/become-coach", (req, res) => {
   res.render("client/become-coach", {
     title: res.locals.t.titles.becomeCoach,

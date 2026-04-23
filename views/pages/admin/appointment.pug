@@ -49,6 +49,14 @@ block content
                                 path(d="m321-80-71-71 329-329-329-329 71-71 400 400L321-80Z")
                 .calendar__section.calendar__section--right
                     .calendar__actions.flex
+                        if user.googleCalendar && user.googleCalendar.connected
+                            p Connecté à #{user.googleCalendar.email}
+                            form(action="/auth/google/calendar/disconnect" method="POST")
+                                button(type="submit") Déconnecter Google Calendar
+                        else
+                            a(href="/auth/google/calendar")
+                                img(src="/images/g_calendar.png")
+                                | Connecter Google Calendar
 
         .calendar__week-strip
             each weekday in weekDays

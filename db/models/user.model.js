@@ -90,9 +90,23 @@ const userSchema = schema(
       iframeUrl: String,
       lat: String,
       lon: String,
-      serviceType: { type: String, enum: ["sur_place", "en_ligne"], default: "sur_place" },
+      serviceType: {
+        type: String,
+        enum: ["sur_place", "en_ligne"],
+        default: "sur_place",
+      },
+    },
+
+    googleCalendar: {
+      connected: { type: Boolean, default: false },
+      email: { type: String, default: "" },
+      refreshToken: { type: String, default: "" },
+      accessToken: { type: String, default: "" },
+      scope: { type: String, default: "" },
+      tokenType: { type: String, default: "" },
     },
   },
+
   { timestamps: true },
 );
 

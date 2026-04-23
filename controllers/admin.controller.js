@@ -225,6 +225,8 @@ exports.appointment = async (req, res) => {
 };
 
 const Company = require("../db/models/company/company.model");
+const User = require("../db/models/user.model");
+const { addEventToCalendar, deleteEventFromCalendar } = require("../utils/googleCalendarSync");
 
 exports.client = (req, res) => {
   res.render("admin/client", {
@@ -341,6 +343,19 @@ exports.deleteBooking = async (req, res) => {
 
   const data = await Booking.findByIdAndDelete(bookId);
 
+  // Sync Google Calendar
+  if (data?.googleEventId) {
+    try {
+      const companyDoc = await Company.findById(data.company);
+      const owner = await User.findById(companyDoc?.owner);
+      if (owner?.googleCalendar?.connected && owner.googleCalendar.refreshToken) {
+        await deleteEventFromCalendar(owner.googleCalendar.refreshToken, data.googleEventId);
+      }
+    } catch (gcalErr) {
+      console.error("Google Calendar sync error (delete):", gcalErr.message);
+    }
+  }
+
   res.json({ success: true, data });
 };
 
@@ -348,9 +363,27 @@ exports.restoreBooking = async (req, res) => {
   try {
     const { bookId } = req.params;
 
-    await Booking.findByIdAndUpdate(bookId, {
-      status: "confirmed",
-    });
+    const booking = await Booking.findByIdAndUpdate(
+      bookId,
+      { status: "confirmed" },
+      { new: true },
+    ).lean();
+
+    // Sync Google Calendar : recréer l'événement et sauvegarder le nouvel ID
+    if (booking) {
+      try {
+        const companyDoc = await Company.findById(booking.company);
+        const owner = await User.findById(companyDoc?.owner);
+        if (owner?.googleCalendar?.connected && owner.googleCalendar.refreshToken) {
+          const eventId = await addEventToCalendar(owner.googleCalendar.refreshToken, booking);
+          if (eventId) {
+            await Booking.findByIdAndUpdate(bookId, { googleEventId: eventId });
+          }
+        }
+      } catch (gcalErr) {
+        console.error("Google Calendar sync error (restore):", gcalErr.message);
+      }
+    }
 
     res.json({ success: true });
   } catch (err) {
@@ -371,9 +404,25 @@ exports.restoreBooking = async (req, res) => {
 
 exports.cancelBooking = async (req, res) => {
   const { id } = req.params;
-  await Booking.findByIdAndUpdate(id, {
-    status: "canceled",
-  });
+
+  const booking = await Booking.findByIdAndUpdate(
+    id,
+    { status: "canceled" },
+    { new: false },
+  ).lean();
+
+  // Sync Google Calendar
+  if (booking?.googleEventId) {
+    try {
+      const companyDoc = await Company.findById(booking.company);
+      const owner = await User.findById(companyDoc?.owner);
+      if (owner?.googleCalendar?.connected && owner.googleCalendar.refreshToken) {
+        await deleteEventFromCalendar(owner.googleCalendar.refreshToken, booking.googleEventId);
+      }
+    } catch (gcalErr) {
+      console.error("Google Calendar sync error (admin cancel):", gcalErr.message);
+    }
+  }
 
   res.json({ success: true });
 };
