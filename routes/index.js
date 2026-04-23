@@ -101,7 +101,7 @@ router.post("/contact", async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL;
     const html = pug.renderFile(
       path.join(__dirname, "../views/templates/emails/contact.pug"),
-      { name, surname, email, subject, message }
+      { name, surname, email, subject, message },
     );
 
     await sendEmail(adminEmail, `[Contact Gymio] ${subject}`, html);
@@ -121,11 +121,17 @@ router.post("/contact", async (req, res) => {
 });
 
 router.get("/confidentialite", (req, res) => {
-  res.render("client/confidentialite", { title: "Politique de confidentialité — Gymio" });
+  res.render("client/confidentialite", {
+    title: "Politique de confidentialité — Gymio",
+    alwaysSticky: true,
+  });
 });
 
 router.get("/conditions-utilisation", (req, res) => {
-  res.render("client/conditions-utilisation", { title: "Conditions d'utilisation — Gymio" });
+  res.render("client/conditions-utilisation", {
+    title: "Conditions d'utilisation — Gymio",
+    alwaysSticky: true,
+  });
 });
 
 router.get("/become-coach", (req, res) => {
