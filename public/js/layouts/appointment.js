@@ -87,10 +87,10 @@ setInterval(updateTimeline, 60000);
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const focusedStr = `${paramDate.getFullYear()}-${String(paramDate.getMonth() + 1).padStart(2, "0")}-${String(paramDate.getDate()).padStart(2, "0")}`;
 
-  const MONTHS_FR = [
-    "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
-  ];
+  const __t = window.__t || {};
+  const MONTHS_FR = (__t.months && __t.months.length === 12)
+    ? __t.months
+    : ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 
   function renderCalendar() {
     title.textContent = `${MONTHS_FR[displayMonth]} ${displayYear}`;

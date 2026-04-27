@@ -8,6 +8,7 @@ const {
   getBookingC,
   cancelBooking,
 } = require("../controllers/booking.controller");
+const Form = require("../db/models/form.model");
 
 router.post("/create-booking", createBooking);
 router.get("/get-booking", getBooking);
@@ -17,5 +18,17 @@ router.get("/get-disabled-days/:companyId", getDisabledDays);
 
 router.get("/get-booking/:companyId", getBookingC);
 router.get("/cancel-booking/:userId", cancelBooking);
+
+router.get("/get-form/:companyId", async (req, res) => {
+  try {
+    const form = await Form.findOne({
+      company: req.params.companyId,
+      active: true,
+    }).lean();
+    return res.json({ form: form || null });
+  } catch (err) {
+    return res.json({ form: null });
+  }
+});
 
 module.exports = router;

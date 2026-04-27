@@ -13,51 +13,63 @@
             //- Boutons nav (desktop inline, mobile dans le panel)
             nav.header__nav
                 if user
-                    a.btn.sec.header__btn--ghost(href="/appointment")= t.header.dashboard
-                    a.btn.header__btn--primary(href="/logout")= t.header.logout
+                    a.btn.secondary.header__btn--ghost(href="/appointment")
+                        span
+                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M520-600v-240h320v240H520ZM120-440v-400h320v400H120Zm400 320v-400h320v400H520Zm-400 0v-240h320v240H120Zm80-400h160v-240H200v240Zm400 320h160v-240H600v240Zm0-480h160v-80H600v80ZM200-200h160v-80H200v80Zm160-320Zm240-160Zm0 240ZM360-280Z"/></svg>
+                            | #{t.header.dashboard}
+                    a.btn.header__btn--primary(href="/logout")
+                        span= t.header.logout
                 else
                     if becomeCoach
-                        a.btn.sec.header__btn--ghost(href="/login")= t.header.login
-                        a.btn.header__btn--primary(href="/register")= t.header.register
+                        a.btn.secondary.header__btn--ghost(href="/login")
+                            span= t.header.login
+                        a.btn.header__btn--primary(href="/register")
+                            span= t.header.register
                     else
-                        a.btn.sec.header__btn--ghost(href="/login")= t.header.login
-                        a.btn.header__btn--primary(href="/become-coach")= t.common.become_coach
+                        a.btn.secondary.header__btn--ghost(href="/login")
+                            span= t.header.login
+                        a.btn.header__btn--primary(href="/become-coach")
+                            span= t.common.become_coach
 
             //- Séparateur desktop
             .header__sep
 
             //- Toggle thème
-            button.theme-toggle.header__theme(type="button" aria-label="Changer le thème" title="Changer le thème")
+            button.theme-toggle.secondary.circle(type="button" aria-label="Changer le thème" title="Changer le thème" style="display:none")
                 svg.theme-toggle__moon(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")
                     path(d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z")
-                svg.theme-toggle__sun.hidden(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")
-                    circle(cx="12" cy="12" r="5")
-                    line(x1="12" y1="1" x2="12" y2="3")
-                    line(x1="12" y1="21" x2="12" y2="23")
-                    line(x1="4.22" y1="4.22" x2="5.64" y2="5.64")
-                    line(x1="18.36" y1="18.36" x2="19.78" y2="19.78")
-                    line(x1="1" y1="12" x2="3" y2="12")
-                    line(x1="21" y1="12" x2="23" y2="12")
-                    line(x1="4.22" y1="19.78" x2="5.64" y2="18.36")
-                    line(x1="18.36" y1="5.64" x2="19.78" y2="4.22")
-
+                <svg class='theme-toggle__sun hidden' xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M440-760v-160h80v160h-80Zm266 110-55-55 112-115 56 57-113 113Zm54 210v-80h160v80H760ZM440-40v-160h80v160h-80ZM254-652 140-763l57-56 113 113-56 54Zm508 512L651-255l54-54 114 110-57 59ZM40-440v-80h160v80H40Zm157 300-56-57 112-112 29 27 29 28-114 114Zm113-170q-70-70-70-170t70-170q70-70 170-70t170 70q70 70 70 170t-70 170q-70 70-170 70t-170-70Z"/></svg>
             //- Sélecteur de langue
             .header__lang#headerLang
-                button.header__lang-btn(type="button" aria-label="Langue")
-                    img.header__lang-img(src=(lang === 'fr' ? '/images/fr.webp' : lang === 'nl' ? '/images/nl.jpg' : "/images/en.jpg"))
-                    span.header__lang-code= lang === 'fr' ? 'FR' : lang === 'nl' ? 'NL' : 'EN'
-                    svg.header__lang-chevron(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")
-                        path(d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none")
-                .header__lang-panel
-                    button.header__lang-option(type="button" onclick="changeLanguage('fr')")
-                        img(src='/images/fr.webp')
-                        span Français
-                    button.header__lang-option(type="button" onclick="changeLanguage('en')")
-                        img(src='/images/en.jpg')
-                        span English
-                    button.header__lang-option(type="button" onclick="changeLanguage('nl')")
-                        img(src='/images/nl.jpg')
-                        span Nederlands
+                button.selector.secondary(type="button" aria-label="Langue")
+                    span.header__lang-code
+                        img.header__lang-img(src=(lang === 'fr' ? '/images/fr.webp' : lang === 'nl' ? '/images/nl.jpg' : lang === 'es' ? '/images/es.jpg' : lang === 'it' ? '/images/it.png' : lang === 'de' ? '/images/de.png' : "/images/en.jpg"))
+                        | #{lang === 'fr' ? 'FR' : lang === 'nl' ? 'NL' : lang === 'es' ? 'ES' : lang === 'it' ? 'IT' : lang === 'de' ? 'DE' : 'EN'}
+                .header__lang-panel.selector-btn
+                    button.secondary(type="button" onclick="changeLanguage('fr')")
+                        span
+                            img(src='/images/fr.webp')
+                            | Français
+                    button.secondary(type="button" onclick="changeLanguage('en')")
+                        span 
+                            img(src='/images/en.jpg')
+                            | English
+                    button.secondary(type="button" onclick="changeLanguage('nl')")
+                        span
+                            img(src='/images/nl.jpg')
+                            | Nederlands
+                    button.secondary(type="button" onclick="changeLanguage('es')")
+                        span 
+                            img(src='/images/es.jpg')
+                            | Español
+                    button.secondary(type="button" onclick="changeLanguage('it')")
+                        span 
+                            img(src='/images/it.png')
+                            | Italiano
+                    button.secondary(type="button" onclick="changeLanguage('de')")
+                        span
+                            img(src='/images/de.png')
+                            | Deutsch
 
             //- Burger (mobile seulement)
             label.header__burger(for="headerNav" aria-label="Menu")
@@ -72,14 +84,19 @@
     .header__panel
         nav.header__panel-nav
             if user
-                a.btn.header__btn--primary(href="/appointment")= t.header.dashboard
-                a.btn.header__btn--ghost.sec(href="/logout")= t.header.logout
+                a.btn.header__btn--primary(href="/appointment")
+                    span= t.header.dashboard
+                a.btn.header__btn--ghost.sec(href="/logout")
+                    span= t.header.logout
             else
                 if becomeCoach
-                    a.btn.header__btn--primary(href="/login")= t.header.login
-                    a.btn.header__btn--ghost.sec(href="/register")= t.header.register
+                    a.btn.header__btn--primary(href="/login")
+                        span= t.header.login
+                    a.btn.header__btn--ghost.sec(href="/register")
+                        span= t.header.register
                 else
-                    a.btn.header__btn--primary(href="/login")= t.header.login
+                    a.btn.header__btn--primary(href="/login")
+                        span= t.header.login
                     a.btn.header__btn--ghost.sec(href="/become-coach") Devenir coach
 
         .header__panel-bottom
@@ -94,6 +111,15 @@
                 button.header__panel-lang-btn(type="button" onclick="changeLanguage('nl')" class=lang === 'nl' ? 'active' : '')
                     img(src='/images/nl.jpg')
                     span Nederlands
+                button.header__panel-lang-btn(type="button" onclick="changeLanguage('es')" class=lang === 'es' ? 'active' : '')
+                    img(src='/images/es.jpg')
+                    span Español
+                button.header__panel-lang-btn(type="button" onclick="changeLanguage('it')" class=lang === 'it' ? 'active' : '')
+                    img(src='/images/it.png')
+                    span Italiano
+                button.header__panel-lang-btn(type="button" onclick="changeLanguage('de')" class=lang === 'de' ? 'active' : '')
+                    img(src='/images/de.png')
+                    span Deutsch
             //- Thème dans le panel
             button.theme-toggle.header__panel-theme(type="button")
                 svg.theme-toggle__moon(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")

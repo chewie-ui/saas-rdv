@@ -18,10 +18,11 @@ aside.sidebar#sidebar
                 span.theme-toggle__label= t.common.dark_mode
             .sidebar-language
                 .header__lang#sidebarLang
-                    button.header__lang-btn(type="button" aria-label="Langue")
-                        img.header__lang-img(src=(lang === 'fr' ? '/images/fr.webp' : lang === 'nl' ? '/images/nl.jpg' : "/images/en.jpg"))
-                        span.header__lang-code= lang === 'fr' ? 'FR' : lang === 'nl' ? 'NL' : 'EN'
-                    .header__lang-panel
+                    button.selector.secondary(type="button" aria-label="Langue")
+                        span.header__lang-code 
+                            img.header__lang-img(src=(lang === 'fr' ? '/images/fr.webp' : lang === 'nl' ? '/images/nl.jpg' : lang === 'es' ? '/images/es.jpg' : lang === 'it' ? '/images/it.png' : lang === 'de' ? '/images/de.png' : "/images/en.jpg"))
+                            | #{lang === 'fr' ? 'FR' : lang === 'nl' ? 'NL' : lang === 'es' ? 'ES' : lang === 'it' ? 'IT' : lang === 'de' ? 'DE' : 'EN'}
+                    .header__lang-panel.selector-btn
                         button.header__lang-option(type="button" onclick="changeLanguage('fr')")
                             img(src='/images/fr.webp')
                             span Français
@@ -31,6 +32,15 @@ aside.sidebar#sidebar
                         button.header__lang-option(type="button" onclick="changeLanguage('nl')")
                             img(src='/images/nl.jpg')
                             span Nederlands
+                        button.header__lang-option(type="button" onclick="changeLanguage('es')")
+                            img(src='/images/es.jpg')
+                            span Español
+                        button.header__lang-option(type="button" onclick="changeLanguage('it')")
+                            img(src='/images/it.png')
+                            span Italiano
+                        button.header__lang-option(type="button" onclick="changeLanguage('de')")
+                            img(src='/images/de.png')
+                            span Deutsch
             .sidebar-profile
                 .profile-image
                     img(src=user.profilePicture)
@@ -56,53 +66,56 @@ aside.sidebar#sidebar
                         p= t.sidebar.title_1
                     .row-body
                         a(href="/appointment" class=pageName === "Appointment" ? "active" : "").row-link
-                            .icon.flex-c
+                            span
                                 svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                     path(d="M200-640h560v-80H200v80Zm0 0v-80 80Zm0 560q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v227q-19-9-39-15t-41-9v-43H200v400h252q7 22 16.5 42T491-80H200Zm378.5-18.5Q520-157 520-240t58.5-141.5Q637-440 720-440t141.5 58.5Q920-323 920-240T861.5-98.5Q803-40 720-40T578.5-98.5ZM787-145l28-28-75-75v-112h-40v128l87 87Z")
-                            p= t.sidebar.a_2
+                                p= t.sidebar.a_2
+                        a(href="/forms" class=pageName === "Forms" ? "active" : "").row-link
+                            span
+                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M348.5-291.5Q360-303 360-320t-11.5-28.5Q337-360 320-360t-28.5 11.5Q280-337 280-320t11.5 28.5Q303-280 320-280t28.5-11.5Zm0-160Q360-463 360-480t-11.5-28.5Q337-520 320-520t-28.5 11.5Q280-497 280-480t11.5 28.5Q303-440 320-440t28.5-11.5Zm0-160Q360-623 360-640t-11.5-28.5Q337-680 320-680t-28.5 11.5Q280-657 280-640t11.5 28.5Q303-600 320-600t28.5-11.5ZM440-280h240v-80H440v80Zm0-160h240v-80H440v80Zm0-160h240v-80H440v80ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/></svg>
+                                p= t.sidebar.a_9
                         a(href="/history" class=pageName === "History" ? "active" : "").row-link
-                            .icon.flex-c
+                            span
                                 <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-120q-138 0-240.5-91.5T122-440h82q14 104 92.5 172T480-200q117 0 198.5-81.5T760-480q0-117-81.5-198.5T480-760q-69 0-129 32t-101 88h110v80H120v-240h80v94q51-64 124.5-99T480-840q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-480q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-120Zm112-192L440-464v-216h80v184l128 128-56 56Z"/></svg>
-                            p= t.sidebar.a_7
+                                p= t.sidebar.a_7
                 .nav-row
                     .row-header
                         p= t.sidebar.title_2
                     .row-body
                         a(href=(grade === "staff" ? "#" : "/availability") class=[pageName === "Availability" ? "active" : "", grade === "staff" ? "disabled" : ""]).row-link
-                            .icon.flex-c
+                            span
                                 svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                     path(d="m612-292 56-56-148-148v-184h-80v216l172 172ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400Zm0 320q133 0 226.5-93.5T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160Z")
-                            p= t.sidebar.a_3
+                                p= t.sidebar.a_3
                         a(href="/informations" class=pageName === "Informations" ? "active" : "").row-link
-                            .icon.flex-c
+                            span
                                 svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                     path(d="M480-340q33 0 56.5-23.5T560-420q0-33-23.5-56.5T480-500q-33 0-56.5 23.5T400-420q0 33 23.5 56.5T480-340ZM160-120q-33 0-56.5-23.5T80-200v-440q0-33 23.5-56.5T160-720h160v-80q0-33 23.5-56.5T400-880h160q33 0 56.5 23.5T640-800v80h160q33 0 56.5 23.5T880-640v440q0 33-23.5 56.5T800-120H160Zm0-80h640v-440H160v440Zm240-520h160v-80H400v80ZM160-200v-440 440Z")
-                            p= t.sidebar.a_4
+                                p= t.sidebar.a_4
+                        //- a(href="/services" class=pageName === "Services" ? "active" : "").row-link
+                        //-     span
+                        //-         svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                        //-             path(d="M480-340q33 0 56.5-23.5T560-420q0-33-23.5-56.5T480-500q-33 0-56.5 23.5T400-420q0 33 23.5 56.5T480-340ZM160-120q-33 0-56.5-23.5T80-200v-440q0-33 23.5-56.5T160-720h160v-80q0-33 23.5-56.5T400-880h160q33 0 56.5 23.5T640-800v80h160q33 0 56.5 23.5T880-640v440q0 33-23.5 56.5T800-120H160Zm0-80h640v-440H160v440Zm240-520h160v-80H400v80ZM160-200v-440 440Z")
+                        //-         p= t.sidebar.a_8
                         a(href="/subscription" class=pageName === "Subscription" ? "active" : "").row-link
-                            .icon.flex-c
+                            span
                                 svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                     path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm0-80h640v-480H160v480Zm40-40h400L400-680H200v400Zm320-320h240v-80H520v80ZM160-240v-480 480Z")
-                            p= t.sidebar.a_1
+                                p= t.sidebar.a_1
                 .nav-row
                     .row-header
                         p= t.sidebar.title_3
                     .row-body
-                        //- a(href="/settings" class=pageName === "Settings" ? "active" : "").row-link
-                        //-     .icon.flex-c
-                        //-         svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                        //-             path(d="m370-80-16-128q-13-5-24.5-12T307-235l-119 50L78-375l103-78q-1-7-1-13.5v-27q0-6.5 1-13.5L78-585l110-190 119 50q11-8 23-15t24-12l16-128h220l16 128q13 5 24.5 12t22.5 15l119-50 110 190-103 78q1 7 1 13.5v27q0 6.5-2 13.5l103 78-110 190-118-50q-11 8-23 15t-24 12L590-80H370Zm70-80h79l14-106q31-8 57.5-23.5T639-327l99 41 39-68-86-65q5-14 7-29.5t2-31.5q0-16-2-31.5t-7-29.5l86-65-39-68-99 42q-22-23-48.5-38.5T533-694l-13-106h-79l-14 106q-31 8-57.5 23.5T321-633l-99-41-39 68 86 64q-5 15-7 30t-2 32q0 16 2 31t7 30l-86 65 39 68 99-42q22 23 48.5 38.5T427-266l13 106Zm42-180q58 0 99-41t41-99q0-58-41-99t-99-41q-59 0-99.5 41T342-480q0 58 40.5 99t99.5 41Zm-2-140Z")
-                        //-     p Settings
-                        
                         a(href=`/${currentCompany._id}` target="_blank").row-link.edit.flex-c.space-b
                             .link-blank.flex-c(style="gap:7px")
-                                .icon.flex-c
+                                span
                                     svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                         path(d="M320-320h480v-400H320v400Zm0 80q-33 0-56.5-23.5T240-320v-480q0-33 23.5-56.5T320-880h480q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H320ZM160-80q-33 0-56.5-23.5T80-160v-560h80v560h560v80H160Zm160-720v480-480Z")
-                                p= t.sidebar.a_5
+                                    p= t.sidebar.a_5
                             svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                 path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z")
                         a(href="/logout").row-link
-                            .icon.flex-c
+                            span
                                 svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
                                     path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z")
-                            p= t.sidebar.a_6
+                                p= t.sidebar.a_6

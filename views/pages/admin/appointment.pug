@@ -10,17 +10,17 @@ block content
                 .calendar__section.calendar__section--left
                     //- Mini month calendar trigger (desktop)
                     .mini-cal-wrapper
-                        button.mini-cal-trigger#miniCalTrigger(type="button" aria-label="Open month calendar")
+                        button.square#miniCalTrigger(type="button" aria-label="Open month calendar")
                             svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
                                 path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm280 240q-17 0-28.5-11.5T440-480q0-17 11.5-28.5T480-520q17 0 28.5 11.5T520-480q0 17-11.5 28.5T480-440Zm-160 0q-17 0-28.5-11.5T280-480q0-17 11.5-28.5T320-520q17 0 28.5 11.5T360-480q0 17-11.5 28.5T320-440Zm320 0q-17 0-28.5-11.5T600-480q0-17 11.5-28.5T640-520q17 0 28.5 11.5T680-480q0 17-11.5 28.5T640-440ZM480-280q-17 0-28.5-11.5T440-320q0-17 11.5-28.5T480-360q17 0 28.5 11.5T520-320q0 17-11.5 28.5T480-280Zm-160 0q-17 0-28.5-11.5T280-320q0-17 11.5-28.5T320-360q17 0 28.5 11.5T360-320q0 17-11.5 28.5T320-280Zm320 0q-17 0-28.5-11.5T600-320q0-17 11.5-28.5T640-360q17 0 28.5 11.5T680-320q0 17-11.5 28.5T640-280Z")
                         //- Dropdown mini calendar
                         .mini-cal-dropdown#miniCalDropdown
                             .mini-cal-header
-                                button.mini-cal-nav#miniCalPrev(type="button" aria-label="Mois précédent")
+                                button.square#miniCalPrev(type="button" aria-label="Mois précédent")
                                     svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                                         path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
                                 span.mini-cal-title#miniCalTitle
-                                button.mini-cal-nav#miniCalNext(type="button" aria-label="Mois suivant")
+                                button.square#miniCalNext(type="button" aria-label="Mois suivant")
                                     svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                                         path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
                             .mini-cal-grid
@@ -36,27 +36,29 @@ block content
 
                 .calendar__section.calendar__section--center
                     .calendar__date.flex-c
-                        a.calendar__today-btn.btn(href="/appointment").sec= t.bk.today
-                        .calendar__date-btn.calendar__date-btn--previous.flex-c(data-direction="prev" aria-label="Previous")
+                        a.calendar__today-btn.btn(href="/appointment")
+                            span= t.bk.today
+                        .calendar__date-btn.btn.square.calendar__date-btn--previous.flex-c(data-direction="prev" aria-label="Previous")
+                            span
+                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M640-80 240-480l400-400 71 71-329 329 329 329-71 71Z"/></svg>
+                        .btn.square.calendar__date-btn.calendar__date-btn--next.flex-c(data-direction="next" aria-label="Next")
                             svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M400-80 0-480l400-400 71 71-329 329 329 329-71 71Z")
+                                path(d="m321-80-71-71 329-329-329-329 71-71 400 400L321-80Z")
                         .calendar__date-text.calendar__date-text--week= weekLabel
                         .calendar__date-text.calendar__date-text--day
                             span.calendar__date-text-weekday= focusedDayName
                             span.calendar__date-text-date= focusedDayDate
-                        .calendar__date-btn.calendar__date-btn--next.flex-c(data-direction="next" aria-label="Next")
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="m321-80-71-71 329-329-329-329 71-71 400 400L321-80Z")
                 .calendar__section.calendar__section--right
                     .calendar__actions.flex
                         if user.googleCalendar && user.googleCalendar.connected
-                            p Connecté à #{user.googleCalendar.email}
+                            p #{t.gcal.connected_to} #{user.googleCalendar.email}
                             form(action="/auth/google/calendar/disconnect" method="POST")
-                                button(type="submit") Déconnecter Google Calendar
+                                button(type="submit")= t.gcal.disconnect
                         else
-                            a(href="/auth/google/calendar")
-                                img(src="/images/g_calendar.png")
-                                | Connecter Google Calendar
+                            a(href="/auth/google/calendar").btn.secondary
+                                span 
+                                    img(src="/images/g_calendar.png")
+                                    | #{t.gcal.connect}
 
         .calendar__week-strip
             each weekday in weekDays

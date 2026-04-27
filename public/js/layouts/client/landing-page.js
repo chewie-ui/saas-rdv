@@ -1,7 +1,7 @@
 // 1. Géolocalisation (GPS)
 const getMyLocation = () => {
   if (!navigator.geolocation) {
-    alert("Désolé, votre navigateur ne supporte pas la géolocalisation.");
+    alert((window.__t && window.__t.geoloc_not_supported) || "Désolé, votre navigateur ne supporte pas la géolocalisation.");
     return;
   }
 
@@ -15,9 +15,7 @@ const getMyLocation = () => {
     },
     (error) => {
       console.warn(`Erreur (${error.code}): ${error.message}`);
-      alert(
-        "Veuillez autoriser la position dans les réglages de votre navigateur.",
-      );
+      alert((window.__t && window.__t.geoloc_denied) || "Veuillez autoriser la position dans les réglages de votre navigateur.");
     },
     options,
   );
@@ -171,7 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
           if (data.length === 0) {
             const div = document.createElement("div");
-            div.textContent = "Aucun resultat";
+            div.textContent = (window.__t && window.__t.no_result) || "Aucun résultat";
             resultsLocation.appendChild(div);
             return;
           }

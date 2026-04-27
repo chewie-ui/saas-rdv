@@ -81,7 +81,7 @@ function renderData(appointments) {
   console.log(appointments);
 
   if (appointments.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;max-width: none;">Aucun client trouvé</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;max-width: none;">${(window.__t && window.__t.no_client_found) || "Aucun client trouvé"}</td></tr>`;
     return;
   }
 

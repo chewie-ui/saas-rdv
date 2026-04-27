@@ -18,7 +18,9 @@ block content
                 //-     input.input(placeholder="Search companies...")
                 //-     button.btn.secondary Search
                 .error-404__search-actions
-                    button.btn.secondary(onclick="history.back()")= t.not_found.back
-                    a.btn(href='/')= t.not_found.home
+                    button.secondary(onclick="history.back()")
+                        span= t.not_found.back
+                    a(href='/').btn
+                        span= t.not_found.home
 block scripts       
     script(src="/js/layouts/index.js" type="module")

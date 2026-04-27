@@ -87,7 +87,8 @@
 }
 
 .schedule-wrapper,
-.booking-wrapper {
+.booking-wrapper,
+.form-step-wrapper {
   position: fixed;
   top: 0;
   left: 0;
@@ -100,8 +101,137 @@
 }
 
 .schedule-wrapper.show,
-.booking-wrapper.show {
+.booking-wrapper.show,
+.form-step-wrapper.show {
   display: flex;
+}
+
+/* Form step — same card style as booking/schedule */
+.form-step-wrapper .form-step {
+  background-color: var(--color-white);
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border: var(--border);
+  box-shadow: var(--shadow);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 460px;
+}
+
+.form-step-wrapper .form-step .form-step-header h2 {
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.form-step-wrapper .form-step .form-step-header .xs-comment {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.form-step-wrapper .form-step .form-step-body {
+  display: flex;
+  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.form-step-wrapper .form-step .form-step-body .back-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.form-step-wrapper .form-step .form-step-body .back-btn:hover {
+  opacity: 1;
+}
+
+.form-step-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.form-step-question {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.form-step-question label {
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.form-step-question .req {
+  color: #f87171;
+  font-size: 11px;
+}
+
+.form-step-question .input {
+  width: 100%;
+  font-size: 14px;
+}
+
+.form-step-question .choice-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-step-question .choice-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.form-step-question .choice-option input {
+  accent-color: currentColor;
+}
+
+.form-step-question .yesno-options {
+  display: flex;
+  gap: 10px;
+}
+
+.form-step-question .yesno-btn {
+  flex: 1;
+  padding: 8px;
+  border: var(--border);
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.form-step-question .yesno-btn.selected,
+.form-step-question .yesno-btn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.25);
+}
+
+.form-step-footer {
+  width: 100%;
+}
+
+.form-step-footer .btn {
+  width: 100%;
+}
+
+.form-step-question .input.field-error {
+  border-color: #f87171 !important;
 }
 
 .schedule-wrapper .schedule,

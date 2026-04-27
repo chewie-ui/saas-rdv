@@ -67,6 +67,13 @@ const bookingSchema = new schema(
       type: String,
       default: "",
     },
+
+    formAnswers: [
+      {
+        question: { type: String },
+        answer: { type: String },
+      },
+    ],
   },
   { timestamps: true },
 );

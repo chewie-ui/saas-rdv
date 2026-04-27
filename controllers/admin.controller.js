@@ -3,10 +3,7 @@ const Stripe = require("stripe");
 
 const stripe = new Stripe(env.stripeSecretKey);
 
-const {
-  getAppointments,
-  GetAllAppointments,
-} = require("../queries/booking.queries");
+const { getAppointments, GetAllAppointments } = require("../queries/booking.queries");
 const { sendEmail } = require("../utils/mailer");
 
 exports.panel = async (req, res) => {
@@ -20,10 +17,7 @@ const Booking = require("../db/models/book.model");
 const DaysOff = require("../db/models/company/daysOff.model");
 const pug = require("pug");
 const path = require("path");
-const htmlTemplate = pug.renderFile(
-  path.join(__dirname, "../views/templates/emails/booking-confirmed.pug"),
-  { hour: "22:30" },
-);
+const htmlTemplate = pug.renderFile(path.join(__dirname, "../views/templates/emails/booking-confirmed.pug"), { hour: "22:30" });
 exports.book = async (req, res) => {
   const { bookId } = req.params;
 
@@ -68,10 +62,7 @@ function getWeekDays(startDate = new Date(), locale = "fr-FR") {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
 
-    const isToday =
-      d.getDate() === today.getDate() &&
-      d.getMonth() === today.getMonth() &&
-      d.getFullYear() === today.getFullYear();
+    const isToday = d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
 
     week.push({
       label: d.toLocaleDateString(locale, { weekday: "short" }),
@@ -112,24 +103,14 @@ exports.appointment = async (req, res) => {
     return res.redirect("/register");
   }
   const apps = await GetAllAppointments(currentCompany);
-  const rowTime = await Company.findById(currentCompany)
-    .select("slotTime schedule")
-    .lean();
+  const rowTime = await Company.findById(currentCompany).select("slotTime schedule").lean();
   const slotTime = rowTime.slotTime || 60;
 
   const formatted = apps.map((appointment) => {
     const [h, m] = appointment.startTime.split(":").map(Number);
 
     // reconstruire la date complète
-    const startDate = new Date(
-      appointment.date.getFullYear(),
-      appointment.date.getMonth(),
-      appointment.date.getDate(),
-      h,
-      m,
-      0,
-      0,
-    );
+    const startDate = new Date(appointment.date.getFullYear(), appointment.date.getMonth(), appointment.date.getDate(), h, m, 0, 0);
 
     // end = +1h (pour l’instant)
     const endDate = new Date(startDate);
@@ -166,7 +147,15 @@ exports.appointment = async (req, res) => {
   });
   const referenceDate = req.query.date ? new Date(req.query.date) : new Date();
   const focusedIso = referenceDate.toISOString().split("T")[0];
-  const locale = res.locals.lang === "nl" ? "nl-NL" : res.locals.lang === "en" ? "en-US" : "fr-FR";
+  const localeMap = {
+    fr: "fr-FR",
+    en: "en-US",
+    nl: "nl-NL",
+    es: "es-ES",
+    it: "it-IT",
+    de: "de-DE",
+  };
+  const locale = localeMap[res.locals.lang] || "fr-FR";
   const weekDays = getWeekDays(referenceDate, locale).map((d) => ({
     ...d,
     isFocused: d.iso.split("T")[0] === focusedIso,
@@ -181,14 +170,8 @@ exports.appointment = async (req, res) => {
   const activeSchedule = (rowTime.schedule || []).filter((d) => !d.dayOff);
   const scheduleHours = activeSchedule.flatMap((d) => d.workingHours || []);
 
-  const scheduleMin =
-    scheduleHours.length > 0
-      ? Math.min(...scheduleHours.map((wh) => parseInt(wh.start.split(":")[0], 10)))
-      : null;
-  const scheduleMax =
-    scheduleHours.length > 0
-      ? Math.max(...scheduleHours.map((wh) => parseInt(wh.end.split(":")[0], 10)))
-      : null;
+  const scheduleMin = scheduleHours.length > 0 ? Math.min(...scheduleHours.map((wh) => parseInt(wh.start.split(":")[0], 10))) : null;
+  const scheduleMax = scheduleHours.length > 0 ? Math.max(...scheduleHours.map((wh) => parseInt(wh.end.split(":")[0], 10))) : null;
 
   const hoursList = formatted.map((a) => {
     const [h] = a.startHour.split(":").map(Number);
@@ -198,18 +181,8 @@ exports.appointment = async (req, res) => {
   const apptMin = hoursList.length > 0 ? Math.min(...hoursList) : null;
   const apptMax = hoursList.length > 0 ? Math.max(...hoursList) + 1 : null;
 
-  const minHour =
-    scheduleMin !== null
-      ? Math.min(scheduleMin, apptMin !== null ? apptMin : scheduleMin)
-      : apptMin !== null
-      ? apptMin
-      : 8;
-  const maxHour =
-    scheduleMax !== null
-      ? Math.max(scheduleMax, apptMax !== null ? apptMax : scheduleMax)
-      : apptMax !== null
-      ? apptMax
-      : 18;
+  const minHour = scheduleMin !== null ? Math.min(scheduleMin, apptMin !== null ? apptMin : scheduleMin) : apptMin !== null ? apptMin : 8;
+  const maxHour = scheduleMax !== null ? Math.max(scheduleMax, apptMax !== null ? apptMax : scheduleMax) : apptMax !== null ? apptMax : 18;
   res.render("admin/appointment", {
     pageName: "Appointment",
     title: res.locals.t.titles.calendar,
@@ -363,11 +336,7 @@ exports.restoreBooking = async (req, res) => {
   try {
     const { bookId } = req.params;
 
-    const booking = await Booking.findByIdAndUpdate(
-      bookId,
-      { status: "confirmed" },
-      { new: true },
-    ).lean();
+    const booking = await Booking.findByIdAndUpdate(bookId, { status: "confirmed" }, { new: true }).lean();
 
     // Sync Google Calendar : recréer l'événement et sauvegarder le nouvel ID
     if (booking) {
@@ -390,8 +359,7 @@ exports.restoreBooking = async (req, res) => {
     if (err.code === 11000) {
       return res.json({
         success: false,
-        message:
-          "Impossible de restaurer : ce créneau horaire est déjà occupé par une autre réservation.",
+        message: "Impossible de restaurer : ce créneau horaire est déjà occupé par une autre réservation.",
       });
     }
     console.error(err);
@@ -405,11 +373,7 @@ exports.restoreBooking = async (req, res) => {
 exports.cancelBooking = async (req, res) => {
   const { id } = req.params;
 
-  const booking = await Booking.findByIdAndUpdate(
-    id,
-    { status: "canceled" },
-    { new: false },
-  ).lean();
+  const booking = await Booking.findByIdAndUpdate(id, { status: "canceled" }, { new: false }).lean();
 
   // Sync Google Calendar
   if (booking?.googleEventId) {
@@ -468,11 +432,7 @@ exports.historyInit = async (req, res) => {
       // date: { $lt: now },
     };
 
-    const history = await Booking.find(query)
-      .sort({ date: -1, startTime: 1 })
-      .skip(skip)
-      .limit(limit)
-      .populate("user");
+    const history = await Booking.find(query).sort({ date: -1, startTime: 1 }).skip(skip).limit(limit).populate("user");
 
     const totalBookings = await Booking.countDocuments(query);
     const totalPages = Math.ceil(totalBookings / limit);
@@ -515,13 +475,7 @@ exports.historySearch = async (req, res) => {
     const searchRegex = new RegExp(client, "i");
 
     const results = await Booking.find({
-      $or: [
-        { name: searchRegex },
-        { surname: searchRegex },
-        { email: searchRegex },
-        { phone: searchRegex },
-        { message: searchRegex },
-      ],
+      $or: [{ name: searchRegex }, { surname: searchRegex }, { email: searchRegex }, { phone: searchRegex }, { message: searchRegex }],
     });
     return res.json({ success: true, results });
   } catch (err) {
@@ -634,5 +588,52 @@ exports.saveAdminNotes = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.json({ success: false, err });
+  }
+};
+
+const Form = require("../db/models/form.model");
+
+exports.formsIndex = async (req, res) => {
+  try {
+    const companyId = res.locals.currentCompany._id;
+    const form = await Form.findOne({ company: companyId }).lean();
+    return res.render("admin/forms", {
+      pageName: res.locals.t.sidebar.a_9,
+      form: form || null,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.render("admin/forms", {
+      pageName: res.locals.t.sidebar.a_9,
+      form: null,
+    });
+  }
+};
+
+exports.getFormData = async (req, res) => {
+  try {
+    const companyId = res.locals.currentCompany._id;
+    const form = await Form.findOne({ company: companyId }).lean();
+    return res.json({ success: true, form: form || null });
+  } catch (err) {
+    return res.json({ success: false, err: err.message });
+  }
+};
+
+exports.saveForm = async (req, res) => {
+  try {
+    const companyId = res.locals.currentCompany._id;
+    const { active, questions } = req.body;
+
+    const form = await Form.findOneAndUpdate(
+      { company: companyId },
+      { active, questions },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    return res.json({ success: true, form });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false, err: err.message });
   }
 };

@@ -2,8 +2,8 @@ export default function () {
   const templateDialog = document.getElementById("templateDialog");
   const calendar = document.querySelector(".calendar-wrapper .calendar");
   const bookingWrapper = document.getElementById("bookingWrapper") || undefined;
-  const scheduleWrapper =
-    document.getElementById("scheduleWrapper") || undefined;
+  const scheduleWrapper = document.getElementById("scheduleWrapper") || undefined;
+  const formStepWrapper = document.getElementById("formStepWrapper") || undefined;
 
   const calendarHeader = calendar.querySelector(".calendar-header");
   const calendarBody = calendar.querySelector(".calendar-body");
@@ -15,38 +15,25 @@ export default function () {
 
   let datePicked;
   let schedulePicked;
+  let activeForm = null; // will be loaded once
+  let formAnswers = []; // collected form answers
 
-  const weekdaysArray = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-  ];
+  const __t = window.__t || {};
 
-  weekdaysArray.forEach((weekday) => {
+  const weekdaysArray = (__t.weekdays_abbr && __t.weekdays_abbr.length === 7)
+    ? __t.weekdays_abbr
+    : ["Mo","Tu","We","Th","Fr","Sa","Su"];
+
+  weekdaysArray.forEach((day) => {
     const weekdayEl = document.createElement("div");
-    weekdayEl.textContent = weekday.slice(0, 3);
+    weekdayEl.textContent = day;
     weekdayEl.className = "weekday";
     calendarWeekdays.appendChild(weekdayEl);
   });
 
-  const monthsArray = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
+  const monthsArray = (__t.months && __t.months.length === 12)
+    ? __t.months
+    : ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
   const realToday = new Date();
   let today = new Date();
@@ -277,15 +264,185 @@ export default function () {
     }
   }
 
+  // ── Load form for this company (once) ────────────────────────────────────
+  const COMPANY_ID_FOR_FORM = bookingWrapper
+    ? bookingWrapper.getAttribute("data-company-id")
+    : null;
+
+  if (COMPANY_ID_FOR_FORM) {
+    fetch(`/get-form/${COMPANY_ID_FOR_FORM}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.form && data.form.active && data.form.questions && data.form.questions.length > 0) {
+          activeForm = data.form;
+        }
+      })
+      .catch(() => {});
+  }
+
+  // ── Form step logic ───────────────────────────────────────────────────────
+  function renderFormStep() {
+    if (!formStepWrapper) return;
+    const container = formStepWrapper.querySelector("#formStepQuestions");
+    if (!container || !activeForm) return;
+
+    container.innerHTML = "";
+    const __t = window.__t || {};
+    const yes = __t.yes || "Oui";
+    const no  = __t.no  || "Non";
+
+    activeForm.questions.forEach((q, i) => {
+      const div = document.createElement("div");
+      div.className = "form-step-question";
+      div.dataset.index = i;
+      div.dataset.type = q.type;
+      div.dataset.required = q.required ? "true" : "false";
+
+      const labelEl = document.createElement("label");
+      labelEl.innerHTML = `${q.label}${q.required ? ' <span class="req">✱</span>' : ""}`;
+
+      div.appendChild(labelEl);
+
+      if (q.type === "text") {
+        const input = document.createElement("input");
+        input.className = "input form-step-input";
+        input.type = "text";
+        input.placeholder = "";
+        div.appendChild(input);
+      } else if (q.type === "choice") {
+        const opts = document.createElement("div");
+        opts.className = "choice-options";
+        (q.options || []).forEach((opt, oi) => {
+          const lbl = document.createElement("label");
+          lbl.className = "choice-option";
+          lbl.innerHTML = `<input type="radio" name="q_${i}" value="${opt}"> <span>${opt}</span>`;
+          opts.appendChild(lbl);
+        });
+        div.appendChild(opts);
+      } else if (q.type === "yes_no") {
+        const yesno = document.createElement("div");
+        yesno.className = "yesno-options";
+        const yesBtn = document.createElement("button");
+        yesBtn.type = "button";
+        yesBtn.className = "yesno-btn";
+        yesBtn.dataset.value = "yes";
+        yesBtn.textContent = yes;
+        const noBtn = document.createElement("button");
+        noBtn.type = "button";
+        noBtn.className = "yesno-btn";
+        noBtn.dataset.value = "no";
+        noBtn.textContent = no;
+
+        [yesBtn, noBtn].forEach((btn) => {
+          btn.addEventListener("click", () => {
+            yesno.querySelectorAll(".yesno-btn").forEach((b) => b.classList.remove("selected"));
+            btn.classList.add("selected");
+          });
+        });
+
+        yesno.appendChild(yesBtn);
+        yesno.appendChild(noBtn);
+        div.appendChild(yesno);
+      }
+
+      container.appendChild(div);
+    });
+  }
+
+  function collectFormAnswers() {
+    const answers = [];
+    if (!formStepWrapper || !activeForm) return answers;
+    const questions = formStepWrapper.querySelectorAll(".form-step-question");
+    questions.forEach((q, i) => {
+      const formQ = activeForm.questions[i];
+      if (!formQ) return;
+      let answer = "";
+      if (formQ.type === "text") {
+        const inp = q.querySelector(".form-step-input");
+        answer = inp ? inp.value.trim() : "";
+      } else if (formQ.type === "choice") {
+        const checked = q.querySelector("input[type=radio]:checked");
+        answer = checked ? checked.value : "";
+      } else if (formQ.type === "yes_no") {
+        const selected = q.querySelector(".yesno-btn.selected");
+        answer = selected ? selected.dataset.value : "";
+      }
+      answers.push({ question: formQ.label, answer });
+    });
+    return answers;
+  }
+
+  function validateFormStep() {
+    if (!formStepWrapper || !activeForm) return true;
+    const __t = window.__t || {};
+    const questions = formStepWrapper.querySelectorAll(".form-step-question");
+    let valid = true;
+    questions.forEach((q, i) => {
+      const formQ = activeForm.questions[i];
+      if (!formQ || !formQ.required) return;
+      let answer = "";
+      if (formQ.type === "text") {
+        const inp = q.querySelector(".form-step-input");
+        answer = inp ? inp.value.trim() : "";
+        if (!answer) inp && inp.classList.add("field-error");
+      } else if (formQ.type === "choice") {
+        const checked = q.querySelector("input[type=radio]:checked");
+        answer = checked ? checked.value : "";
+      } else if (formQ.type === "yes_no") {
+        const selected = q.querySelector(".yesno-btn.selected");
+        answer = selected ? selected.dataset.value : "";
+      }
+      if (!answer) valid = false;
+    });
+    if (!valid) {
+      alert(__t.form_required_error || "Veuillez répondre à toutes les questions obligatoires");
+    }
+    return valid;
+  }
+
+  // Form step back button
+  if (formStepWrapper) {
+    const formBackBtn = formStepWrapper.querySelector(".back-btn");
+    if (formBackBtn) {
+      formBackBtn.addEventListener("click", () => {
+        formStepWrapper.classList.remove("show");
+        scheduleWrapper && scheduleWrapper.classList.add("show");
+      });
+    }
+
+    // Form step next button
+    const formNextBtn = formStepWrapper.querySelector("#formStepNextBtn");
+    if (formNextBtn) {
+      formNextBtn.addEventListener("click", () => {
+        if (!validateFormStep()) return;
+        formAnswers = collectFormAnswers();
+        formStepWrapper.classList.remove("show");
+        bookingWrapper && bookingWrapper.classList.add("show");
+      });
+    }
+
+    // Remove field-error on input
+    formStepWrapper.addEventListener("input", (e) => {
+      if (e.target.classList.contains("field-error")) {
+        e.target.classList.remove("field-error");
+      }
+    });
+  }
+
   if (scheduleWrapper) {
     scheduleWrapper.addEventListener("click", (e) => {
       const row = e.target.closest(".row:not(.reserved)");
       if (!row) return;
 
       schedulePicked = row.textContent;
-
       scheduleWrapper.classList.remove("show");
-      bookingWrapper.classList.add("show");
+
+      if (activeForm && formStepWrapper) {
+        renderFormStep();
+        formStepWrapper.classList.add("show");
+      } else {
+        bookingWrapper && bookingWrapper.classList.add("show");
+      }
     });
   }
 
@@ -306,11 +463,10 @@ export default function () {
         function rmvParent() {
           parent.remove();
         }
-        tmp.querySelector(".dialog__h2").textContent = "Email invalide";
-        tmp.querySelector(".dialog__p").textContent =
-          "Veuillez modifier lemail et mettre un email valide svp";
+        tmp.querySelector(".dialog__h2").textContent = __t.invalid_email_title || "Email invalide";
+        tmp.querySelector(".dialog__p").textContent = __t.invalid_email_desc || "Veuillez modifier l'email et mettre un email valide.";
         tmp.querySelector(".dialog__icon").onclick = rmvParent;
-        tmp.querySelector(".dialog__btn2").textContent = "Fermer";
+        tmp.querySelector(".dialog__btn2").textContent = __t.close || "Fermer";
         tmp.querySelector(".dialog__btn2").onclick = rmvParent;
         document.querySelector("body").appendChild(tmp);
         bookingEmail.style.border = "1px solid red"; // Petit feedback visuel
@@ -365,6 +521,7 @@ export default function () {
           email: email.value,
           phone: phone.value,
           message: message.value,
+          formAnswers: formAnswers,
         }),
       });
 

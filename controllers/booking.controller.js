@@ -12,7 +12,7 @@ const { log } = require("console");
 
 exports.createBooking = async (req, res) => {
   try {
-    const { date, startTime, company, name, surname, email, phone, message } =
+    const { date, startTime, company, name, surname, email, phone, message, formAnswers } =
       req.body;
 
     const response = await Company.findById(company);
@@ -42,6 +42,7 @@ exports.createBooking = async (req, res) => {
       slotTime,
       endTime,
       status: "confirmed",
+      formAnswers: Array.isArray(formAnswers) ? formAnswers : [],
     });
 
     const htmlTemplate = pug.renderFile(

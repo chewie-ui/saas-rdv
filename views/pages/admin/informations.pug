@@ -15,7 +15,8 @@ block content
                     img(alt="Profile picture" src=user.profilePicture || "/images/no-user.webp" id="avatarPreview")
                 .account__avatar-btn
                     input#fileInput(type="file" style="display:none" accept="image/*")
-                    button.btn.secondary#uploadBtn= t.profile.upload_photo
+                    button.btn#uploadBtn
+                        span= t.profile.upload_photo
             .account__right
                 h2= t.profile.title
                 .account__form
@@ -36,8 +37,10 @@ block content
                         a(href="/forgot-password").more#passwordOpen= t.profile.change_pwd
                         .success= success
                     .account__actions
-                        button#saveChanges.btn.sec= t.profile.save
-                        button#deleteAccountBtn.danger(type="button")= t.profile.delete_account
+                        button#saveChanges
+                            span= t.profile.save
+                        button#deleteAccountBtn.danger(type="button")
+                            span= t.profile.delete_account
 
         //- ---- Delete account modal ----
         .delete-account-modal#deleteAccountModal(style="display:none")
@@ -111,7 +114,8 @@ block content
                             label= t.info.city_optional
                             input.input(id='cityInputOnline' value=user.location.city || "")
                     .form-action
-                        button.btn(id="confirmLocation" style="width:auto").sec= t.info.confirm_location
+                        button(id="confirmLocation" style="width:auto")
+                            span= t.info.confirm_location
         .description
             .description__container
                 .form-group
@@ -119,7 +123,8 @@ block content
                     textarea.textarea(maxlength=230 id="descriptionCoach")= user.description || ''
 
                 .description__action
-                    button.btn#saveDescription.sec(style='width:auto')= t.info.save
+                    button#saveDescription(style='width:auto')
+                        span= t.info.save
         .social
             .social__container
                 .social__box(data-name="emailPro")
@@ -130,7 +135,8 @@ block content
                     .social__title= t.profile.social.email_pro
                     .social__field
                         input.input(placeholder=t.info.link_placeholder value=user.emailPro || "" disabled=(!user.isPremium))
-                        button.btn.sec.btn__social-save= t.avail.save
+                        button  
+                            span= t.avail.save
                 .social__box(data-name="phonePro")
                     if !user.isPremium
                         a(href="/subscription").get__premium= t.profile.get_premium
@@ -139,7 +145,8 @@ block content
                     .social__title= t.profile.social.phone_pro
                     .social__field
                         input.input(placeholder=t.info.link_placeholder value=user.phonePro || "" disabled=(!user.isPremium))
-                        button.btn.btn__social-save.sec= t.avail.save
+                        button
+                            span= t.avail.save
                 .social__box(data-name="instagramLink")
                     if !user.isPremium
                         a(href="/subscription").get__premium= t.profile.get_premium
@@ -148,7 +155,8 @@ block content
                     .social__title= t.profile.social.instagram
                     .social__field
                         input.input(placeholder=t.info.link_placeholder value=user.instagramLink || "" disabled=(!user.isPremium))
-                        button.btn.btn__social-save.sec= t.avail.save
+                        button
+                            span= t.avail.save
                 .social__box(data-name="whatsappLink")
                     if !user.isPremium
                         a(href="/subscription").get__premium= t.profile.get_premium
@@ -157,7 +165,8 @@ block content
                     .social__title= t.profile.social.whatsapp
                     .social__field
                         input.input(placeholder=t.info.link_placeholder value=user.whatsappLink || "" disabled=(!user.isPremium))
-                        button.btn.btn__social-save.sec= t.avail.save
+                        button
+                            span= t.avail.save
                 .social__box(data-name="facebookLink")
                     if !user.isPremium
                         a(href="/subscription").get__premium= t.profile.get_premium
@@ -166,7 +175,8 @@ block content
                     .social__title= t.profile.social.facebook
                     .social__field
                         input.input(placeholder=t.info.link_placeholder value=user.facebookLink || "" disabled=(!user.isPremium))
-                        button.btn.btn__social-save.sec= t.avail.save
+                        button
+                            span= t.avail.save
                 .social__box(data-name="website")
                     if !user.isPremium
                         a(href="/subscription").get__premium= t.profile.get_premium
@@ -175,7 +185,8 @@ block content
                     .social__title= t.profile.social.website
                     .social__field
                         input.input(placeholder=t.info.link_placeholder value=user.website || "" disabled=(!user.isPremium))
-                        button.btn.btn__social-save.sec= t.avail.save
+                        button
+                            span= t.avail.save
     +dialog()
     +prompt()
 

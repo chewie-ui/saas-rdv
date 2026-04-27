@@ -23,19 +23,25 @@
   --cursor-busy: wait;
 
   /* ── Brand orange ── */
-  --orange: #ff5733;
-  --orange-hover: #e64d2e;
-  --orange-dark: #c73d22;
-  --orange-light: #ff7a5c;
-  --orange-pale: #fff0ec;
-  --orange-subtle: #fff7f5;
-  --orange-glow: rgba(255, 87, 51, 0.15);
-  --orange-border: rgba(255, 87, 51, 0.3);
+  --main-color: #3266d0;
+  --main-color-hover: #4d85f7;
+  --main-color-dark: #0f2e6b;
+  --main-color-light: #3267d02d;
+  --main-color-pale: #ecf6ff;
+  --main-color-subtle: #fff7f5;
+  --main-color-glow: rgba(51, 88, 255, 0.15);
+  --main-color-border: #3267d02d;
+
+  /* ── Brand black & white ── */
+
+  --black: #000000;
+  --white: #ffffff;
+  --white-hover: rgb(250, 250, 250);
 
   /* Backward compat aliases */
-  --green-primary: var(--orange);
-  --green-light: var(--orange-light);
-  --green-soft: var(--orange-pale);
+  --green-primary: var(--main-color);
+  --green-light: var(--main-color-light);
+  --green-soft: var(--main-color-pale);
 
   /* ── Surfaces ── */
   --bg-app: #f8fafc;
@@ -123,15 +129,14 @@
   --border-light: #27272a;
   --border-medium: #3f3f46;
 
-  --orange-pale: #1f0e08;
-  --orange-subtle: #150a05;
-  --orange-glow: rgba(255, 87, 51, 0.22);
+  --main-color-pale: #1f0e08;
+  --main-color-subtle: #150a05;
+  --main-color-glow: rgba(255, 87, 51, 0.22);
 
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.25);
   --shadow-p: 0 4px 24px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.3);
   --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-card:
-    0 0 0 1px rgba(255, 255, 255, 0.04), 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 2px 8px rgba(0, 0, 0, 0.25);
 
   --danger-pale: #2d0a0a;
   --warning-pale: #1f1400;
@@ -218,7 +223,7 @@
 
 @keyframes pulse-ring {
   0% {
-    box-shadow: 0 0 0 0 var(--orange-glow);
+    box-shadow: 0 0 0 0 var(--main-color-glow);
   }
   70% {
     box-shadow: 0 0 0 10px transparent;
@@ -337,7 +342,6 @@ label {
   display: flex;
   align-items: center;
   cursor: pointer;
-  font-family: sans-serif;
   color: var(--grey-light);
 }
 
@@ -378,11 +382,9 @@ input[type="radio"]:checked + label .custom-radio::after {
 .more {
   cursor: pointer;
   font-size: 12px;
-  color: var(--orange);
+  color: var(--main-color);
 }
-.btn.sec:not(.primary):not(.secondary):not(.danger):not(
-    .icon-btn
-  ).btn__social-save {
+.btn.sec:not(.primary):not(.secondary):not(.danger):not(.icon-btn).btn__social-save {
   width: auto;
 }
 html {
@@ -421,11 +423,11 @@ body {
 
 a {
   text-decoration: none;
-  color: var(--orange);
+  color: var(--main-color);
   transition: var(--t-fast);
 }
 a:hover {
-  color: var(--orange-hover);
+  color: var(--main-color-hover);
 }
 
 img,
@@ -451,15 +453,9 @@ video {
   background: var(--text-muted);
 }
 
-/* ── Selection ── */
-::selection {
-  background: var(--orange-glow);
-  color: var(--orange-dark);
-}
-
 /* ── Focus visible ── */
 :focus-visible {
-  outline: 2px solid var(--orange);
+  outline: 2px solid var(--main-color);
   outline-offset: 3px;
   border-radius: var(--radius-sm);
 }
@@ -547,100 +543,98 @@ video {
 
 button,
 .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  position: relative;
   font-family: var(--font-primary);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1;
-  padding: 11px 22px;
+  font-weight: 500;
   border-radius: var(--radius-md);
-  border: 1.5px solid transparent;
+  border: none;
   cursor: pointer;
-  text-decoration: none;
   transition:
     background-color 0.2s ease,
     color 0.2s ease,
     border-color 0.2s ease,
     box-shadow 0.2s ease,
     transform 0.15s ease;
-  position: relative;
   overflow: hidden;
-  white-space: nowrap;
-  width: 100%;
-  user-select: none;
-  background: none;
+  background: var(--black);
+  line-height: normal;
+  flex-shrink: 0;
 }
 
-/* Primary (orange gradient) */
-.btn.primary,
-button.primary {
-  background: linear-gradient(
-    135deg,
-    var(--orange) 0%,
-    var(--orange-hover) 100%
-  );
-  color: #fff;
-  border-color: var(--orange-hover);
-  box-shadow: 0 2px 8px var(--orange-glow);
+button.circle,
+.btn.circle,
+button.square,
+.btn.square {
+  border-radius: 50%;
+  width: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40px;
 }
-.btn.primary:hover,
-button.primary:hover {
-  background: linear-gradient(
-    135deg,
-    var(--orange-light) 0%,
-    var(--orange) 100%
-  );
-  box-shadow: var(--shadow-orange);
-  transform: translateY(-1px);
-  color: #fff;
+
+button.square,
+.btn.square {
+  border-radius: 7px;
 }
-.btn.primary:active,
-button.primary:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 4px var(--orange-glow);
+
+button.circle svg,
+.btn.circle svg,
+button.square svg,
+.btn.square svg {
+  margin-right: 0em;
+}
+
+button svg,
+.btn svg,
+button img,
+.btn img {
+  width: 1.2em;
+  height: 1.2em;
+  fill: var(--white);
+  margin-right: 0.5em;
+}
+
+button span,
+.btn span {
+  position: relative;
+  z-index: 10;
+  transition: color 0.4s;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.8em 1.2em;
+  color: var(--white);
+}
+
+button.secondary,
+.btn.secondary {
+  background: var(--white-hover);
+}
+
+button.secondary svg,
+.btn.secondary svg {
+  fill: var(--black);
+}
+
+button.secondary span,
+.btn.secondary span {
+  color: var(--black);
+}
+
+button.secondary:hover,
+.btn.secondary:hover {
+  background-color: var(--white-hover);
+}
+
+.selector-btn button,
+.selector-btn .btn {
+  background: transparent;
 }
 
 .space-b {
   justify-content: space-between;
 }
 
-/* Default ghost */
-.btn:not(.primary):not(.secondary):not(.danger):not(.icon-btn) {
-  background-color: var(--color-card);
-  color: #fff;
-  border-color: var(--border-light);
-  box-shadow: var(--shadow-card);
-}
-
-.btn.sec:not(.primary):not(.secondary):not(.danger):not(.icon-btn) {
-  color: var(--text-primary);
-}
-
-.btn:not(.primary):not(.secondary):not(.danger):not(.icon-btn):hover {
-  background-color: var(--color-surface-2);
-  border-color: var(--border-medium);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow);
-}
-
-/* Secondary (outline orange) */
-.btn.secondary {
-  background-color: transparent;
-  color: var(--orange);
-  border-color: var(--orange-border);
-  width: auto;
-}
-.btn.secondary:hover {
-  background-color: var(--orange-pale);
-  border-color: var(--orange);
-  transform: translateY(-1px);
-  color: var(--orange);
-}
-
-/* Danger */
 .btn.danger,
 button.danger {
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
@@ -689,9 +683,9 @@ button:disabled,
   width: auto;
 }
 .icon-btn:hover {
-  background: var(--orange-pale);
-  color: var(--orange);
-  border-color: var(--orange-border);
+  background: var(--main-color-pale);
+  color: var(--main-color);
+  border-color: var(--main-color-border);
 }
 
 /* ============================================================
@@ -702,7 +696,8 @@ button:disabled,
 .textarea,
 .select {
   display: block;
-  width: 100%;
+  width: auto;
+  flex: 1;
   padding: 10px 14px;
   font-family: var(--font-primary);
   font-size: 14px;
@@ -711,6 +706,7 @@ button:disabled,
   border: 1.5px solid var(--border-light);
   border-radius: var(--radius-md);
   outline: none;
+  min-width: 0;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -728,8 +724,8 @@ button:disabled,
 .input:focus,
 .textarea:focus,
 .select:focus {
-  border-color: var(--orange);
-  box-shadow: 0 0 0 3px var(--orange-glow);
+  border-color: var(--main-color);
+  box-shadow: 0 0 0 3px var(--main-color-glow);
 }
 
 .input:hover:not(:focus),
@@ -801,11 +797,7 @@ label.switch .slider::after {
 }
 
 label.switch input:checked + .slider {
-  background: linear-gradient(
-    135deg,
-    var(--orange) 0%,
-    var(--orange-hover) 100%
-  );
+  background: linear-gradient(135deg, var(--main-color) 0%, var(--main-color-hover) 100%);
 }
 label.switch input:checked + .slider::after {
   transform: translateX(18px);
@@ -857,8 +849,8 @@ label.switch input:checked + .slider::after {
 
 .selectmenu.open,
 .searchmenu.open {
-  border-color: var(--orange);
-  box-shadow: 0 0 0 3px var(--orange-glow);
+  border-color: var(--main-color);
+  box-shadow: 0 0 0 3px var(--main-color-glow);
 }
 
 .selectmenu .dropdown,
@@ -897,8 +889,8 @@ label.switch input:checked + .slider::after {
 }
 .selectmenu .dropdown .option.selected,
 .searchmenu .dropdown .option.selected {
-  background-color: var(--orange-pale);
-  color: var(--orange);
+  background-color: var(--main-color-pale);
+  color: var(--main-color);
   font-weight: 600;
 }
 
@@ -1046,9 +1038,9 @@ table.table__schema tbody tr td .td__status.warning {
   text-transform: uppercase;
   line-height: 1;
 }
-.badge.badge--orange {
-  background: var(--orange-pale);
-  color: var(--orange);
+.badge.badge--main-color {
+  background: var(--main-color-pale);
+  color: var(--main-color);
 }
 .badge.badge--success {
   background: var(--success-pale);
@@ -1076,12 +1068,7 @@ table.table__schema tbody tr td .td__status.warning {
    ============================================================ */
 
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--color-surface-2) 25%,
-    var(--border-light) 50%,
-    var(--color-surface-2) 75%
-  );
+  background: linear-gradient(90deg, var(--color-surface-2) 25%, var(--border-light) 50%, var(--color-surface-2) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
   border-radius: var(--radius-md);
@@ -1117,21 +1104,13 @@ table.table__schema tbody tr td .td__status.warning {
    ============================================================ */
 
 .gradient-text {
-  background: linear-gradient(
-    135deg,
-    var(--orange) 0%,
-    var(--accent-pink) 100%
-  );
+  background: linear-gradient(135deg, var(--main-color) 0%, var(--accent-pink) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 .gradient-text-warm {
-  background: linear-gradient(
-    135deg,
-    var(--orange) 0%,
-    var(--accent-amber) 100%
-  );
+  background: linear-gradient(135deg, var(--main-color) 0%, var(--accent-amber) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

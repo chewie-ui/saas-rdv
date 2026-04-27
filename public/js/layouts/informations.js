@@ -61,9 +61,10 @@ if (saveChanges && accountForm) {
         setTimeout(() => successMsg.remove(), 3000);
       };
 
+      const __t = window.__t || {};
       if (data.changes) {
-        if (data.changes.fullName) showSuccess(fullNameInput, "Nom mis à jour !");
-        if (data.changes.phone) showSuccess(phoneInput, "Téléphone mis à jour !");
+        if (data.changes.fullName) showSuccess(fullNameInput, __t.name_updated || "Nom mis à jour !");
+        if (data.changes.phone) showSuccess(phoneInput, __t.phone_updated || "Téléphone mis à jour !");
       }
     } catch (err) {
       console.error(err);
@@ -95,7 +96,7 @@ if (socialContainer) {
         if (!msg) {
           msg = document.createElement("span");
           msg.className = "status-msg";
-          msg.textContent = "Modifications enregistrées !";
+          msg.textContent = (window.__t && window.__t.changes_saved) || "Modifications enregistrées !";
           box.appendChild(msg);
         }
         msg.classList.remove("visible");
@@ -234,7 +235,7 @@ if (addressInput && confirmLocation) {
         const data = await response.json();
 
         if (!data.length) {
-          results.innerHTML = `<div class="result-item">Aucun résultat</div>`;
+          results.innerHTML = `<div class="result-item">${(window.__t && window.__t.no_result) || "Aucun résultat"}</div>`;
           results.classList.add("active");
           return;
         }
@@ -259,7 +260,7 @@ if (addressInput && confirmLocation) {
             if (cityInput) {
               cityInput.value = address.city || address.town || address.village || address.municipality || "";
             }
-            if (countryInput) countryInput.value = address.country || "Belgique";
+            if (countryInput) countryInput.value = address.country || "";
 
             addressInput.value = item.display_name;
             results.innerHTML = "";
@@ -271,7 +272,7 @@ if (addressInput && confirmLocation) {
         });
       } catch (err) {
         console.error("Erreur Nominatim :", err);
-        results.innerHTML = `<div class="result-item">Erreur lors de la recherche</div>`;
+        results.innerHTML = `<div class="result-item">${(window.__t && window.__t.search_error) || "Erreur lors de la recherche"}</div>`;
         results.classList.add("active");
       }
     }, 500);
@@ -330,20 +331,20 @@ if (deleteAccountOverlay) deleteAccountOverlay.addEventListener("click", closeDe
 if (sendDeleteCode) {
   sendDeleteCode.addEventListener("click", async () => {
     sendDeleteCode.disabled = true;
-    deleteCodeStatus.textContent = "Envoi en cours...";
+    deleteCodeStatus.textContent = (window.__t && window.__t.code_sending) || "Envoi en cours...";
 
     const res = await fetch("/account/send-delete-code", { method: "POST" });
     const data = await res.json();
 
     if (data.success) {
-      deleteCodeStatus.textContent = "✓ Code envoyé à votre adresse email.";
+      deleteCodeStatus.textContent = (window.__t && window.__t.code_sent) || "✓ Code envoyé à votre adresse email.";
       deleteCodeStatus.style.color = "#16a34a";
       setTimeout(() => {
         deleteStep1.style.display = "none";
         deleteStep2.style.display = "";
       }, 1200);
     } else {
-      deleteCodeStatus.textContent = "Erreur lors de l'envoi. Réessayez.";
+      deleteCodeStatus.textContent = (window.__t && window.__t.code_send_error) || "Erreur lors de l'envoi. Réessayez.";
       deleteCodeStatus.style.color = "#dc2626";
       sendDeleteCode.disabled = false;
     }
@@ -354,13 +355,13 @@ if (confirmDeleteAccount) {
   confirmDeleteAccount.addEventListener("click", async () => {
     const code = deleteCodeInput.value.trim();
     if (!code) {
-      deleteConfirmStatus.textContent = "Veuillez entrer le code reçu.";
+      deleteConfirmStatus.textContent = (window.__t && window.__t.enter_code_required) || "Veuillez entrer le code reçu.";
       deleteConfirmStatus.style.color = "#dc2626";
       return;
     }
 
     confirmDeleteAccount.disabled = true;
-    deleteConfirmStatus.textContent = "Suppression en cours...";
+    deleteConfirmStatus.textContent = (window.__t && window.__t.account_deleting) || "Suppression en cours...";
 
     const res = await fetch("/account/delete-account", {
       method: "DELETE",
@@ -370,7 +371,7 @@ if (confirmDeleteAccount) {
     const data = await res.json();
 
     if (data.success) {
-      deleteConfirmStatus.textContent = "Compte supprimé. Redirection...";
+      deleteConfirmStatus.textContent = (window.__t && window.__t.account_deleted) || "Compte supprimé. Redirection...";
       deleteConfirmStatus.style.color = "#16a34a";
       setTimeout(() => { window.location.href = "/"; }, 1500);
     } else {

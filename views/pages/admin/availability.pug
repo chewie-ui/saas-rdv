@@ -90,9 +90,11 @@ block content
                 if !user.isPremium
                     a(href="/subscription").get__premium= t.avail.get_premium
                 if user && user.isPremium
-                    button.btn.btn-primary#addDaysOffBtn.sec(type="button" style='width:auto')= t.avail.btn1
+                    button#addDaysOffBtn(type="button" style='width:auto')
+                        span= t.avail.btn1
                 else
-                    button.btn.btn-secondary(disabled title=t.avail.premium_only)= t.avail.btn1
+                    button.secondary(disabled title=t.avail.premium_only)
+                        span= t.avail.btn1
                 
                 #holidaysBody.days-off__wrapper.flex.col
                     if daysOff

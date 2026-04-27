@@ -79,11 +79,13 @@ block content
             .calendar
                 .calendar-header
                     .prev-month
-                        button.btn#prevMonthBtn.sec= t.booking_page.prev
+                        button.btn#prevMonthBtn.sec
+                            span= t.booking_page.prev
                     .this-month
                         h2
                     .next-month
-                        button.btn#nextMonthBtn.sec= t.booking_page.next
+                        button.btn#nextMonthBtn.sec
+                            span= t.booking_page.next
                 .calendar-body
                     .weekdays
                         //- Injected from JS
@@ -104,6 +106,22 @@ block content
 
 
                                    
+
+        //- Form step (shown between schedule & booking if form is active)
+        .form-step-wrapper#formStepWrapper(data-company-id=company._id)
+            .form-step
+                .form-step-header
+                    h2#formStepTitle= t.forms.form_step_title
+                    p.xs-comment#formStepSubtitle= t.forms.form_step_subtitle
+                .form-step-body
+                    .back-btn
+                        svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                            path(d="M640-200 200-480l440-280v560Zm-80-280Zm0 134v-268L350-480l210 134Z")
+                    #formStepQuestions.form-step-questions
+                        //- Injected from JS
+                .form-step-footer
+                    button.btn#formStepNextBtn
+                        span= t.forms.form_next
 
         .booking-wrapper#bookingWrapper(data-company-id=company._id)
             .booking
@@ -130,7 +148,8 @@ block content
                             p= t.booking_page.message
                             input.input(placeholder="Write something..." id="bookingMsg")
                     .booking-button
-                        button.btn#confirmBooking.btn.sec= t.booking_page.confirm
+                        button.btn#confirmBooking.btn
+                            span= t.booking_page.confirm
     +confirmPopup()
     +dialog()
 

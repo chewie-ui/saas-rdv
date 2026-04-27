@@ -25,16 +25,12 @@ const {
   saveAdminNotes,
 } = require("../controllers/admin.controller");
 
+const adminController = require("../controllers/admin.controller");
+
 const isAuth = require("../middlewares/isAuth");
 const injectCompany = require("../middlewares/injectCompany");
 
-router.get(
-  "/appointement/:bookId",
-  isAuth,
-  injectCompany,
-  renderAppointments,
-  book,
-);
+router.get("/appointement/:bookId", isAuth, injectCompany, renderAppointments, book);
 
 const isVerified = [isAuth, injectCompany];
 
@@ -71,5 +67,9 @@ router.patch("/appointement/:bookId/admin-notes", saveAdminNotes);
 router.get("/subscription/success", isVerified, paymentVerification);
 
 router.post("/subscription/resume", isAuth, resumeSubscription);
+
+router.get("/forms", isVerified, adminController.formsIndex);
+router.get("/forms/data", isVerified, adminController.getFormData);
+router.post("/forms/save", isVerified, adminController.saveForm);
 
 module.exports = router;

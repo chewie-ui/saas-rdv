@@ -9,7 +9,7 @@ let emailValue;
 if (forgotPwdSendCode && forgotPwdEmail) {
   forgotPwdSendCode.onclick = async function () {
     const value = forgotPwdEmail.value;
-    if (value.trim() === "") return alert("Veuillez entrer un email valide...");
+    if (value.trim() === "") return alert((window.__t && window.__t.email_required) || "Veuillez entrer un email valide.");
     emailValue = value;
 
     const response = await fetch(`/forgot-password/verify-code`, {
@@ -28,7 +28,7 @@ if (forgotPwdSendCode && forgotPwdEmail) {
       const template = secondFormTemplate.content.cloneNode(true);
       container.appendChild(template);
     } else {
-      return alert("Veuillez entrer un email valide...");
+      return alert((window.__t && window.__t.email_required) || "Veuillez entrer un email valide.");
     }
   };
 }
@@ -110,7 +110,7 @@ container.addEventListener("click", async (e) => {
     console.log(data);
 
     if (data.error === 404) {
-      return alert("Aucun compte trouvé avec cet email.");
+      return alert((window.__t && window.__t.no_account_email) || "Aucun compte trouvé avec cet email.");
     }
 
     if (data.success) {
