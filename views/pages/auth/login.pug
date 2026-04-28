@@ -22,7 +22,8 @@ block content
                                 p= t.auth.password
                                 input.input(placeholder="**************" type="password" name="password")
                                 a(href="/forgot-password")= t.auth.forgot_link
-                            button.btn(type="submit").sec= t.auth.login_btn
+                            button(type="submit")
+                                span= t.auth.login_btn
                         .no-acc.flex= t.auth.no_account
                             a(href="/register")= t.auth.register_link
                         if error

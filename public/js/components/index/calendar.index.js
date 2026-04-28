@@ -312,11 +312,28 @@ export default function () {
       } else if (q.type === "choice") {
         const opts = document.createElement("div");
         opts.className = "choice-options";
-        (q.options || []).forEach((opt, oi) => {
-          const lbl = document.createElement("label");
-          lbl.className = "choice-option";
-          lbl.innerHTML = `<input type="radio" name="q_${i}" value="${opt}"> <span>${opt}</span>`;
-          opts.appendChild(lbl);
+        // hidden radio group to track value — buttons handle visual state
+        (q.options || []).forEach((opt) => {
+          const radio = document.createElement("input");
+          radio.type = "radio";
+          radio.name = `q_${i}`;
+          radio.value = opt;
+          radio.style.display = "none";
+          opts.appendChild(radio);
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "choice-option-btn";
+          btn.textContent = opt;
+          btn.addEventListener("click", () => {
+            // deselect all in group
+            opts.querySelectorAll(".choice-option-btn").forEach((b) => b.classList.remove("selected"));
+            opts.querySelectorAll("input[type=radio]").forEach((r) => (r.checked = false));
+            // select this one
+            btn.classList.add("selected");
+            radio.checked = true;
+          });
+          opts.appendChild(btn);
         });
         div.appendChild(opts);
       } else if (q.type === "yes_no") {

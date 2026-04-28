@@ -216,6 +216,55 @@
   }
 }
 
+/* ── Form answers section ──────────────────────────────────────────── */
+.appointment-details__form-answers .appointment-details__body {
+  padding: 4px 0;
+}
+
+.form-answers-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.form-answer-row {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+}
+
+.form-answer-row:last-child {
+  border-bottom: none;
+}
+
+.form-answer-row__question {
+  font-size: 13px;
+  color: grey;
+  flex-shrink: 0;
+  min-width: 160px;
+  max-width: 260px;
+}
+
+.form-answer-row__answer {
+  font-size: 14px;
+  font-weight: 500;
+  word-break: break-word;
+  flex: 1;
+}
+
+@media (max-width: 600px) {
+  .form-answer-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .form-answer-row__question {
+    max-width: 100%;
+    font-size: 12px;
+  }
+}
+
 /* Badge passé */
 .badge-past {
   display: flex;

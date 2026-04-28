@@ -18,9 +18,10 @@ block content
                         input#formActiveToggle(type="checkbox" checked=(form && form.active))
                         span.slider
                     button.btn#saveFormBtn(type="button")
-                        svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                            path(d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z")
-                        span= t.forms.save
+                        span
+                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                path(d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z")
+                            | #{t.forms.save}
 
             //- Main body: question list + editor
             .forms-builder__body.flex
@@ -41,9 +42,10 @@ block content
 
                     .forms-builder__add
                         button.btn.secondary#addQuestionBtn(type="button")
-                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
-                            span= t.forms.add_question
+                            span
+                                svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                    path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                                | #{t.forms.add_question}
 
                 //- RIGHT: preview
                 .forms-builder__right.flex.col
@@ -61,7 +63,8 @@ block content
                                 .preview-phone__questions#previewQuestions
                                     //- Rendered by JS
                                 .preview-phone__footer
-                                    button.btn.preview-btn(disabled)= t.forms.form_next
+                                    button.btn.preview-btn(disabled)
+                                        span= t.forms.form_next
 
     //- Modal: add / edit question
     .forms-modal-overlay#modalOverlay
@@ -69,8 +72,9 @@ block content
             .forms-modal__header.flex-c.space-b
                 h3#modalTitle= t.forms.add_question
                 button.square#closeModalBtn(type="button" aria-label="close")
-                    svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                        path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                    span
+                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                            path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
 
             .forms-modal__body.flex.col
 
@@ -102,8 +106,10 @@ block content
                         span ✱
 
             .forms-modal__footer.flex-c
-                button.btn.secondary#cancelModalBtn(type="button")= t.forms.cancel
-                button.btn#confirmModalBtn(type="button")= t.forms.confirm
+                button.btn.secondary#cancelModalBtn(type="button")
+                    span= t.forms.cancel
+                button.btn#confirmModalBtn(type="button")
+                    span= t.forms.confirm
 
     //- Hidden data for JS
     script.

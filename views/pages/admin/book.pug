@@ -43,6 +43,20 @@ block content
                         p.name-element= t.book_detail.status
                         p(class=isPast && client.status === 'confirmed' ? 'status-past' : '') #{client.status.charAt(0).toUpperCase() + client.status.slice(1)}
 
+        if client.formAnswers && client.formAnswers.length > 0
+            .appointment-details.appointment-details__form-answers.page--appointment-block.page--block-2
+                .appointment-details__header.flex
+                    svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                        path(d="M280-600q-17 0-28.5-11.5T240-640q0-17 11.5-28.5T280-680h400q17 0 28.5 11.5T720-640q0 17-11.5 28.5T680-600H280Zm0 160q-17 0-28.5-11.5T240-480q0-17 11.5-28.5T280-520h400q17 0 28.5 11.5T720-480q0 17-11.5 28.5T680-440H280Zm0 160q-17 0-28.5-11.5T240-320q0-17 11.5-28.5T280-360h200q17 0 28.5 11.5T520-320q0 17-11.5 28.5T480-280H280ZM160-80q-33 0-56.5-23.5T80-160v-640q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v640q0 33-23.5 56.5T800-80H160Zm0-80h640v-640H160v640Zm0 0v-640 640Z")
+                    h3= t.book_detail.form_answers
+                .appointment-details__separator
+                .appointment-details__body
+                    .form-answers-grid
+                        each answer in client.formAnswers
+                            .form-answer-row
+                                .form-answer-row__question= answer.question
+                                .form-answer-row__answer= answer.answer || ('— ' + t.book_detail.no_answer)
+
         .appointment-details.appointment-details__client.page--appointment-block.page--block-3
             .appointment-details__header.flex
                 svg(

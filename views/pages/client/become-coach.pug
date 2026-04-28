@@ -16,7 +16,8 @@ block content
                     .landing-page__description.flex-c
                         p= t.hero.description
                     .landing-page__actions.flex-c
-                        a.btn(href='/register').sec= t.hero.btn_1
+                        a.btn(href='/register')
+                            span= t.hero.btn_1
                         //- a.btn.secondary(href='/register')= t.hero.btn_2
             section.features.container
                 .features__container
@@ -35,7 +36,8 @@ block content
                         p= t.promotion.description
                     .promotion__actions
                         //- button.btn.secondary= t.promotion.btn_1
-                        a.btn(href="/register").sec= t.promotion.btn_2
+                        a.btn(href="/register")
+                            span= t.promotion.btn_2
             section.functionalities
                 .functionalities__container.container
                     each row, index in t.functionalities.rows
@@ -55,7 +57,8 @@ block content
                                                 .functionality__text= item
                                 .row__actions
                                     //- button.btn.secondary= row.btn_1
-                                    a(href="/register").btn.sec= row.btn_2
+                                    a(href="/register").btn
+                                        span= row.btn_2
                             .row__right
                                 .row__image
                                     img(src=row.image)

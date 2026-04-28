@@ -32,7 +32,7 @@ const requiredCheck    = document.getElementById("questionRequired");
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let editingIndex = -1; // -1 = new question
-let dragSrcIndex = null;
+let drag = null;       // active drag session
 
 // ─── Active toggle ────────────────────────────────────────────────────────────
 function syncActiveUI(active) {
@@ -70,7 +70,6 @@ function renderQuestions() {
   qs.forEach((q, i) => {
     const card = document.createElement("div");
     card.className = "question-card";
-    card.draggable = true;
     card.dataset.index = i;
 
     card.innerHTML = `
@@ -100,11 +99,11 @@ function renderQuestions() {
       </div>
     `;
 
-    // drag events
-    card.addEventListener("dragstart", onDragStart);
-    card.addEventListener("dragover",  onDragOver);
-    card.addEventListener("drop",      onDrop);
-    card.addEventListener("dragend",   onDragEnd);
+    // drag — only on the handle icon
+    card.querySelector(".question-card__drag").addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      startDrag(e, i);
+    });
 
     // edit
     card.querySelector(".edit-btn").addEventListener("click", () => openModal(i));
@@ -121,32 +120,116 @@ function renderQuestions() {
   renderPreview();
 }
 
-// ─── Drag & drop ──────────────────────────────────────────────────────────────
-function onDragStart(e) {
-  dragSrcIndex = parseInt(this.dataset.index);
-  this.classList.add("dragging");
-  e.dataTransfer.effectAllowed = "move";
+// ─── Drag & drop (pointer events — smooth ghost + animated shifts) ────────────
+
+function startDrag(e, srcIndex) {
+  const cards = [...questionsList.querySelectorAll(".question-card")];
+  const srcCard = cards[srcIndex];
+  const srcRect = srcCard.getBoundingClientRect();
+
+  // Snapshot each card's Y position and height before anything moves
+  const snapshots = cards.map((c) => {
+    const r = c.getBoundingClientRect();
+    return { top: r.top, height: r.height, mid: r.top + r.height / 2 };
+  });
+  const cardH   = srcRect.height;
+  const GAP     = 10; // matches CSS gap: 10px on .questions-list
+
+  // ── Ghost: floating clone that follows the pointer ──
+  const ghost = srcCard.cloneNode(true);
+  ghost.classList.add("drag-ghost");
+  Object.assign(ghost.style, {
+    position:      "fixed",
+    left:          `${srcRect.left}px`,
+    width:         `${srcRect.width}px`,
+    top:           `${srcRect.top}px`,
+    pointerEvents: "none",
+    zIndex:        "9999",
+    margin:        "0",
+    transition:    "box-shadow 0.15s, transform 0.08s",
+    transform:     "scale(1.02)",
+    boxShadow:     "0 16px 48px rgba(0,0,0,0.55)",
+  });
+  document.body.appendChild(ghost);
+
+  // ── Placeholder: source card becomes invisible (keeps layout space) ──
+  srcCard.classList.add("drag-placeholder");
+
+  // ── Enable CSS transitions on every other card ──
+  cards.forEach((c) => {
+    c.style.transition = "transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+  });
+
+  const offsetY = e.clientY - srcRect.top;
+  let insertIndex = srcIndex;
+
+  drag = { srcIndex, insertIndex, ghost, srcCard, cards, snapshots, cardH, GAP, offsetY };
+
+  document.addEventListener("pointermove", onDragMove);
+  document.addEventListener("pointerup",   onDragEnd, { once: true });
 }
 
-function onDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = "move";
-}
+function onDragMove(e) {
+  if (!drag) return;
+  const { ghost, srcCard, cards, snapshots, cardH, GAP, srcIndex, offsetY } = drag;
 
-function onDrop(e) {
-  e.preventDefault();
-  const targetIndex = parseInt(this.dataset.index);
-  if (dragSrcIndex === null || dragSrcIndex === targetIndex) return;
+  // Move ghost
+  ghost.style.top = `${e.clientY - offsetY}px`;
 
-  const moved = formData.questions.splice(dragSrcIndex, 1)[0];
-  formData.questions.splice(targetIndex, 0, moved);
-  dragSrcIndex = null;
-  renderQuestions();
+  // Insert index = first slot where ghost center is above a card's snapshot midpoint
+  // Walk bottom→top: last card whose mid is BELOW ghostMid defines the slot
+  const ghostMid = e.clientY - offsetY + cardH / 2;
+  let newInsert = 0;
+  for (let i = snapshots.length - 1; i >= 0; i--) {
+    if (i === srcIndex) continue;
+    if (ghostMid >= snapshots[i].mid) {
+      newInsert = i > srcIndex ? i : i + 1;
+      break;
+    }
+  }
+
+  drag.insertIndex = newInsert;
+
+  // Animate sibling cards: shift to make room at insertIndex
+  cards.forEach((c, i) => {
+    if (i === srcIndex) return; // placeholder stays in place
+    const shift = cardH + GAP;
+    if (srcIndex < newInsert) {
+      // dragging DOWN → cards between src+1 … insertIndex slide UP
+      c.style.transform = (i > srcIndex && i <= newInsert) ? `translateY(-${shift}px)` : "";
+    } else {
+      // dragging UP → cards between insertIndex … src-1 slide DOWN
+      c.style.transform = (i >= newInsert && i < srcIndex) ? `translateY(${shift}px)` : "";
+    }
+  });
 }
 
 function onDragEnd() {
-  this.classList.remove("dragging");
-  dragSrcIndex = null;
+  if (!drag) return;
+  const { srcIndex, insertIndex, ghost, srcCard, cards } = drag;
+
+  // Snap ghost to its landing position before removing (optional quick snap)
+  ghost.style.transition = "opacity 0.15s";
+  ghost.style.opacity    = "0";
+  setTimeout(() => ghost.remove(), 150);
+
+  // Remove all transforms/classes — renderQuestions will rebuild
+  cards.forEach((c) => {
+    c.style.transform  = "";
+    c.style.transition = "";
+  });
+  srcCard.classList.remove("drag-placeholder");
+
+  drag = null;
+  document.removeEventListener("pointermove", onDragMove);
+
+  if (srcIndex !== insertIndex) {
+    const moved = formData.questions.splice(srcIndex, 1)[0];
+    const target = insertIndex > srcIndex ? insertIndex - 1 : insertIndex;
+    formData.questions.splice(target, 0, moved);
+    renderQuestions();
+    renderPreview();
+  }
 }
 
 // ─── Preview ──────────────────────────────────────────────────────────────────
