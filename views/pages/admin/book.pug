@@ -20,9 +20,9 @@ block content
                         span.badge-past= t.book_detail.past
 
                     if client.status === "confirmed"
-                        button(data-link=`/appointment/${client._id}/cancel` data-method="PATCH" disabled=(grade === 'staff' || !isPremium || isPast))#cancelAppointment
+                        button.appointment-action(data-link=`/appointment/${client._id}/cancel` data-method="PATCH" disabled=(grade === 'staff' || !isPremium || isPast))#cancelAppointment
                             span= t.book_detail.cancel
-                    button(data-link=`/appointment/${client._id}/delete` data-method="DELETE" disabled=(grade === 'staff' || !isPremium))#deleteAppointment
+                    button.appointment-action(data-link=`/appointment/${client._id}/delete` data-method="DELETE" disabled=(grade === 'staff' || !isPremium))#deleteAppointment
                         span= t.book_detail.delete
                     if client.status === "confirmed"
                         //- button(data-link=`/appointment/${user._id}/send-reminder`).btn.appointment-action Send reminder

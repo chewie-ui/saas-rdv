@@ -39,8 +39,8 @@ if (emailOpen) {
       const parentPrompt = tmp.querySelector("#promptWrp");
       tmp.querySelector("h2").textContent = window.__t.email_confirm_title;
       tmp.querySelector(".dialog__p").textContent = window.__t.email_confirm_desc;
-      tmp.querySelector(".dialog__btn1").textContent = window.__t.cancel;
-      tmp.querySelector(".dialog__btn2").textContent = window.__t.confirm;
+      tmp.querySelector(".dialog__btn2").innerHTML = `<span>${window.__t.confirm}</span>`;
+      tmp.querySelector(".dialog__btn1").innerHTML = `<span>${window.__t.cancel}</span>`;
       function closePrompt() {
         parentPrompt.remove();
       }
@@ -71,8 +71,8 @@ if (emailOpen) {
 
           tmp2.querySelector("h2").textContent = window.__t.email_verify_title;
           tmp2.querySelector(".dialog__p").textContent = window.__t.email_verify_desc;
-          tmp2.querySelector(".dialog__btn1").textContent = window.__t.cancel;
-          tmp2.querySelector(".dialog__btn2").textContent = window.__t.confirm;
+          tmp.querySelector(".dialog__btn2").innerHTML = `<span>${window.__t.confirm}</span>`;
+          tmp.querySelector(".dialog__btn1").innerHTML = `<span>${window.__t.cancel}</span>`;
           const closePrompt2 = () => {
             if (secparentPrompt2) {
               secparentPrompt2.remove();
@@ -102,28 +102,26 @@ if (emailOpen) {
 
               editEmailPopup.querySelector("h2").textContent = window.__t.email_new_title;
               editEmailPopup.querySelector(".dialog__p").textContent = window.__t.email_new_desc;
-              editEmailPopup.querySelector(".dialog__btn1").textContent = window.__t.cancel;
-              editEmailPopup.querySelector(".dialog__btn2").textContent = window.__t.confirm;
+              tmp.querySelector(".dialog__btn2").innerHTML = `<span>${window.__t.confirm}</span>`;
+              tmp.querySelector(".dialog__btn1").innerHTML = `<span>${window.__t.cancel}</span>`;
 
               editEmailPopup.querySelector(".dialog__btn1").onclick = clsPrmp;
               editEmailPopup.querySelector(".dialog__icon").onclick = clsPrmp;
 
-              editEmailPopup.querySelector(".dialog__btn2").onclick =
-                async function () {
-                  const response = await fetch("/account/edit/email", {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: email.value }),
-                  });
+              editEmailPopup.querySelector(".dialog__btn2").onclick = async function () {
+                const response = await fetch("/account/edit/email", {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email: email.value }),
+                });
 
-                  const data = await response.json();
+                const data = await response.json();
 
-                  if (data.success) {
-                    location.reload();
-                  } else {
-                    
-                  }
-                };
+                if (data.success) {
+                  location.reload();
+                } else {
+                }
+              };
 
               document.querySelector("body").appendChild(editEmailPopup);
             }

@@ -32,10 +32,9 @@ const handleSubscriptionCancel = async function (e) {
       };
 
       tmp.querySelector(".dialog__h2").textContent = "Stop pro plan";
-      tmp.querySelector(".dialog__p").textContent =
-        "Are you sure you want to stop your pro plan?";
-      tmp.querySelector(".dialog__btn2").textContent = "Confirm";
-      tmp.querySelector(".dialog__btn1").textContent = "Close";
+      tmp.querySelector(".dialog__p").textContent = "Are you sure you want to stop your pro plan?";
+      tmp.querySelector(".dialog__btn2").innerHTML = `<span>Confirm</span>`;
+      tmp.querySelector(".dialog__btn1").innerHTML = `<span>Close</span>`;
       tmp.querySelector(".dialog__btn1").onclick = () => close(false);
       tmp.querySelector(".dialog__icon").onclick = () => close(false);
 
@@ -58,9 +57,7 @@ const handleSubscriptionCancel = async function (e) {
     const data = await response.json();
 
     if (data.success) {
-      alert(
-        "Your subscription has been set to cancel at the end of the billing period.",
-      );
+      alert("Your subscription has been set to cancel at the end of the billing period.");
       window.location.reload();
     } else {
       alert("Error: " + data.error);
@@ -72,8 +69,7 @@ const handleSubscriptionCancel = async function (e) {
 };
 
 // On attache la fonction aux boutons s'ils existent dans la page
-if (cancelSubscriptionPro)
-  cancelSubscriptionPro.onclick = handleSubscriptionCancel;
+if (cancelSubscriptionPro) cancelSubscriptionPro.onclick = handleSubscriptionCancel;
 if (getFreePlan) getFreePlan.onclick = handleSubscriptionCancel;
 
 if (retakeSubscription) {
@@ -91,10 +87,9 @@ if (retakeSubscription) {
         };
 
         tmp.querySelector(".dialog__h2").textContent = "Restore pro plan";
-        tmp.querySelector(".dialog__p").textContent =
-          "Are you sure you want to restore your pro plan?";
-        tmp.querySelector(".dialog__btn2").textContent = "Confirm";
-        tmp.querySelector(".dialog__btn1").textContent = "Close";
+        tmp.querySelector(".dialog__p").textContent = "Are you sure you want to restore your pro plan?";
+        tmp.querySelector(".dialog__btn2").innerHTML = `<span>Confirm</span>`;
+        tmp.querySelector(".dialog__btn1").innerHTML = `<span>Close</span>`;
         tmp.querySelector(".dialog__btn1").onclick = () => close(false);
         tmp.querySelector(".dialog__icon").onclick = () => close(false);
 

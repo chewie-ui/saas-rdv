@@ -21,8 +21,8 @@ document.addEventListener("click", async (event) => {
 
     tmp.querySelector("h2").textContent = window.__t.delete_confirm_title;
     tmp.querySelector(".dialog__p").textContent = window.__t.delete_confirm_desc;
-    tmp.querySelector(".dialog__btn1").textContent = window.__t.cancel;
-    tmp.querySelector(".dialog__btn2").textContent = window.__t.confirm_delete;
+    tmp.querySelector(".dialog__btn1").innerHTML = `<span>${window.__t.cancel}</span>`;
+    tmp.querySelector(".dialog__btn2").innerHTML = `<span>${window.__t.confirm_delete}</span>`;
 
     document.querySelector("body").appendChild(tmp);
 
@@ -67,9 +67,7 @@ if (searchClient) {
     clearTimeout(debounceTimer);
     const v = searchClient.value.trim();
     debounceTimer = setTimeout(async () => {
-      const response = await fetch(
-        `/history/search?client=${encodeURIComponent(v)}`,
-      );
+      const response = await fetch(`/history/search?client=${encodeURIComponent(v)}`);
       const data = await response.json();
 
       renderData(data.results);
@@ -95,7 +93,7 @@ function renderData(appointments) {
             <td>${new Date(h.date).toLocaleDateString("fr-FR")} | ${h.startTime}-${h.endTime}</td>
             <td>${h.message || ""}</td>
             <td style="padding:8px 1.5rem">
-                <div class="${h.status}">${h.status === 'canceled' ? window.__t.status_canceled : window.__t.status_confirmed}</div>
+                <div class="${h.status}">${h.status === "canceled" ? window.__t.status_canceled : window.__t.status_confirmed}</div>
             </td>
             <td class="btn-td flex-c j-start">
                 <button class="btn-icon flex-c btn-panel">

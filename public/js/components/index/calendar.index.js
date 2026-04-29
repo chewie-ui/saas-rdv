@@ -483,7 +483,7 @@ export default function () {
         tmp.querySelector(".dialog__h2").textContent = __t.invalid_email_title || "Email invalide";
         tmp.querySelector(".dialog__p").textContent = __t.invalid_email_desc || "Veuillez modifier l'email et mettre un email valide.";
         tmp.querySelector(".dialog__icon").onclick = rmvParent;
-        tmp.querySelector(".dialog__btn2").textContent = __t.close || "Fermer";
+        tmp.querySelector(".dialog__btn2").innerHTML = `<span>${__t.close || "Fermer"}</span>` 
         tmp.querySelector(".dialog__btn2").onclick = rmvParent;
         document.querySelector("body").appendChild(tmp);
         bookingEmail.style.border = "1px solid red"; // Petit feedback visuel
