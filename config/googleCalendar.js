@@ -1,10 +1,15 @@
 const { google } = require("googleapis");
 
-function createOAuthClient() {
+/**
+ * Crée un client OAuth2 Google.
+ * Si redirectUri est fourni, on l'utilise (dynamique depuis la requête).
+ * Sinon on tombe sur GOOGLE_REDIRECT_URI du .env (fallback).
+ */
+function createOAuthClient(redirectUri) {
   return new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI
+    redirectUri || process.env.GOOGLE_REDIRECT_URI
   );
 }
 

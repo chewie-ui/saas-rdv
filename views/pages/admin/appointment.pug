@@ -53,7 +53,8 @@ block content
                         if user.googleCalendar && user.googleCalendar.connected
                             p #{t.gcal.connected_to} #{user.googleCalendar.email}
                             form(action="/auth/google/calendar/disconnect" method="POST")
-                                button(type="submit")= t.gcal.disconnect
+                                button(type="submit")
+                                    span= t.gcal.disconnect
                         else
                             a(href="/auth/google/calendar").btn.secondary
                                 span 
