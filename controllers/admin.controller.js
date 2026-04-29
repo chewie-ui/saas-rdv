@@ -600,12 +600,14 @@ exports.formsIndex = async (req, res) => {
     return res.render("admin/forms", {
       pageName: res.locals.t.sidebar.a_9,
       form: form || null,
+      title: res.locals.t.sidebar.a_9,
     });
   } catch (err) {
     console.error(err);
     return res.render("admin/forms", {
       pageName: res.locals.t.sidebar.a_9,
       form: null,
+      title: res.locals.t.sidebar.a_9,
     });
   }
 };
@@ -625,11 +627,7 @@ exports.saveForm = async (req, res) => {
     const companyId = res.locals.currentCompany._id;
     const { active, questions } = req.body;
 
-    const form = await Form.findOneAndUpdate(
-      { company: companyId },
-      { active, questions },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const form = await Form.findOneAndUpdate({ company: companyId }, { active, questions }, { upsert: true, new: true, setDefaultsOnInsert: true });
 
     return res.json({ success: true, form });
   } catch (err) {

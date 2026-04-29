@@ -126,7 +126,7 @@ exports.forgotPasswordVerifyCode = async (req, res) => {
       <p>Ce code est valable pendant une durée limitée. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email en toute sécurité.</p>
       <p>Pour des raisons de sécurité, ne partagez jamais ce code avec qui que ce soit.</p>
       <p>Si vous avez besoin d'aide, n'hésitez pas à nous contacter.</p>
-      <p>Cordialement,<br><strong>L'équipe Gymio</strong></p>
+      <p>Cordialement,<br><strong>L'équipe SayMiro</strong></p>
     </body>
   </html>`,
     );
