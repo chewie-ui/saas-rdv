@@ -1,6 +1,8 @@
 body {
   background-color: var(--color-white);
 }
+
+/* ── Hero ── */
 .landing__client {
   display: flex;
   flex-direction: column;
@@ -24,42 +26,37 @@ body {
   left: 0;
   bottom: 0;
   right: 0;
+  background: rgba(0, 0, 0, 0.18);
 }
 
 .landing__client .hero .hero__container {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 16px;
+  text-align: center;
 }
 
 .landing__client .hero .hero__container h1 {
   color: white;
   font-size: 32px;
-  font-weight: 400;
+  font-weight: 700;
   text-align: center;
-  text-shadow: 1px 1px 12px #00000069;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
+  line-height: 1.2;
 }
 
 .landing__client .hero .hero__container p {
   text-align: center;
-  color: white;
-  font-weight: 500;
-  text-shadow: 1px 1px 12px #00000069;
+  color: rgba(255, 255, 255, 0.88);
+  font-weight: 400;
+  font-size: 16px;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
-.landing__client
-  .hero
-  .hero__container
-  .hero__form
-  .form-group
-  input::placeholder {
-  color: rgb(150, 139, 139);
-  font-weight: 500;
-}
-
+/* ── Search form ── */
 .hero__form {
-  padding: 70px 0;
+  padding: 60px 0;
   display: flex;
   flex-direction: column;
   gap: 50px;
@@ -68,31 +65,48 @@ body {
 .hero__form .hero__form-container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  border: var(--border);
-  box-shadow: var(--shadow);
-  padding: 1rem;
-  border-radius: 1rem;
+  gap: 0;
+  border: 1.5px solid var(--border-light);
+  box-shadow: var(--shadow-p);
+  border-radius: var(--radius-xl);
   width: 100%;
-  align-items: center;
+  align-items: stretch;
+  /* overflow: hidden REMOVED — clippait les dropdowns absolus et le texte */
+  background: var(--color-white);
 }
 
 .hero__form .hero__form-container .form-group {
-  gap: 0;
-  width: stretch;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
+  gap: 2px;
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 0;
   position: relative;
-  border: 1px solid transparent;
+  border: none;
+  border-bottom: 1.5px solid var(--border-light);
+  transition: background 0.15s ease;
+  overflow: visible;
 }
 
-.hero__form .hero__form-container .form-group.active {
-  border: 1px solid;
+/* Coins arrondis sur les enfants (mobile = colonne) */
+.hero__form .hero__form-container .form-group:first-child {
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.hero__form .hero__form-container .form__action {
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+/* 2ème form-group et suivants n'ont pas de border-bottom — le séparateur vient du border-top de .form__action */
+.hero__form .hero__form-container .form-group + .form-group {
+  border-bottom: none;
 }
 
 .hero__form .hero__form-container .form-group label {
-  font-weight: 400;
-  color: grey;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
 }
 
 .hero__form .hero__form-container input {
@@ -100,15 +114,34 @@ body {
   outline: none;
   box-shadow: none;
   background: transparent;
-  padding: 0.2rem 0;
-  font-size: 16px;
-}
-
-.hero__form .hero__form-container input.input::placeholder {
+  padding: 4px 0 0;
+  font-size: 15px;
+  font-weight: 500;
   color: var(--text-primary);
+  width: 100%;
+  border-radius: 0;
 }
 
-.hero__form .hero__form-container .form-group .menu-locations {
+.hero__form .hero__form-container input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.hero__form .hero__form-container .form__action {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1.5px solid var(--border-light);
+}
+
+.hero__form .hero__form-container .form__action button {
+  width: 100%;
+}
+
+/* ── Service/Location dropdowns ── */
+.hero__form .hero__form-container .form-group .menu-locations,
+.hero__form .hero__form-container .form-group .menu-names {
   position: absolute;
   top: 110%;
   display: none;
@@ -116,35 +149,42 @@ body {
   background: var(--color-white);
   box-shadow: var(--shadow-p);
   left: 0;
-  border-radius: 0.6rem;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  border: var(--border);
+  border: 1px solid var(--border-light);
   z-index: 100;
   width: 100%;
+  max-height: 260px;
+  overflow-y: auto;
 }
 
-.hero__form .hero__form-container .form-group .menu-locations.active {
+.hero__form .hero__form-container .form-group .menu-locations.active,
+.hero__form .hero__form-container .form-group .menu-names.active {
   display: flex;
 }
 
-.hero__form .hero__form-container .form-group .menu-locations div {
-  padding: 1rem;
+.hero__form .hero__form-container .form-group .menu-locations div,
+.hero__form .hero__form-container .form-group .menu-names div {
+  padding: 10px 16px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+  flex-shrink: 0;
+  color: var(--text-primary);
+  transition: background 0.12s ease;
 }
 
-.hero__form .hero__form-container .form-group .menu-locations div:hover {
-  background-color: var(--color-card);
+.hero__form .hero__form-container .form-group .menu-locations div:hover,
+.hero__form .hero__form-container .form-group .menu-names div:hover {
+  background-color: var(--main-color-pale);
+  color: var(--main-color);
 }
 
-.hero__form .hero__form-container input::placeholder {
-  color: black;
-}
-
+/* ── Coach suggestion cards ── */
 .landing__client .hero__form .hero__suggestions {
   display: flex;
   width: 100%;
-  gap: 20px;
+  gap: 16px;
   flex-direction: column;
 }
 
@@ -153,288 +193,213 @@ body {
   width: 100%;
   flex-direction: column;
   align-items: stretch;
-  border: var(--border);
-  border-radius: 1rem;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   overflow: hidden;
+  background: var(--color-white);
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
+.landing__client .hero__form .hero__suggestions .suggestions__row:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
 }
 
 .landing__client .hero__form .hero__suggestions .suggestions__row .row__avatar {
   width: 100%;
-  height: 300px;
+  height: 240px;
+  overflow: hidden;
 }
 
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations {
+.landing__client .hero__form .hero__suggestions .suggestions__row .row__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.landing__client .hero__form .hero__suggestions .suggestions__row:hover .row__avatar img {
+  transform: scale(1.04);
+}
+
+.landing__client .hero__form .hero__suggestions .suggestions__row .row__informations {
   width: 100%;
   display: flex;
   flex-direction: column;
 }
 
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__avatar
-  img {
-  width: 100%;
-  object-fit: cover;
-}
-
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__left {
+.landing__client .hero__form .hero__suggestions .suggestions__row .row__informations .informations__left {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   flex-direction: column;
   width: 100%;
-  padding: 1.5rem;
-  gap: 20px;
+  padding: 1.25rem 1.5rem;
+  gap: 12px;
 }
 
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__right {
+.landing__client .hero__form .hero__suggestions .suggestions__row .row__informations .informations__right {
   display: flex;
   width: 100%;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 1.5rem;
+  padding: 1rem 1.5rem 1.25rem;
+  border-top: 1px solid var(--border-light);
 }
 
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__right
-  .socials {
+.landing__client .hero__form .hero__suggestions .suggestions__row .row__informations .informations__left h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.landing__client .hero__form .hero__suggestions .suggestions__row .row__informations .informations__left p {
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.landing__client .hero__form .hero__suggestions .suggestions__row .row__informations .informations__left .informations__description p {
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.landing__client .hero__form .hero__suggestions .suggestions__row .row__informations .informations__left a {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.landing__client .hero__form .hero__suggestions .suggestions__row .row__informations .informations__left .informations__location a {
+  color: var(--text-muted);
+}
+
+.landing__client .hero__form .hero__suggestions .suggestions__row .row__informations .informations__right .infos__coach {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+}
+
+.landing__client .hero__form .hero__suggestions .suggestions__row .row__informations .informations__right .infos__coach svg {
+  width: 28px;
+  height: 28px;
+  fill: var(--text-muted);
+  cursor: pointer;
+  transition: fill 0.15s ease;
+}
+
+.landing__client .hero__form .hero__suggestions .suggestions__row .row__informations .informations__right .infos__coach svg:hover {
+  fill: var(--main-color);
+}
+
+.landing__client .hero__form .hero__suggestions .suggestions__row .row__informations .informations__right .socials {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__right
-  .socials
-  .icon__btn {
+.landing__client .hero__form .hero__suggestions .suggestions__row .row__informations .informations__right .socials .icon__btn {
   cursor: pointer;
   display: flex;
   flex-direction: row;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   justify-content: center;
-  padding: 0.6rem;
-  border-radius: 0.6rem;
-  background: #000;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: var(--text-primary);
   color: white;
-}
-
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__right
-  .socials
-  .icon__btn
-  p {
   font-size: 12px;
   font-weight: 500;
+  transition: background 0.15s ease;
 }
 
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__right
-  .infos__coach {
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-end;
-  gap: 8px;
+.landing__client .hero__form .hero__suggestions .suggestions__row .row__informations .informations__right .socials .icon__btn img {
+  width: 18px;
+  height: 18px;
 }
 
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__right
-  .infos__coach
-  svg {
-  width: 30px;
-  height: 30px;
-  fill: black;
-  cursor: pointer;
-}
-
-/* .landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__right
-  .socials
-  .icon__btn.facebook {
-  background-color: rgba(0, 119, 255, 0.1);
-}
-
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__right
-  .socials
-  .icon__btn.instagram {
-  background-color: rgba(255, 0, 43, 0.1);
-}
-
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__right
-  .socials
-  .icon__btn.whatsapp {
-  background-color: rgba(0, 230, 31, 0.1);
-}
-
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__right
-  .socials
-  .icon__btn.website {
-  background-color: rgba(0, 0, 0, 0.1);
-} */
-
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__right
-  .socials
-  .icon__btn
-  img {
-  width: 25px;
-}
-
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__left
-  h2 {
-  font-size: 20px;
-  font-weight: 500;
-}
-
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__left
-  p {
-  line-height: 26px;
-}
-
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__left
-  .informations__description
-  p {
-  color: var(--grey-primary);
-}
-
-.landing__client
-  .hero__form
-  .hero__suggestions
-  .suggestions__row
-  .row__informations
-  .informations__left
-  a {
-  font-weight: 600;
-  color: var(--black);
-}
-
+/* ── Responsive ── */
 @media all and (min-width: 820px) {
+  .hero__form .hero__form-container {
+    flex-direction: row;
+    gap: 0;
+    align-items: center;
+  }
+
+  .hero__form .hero__form-container .form-group {
+    border-bottom: none;
+    border-right: 1.5px solid var(--border-light);
+    border-radius: 0;
+    flex: 1;
+  }
+
+  /* Coins gauches sur le premier group (layout row) */
+  .hero__form .hero__form-container .form-group:first-child {
+    border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+  }
+
+  /* Coins droits sur le bouton */
+  .hero__form .hero__form-container .form__action {
+    border-top: none;
+    border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+    padding: 12px 14px;
+    flex-shrink: 0;
+    width: auto;
+    border-bottom: none;
+  }
+
+  .hero__form .hero__form-container .form__action button {
+    width: auto;
+    white-space: nowrap;
+  }
 }
 
 @media all and (min-width: 1280px) {
-  .hero__form .hero__form-container {
-    flex-direction: row;
-  }
-
   .landing__client .hero .hero__container h1 {
-    font-size: 50px;
+    font-size: 52px;
   }
 
   .landing__client .hero__form .hero__suggestions .suggestions__row {
     flex-direction: row;
   }
 
-  .landing__client
-    .hero__form
-    .hero__suggestions
-    .suggestions__row
-    .row__avatar {
-    width: 25%;
+  .landing__client .hero__form .hero__suggestions .suggestions__row .row__avatar {
+    width: 260px;
+    height: auto;
+    flex-shrink: 0;
   }
 
-  .landing__client
-    .hero__form
-    .hero__suggestions
-    .suggestions__row
-    .row__informations {
-    width: 75%;
+  .landing__client .hero__form .hero__suggestions .suggestions__row .row__informations {
+    width: 1px;
+    flex: 1;
     flex-direction: row;
   }
 
-  .landing__client
-    .hero__form
-    .hero__suggestions
-    .suggestions__row
-    .row__informations
-    .informations__left {
-    width: 70%;
-    gap: 0;
+  .landing__client .hero__form .hero__suggestions .suggestions__row .row__informations .informations__left {
+    flex: 1;
+    gap: 10px;
+    justify-content: center;
+    padding: 1.5rem 1.75rem;
   }
 
-  .landing__client
-    .hero__form
-    .hero__suggestions
-    .suggestions__row
-    .row__informations
-    .informations__right {
-    width: 30%;
+  .landing__client .hero__form .hero__suggestions .suggestions__row .row__informations .informations__right {
+    width: 220px;
+    flex-shrink: 0;
     flex-direction: column;
     align-items: flex-end;
+    justify-content: center;
+    border-top: none;
+    border-left: 1px solid var(--border-light);
+    padding: 1.5rem;
   }
 }

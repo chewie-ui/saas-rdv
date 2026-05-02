@@ -37,6 +37,7 @@ router.patch("/edit/email", accountController.editEmail);
 router.patch("/location", accountController.updateLocation);
 
 router.patch("/description/edit", accountController.editDescription);
+router.patch("/business-type", accountController.updateBusinessType);
 
 router.post("/send-delete-code", isAuth, accountController.sendDeleteCode);
 router.delete("/delete-account", isAuth, accountController.deleteAccount);

@@ -7,9 +7,10 @@ const {
   newPwd,
 } = require("../controllers/auth.controller");
 const passport = require("passport");
+const SERVICES = require("../utils/services");
 
 router.get("/register", (req, res) => {
-  res.render("auth/register", { alwaysSticky: true });
+  res.render("auth/register", { becomeCoach: true, alwaysSticky: true, services: SERVICES });
 });
 
 router.get("/login", (req, res) => {
@@ -26,6 +27,7 @@ router.post("/login", (req, res, next) => {
       return res.render("auth/login", {
         error: "Invalid email or password",
         errorField: "email",
+        becomeCoach: true,
         alwaysSticky: true,
       });
     }

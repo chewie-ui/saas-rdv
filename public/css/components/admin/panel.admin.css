@@ -60,7 +60,19 @@
 .stats-section .stats-card .stats-card__content {
   display: grid;
   gap: 15px;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 820px) {
+  .stats-section .stats-card .stats-card__content {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 479px) {
+  .stats-section .stats-card .stats-card__content {
+    grid-template-columns: 1fr;
+  }
 }
 
 .stats-section .stats-card .stats-card__content .stats-item {
@@ -102,11 +114,11 @@
 }
 
 .stats-item__trend--up {
-  color: #10b978;
+  color: var(--success);
 }
 
 .stats-item__trend--down {
-  color: #ff4d4d;
+  color: var(--danger);
 }
 
 .stats-section

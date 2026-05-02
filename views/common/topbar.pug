@@ -5,7 +5,7 @@
         //- Logo
         a.header__logo(href="/")
             .header__logo-img
-                img(src="/images/icon.webp" alt="Gymio")
+                img(src="/images/icon.webp" alt="SayMiro Calendar")
             span.header__logo-name SayMiro
 
         //- Right side
@@ -25,9 +25,14 @@
                             span= t.header.login
                         a.btn.header__btn--primary(href="/register")
                             span= t.header.register
-                    else
-                        a.btn.secondary.header__btn--ghost(href="/login")
+                    else if clientAuth
+                        a.btn.secondary.header__btn--ghost(href="/client/login")
                             span= t.header.login
+                        a.btn.header__btn--primary(href="/client/register")
+                            span= t.footer.book_now
+                    else
+                        a.btn.secondary.header__btn--ghost(href="/client/login")
+                            span Compte client
                         a.btn.header__btn--primary(href="/become-coach")
                             span= t.common.become_coach
 
@@ -94,44 +99,35 @@
                         span= t.header.login
                     a.btn.header__btn--ghost.sec(href="/register")
                         span= t.header.register
+                else if clientAuth
+                    a.btn.header__btn--primary(href="/client/login")
+                        span= t.header.login
+                    a.btn.header__btn--ghost.sec(href="/client/register")
+                        span= t.booking_page.register
                 else
                     a.btn.header__btn--primary(href="/login")
                         span= t.header.login
-                    a.btn.header__btn--ghost.sec(href="/become-coach") Devenir coach
+                    a.btn.secondary(href="/become-coach")  
+                        span Gérer un établissement
 
         .header__panel-bottom
             //- Langue dans le panel
             .header__panel-lang
                 button.header__panel-lang-btn(type="button" onclick="changeLanguage('fr')" class=lang === 'fr' ? 'active' : '')
                     img(src='/images/fr.webp')
-                    span Français
+                    span FR
                 button.header__panel-lang-btn(type="button" onclick="changeLanguage('en')" class=lang === 'en' ? 'active' : '')
                     img(src='/images/en.jpg')
-                    span English
+                    span EN
                 button.header__panel-lang-btn(type="button" onclick="changeLanguage('nl')" class=lang === 'nl' ? 'active' : '')
                     img(src='/images/nl.jpg')
-                    span Nederlands
+                    span NL
                 button.header__panel-lang-btn(type="button" onclick="changeLanguage('es')" class=lang === 'es' ? 'active' : '')
                     img(src='/images/es.jpg')
-                    span Español
+                    span ES
                 button.header__panel-lang-btn(type="button" onclick="changeLanguage('it')" class=lang === 'it' ? 'active' : '')
                     img(src='/images/it.png')
-                    span Italiano
+                    span IT
                 button.header__panel-lang-btn(type="button" onclick="changeLanguage('de')" class=lang === 'de' ? 'active' : '')
                     img(src='/images/de.png')
-                    span Deutsch
-            //- Thème dans le panel
-            button.theme-toggle.header__panel-theme(type="button")
-                svg.theme-toggle__moon(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")
-                    path(d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z")
-                svg.theme-toggle__sun.hidden(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")
-                    circle(cx="12" cy="12" r="5")
-                    line(x1="12" y1="1" x2="12" y2="3")
-                    line(x1="12" y1="21" x2="12" y2="23")
-                    line(x1="4.22" y1="4.22" x2="5.64" y2="5.64")
-                    line(x1="18.36" y1="18.36" x2="19.78" y2="19.78")
-                    line(x1="1" y1="12" x2="3" y2="12")
-                    line(x1="21" y1="12" x2="23" y2="12")
-                    line(x1="4.22" y1="19.78" x2="5.64" y2="18.36")
-                    line(x1="18.36" y1="5.64" x2="19.78" y2="4.22")
-                span Changer le thème
+                    span DE

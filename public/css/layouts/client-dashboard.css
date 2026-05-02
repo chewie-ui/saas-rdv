@@ -1,0 +1,227 @@
+/* ═══════════════════════════════════════════════
+   CLIENT DASHBOARD — contenu uniquement
+   (le layout/sidebar vient de client.css)
+   ═══════════════════════════════════════════════ */
+
+/* ── Header ── */
+.dash-header {
+  margin-bottom: 1.75rem;
+}
+
+.dash-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ── Vide ── */
+.dash-empty {
+  text-align: center;
+  padding: 4rem 1rem;
+  color: var(--text-muted);
+}
+
+.dash-empty svg {
+  opacity: 0.2;
+  margin-bottom: 1rem;
+  fill: var(--text-muted);
+}
+
+.dash-empty p {
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+/* ── Section ── */
+.dash-section {
+  margin-bottom: 2.5rem;
+}
+
+.dash-section__title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.dash-section__title svg {
+  opacity: 0.45;
+  fill: var(--text-muted);
+}
+
+.dash-section__title h2 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+
+/* ── Cards ── */
+.dash-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dash-card {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: var(--color-white);
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.15s;
+}
+
+.dash-card:hover {
+  box-shadow: var(--shadow-hover, var(--shadow-p));
+}
+
+.dash-card--upcoming {
+  border-color: var(--main-color-border);
+  background: var(--main-color-pale);
+}
+
+.dash-card--canceled {
+  opacity: 0.45;
+}
+
+/* ── Date column ── */
+.dash-card__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 44px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.date-day {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.date-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+
+.date-month {
+  font-size: 0.7rem;
+  text-transform: capitalize;
+  color: var(--text-muted);
+}
+
+/* ── Body ── */
+.dash-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.dash-card__pro {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+
+.dash-card__time {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.dash-card__time svg {
+  fill: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ── Badge ── */
+.dash-card__badge {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+}
+
+.dash-card__badge.confirmed {
+  background: var(--success-pale);
+  color: var(--success);
+}
+
+.dash-card__badge.canceled {
+  background: var(--danger-pale);
+  color: var(--danger);
+}
+
+.dash-card__badge.past {
+  background: var(--color-surface-2);
+  color: var(--text-muted);
+}
+
+/* ── Action ── */
+.dash-card__action {
+  flex-shrink: 0;
+}
+
+.btn--danger-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--danger-border, #fca5a5);
+  color: var(--danger);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+  cursor: pointer;
+}
+
+.btn--danger-ghost:hover {
+  border-color: var(--danger);
+  background: var(--danger-pale);
+}
+
+/* ── Responsive mobile ── */
+@media (max-width: 599px) {
+  .dash-card {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .dash-card__action {
+    width: 100%;
+  }
+
+  .btn--danger-ghost {
+    width: 100%;
+    text-align: center;
+  }
+
+  .dash-header h1 {
+    font-size: 1.2rem;
+  }
+}

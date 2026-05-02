@@ -15,43 +15,54 @@ svg {
 .main {
   flex: 1;
   overflow-y: auto;
+  min-width: 0;
 }
 
 .main-wrapper {
-  padding: 24px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
   height: calc(100% - 52px);
 }
 
 .main .admin-nav {
-  padding: 12px 32px;
+  padding: 12px 16px;
   border-bottom: var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  min-height: 52px;
 }
 
 .main .admin-nav h2 {
-  font-size: 18px;
-  font-weight: 400;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
 }
 
 .section__container {
   background-color: var(--color-white);
   padding: 14px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   gap: 25px;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow);
 }
 
 .block-section__row {
   display: flex;
-  gap: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .block-section__row .section__container {
-  width: calc((100% - 24px) / 2);
+  flex: 1;
+  min-width: min(100%, 280px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -79,4 +90,26 @@ svg {
   h3 {
   font-weight: 500;
   line-height: 31px;
+}
+
+/* ── Responsive admin layout ── */
+@media (min-width: 820px) {
+  .main-wrapper {
+    padding: 24px;
+    gap: 24px;
+  }
+  .main .admin-nav {
+    padding: 12px 32px;
+  }
+  .main .admin-nav h2 {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 819px) {
+  .block-section__row .section__container {
+    width: 100%;
+    min-width: 0;
+    flex: none;
+  }
 }

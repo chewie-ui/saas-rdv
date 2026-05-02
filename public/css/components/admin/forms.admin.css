@@ -33,19 +33,19 @@
 .forms-status-badge {
   padding: 4px 12px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-surface-2);
   border: var(--border);
   font-size: 0.75rem;
-  color: var(--text-muted, #888);
+  color: var(--text-muted);
   transition:
     background 0.2s,
     color 0.2s;
 }
 
 .forms-status-badge.is-active {
-  background: rgba(74, 222, 128, 0.1);
-  border-color: rgba(74, 222, 128, 0.3);
-  color: #4ade80;
+  background: var(--success-pale);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--success);
 }
 
 /* Save button */
@@ -79,8 +79,9 @@
 
 .questions-count {
   font-size: 0.75rem;
-  color: var(--text-muted, #888);
-  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--border-light);
   padding: 2px 8px;
   border-radius: 20px;
 }
@@ -110,8 +111,8 @@
 }
 
 .question-card:hover {
-  border-color: rgba(0, 0, 0, 0.7);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-medium);
+  background: var(--color-surface-2);
 }
 
 /* Source card becomes a ghost placeholder */
@@ -168,18 +169,19 @@
 
 .question-card__type {
   font-size: 0.72rem;
-  color: var(--text-muted, #888);
-  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--border-light);
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 .question-card__required {
   font-size: 0.72rem;
-  color: #f87171;
-  background: rgba(248, 113, 113, 0.1);
+  color: var(--danger);
+  background: var(--danger-pale);
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 .question-card__actions {
@@ -189,18 +191,19 @@
 }
 
 .question-card__actions button {
-  background: black;
-  border: none;
+  background: var(--color-surface-2);
+  border: 1px solid var(--border-light);
   cursor: pointer;
-  padding: 4px;
-  color: var(--text-muted, #888);
+  padding: 6px;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   justify-content: center;
   transition:
     background 0.15s,
-    color 0.15s;
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .question-card__actions button svg {
@@ -208,13 +211,15 @@
 }
 
 .question-card__actions button:hover {
-  background: rgb(70, 70, 70);
-  color: var(--text-primary, #e3e3e3);
+  background: var(--color-surface-2);
+  color: var(--text-primary);
+  border-color: var(--border-medium);
 }
 
 .question-card__actions .delete-btn:hover {
-  background: rgb(70, 70, 70);
-  color: #f87171;
+  background: var(--danger-pale);
+  color: var(--danger);
+  border-color: var(--danger-border);
 }
 
 /* Empty state */
@@ -226,9 +231,10 @@
   gap: 8px;
   padding: 40px 20px;
   text-align: center;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  color: var(--text-muted, #888);
+  border: 1.5px dashed var(--border-medium);
+  border-radius: var(--radius-lg);
+  color: var(--text-muted);
+  background: var(--color-surface);
 }
 
 .forms-builder__empty p {
@@ -335,17 +341,17 @@
 }
 
 .preview-question__label .req {
-  color: #f87171;
+  color: var(--danger);
   font-size: 0.7rem;
 }
 
 .preview-question__input {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
   padding: 6px 10px;
   font-size: 0.75rem;
-  color: var(--text-muted, #888);
+  color: var(--text-muted);
   width: 100%;
 }
 
@@ -410,7 +416,8 @@
 .forms-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -427,9 +434,9 @@
 }
 
 .forms-modal {
-  background: var(--bg-secondary, #ffffff);
-  border: var(--border);
-  border-radius: 16px;
+  background: var(--color-white);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
   width: 100%;
   max-width: 460px;
   display: flex;
@@ -477,12 +484,12 @@
 
 .type-btn {
   padding: 7px 14px;
-  border: var(--border);
-  border-radius: 8px;
-  background: none;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
   cursor: pointer;
   font-size: 0.82rem;
-  color: var(--text-muted, #888);
+  color: var(--text-secondary);
   transition:
     background 0.15s,
     border-color 0.15s,
@@ -490,14 +497,16 @@
 }
 
 .type-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-primary, #e3e3e3);
+  background: var(--color-surface-2);
+  border-color: var(--border-medium);
+  color: var(--text-primary);
 }
 
 .type-btn.active {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.25);
-  color: var(--text-primary, #e3e3e3);
+  background: var(--main-color-pale);
+  border-color: var(--main-color);
+  color: var(--main-color);
+  font-weight: 500;
 }
 
 /* Options builder */
@@ -537,7 +546,7 @@
 }
 
 .option-row .remove-option:hover {
-  color: #f87171;
+  color: var(--danger);
 }
 
 #addOptionBtn {
@@ -570,7 +579,7 @@
 }
 
 .required-badge {
-  color: #f87171;
+  color: var(--danger);
   font-size: 0.9rem;
 }
 
@@ -582,9 +591,9 @@
   position: fixed;
   bottom: 30px;
   right: 30px;
-  background: var(--bg-secondary, #1e1e1e);
-  border: var(--border);
-  border-radius: 10px;
+  background: var(--color-white);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
   padding: 12px 20px;
   font-size: 0.85rem;
   display: flex;
@@ -597,6 +606,8 @@
     opacity 0.2s,
     transform 0.2s;
   pointer-events: none;
+  box-shadow: var(--shadow-p);
+  color: var(--text-primary);
 }
 
 .forms-toast.show {
@@ -605,19 +616,21 @@
 }
 
 .forms-toast.success {
-  border-color: rgba(74, 222, 128, 0.3);
+  border-color: rgba(16, 185, 129, 0.3);
+  background: var(--color-white);
 }
 
 .forms-toast.success .toast-dot {
-  background: #4ade80;
+  background: var(--success);
 }
 
 .forms-toast.error {
-  border-color: rgba(248, 113, 113, 0.3);
+  border-color: var(--danger-border);
+  background: var(--color-white);
 }
 
 .forms-toast.error .toast-dot {
-  background: #f87171;
+  background: var(--danger);
 }
 
 .toast-dot {

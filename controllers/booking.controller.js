@@ -43,6 +43,7 @@ exports.createBooking = async (req, res) => {
       endTime,
       status: "confirmed",
       formAnswers: Array.isArray(formAnswers) ? formAnswers : [],
+      clientRef: req.session?.clientId || null,
     });
 
     const htmlTemplate = pug.renderFile(
@@ -288,5 +289,53 @@ exports.cancelBooking = async (req, res) => {
     cancelBooking: true,
     company,
     coach,
+  });
+};
+
+// ─── CLIENT PANEL ───────────────────────────────────────────────────────────
+exports.getClientPanel = async (req, res) => {
+  res.render("client/my-bookings", {
+    title: "Mes rendez-vous — SayMiro Calendar",
+    alwaysSticky: true,
+    bookings: null,
+    email: null,
+    error: null,
+  });
+};
+
+exports.postClientPanel = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email || !email.includes("@")) {
+    return res.render("client/my-bookings", {
+      title: "Mes rendez-vous — SayMiro Calendar",
+      alwaysSticky: true,
+      bookings: null,
+      email: null,
+      error: "Veuillez entrer une adresse email valide.",
+    });
+  }
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  const allBookings = await Booking.find({ email: email.toLowerCase().trim() })
+    .populate("company", "fullName profilePicture")
+    .sort({ date: -1 })
+    .lean();
+
+  const upcoming = allBookings.filter(
+    (b) => new Date(b.date) >= now && b.status === "confirmed"
+  );
+  const past = allBookings.filter(
+    (b) => new Date(b.date) < now || b.status === "canceled"
+  );
+
+  return res.render("client/my-bookings", {
+    title: "Mes rendez-vous — SayMiro Calendar",
+    alwaysSticky: true,
+    bookings: { upcoming, past },
+    email,
+    error: null,
   });
 };

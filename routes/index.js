@@ -6,8 +6,10 @@ const Companies = require("../db/models/company/company.model");
 const pug = require("pug");
 const path = require("path");
 const { sendEmail } = require("../utils/mailer");
+const SERVICES = require("../utils/services");
 
 router.use(require("./auth"));
+router.use(require("./client-auth"));
 router.use(require("./company"));
 router.use(require("./admin"));
 router.use(require("./booking"));
@@ -27,8 +29,9 @@ router.get("/", async (req, res) => {
   const validCoachs = coachs.filter((c) => c.owner);
 
   res.render("client/landing-page", {
-    title: `Gymio - ${res.locals.t.titles.home}`,
+    title: `SayMiro Calendar - ${res.locals.t.titles.home}`,
     coachs: validCoachs,
+    services: SERVICES,
   });
 });
 
@@ -36,16 +39,21 @@ router.get("/search", async (req, res) => {
   try {
     const { name, location } = req.query;
     let userQuery = {};
+    const conditions = [];
 
     if (name) {
-      // On fait la même chose pour le nom au cas où (ex: Jean-Pierre)
+      // Recherche sur le nom complet OU le type de service/métier
       const flexibleName = name.trim().replace(/[\s\-\']/g, ".*");
-      userQuery.fullName = { $regex: flexibleName, $options: "i" };
+      conditions.push({
+        $or: [
+          { fullName: { $regex: flexibleName, $options: "i" } },
+          { businessType: { $regex: flexibleName, $options: "i" } },
+        ],
+      });
     }
 
     if (location) {
       // On remplace les espaces, tirets et apostrophes par ".*" (n'importe quoi)
-      // "Grez Doiceau" devient "Grez.*Doiceau"
       const flexibleLocation = location.trim().replace(/[\s\-\']/g, ".*");
 
       const locationFilters = [
@@ -58,7 +66,13 @@ router.get("/search", async (req, res) => {
         locationFilters.push({ "location.zip": zipValue });
       }
 
-      userQuery.$or = locationFilters;
+      conditions.push({ $or: locationFilters });
+    }
+
+    if (conditions.length === 1) {
+      userQuery = conditions[0];
+    } else if (conditions.length > 1) {
+      userQuery = { $and: conditions };
     }
 
     // Le reste de ta logique Companies.find().populate()...
@@ -75,6 +89,7 @@ router.get("/search", async (req, res) => {
       coachs: filteredCoachs,
       searchName: name,
       searchLocation: location,
+      services: SERVICES,
     });
   } catch (err) {
     console.error(err);
@@ -83,7 +98,7 @@ router.get("/search", async (req, res) => {
 });
 
 router.get("/contact", (req, res) => {
-  res.render("client/contact", { title: "Contact — Gymio" });
+  res.render("client/contact", { title: "Contact — SayMiro Calendar" });
 });
 
 router.post("/contact", async (req, res) => {
@@ -91,7 +106,7 @@ router.post("/contact", async (req, res) => {
 
   if (!name || !surname || !email || !subject || !message) {
     return res.render("client/contact", {
-      title: "Contact — Gymio",
+      title: "Contact — SayMiro Calendar",
       error: "Veuillez remplir tous les champs.",
       formData: req.body,
     });
@@ -104,16 +119,16 @@ router.post("/contact", async (req, res) => {
       { name, surname, email, subject, message },
     );
 
-    await sendEmail(adminEmail, `[Contact Gymio] ${subject}`, html);
+    await sendEmail(adminEmail, `[Contact SayMiro Calendar] ${subject}`, html);
 
     return res.render("client/contact", {
-      title: "Contact — Gymio",
+      title: "Contact — SayMiro Calendar",
       success: true,
     });
   } catch (err) {
     console.error(err);
     return res.render("client/contact", {
-      title: "Contact — Gymio",
+      title: "Contact — SayMiro Calendar",
       error: "Une erreur est survenue. Veuillez réessayer.",
       formData: req.body,
     });
@@ -122,14 +137,14 @@ router.post("/contact", async (req, res) => {
 
 router.get("/confidentialite", (req, res) => {
   res.render("client/confidentialite", {
-    title: "Politique de confidentialité — Gymio",
+    title: "Politique de confidentialité — SayMiro Calendar",
     alwaysSticky: true,
   });
 });
 
 router.get("/conditions-utilisation", (req, res) => {
   res.render("client/conditions-utilisation", {
-    title: "Conditions d'utilisation — Gymio",
+    title: "Conditions d'utilisation — SayMiro Calendar",
     alwaysSticky: true,
   });
 });
@@ -141,6 +156,16 @@ router.get("/become-coach", (req, res) => {
   });
 });
 
+
+router.get("/s-inscrire", (req, res) => {
+  res.render("auth/choose-account", {
+    title: "Créer un compte — SayMiro Calendar",
+    alwaysSticky: true,
+  });
+});
+
+router.get("/mes-rdv", require("../controllers/booking.controller").getClientPanel);
+router.post("/mes-rdv", require("../controllers/booking.controller").postClientPanel);
 router.get("/:company", async (req, res) => {
   const company = await getCompanyIfExist(req.params.company);
   console.log(req.params.company);

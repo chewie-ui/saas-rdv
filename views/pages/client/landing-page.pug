@@ -17,11 +17,11 @@ block content
             .hero__form-container.container
                 .form-group
                     label= t.search.label_name
-                    input.input.search-input#inputName(placeholder=t.search.placeholder_name)
+                    input.input.search-input#inputName(placeholder=t.search.placeholder_name value=searchName || "")
                     .menu-search.menu-names
                 .form-group
                     label= t.search.label_location
-                    input.search-input#inputLocation(type="text" placeholder=t.search.placeholder_location).input
+                    input.search-input#inputLocation(type="text" placeholder=t.search.placeholder_location value=searchLocation || "").input
                     .menu-search.menu-locations
                 .form__action
                     button.btn#searchBtn
@@ -66,5 +66,7 @@ block content
     +dialog()   
 
 block scripts
+    script.
+        window.__services = !{JSON.stringify(services)};
     script(src="/js/layouts/client/landing-page.js" type="module")
     script(src='/js/templates/dialog.js' type="module")

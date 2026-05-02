@@ -1,0 +1,29 @@
+doctype html
+html(lang="fr")
+    head
+        meta(name="viewport" content="width=device-width, initial-scale=1.0")
+        meta(charset="UTF-8")
+        title= title || 'Mon espace — SayMiro Calendar'
+        link(rel="shortcut icon", href="/images/icon.svg", type="image/x-icon")
+        link(rel="stylesheet", href="/css/import.css")
+        link(rel="stylesheet", href="/css/layouts/client.css")
+        //- Anti-flash : applique le thème AVANT le rendu
+        script.
+            (function(){try{var t=localStorage.getItem('saymiro-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
+        block links
+    body
+        .client-layout
+            include ../common/sidebar-client
+            .client-main
+                .client-nav
+                    button#openMenu.client-nav__burger(type="button" aria-label="Ouvrir le menu")
+                        svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor")
+                            path(d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z")
+                    h2.client-nav__title= pageName || 'Mon espace'
+                .client-main-wrapper
+                    block content
+        script(src="/js/layouts/admin.js" type="module")
+        script(src="/js/theme.js")
+        block scripts
+        script.
+            window.__t = !{JSON.stringify(t.js)};

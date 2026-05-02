@@ -26,7 +26,9 @@
 
 .auth-wrapper .auth-form .form-body {
   gap: 30px;
-  width: 300px;
+  width: 100%;
+  max-width: 380px;
+  padding: 0 16px;
 }
 
 .auth-wrapper .auth-form .auth-form__container .company h2 {
@@ -83,7 +85,8 @@
 }
 
 .auth-wrapper .auth-form .form-body.schedule {
-  width: 520px;
+  width: 100%;
+  max-width: 560px;
 }
 
 .auth-wrapper
@@ -151,7 +154,58 @@
   width: 125px;
 }
 
-@media all and (min-width: 820px) {
+/* ── Service searchable select ── */
+.service-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.service-select-wrapper .service-input {
+  width: 100%;
+}
+
+.service-select-wrapper .service-input--selected {
+  border-color: var(--primary, #111);
+}
+
+.service-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.10);
+  z-index: 999;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.service-dropdown__item {
+  padding: 10px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.service-dropdown__item:hover {
+  background: var(--bg-secondary, #f5f5f5);
+}
+
+@media all and (max-width: 480px) {
+  .auth-wrapper .auth-form .form-body {
+    padding: 0 12px;
+  }
+
+  .auth-wrapper .auth-form .auth-form__container .form-body .form-fields {
+    gap: 12px;
+  }
+
+  .auth-wrapper .auth-form .form-body .form-title h1 {
+    font-size: 18px;
+  }
 }
 
 @media all and (min-width: 1280px) {
@@ -165,5 +219,7 @@
 
   .auth-wrapper .auth-form .form-body {
     width: 420px;
+    max-width: 420px;
+    padding: 0;
   }
 }

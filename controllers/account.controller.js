@@ -78,8 +78,8 @@ exports.createCheckout = async (req, res) => {
 
     client_reference_id: req.user._id.toString(),
 
-    success_url: "https://www.gymio.be/subscription/success",
-    cancel_url: "https://www.gymio.be/subscription",
+    success_url: "https://www.saymiro.com/subscription/success",
+    cancel_url: "https://www.saymiro.com/subscription",
   });
 
   res.json({ url: session.url });
@@ -266,6 +266,17 @@ exports.editDescription = async (req, res) => {
       description,
     });
 
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false });
+  }
+};
+
+exports.updateBusinessType = async (req, res) => {
+  try {
+    const { businessType } = req.body;
+    await User.findByIdAndUpdate(req.user._id, { businessType: businessType || "" });
     return res.json({ success: true });
   } catch (err) {
     console.error(err);

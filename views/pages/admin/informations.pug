@@ -63,6 +63,24 @@ block content
                         button#confirmDeleteAccount.btn.danger(type="button")= t.info.confirm_delete
                         .delete-account-modal__status#deleteConfirmStatus
 
+        .business-type__container
+            h2 Type de service / Métier
+            .business-type__body
+                .form-group
+                    label Votre métier ou secteur d'activité
+                    .service-select-wrapper
+                        input.input.service-input(
+                            type="text"
+                            id="businessTypeInput"
+                            placeholder="Ex: Coiffeur, Médecin, Coach sportif..."
+                            autocomplete="off"
+                            value=user.businessType || ""
+                        )
+                        .service-dropdown#businessTypeDropdown
+                .business-type__action
+                    button#saveBusinessType(style="width:auto")
+                        span Enregistrer
+
         .location__container
             .location__map(id="mapContainer")
                 if user.location.iframeUrl
@@ -195,3 +213,62 @@ block scripts
     script(src='/js/layouts/informations.js')
     script(src='/js/templates/dialog.js' type="module")
     script(src='/js/templates/edit-email.js')
+    script.
+        const __services = !{JSON.stringify(services)};
+        (function() {
+            const input = document.getElementById('businessTypeInput');
+            const dropdown = document.getElementById('businessTypeDropdown');
+            const saveBtn = document.getElementById('saveBusinessType');
+            if (!input || !dropdown) return;
+
+            function normalize(str) {
+                return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+            }
+
+            function renderList(items) {
+                dropdown.innerHTML = '';
+                if (items.length === 0) { dropdown.style.display = 'none'; return; }
+                items.forEach(function(item) {
+                    const div = document.createElement('div');
+                    div.className = 'service-dropdown__item';
+                    div.textContent = item;
+                    div.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        input.value = item;
+                        dropdown.style.display = 'none';
+                    });
+                    dropdown.appendChild(div);
+                });
+                dropdown.style.display = 'block';
+            }
+
+            input.addEventListener('input', function() {
+                const q = normalize(input.value.trim());
+                if (!q) { dropdown.style.display = 'none'; return; }
+                renderList(__services.filter(s => normalize(s).includes(q)).slice(0, 8));
+            });
+
+            input.addEventListener('focus', function() {
+                const q = normalize(input.value.trim());
+                if (q) renderList(__services.filter(s => normalize(s).includes(q)).slice(0, 8));
+            });
+
+            input.addEventListener('blur', function() {
+                setTimeout(function() { dropdown.style.display = 'none'; }, 150);
+            });
+
+            if (saveBtn) {
+                saveBtn.addEventListener('click', async function() {
+                    const res = await fetch('/account/business-type', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ businessType: input.value.trim() })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        saveBtn.querySelector('span').textContent = '✓ Enregistré';
+                        setTimeout(() => { saveBtn.querySelector('span').textContent = 'Enregistrer'; }, 2500);
+                    }
+                });
+            }
+        })();

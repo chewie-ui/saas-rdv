@@ -74,6 +74,13 @@ const bookingSchema = new schema(
         answer: { type: String },
       },
     ],
+
+    clientRef: {
+      type: schema.Types.ObjectId,
+      ref: "Client",
+      required: false,
+      default: null,
+    },
   },
   { timestamps: true },
 );

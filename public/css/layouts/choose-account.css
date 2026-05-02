@@ -1,0 +1,138 @@
+.choose-account {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: var(--bg-app);
+}
+
+.choose-account__card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--color-white);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: 2.5rem 2rem;
+  box-shadow: var(--shadow-p);
+}
+
+.choose-account__header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.choose-account__header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+  color: var(--text-primary);
+}
+
+.choose-account__header p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.choose-account__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.choose-option {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--border-light);
+  background: var(--color-white);
+  text-decoration: none;
+  color: inherit;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.1s ease,
+    box-shadow 0.15s ease;
+  cursor: pointer;
+}
+
+.choose-option:hover {
+  border-color: var(--main-color);
+  background: var(--main-color-pale);
+  transform: translateX(3px);
+  box-shadow: 0 2px 12px var(--main-color-glow);
+  color: inherit;
+}
+
+.choose-option__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  background: var(--main-color-pale);
+  border: 1px solid var(--main-color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--main-color);
+  transition: background 0.15s ease;
+}
+
+.choose-option:hover .choose-option__icon {
+  background: var(--main-color-light);
+}
+
+.choose-option__icon svg {
+  width: 22px;
+  height: 22px;
+  fill: var(--main-color);
+  margin: 0;
+}
+
+.choose-option__content {
+  flex: 1;
+}
+
+.choose-option__content h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+  color: var(--text-primary);
+}
+
+.choose-option__content p {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.choose-option__arrow {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.choose-option:hover .choose-option__arrow {
+  color: var(--main-color);
+  transform: translateX(2px);
+}
+
+.choose-account__login {
+  text-align: center;
+  font-size: 0.83rem;
+  color: var(--text-muted);
+}
+
+.choose-account__login a {
+  color: var(--main-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.choose-account__login a:hover {
+  color: var(--main-color-hover);
+  text-decoration: underline;
+}

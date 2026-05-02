@@ -8,8 +8,9 @@
   justify-content: center;
   align-items: center;
   z-index: 99;
-  background: rgb(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(2px);
+  padding: 16px;
 }
 
 .confirm-popup.show {
@@ -18,11 +19,12 @@
 
 .confirm-popup .confirm-popup__wrapper {
   background-color: var(--color-white);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-p);
   border: var(--border);
   padding: 22px 24px;
-  border-radius: 10px;
-  max-width: 310px;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 360px;
   display: flex;
   flex-direction: column;
   gap: 15px;

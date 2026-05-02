@@ -7,9 +7,10 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgb(255, 255, 255, 0.2);
+  background-color: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(2px);
   z-index: 50;
+  padding: 16px;
 }
 
 .email__editor.open {
@@ -18,13 +19,14 @@
 
 .email__editor .email__container {
   padding: 24px;
-  border-radius: 10px;
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-p);
   border: var(--border);
   display: flex;
-  width: 320px;
+  width: 100%;
+  max-width: 380px;
   flex-direction: column;
-  background-color: white;
+  background-color: var(--color-white);
   position: relative;
   gap: 25px;
 }

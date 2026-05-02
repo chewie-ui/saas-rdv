@@ -1,0 +1,221 @@
+extends ../../layouts/client
+
+block links
+    link(rel="stylesheet", href="/css/layouts/client-settings.css")
+
+block content
+    .settings
+
+        //- ── Toast feedback ──
+        if success === 'profile'
+            .settings__toast.settings__toast--success
+                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                span Profil mis à jour avec succès.
+        else if success === 'email'
+            .settings__toast.settings__toast--success
+                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                span Adresse email mise à jour.
+        else if success === 'password'
+            .settings__toast.settings__toast--success
+                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                span Mot de passe modifié avec succès.
+        else if error === 'wrong_password'
+            .settings__toast.settings__toast--error
+                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                    path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                span Mot de passe incorrect.
+        else if error === 'password_mismatch'
+            .settings__toast.settings__toast--error
+                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                    path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                span Les mots de passe ne correspondent pas.
+        else if error === 'password_too_short'
+            .settings__toast.settings__toast--error
+                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                    path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                span Le mot de passe doit contenir au moins 8 caractères.
+        else if error === 'email_taken'
+            .settings__toast.settings__toast--error
+                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                    path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                span Cette adresse email est déjà utilisée.
+        else if error === 'invalid_name'
+            .settings__toast.settings__toast--error
+                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                    path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                span Le nom doit contenir au moins 2 caractères.
+        else if error
+            .settings__toast.settings__toast--error
+                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                    path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                span Une erreur est survenue. Veuillez réessayer.
+
+        //- ════════════════════════════════
+        //- SECTION 1 — Photo de profil
+        //- ════════════════════════════════
+        .settings__card#profil
+            .settings__card-header
+                .settings__card-title
+                    svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                        path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Z")
+                    h2 Photo de profil
+            .settings__card-body
+                .settings__avatar-wrap
+                    .settings__avatar
+                        img#avatarPreview(src=client.profilePicture || '/images/no-user.webp' alt="Avatar")
+                    .settings__avatar-actions
+                        button.settings__avatar-btn(type="button" id="triggerAvatarUpload")
+                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                path(d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z")
+                            | Changer la photo
+                        p.settings__avatar-hint JPG, PNG, WebP · max 5 Mo
+                        input#avatarInput(type="file" name="profilePicture" accept="image/*" style="display:none")
+
+        //- ════════════════════════════════
+        //- SECTION 2 — Informations personnelles
+        //- ════════════════════════════════
+        form.settings__card(action="/espace-client/parametres/profile" method="POST")
+            .settings__card-header
+                .settings__card-title
+                    svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                        path(d="M160-120q-33 0-56.5-23.5T80-200v-440q0-33 23.5-56.5T160-720h160v-80q0-33 23.5-56.5T400-880h160q33 0 56.5 23.5T640-800v80h160q33 0 56.5 23.5T880-640v440q0 33-23.5 56.5T800-120H160Z")
+                    h2 Informations personnelles
+            .settings__card-body
+                .settings__grid
+                    .settings__field
+                        label(for="fullName") Nom complet
+                        input#fullName(
+                            type="text"
+                            name="fullName"
+                            value=client.fullName
+                            placeholder="Jean Dupont"
+                            required
+                        )
+                    .settings__field
+                        label(for="phone") Téléphone
+                        input#phone(
+                            type="tel"
+                            name="phone"
+                            value=client.phone || ''
+                            placeholder="+32 470 00 00 00"
+                        )
+                    .settings__field.settings__field--full
+                        label(for="location")
+                            svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                path(d="M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 294q122-112 181-203.5T720-552q0-109-69.5-178.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186Zm0 106Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 100-79.5 217.5T480-80Zm0-480Z")
+                            | Localisation
+                        input#location(
+                            type="text"
+                            name="location"
+                            value=client.location || ''
+                            placeholder="Paris, France"
+                        )
+
+                //- Langues
+                .settings__field.settings__field--full
+                    label Langues parlées
+                    .settings__langs
+                        - const allLangs = [{code:'fr',label:'Français',flag:'/images/fr.webp'},{code:'en',label:'English',flag:'/images/en.jpg'},{code:'nl',label:'Nederlands',flag:'/images/nl.jpg'},{code:'es',label:'Español',flag:'/images/es.jpg'},{code:'it',label:'Italiano',flag:'/images/it.png'},{code:'de',label:'Deutsch',flag:'/images/de.png'}]
+                        each l in allLangs
+                            label.settings__lang-chip(class=(client.languages && client.languages.includes(l.code)) ? 'active' : '')
+                                input(type="checkbox" name="languages" value=l.code checked=(client.languages && client.languages.includes(l.code)))
+                                img(src=l.flag alt=l.label)
+                                span= l.label
+
+                //- Notifications
+                .settings__field.settings__field--full
+                    .settings__toggle-row
+                        .settings__toggle-info
+                            p.settings__toggle-title Notifications email
+                            p.settings__toggle-sub Recevoir les confirmations et rappels de rendez-vous par email
+                        label.settings__toggle-switch
+                            input#emailNotifications(
+                                type="checkbox"
+                                name="emailNotifications"
+                                checked=(client.emailNotifications !== false)
+                            )
+                            span.settings__toggle-track
+
+            .settings__card-footer
+                button.btn.primary(type="submit")
+                    span Enregistrer les modifications
+
+        //- ════════════════════════════════
+        //- SECTION 3 — Adresse email
+        //- ════════════════════════════════
+        form.settings__card#compte(action="/espace-client/parametres/email" method="POST")
+            .settings__card-header
+                .settings__card-title
+                    svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                        path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280L160-640v400h640v-400L480-440Zm0-80 320-200H160l320 200ZM160-640v-80 480-400Z")
+                    h2 Adresse email
+            .settings__card-body
+                .settings__info-row
+                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                        path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                    p Email actuel : #[strong= client.email]
+                .settings__grid
+                    .settings__field
+                        label(for="newEmail") Nouvel email
+                        input#newEmail(
+                            type="email"
+                            name="newEmail"
+                            placeholder="nouveau@email.com"
+                            required
+                        )
+                    .settings__field
+                        label(for="passwordConfirmEmail") Mot de passe actuel
+                        input#passwordConfirmEmail(
+                            type="password"
+                            name="passwordConfirm"
+                            placeholder="Confirmez votre identité"
+                            required
+                        )
+            .settings__card-footer
+                button.btn.primary(type="submit")
+                    span Changer l'email
+
+        //- ════════════════════════════════
+        //- SECTION 4 — Sécurité
+        //- ════════════════════════════════
+        form.settings__card#securite(action="/espace-client/parametres/password" method="POST")
+            .settings__card-header
+                .settings__card-title
+                    svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                        path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-200q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
+                    h2 Sécurité
+            .settings__card-body
+                .settings__grid
+                    .settings__field
+                        label(for="currentPassword") Mot de passe actuel
+                        input#currentPassword(
+                            type="password"
+                            name="currentPassword"
+                            placeholder="••••••••"
+                            required
+                        )
+                    .settings__field
+                        label(for="newPassword") Nouveau mot de passe
+                        input#newPassword(
+                            type="password"
+                            name="newPassword"
+                            placeholder="min. 8 caractères"
+                            required
+                        )
+                    .settings__field
+                        label(for="confirmPassword") Confirmer le mot de passe
+                        input#confirmPassword(
+                            type="password"
+                            name="confirmPassword"
+                            placeholder="••••••••"
+                            required
+                        )
+            .settings__card-footer
+                button.btn.primary(type="submit")
+                    span Changer le mot de passe
+
+block scripts
+    script(src="/js/pages/client/client-settings.js")

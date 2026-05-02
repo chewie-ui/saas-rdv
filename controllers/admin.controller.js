@@ -1,5 +1,6 @@
 const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
 const Stripe = require("stripe");
+const SERVICES = require("../utils/services");
 
 const stripe = new Stripe(env.stripeSecretKey);
 
@@ -417,6 +418,7 @@ exports.informationsPage = (req, res) => {
     success: req.query.success,
     title: res.locals.t.titles.infos,
     maskEmail,
+    services: SERVICES,
   });
 };
 

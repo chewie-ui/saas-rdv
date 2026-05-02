@@ -136,17 +136,79 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputName = document.getElementById("inputName");
   const inputLocation = document.getElementById("inputLocation");
   const resultsLocation = document.querySelector(".menu-locations");
+  const menuNames = document.querySelector(".menu-names");
 
-  let debounceTimer; // On crée une variable pour stocker le "chrono"
+  // ---- Service suggestions dropdown ----
+  function normalizeStr(str) {
+    return str.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  }
+
+  function renderServiceItems(items) {
+    if (!menuNames) return;
+    menuNames.innerHTML = "";
+    if (items.length === 0) {
+      menuNames.classList.remove("active");
+      return;
+    }
+    items.forEach((item) => {
+      const div = document.createElement("div");
+      div.textContent = item;
+      menuNames.appendChild(div);
+    });
+    menuNames.classList.add("active");
+  }
+
+  // Ferme tous les dropdowns
+  function closeAllDropdowns() {
+    if (menuNames) menuNames.classList.remove("active");
+    if (resultsLocation) {
+      resultsLocation.classList.remove("active");
+      resultsLocation.innerHTML = "";
+    }
+  }
+
+  if (inputName && menuNames && window.__services) {
+    inputName.addEventListener("focus", () => {
+      // Ferme le dropdown lieu avant d'ouvrir services
+      if (resultsLocation) {
+        resultsLocation.classList.remove("active");
+        resultsLocation.innerHTML = "";
+      }
+      const q = normalizeStr(inputName.value.trim());
+      const filtered = q
+        ? window.__services.filter((s) => normalizeStr(s).includes(q)).slice(0, 10)
+        : window.__services.slice(0, 10);
+      renderServiceItems(filtered);
+    });
+
+    inputName.addEventListener("input", () => {
+      const q = normalizeStr(inputName.value.trim());
+      const filtered = q
+        ? window.__services.filter((s) => normalizeStr(s).includes(q)).slice(0, 10)
+        : window.__services.slice(0, 10);
+      renderServiceItems(filtered);
+    });
+
+    inputName.addEventListener("blur", () => {
+      setTimeout(() => menuNames.classList.remove("active"), 150);
+    });
+  }
+
+  let debounceTimer;
 
   if (inputLocation) {
-    inputLocation.addEventListener("input", () => {
-      // 1. On annule le chrono précédent à chaque fois qu'on tape une lettre
-      clearTimeout(debounceTimer);
+    inputLocation.addEventListener("focus", () => {
+      // Ferme le dropdown services quand on entre dans le champ lieu
+      if (menuNames) menuNames.classList.remove("active");
+    });
 
+    inputLocation.addEventListener("input", () => {
+      // Ferme le dropdown services
+      if (menuNames) menuNames.classList.remove("active");
+
+      clearTimeout(debounceTimer);
       const val = inputLocation.value.trim();
 
-      // 2. On lance un nouveau chrono de 300 millisecondes
       debounceTimer = setTimeout(async () => {
         if (val.length < 2) {
           resultsLocation.classList.remove("active");
@@ -156,14 +218,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
           const res = await fetch(
-            `https://quentin-project.site/api/search?name=${val}`,
+            `https://quentin-project.site/api/search?name=${encodeURIComponent(val)}`,
           );
 
           if (!res.ok) throw new Error("Erreur API");
 
           const data = await res.json();
 
-          // On vide le menu AVANT d'afficher les nouveaux résultats
           resultsLocation.innerHTML = "";
           resultsLocation.classList.add("active");
 
@@ -181,9 +242,22 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (err) {
           console.error("Erreur de fetch :", err);
         }
-      }, 300); // 300ms de délai
+      }, 300);
+    });
+
+    inputLocation.addEventListener("blur", () => {
+      setTimeout(() => {
+        if (resultsLocation) resultsLocation.classList.remove("active");
+      }, 150);
     });
   }
+
+  // Clic en dehors = ferme tout
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".hero__form-container")) {
+      closeAllDropdowns();
+    }
+  }, true);
 
   if (searchBtn) {
     searchBtn.addEventListener("click", () => {

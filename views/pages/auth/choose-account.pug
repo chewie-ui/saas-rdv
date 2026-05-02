@@ -1,0 +1,86 @@
+extends ../../layouts/index
+
+block links
+    link(rel="stylesheet", href="/css/components/index/auth.index.css")
+    link(rel="stylesheet", href="/css/layouts/choose-account.css")
+
+block content
+    .content-wrapper
+        .auth-wrapper
+            .auth-image       
+                img(src='/images/auth-bg.png' alt="Men writing on computer")
+                .image-content
+            .auth-form.flex
+                .auth-form__container
+                    .form-body.flex.col
+                        .form-title.flex.col
+                            h1 Créer un compte
+                            p Choisissez votre type de compte pour commencer.
+                        .choose-account__options
+                            a.choose-option(href="/register")
+                                .choose-option__icon
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
+                                        path(d="M160-120v-80h640v80H160Zm0-160v-80h640v80H160Zm0-160v-80h640v80H160Zm0-160v-80h640v80H160Zm0-160v-80h640v80H160Z")
+                                .choose-option__content
+                                    h2 Je suis un professionnel
+                                    p Coach, coiffeur, médecin, thérapeute… Gérez vos réservations et vos clients.
+                                .choose-option__arrow
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                                        path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+
+                            a.choose-option(href="/client/register")
+                                .choose-option__icon
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
+                                        path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Z")
+                                .choose-option__content
+                                    h2 Je suis un client
+                                    p Suivez vos rendez-vous, gérez vos réservations depuis un seul endroit.
+                                .choose-option__arrow
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                                        path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                        .choose-account__login
+                            p Déjà un compte ?
+                            a(href="/login")  Se connecter en tant que pro
+                            |  ·
+                            a(href="/client/login")  Se connecter en tant que client
+                        if error
+                            p.xs-comment.error= error
+block scripts       
+    script(src="/js/components/topbar.js")
+
+
+//- block content
+//-     .choose-account
+//-         .choose-account__card
+//-             .choose-account__header
+//-                 h1 Créer un compte
+//-                 p Choisissez votre type de compte pour commencer.
+
+//-             .choose-account__options
+//-                 a.choose-option(href="/register")
+//-                     .choose-option__icon
+//-                         svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
+//-                             path(d="M160-120v-80h640v80H160Zm0-160v-80h640v80H160Zm0-160v-80h640v80H160Zm0-160v-80h640v80H160Zm0-160v-80h640v80H160Z")
+//-                     .choose-option__content
+//-                         h2 Je suis un professionnel
+//-                         p Coach, coiffeur, médecin, thérapeute… Gérez vos réservations et vos clients.
+//-                     .choose-option__arrow
+//-                         svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+//-                             path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+
+//-                 a.choose-option(href="/client/register")
+//-                     .choose-option__icon
+//-                         svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
+//-                             path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Z")
+//-                     .choose-option__content
+//-                         h2 Je suis un client
+//-                         p Suivez vos rendez-vous, gérez vos réservations depuis un seul endroit.
+//-                     .choose-option__arrow
+//-                         svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+//-                             path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+
+//-             .choose-account__login
+//-                 p Déjà un compte ?
+//-                     a(href="/login")  Se connecter en tant que pro
+//-                     |  ·
+//-                     a(href="/client/login")  Se connecter en tant que client

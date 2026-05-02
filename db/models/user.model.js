@@ -97,6 +97,11 @@ const userSchema = schema(
       },
     },
 
+    businessType: {
+      type: String,
+      default: "",
+    },
+
     googleCalendar: {
       connected: { type: Boolean, default: false },
       email: { type: String, default: "" },

@@ -1,0 +1,31 @@
+extends ../../layouts/index
+
+block links
+    link(rel="stylesheet", href="/css/layouts/client-auth.css")
+
+block content
+    .client-auth
+        .client-auth__card
+            .client-auth__header
+                h1 Bon retour !
+                p Connectez-vous pour accéder à vos rendez-vous.
+
+            if error
+                .client-auth__error= error
+
+            form.client-auth__form(method="POST" action="/client/login")
+                .form-group
+                    label Email
+                    input.input(type="email" name="email" placeholder="votre@email.com" required autocomplete="email")
+                .form-group
+                    label Mot de passe
+                    input.input(type="password" name="password" placeholder="••••••••" required autocomplete="current-password")
+                button.btn(type="submit")
+                    span Se connecter
+
+            .client-auth__footer
+                p Pas encore de compte ?
+                    a(href="/client/register")  Créer un compte
+                p.separator ou
+                a.btn.secondary(href="/mes-rdv")
+                    span Voir mes RDV sans compte

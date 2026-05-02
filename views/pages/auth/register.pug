@@ -1,12 +1,13 @@
 extends ../../layouts/index
 
-block links 
+block links
     link(rel="stylesheet", href="/css/components/index/auth.index.css")
+
 block content
     .content-wrapper
         .auth-wrapper
-            .auth-image       
-                img(src='/images/auth-bg.webp' alt="Men writing on computer")
+            .auth-image
+                img(src='/images/auth-bg.png' alt="Men writing on computer")
                 .image-content
             .auth-form.flex
                 .auth-form__container.flex.col
@@ -26,6 +27,17 @@ block content
                                 p= t.auth.work_email
                                 input.input(placeholder="business@example.com" type="text" name="email")
                             .field-container.flex.col
+                                p Votre métier / secteur
+                                .service-select-wrapper
+                                    input.input.service-input(
+                                        type="text"
+                                        id="serviceInput"
+                                        placeholder="Ex: Coiffeur, Médecin..."
+                                        autocomplete="off"
+                                    )
+                                    input(type="hidden" name="businessType" id="businessTypeInput")
+                                    .service-dropdown#serviceDropdown
+                            .field-container.flex.col
                                 p= t.auth.password
                                 input.input(placeholder="**************" type="password" name="password")
                             .field-container.flex.col
@@ -33,7 +45,64 @@ block content
                                 input.input(placeholder="**************" type="password" name="conformPassword")
                             button(type="submit")
                                 span= t.auth.continue
+                            .no-acc.flex= t.auth.already_account
+                                a(href="/login")= t.auth.login_link
                         if error
                             p.xs-comment.error= error
-block scripts       
+
+block scripts
     script(src="/js/components/topbar.js")
+    script.
+        const __services = !{JSON.stringify(services)};
+        (function() {
+            const input = document.getElementById('serviceInput');
+            const hidden = document.getElementById('businessTypeInput');
+            const dropdown = document.getElementById('serviceDropdown');
+            if (!input || !dropdown) return;
+
+            function normalize(str) {
+                return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+            }
+
+            function renderList(items) {
+                dropdown.innerHTML = '';
+                if (items.length === 0) {
+                    dropdown.style.display = 'none';
+                    return;
+                }
+                items.forEach(function(item) {
+                    const li = document.createElement('div');
+                    li.className = 'service-dropdown__item';
+                    li.textContent = item;
+                    li.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        input.value = item;
+                        hidden.value = item;
+                        dropdown.style.display = 'none';
+                        input.classList.add('service-input--selected');
+                    });
+                    dropdown.appendChild(li);
+                });
+                dropdown.style.display = 'block';
+            }
+
+            input.addEventListener('input', function() {
+                const q = normalize(input.value.trim());
+                hidden.value = input.value.trim();
+                if (!q) { dropdown.style.display = 'none'; return; }
+                const filtered = __services.filter(s => normalize(s).includes(q));
+                renderList(filtered.slice(0, 8));
+            });
+
+            input.addEventListener('focus', function() {
+                const q = normalize(input.value.trim());
+                if (q) {
+                    const filtered = __services.filter(s => normalize(s).includes(q));
+                    renderList(filtered.slice(0, 8));
+                }
+            });
+
+            input.addEventListener('blur', function() {
+                setTimeout(function() { dropdown.style.display = 'none'; }, 150);
+            });
+        })();

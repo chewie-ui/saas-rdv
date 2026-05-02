@@ -3,14 +3,17 @@ const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
 const Company = require("../db/models/company/company.model");
 const { sendEmail } = require("../utils/mailer");
+const SERVICES = require("../utils/services");
 
 exports.createUser = async (req, res) => {
-  const { fullname, email, password, conformPassword } = req.body;
+  const { fullname, email, password, conformPassword, businessType } = req.body;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.render("auth/register", {
+      becomeCoach: true,
       alwaysSticky: true,
+      services: SERVICES,
       error: res.locals.t?.auth?.error_invalid_email || "Veuillez entrer une adresse email valide.",
     });
   }
@@ -18,28 +21,36 @@ exports.createUser = async (req, res) => {
   const checkName = await User.findOne({ fullName: fullname }).lean();
   if (checkName) {
     return res.render("auth/register", {
+      becomeCoach: true,
       alwaysSticky: true,
+      services: SERVICES,
       error: res.locals.t?.auth?.error_name_taken || "Ce nom est déjà utilisé.",
     });
   }
   const checkEmail = await User.findOne({ email }).lean();
   if (checkEmail) {
     return res.render("auth/register", {
+      becomeCoach: true,
       alwaysSticky: true,
+      services: SERVICES,
       error: res.locals.t?.auth?.error_email_taken || "Cette adresse email est déjà utilisée.",
     });
   }
 
   if (password.trim() !== conformPassword.trim()) {
     return res.render("auth/register", {
+      becomeCoach: true,
       alwaysSticky: true,
+      services: SERVICES,
       error: res.locals.t?.auth?.error_pwd_match || "Les mots de passe ne correspondent pas.",
     });
   }
 
   if (password.trim().length < 8) {
     return res.render("auth/register", {
+      becomeCoach: true,
       alwaysSticky: true,
+      services: SERVICES,
       error: res.locals.t?.auth?.error_pwd_length || "Le mot de passe doit contenir au moins 8 caractères.",
     });
   }
@@ -53,6 +64,7 @@ exports.createUser = async (req, res) => {
       email,
       password: hashedPassword,
       company: companyId,
+      businessType: businessType || "",
     });
 
     await Company.create({
@@ -82,7 +94,9 @@ exports.createUser = async (req, res) => {
       });
     }
     return res.render("auth/register", {
+      becomeCoach: true,
       alwaysSticky: true,
+      services: SERVICES,
       error: err,
     });
   }

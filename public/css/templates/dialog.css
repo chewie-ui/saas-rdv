@@ -8,9 +8,17 @@
   width: 100%;
   height: 100%;
   justify-content: center;
-  padding-top: 10%;
+  padding: 16px;
   backdrop-filter: blur(1px);
   align-items: flex-start;
+}
+
+@media (min-width: 480px) {
+  .dialog {
+    padding-top: 10%;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }
 
 .dialog .dialog__wrapper {
@@ -18,7 +26,7 @@
   padding: 5px 0;
   max-width: 600px;
   width: 100%;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow:
     0 10px 16px -4px rgba(28, 28, 28, 0.1),
@@ -35,11 +43,17 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 32px;
+  padding: 20px 24px;
+}
+
+@media (min-width: 480px) {
+  .dialog .dialog__wrapper .dialog__top {
+    padding: 32px;
+  }
 }
 
 .dialog .dialog__wrapper .dialog__top .dialog__title h2 {
-  font-size: 24px;
+  font-size: clamp(18px, 4vw, 24px);
   font-weight: 500;
 }
 
@@ -54,7 +68,14 @@
 
 .dialog .dialog__wrapper .dialog__description,
 .dialog .dialog__wrapper .dialog__field {
-  padding: 32px;
+  padding: 20px 24px;
+}
+
+@media (min-width: 480px) {
+  .dialog .dialog__wrapper .dialog__description,
+  .dialog .dialog__wrapper .dialog__field {
+    padding: 32px;
+  }
 }
 
 .dialog .dialog__wrapper .dialog__field input {
@@ -68,12 +89,20 @@
 }
 
 .dialog .dialog__wrapper .dialog__actions {
-  padding: 32px;
+  padding: 20px 24px;
   display: flex;
   flex-direction: row;
-  gap: 17px;
+  gap: 12px;
   justify-content: flex-end;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 480px) {
+  .dialog .dialog__wrapper .dialog__actions {
+    padding: 32px;
+    gap: 17px;
+  }
 }
 
 .dialog .dialog__wrapper .dialog__actions button.dialog__btn1 {
