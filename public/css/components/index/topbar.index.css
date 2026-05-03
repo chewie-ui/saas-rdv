@@ -157,10 +157,10 @@
   right: 0;
   background: var(--color-card);
   border: 1px solid var(--border-light);
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: var(--shadow-p);
   padding: 6px;
-  min-width: 140px;
+  min-width: 170px;
   display: none;
   flex-direction: column;
   gap: 2px;
@@ -170,6 +170,47 @@
 
 .header__lang.open .header__lang-panel {
   display: flex;
+}
+
+/* Boutons dans le dropdown langue */
+.header__lang-panel button.secondary {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: transparent;
+  border-radius: 9px;
+  width: 100%;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+
+.header__lang-panel button.secondary span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  width: 100%;
+}
+
+.header__lang-panel button.secondary img {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  margin-right: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.header__lang-panel button.secondary:hover {
+  background: var(--color-surface-2);
+}
+
+.header__lang-panel button.secondary:hover span {
+  color: var(--main-color);
 }
 
 /* ── Burger (mobile) ── */

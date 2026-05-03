@@ -24,8 +24,6 @@ router.get("/", async (req, res) => {
     })
     .limit(10);
 
-  console.log(coachs);
-
   const validCoachs = coachs.filter((c) => c.owner);
 
   res.render("client/landing-page", {
@@ -45,10 +43,7 @@ router.get("/search", async (req, res) => {
       // Recherche sur le nom complet OU le type de service/métier
       const flexibleName = name.trim().replace(/[\s\-\']/g, ".*");
       conditions.push({
-        $or: [
-          { fullName: { $regex: flexibleName, $options: "i" } },
-          { businessType: { $regex: flexibleName, $options: "i" } },
-        ],
+        $or: [{ fullName: { $regex: flexibleName, $options: "i" } }, { businessType: { $regex: flexibleName, $options: "i" } }],
       });
     }
 
@@ -56,10 +51,7 @@ router.get("/search", async (req, res) => {
       // On remplace les espaces, tirets et apostrophes par ".*" (n'importe quoi)
       const flexibleLocation = location.trim().replace(/[\s\-\']/g, ".*");
 
-      const locationFilters = [
-        { "location.city": { $regex: flexibleLocation, $options: "i" } },
-        { "location.address": { $regex: flexibleLocation, $options: "i" } },
-      ];
+      const locationFilters = [{ "location.city": { $regex: flexibleLocation, $options: "i" } }, { "location.address": { $regex: flexibleLocation, $options: "i" } }];
 
       const zipValue = parseInt(location);
       if (!isNaN(zipValue)) {
@@ -98,7 +90,7 @@ router.get("/search", async (req, res) => {
 });
 
 router.get("/contact", (req, res) => {
-  res.render("client/contact", { title: "Contact — SayMiro Calendar" });
+  res.render("client/contact", { title: "Contact — SayMiro Calendar", alwaysSticky: true });
 });
 
 router.post("/contact", async (req, res) => {
@@ -114,10 +106,7 @@ router.post("/contact", async (req, res) => {
 
   try {
     const adminEmail = process.env.ADMIN_EMAIL;
-    const html = pug.renderFile(
-      path.join(__dirname, "../views/templates/emails/contact.pug"),
-      { name, surname, email, subject, message },
-    );
+    const html = pug.renderFile(path.join(__dirname, "../views/templates/emails/contact.pug"), { name, surname, email, subject, message });
 
     await sendEmail(adminEmail, `[Contact SayMiro Calendar] ${subject}`, html);
 
@@ -149,13 +138,12 @@ router.get("/conditions-utilisation", (req, res) => {
   });
 });
 
-router.get("/become-coach", (req, res) => {
-  res.render("client/become-coach", {
+router.get("/manage-business", (req, res) => {
+  res.render("client/manage-business", {
     title: res.locals.t.titles.becomeCoach,
     becomeCoach: true,
   });
 });
-
 
 router.get("/s-inscrire", (req, res) => {
   res.render("auth/choose-account", {
@@ -178,8 +166,6 @@ router.get("/:company", async (req, res) => {
   console.log(ID);
 
   const coach = await User.findById(ID);
-
-  console.log(coach);
 
   res.render("client/index", {
     title: `Coach ${coach.fullName}`,

@@ -122,6 +122,126 @@
 
 .subscription {
   padding-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Bannières d'alerte ── */
+.sub-alert {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid;
+  flex-wrap: wrap;
+}
+
+.sub-alert--expired {
+  background: var(--danger-pale);
+  border-color: var(--danger-border, #fca5a5);
+  color: var(--danger);
+}
+
+.sub-alert--warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+[data-theme="dark"] .sub-alert--warning {
+  background: rgba(251, 191, 36, 0.08);
+  border-color: rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+}
+
+.sub-alert__icon {
+  flex-shrink: 0;
+}
+
+.sub-alert__icon svg {
+  fill: currentColor;
+  display: block;
+}
+
+.sub-alert__body {
+  flex: 1;
+  min-width: 200px;
+}
+
+.sub-alert__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.sub-alert__sub {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.sub-alert__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--font-primary);
+  cursor: pointer;
+  border: none;
+  background: var(--danger);
+  color: #fff;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.sub-alert__btn:hover {
+  opacity: 0.88;
+}
+
+.sub-alert__btn svg {
+  fill: #fff;
+  flex-shrink: 0;
+}
+
+.sub-alert__btn--warning {
+  background: #d97706;
+  color: #fff;
+}
+
+/* ── Temps restant dans la card ── */
+.sub-time-left {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sub-time-left strong {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sub-time-left.expiring {
+  color: #b45309;
+}
+
+.sub-time-left.expiring strong {
+  color: #92400e;
+}
+
+.sub-time-left.expired {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.sub-time-left.expired svg {
+  fill: var(--danger);
 }
 
 .subscription .subscription__top .subscription__plan:last-child {

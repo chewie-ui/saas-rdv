@@ -1,22 +1,19 @@
 const getProPlan = document.getElementById("getProPlan");
+const getProPlanAlert = document.getElementById("getProPlanAlert");
 const cancelSubscriptionPro = document.getElementById("cancelSubscriptionPro");
 const getFreePlan = document.getElementById("getFreePlan");
 const retakeSubscription = document.getElementById("retakeSubscription");
 
 const templateDialog = document.getElementById("templateDialog");
 
-if (getProPlan) {
-  getProPlan.onclick = async function () {
-    const response = await fetch(`/account/create-checkout`, {
-      method: "POST",
-    });
-
-    const data = await response.json();
-    console.log(data);
-
-    window.location = data.url;
-  };
+async function startProCheckout() {
+  const response = await fetch(`/account/create-checkout`, { method: "POST" });
+  const data = await response.json();
+  window.location = data.url;
 }
+
+if (getProPlan) getProPlan.onclick = startProCheckout;
+if (getProPlanAlert) getProPlanAlert.onclick = startProCheckout;
 
 // On crée la fonction une seule fois
 const handleSubscriptionCancel = async function (e) {

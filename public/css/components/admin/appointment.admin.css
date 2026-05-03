@@ -2,71 +2,287 @@
    Appointment calendar — mobile-first, pro design
    ============================================================ */
 
-/* -------- Top menu (today btn + date nav) -------- */
-.calendar .calendar__menu {
-  background-color: var(--color-white);
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid var(--border-light);
+/* ============================================================
+   CALENDAR HEADER — redesign
+   ============================================================ */
+
+.calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
+.calendar .calendar__menu {
+  background: var(--white);
+  padding: 12px 16px;
+  border-radius: 15px;
+  box-shadow: var(--shadow);
+}
+
+/* ── Sections row ── */
 .calendar .calendar__menu .calendar__sections {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .calendar .calendar__menu .calendar__sections .calendar__section {
-  /* width: 100%; */
   display: flex;
-  justify-content: center;
   align-items: center;
-}
-.calendar .calendar__menu .calendar__sections .calendar__section.calendar__section--center {
-  width: 100%;
-}
-.calendar .calendar__menu .calendar__sections .calendar__section.calendar__section--right {
-  justify-content: flex-end;
-  width: auto;
+  gap: 8px;
 }
 
-.calendar .calendar__menu .calendar__sections .calendar__section.calendar__section--right .calendar__actions {
-  flex-direction: column;
+.calendar__section--center {
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-direction: row;
+}
+
+/* ── Groupe nav : flèches + label date ── */
+.cal-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.calendar__section--right {
+  justify-content: flex-end;
+  flex-shrink: 0;
   gap: 10px;
 }
 
-.calendar .calendar__menu .calendar__sections .calendar__section.calendar__section--center .calendar__date {
-  gap: 8px;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  width: 100%;
+/* ── Icône calendrier (mini-cal trigger) ── */
+.cal-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-light);
+  background: var(--color-white);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+  flex-shrink: 0;
+  color: var(--text-secondary);
 }
 
-/* Labels */
-.calendar .calendar__menu .calendar__sections .calendar__section.calendar__section--center .calendar__date .calendar__date-text {
-  font-size: 16px;
+.cal-icon-btn svg {
+  fill: currentColor;
+  margin-right: 0;
+}
+
+.cal-icon-btn:hover {
+  background: var(--main-color-pale);
+  border-color: var(--main-color-border);
+  color: var(--main-color);
+}
+
+/* ── Bouton Aujourd'hui ── */
+.cal-today-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--main-color);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: var(--font-primary);
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+  box-shadow: 0 2px 8px var(--main-color-glow);
+}
+
+.cal-today-btn svg {
+  fill: #fff;
+  flex-shrink: 0;
+}
+
+.cal-today-btn:hover {
+  opacity: 0.88;
+  color: #fff;
+}
+
+/* ── Flèches nav ── */
+.cal-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-light);
+  background: var(--color-white);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+  color: var(--text-secondary);
+}
+
+.cal-nav-btn svg {
+  fill: currentColor;
+  margin: 0;
+}
+
+.cal-nav-btn:hover {
+  background: var(--color-white);
+  border-color: var(--main-color-border);
+  color: var(--main-color);
+}
+
+/* ── Label de date ── */
+.cal-date-label {
   display: flex;
   flex-direction: column;
   align-items: center;
-  line-height: 1.2;
-  min-width: 0;
-  width: 100%;
+  min-width: 130px;
   text-align: center;
 }
 
+.cal-date-week {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.cal-date-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.25;
+}
+
+.cal-date-weekday {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.cal-date-daynum {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Mobile : affiche le jour, pas la semaine */
+.cal-date-week {
+  display: none;
+}
+.cal-date-day {
+  display: flex;
+}
+
+/* ── Section droite : Google Calendar ── */
+.gcal-connected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gcal-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--main-color);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding-top: 0.3em;
+}
+
+.gcal-email {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.gcal-email strong {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* Bouton Déconnecter Google ── */
+.gcal-disconnect-btn,
+.gcal-connect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1.5px solid var(--border-light);
+  background: var(--color-white);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-primary);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+  flex-shrink: 0;
+}
+
+.gcal-connect-btn {
+  padding: 0.8em 14px;
+  border-radius: 10px;
+}
+
+.gcal-disconnect-btn {
+  border-radius: 10px;
+}
+
+.gcal-disconnect-btn span {
+  color: var(--black);
+  font-weight: 400;
+  padding: 0.8em 0;
+}
+
+.gcal-disconnect-btn svg,
+.gcal-connect-btn svg {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.gcal-disconnect-btn:hover,
+.gcal-connect-btn:hover {
+  border-color: #4285f4;
+  background: #f8f9ff;
+  color: var(--text-primary);
+}
+
+/* Anciens sélecteurs (gardés pour compat) */
 .calendar__date-text-weekday {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
 }
-
 .calendar__date-text-date {
   font-size: 12px;
   color: var(--text-muted);
   font-weight: 500;
   margin-top: 2px;
 }
-
 .calendar__date-text--week {
   display: none;
 }
@@ -80,8 +296,9 @@
   gap: 6px;
   padding: 10px 12px 14px;
   background-color: #fff;
-  border-bottom: 1px solid var(--border-light);
   position: sticky;
+  box-shadow: var(--shadow);
+  border-radius: 15px;
   top: 0;
   z-index: 50;
 }
@@ -141,6 +358,8 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding-bottom: 24px;
+  border-radius: 15px;
+  box-shadow: var(--shadow);
 }
 
 .calendar-section .grid-section {
@@ -296,43 +515,20 @@
    ============================================================ */
 @media (min-width: 820px) {
   .calendar .calendar__menu {
-    padding: 16px 24px;
+    padding: 14px 24px;
   }
 
-  .calendar .calendar__menu .calendar__sections .calendar__section.calendar__section--right .calendar__actions {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .calendar .calendar__menu .calendar__sections .calendar__section.calendar__section--left {
-    width: auto;
-  }
-
-  .calendar .calendar__menu .calendar__sections {
-    gap: 25px;
-    flex-direction: row;
-  }
-
-  .calendar .calendar__menu .calendar__sections {
-    align-items: center;
-  }
-  .calendar .calendar__menu .calendar__sections .calendar__section.calendar__section--center .calendar__date {
-    gap: 16px;
-    justify-content: center;
-    flex-direction: row;
-    width: 100%;
-  }
-
-  .calendar__date-text--week {
+  /* Sur desktop : semaine au lieu du jour seul */
+  .cal-date-week {
     display: block;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--text-primary);
-    min-width: 220px;
+  }
+  .cal-date-day {
+    display: none;
   }
 
-  .calendar__date-text--day {
-    display: none;
+  /* Label plus large pour contenir la plage de semaine */
+  .cal-date-label {
+    min-width: 220px;
   }
 
   /* Hide mobile week strip on desktop */
@@ -367,7 +563,7 @@
   }
 
   .calendar-section .grid-section .cell.day-header.focused {
-    color: var(--black);
+    color: var(--text-primary);
   }
 
   .calendar-section .grid-section .cell {
@@ -381,10 +577,6 @@
   .calendar-timeline {
     left: 72px;
   }
-
-  .calendar .calendar__menu .calendar__sections .calendar__section.calendar__section--right .calendar__actions a {
-    font-size: 14px;
-  }
 }
 
 /* ---- Mini month calendar ---- */
@@ -395,7 +587,7 @@
 
 .mini-cal-dropdown {
   position: fixed;
-  background: var(--color-card);
+  background: var(--white);
   border: 1px solid var(--border-light);
   border-radius: 16px;
   box-shadow:
@@ -485,17 +677,23 @@
   font-weight: 700;
 }
 
-@media all and (min-width: 1280px) {
-  .calendar .calendar__menu .calendar__sections .calendar__section.calendar__section--center .calendar__date {
-    flex-direction: row;
-    flex-wrap: nowrap;
-  }
-
-  .calendar .calendar__menu .calendar__sections .calendar__section.calendar__section--right .calendar__actions {
-    white-space: nowrap;
-  }
-
-  .calendar .calendar__menu .calendar__sections .calendar__section.calendar__section--center .calendar__date .calendar__date-text {
+@media (min-width: 820px) {
+  .calendar__section--center {
     width: auto;
+    flex: 1;
+  }
+
+  .calendar .calendar__menu .calendar__sections {
+    justify-content: space-between;
+  }
+}
+
+@media (min-width: 1280px) {
+  .calendar .calendar__menu {
+    padding: 14px 32px;
+  }
+
+  .gcal-email {
+    max-width: 260px;
   }
 }

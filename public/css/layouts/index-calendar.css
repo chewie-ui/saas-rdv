@@ -4,16 +4,20 @@
   flex-direction: column;
 }
 
+.informations {
+  width: 100%;
+}
+
 .informations .informations__container {
   display: flex;
   flex-direction: column;
   gap: 25px;
+  padding: 0 5%;
 }
 
 .informations .informations__container .informations__top,
 .informations .informations__container .informations__bottom {
   width: 100%;
-  max-width: 360px;
   display: flex;
   flex-direction: column;
   gap: 25px;
@@ -23,68 +27,41 @@
   border-radius: var(--radius-md);
 }
 
+.informations .informations__container .informations__bottom {
+  display: none;
+}
+
 .informations .informations__container .informations__top .informations__user,
-.informations
-  .informations__container
-  .informations__bottom
-  .informations__links {
+.informations .informations__container .informations__bottom .informations__links {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.informations
-  .informations__container
-  .informations__bottom
-  .informations__links
-  p {
+.informations .informations__container .informations__bottom .informations__links p {
   color: var(--grey-primary);
 }
 
-.informations
-  .informations__container
-  .informations__bottom
-  .informations__links
-  p
-  a {
+.informations .informations__container .informations__bottom .informations__links p a {
   color: var(--green-primary);
 }
 
-.informations
-  .informations__container
-  .informations__top
-  .informations__user
-  h2,
-.informations
-  .informations__container
-  .informations__bottom
-  .informations__links
-  h2 {
+.informations .informations__container .informations__top .informations__user h2,
+.informations .informations__container .informations__bottom .informations__links h2 {
   font-size: 18px;
   color: var(--grey-primary);
   font-weight: 400;
 }
 
-.informations
-  .informations__container
-  .informations__top
-  .informations__user-wrapper,
-.informations
-  .informations__container
-  .informations__bottom
-  .informations__links
-  .informations__links-wrapper {
+.informations .informations__container .informations__top .informations__user-wrapper,
+.informations .informations__container .informations__bottom .informations__links .informations__links-wrapper {
   display: flex;
   gap: 15px;
   align-items: stretch;
   overflow: hidden;
 }
 
-.informations
-  .informations__container
-  .informations__top
-  .informations__user
-  .user__name {
+.informations .informations__container .informations__top .informations__user .user__name {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -92,120 +69,86 @@
   width: calc(100% - 70px - 15px);
 }
 
-.informations
-  .informations__container
-  .informations__top
-  .informations__user
-  .user__name.not-premium {
+.informations .informations__container .informations__top .informations__user .user__name.not-premium {
   justify-content: center;
 }
 
-.informations
-  .informations__container
-  .informations__top
-  .informations__user
-  .user__name.not-premium
-  h3 {
+.informations .informations__container .informations__top .informations__user .user__name.not-premium h3 {
   font-size: 20px;
 }
 
-.informations
-  .informations__container
-  .informations__top
-  .informations__user
-  .user__name
-  .user__name-row {
+.informations .informations__container .informations__top .informations__user .user__name .user__name-row {
   width: 100%;
 }
 
-.informations
-  .informations__container
-  .informations__top
-  .informations__user
-  .user__name
-  h3,
-.informations
-  .informations__container
-  .informations__bottom
-  .informations__links
-  .informations__links-wrapper
-  .links__row
-  h3 {
+.informations .informations__container .informations__top .informations__user .user__name h3,
+.informations .informations__container .informations__bottom .informations__links .informations__links-wrapper .links__row h3 {
   font-weight: 500;
   font-size: 16px;
   text-overflow: ellipsis;
   overflow: hidden;
 }
 
-.informations
-  .informations__container
-  .informations__top
-  .informations__user
-  .user__name
-  p {
+.informations .informations__container .informations__top .informations__user .user__name p {
   color: var(--grey-primary);
 }
 
-.informations
-  .informations__container
-  .informations__top
-  .informations__user
-  .user__image {
+.informations .informations__container .informations__top .informations__user .user__image {
   min-width: 70px;
   width: 70px;
   height: 70px;
   border-radius: 50%;
   overflow: hidden;
 }
-.informations
-  .informations__container
-  .informations__top
-  .informations__user
-  .user__image
-  img {
+.informations .informations__container .informations__top .informations__user .user__image img {
   object-fit: cover;
 }
 
-.informations
-  .informations__container
-  .informations__bottom
-  .informations__links
-  .informations__links-wrapper
-  .links__row {
+.informations .informations__container .informations__bottom .informations__links .informations__links-wrapper .links__row {
   display: flex;
   gap: 20px;
   align-items: center;
 }
 
-.informations
-  .informations__container
-  .informations__bottom
-  .informations__links
-  .informations__links-wrapper
-  .links__row
-  .links__row-logo {
+.informations .informations__container .informations__bottom .informations__links .informations__links-wrapper .links__row .links__row-logo {
   width: 30px;
+}
+
+.space-on-screen {
+  display: block;
+  height: 50px;
 }
 
 @media all and (min-width: 820px) {
   .content-wrapper {
     flex-direction: row;
-    align-items: flex-start;
   }
 
   .calendar-wrapper .calendar {
     width: 410px;
     max-width: 410px;
   }
+
+  .informations {
+    width: auto;
+  }
+
+  .informations .informations__container {
+    padding: 0;
+  }
+
+  .informations .informations__container .informations__top,
+  .informations .informations__container .informations__bottom {
+    max-width: 360px;
+    display: flex;
+  }
+
+  .space-on-screen {
+    display: none;
+  }
 }
 
 @media all and (min-width: 1280px) {
-  .informations .informations__container .informations__top,
-  .informations .informations__container .informations__bottom {
-    width: 100%;
-    max-width: 350px;
-  }
-
   .calendar-wrapper .calendar {
     width: 500px;
     max-width: 500px;
