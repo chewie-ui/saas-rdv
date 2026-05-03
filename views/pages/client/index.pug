@@ -75,8 +75,10 @@ block content
                     else    
                         .informations__links
                             h2= t.booking_page.join_us
-                            a.btn(href="/register")= t.booking_page.register
-                            a.btn.secondary(href="/login")= t.booking_page.login
+                            a.btn(href="/register")
+                                span= t.booking_page.register
+                            a.btn.secondary(href="/login")
+                                span= t.booking_page.login
         .calendar-wrapper
             .calendar
                 .calendar-header
