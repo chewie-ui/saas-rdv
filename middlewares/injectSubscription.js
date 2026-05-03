@@ -1,4 +1,16 @@
 const Subscription = require("../db/models/subscription.model");
+const User = require("../db/models/user.model");
+
+/**
+ * Révoque isPremium en DB + en mémoire si nécessaire.
+ * Appelé quand l'abonnement est expiré ou inexistant.
+ */
+async function revokePremium(req) {
+  if (req.user && req.user.isPremium) {
+    req.user.isPremium = false; // en mémoire → templates
+    await User.findByIdAndUpdate(req.user._id, { isPremium: false }); // en DB → requêtes futures
+  }
+}
 
 module.exports = async (req, res, next) => {
   try {
@@ -20,18 +32,16 @@ module.exports = async (req, res, next) => {
       res.locals.subscription = subscription;
       res.locals.autoRenew    = subscription.autoRenew;
 
-      // Temps restant
       if (diffMs <= 0) {
         // ── Abonnement expiré ──
-        res.locals.isPro      = false;   // plus d'accès premium
+        res.locals.isPro      = false;
         res.locals.daysLeft   = 0;
         res.locals.hoursLeft  = 0;
         res.locals.isExpired  = true;
         res.locals.isExpiring = false;
-        // Révoquer isPremium sur l'objet user injecté dans les templates
-        if (req.user) req.user.isPremium = false;
+        await revokePremium(req); // DB + mémoire
       } else if (diffDays <= 1) {
-        // ── Moins de 24h ──
+        // ── Moins de 24h restantes ──
         res.locals.isPro      = true;
         res.locals.daysLeft   = 0;
         res.locals.hoursLeft  = diffHours > 0 ? diffHours : 1;
@@ -45,6 +55,7 @@ module.exports = async (req, res, next) => {
         res.locals.isExpiring = diffDays <= 3;
       }
     } else {
+      // ── Pas d'abonnement actif ──
       res.locals.isPro        = false;
       res.locals.subscription = null;
       res.locals.autoRenew    = false;
@@ -52,6 +63,7 @@ module.exports = async (req, res, next) => {
       res.locals.hoursLeft    = null;
       res.locals.isExpired    = false;
       res.locals.isExpiring   = false;
+      await revokePremium(req); // DB + mémoire si isPremium était true en DB
     }
 
     next();

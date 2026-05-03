@@ -61,13 +61,15 @@ router.get("/search", async (req, res) => {
       conditions.push({ $or: locationFilters });
     }
 
+    // Toujours filtrer sur isPremium actif
+    conditions.push({ isPremium: true });
+
     if (conditions.length === 1) {
       userQuery = conditions[0];
-    } else if (conditions.length > 1) {
+    } else {
       userQuery = { $and: conditions };
     }
 
-    // Le reste de ta logique Companies.find().populate()...
     const coachs = await Companies.find({})
       .populate({
         path: "owner",
