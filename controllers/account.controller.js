@@ -262,10 +262,7 @@ exports.editDescription = async (req, res) => {
   try {
     const { _id } = req.user;
     const { description } = req.body;
-    await User.findByIdAndUpdate(_id, {
-      description,
-    });
-
+    await User.findByIdAndUpdate(_id, { description });
     return res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -278,6 +275,35 @@ exports.updateBusinessType = async (req, res) => {
     const { businessType } = req.body;
     await User.findByIdAndUpdate(req.user._id, { businessType: businessType || "" });
     return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false });
+  }
+};
+
+// Sauvegarde nom + description + businessType en une seule requête
+exports.editBusinessInfo = async (req, res) => {
+  try {
+    const { businessName, description, businessType } = req.body;
+    await User.findByIdAndUpdate(req.user._id, {
+      businessName: businessName || "",
+      description:  description  || "",
+      businessType: businessType || "",
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false });
+  }
+};
+
+// Upload photo établissement
+exports.editBusinessPicture = async (req, res) => {
+  try {
+    const { filename } = req.file;
+    const imagePath = `/uploads/profiles/${filename}`;
+    await User.findByIdAndUpdate(req.user._id, { businessPicture: imagePath });
+    return res.json({ success: true, path: imagePath });
   } catch (err) {
     console.error(err);
     return res.json({ success: false });
@@ -335,5 +361,42 @@ exports.deleteAccount = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ success: false, message: "Erreur suppression" });
+  }
+};
+
+exports.updateCalendarSettings = async (req, res) => {
+  try {
+    const {
+      pageBg, calBg, accentColor, accentText, dayBg, dayText, btnBg, btnText,
+      lang, font, showInfo, showSocials, layoutStyle, pageBgType, pageBgImage
+    } = req.body;
+    await User.findByIdAndUpdate(req.user._id, {
+      calendarSettings: {
+        pageBg, calBg, accentColor, accentText, dayBg, dayText, btnBg, btnText,
+        lang, font, showInfo, showSocials, layoutStyle, pageBgType,
+        pageBgImage: pageBgImage || ''
+      }
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false });
+  }
+};
+
+exports.editCalendarBgImage = async (req, res) => {
+  try {
+    const { filename } = req.file;
+    const imagePath = `/uploads/profiles/${filename}`;
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: {
+        'calendarSettings.pageBgImage': imagePath,
+        'calendarSettings.pageBgType':  'image',
+      }
+    });
+    return res.json({ success: true, path: imagePath });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false });
   }
 };

@@ -18,6 +18,18 @@ module.exports = async (req, res, next) => {
       return next();
     }
 
+    // ── Bypass local : si NODE_ENV=development et isPremium=true en DB → pas de vérification Stripe
+    if (process.env.NODE_ENV !== "production" && req.user.isPremium === true) {
+      res.locals.isPro      = true;
+      res.locals.daysLeft   = 999;
+      res.locals.hoursLeft  = null;
+      res.locals.isExpired  = false;
+      res.locals.isExpiring = false;
+      res.locals.subscription = null;
+      res.locals.autoRenew    = false;
+      return next();
+    }
+
     const subscription = await Subscription.findOne({
       user: req.user._id,
       status: "active",

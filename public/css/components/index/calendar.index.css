@@ -4,7 +4,7 @@
   flex-direction: column;
   gap: 25px;
   box-shadow: var(--shadow);
-  background-color: var(--color-white);
+  background-color: var(--cal-bg, var(--color-white));
   padding: 24px;
   border-radius: var(--radius-md);
 }
@@ -63,6 +63,8 @@
   cursor: var(--cursor-pointer);
   transition: 0.3s;
   border-radius: var(--radius-sm);
+  background-color: var(--cal-day-bg, transparent);
+  color: var(--cal-day-text, inherit);
 }
 
 .calendar-wrapper .calendar .calendar-body .days .day.empty {
@@ -73,13 +75,13 @@
 
 .calendar-wrapper .calendar .calendar-body .days .day:hover,
 .calendar-wrapper .calendar .calendar-body .days .day.today {
-  background-color: var(--green-primary);
-  color: var(--color-white);
+  background-color: var(--cal-accent, var(--green-primary));
+  color: var(--cal-accent-text, var(--color-white));
 }
 
 .calendar-wrapper .calendar .calendar-body .days .day.clicked {
-  background-color: var(--green-soft);
-  color: var(--text-primary);
+  background-color: var(--cal-day-selected, var(--green-soft));
+  color: var(--cal-day-text, var(--text-primary));
 }
 
 .calendar-wrapper .calendar .calendar-body .days .day.over-booked {
@@ -329,7 +331,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: var(--green-primary);
+  background-color: var(--cal-accent, var(--green-primary));
   width: 35px;
   height: 35px;
   cursor: var(--cursor-pointer);
@@ -354,8 +356,8 @@
 }
 
 .schedule-wrapper .schedule .schedule-body .schedule-rows .row:hover {
-  background-color: var(--green-primary);
-  color: var(--color-white);
+  background-color: var(--cal-accent, var(--green-primary));
+  color: var(--cal-accent-text, var(--color-white));
 }
 
 .schedule-wrapper .schedule .schedule-body .schedule-rows .row.reserved {

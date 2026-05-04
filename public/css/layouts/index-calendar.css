@@ -154,3 +154,37 @@
     max-width: 500px;
   }
 }
+
+/* ── Layout customisation styles ──────────────────────────────────────── */
+
+/* Hide info panel for centered and title layouts */
+.content-wrapper.centered .informations,
+.content-wrapper.title .informations {
+  display: none !important;
+}
+
+/* centered: calendar centred with no side panel */
+@media all and (min-width: 820px) {
+  .content-wrapper.centered {
+    justify-content: center;
+  }
+}
+
+/* title layout: column with title at the top */
+.content-wrapper.title {
+  flex-direction: column !important;
+  align-items: center;
+  padding-top: 10px;
+}
+
+.booking-title {
+  width: 100%;
+  text-align: center;
+  padding: 16px 20px 20px;
+}
+
+.booking-title h1 {
+  font-size: clamp(1.4rem, 4vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}

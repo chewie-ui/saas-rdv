@@ -31,17 +31,17 @@ block content
                 each coach in coachs
                     .suggestions__row
                         .row__avatar
-                            img(src=coach.owner.profilePicture || '/images/no-user.webp')
+                            img(src=coach.owner.businessPicture || '/images/no-user.webp')
                         .row__informations
                             .informations__left
                                 .informations__name
-                                    h2= coach.owner.fullName
+                                    h2 #{coach.owner.businessName} - #{coach.owner.businessType}
                                 if coach.owner.email
                                     .informations__email
-                                        a(href=`mailto:${coach.owner.email}`)= coach.owner.email
+                                        a(href=`mailto:${coach.owner.email}`)= coach.owner.emailPro
                                 if coach.owner.phone
                                     .informations__phone
-                                        a(href=`tel:${coach.owner.phone}`)= coach.owner.phone
+                                        a(href=`tel:${coach.owner.phone}`)= coach.owner.phonePro
                                 .informations__description
                                     p= coach.owner.description || ""
                                 if coach.owner.location

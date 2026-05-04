@@ -1,0 +1,515 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@400;600&family=Roboto:wght@400;600&family=Montserrat:wght@400;600&family=Lato:wght@400;700&family=Nunito:wght@400;600&family=Raleway:wght@400;600&family=Open+Sans:wght@400;600&family=Playfair+Display:wght@400;600&display=swap")
+    link(rel="stylesheet" href="/css/layouts/customize.css")
+
+block content
+    .customize-layout
+        .customize-panel
+
+            //- ── Section 1 : Mise en page ──────────────────────────────────
+            .customize-section
+                .customize-section__header
+                    h3= t.customize.layout_section
+                .customize-section__body
+
+                    .layout-cards
+                        label.layout-card(for="layout-classic" title=t.customize.layout_classic)
+                            input#layout-classic(type="radio" name="layoutStyle" value="classic")
+                            .layout-card__diagram
+                                .lc-col.lc-info
+                                .lc-col.lc-cal
+                                .lc-col.lc-sched
+                            span= t.customize.layout_classic
+                        label.layout-card(for="layout-centered" title=t.customize.layout_centered)
+                            input#layout-centered(type="radio" name="layoutStyle" value="centered")
+                            .layout-card__diagram.lc-centered-diag
+                                .lc-cal-wide
+                                .lc-sched-thin
+                            span= t.customize.layout_centered
+                        label.layout-card(for="layout-title" title=t.customize.layout_title)
+                            input#layout-title(type="radio" name="layoutStyle" value="title")
+                            .layout-card__diagram.lc-title-diag
+                                .lc-title-bar
+                                .lc-row
+                                    .lc-cal-sm
+                                    .lc-sched-sm
+                            span= t.customize.layout_title
+
+                    .toggle-row
+                        span= t.customize.show_info
+                        label.toggle-switch(for="toggleShowInfo")
+                            input#toggleShowInfo(type="checkbox")
+                            .toggle-track
+                                .toggle-thumb
+
+                    .toggle-row
+                        span= t.customize.show_socials
+                        label.toggle-switch(for="toggleShowSocials")
+                            input#toggleShowSocials(type="checkbox")
+                            .toggle-track
+                                .toggle-thumb
+
+                    .field-row
+                        span= t.customize.font
+                        select#fontSelect.input.font-select
+                            option(value="Inter") Inter
+                            option(value="Poppins") Poppins
+                            option(value="Roboto") Roboto
+                            option(value="Montserrat") Montserrat
+                            option(value="Lato") Lato
+                            option(value="Nunito") Nunito
+                            option(value="Raleway") Raleway
+                            option(value="Open Sans") Open Sans
+                            option(value="Playfair Display") Playfair Display
+
+            //- ── Section 2 : Arrière-plan ──────────────────────────────────
+            .customize-section
+                .customize-section__header
+                    h3= t.customize.bg_section
+                .customize-section__body.bg-body
+                    .bg-tabs
+                        button.bg-tab.active(data-tab="color" type="button")= t.customize.bg_color
+                        button.bg-tab(data-tab="image" type="button")= t.customize.bg_image
+                    .bg-panel(data-tab="color")
+                        .color-row(data-key="pageBg")
+                            .color-row__label
+                                span= t.customize.page_bg
+                            .color-row__inputs
+                                input.color-swatch(type="color")
+                                input.color-hex.input(type="text" maxlength=7 placeholder="#f3f4f6")
+                    .bg-panel.hidden(data-tab="image")
+                        .bg-upload-area#bgUploadArea
+                            input#bgImageInput(type="file" accept="image/*" style="display:none")
+                            .bg-upload-preview#bgUploadPreview
+                                span#bgUploadHint= t.customize.upload_hint
+                        button.btn.secondary.sm#removeBgImage(type="button" style="display:none")= t.customize.remove_image
+
+            //- ── Section 3 : Couleurs ──────────────────────────────────────
+            .customize-section
+                .customize-section__header
+                    h3= t.customize.colors_section
+                .customize-section__body.color-list
+                    .color-row(data-key="calBg")
+                        .color-row__label
+                            span= t.customize.cal_bg
+                        .color-row__inputs
+                            input.color-swatch(type="color")
+                            input.color-hex.input(type="text" maxlength=7 placeholder="#ffffff")
+                    .color-row(data-key="accentColor")
+                        .color-row__label
+                            span= t.customize.accent_color
+                        .color-row__inputs
+                            input.color-swatch(type="color")
+                            input.color-hex.input(type="text" maxlength=7 placeholder="#22c55e")
+                    .color-row(data-key="accentText")
+                        .color-row__label
+                            span= t.customize.accent_text
+                        .color-row__inputs
+                            input.color-swatch(type="color")
+                            input.color-hex.input(type="text" maxlength=7 placeholder="#ffffff")
+                    .color-row(data-key="dayBg")
+                        .color-row__label
+                            span= t.customize.day_bg
+                        .color-row__inputs
+                            input.color-swatch(type="color")
+                            input.color-hex.input(type="text" maxlength=7 placeholder="#ffffff")
+                    .color-row(data-key="dayText")
+                        .color-row__label
+                            span= t.customize.day_text
+                        .color-row__inputs
+                            input.color-swatch(type="color")
+                            input.color-hex.input(type="text" maxlength=7 placeholder="#111111")
+                    .color-row(data-key="btnBg")
+                        .color-row__label
+                            span= t.customize.btn_bg
+                        .color-row__inputs
+                            input.color-swatch(type="color")
+                            input.color-hex.input(type="text" maxlength=7 placeholder="#111111")
+                    .color-row(data-key="btnText")
+                        .color-row__label
+                            span= t.customize.btn_text
+                        .color-row__inputs
+                            input.color-swatch(type="color")
+                            input.color-hex.input(type="text" maxlength=7 placeholder="#ffffff")
+
+            //- ── Actions ───────────────────────────────────────────────────
+            .customize-actions
+                button.btn.secondary#resetCalendarSettings(type="button")
+                    span= t.customize.reset
+                button.btn#saveCalendarSettings(type="button")
+                    span= t.customize.save
+
+        //- ── Preview ───────────────────────────────────────────────────────
+        .customize-preview
+            .customize-section
+                .customize-section__header
+                    h3= t.customize.preview
+                .customize-section__body.preview-body
+                    .preview-frame#previewFrame
+                        .pv-page#pvPage
+                            .pv-title-bar#pvTitleBar
+                                span.pv-biz-name Votre activité
+                            .pv-content#pvContent
+                                .pv-info#pvInfo
+                                    .pv-info__top
+                                        .pv-avatar
+                                        .pv-name
+                                            .pv-name-line
+                                            .pv-name-line.short
+                                    .pv-info__bottom#pvSocial
+                                        .pv-social-item
+                                        .pv-social-item
+                                        .pv-social-item
+                                .pv-cal
+                                    .pv-cal__nav
+                                        button.pv-nav-btn Préc.
+                                        span.pv-month-label Mai 2026
+                                        button.pv-nav-btn Suiv.
+                                    .pv-cal__weekdays
+                                        span Lu
+                                        span Ma
+                                        span Me
+                                        span Je
+                                        span Ve
+                                        span Sa
+                                        span Di
+                                    .pv-cal__days
+                                        span.pv-day.pv-empty
+                                        span.pv-day.pv-empty
+                                        span.pv-day.pv-empty
+                                        span.pv-day 1
+                                        span.pv-day 2
+                                        span.pv-day 3
+                                        span.pv-day 4
+                                        span.pv-day 5
+                                        span.pv-day 6
+                                        span.pv-day 7
+                                        span.pv-day 8
+                                        span.pv-day 9
+                                        span.pv-day 10
+                                        span.pv-day 11
+                                        span.pv-day 12
+                                        span.pv-day 13
+                                        span.pv-day 14
+                                        span.pv-day 15
+                                        span.pv-day 16
+                                        span.pv-day 17
+                                        span.pv-day 18
+                                        span.pv-day 19
+                                        span.pv-day.pv-today 20
+                                        span.pv-day 21
+                                        span.pv-day 22
+                                        span.pv-day 23
+                                        span.pv-day 24
+                                        span.pv-day 25
+                                        span.pv-day 26
+                                        span.pv-day 27
+                                        span.pv-day 28
+                                        span.pv-day 29
+                                        span.pv-day 30
+                                        span.pv-day 31
+
+block scripts
+    script.
+        (function () {
+
+            var DEFAULTS = {
+                pageBg:      '#f3f4f6',
+                calBg:       '#ffffff',
+                accentColor: '#22c55e',
+                accentText:  '#ffffff',
+                dayBg:       '#ffffff',
+                dayText:     '#111111',
+                btnBg:       '#111111',
+                btnText:     '#ffffff',
+                lang:        'fr',
+                font:        'Inter',
+                showInfo:    true,
+                showSocials: true,
+                layoutStyle: 'classic',
+                pageBgType:  'color',
+                pageBgImage: ''
+            };
+
+            var settings = Object.assign({}, DEFAULTS, !{JSON.stringify(calendarSettings)});
+
+            var frame     = document.getElementById('previewFrame');
+            var pvPage    = document.getElementById('pvPage');
+            var pvContent = document.getElementById('pvContent');
+            var pvInfo    = document.getElementById('pvInfo');
+            var pvSocial  = document.getElementById('pvSocial');
+            var pvTitleBar = document.getElementById('pvTitleBar');
+
+            var HEX_RE = new RegExp('^#[0-9A-Fa-f]{6}$');
+
+            var CSS_VAR_MAP = {
+                pageBg:      '--pv-page-bg',
+                calBg:       '--pv-cal-bg',
+                accentColor: '--pv-accent',
+                accentText:  '--pv-accent-text',
+                dayBg:       '--pv-day-bg',
+                dayText:     '--pv-day-text',
+                btnBg:       '--pv-btn-bg',
+                btnText:     '--pv-btn-text'
+            };
+
+            function updateBgPreview() {
+                if (settings.pageBgType === 'image' && settings.pageBgImage) {
+                    pvPage.style.backgroundImage    = 'url(' + settings.pageBgImage + ')';
+                    pvPage.style.backgroundSize     = 'cover';
+                    pvPage.style.backgroundPosition = 'center';
+                    pvPage.style.removeProperty('background-color');
+                } else {
+                    pvPage.style.backgroundImage = 'none';
+                    pvPage.style.backgroundSize  = '';
+                    pvPage.style.removeProperty('background-color');
+                    if (frame) frame.style.setProperty('--pv-page-bg', settings.pageBg || DEFAULTS.pageBg);
+                }
+            }
+
+            function applyLayout(layout) {
+                pvContent.dataset.layout = layout;
+                // title bar only visible in 'title' layout
+                pvTitleBar.style.display = (layout === 'title') ? '' : 'none';
+                // in classic, info panel controlled by showInfo toggle
+                if (layout === 'classic') {
+                    pvInfo.style.display = settings.showInfo ? '' : 'none';
+                } else {
+                    pvInfo.style.display = 'none';
+                }
+            }
+
+            function activateBgTab(tabName) {
+                document.querySelectorAll('.bg-tab').forEach(function (t) {
+                    t.classList.toggle('active', t.dataset.tab === tabName);
+                });
+                document.querySelectorAll('.bg-panel').forEach(function (p) {
+                    p.classList.toggle('hidden', p.dataset.tab !== tabName);
+                });
+            }
+
+            function applyPreview(key, value) {
+                if (!frame) return;
+                if (CSS_VAR_MAP[key]) {
+                    frame.style.setProperty(CSS_VAR_MAP[key], value);
+                    if (key === 'pageBg') updateBgPreview();
+                } else if (key === 'layoutStyle') {
+                    applyLayout(value);
+                } else if (key === 'showInfo') {
+                    if (settings.layoutStyle === 'classic') {
+                        pvInfo.style.display = value ? '' : 'none';
+                    }
+                } else if (key === 'showSocials') {
+                    pvSocial.style.display = value ? '' : 'none';
+                } else if (key === 'font') {
+                    pvPage.style.fontFamily = value + ', sans-serif';
+                } else if (key === 'pageBgType' || key === 'pageBgImage') {
+                    updateBgPreview();
+                }
+            }
+
+            function initAll() {
+                // ── Colors ──────────────────────────────────────────────────
+                document.querySelectorAll('.color-row').forEach(function (row) {
+                    var key    = row.dataset.key;
+                    var swatch = row.querySelector('input[type=color]');
+                    var hex    = row.querySelector('.color-hex');
+                    var val    = (settings[key] !== undefined ? settings[key] : DEFAULTS[key]) || DEFAULTS[key];
+
+                    swatch.value = val;
+                    hex.value    = val;
+                    applyPreview(key, val);
+
+                    swatch.addEventListener('input', function () {
+                        hex.value     = swatch.value;
+                        settings[key] = swatch.value;
+                        applyPreview(key, swatch.value);
+                    });
+                    hex.addEventListener('input', function () {
+                        var v = hex.value.trim();
+                        if (HEX_RE.test(v)) {
+                            swatch.value  = v;
+                            settings[key] = v;
+                            applyPreview(key, v);
+                        }
+                    });
+                });
+
+                // ── Layout cards ──────────────────────────────────────────────
+                var layoutVal   = settings.layoutStyle || 'classic';
+                var layoutRadio = document.querySelector('input[name=layoutStyle][value="' + layoutVal + '"]');
+                if (layoutRadio) layoutRadio.checked = true;
+                applyLayout(layoutVal);
+
+                document.querySelectorAll('input[name=layoutStyle]').forEach(function (radio) {
+                    radio.addEventListener('change', function () {
+                        settings.layoutStyle = radio.value;
+                        applyPreview('layoutStyle', radio.value);
+                    });
+                });
+
+                // ── Toggles ───────────────────────────────────────────────────
+                var showInfoCb    = document.getElementById('toggleShowInfo');
+                var showSocialsCb = document.getElementById('toggleShowSocials');
+
+                showInfoCb.checked    = settings.showInfo    !== false;
+                showSocialsCb.checked = settings.showSocials !== false;
+                applyPreview('showInfo',    showInfoCb.checked);
+                applyPreview('showSocials', showSocialsCb.checked);
+
+                showInfoCb.addEventListener('change', function () {
+                    settings.showInfo = showInfoCb.checked;
+                    applyPreview('showInfo', showInfoCb.checked);
+                });
+                showSocialsCb.addEventListener('change', function () {
+                    settings.showSocials = showSocialsCb.checked;
+                    applyPreview('showSocials', showSocialsCb.checked);
+                });
+
+                // ── Font ──────────────────────────────────────────────────────
+                var fontSelect  = document.getElementById('fontSelect');
+                fontSelect.value = settings.font || 'Inter';
+                applyPreview('font', fontSelect.value);
+                fontSelect.addEventListener('change', function () {
+                    settings.font = fontSelect.value;
+                    applyPreview('font', fontSelect.value);
+                });
+
+                // ── Background tabs ───────────────────────────────────────────
+                document.querySelectorAll('.bg-tab').forEach(function (tab) {
+                    tab.addEventListener('click', function () {
+                        settings.pageBgType = tab.dataset.tab;
+                        activateBgTab(tab.dataset.tab);
+                        updateBgPreview();
+                    });
+                });
+                activateBgTab(settings.pageBgType || 'color');
+
+                // ── Background image upload ───────────────────────────────────
+                var bgInput    = document.getElementById('bgImageInput');
+                var bgArea     = document.getElementById('bgUploadArea');
+                var bgPreview  = document.getElementById('bgUploadPreview');
+                var removeBgBtn = document.getElementById('removeBgImage');
+
+                if (settings.pageBgImage) {
+                    bgPreview.style.backgroundImage    = 'url(' + settings.pageBgImage + ')';
+                    bgPreview.style.backgroundSize     = 'cover';
+                    bgPreview.style.backgroundPosition = 'center';
+                    document.getElementById('bgUploadHint').style.display = 'none';
+                    removeBgBtn.style.display = '';
+                }
+
+                bgArea.addEventListener('click', function () { bgInput.click(); });
+                bgInput.addEventListener('change', function () {
+                    var file = bgInput.files[0];
+                    if (!file) return;
+                    bgArea.classList.add('loading');
+                    var fd = new FormData();
+                    fd.append('calendarBgImage', file);
+                    fetch('/account/calendar-bg-image', { method: 'PATCH', body: fd })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            bgArea.classList.remove('loading');
+                            if (data.success) {
+                                settings.pageBgImage = data.path;
+                                settings.pageBgType  = 'image';
+                                bgPreview.style.backgroundImage    = 'url(' + data.path + ')';
+                                bgPreview.style.backgroundSize     = 'cover';
+                                bgPreview.style.backgroundPosition = 'center';
+                                document.getElementById('bgUploadHint').style.display = 'none';
+                                removeBgBtn.style.display = '';
+                                activateBgTab('image');
+                                updateBgPreview();
+                            }
+                        })
+                        .catch(function () { bgArea.classList.remove('loading'); });
+                });
+
+                removeBgBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    settings.pageBgImage = '';
+                    settings.pageBgType  = 'color';
+                    bgPreview.style.backgroundImage = '';
+                    bgPreview.style.backgroundSize  = '';
+                    document.getElementById('bgUploadHint').style.display = '';
+                    removeBgBtn.style.display = 'none';
+                    bgInput.value = '';
+                    activateBgTab('color');
+                    updateBgPreview();
+                });
+
+                // Initial bg preview
+                updateBgPreview();
+            }
+
+            initAll();
+
+            // ── Save ──────────────────────────────────────────────────────────
+            document.getElementById('saveCalendarSettings').addEventListener('click', async function () {
+                var btn  = this;
+                var span = btn.querySelector('span');
+                span.textContent = '...';
+                btn.disabled = true;
+
+                var payload = Object.assign({}, settings);
+
+                try {
+                    var r    = await fetch('/account/calendar-settings', {
+                        method:  'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body:    JSON.stringify(payload)
+                    });
+                    var data = await r.json();
+                    span.textContent = data.success ? '✓ Enregistré' : '✗ Erreur';
+                } catch (e) {
+                    span.textContent = '✗ Erreur';
+                }
+                btn.disabled = false;
+                setTimeout(function () { span.textContent = '#{t.customize.save}'; }, 2500);
+            });
+
+            // ── Reset ─────────────────────────────────────────────────────────
+            document.getElementById('resetCalendarSettings').addEventListener('click', function () {
+                // Colors
+                Object.keys(DEFAULTS).forEach(function (key) {
+                    if (key === 'lang' || key === 'showInfo' || key === 'showSocials' ||
+                        key === 'layoutStyle' || key === 'pageBgType' || key === 'pageBgImage' || key === 'font') return;
+                    settings[key] = DEFAULTS[key];
+                    applyPreview(key, DEFAULTS[key]);
+                    var row = document.querySelector('.color-row[data-key="' + key + '"]');
+                    if (row) {
+                        row.querySelector('input[type=color]').value = DEFAULTS[key];
+                        row.querySelector('.color-hex').value        = DEFAULTS[key];
+                    }
+                });
+                // Layout
+                settings.layoutStyle = 'classic';
+                var classicR = document.querySelector('input[name=layoutStyle][value="classic"]');
+                if (classicR) classicR.checked = true;
+                applyLayout('classic');
+                // Toggles
+                settings.showInfo    = true;
+                settings.showSocials = true;
+                document.getElementById('toggleShowInfo').checked    = true;
+                document.getElementById('toggleShowSocials').checked = true;
+                applyPreview('showSocials', true);
+                // Font
+                settings.font = 'Inter';
+                document.getElementById('fontSelect').value = 'Inter';
+                applyPreview('font', 'Inter');
+                // Bg
+                settings.pageBgType  = 'color';
+                settings.pageBgImage = '';
+                var bgPreview = document.getElementById('bgUploadPreview');
+                bgPreview.style.backgroundImage = '';
+                bgPreview.style.backgroundSize  = '';
+                document.getElementById('bgUploadHint').style.display = '';
+                document.getElementById('removeBgImage').style.display = 'none';
+                document.getElementById('bgImageInput').value = '';
+                activateBgTab('color');
+                updateBgPreview();
+            });
+
+        })();

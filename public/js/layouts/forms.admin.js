@@ -225,8 +225,7 @@ function onDragEnd() {
 
   if (srcIndex !== insertIndex) {
     const moved = formData.questions.splice(srcIndex, 1)[0];
-    const target = insertIndex > srcIndex ? insertIndex - 1 : insertIndex;
-    formData.questions.splice(target, 0, moved);
+    formData.questions.splice(insertIndex, 0, moved);
     renderQuestions();
     renderPreview();
   }

@@ -102,6 +102,34 @@ const userSchema = schema(
       default: "",
     },
 
+    businessPicture: {
+      type: String,
+      default: "",
+    },
+
+    businessName: {
+      type: String,
+      default: "",
+    },
+
+    calendarSettings: {
+      pageBg:      { type: String,  default: '#f3f4f6' },
+      calBg:       { type: String,  default: '#ffffff' },
+      accentColor: { type: String,  default: '#22c55e' },
+      accentText:  { type: String,  default: '#ffffff' },
+      dayBg:       { type: String,  default: '#ffffff' },
+      dayText:     { type: String,  default: '#111111' },
+      btnBg:       { type: String,  default: '#111111' },
+      btnText:     { type: String,  default: '#ffffff' },
+      lang:        { type: String,  default: 'fr' },
+      font:        { type: String,  default: 'Inter' },
+      showInfo:    { type: Boolean, default: true },
+      showSocials: { type: Boolean, default: true },
+      layoutStyle: { type: String,  default: 'classic' },
+      pageBgType:  { type: String,  default: 'color' },
+      pageBgImage: { type: String,  default: '' },
+    },
+
     googleCalendar: {
       connected: { type: Boolean, default: false },
       email: { type: String, default: "" },

@@ -38,8 +38,21 @@ router.patch("/location", accountController.updateLocation);
 
 router.patch("/description/edit", accountController.editDescription);
 router.patch("/business-type", accountController.updateBusinessType);
+router.patch("/business-info", accountController.editBusinessInfo);
+router.patch(
+  "/business-picture",
+  upload.single("businessPicture"),
+  accountController.editBusinessPicture,
+);
 
 router.post("/send-delete-code", isAuth, accountController.sendDeleteCode);
 router.delete("/delete-account", isAuth, accountController.deleteAccount);
+
+router.patch("/calendar-settings", accountController.updateCalendarSettings);
+router.patch(
+  "/calendar-bg-image",
+  upload.single("calendarBgImage"),
+  accountController.editCalendarBgImage
+);
 
 module.exports = router;

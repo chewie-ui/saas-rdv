@@ -637,3 +637,11 @@ exports.saveForm = async (req, res) => {
     return res.json({ success: false, err: err.message });
   }
 };
+
+exports.customizeCalendarPage = async (req, res) => {
+  return res.render("admin/customize", {
+    pageName: "Customize",
+    title: res.locals.t.customize.title,
+    calendarSettings: req.user.calendarSettings || {},
+  });
+};

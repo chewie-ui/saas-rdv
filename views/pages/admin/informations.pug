@@ -41,6 +41,48 @@ block content
                             span= t.profile.save
                         button#deleteAccountBtn.danger(type="button")
                             span= t.profile.delete_account
+        .account__container.reversed
+            .account__left
+                .business-pic-wrapper
+                    .business-pic-preview
+                        if user.businessPicture
+                            img(alt="Photo établissement" src=user.businessPicture id="businessPicPreview")
+                        else
+                            .business-pic-placeholder#businessPicPreview
+                                svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor")
+                                    path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80ZM480-320q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113T480-320Zm0-80q33 0 56.5-23.5T560-480q0-33-23.5-56.5T480-560q-33 0-56.5 23.5T400-480q0 33 23.5 56.5T480-400Z")
+                    .account__avatar-btn
+                        input#businessFileInput(type="file" style="display:none" accept="image/*")
+                        button.btn#uploadBusinessBtn
+                            span= t.info.business_photo
+            .account__right
+                h2= t.info.business_section_title
+                .account__form
+                    .field
+                        label= t.info.business_name
+                        input.input#businessNameInput(
+                            type="text"
+                            value=user.businessName || ""
+                            placeholder=t.info.business_name_placeholder
+                        )
+                    .field
+                        label= t.info.business_desc_label
+                        textarea.textarea#descriptionCoach(maxlength=500 placeholder=t.info.business_desc_placeholder)= user.description || ''
+                        span.field-hint#descCount #{(user.description || '').length}/500
+                    .field
+                        label= t.info.business_type_label
+                        .service-select-wrapper
+                            input.input.service-input(
+                                type="text"
+                                id="businessTypeInput"
+                                placeholder="Ex: Coiffeur, Médecin, Coach sportif..."
+                                autocomplete="off"
+                                value=user.businessType || ""
+                            )
+                            .service-dropdown#businessTypeDropdown
+                    .account__actions
+                        button#saveBusinessInfo
+                            span= t.info.business_save
 
         //- ---- Delete account modal ----
         .delete-account-modal#deleteAccountModal(style="display:none")
@@ -62,24 +104,6 @@ block content
                         input#deleteCodeInput.input(type="text" placeholder=t.info.code_placeholder maxlength="6")
                         button#confirmDeleteAccount.btn.danger(type="button")= t.info.confirm_delete
                         .delete-account-modal__status#deleteConfirmStatus
-
-        .business-type__container
-            h2 Type de service / Métier
-            .business-type__body
-                .form-group
-                    label Votre métier ou secteur d'activité
-                    .service-select-wrapper
-                        input.input.service-input(
-                            type="text"
-                            id="businessTypeInput"
-                            placeholder="Ex: Coiffeur, Médecin, Coach sportif..."
-                            autocomplete="off"
-                            value=user.businessType || ""
-                        )
-                        .service-dropdown#businessTypeDropdown
-                .business-type__action
-                    button#saveBusinessType(style="width:auto")
-                        span Enregistrer
 
         .location__container
             .location__map(id="mapContainer")
@@ -134,15 +158,6 @@ block content
                     .form-action
                         button(id="confirmLocation" style="width:auto")
                             span= t.info.confirm_location
-        .description
-            .description__container
-                .form-group
-                    label= t.info.description
-                    textarea.textarea(maxlength=230 id="descriptionCoach")= user.description || ''
-
-                .description__action
-                    button#saveDescription(style='width:auto')
-                        span= t.info.save
         .social
             .social__container
                 .social__box(data-name="emailPro")
@@ -153,7 +168,7 @@ block content
                     .social__title= t.profile.social.email_pro
                     .social__field
                         input.input(placeholder=t.info.link_placeholder value=user.emailPro || "" disabled=(!user.isPremium))
-                        button  
+                        button.btn__social-save
                             span= t.avail.save
                 .social__box(data-name="phonePro")
                     if !user.isPremium
@@ -163,7 +178,7 @@ block content
                     .social__title= t.profile.social.phone_pro
                     .social__field
                         input.input(placeholder=t.info.link_placeholder value=user.phonePro || "" disabled=(!user.isPremium))
-                        button
+                        button.btn__social-save
                             span= t.avail.save
                 .social__box(data-name="instagramLink")
                     if !user.isPremium
@@ -173,7 +188,7 @@ block content
                     .social__title= t.profile.social.instagram
                     .social__field
                         input.input(placeholder=t.info.link_placeholder value=user.instagramLink || "" disabled=(!user.isPremium))
-                        button
+                        button.btn__social-save
                             span= t.avail.save
                 .social__box(data-name="whatsappLink")
                     if !user.isPremium
@@ -183,7 +198,7 @@ block content
                     .social__title= t.profile.social.whatsapp
                     .social__field
                         input.input(placeholder=t.info.link_placeholder value=user.whatsappLink || "" disabled=(!user.isPremium))
-                        button
+                        button.btn__social-save
                             span= t.avail.save
                 .social__box(data-name="facebookLink")
                     if !user.isPremium
@@ -193,7 +208,7 @@ block content
                     .social__title= t.profile.social.facebook
                     .social__field
                         input.input(placeholder=t.info.link_placeholder value=user.facebookLink || "" disabled=(!user.isPremium))
-                        button
+                        button.btn__social-save
                             span= t.avail.save
                 .social__box(data-name="website")
                     if !user.isPremium
@@ -203,7 +218,7 @@ block content
                     .social__title= t.profile.social.website
                     .social__field
                         input.input(placeholder=t.info.link_placeholder value=user.website || "" disabled=(!user.isPremium))
-                        button
+                        button.btn__social-save
                             span= t.avail.save
     +dialog()
     +prompt()
@@ -216,18 +231,16 @@ block scripts
     script.
         const __services = !{JSON.stringify(services)};
         (function() {
+            // ── Autocomplete business type ──
             const input = document.getElementById('businessTypeInput');
             const dropdown = document.getElementById('businessTypeDropdown');
-            const saveBtn = document.getElementById('saveBusinessType');
-            if (!input || !dropdown) return;
 
             function normalize(str) {
                 return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
             }
-
             function renderList(items) {
                 dropdown.innerHTML = '';
-                if (items.length === 0) { dropdown.style.display = 'none'; return; }
+                if (!items.length) { dropdown.style.display = 'none'; return; }
                 items.forEach(function(item) {
                     const div = document.createElement('div');
                     div.className = 'service-dropdown__item';
@@ -241,34 +254,84 @@ block scripts
                 });
                 dropdown.style.display = 'block';
             }
+            if (input && dropdown) {
+                input.addEventListener('input', function() {
+                    const q = normalize(input.value.trim());
+                    if (!q) { dropdown.style.display = 'none'; return; }
+                    renderList(__services.filter(s => normalize(s).includes(q)).slice(0, 8));
+                });
+                input.addEventListener('focus', function() {
+                    const q = normalize(input.value.trim());
+                    if (q) renderList(__services.filter(s => normalize(s).includes(q)).slice(0, 8));
+                });
+                input.addEventListener('blur', function() {
+                    setTimeout(function() { dropdown.style.display = 'none'; }, 150);
+                });
+            }
 
-            input.addEventListener('input', function() {
-                const q = normalize(input.value.trim());
-                if (!q) { dropdown.style.display = 'none'; return; }
-                renderList(__services.filter(s => normalize(s).includes(q)).slice(0, 8));
-            });
+            // ── Compteur description ──
+            const textarea = document.getElementById('descriptionCoach');
+            const counter  = document.getElementById('descCount');
+            if (textarea && counter) {
+                textarea.addEventListener('input', function() {
+                    counter.textContent = textarea.value.length + '/500';
+                });
+            }
 
-            input.addEventListener('focus', function() {
-                const q = normalize(input.value.trim());
-                if (q) renderList(__services.filter(s => normalize(s).includes(q)).slice(0, 8));
-            });
-
-            input.addEventListener('blur', function() {
-                setTimeout(function() { dropdown.style.display = 'none'; }, 150);
-            });
-
-            if (saveBtn) {
-                saveBtn.addEventListener('click', async function() {
-                    const res = await fetch('/account/business-type', {
+            // ── Enregistrer nom + description + type en une fois ──
+            const saveBusinessInfo = document.getElementById('saveBusinessInfo');
+            const businessNameInput = document.getElementById('businessNameInput');
+            if (saveBusinessInfo) {
+                saveBusinessInfo.addEventListener('click', async function() {
+                    const btn = saveBusinessInfo;
+                    const businessName = businessNameInput ? businessNameInput.value.trim() : '';
+                    const description  = textarea ? textarea.value.trim() : '';
+                    const businessType = input ? input.value.trim() : '';
+                    const res = await fetch('/account/business-info', {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ businessType: input.value.trim() })
+                        body: JSON.stringify({ businessName, description, businessType })
                     });
                     const data = await res.json();
                     if (data.success) {
-                        saveBtn.querySelector('span').textContent = '✓ Enregistré';
-                        setTimeout(() => { saveBtn.querySelector('span').textContent = 'Enregistrer'; }, 2500);
+                        btn.querySelector('span').textContent = '✓ Enregistré';
+                        setTimeout(() => { btn.querySelector('span').textContent = 'Enregistrer'; }, 2500);
                     }
+                });
+            }
+
+            // ── Upload photo établissement ──
+            const businessFileInput = document.getElementById('businessFileInput');
+            const uploadBusinessBtn = document.getElementById('uploadBusinessBtn');
+            const businessPicPreview = document.getElementById('businessPicPreview');
+
+            if (uploadBusinessBtn && businessFileInput) {
+                uploadBusinessBtn.addEventListener('click', function() { businessFileInput.click(); });
+                businessFileInput.addEventListener('change', async function() {
+                    const file = businessFileInput.files[0];
+                    if (!file) return;
+
+                    // Preview immédiat
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        if (businessPicPreview.tagName === 'IMG') {
+                            businessPicPreview.src = e.target.result;
+                        } else {
+                            // Remplacer le placeholder par une vraie image
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.alt = 'Photo établissement';
+                            img.id = 'businessPicPreview';
+                            businessPicPreview.replaceWith(img);
+                        }
+                    };
+                    reader.readAsDataURL(file);
+
+                    // Upload
+                    const formData = new FormData();
+                    formData.append('businessPicture', file);
+                    const res = await fetch('/account/business-picture', { method: 'PATCH', body: formData });
+                    await res.json();
                 });
             }
         })();

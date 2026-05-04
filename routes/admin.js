@@ -72,4 +72,6 @@ router.get("/forms", isVerified, adminController.formsIndex);
 router.get("/forms/data", isVerified, adminController.getFormData);
 router.post("/forms/save", isVerified, adminController.saveForm);
 
+router.get("/customize-calendar", isAuth, injectCompany, adminController.customizeCalendarPage);
+
 module.exports = router;
