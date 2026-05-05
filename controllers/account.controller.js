@@ -94,8 +94,8 @@ exports.createCheckout = async (req, res) => {
 
     client_reference_id: req.user._id.toString(),
 
-    success_url: "https://www.saymiro.com/subscription/success",
-    cancel_url: "https://www.saymiro.com/subscription",
+    success_url: "https://gymio.be/subscription/success",
+    cancel_url: "https://gymio.be/subscription",
   });
 
   res.json({ url: session.url });
