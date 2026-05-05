@@ -31,11 +31,11 @@ block content
                 each coach in coachs
                     .suggestions__row
                         .row__avatar
-                            img(src=coach.owner.businessPicture || '/images/no-user.webp')
+                            img(src=coach.owner.businessPicture || coach.owner.profilePicture || '/images/no-user.webp')
                         .row__informations
                             .informations__left
                                 .informations__name
-                                    h2 #{coach.owner.businessName} - #{coach.owner.businessType}
+                                    h2 #{coach.owner.businessName || coach.owner.fullName} - #{coach.owner.businessType}
                                 if coach.owner.email
                                     .informations__email
                                         a(href=`mailto:${coach.owner.email}`)= coach.owner.emailPro
