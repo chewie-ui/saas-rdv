@@ -8,6 +8,7 @@ const SERVICES = [
   "Dermatologue",
   "Ophtalmologue",
   "ORL",
+  "Réflexologue",
   "Psychiatre",
   "Dentiste",
   "Orthodontiste",
