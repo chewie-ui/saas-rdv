@@ -82,6 +82,11 @@ const userSchema = schema(
       default: false,
     },
 
+    manualPremium: {
+      type: Boolean,
+      default: false,
+    },
+
     location: {
       address: String,
       city: String,

@@ -6,15 +6,33 @@ const User = require("../db/models/user.model");
  * Appelé quand l'abonnement est expiré ou inexistant.
  */
 async function revokePremium(req) {
+  // Ne jamais révoquer un accès accordé manuellement (bêta testeurs)
+  if (req.user && req.user.manualPremium) return;
   if (req.user && req.user.isPremium) {
-    req.user.isPremium = false; // en mémoire → templates
-    await User.findByIdAndUpdate(req.user._id, { isPremium: false }); // en DB → requêtes futures
+    req.user.isPremium = false;
+    await User.findByIdAndUpdate(req.user._id, { isPremium: false });
   }
 }
 
 module.exports = async (req, res, next) => {
   try {
     if (!req.user) {
+      return next();
+    }
+
+    // ── Bypass manuel : bêta testeurs avec manualPremium=true (prod + dev)
+    if (req.user.manualPremium) {
+      if (!req.user.isPremium) {
+        await User.findByIdAndUpdate(req.user._id, { isPremium: true });
+        req.user.isPremium = true;
+      }
+      res.locals.isPro        = true;
+      res.locals.daysLeft     = 9999;
+      res.locals.hoursLeft    = null;
+      res.locals.isExpired    = false;
+      res.locals.isExpiring   = false;
+      res.locals.subscription = null;
+      res.locals.autoRenew    = false;
       return next();
     }
 

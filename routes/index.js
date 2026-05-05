@@ -15,6 +15,7 @@ router.use(require("./admin"));
 router.use(require("./booking"));
 router.use("/api", require("./api"));
 router.use("/account", require("./user/account"));
+router.use(require("./superadmin"));
 
 router.get("/", async (req, res) => {
   const coachs = await Companies.find({})

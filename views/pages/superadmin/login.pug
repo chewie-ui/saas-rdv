@@ -1,0 +1,130 @@
+doctype html
+html(lang="fr")
+    head
+        meta(name="viewport" content="width=device-width, initial-scale=1.0")
+        meta(charset="UTF-8")
+        title Superadmin — SayMiro Calendar
+        link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
+        link(rel="stylesheet" href="/css/import.css")
+        style.
+            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #0f0f0f;
+                font-family: 'Inter', sans-serif;
+            }
+            .login-card {
+                background: #1a1a1a;
+                border: 1px solid #2a2a2a;
+                border-radius: 16px;
+                padding: 40px 36px;
+                width: 100%;
+                max-width: 380px;
+                display: flex;
+                flex-direction: column;
+                gap: 28px;
+            }
+            .login-card__header {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .login-card__header h1 {
+                font-size: 22px;
+                font-weight: 700;
+                color: #fff;
+                letter-spacing: -0.02em;
+            }
+            .login-card__header p {
+                font-size: 13px;
+                color: #666;
+            }
+            .login-card form {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            .field {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .field label {
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                color: #555;
+            }
+            .field input {
+                background: #111;
+                border: 1.5px solid #2a2a2a;
+                border-radius: 10px;
+                color: #fff;
+                font-size: 14px;
+                padding: 10px 14px;
+                outline: none;
+                transition: border-color 0.15s;
+            }
+            .field input:focus {
+                border-color: #444;
+            }
+            .btn-submit {
+                background: #fff;
+                color: #111;
+                border: none;
+                border-radius: 10px;
+                font-size: 14px;
+                font-weight: 600;
+                padding: 11px;
+                cursor: pointer;
+                transition: opacity 0.15s;
+                margin-top: 4px;
+            }
+            .btn-submit:hover { opacity: 0.88; }
+            .error-msg {
+                background: rgba(248, 113, 113, 0.12);
+                border: 1px solid rgba(248, 113, 113, 0.3);
+                border-radius: 8px;
+                color: #f87171;
+                font-size: 13px;
+                padding: 10px 14px;
+            }
+            .badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 11px;
+                font-weight: 600;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+                color: #666;
+                background: #1f1f1f;
+                border: 1px solid #2a2a2a;
+                border-radius: 6px;
+                padding: 4px 10px;
+                width: fit-content;
+            }
+            .badge::before {
+                content: '';
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: #22c55e;
+            }
+    body
+        .login-card
+            .login-card__header
+                span.badge SayMiro Admin
+                h1 Accès superadmin
+                p Zone réservée à l'administrateur.
+            if error
+                .error-msg= error
+            form(method="POST" action="/superadmin/login")
+                .field
+                    label Mot de passe
+                    input(type="password" name="secret" placeholder="••••••••" autofocus required)
+                button.btn-submit(type="submit") Connexion
