@@ -1,0 +1,341 @@
+/* ================================================================
+   History Edit Page — full redesign
+   ================================================================ */
+
+/* ── Page wrapper ── */
+.page--history-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 100px; /* room for sticky bar */
+}
+
+/* ── Back link ── */
+.edit-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--grey-primary);
+  text-decoration: none;
+  transition: color 0.2s;
+  width: fit-content;
+}
+
+.edit-back-btn svg {
+  fill: currentColor;
+}
+
+.edit-back-btn:hover {
+  color: var(--text-primary, #111);
+}
+
+/* ── Two-column layout ── */
+.edit-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* ── Sidebar (summary card) ── */
+.edit-sidebar {
+  width: 100%;
+}
+
+.edit-sidebar__card {
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.edit-sidebar__avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--green-primary, #22c55e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.edit-sidebar__name {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.edit-sidebar__name h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary, #111);
+}
+
+.edit-sidebar__name p {
+  font-size: 13px;
+  color: var(--grey-primary);
+  word-break: break-word;
+}
+
+.edit-sidebar__divider {
+  height: 1px;
+  background: var(--border-light, #f0f0f0);
+  margin: 4px 0;
+}
+
+.edit-sidebar__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.edit-sidebar__meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-primary, #222);
+}
+
+.edit-sidebar__meta-row svg {
+  fill: var(--grey-primary);
+  flex-shrink: 0;
+}
+
+.edit-sidebar__status-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--grey-primary);
+}
+
+.edit-sidebar__status-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.status-pill {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-light, #e5e5e5);
+  background: var(--bg-secondary, #f7f7f7);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s;
+  color: var(--grey-primary);
+}
+
+.status-pill:hover {
+  border-color: var(--border, #d0d0d0);
+  background: var(--color-white);
+}
+
+.status-pill.active.confirmed {
+  background: #dcfce7;
+  border-color: #16a34a;
+  color: #16a34a;
+}
+
+.status-pill.active.canceled {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+/* ── Form sections ── */
+.edit-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.edit-section {
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.edit-section__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light, #f0f0f0);
+}
+
+.edit-section__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-secondary, #f5f5f5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.edit-section__icon svg {
+  fill: var(--grey-primary);
+}
+
+.edit-section__header h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #111);
+}
+
+.edit-section__body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.edit-fields-row {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.edit-fields-row.two-col {
+  flex-direction: row;
+  gap: 14px;
+}
+
+.edit-fields-row.two-col .field-container {
+  flex: 1;
+  min-width: 0;
+}
+
+.edit-fields-row .field-container label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--grey-primary);
+  margin-bottom: 6px;
+}
+
+/* ── Form answers ── */
+.form-answers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-answer-item {
+  background: var(--bg-secondary, #f7f7f7);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-answer-question {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--grey-primary);
+}
+
+.form-answer-value {
+  font-size: 14px;
+  color: var(--text-primary, #111);
+}
+
+/* ── Sticky action bar ── */
+.edit-actions-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-white);
+  border-top: 1px solid var(--border-light, #e8e8e8);
+  padding: 14px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  z-index: 100;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
+}
+
+/* Account for sidebar width on large desktop (sidebar is in-flow at ≥1280px) */
+@media (min-width: 1280px) {
+  .edit-actions-bar {
+    left: 280px;
+  }
+}
+
+.edit-actions-bar .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.save-icon {
+  fill: currentColor;
+}
+
+/* ── Save button states ── */
+#saveBtnEdit.saving {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+#saveBtnEdit.saved {
+  background: var(--green-primary, #22c55e) !important;
+}
+
+/* ================================================================
+   DESKTOP (≥ 820px): sidebar left, content right
+   ================================================================ */
+@media (min-width: 820px) {
+  .edit-layout {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 24px;
+  }
+
+  .edit-sidebar {
+    width: 280px;
+    min-width: 250px;
+    max-width: 300px;
+    position: sticky;
+    top: 80px;
+  }
+
+  .edit-content {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* ================================================================
+   RESPONSIVE: stack two-col on narrow screens
+   ================================================================ */
+@media (max-width: 540px) {
+  .edit-fields-row.two-col {
+    flex-direction: column;
+  }
+
+  .edit-sidebar__status-toggle {
+    flex-direction: column;
+  }
+}

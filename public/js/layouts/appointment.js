@@ -15,6 +15,13 @@ function updateTimeline() {
   const timeline = document.getElementById("current-time-line");
   if (!timeline) return;
 
+  // N'afficher la ligne que si aujourd'hui est dans la semaine visible
+  const todayHeader = document.querySelector(".cell.day-header.today");
+  if (!todayHeader) {
+    timeline.style.display = "none";
+    return;
+  }
+
   const timeCells = Array.from(document.querySelectorAll(".cell.time"));
   if (!timeCells.length) {
     timeline.style.display = "none";
@@ -23,11 +30,9 @@ function updateTimeline() {
 
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-
   const firstMinutes = toMinutes(timeCells[0].textContent);
   const lastMinutes = toMinutes(timeCells[timeCells.length - 1].textContent);
 
-  // Masquer si hors plage horaire du calendrier
   if (nowMinutes < firstMinutes || nowMinutes > lastMinutes + 120) {
     timeline.style.display = "none";
     return;
@@ -37,7 +42,21 @@ function updateTimeline() {
   if (!gridSection) return;
   const gridRect = gridSection.getBoundingClientRect();
 
-  // Trouver entre quelles deux cellules se situe l'heure actuelle
+  // Positionnement horizontal : restreindre à la colonne du jour actuel
+  const isMobile = window.matchMedia("(max-width: 819px)").matches;
+  if (isMobile) {
+    timeline.style.left  = "56px";
+    timeline.style.width = "calc(100% - 56px)";
+    timeline.style.right = "auto";
+  } else {
+    const todayRect = todayHeader.getBoundingClientRect();
+    const leftOffset = todayRect.left - gridRect.left;
+    timeline.style.left  = `${leftOffset}px`;
+    timeline.style.width = `${todayRect.width}px`;
+    timeline.style.right = "auto";
+  }
+
+  // Positionnement vertical
   for (let i = 0; i < timeCells.length; i++) {
     const cellMin = toMinutes(timeCells[i].textContent);
     const nextMin =
@@ -49,7 +68,6 @@ function updateTimeline() {
       const cellRect = timeCells[i].getBoundingClientRect();
       const fraction = (nowMinutes - cellMin) / (nextMin - cellMin);
       const top = cellRect.top - gridRect.top + fraction * cellRect.height;
-
       timeline.style.top = `${top}px`;
       timeline.style.display = "block";
       return;

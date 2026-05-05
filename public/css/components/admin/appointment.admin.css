@@ -383,16 +383,13 @@
 
 .calendar-timeline {
   position: absolute;
-  left: 56px;
-  right: 0;
+  /* left / width sont définis dynamiquement par le JS */
   height: 2px;
   background-color: #ea4335;
   z-index: 40;
   pointer-events: none;
   display: none;
-  /* Ne pas participer au flux du grid */
   grid-column: 1 / -1;
-  width: calc(100% - 56px);
 }
 
 .timeline-circle {
@@ -562,7 +559,14 @@
     z-index: 30;
   }
 
-  .calendar-section .grid-section .cell.day-header.focused {
+  /* "focused" = jour sélectionné par la navigation → indicateur discret */
+  .calendar-section .grid-section .cell.day-header.focused:not(.today) {
+    color: var(--text-primary);
+    font-weight: 700;
+  }
+
+  /* "today" = la vraie date du jour → couleur principale */
+  .calendar-section .grid-section .cell.day-header.today {
     color: var(--main-color);
   }
 
@@ -574,9 +578,7 @@
     border-right: 1px solid var(--border-light);
   }
 
-  .calendar-timeline {
-    left: 72px;
-  }
+  /* .calendar-timeline left/width now fully controlled by JS */
 }
 
 /* ---- Mini month calendar ---- */

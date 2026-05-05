@@ -106,26 +106,64 @@ function renderData(appointments) {
     .join("");
 }
 
+/* ── Status pills (edit page) ── */
+const statusPills = document.querySelectorAll(".status-pill");
+const editStatusInput = document.getElementById("editStatus");
+
+if (statusPills.length && editStatusInput) {
+  statusPills.forEach((pill) => {
+    pill.addEventListener("click", () => {
+      const value = pill.dataset.value;
+      editStatusInput.value = value;
+
+      statusPills.forEach((p) => {
+        p.classList.remove("active", "confirmed", "canceled");
+      });
+
+      pill.classList.add("active", value);
+    });
+  });
+}
+
+/* ── Save button (edit page) ── */
 const saveBtnEdit = document.getElementById("saveBtnEdit");
 
 if (saveBtnEdit) {
   saveBtnEdit.addEventListener("click", async () => {
     const id = window.location.pathname.split("/").pop();
+    const label = document.getElementById("saveBtnLabel");
+
+    saveBtnEdit.classList.add("saving");
+
     const response = await fetch(`/history/edit/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        fullName: document.getElementById("fullName").value,
-        email: document.getElementById("email").value,
-        phone: document.getElementById("phone").value,
-        message: document.getElementById("message").value,
-        date: document.getElementById("editDate")?.value,
-        startTime: document.getElementById("editStartTime")?.value,
+        name: document.getElementById("editName")?.value || "",
+        surname: document.getElementById("editSurname")?.value || "",
+        email: document.getElementById("editEmail")?.value || "",
+        phone: document.getElementById("editPhone")?.value || "",
+        message: document.getElementById("editMessage")?.value || "",
+        date: document.getElementById("editDate")?.value || "",
+        startTime: document.getElementById("editStartTime")?.value || "",
+        endTime: document.getElementById("editEndTime")?.value || "",
+        status: document.getElementById("editStatus")?.value || "confirmed",
+        adminNotes: document.getElementById("editAdminNotes")?.value || "",
+        // legacy fields kept for backward compat
+        fullName: (document.getElementById("editName")?.value || "") + " " + (document.getElementById("editSurname")?.value || ""),
       }),
     });
+
+    saveBtnEdit.classList.remove("saving");
+
     const data = await response.json();
     if (data.success) {
-      location.reload();
+      saveBtnEdit.classList.add("saved");
+      if (label) label.textContent = (window.__t && window.__t.changes_saved) || "✓ Enregistré";
+      setTimeout(() => {
+        saveBtnEdit.classList.remove("saved");
+        if (label) label.textContent = "Enregistrer";
+      }, 2500);
     }
   });
 }

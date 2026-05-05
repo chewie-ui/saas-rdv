@@ -31,7 +31,101 @@
   display: none;
 }
 
-.informations .informations__container .informations__top .informations__user,
+/* ── informations__top : profile card redesign ── */
+.informations .informations__container .informations__top .informations__user {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Photo */
+.informations .informations__container .informations__top .informations__user .user__image {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid var(--border-light, #ececec);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.informations .informations__container .informations__top .informations__user .user__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Text block */
+.informations .informations__container .informations__top .informations__user .user__details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+/* Business name */
+.user__business-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary, #111);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+/* Business type badge */
+.user__business-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--grey-primary, #888);
+  background: var(--bg-secondary, #f5f5f5);
+  border-radius: 6px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Contact rows */
+.user__contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.user__contact-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--grey-primary, #666);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user__contact-row svg {
+  fill: var(--grey-primary, #888);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.user__contact-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* bottom links section */
 .informations .informations__container .informations__bottom .informations__links {
   display: flex;
   flex-direction: column;
@@ -46,14 +140,12 @@
   color: var(--green-primary);
 }
 
-.informations .informations__container .informations__top .informations__user h2,
 .informations .informations__container .informations__bottom .informations__links h2 {
   font-size: 18px;
   color: var(--grey-primary);
   font-weight: 400;
 }
 
-.informations .informations__container .informations__top .informations__user-wrapper,
 .informations .informations__container .informations__bottom .informations__links .informations__links-wrapper {
   display: flex;
   gap: 15px;
@@ -61,47 +153,11 @@
   overflow: hidden;
 }
 
-.informations .informations__container .informations__top .informations__user .user__name {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-start;
-  width: calc(100% - 70px - 15px);
-}
-
-.informations .informations__container .informations__top .informations__user .user__name.not-premium {
-  justify-content: center;
-}
-
-.informations .informations__container .informations__top .informations__user .user__name.not-premium h3 {
-  font-size: 20px;
-}
-
-.informations .informations__container .informations__top .informations__user .user__name .user__name-row {
-  width: 100%;
-}
-
-.informations .informations__container .informations__top .informations__user .user__name h3,
 .informations .informations__container .informations__bottom .informations__links .informations__links-wrapper .links__row h3 {
   font-weight: 500;
   font-size: 16px;
   text-overflow: ellipsis;
   overflow: hidden;
-}
-
-.informations .informations__container .informations__top .informations__user .user__name p {
-  color: var(--grey-primary);
-}
-
-.informations .informations__container .informations__top .informations__user .user__image {
-  min-width: 70px;
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  overflow: hidden;
-}
-.informations .informations__container .informations__top .informations__user .user__image img {
-  object-fit: cover;
 }
 
 .informations .informations__container .informations__bottom .informations__links .informations__links-wrapper .links__row {

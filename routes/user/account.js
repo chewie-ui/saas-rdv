@@ -13,6 +13,7 @@ router.patch(
 
 router.patch("/update-info", accountController.updateAccountInfo);
 router.patch("/update-social", accountController.updateAccountSocial);
+router.patch("/toggle-social", accountController.toggleSocialVisibility);
 
 router.post("/create-checkout", accountController.createCheckout);
 

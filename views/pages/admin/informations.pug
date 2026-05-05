@@ -160,66 +160,41 @@ block content
                             span= t.info.confirm_location
         .social
             .social__container
-                .social__box(data-name="emailPro")
-                    if !user.isPremium
-                        a(href="/subscription").get__premium= t.profile.get_premium
-                    .social__logo
-                        img(src="/images/logos/email-logo.webp" alt="Email logo")
-                    .social__title= t.profile.social.email_pro
-                    .social__field
-                        input.input(placeholder=t.info.link_placeholder value=user.emailPro || "" disabled=(!user.isPremium))
-                        button.btn__social-save
-                            span= t.avail.save
-                .social__box(data-name="phonePro")
-                    if !user.isPremium
-                        a(href="/subscription").get__premium= t.profile.get_premium
-                    .social__logo
-                        img(src="/images/logos/phone-logo.webp" alt="Phone logo")
-                    .social__title= t.profile.social.phone_pro
-                    .social__field
-                        input.input(placeholder=t.info.link_placeholder value=user.phonePro || "" disabled=(!user.isPremium))
-                        button.btn__social-save
-                            span= t.avail.save
-                .social__box(data-name="instagramLink")
-                    if !user.isPremium
-                        a(href="/subscription").get__premium= t.profile.get_premium
-                    .social__logo
-                        img(src="/images/logos/instagram-logo.webp" alt="Instagram logo")
-                    .social__title= t.profile.social.instagram
-                    .social__field
-                        input.input(placeholder=t.info.link_placeholder value=user.instagramLink || "" disabled=(!user.isPremium))
-                        button.btn__social-save
-                            span= t.avail.save
-                .social__box(data-name="whatsappLink")
-                    if !user.isPremium
-                        a(href="/subscription").get__premium= t.profile.get_premium
-                    .social__logo
-                        img(src="/images/logos/whatsapp-logo.webp" alt="Whatsapp logo")
-                    .social__title= t.profile.social.whatsapp
-                    .social__field
-                        input.input(placeholder=t.info.link_placeholder value=user.whatsappLink || "" disabled=(!user.isPremium))
-                        button.btn__social-save
-                            span= t.avail.save
-                .social__box(data-name="facebookLink")
-                    if !user.isPremium
-                        a(href="/subscription").get__premium= t.profile.get_premium
-                    .social__logo
-                        img(src="/images/logos/facebook-logo.webp" alt="Facebook logo")
-                    .social__title= t.profile.social.facebook
-                    .social__field
-                        input.input(placeholder=t.info.link_placeholder value=user.facebookLink || "" disabled=(!user.isPremium))
-                        button.btn__social-save
-                            span= t.avail.save
-                .social__box(data-name="website")
-                    if !user.isPremium
-                        a(href="/subscription").get__premium= t.profile.get_premium
-                    .social__logo
-                        img(src="/images/logos/website-logo.webp" alt="Website logo")
-                    .social__title= t.profile.social.website
-                    .social__field
-                        input.input(placeholder=t.info.link_placeholder value=user.website || "" disabled=(!user.isPremium))
-                        button.btn__social-save
-                            span= t.avail.save
+                -
+                    var cs = (user.calendarSettings) ? user.calendarSettings : {}
+                    var socials = [
+                        { name: 'emailPro',       toggle: 'showEmailPro',  logo: 'email-logo.webp',     alt: 'Email logo',     label: t.profile.social.email_pro,   val: user.emailPro    || '' },
+                        { name: 'phonePro',       toggle: 'showPhonePro',  logo: 'phone-logo.webp',     alt: 'Phone logo',     label: t.profile.social.phone_pro,   val: user.phonePro    || '' },
+                        { name: 'instagramLink',  toggle: 'showInstagram', logo: 'instagram-logo.webp', alt: 'Instagram logo', label: t.profile.social.instagram,   val: user.instagramLink || '' },
+                        { name: 'whatsappLink',   toggle: 'showWhatsapp',  logo: 'whatsapp-logo.webp',  alt: 'Whatsapp logo',  label: t.profile.social.whatsapp,    val: user.whatsappLink  || '' },
+                        { name: 'facebookLink',   toggle: 'showFacebook',  logo: 'facebook-logo.webp',  alt: 'Facebook logo',  label: t.profile.social.facebook,    val: user.facebookLink  || '' },
+                        { name: 'website',        toggle: 'showWebsite',   logo: 'website-logo.webp',   alt: 'Website logo',   label: t.profile.social.website,     val: user.website       || '' }
+                    ]
+                each s in socials
+                    -
+                        var isOn = (cs[s.toggle] !== false)
+                    .social__box(data-name=s.name class=(!isOn ? 'social__box--hidden' : ''))
+                        if !user.isPremium
+                            a(href="/subscription").get__premium= t.profile.get_premium
+                        //- Toggle on/off
+                        label.social-visibility-toggle(
+                            title=t.info.toggle_visibility
+                            data-toggle=s.toggle
+                        )
+                            input.social-visibility-toggle__input(
+                                type="checkbox"
+                                checked=isOn
+                                disabled=(!user.isPremium)
+                            )
+                            span.social-visibility-toggle__track
+                                span.social-visibility-toggle__thumb
+                        .social__logo
+                            img(src="/images/logos/" + s.logo alt=s.alt)
+                        .social__title= s.label
+                        .social__field
+                            input.input(placeholder=t.info.link_placeholder value=s.val disabled=(!user.isPremium))
+                            button.btn__social-save
+                                span= t.avail.save
     +dialog()
     +prompt()
 

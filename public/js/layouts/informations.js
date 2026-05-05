@@ -75,6 +75,34 @@ if (saveChanges && accountForm) {
 const socialContainer = document.querySelector(".social__container");
 
 if (socialContainer) {
+  /* ── Visibility toggles ── */
+  socialContainer.addEventListener("change", async function (e) {
+    const checkbox = e.target.closest(".social-visibility-toggle__input");
+    if (!checkbox) return;
+
+    const label   = checkbox.closest(".social-visibility-toggle");
+    const box     = checkbox.closest(".social__box");
+    const field   = label.dataset.toggle;
+    const enabled = checkbox.checked;
+
+    // Optimistic UI: dim the box if disabled
+    box.classList.toggle("social__box--hidden", !enabled);
+
+    const response = await fetch("/account/toggle-social", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fieldName: field, enabled }),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      // Revert on error
+      checkbox.checked = !enabled;
+      box.classList.toggle("social__box--hidden", enabled);
+    }
+  });
+
+  /* ── Save link buttons ── */
   socialContainer.onclick = async function (e) {
     const button = e.target.closest(".btn__social-save");
     if (button) {

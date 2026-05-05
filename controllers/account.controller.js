@@ -63,6 +63,22 @@ exports.updateAccountSocial = async (req, res) => {
   }
 };
 
+exports.toggleSocialVisibility = async (req, res) => {
+  try {
+    const { fieldName, enabled } = req.body;
+    const allowed = ["showEmailPro", "showPhonePro", "showInstagram", "showWhatsapp", "showFacebook", "showWebsite"];
+    if (!allowed.includes(fieldName)) {
+      return res.status(400).json({ error: "Invalid field" });
+    }
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: { [`calendarSettings.${fieldName}`]: !!enabled },
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    return res.json(err);
+  }
+};
+
 exports.createCheckout = async (req, res) => {
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",

@@ -515,20 +515,49 @@ exports.settingsInit = async (req, res) => {
 exports.historyEditRowPatch = async (req, res) => {
   try {
     const { id } = req.params;
-    const { fullName, email, phone, message, date, startTime } = req.body;
-    const parts = fullName.trim().split(" ");
-    const name = parts[0];
-    const surname = parts.slice(1).join(" ") || "";
+    const {
+      name,
+      surname,
+      fullName,
+      email,
+      phone,
+      message,
+      date,
+      startTime,
+      endTime,
+      status,
+      adminNotes,
+    } = req.body;
 
-    const updateFields = { name, surname, phone, email, message };
+    // Support both separate name/surname and legacy fullName
+    let firstName = name;
+    let lastName = surname;
+    if (!firstName && !lastName && fullName) {
+      const parts = fullName.trim().split(" ");
+      firstName = parts[0];
+      lastName = parts.slice(1).join(" ") || "";
+    }
+
+    const updateFields = {};
+    if (firstName !== undefined) updateFields.name = firstName;
+    if (lastName !== undefined) updateFields.surname = lastName;
+    if (email !== undefined) updateFields.email = email;
+    if (phone !== undefined) updateFields.phone = phone;
+    if (message !== undefined) updateFields.message = message;
+    if (adminNotes !== undefined) updateFields.adminNotes = adminNotes;
     if (date) updateFields.date = new Date(date);
     if (startTime) updateFields.startTime = startTime;
+    if (endTime) updateFields.endTime = endTime;
+    if (status && ["confirmed", "canceled"].includes(status)) {
+      updateFields.status = status;
+    }
 
     const response = await Booking.findByIdAndUpdate(id, updateFields);
 
     if (response) {
       return res.json({ success: true });
     }
+    return res.json({ success: false });
   } catch (err) {
     console.error(err);
     return res.json({ err });

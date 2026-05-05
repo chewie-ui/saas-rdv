@@ -231,6 +231,76 @@
   left: 20px;
 }
 
+/* ── Social box hidden state ── */
+.social .social__container .social__box--hidden .social__logo,
+.social .social__container .social__box--hidden .social__title,
+.social .social__container .social__box--hidden .social__field {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* ── Visibility toggle (top-right of each box) ── */
+.social-visibility-toggle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.social-visibility-toggle__input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.social-visibility-toggle__track {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--border, #d4d4d4);
+  transition: background 0.22s ease;
+  flex-shrink: 0;
+}
+
+.social-visibility-toggle__thumb {
+  position: absolute;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  transition: transform 0.22s ease;
+}
+
+/* checked state */
+.social-visibility-toggle__input:checked + .social-visibility-toggle__track {
+  background: var(--green-primary, #22c55e);
+}
+
+.social-visibility-toggle__input:checked + .social-visibility-toggle__track .social-visibility-toggle__thumb {
+  transform: translateX(18px);
+}
+
+/* disabled (non-premium) */
+.social-visibility-toggle__input:disabled + .social-visibility-toggle__track {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.social-visibility-toggle:has(.social-visibility-toggle__input:disabled) {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .social .social__container .social__box .social__logo {
   width: 50px;
   height: 50px;

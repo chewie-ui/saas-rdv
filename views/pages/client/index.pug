@@ -12,12 +12,18 @@ block links
         link(rel="stylesheet" href="https://fonts.googleapis.com/css2?family=" + gfontName + ":wght@400;600&display=swap")
 
 block content
-    - var cs          = (coach && coach.calendarSettings) ? coach.calendarSettings : {}
-    - var calFont     = cs.font        || 'Inter'
-    - var layoutStyle = cs.layoutStyle || 'classic'
-    - var showInfo    = cs.showInfo    !== false
-    - var showSocials = cs.showSocials !== false
-    - var pageBgType  = cs.pageBgType  || 'color'
+    - var cs            = (coach && coach.calendarSettings) ? coach.calendarSettings : {}
+    - var calFont       = cs.font        || 'Inter'
+    - var layoutStyle   = cs.layoutStyle || 'classic'
+    - var showInfo      = cs.showInfo    !== false
+    - var showSocials   = cs.showSocials !== false
+    - var showEmailPro  = cs.showEmailPro  !== false
+    - var showPhonePro  = cs.showPhonePro  !== false
+    - var showInstagram = cs.showInstagram !== false
+    - var showWhatsapp  = cs.showWhatsapp  !== false
+    - var showFacebook  = cs.showFacebook  !== false
+    - var showWebsite   = cs.showWebsite   !== false
+    - var pageBgType    = cs.pageBgType  || 'color'
     - var bgStyle     = (pageBgType === 'image' && cs.pageBgImage) ? ('background-image: url("' + cs.pageBgImage + '"); background-size: cover; background-position: center; background-attachment: fixed;') : ('background-color: ' + (cs.pageBg || '#f3f4f6') + ';')
 
     if coach && cs
@@ -52,66 +58,73 @@ block content
                 .informations__container
                     .informations__top
                         .informations__user
-                            .informations__user-wrapper
-                                .user__image
-                                    img.cover(alt="Profile Picture" src=(coach.businessPicture || "/images/no-user.webp"))
-                                .user__name(class=(coach.isPremium && (coach.emailPro || coach.phonePro) ? "" : "not-premium"))
-                                    .user__name-row
-                                        h3= coach.businessName || ""
-                                    .user__business-type= coach.businessType
-                                    if coach.isPremium
-                                        if coach.emailPro
-                                            .user__name-row
-                                                p= coach.emailPro
-                                        if coach.phonePro
-                                            .user__name-row
-                                                p= coach.phonePro
+                            .user__image
+                                img.cover(alt="Profile Picture" src=(coach.businessPicture || "/images/no-user.webp"))
+                            .user__details
+                                h3.user__business-name= coach.businessName || ""
+                                if coach.businessType
+                                    span.user__business-badge= coach.businessType
+                                if coach.isPremium
+                                    .user__contacts
+                                        if coach.emailPro && showEmailPro
+                                            .user__contact-row
+                                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px")
+                                                    path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280L160-640v400h640v-400L480-440Zm0-80 320-200H160l320 200ZM160-640v-80 480-400Z")
+                                                span= coach.emailPro
+                                        if coach.phonePro && showPhonePro
+                                            .user__contact-row
+                                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px")
+                                                    path(d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12Z")
+                                                span= coach.phonePro
 
-                    .informations__bottom
-                        if coach.isPremium
-                            if showSocials
+                    -
+                        var hasAnyLink = showSocials && (
+                            (coach.instagramLink && showInstagram) ||
+                            (coach.facebookLink  && showFacebook)  ||
+                            (coach.whatsappLink  && showWhatsapp)  ||
+                            (coach.website       && showWebsite)
+                        )
+                        var showBottom = (coach.isPremium && hasAnyLink) || !coach.isPremium
+                    if showBottom
+                        .informations__bottom
+                            if coach.isPremium
                                 .informations__links
-                                    if coach.instagramLink || coach.facebookLink || coach.whatsappLink || coach.website
-                                        h2= t.booking_page.links
-                                        if coach.instagramLink
-                                            .informations__links-wrapper
-                                                a(href=coach.instagramLink target="_blank").links__row
-                                                    .links__row-logo
-                                                        img(alt="Instagram logo" src="/images/logos/instagram-logo.webp")
-                                                    .links__row-name
-                                                        h3= t.profile.social.instagram
-                                        if coach.facebookLink
-                                            .informations__links-wrapper
-                                                a(href=coach.facebookLink target="_blank").links__row
-                                                    .links__row-logo
-                                                        img(alt="Facebook logo" src="/images/logos/facebook-logo.webp")
-                                                    .links__row-name
-                                                        h3= t.profile.social.facebook
-                                        if coach.whatsappLink
-                                            .informations__links-wrapper
-                                                a(href=coach.whatsappLink target="_blank").links__row
-                                                    .links__row-logo
-                                                        img(alt="Whatsapp logo" src="/images/logos/whatsapp-logo.webp")
-                                                    .links__row-name
-                                                        h3= t.profile.social.whatsapp
-                                        if coach.website
-                                            .informations__links-wrapper
-                                                a(href=coach.website target="_blank").links__row
-                                                    .links__row-logo
-                                                        img(alt="Website logo" src="/images/logos/website-logo.webp")
-                                                    .links__row-name
-                                                        h3= t.profile.social.website
-                                    else
-                                        .informations__links
-                                            p= t.booking_page.support
-                                                a(href="/contact")= t.booking_page.contact_us
-                        else
-                            .informations__links
-                                h2= t.booking_page.join_us
-                                a.btn(href="/register")
-                                    span= t.booking_page.register
-                                a.btn.secondary(href="/login")
-                                    span= t.booking_page.login
+                                    h2= t.booking_page.links
+                                    if coach.instagramLink && showInstagram
+                                        .informations__links-wrapper
+                                            a(href=coach.instagramLink target="_blank").links__row
+                                                .links__row-logo
+                                                    img(alt="Instagram logo" src="/images/logos/instagram-logo.webp")
+                                                .links__row-name
+                                                    h3= t.profile.social.instagram
+                                    if coach.facebookLink && showFacebook
+                                        .informations__links-wrapper
+                                            a(href=coach.facebookLink target="_blank").links__row
+                                                .links__row-logo
+                                                    img(alt="Facebook logo" src="/images/logos/facebook-logo.webp")
+                                                .links__row-name
+                                                    h3= t.profile.social.facebook
+                                    if coach.whatsappLink && showWhatsapp
+                                        .informations__links-wrapper
+                                            a(href=coach.whatsappLink target="_blank").links__row
+                                                .links__row-logo
+                                                    img(alt="Whatsapp logo" src="/images/logos/whatsapp-logo.webp")
+                                                .links__row-name
+                                                    h3= t.profile.social.whatsapp
+                                    if coach.website && showWebsite
+                                        .informations__links-wrapper
+                                            a(href=coach.website target="_blank").links__row
+                                                .links__row-logo
+                                                    img(alt="Website logo" src="/images/logos/website-logo.webp")
+                                                .links__row-name
+                                                    h3= t.profile.social.website
+                            else
+                                .informations__links
+                                    h2= t.booking_page.join_us
+                                    a.btn(href="/register")
+                                        span= t.booking_page.register
+                                    a.btn.secondary(href="/login")
+                                        span= t.booking_page.login
 
         .calendar-wrapper
             .calendar
@@ -136,8 +149,8 @@ block content
                     h2= t.booking_page.choose_schedule
                 .schedule-body
                     .back-btn
-                        svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                            path(d="M640-200 200-480l440-280v560Zm-80-280Zm0 134v-268L350-480l210 134Z")
+                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
+                            path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
                     .schedule-rows
                         //- Injected from JS
 
@@ -149,8 +162,8 @@ block content
                     p.xs-comment#formStepSubtitle= t.forms.form_step_subtitle
                 .form-step-body
                     .back-btn
-                        svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                            path(d="M640-200 200-480l440-280v560Zm-80-280Zm0 134v-268L350-480l210 134Z")
+                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
+                            path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
                     #formStepQuestions.form-step-questions
                         //- Injected from JS
                 .form-step-footer
@@ -163,8 +176,8 @@ block content
                     h2= t.booking_page.confirm_title
                 .booking-body
                     .back-btn
-                        svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                            path(d="M640-200 200-480l440-280v560Zm-80-280Zm0 134v-268L350-480l210 134Z")
+                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
+                            path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
                     .form-confirm
                         .field-container.flex.col
                             p= t.booking_page.name
