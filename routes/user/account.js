@@ -56,4 +56,7 @@ router.patch(
   accountController.editCalendarBgImage
 );
 
+router.patch("/slug", isAuth, accountController.updateSlug);
+router.get("/check-slug", isAuth, accountController.checkSlug);
+
 module.exports = router;

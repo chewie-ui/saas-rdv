@@ -80,25 +80,54 @@ exports.toggleSocialVisibility = async (req, res) => {
 };
 
 exports.createCheckout = async (req, res) => {
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
+  try {
+    const PromoCode = require("../db/models/promoCode.model");
+    const { promoCode } = req.body || {};
 
-    payment_method_types: ["card"],
+    const sessionParams = {
+      mode: "subscription",
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price: env.stripePricePlanPro,
+          quantity: 1,
+        },
+      ],
+      client_reference_id: req.user._id.toString(),
+      success_url: `${process.env.BASE_URL || "https://gymio.be"}/subscription/success`,
+      cancel_url:  `${process.env.BASE_URL || "https://gymio.be"}/subscription`,
+    };
 
-    line_items: [
-      {
-        price: "price_1TGzw7KBy9u2w1HpuEnmgRwH",
-        quantity: 1,
-      },
-    ],
+    // Appliquer le code promo si fourni
+    if (promoCode) {
+      const promo = await PromoCode.findOne({
+        code: promoCode.trim().toUpperCase(),
+        active: true,
+      });
 
-    client_reference_id: req.user._id.toString(),
+      if (promo && !(promo.expiresAt && new Date() > promo.expiresAt) && (promo.maxUses === null || promo.usedCount < promo.maxUses)) {
+        // Créer un coupon Stripe à la volée
+        const couponParams = { duration: "once" };
+        if (promo.discountType === "percent") {
+          couponParams.percent_off = promo.discountValue;
+        } else {
+          couponParams.amount_off = Math.round(promo.discountValue * 100); // centimes
+          couponParams.currency = "eur";
+        }
+        const coupon = await stripe.coupons.create(couponParams);
+        sessionParams.discounts = [{ coupon: coupon.id }];
 
-    success_url: "https://gymio.be/subscription/success",
-    cancel_url: "https://gymio.be/subscription",
-  });
+        // Incrémenter usedCount
+        await PromoCode.findByIdAndUpdate(promo._id, { $inc: { usedCount: 1 } });
+      }
+    }
 
-  res.json({ url: session.url });
+    const session = await stripe.checkout.sessions.create(sessionParams);
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error("createCheckout error:", err);
+    res.status(500).json({ error: "Erreur lors de la création du checkout." });
+  }
 };
 
 exports.updatePassword = async (req, res) => {
@@ -414,5 +443,57 @@ exports.editCalendarBgImage = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.json({ success: false });
+  }
+};
+
+// ── URL personnalisée (slug) ───────────────────────────────────────────────────
+exports.updateSlug = async (req, res) => {
+  try {
+    const Company = require("../db/models/company/company.model");
+    const { slug } = req.body;
+
+    if (!slug || !/^[a-z0-9-]{3,60}$/.test(slug)) {
+      return res.status(400).json({
+        error: "Le slug doit contenir entre 3 et 60 caractères (lettres minuscules, chiffres, tirets).",
+      });
+    }
+
+    // Trouver la company de l'utilisateur
+    const company = await Company.findOne({ owner: req.user._id });
+    if (!company) return res.status(404).json({ error: "Company introuvable." });
+
+    // Vérifier l'unicité
+    const existing = await Company.findOne({ slug });
+    if (existing && String(existing._id) !== String(company._id)) {
+      return res.json({ error: "Ce nom d'URL est déjà utilisé par quelqu'un d'autre." });
+    }
+
+    await Company.findByIdAndUpdate(company._id, { slug });
+    return res.json({ success: true, slug });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Vérifier disponibilité du slug (AJAX) ─────────────────────────────────────
+exports.checkSlug = async (req, res) => {
+  try {
+    const Company = require("../db/models/company/company.model");
+    const { slug } = req.query;
+
+    if (!slug || !/^[a-z0-9-]{3,60}$/.test(slug)) {
+      return res.json({ available: false, error: "Format invalide." });
+    }
+
+    const myCompany = await Company.findOne({ owner: req.user._id }).lean();
+    const existing = await Company.findOne({ slug }).lean();
+
+    if (!existing || (myCompany && String(existing._id) === String(myCompany._id))) {
+      return res.json({ available: true });
+    }
+    return res.json({ available: false });
+  } catch (err) {
+    return res.status(500).json({ available: false });
   }
 };

@@ -7,10 +7,10 @@ const {
   newPwd,
 } = require("../controllers/auth.controller");
 const passport = require("passport");
-const SERVICES = require("../utils/services");
+const getServices = require("../utils/services");
 
 router.get("/register", (req, res) => {
-  res.render("auth/register", { becomeCoach: true, alwaysSticky: true, services: SERVICES });
+  res.render("auth/register", { becomeCoach: true, alwaysSticky: true, services: getServices(res.locals.lang) });
 });
 
 router.get("/login", (req, res) => {

@@ -6,7 +6,7 @@ const Companies = require("../db/models/company/company.model");
 const pug = require("pug");
 const path = require("path");
 const { sendEmail } = require("../utils/mailer");
-const SERVICES = require("../utils/services");
+const getServices = require("../utils/services");
 
 router.use(require("./auth"));
 router.use(require("./client-auth"));
@@ -16,6 +16,8 @@ router.use(require("./booking"));
 router.use("/api", require("./api"));
 router.use("/account", require("./user/account"));
 router.use(require("./superadmin"));
+router.use(require("./services"));
+router.use(require("./employees"));
 
 router.get("/", async (req, res) => {
   const coachs = await Companies.find({})
@@ -30,7 +32,7 @@ router.get("/", async (req, res) => {
   res.render("client/landing-page", {
     title: `SayMiro Calendar - ${res.locals.t.titles.home}`,
     coachs: validCoachs,
-    services: SERVICES,
+    services: getServices(res.locals.lang),
   });
 });
 
@@ -84,7 +86,7 @@ router.get("/search", async (req, res) => {
       coachs: filteredCoachs,
       searchName: name,
       searchLocation: location,
-      services: SERVICES,
+      services: getServices(res.locals.lang),
     });
   } catch (err) {
     console.error(err);
@@ -155,25 +157,66 @@ router.get("/s-inscrire", (req, res) => {
   });
 });
 
-router.get("/mes-rdv", require("../controllers/booking.controller").getClientPanel);
-router.post("/mes-rdv", require("../controllers/booking.controller").postClientPanel);
 router.get("/:company", async (req, res) => {
   const company = await getCompanyIfExist(req.params.company);
-  console.log(req.params.company);
 
   if (!company) {
     return res.status(404).render("client/404");
   }
 
   const ID = company.owner;
-  console.log(ID);
-
   const coach = await User.findById(ID);
 
+  const Service = require("../db/models/company/service.model");
+  const services = await Service.find({ company: company._id, active: true })
+    .populate("employees", "firstName lastName profilePicture")
+    .sort("order")
+    .lean();
+
+  // Pre-serialize services to avoid Pug interpolation issues with nested braces
+  const servicesJson = JSON.stringify(services.map(function(s) {
+    return {
+      _id: String(s._id),
+      name: s.name,
+      description: s.description || '',
+      price: s.price,
+      duration: s.duration,
+      employees: (s.employees || []).map(function(e) {
+        return {
+          _id: String(e._id),
+          firstName: e.firstName || '',
+          lastName: e.lastName || '',
+          profilePicture: e.profilePicture || '/images/no-user.webp'
+        };
+      })
+    };
+  }));
+
+  // Client connecté → pré-remplir le formulaire de réservation
+  let clientUser = null;
+  if (req.session && req.session.clientId) {
+    try {
+      const Client = require("../db/models/client.model");
+      const client = await Client.findById(req.session.clientId).lean();
+      if (client) {
+        const parts = (client.fullName || "").trim().split(" ");
+        clientUser = {
+          firstName: parts[0] || "",
+          lastName:  parts.slice(1).join(" ") || "",
+          email: client.email || "",
+          phone: client.phone || "",
+        };
+      }
+    } catch (_) {}
+  }
+
   res.render("client/index", {
-    title: `Coach ${coach.fullName}`,
+    title: `${coach.businessName || coach.fullName}`,
     company,
     coach,
+    services,
+    servicesJson,
+    clientUser,
     alwaysSticky: true,
   });
 });

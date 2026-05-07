@@ -12,4 +12,13 @@ router.get("/superadmin/logout", ctrl.logout);
 router.get("/superadmin", isSuperAdmin, ctrl.usersPage);
 router.patch("/superadmin/toggle-premium/:userId", isSuperAdmin, ctrl.toggleManualPremium);
 
+// Promo codes
+router.get("/superadmin/promo-codes", isSuperAdmin, ctrl.promoCodesPage);
+router.post("/superadmin/promo-codes", isSuperAdmin, ctrl.createPromoCode);
+router.patch("/superadmin/promo-codes/:id/toggle", isSuperAdmin, ctrl.togglePromoCode);
+router.delete("/superadmin/promo-codes/:id", isSuperAdmin, ctrl.deletePromoCode);
+
+// Validation publique (pour le checkout)
+router.post("/api/validate-promo", ctrl.validatePromoCode);
+
 module.exports = router;

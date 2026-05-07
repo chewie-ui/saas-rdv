@@ -51,12 +51,22 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ── Language chips toggle ──────────────────────────────────────────────────
+  // ── Language chips toggle (multi, for spoken languages) ───────────────────
   document.querySelectorAll(".settings__lang-chip").forEach((chip) => {
     chip.addEventListener("click", () => {
       chip.classList.toggle("active");
       const checkbox = chip.querySelector("input[type='checkbox']");
       if (checkbox) checkbox.checked = chip.classList.contains("active");
+    });
+  });
+
+  // ── Preferred language chips (single radio select) ─────────────────────
+  document.querySelectorAll(".settings__pref-lang-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".settings__pref-lang-chip").forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      const radio = chip.querySelector("input[type='radio']");
+      if (radio) radio.checked = true;
     });
   });
 

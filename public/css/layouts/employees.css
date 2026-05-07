@@ -1,0 +1,271 @@
+/* ── Page header ────────────────────────────────────────────────────────────── */
+.employees-page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding-bottom: 60px;
+}
+
+.employees-page__header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.employees-page__header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  flex: 1;
+}
+
+.employees-page__subtitle {
+  width: 100%;
+  font-size: 13px;
+  color: var(--grey-primary);
+  order: 1;
+  margin-top: -10px;
+}
+
+/* ── Empty state ────────────────────────────────────────────────────────────── */
+.employees-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 60px 20px;
+  color: var(--grey-primary);
+  text-align: center;
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+}
+
+.employees-empty p {
+  font-size: 14px;
+}
+
+/* ── List ───────────────────────────────────────────────────────────────────── */
+.employees-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Employee card ──────────────────────────────────────────────────────────── */
+.emp-card {
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  border: 1.5px solid var(--border-light, #efefef);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 20px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.emp-card:hover {
+  border-color: var(--border, #ddd);
+  box-shadow: var(--shadow-md, 0 4px 20px rgba(0,0,0,0.08));
+}
+
+.emp-card--inactive {
+  opacity: 0.55;
+}
+
+/* Photo */
+.emp-card__left {
+  flex-shrink: 0;
+}
+
+.emp-card__photo {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2.5px solid var(--border-light, #ececec);
+}
+
+.emp-card__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.emp-photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.18s;
+  border-radius: 50%;
+}
+
+.emp-photo-overlay svg {
+  fill: #fff;
+}
+
+.emp-card__photo:hover .emp-photo-overlay {
+  opacity: 1;
+}
+
+.emp-photo-input {
+  display: none;
+}
+
+/* Body */
+.emp-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.emp-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.emp-card__name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary, #111);
+}
+
+.emp-card__desc {
+  font-size: 13px;
+  color: var(--grey-primary);
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Badges */
+.badge--age {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: var(--bg-secondary, #f5f5f5);
+  color: var(--grey-primary);
+  border: 1px solid var(--border-light, #e5e5e5);
+  flex-shrink: 0;
+}
+
+/* Actions */
+.emp-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Toggle (réutilise .sa-toggle de services.css) */
+.sa-toggle {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.sa-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.sa-toggle__track {
+  position: absolute;
+  inset: 0;
+  background: var(--border, #d4d4d4);
+  border-radius: 99px;
+  transition: background 0.22s ease;
+}
+
+.sa-toggle__track::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  transition: transform 0.22s ease;
+}
+
+.sa-toggle input:checked + .sa-toggle__track {
+  background: var(--main-color, #22c55e);
+}
+
+.sa-toggle input:checked + .sa-toggle__track::after {
+  transform: translateX(18px);
+}
+
+/* ── Modal photo row ────────────────────────────────────────────────────────── */
+.emp-modal__photo-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 4px;
+}
+
+.emp-modal__photo-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--border-light, #e5e5e5);
+  flex-shrink: 0;
+}
+
+.emp-modal__photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.emp-modal__photo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.xs-comment {
+  font-size: 11px;
+  color: var(--grey-primary);
+}
+
+.btn--sm {
+  padding: 7px 14px !important;
+  font-size: 13px !important;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .emp-card {
+    flex-wrap: wrap;
+  }
+
+  .emp-card__actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

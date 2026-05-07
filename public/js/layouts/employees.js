@@ -1,126 +1,145 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const headerActions = document.querySelector(".header-actions");
-  const tableBody = document.querySelector("#tableShowing tbody");
-  const template = document.getElementById("requestRowTemplate");
-  const thead = document.querySelector("#tableShowing thead");
-  const requestHeaderTemplate = document.getElementById(
-    "requestHeaderTemplate",
-  );
+  const addEmpBtn      = document.getElementById("addEmpBtn");
+  const empModal       = document.getElementById("empModal");
+  const empModalOverlay = document.getElementById("empModalOverlay");
+  const closeEmpModal  = document.getElementById("closeEmpModal");
+  const cancelEmpModal = document.getElementById("cancelEmpModal");
+  const saveEmpBtn     = document.getElementById("saveEmpBtn");
+  const empModalTitle  = document.getElementById("empModalTitle");
+  const empModalId     = document.getElementById("empModalId");
+  const empModalFirstName = document.getElementById("empModalFirstName");
+  const empModalLastName  = document.getElementById("empModalLastName");
+  const empModalAge    = document.getElementById("empModalAge");
+  const empModalDesc   = document.getElementById("empModalDesc");
+  const empModalPhotoBtn    = document.getElementById("empModalPhotoBtn");
+  const empModalPhotoInput  = document.getElementById("empModalPhotoInput");
+  const empModalPhotoPreview = document.getElementById("empModalPhotoPreview");
+  const employeesList  = document.getElementById("employeesList");
 
-  if (!headerActions || !tableBody) return;
+  let pendingPhotoFile = null;
 
-  tableBody.addEventListener("change", async (e) => {
-    const selectRole = e.target.closest(".select-role");
-    if (!selectRole) return;
+  function openModal()  { empModalOverlay.classList.add("show"); empModal.classList.add("show"); }
+  function closeModal() { empModalOverlay.classList.remove("show"); empModal.classList.remove("show"); }
 
-    const row = selectRole.closest("tr");
-    const userId = row.dataset.id;
-    const newRole = selectRole.value;
+  const msgNew  = window.__empModalNew  || "Nouvel employé";
+  const msgEdit = window.__empModalEdit || "Modifier l'employé";
+  const msgDel  = window.__empDeleteConfirm || "Supprimer cet employé ? Cette action est irréversible.";
 
-    try {
-      await fetch(`/employees/${userId}/role`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: newRole }),
-      });
-    } catch (err) {
-      console.error(err);
-    }
+  function resetModal() {
+    empModalId.value         = "";
+    empModalFirstName.value  = "";
+    empModalLastName.value   = "";
+    empModalAge.value        = "";
+    empModalDesc.value       = "";
+    empModalPhotoPreview.src = "/images/no-user.webp";
+    empModalTitle.textContent = msgNew;
+    pendingPhotoFile = null;
+  }
+
+  // Photo preview in modal
+  empModalPhotoBtn.addEventListener("click", () => empModalPhotoInput.click());
+  empModalPhotoInput.addEventListener("change", () => {
+    const file = empModalPhotoInput.files[0];
+    if (!file) return;
+    pendingPhotoFile = file;
+    empModalPhotoPreview.src = URL.createObjectURL(file);
   });
 
-  tableBody.addEventListener("click", async (e) => {
-    const setNewOwner = e.target.closest(".set-new-owner");
-    const approveBtn = e.target.closest(".approve");
-    const rejectBtn = e.target.closest(".reject:not(.fire-btn)");
-    const fireBtn = e.target.closest(".fire-btn");
-    const selectRole = e.target.closest(".select-role");
-    console.log(e.target);
+  // Open create modal
+  addEmpBtn.addEventListener("click", () => { resetModal(); openModal(); empModalFirstName.focus(); });
 
-    if (!approveBtn && !rejectBtn && !fireBtn && !selectRole && !setNewOwner)
-      return;
+  [closeEmpModal, cancelEmpModal].forEach((el) => el.addEventListener("click", closeModal));
+  empModalOverlay.addEventListener("click", (e) => { if (e.target === empModalOverlay) closeModal(); });
 
-    const row = e.target.closest("tr");
-    const requestId = row.dataset.id;
+  // Save
+  saveEmpBtn.addEventListener("click", async () => {
+    const firstName = empModalFirstName.value.trim();
+    const lastName  = empModalLastName.value.trim();
+    if (!firstName) { empModalFirstName.focus(); return; }
+    if (!lastName)  { empModalLastName.focus();  return; }
+
+    const id = empModalId.value;
+    const formData = new FormData();
+    formData.append("firstName",   firstName);
+    formData.append("lastName",    lastName);
+    formData.append("age",         empModalAge.value);
+    formData.append("description", empModalDesc.value.trim());
+    if (pendingPhotoFile) formData.append("profilePicture", pendingPhotoFile);
+
+    const url    = id ? `/api/employees/${id}` : "/api/employees";
+    const method = id ? "PATCH" : "POST";
 
     try {
-      if (approveBtn) {
-        await fetch(`/employees/requests/${requestId}/approve`, {
-          method: "PATCH",
-        });
-        row.remove();
-      }
-      if (rejectBtn) {
-        await fetch(`/employees/requests/${requestId}/reject`, {
-          method: "DELETE",
-        });
-        row.remove();
-      }
-
-      if (fireBtn) {
-        const confirmPopup = document.querySelector(".confirm-popup");
-        confirmPopup.dataset.type = "fire-employee";
-        confirmPopup.dataset.requestId = row.dataset.id;
-        confirmPopup.classList.add("show");
-        confirmPopup.querySelector(".confirm-popup__title").innerHTML =
-          `Terminate Employee Account?`;
-        confirmPopup.querySelector(".confirm-popup__description").innerHTML =
-          `This action cannot be undone. All associated data and access for this user will be permanently revoked.`;
-        confirmPopup.addEventListener("click", (e) => {
-          if (confirmPopup.querySelector(".confirm-btn").contains(e.target))
-            confirmPopup.classList.remove("show");
-          row.remove();
-        });
-      }
-
-      if (setNewOwner) {
-        const confirmPopup = document.querySelector(".confirm-popup");
-        confirmPopup.dataset.type = "transfer-owner";
-        confirmPopup.dataset.userId = row.dataset.id;
-        confirmPopup.classList.add("show");
-        confirmPopup.querySelector(".confirm-popup__title").innerHTML =
-          `Transfer company ownership?`;
-        confirmPopup.querySelector(".confirm-popup__description").innerHTML =
-          `This action will transfer ownership of the company to another user. You will no longer be the owner and your role will change to admin, which may limit your permissions.`;
-      }
-    } catch (err) {
-      console.error(er);
-    }
+      saveEmpBtn.disabled = true;
+      const res  = await fetch(url, { method, body: formData });
+      const data = await res.json();
+      if (data.success) { location.reload(); }
+      else { alert(data.error || "Erreur."); saveEmpBtn.disabled = false; }
+    } catch (_) { alert("Erreur réseau."); saveEmpBtn.disabled = false; }
   });
 
-  headerActions.addEventListener("click", async (e) => {
-    const requestSwitcher = e.target.closest("#requestSwitcher");
-    const addEmployeeSwitcher = e.target.closest("#addEmployeeSwitcher");
+  if (!employeesList) return;
 
-    if (requestSwitcher) {
+  // Edit & delete
+  employeesList.addEventListener("click", async (e) => {
+    const editBtn = e.target.closest(".edit-emp-btn");
+    const delBtn  = e.target.closest(".delete-emp-btn");
+
+    if (editBtn) {
+      empModalId.value        = editBtn.dataset.id;
+      empModalFirstName.value = editBtn.dataset.firstname || "";
+      empModalLastName.value  = editBtn.dataset.lastname  || "";
+      empModalAge.value       = editBtn.dataset.age       || "";
+      empModalDesc.value      = editBtn.dataset.desc      || "";
+      const img = editBtn.closest(".emp-card").querySelector(".emp-card__photo img");
+      empModalPhotoPreview.src = img ? img.src : "/images/no-user.webp";
+      pendingPhotoFile = null;
+      empModalTitle.textContent = msgEdit;
+      openModal();
+      empModalFirstName.focus();
+    }
+
+    if (delBtn) {
+      if (!confirm(msgDel)) return;
       try {
-        const res = await fetch(`/employees/requests?companyId=${companyId}`);
-        const requests = await res.json();
+        const res  = await fetch(`/api/employees/${delBtn.dataset.id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (data.success) delBtn.closest(".emp-card").remove();
+      } catch (_) { alert("Erreur réseau."); }
+    }
+  });
 
-        thead.innerHTML = "";
-        thead.appendChild(requestHeaderTemplate.content.cloneNode(true));
-
-        const results = requests.result;
-
-        tableBody.innerHTML = "";
-
-        results.forEach((req, index) => {
-          const clone = template.content.cloneNode(true);
-          clone.querySelector("tr").dataset.id = req._id;
-          clone.querySelector(".index").textContent = index + 1;
-          clone.querySelector(".fullName").textContent = req.user.fullName;
-          clone.querySelector(".status").textContent = "Pending";
-          clone.querySelector(".email").textContent = req.user.email;
-
-          tableBody.appendChild(clone);
-        });
-      } catch (err) {
-        console.error(err);
-      }
+  // Toggle active
+  employeesList.addEventListener("change", async (e) => {
+    const toggle = e.target.closest(".toggle-emp-active");
+    if (toggle) {
+      const id   = toggle.dataset.id;
+      const card = toggle.closest(".emp-card");
+      try {
+        const res  = await fetch(`/api/employees/${id}/toggle`, { method: "PATCH" });
+        const data = await res.json();
+        if (data.success) card.classList.toggle("emp-card--inactive", !data.active);
+        else toggle.checked = !toggle.checked;
+      } catch (_) { toggle.checked = !toggle.checked; }
       return;
     }
 
-    if (addEmployeeSwitcher) {
-      location.reload();
+    // Quick photo upload from card
+    const photoInput = e.target.closest(".emp-photo-input");
+    if (photoInput) {
+      const file = photoInput.files[0];
+      if (!file) return;
+      const id = photoInput.dataset.id;
+      const fd = new FormData();
+      fd.append("profilePicture", file);
+      try {
+        const res  = await fetch(`/api/employees/${id}`, { method: "PATCH", body: fd });
+        const data = await res.json();
+        if (data.success) {
+          const img = photoInput.closest(".emp-card").querySelector(".emp-card__photo img");
+          if (img) img.src = URL.createObjectURL(file);
+        }
+      } catch (_) { alert("Erreur upload."); }
     }
   });
 });

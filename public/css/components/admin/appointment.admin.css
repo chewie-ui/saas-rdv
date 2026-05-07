@@ -402,20 +402,30 @@
   border-radius: 50%;
 }
 
-/* Cell (one hour row) */
+/* ── Grid cells — all rows equal height ─────────────────────── */
 .calendar-section .grid-section .cell {
-  height: 68px;
+  height: 56px;
   border-bottom: 1px solid var(--border-light);
   border-right: none;
-  padding: 4px 10px 4px 4px;
+  padding: 3px 6px 3px 3px;
   display: flex;
   background-color: var(--color-white);
   flex-direction: column;
-  gap: 7px;
+  gap: 4px;
   position: relative;
 }
 
-/* Time labels — muted, small, hanging above the line */
+/* :00 day rows → dashed border at the half-hour mark */
+.calendar-section .grid-section .cell.day:not(.day--half) {
+  border-bottom: 1px dashed rgba(0,0,0,0.07);
+}
+
+/* :30 day rows → solid border at the full-hour mark */
+.calendar-section .grid-section .cell.day--half {
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* Time label column */
 .calendar-section .grid-section .cell.time {
   font-size: 11px;
   font-weight: 500;
@@ -424,47 +434,151 @@
   align-items: flex-end;
   padding: 4px 8px 0 0;
   border-bottom: none;
-  height: 68px;
   text-align: right;
 }
 
-/* Day cell with subtle hover */
-.calendar-section .grid-section .cell.day {
-  transition: background-color 0.15s ease;
+/* :30 time cell — no label, no border */
+.calendar-section .grid-section .cell.time--half {
+  border-bottom: none;
 }
 
+/* Day cell hover */
+.calendar-section .grid-section .cell.day {
+  overflow: visible; /* let appointments overflow into rows below */
+  transition: background-color 0.12s ease;
+}
 .calendar-section .grid-section .cell.day:hover {
   background-color: var(--grey-soft);
 }
 
-/* -------- Appointment card -------- */
+/* Single appointment — absolutely positioned, height set inline via slotTime */
+.calendar-section .grid-section .cell.day > .appointment {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  z-index: 20;
+}
+
+/* Multi-wrap — absolutely positioned, height set inline as max(slotTimes) */
+.calendar-section .grid-section .cell.day > .appt-multi-wrap {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  z-index: 20;
+  align-items: stretch; /* stretch child appointments to fill wrap height */
+}
+
+/* ────────────────────────────────────────────────────────────
+   Appointment card — left: photo+name+service  |  right: time
+   ──────────────────────────────────────────────────────────── */
 .appointment {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  background-color: var(--black);
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background-color: #1a1a1a;
   color: #fff;
-  border-radius: 10px;
-  padding: 8px 10px;
+  border-radius: 8px;
+  padding: 5px 8px;
   text-decoration: none;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
   overflow: hidden;
-  min-height: 50px;
+  border-left: 3px solid var(--main-color);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  min-height: 0;
 }
 
 .appointment:hover {
+  opacity: 0.88;
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
   color: #fff;
 }
 
 .appointment.canceled {
   background-color: var(--grey-soft);
   color: var(--text-muted);
-  text-decoration: line-through;
+  border-left-color: #aaa;
+  text-decoration: none;
+  opacity: 0.65;
+}
+
+/* Left block: photo + name + optional service */
+.appt-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* Row: employee photo + client name */
+.appt-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.appointment-emp-photo {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+}
+
+/* No-employee fallback: hide broken img */
+.appointment-emp-photo[src="/images/no-user.webp"],
+.appointment-emp-photo:not([src]) {
+  display: none;
+}
+
+.appointment-client {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+  color: #fff;
+}
+
+/* Time — right side, never wraps */
+.appointment-time {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-align: right;
+  line-height: 1.2;
+}
+
+/* Service row (single-booking only, shown as a subtle tag) */
+.appointment-service {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-style: italic;
+  line-height: 1.2;
+}
+
+/* Canceled badge */
+.appointment-tag--canceled {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #ea4335;
+  line-height: 1;
+  margin-bottom: 1px;
 }
 
 .calendar .calendar__menu .calendar__sections .calendar__section.calendar__section--right .calendar__actions a {
@@ -476,36 +590,11 @@
   gap: 7px;
   font-size: 12px;
 }
-.appointment-canceled {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #ea4335;
-  background-color: #fff;
-  display: inline-block;
-  padding: 2px 6px;
-  border-radius: 4px;
-  align-self: flex-start;
-}
-
-.appointment-name {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.appointment-time {
-  font-size: 11px;
-  font-weight: 500;
-  opacity: 0.9;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+/* legacy stubs — kept so other views referencing these classes don't break */
+.appointment-canceled { display: none; }
+.appointment-name     { display: none; }
+.appointment-emp      { display: none; }
+.appointment-emp-name { display: none; }
 
 /* ============================================================
    Desktop (>= 820px) — full week view
@@ -698,4 +787,74 @@
   .gcal-email {
     max-width: 260px;
   }
+}
+
+/* ============================================================
+   Employee filter select
+   ============================================================ */
+.emp-filter-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.emp-filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--color-white);
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 7px 32px 7px 12px;
+  font-size: 0.82rem;
+  font-family: var(--font-primary);
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='16' viewBox='0 -960 960 960' width='16' fill='%23666'%3E%3Cpath d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
+  min-width: 160px;
+  max-width: 200px;
+  transition: border-color 0.15s;
+}
+
+.emp-filter-select:hover,
+.emp-filter-select:focus {
+  border-color: var(--main-color-border);
+  outline: none;
+}
+
+/* ============================================================
+   Multi-booking slot: side-by-side layout
+   ============================================================ */
+.appt-multi-wrap {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+  min-height: 50px;
+}
+
+.appt-multi-wrap .appointment {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 11px;
+  padding: 5px 7px;
+  gap: 2px;
+}
+
+/* Compact variant used inside multi-wrap */
+.appointment--compact {
+  padding: 4px 6px;
+}
+
+.appointment--compact .appointment-client {
+  font-size: 10px;
+}
+
+.appointment--compact .appointment-time {
+  font-size: 9px;
+}
+
+.appointment--compact .appointment-service {
+  display: none; /* too cramped in multi-booking view */
 }

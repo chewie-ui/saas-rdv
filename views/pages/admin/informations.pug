@@ -41,6 +41,27 @@ block content
                             span= t.profile.save
                         button#deleteAccountBtn.danger(type="button")
                             span= t.profile.delete_account
+        //- ── URL personnalisée (slug) ────────────────────────────────────────
+        .account__container
+            .account__right(style="width:100%")
+                h2= t.info.custom_url_title || 'URL personnalisée'
+                p.field-hint(style="margin-bottom:14px;color:var(--grey-primary)")= t.info.custom_url_desc || 'Choisissez une URL unique pour votre page de réservation publique.'
+                .account__form
+                    .field
+                        label= t.info.custom_url_label || 'Nom d\'URL'
+                        .slug-field-wrapper
+                            span.slug-prefix= '/'
+                            input.input#slugInput(
+                                type="text"
+                                value=(currentCompany && currentCompany.slug ? currentCompany.slug : '')
+                                placeholder="mon-salon"
+                                autocomplete="off"
+                            )
+                        .slug-status#slugStatus(style="font-size:12px;margin-top:6px;min-height:18px")
+                    .account__actions
+                        button#saveSlugBtn
+                            span= t.info.custom_url_save || 'Enregistrer l\'URL'
+
         .account__container.reversed
             .account__left
                 .business-pic-wrapper

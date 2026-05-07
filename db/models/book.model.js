@@ -81,17 +81,42 @@ const bookingSchema = new schema(
       required: false,
       default: null,
     },
+
+    service: {
+      type: schema.Types.ObjectId,
+      ref: "Service",
+      default: null,
+    },
+    serviceName: {
+      type: String,
+      default: "",
+    },
+    employee: {
+      type: schema.Types.ObjectId,
+      ref: "Employee",
+      default: null,
+    },
+    employeeName: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true },
 );
 
+// Unique per (company, date, startTime, employee) — so different employees CAN share a time slot,
+// but the same employee cannot be double-booked. When employee is null (no specific employee),
+// treat as the company itself (only one unassigned slot per time).
 bookingSchema.index(
-  { date: 1, startTime: 1 },
+  { company: 1, date: 1, startTime: 1, employee: 1 },
   {
     unique: true,
     partialFilterExpression: { status: "confirmed" },
   },
 );
+
+// Fix ref: employee is an Employee document, not a User
+
 
 const Booking = mongoose.model("Booking", bookingSchema);
 

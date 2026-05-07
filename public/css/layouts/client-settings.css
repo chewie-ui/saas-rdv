@@ -269,6 +269,67 @@
   font-weight: 600;
 }
 
+/* ── Language preference ── */
+.settings__hint {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.settings__lang-preference {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.settings__pref-lang-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-light);
+  background: var(--color-white);
+  color: var(--text-secondary);
+  font-size: 0.83rem;
+  font-weight: 500;
+  font-family: var(--font-primary);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  user-select: none;
+}
+
+.settings__pref-lang-chip input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+.settings__pref-lang-chip img {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.settings__pref-lang-chip:hover {
+  border-color: var(--main-color-border);
+  background: var(--main-color-pale);
+  color: var(--main-color);
+}
+
+.settings__pref-lang-chip.active {
+  border-color: var(--main-color);
+  background: var(--main-color-pale);
+  color: var(--main-color);
+  box-shadow: 0 0 0 2px var(--main-color-glow);
+  font-weight: 600;
+}
+
 /* ── Notification toggle ── */
 .settings__toggle-row {
   display: flex;

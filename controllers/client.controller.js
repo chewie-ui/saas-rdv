@@ -108,6 +108,12 @@ exports.postLogin = async (req, res) => {
   }
 
   req.session.clientId = client._id.toString();
+
+  // Apply preferred language if set
+  if (client.preferredLang) {
+    res.cookie("user_lang", client.preferredLang, { maxAge: 365 * 24 * 60 * 60 * 1000, httpOnly: false });
+  }
+
   return res.redirect("/espace-client");
 };
 
@@ -264,5 +270,26 @@ exports.updateClientPassword = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.redirect("/espace-client/parametres?error=server#securite");
+  }
+};
+
+// POST /espace-client/parametres/language
+exports.updateClientLang = async (req, res) => {
+  try {
+    const { lang } = req.body;
+    const allowed = ["fr", "en", "nl", "de", "es", "it"];
+    if (!allowed.includes(lang)) {
+      return res.redirect("/espace-client/parametres?error=invalid_lang");
+    }
+
+    await Client.findByIdAndUpdate(req.client._id, { preferredLang: lang });
+
+    // Set the cookie immediately so the UI refreshes in the new language
+    res.cookie("user_lang", lang, { maxAge: 365 * 24 * 60 * 60 * 1000, httpOnly: false });
+
+    return res.redirect("/espace-client/parametres?success=language");
+  } catch (err) {
+    console.error(err);
+    return res.redirect("/espace-client/parametres?error=server");
   }
 };

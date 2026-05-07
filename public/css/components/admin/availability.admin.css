@@ -157,31 +157,168 @@
   gap: 17px;
 }
 
-.availability-section .days-off__wrapper {
-  gap: 5px;
-  align-items: flex-start;
+/* ---- Days Off grid cards ---- */
+.days-off__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+  width: 100%;
 }
 
-.availability-section .days-off__wrapper .days-off__row {
-  gap: 45px;
+.days-off__row {
+  background-color: var(--color-white);
+  border: var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   user-select: none;
+  transition: box-shadow 0.15s ease;
 }
 
-.availability-section .days-off__wrapper .days-off__row .days-off__schedule p {
+.days-off__row:hover {
+  box-shadow: var(--shadow);
+}
+
+/* Card top: date + delete */
+.day-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.day-card__date-area {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text, #1e272e);
+}
+
+.day-card__date-area svg {
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.day-card__date-area p.input {
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: default;
+}
+
+/* Delete button (top-right corner) */
+.days-off__button.delete-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, color 0.15s ease;
   color: var(--grey-primary);
-  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.availability-section .days-off__wrapper .days-off__row .days-off__actions {
-  gap: 7px;
+.days-off__button.delete-btn:hover {
+  background-color: #fff0f0;
+  color: #e84545;
 }
 
-.availability-section .days-off__wrapper .days-off__row .days-off__actions .days-off__button {
+.days-off__button.delete-btn:hover svg {
+  fill: #e84545;
+}
+
+/* Schedule area */
+.days-off__schedule {
+  min-height: 30px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Badge "Congé" */
+.day-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #fff4e5;
+  color: #c87800;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.day-card__badge svg {
+  fill: #c87800;
+  flex-shrink: 0;
+}
+
+/* Time slot inside card */
+.days-off__row .time-slot {
+  align-items: center;
+  gap: 4px;
+}
+
+.days-off__row .time-slot .hour-container {
+  font-size: 12px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background-color: var(--grey-soft, #f5f5f5);
+  border: var(--border);
   cursor: pointer;
 }
 
-.availability-section .days-off__wrapper .days-off__row .days-off__actions .days-off__button.schedule-btn {
+.days-off__row .slot-separator {
+  color: var(--grey-primary);
+  font-size: 11px;
+}
+
+.days-off__row .delete-time-slot {
+  position: static;
+  left: auto;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
   display: flex;
+  align-items: center;
+}
+
+.days-off__row .delete-time-slot:hover {
+  opacity: 1;
+}
+
+/* Card footer: add schedule button */
+.day-card__footer {
+  border-top: var(--border);
+  padding-top: 8px;
+  display: flex;
+}
+
+.days-off__button.schedule-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--grey-primary);
+  padding: 3px 8px;
+  border-radius: 6px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.days-off__button.schedule-btn svg {
+  fill: currentColor;
+}
+
+.days-off__button.schedule-btn:hover {
+  background-color: var(--grey-soft, #f5f5f5);
+  color: var(--color-text, #1e272e);
 }
 
 @media all and (min-width: 820px) {
@@ -283,13 +420,67 @@
     margin-left: 0;
   }
 
-  /* Days off rows on mobile */
-  .availability-section .days-off__wrapper .days-off__row {
-    flex-wrap: wrap;
-    gap: 10px;
+  /* Days off grid on mobile */
+  .days-off__grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
+}
 
-  .availability-section .days-off__wrapper .days-off__row .days-off__schedule {
-    flex-wrap: wrap;
-  }
+/* ============================================================
+   Slot-time section — managed by services state
+   ============================================================ */
+.slot-time-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* When services control slot duration: dim the input */
+.slot-time-section.slot-managed .slot-input__container {
+  opacity: 0.45;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Info banner shown when slot is managed */
+.slot-managed-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background-color: #fff8ed;
+  border: 1px solid #ffe0a0;
+  font-size: 0.82rem;
+  color: #8a5c00;
+  flex-wrap: wrap;
+}
+
+.slot-managed-info svg {
+  fill: #c87800;
+  flex-shrink: 0;
+}
+
+.slot-managed-info span {
+  flex: 1;
+  min-width: 0;
+}
+
+.slot-reenable-btn {
+  background: none;
+  border: 1px solid #c87800;
+  color: #c87800;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: var(--font-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.slot-reenable-btn:hover {
+  background-color: #c87800;
+  color: #fff;
 }

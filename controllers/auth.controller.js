@@ -3,7 +3,7 @@ const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
 const Company = require("../db/models/company/company.model");
 const { sendEmail } = require("../utils/mailer");
-const SERVICES = require("../utils/services");
+const getServices = require("../utils/services");
 
 exports.createUser = async (req, res) => {
   const { fullname, email, password, conformPassword, businessType } = req.body;
@@ -13,7 +13,7 @@ exports.createUser = async (req, res) => {
     return res.render("auth/register", {
       becomeCoach: true,
       alwaysSticky: true,
-      services: SERVICES,
+      services: getServices(res.locals.lang),
       error: res.locals.t?.auth?.error_invalid_email || "Veuillez entrer une adresse email valide.",
     });
   }
@@ -23,7 +23,7 @@ exports.createUser = async (req, res) => {
     return res.render("auth/register", {
       becomeCoach: true,
       alwaysSticky: true,
-      services: SERVICES,
+      services: getServices(res.locals.lang),
       error: res.locals.t?.auth?.error_name_taken || "Ce nom est déjà utilisé.",
     });
   }
@@ -32,7 +32,7 @@ exports.createUser = async (req, res) => {
     return res.render("auth/register", {
       becomeCoach: true,
       alwaysSticky: true,
-      services: SERVICES,
+      services: getServices(res.locals.lang),
       error: res.locals.t?.auth?.error_email_taken || "Cette adresse email est déjà utilisée.",
     });
   }
@@ -41,7 +41,7 @@ exports.createUser = async (req, res) => {
     return res.render("auth/register", {
       becomeCoach: true,
       alwaysSticky: true,
-      services: SERVICES,
+      services: getServices(res.locals.lang),
       error: res.locals.t?.auth?.error_pwd_match || "Les mots de passe ne correspondent pas.",
     });
   }
@@ -50,7 +50,7 @@ exports.createUser = async (req, res) => {
     return res.render("auth/register", {
       becomeCoach: true,
       alwaysSticky: true,
-      services: SERVICES,
+      services: getServices(res.locals.lang),
       error: res.locals.t?.auth?.error_pwd_length || "Le mot de passe doit contenir au moins 8 caractères.",
     });
   }
@@ -96,7 +96,7 @@ exports.createUser = async (req, res) => {
     return res.render("auth/register", {
       becomeCoach: true,
       alwaysSticky: true,
-      services: SERVICES,
+      services: getServices(res.locals.lang),
       error: err,
     });
   }
@@ -111,11 +111,13 @@ exports.logout = (req, res, next) => {
   });
 };
 
-exports.getCompanyIfExist = async (companyId) => {
-  if (!mongoose.Types.ObjectId.isValid(companyId)) {
-    return null;
-  }
-  return await Company.findById(companyId);
+exports.getCompanyIfExist = async (identifier) => {
+  // 1. Essayer par slug d'abord
+  const bySlug = await Company.findOne({ slug: identifier });
+  if (bySlug) return bySlug;
+  // 2. Fallback sur ObjectId
+  if (!mongoose.Types.ObjectId.isValid(identifier)) return null;
+  return await Company.findById(identifier);
 };
 
 exports.forgotPasswordVerifyCode = async (req, res) => {

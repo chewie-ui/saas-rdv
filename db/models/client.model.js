@@ -40,6 +40,11 @@ const clientSchema = schema(
       type: Boolean,
       default: true,
     },
+    preferredLang: {
+      type: String,
+      enum: ["fr", "en", "nl", "de", "es", "it"],
+      default: "fr",
+    },
   },
   { timestamps: true },
 );

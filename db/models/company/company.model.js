@@ -9,6 +9,14 @@ const companySchema = schema(
       required: true,
     },
 
+    slug: {
+      type: String,
+      unique: true,
+      sparse: true,
+      lowercase: true,
+      trim: true,
+    },
+
     slotTime: {
       type: Number,
       default: 30,

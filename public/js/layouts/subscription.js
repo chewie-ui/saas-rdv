@@ -6,8 +6,49 @@ const retakeSubscription = document.getElementById("retakeSubscription");
 
 const templateDialog = document.getElementById("templateDialog");
 
+// ── Promo code ────────────────────────────────────────────────────────────────
+const promoCodeInput  = document.getElementById("promoCodeInput");
+const applyPromoBtn   = document.getElementById("applyPromoBtn");
+const promoCodeStatus = document.getElementById("promoCodeStatus");
+let appliedPromoCode  = null; // { code, discountType, discountValue }
+
+if (applyPromoBtn && promoCodeInput) {
+  applyPromoBtn.addEventListener("click", async () => {
+    const code = promoCodeInput.value.trim().toUpperCase();
+    if (!code) return;
+    promoCodeStatus.textContent = "Vérification...";
+    promoCodeStatus.className = "promo-code-status";
+
+    const res  = await fetch("/api/validate-promo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+
+    if (data.valid) {
+      appliedPromoCode = data;
+      const discount = data.discountType === "percent"
+        ? `-${data.discountValue}%`
+        : `-${data.discountValue}€`;
+      promoCodeStatus.textContent = `✓ Code appliqué : ${discount} de réduction`;
+      promoCodeStatus.className = "promo-code-status valid";
+    } else {
+      appliedPromoCode = null;
+      promoCodeStatus.textContent = data.error || "Code invalide.";
+      promoCodeStatus.className = "promo-code-status invalid";
+    }
+  });
+}
+
 async function startProCheckout() {
-  const response = await fetch(`/account/create-checkout`, { method: "POST" });
+  const body = {};
+  if (appliedPromoCode) body.promoCode = appliedPromoCode.code;
+  const response = await fetch(`/account/create-checkout`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
   const data = await response.json();
   window.location = data.url;
 }

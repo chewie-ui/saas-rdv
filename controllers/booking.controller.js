@@ -12,22 +12,23 @@ const { log } = require("console");
 
 exports.createBooking = async (req, res) => {
   try {
-    const { date, startTime, company, name, surname, email, phone, message, formAnswers } =
+    const { date, startTime, company, name, surname, email, phone, message, formAnswers,
+            serviceId, serviceName, employeeId, employeeName, serviceDuration } =
       req.body;
 
     const response = await Company.findById(company);
-    const slotTime = response.slotTime;
+    const companySlotTime = response.slotTime;
+
+    // Use service duration if provided, otherwise fall back to company slot time
+    const actualDuration = (serviceDuration && Number(serviceDuration) > 0)
+      ? Number(serviceDuration)
+      : companySlotTime;
+
     const [hours, minutes] = startTime.split(":").map(Number);
     const startTimeInMinutes = hours * 60 + minutes;
-
-    // 2. Ajouter le slotTime
-    const endTimeInMinutes = startTimeInMinutes + slotTime;
-
-    // 3. Reconvertir en format HH:MM
-    const endHours = Math.floor(endTimeInMinutes / 60);
+    const endTimeInMinutes   = startTimeInMinutes + actualDuration;
+    const endHours   = Math.floor(endTimeInMinutes / 60);
     const endMinutes = endTimeInMinutes % 60;
-
-    // 4. Formater avec des zéros devant (ex: "09:05")
     const endTime = `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
 
     const newBooking = await Booking.create({
@@ -39,11 +40,15 @@ exports.createBooking = async (req, res) => {
       email,
       phone,
       message,
-      slotTime,
+      slotTime: actualDuration,   // store the ACTUAL duration, not the default slot
       endTime,
       status: "confirmed",
       formAnswers: Array.isArray(formAnswers) ? formAnswers : [],
       clientRef: req.session?.clientId || null,
+      service:      serviceId   || null,
+      serviceName:  serviceName || "",
+      employee:     employeeId  || null,
+      employeeName: employeeName || "",
     });
 
     const htmlTemplate = pug.renderFile(
@@ -55,7 +60,7 @@ exports.createBooking = async (req, res) => {
         startHour: startTime,
         message,
         endHour: endTime,
-        slotTime: slotTime,
+        slotTime: actualDuration,
         bookingId: newBooking._id,
         cancelToken: newBooking.cancelToken,
       },
@@ -84,17 +89,45 @@ exports.createBooking = async (req, res) => {
 };
 
 exports.getBooking = async (req, res) => {
-  const { date, companyId } = req.query;
+  const { date, companyId, employeeId, serviceDuration } = req.query;
 
-  const bookings = await Booking.find({
+  const query = {
     company: companyId,
     date: new Date(date),
     status: { $ne: "canceled" },
-  }).select("startTime -_id");
+  };
 
-  res.json({
-    bookedTimes: bookings.map((b) => b.startTime),
+  // If a specific employee is requested, only show that employee's bookings
+  if (employeeId && employeeId !== "null" && employeeId !== "") {
+    query.employee = employeeId;
+  }
+
+  const bookings = await Booking.find(query).select("startTime slotTime");
+
+  // Get company slotTime so we can compute slot granularity.
+  // If a service duration was passed, use it — it matches the step used in getSchedule.
+  const companyDoc = await Company.findById(companyId).select("slotTime").lean();
+  const granularity = (serviceDuration && Number(serviceDuration) > 0)
+    ? Number(serviceDuration)
+    : (companyDoc?.slotTime || 30);
+
+  // Block every slot that falls within any booking's duration window.
+  // Slot T is blocked if: booking.startMin <= T_min < booking.startMin + booking.duration
+  const blockedSet = new Set();
+  bookings.forEach((b) => {
+    const [h, m] = b.startTime.split(":").map(Number);
+    const startMin = h * 60 + m;
+    const duration = b.slotTime || granularity;
+    const endMin   = startMin + duration;
+
+    for (let t = startMin; t < endMin; t += granularity) {
+      const tH = Math.floor(t / 60);
+      const tM = t % 60;
+      blockedSet.add(`${String(tH).padStart(2, "0")}:${String(tM).padStart(2, "0")}`);
+    }
   });
+
+  res.json({ bookedTimes: Array.from(blockedSet) });
 };
 
 function formatFutureDate(date) {
@@ -164,7 +197,7 @@ exports.renderAppointments = async (req, res, next) => {
 };
 
 exports.getSchedule = async (req, res) => {
-  const { index, COMPANY_ID, date } = req.body;
+  const { index, COMPANY_ID, date, serviceDuration } = req.body;
   const jsWeekdayIndex = parseInt(index);
   // 1. Récupérer la config de base (pour le slotTime et les horaires par défaut)
   const company = await Company.findById(COMPANY_ID)
@@ -204,6 +237,12 @@ exports.getSchedule = async (req, res) => {
     return res.json({ slots: [] });
   }
 
+  // Use the selected service duration as the step (granularity) if provided,
+  // otherwise fall back to the company's global slot time.
+  const step = (serviceDuration && Number(serviceDuration) > 0)
+    ? Number(serviceDuration)
+    : company.slotTime;
+
   let allSlots = [];
   target.workingHours.forEach((period) => {
     const [startH, startM] = period.start.split(":").map(Number);
@@ -212,13 +251,13 @@ exports.getSchedule = async (req, res) => {
     let current = startH * 60 + startM;
     const endTotal = endH * 60 + endM;
 
-    while (current + company.slotTime <= endTotal) {
+    while (current + step <= endTotal) {
       const h = Math.floor(current / 60);
       const m = current % 60;
       allSlots.push(
         `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
       );
-      current += company.slotTime;
+      current += step;
     }
   });
 

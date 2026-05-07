@@ -22,7 +22,8 @@ function updateTimeline() {
     return;
   }
 
-  const timeCells = Array.from(document.querySelectorAll(".cell.time"));
+  // Use data-time attribute so half-hour cells (empty text) are also included
+  const timeCells = Array.from(document.querySelectorAll(".cell.time[data-time]"));
   if (!timeCells.length) {
     timeline.style.display = "none";
     return;
@@ -30,10 +31,10 @@ function updateTimeline() {
 
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const firstMinutes = toMinutes(timeCells[0].textContent);
-  const lastMinutes = toMinutes(timeCells[timeCells.length - 1].textContent);
+  const firstMinutes = toMinutes(timeCells[0].dataset.time);
+  const lastMinutes  = toMinutes(timeCells[timeCells.length - 1].dataset.time);
 
-  if (nowMinutes < firstMinutes || nowMinutes > lastMinutes + 120) {
+  if (nowMinutes < firstMinutes || nowMinutes > lastMinutes + 60) {
     timeline.style.display = "none";
     return;
   }
@@ -56,13 +57,13 @@ function updateTimeline() {
     timeline.style.right = "auto";
   }
 
-  // Positionnement vertical
+  // Positionnement vertical — works with any row granularity (30 min, 60 min…)
   for (let i = 0; i < timeCells.length; i++) {
-    const cellMin = toMinutes(timeCells[i].textContent);
+    const cellMin = toMinutes(timeCells[i].dataset.time);
     const nextMin =
       i < timeCells.length - 1
-        ? toMinutes(timeCells[i + 1].textContent)
-        : cellMin + 60;
+        ? toMinutes(timeCells[i + 1].dataset.time)
+        : cellMin + 30;
 
     if (nowMinutes >= cellMin && nowMinutes < nextMin) {
       const cellRect = timeCells[i].getBoundingClientRect();

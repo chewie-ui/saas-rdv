@@ -96,7 +96,9 @@
    ================================================================= */
 .schedule-wrapper,
 .booking-wrapper,
-.form-step-wrapper {
+.form-step-wrapper,
+.service-step-wrapper,
+.employee-step-wrapper {
   position: fixed;
   inset: 0;
   z-index: 11;
@@ -112,7 +114,9 @@
 
 .schedule-wrapper.show,
 .booking-wrapper.show,
-.form-step-wrapper.show {
+.form-step-wrapper.show,
+.service-step-wrapper.show,
+.employee-step-wrapper.show {
   display: flex;
 }
 
@@ -121,7 +125,9 @@
    ================================================================= */
 .schedule-wrapper .schedule,
 .booking-wrapper .booking,
-.form-step-wrapper .form-step {
+.form-step-wrapper .form-step,
+.service-step-wrapper .service-step,
+.employee-step-wrapper .employee-step {
   background: var(--color-white);
   width: 100%;
   max-width: 520px;
@@ -152,7 +158,9 @@
    ================================================================= */
 .schedule-wrapper .schedule .schedule-header,
 .booking-wrapper .booking .booking-header,
-.form-step-wrapper .form-step .form-step-header {
+.form-step-wrapper .form-step .form-step-header,
+.service-step-wrapper .service-step .service-step-header,
+.employee-step-wrapper .employee-step .employee-step__header {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -161,7 +169,9 @@
 /* Drag handle */
 .schedule-wrapper .schedule .schedule-header::before,
 .booking-wrapper .booking .booking-header::before,
-.form-step-wrapper .form-step .form-step-header::before {
+.form-step-wrapper .form-step .form-step-header::before,
+.service-step-wrapper .service-step .service-step-header::before,
+.employee-step-wrapper .employee-step .employee-step__header::before {
   content: "";
   display: block;
   width: 36px;
@@ -173,7 +183,9 @@
 
 .schedule-wrapper .schedule .schedule-header h2,
 .booking-wrapper .booking .booking-header h2,
-.form-step-wrapper .form-step .form-step-header h2 {
+.form-step-wrapper .form-step .form-step-header h2,
+.service-step-wrapper .service-step .service-step-header h2,
+.employee-step-wrapper .employee-step .employee-step__header h2 {
   font-size: 18px;
   font-weight: 700;
   color: var(--text-primary, #111);
@@ -191,7 +203,9 @@
    ================================================================= */
 .schedule-wrapper .schedule .schedule-body,
 .booking-wrapper .booking .booking-body,
-.form-step-wrapper .form-step .form-step-body {
+.form-step-wrapper .form-step .form-step-body,
+.service-step-wrapper .service-step .service-step-body,
+.employee-step-wrapper .employee-step .employee-step__body {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -203,7 +217,9 @@
    ================================================================= */
 .schedule-wrapper .schedule .schedule-body .back-btn,
 .booking-wrapper .booking .booking-body .back-btn,
-.form-step-wrapper .form-step .form-step-body .back-btn {
+.form-step-wrapper .form-step .form-step-body .back-btn,
+.service-step-wrapper .service-step .service-step-body .back-btn,
+.employee-step-wrapper .employee-step .employee-step__body .back-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -481,13 +497,17 @@
 @media (min-width: 820px) {
   .schedule-wrapper,
   .booking-wrapper,
-  .form-step-wrapper {
-    align-items: center; /* centré verticalement */
+  .form-step-wrapper,
+  .service-step-wrapper,
+  .employee-step-wrapper {
+    align-items: center;
   }
 
   .schedule-wrapper .schedule,
   .booking-wrapper .booking,
-  .form-step-wrapper .form-step {
+  .form-step-wrapper .form-step,
+  .service-step-wrapper .service-step,
+  .employee-step-wrapper .employee-step {
     border-radius: 20px;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
     animation: fadeScaleIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -508,7 +528,9 @@
   /* Masquer le drag handle sur desktop */
   .schedule-wrapper .schedule .schedule-header::before,
   .booking-wrapper .booking .booking-header::before,
-  .form-step-wrapper .form-step .form-step-header::before {
+  .form-step-wrapper .form-step .form-step-header::before,
+  .service-step-wrapper .service-step .service-step-header::before,
+  .employee-step-wrapper .employee-step .employee-step__header::before {
     display: none;
   }
 
@@ -529,4 +551,178 @@
   .schedule-wrapper .schedule .schedule-body .schedule-rows {
     grid-template-columns: repeat(4, 1fr);
   }
+}
+
+/* =================================================================
+   Service step — cards
+   ================================================================= */
+.service-step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.svc-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border-light, #e5e5e5);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, transform 0.12s;
+  gap: 12px;
+}
+
+.svc-card:hover {
+  background: var(--bg-secondary, #f8f8f8);
+  border-color: var(--cal-accent, #22c55e);
+  transform: translateY(-1px);
+}
+
+.svc-card.selected {
+  background: rgba(34, 197, 94, 0.07);
+  border-color: var(--cal-accent, #22c55e);
+}
+
+.svc-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.svc-card__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.svc-card__desc {
+  font-size: 12px;
+  color: var(--grey-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.svc-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.svc-card__price {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cal-accent, #22c55e);
+}
+
+.svc-card__dur {
+  font-size: 11px;
+  color: var(--grey-primary);
+  background: var(--bg-secondary, #f5f5f5);
+  border-radius: 20px;
+  padding: 2px 8px;
+}
+
+/* =================================================================
+   Employee step — cards
+   ================================================================= */
+.emp-step-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  border: 1.5px solid var(--border-light, #e5e5e5);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  width: 100%;
+}
+
+.emp-step-card:hover {
+  border-color: var(--cal-accent, #22c55e);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.emp-step-card img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.emp-step-card span {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.emp-step-skip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border: 1.5px dashed var(--border-light, #e5e5e5);
+  border-radius: 14px;
+  font-size: 13px;
+  color: var(--grey-primary);
+  cursor: pointer;
+  transition: background 0.15s;
+  width: 100%;
+}
+
+.emp-step-skip:hover {
+  background: var(--bg-secondary, #f5f5f5);
+}
+
+/* =================================================================
+   Client logged-in summary (booking step)
+   ================================================================= */
+.client-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-secondary, #f8f8f8);
+  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border-light, #e5e5e5);
+}
+
+.client-summary__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--cal-accent, #22c55e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.client-summary__avatar svg {
+  fill: #fff;
+}
+
+.client-summary__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.client-summary__name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary, #111);
+}
+
+.client-summary__email {
+  font-size: 12px;
+  color: var(--grey-primary);
 }

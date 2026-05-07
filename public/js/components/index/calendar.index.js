@@ -1,9 +1,11 @@
 export default function () {
-  const templateDialog = document.getElementById("templateDialog");
-  const calendar = document.querySelector(".calendar-wrapper .calendar");
-  const bookingWrapper = document.getElementById("bookingWrapper") || undefined;
-  const scheduleWrapper = document.getElementById("scheduleWrapper") || undefined;
-  const formStepWrapper = document.getElementById("formStepWrapper") || undefined;
+  const templateDialog      = document.getElementById("templateDialog");
+  const calendar            = document.querySelector(".calendar-wrapper .calendar");
+  const bookingWrapper      = document.getElementById("bookingWrapper")      || undefined;
+  const scheduleWrapper     = document.getElementById("scheduleWrapper")     || undefined;
+  const formStepWrapper     = document.getElementById("formStepWrapper")     || undefined;
+  const serviceStepWrapper  = document.getElementById("serviceStepWrapper")  || undefined;
+  const employeeStepWrapper = document.getElementById("employeeStepWrapper") || undefined;
 
   const calendarHeader = calendar.querySelector(".calendar-header");
   const calendarBody = calendar.querySelector(".calendar-body");
@@ -13,10 +15,14 @@ export default function () {
   const prevMonthBtn = calendarHeader.querySelector("#prevMonthBtn");
   const nextMonthBtn = calendarHeader.querySelector("#nextMonthBtn");
 
+  // ── State ────────────────────────────────────────────────────────────────
   let datePicked;
+  let weekdayIndexPicked;
   let schedulePicked;
-  let activeForm = null; // will be loaded once
-  let formAnswers = []; // collected form answers
+  let activeForm  = null;
+  let formAnswers = [];
+  window.__selectedService  = null;
+  window.__selectedEmployee = null;
 
   const __t = window.__t || {};
 
@@ -38,13 +44,11 @@ export default function () {
   const realToday = new Date();
   let today = new Date();
 
+  // ── Mark reserved slots ──────────────────────────────────────────────────
   function renderSchedules(bookedTimes) {
     const rows = scheduleWrapper.querySelectorAll(".row");
-
     rows.forEach((row) => {
       const time = row.textContent.trim();
-      console.log(time);
-
       if (bookedTimes.includes(time)) {
         row.classList.add("reserved");
         row.dataset.disabled = "true";
@@ -55,38 +59,96 @@ export default function () {
     });
   }
 
+  // ── Hide all step panels ─────────────────────────────────────────────────
+  function hideAllSteps() {
+    scheduleWrapper     && scheduleWrapper.classList.remove("show");
+    serviceStepWrapper  && serviceStepWrapper.classList.remove("show");
+    employeeStepWrapper && employeeStepWrapper.classList.remove("show");
+    formStepWrapper     && formStepWrapper.classList.remove("show");
+    bookingWrapper      && bookingWrapper.classList.remove("show");
+  }
+
+  // ── Fetch slots for the stored date, then show scheduleWrapper ───────────
+  async function fetchAndShowSlots() {
+    if (!scheduleWrapper || !datePicked) return;
+
+    scheduleWrapper.querySelector(".schedule-rows").innerHTML = "";
+
+    // Pass service duration so the backend uses it as the slot step
+    const serviceDuration = window.__selectedService?.duration || null;
+
+    const slotsRes = await fetch("/get-schedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        index: weekdayIndexPicked,
+        COMPANY_ID,
+        date: datePicked,
+        serviceDuration,
+      }),
+    });
+    const slotsData = await slotsRes.json();
+
+    slotsData.slots.forEach((slot) => {
+      const div = document.createElement("div");
+      div.className = "row";
+      div.textContent = slot;
+      scheduleWrapper.querySelector(".schedule-rows").appendChild(div);
+    });
+
+    // Pass selected employee + service duration so blocking granularity matches slot step
+    const empId = window.__selectedEmployee?.id || "";
+    const durationParam = serviceDuration ? `&serviceDuration=${serviceDuration}` : "";
+    const bookedRes  = await fetch(`/get-booking?date=${datePicked}&companyId=${COMPANY_ID}&employeeId=${empId}${durationParam}`);
+    const bookedData = await bookedRes.json();
+    renderSchedules(bookedData.bookedTimes);
+
+    // Show schedule, hide everything else
+    serviceStepWrapper  && serviceStepWrapper.classList.remove("show");
+    employeeStepWrapper && employeeStepWrapper.classList.remove("show");
+    bookingWrapper      && bookingWrapper.classList.remove("show");
+    scheduleWrapper.classList.add("show");
+  }
+
+  // ── After time slot picked: go to form or booking ────────────────────────
+  function proceedAfterSlot() {
+    scheduleWrapper && scheduleWrapper.classList.remove("show");
+    if (activeForm && formStepWrapper) {
+      renderFormStep();
+      formStepWrapper.classList.add("show");
+    } else {
+      bookingWrapper && bookingWrapper.classList.add("show");
+    }
+  }
+
+  // ── Calendar rendering ───────────────────────────────────────────────────
   async function renderCalendar() {
     calendarDays.innerHTML = "";
 
     const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
+    const currentYear  = today.getFullYear();
 
     const isCurrentMonth =
       currentYear === realToday.getFullYear() &&
       currentMonth === realToday.getMonth();
     prevMonthBtn.disabled = isCurrentMonth;
-    // Optionnel : ajoute une classe pour le style CSS
-    // prevMonthBtn.style.opacity = isCurrentMonth ? "0.5" : "1";
     prevMonthBtn.style.cursor = isCurrentMonth ? "not-allowed" : "pointer";
 
-    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+    const firstDayOfMonth  = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth      = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const daysInPrevMonth  = new Date(currentYear, currentMonth, 0).getDate();
 
-    currentMonthTarget.textContent =
-      monthsArray[currentMonth] + " " + currentYear;
+    currentMonthTarget.textContent = monthsArray[currentMonth] + " " + currentYear;
 
     const startDay = (firstDayOfMonth + 6) % 7;
 
     function addEmptyCell(dayCounter) {
       const empty = document.createElement("div");
-      empty.classList.add("day");
-      empty.classList.add("empty");
+      empty.classList.add("day", "empty");
       empty.textContent = dayCounter;
       calendarDays.appendChild(empty);
     }
 
-    // Prev month days
     for (let i = startDay - 1; i >= 0; i--) {
       addEmptyCell(daysInPrevMonth - i);
     }
@@ -97,12 +159,10 @@ export default function () {
       body: JSON.stringify({ COMPANY_ID }),
     });
 
-    const disabledDays = await fetch(`/get-disabled-days/${COMPANY_ID}`);
+    const disabledDays     = await fetch(`/get-disabled-days/${COMPANY_ID}`);
     const arrayDisabledDays = await disabledDays.json();
-
-    const resultDaysOff = await daysOff.json();
-
-    const dayOffArray = resultDaysOff.result.schedule;
+    const resultDaysOff    = await daysOff.json();
+    const dayOffArray      = resultDaysOff.result.schedule;
     const responseBookings = await fetch(`/get-booking/${COMPANY_ID}`);
     const specificExceptions = await responseBookings.json();
 
@@ -111,18 +171,17 @@ export default function () {
       let count = 0;
       workingHours.forEach((period) => {
         const [startH, startM] = period.start.split(":").map(Number);
-        const [endH, endM] = period.end.split(":").map(Number);
-        const totalMinutes = endH * 60 + endM - (startH * 60 + startM);
+        const [endH, endM]     = period.end.split(":").map(Number);
+        const totalMinutes     = endH * 60 + endM - (startH * 60 + startM);
         count += Math.floor(totalMinutes / slotTime);
       });
       return count;
     }
-    const companyInfos = await fetch(`/company/get-infos/${COMPANY_ID}`);
-    const res = await companyInfos.json();
 
-    const slotTime = res.slotTime;
-    // Current month days
-    // Helper : extrait la partie YYYY-MM-DD d'une date en UTC (évite les décalages de fuseau)
+    const companyInfos = await fetch(`/company/get-infos/${COMPANY_ID}`);
+    const res          = await companyInfos.json();
+    const slotTime     = res.slotTime;
+
     const toUTCDateStr = (d) => new Date(d).toISOString().split("T")[0];
 
     for (let i = 1; i <= daysInMonth; i++) {
@@ -133,17 +192,14 @@ export default function () {
       const currentDate = new Date(currentYear, currentMonth, i);
       currentDate.setHours(0, 0, 0, 0);
 
-      // Chaîne YYYY-MM-DD locale pour le jour en cours (pas de timezone)
       const currentDateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
-
-      const weekdayIndex = currentDate.getDay(); // garde pour le positionnement visuel
-      const jsWeekdayIndex = currentDate.getDay(); // pour la DB
-      const todayClean = new Date(realToday);
+      const weekdayIndex   = currentDate.getDay();
+      const jsWeekdayIndex = currentDate.getDay();
+      const todayClean     = new Date(realToday);
       todayClean.setHours(0, 0, 0, 0);
 
       const exception = arrayDisabledDays.find((d) => toUTCDateStr(d.date) === currentDateStr);
-
-      const isFull = specificExceptions.find(
+      const isFull    = specificExceptions.find(
         (d) => toUTCDateStr(d.date) === currentDateStr && d.isFull === true,
       );
 
@@ -152,9 +208,7 @@ export default function () {
         day.dataset.disabled = "true";
       }
 
-      const dayConfig = dayOffArray.find(
-        (d) => d.weekdayIndex === jsWeekdayIndex, // 👈
-      );
+      const dayConfig = dayOffArray.find((d) => d.weekdayIndex === jsWeekdayIndex);
 
       if (currentDate < todayClean) {
         day.classList.add("empty");
@@ -167,7 +221,7 @@ export default function () {
           day.classList.add("special-day");
         }
       } else if (dayConfig && dayConfig.dayOff) {
-        day.classList.add("empty"); // Repos hebdomadaire normal
+        day.classList.add("empty");
         day.dataset.disabled = "true";
       } else {
         day.dataset.weekdayIndex = weekdayIndex;
@@ -180,16 +234,11 @@ export default function () {
         activeWorkingHours = dayConfig.workingHours;
       }
 
-      // 2. Calculer le nombre maximum de créneaux possibles
       const maxSlots = countPossibleSlots(activeWorkingHours, slotTime);
-
-      // 3. Compter combien de réservations existent déjà pour ce jour i
-      // Note : specificExceptions doit contenir TOUS les bookings renvoyés par ton serveur
       const existingBookingsCount = specificExceptions.filter(
         (booking) => toUTCDateStr(booking.date) === currentDateStr,
       ).length;
 
-      // 4. Si c'est plein, on ajoute la classe over-booked
       if (maxSlots > 0 && existingBookingsCount >= maxSlots) {
         day.classList.add("over-booked");
         day.dataset.disabled = "true";
@@ -210,61 +259,43 @@ export default function () {
 
       calendarDays.appendChild(day);
 
+      // ── Day click ────────────────────────────────────────────────────────
       day.addEventListener("click", async () => {
         if (day.dataset.disabled === "true") return;
-        const index = day.dataset.weekdayIndex;
-        console.log(index);
+        if (day.classList.contains("empty")) return;
 
         const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
-        datePicked = dateStr;
+        datePicked         = dateStr;
+        weekdayIndexPicked = day.dataset.weekdayIndex;
 
-        const dateIso = dateStr;
+        // Reset previous selections
+        window.__selectedService  = null;
+        window.__selectedEmployee = null;
+        schedulePicked = null;
 
-        const slots = await fetch("/get-schedule", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            index: index,
-            COMPANY_ID,
-            date: dateIso,
-          }),
-        });
-        const slotsToAdd = await slots.json();
+        const services = window.__services || [];
 
-        scheduleWrapper.querySelector(".schedule-rows").innerHTML = "";
-
-        slotsToAdd.slots.forEach((slot) => {
-          const div = document.createElement("div");
-          div.className = "row";
-          div.textContent = slot;
-          scheduleWrapper.querySelector(".schedule-rows").appendChild(div);
-        });
-
-        if (day.classList.contains("empty")) return false;
-
-        const result = await fetch(
-          `/get-booking?date=${dateIso}&companyId=${COMPANY_ID}`,
-        );
-
-        const response = await result.json();
-
-        renderSchedules(response.bookedTimes);
-
-        scheduleWrapper.classList.add("show");
-        bookingWrapper.classList.remove("show");
+        if (services.length > 0) {
+          // NEW FLOW: show services first
+          hideAllSteps();
+          renderServiceStep();
+          serviceStepWrapper && serviceStepWrapper.classList.add("show");
+        } else {
+          // No services: go straight to time slots
+          await fetchAndShowSlots();
+        }
       });
     }
 
-    // Next month days
-    const totalCells = calendarDays.children.length;
+    // Next month trailing cells
+    const totalCells    = calendarDays.children.length;
     const remainingCells = 7 * 6 - totalCells;
-
     for (let i = 1; i <= remainingCells; i++) {
       addEmptyCell(i);
     }
   }
 
-  // ── Load form for this company (once) ────────────────────────────────────
+  // ── Load form (once on init) ─────────────────────────────────────────────
   const COMPANY_ID_FOR_FORM = bookingWrapper
     ? bookingWrapper.getAttribute("data-company-id")
     : null;
@@ -280,56 +311,50 @@ export default function () {
       .catch(() => {});
   }
 
-  // ── Form step logic ───────────────────────────────────────────────────────
+  // ── Form step rendering ──────────────────────────────────────────────────
   function renderFormStep() {
     if (!formStepWrapper) return;
     const container = formStepWrapper.querySelector("#formStepQuestions");
     if (!container || !activeForm) return;
 
     container.innerHTML = "";
-    const __t = window.__t || {};
     const yes = __t.yes || "Oui";
     const no  = __t.no  || "Non";
 
     activeForm.questions.forEach((q, i) => {
       const div = document.createElement("div");
       div.className = "form-step-question";
-      div.dataset.index = i;
-      div.dataset.type = q.type;
+      div.dataset.index    = i;
+      div.dataset.type     = q.type;
       div.dataset.required = q.required ? "true" : "false";
 
       const labelEl = document.createElement("label");
       labelEl.innerHTML = `${q.label}${q.required ? ' <span class="req">✱</span>' : ""}`;
-
       div.appendChild(labelEl);
 
       if (q.type === "text") {
         const input = document.createElement("input");
         input.className = "input form-step-input";
         input.type = "text";
-        input.placeholder = "";
         div.appendChild(input);
       } else if (q.type === "choice") {
         const opts = document.createElement("div");
         opts.className = "choice-options";
-        // hidden radio group to track value — buttons handle visual state
         (q.options || []).forEach((opt) => {
           const radio = document.createElement("input");
-          radio.type = "radio";
-          radio.name = `q_${i}`;
+          radio.type  = "radio";
+          radio.name  = `q_${i}`;
           radio.value = opt;
           radio.style.display = "none";
           opts.appendChild(radio);
 
           const btn = document.createElement("button");
-          btn.type = "button";
+          btn.type      = "button";
           btn.className = "choice-option-btn";
           btn.textContent = opt;
           btn.addEventListener("click", () => {
-            // deselect all in group
             opts.querySelectorAll(".choice-option-btn").forEach((b) => b.classList.remove("selected"));
             opts.querySelectorAll("input[type=radio]").forEach((r) => (r.checked = false));
-            // select this one
             btn.classList.add("selected");
             radio.checked = true;
           });
@@ -339,16 +364,12 @@ export default function () {
       } else if (q.type === "yes_no") {
         const yesno = document.createElement("div");
         yesno.className = "yesno-options";
+
         const yesBtn = document.createElement("button");
-        yesBtn.type = "button";
-        yesBtn.className = "yesno-btn";
-        yesBtn.dataset.value = "yes";
-        yesBtn.textContent = yes;
+        yesBtn.type = "button"; yesBtn.className = "yesno-btn"; yesBtn.dataset.value = "yes"; yesBtn.textContent = yes;
+
         const noBtn = document.createElement("button");
-        noBtn.type = "button";
-        noBtn.className = "yesno-btn";
-        noBtn.dataset.value = "no";
-        noBtn.textContent = no;
+        noBtn.type = "button"; noBtn.className = "yesno-btn"; noBtn.dataset.value = "no"; noBtn.textContent = no;
 
         [yesBtn, noBtn].forEach((btn) => {
           btn.addEventListener("click", () => {
@@ -356,7 +377,6 @@ export default function () {
             btn.classList.add("selected");
           });
         });
-
         yesno.appendChild(yesBtn);
         yesno.appendChild(noBtn);
         div.appendChild(yesno);
@@ -369,8 +389,7 @@ export default function () {
   function collectFormAnswers() {
     const answers = [];
     if (!formStepWrapper || !activeForm) return answers;
-    const questions = formStepWrapper.querySelectorAll(".form-step-question");
-    questions.forEach((q, i) => {
+    formStepWrapper.querySelectorAll(".form-step-question").forEach((q, i) => {
       const formQ = activeForm.questions[i];
       if (!formQ) return;
       let answer = "";
@@ -391,7 +410,6 @@ export default function () {
 
   function validateFormStep() {
     if (!formStepWrapper || !activeForm) return true;
-    const __t = window.__t || {};
     const questions = formStepWrapper.querySelectorAll(".form-step-question");
     let valid = true;
     questions.forEach((q, i) => {
@@ -417,7 +435,7 @@ export default function () {
     return valid;
   }
 
-  // Form step back button
+  // ── Form step: back → schedule ───────────────────────────────────────────
   if (formStepWrapper) {
     const formBackBtn = formStepWrapper.querySelector(".back-btn");
     if (formBackBtn) {
@@ -427,7 +445,6 @@ export default function () {
       });
     }
 
-    // Form step next button
     const formNextBtn = formStepWrapper.querySelector("#formStepNextBtn");
     if (formNextBtn) {
       formNextBtn.addEventListener("click", () => {
@@ -438,7 +455,6 @@ export default function () {
       });
     }
 
-    // Remove field-error on input
     formStepWrapper.addEventListener("input", (e) => {
       if (e.target.classList.contains("field-error")) {
         e.target.classList.remove("field-error");
@@ -446,137 +462,243 @@ export default function () {
     });
   }
 
+  // ── Render service selection ─────────────────────────────────────────────
+  function renderServiceStep() {
+    if (!serviceStepWrapper) return;
+    const list = serviceStepWrapper.querySelector("#serviceStepList");
+    if (!list) return;
+    list.innerHTML = "";
+
+    const services = window.__services || [];
+    services.forEach((svc) => {
+      const card = document.createElement("div");
+      card.className = "svc-card";
+
+      let metaHtml = "";
+      if (svc.price !== null && svc.price !== undefined) {
+        metaHtml += `<span class="svc-card__price">${svc.price}€</span>`;
+      }
+      metaHtml += `<span class="svc-card__dur">${svc.duration} min</span>`;
+
+      card.innerHTML = `
+        <div class="svc-card__info">
+          <span class="svc-card__name">${svc.name}</span>
+          ${svc.description ? `<span class="svc-card__desc">${svc.description}</span>` : ""}
+        </div>
+        <div class="svc-card__meta">${metaHtml}</div>`;
+
+      card.addEventListener("click", () => onServiceSelected(svc));
+      list.appendChild(card);
+    });
+  }
+
+  function onServiceSelected(svc) {
+    window.__selectedService  = { id: svc._id, name: svc.name, duration: svc.duration };
+    window.__selectedEmployee = null;
+
+    serviceStepWrapper && serviceStepWrapper.classList.remove("show");
+
+    const employees = svc.employees || [];
+    if (employees.length > 0) {
+      // Show employee picker first
+      renderEmployeeStep(employees);
+      employeeStepWrapper && employeeStepWrapper.classList.add("show");
+    } else {
+      // No employees — fetch slots right away
+      fetchAndShowSlots();
+    }
+  }
+
+  // ── Render employee selection ────────────────────────────────────────────
+  function renderEmployeeStep(employees) {
+    if (!employeeStepWrapper) return;
+    const body = employeeStepWrapper.querySelector("#employeeStepBody");
+    if (!body) return;
+    body.innerHTML = "";
+
+    employees.forEach((emp) => {
+      const fullName = `${emp.firstName || ""} ${emp.lastName || ""}`.trim();
+      const card = document.createElement("div");
+      card.className = "emp-step-card";
+      card.innerHTML = `<img src="${emp.profilePicture || "/images/no-user.webp"}" alt="${fullName}"><span>${fullName}</span>`;
+      card.addEventListener("click", () => {
+        window.__selectedEmployee = { id: emp._id, name: fullName };
+        employeeStepWrapper.classList.remove("show");
+        fetchAndShowSlots();
+      });
+      body.appendChild(card);
+    });
+
+    // "No preference" option
+    const skip = document.createElement("div");
+    skip.className = "emp-step-skip";
+    skip.textContent = __t.skip_employee || "Sans préférence";
+    skip.addEventListener("click", () => {
+      window.__selectedEmployee = null;
+      employeeStepWrapper.classList.remove("show");
+      fetchAndShowSlots();
+    });
+    body.appendChild(skip);
+  }
+
+  // ── Back: employee → service ─────────────────────────────────────────────
+  if (employeeStepWrapper) {
+    const empBack = document.getElementById("empBackBtn");
+    if (empBack) {
+      empBack.addEventListener("click", () => {
+        employeeStepWrapper.classList.remove("show");
+        renderServiceStep();
+        serviceStepWrapper && serviceStepWrapper.classList.add("show");
+      });
+    }
+    employeeStepWrapper.addEventListener("click", (e) => {
+      if (e.target === employeeStepWrapper) employeeStepWrapper.classList.remove("show");
+    });
+  }
+
+  // ── Back: service → (calendar stays visible) ────────────────────────────
+  if (serviceStepWrapper) {
+    const svcBack = document.getElementById("serviceBackBtn");
+    if (svcBack) {
+      svcBack.addEventListener("click", () => {
+        serviceStepWrapper.classList.remove("show");
+        // Calendar is always in DOM, nothing else needed
+      });
+    }
+    serviceStepWrapper.addEventListener("click", (e) => {
+      if (e.target === serviceStepWrapper) serviceStepWrapper.classList.remove("show");
+    });
+  }
+
+  // ── Schedule: back → service step (or just hide if no services) ─────────
+  if (scheduleWrapper) {
+    const scheduleBackBtn = scheduleWrapper.querySelector(".back-btn");
+    if (scheduleBackBtn) {
+      scheduleBackBtn.addEventListener("click", () => {
+        scheduleWrapper.classList.remove("show");
+        const services = window.__services || [];
+        if (services.length > 0 && serviceStepWrapper) {
+          renderServiceStep();
+          serviceStepWrapper.classList.add("show");
+        }
+        // If no services, calendar is always visible — nothing more needed
+      });
+    }
+  }
+
+  // ── Schedule: time slot click → form or booking ──────────────────────────
   if (scheduleWrapper) {
     scheduleWrapper.addEventListener("click", (e) => {
       const row = e.target.closest(".row:not(.reserved)");
       if (!row) return;
 
-      schedulePicked = row.textContent;
-      scheduleWrapper.classList.remove("show");
-
-      if (activeForm && formStepWrapper) {
-        renderFormStep();
-        formStepWrapper.classList.add("show");
-      } else {
-        bookingWrapper && bookingWrapper.classList.add("show");
-      }
+      schedulePicked = row.textContent.trim();
+      proceedAfterSlot();
     });
   }
 
+  // ── Booking wrapper: confirm (back is handled by booking.index.js) ────────
   if (bookingWrapper) {
     bookingWrapper.addEventListener("click", async (e) => {
       const button = e.target.closest("button#confirmBooking");
       if (!button) return;
-      const name = document.getElementById("bookingName");
+
+      const name    = document.getElementById("bookingName");
       const surname = document.getElementById("bookingSurname");
-      const email = document.getElementById("bookingEmail");
-      const phone = document.getElementById("bookingPhone");
+      const email   = document.getElementById("bookingEmail");
+      const phone   = document.getElementById("bookingPhone");
       const message = document.getElementById("bookingMsg");
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-      if (!emailPattern.test(email.value)) {
-        const tmp = templateDialog.content.cloneNode(true);
-        const parent = tmp.querySelector("#dialogWrp");
-        function rmvParent() {
-          parent.remove();
+      const isClientLoggedIn = !!window.__clientUser;
+      if (!isClientLoggedIn) {
+        if (!emailPattern.test(email.value)) {
+          const tmp = templateDialog.content.cloneNode(true);
+          const parent = tmp.querySelector("#dialogWrp");
+          function rmvParent() { parent.remove(); }
+          tmp.querySelector(".dialog__h2").textContent = __t.invalid_email_title || "Email invalide";
+          tmp.querySelector(".dialog__p").textContent  = __t.invalid_email_desc  || "Veuillez modifier l'email et mettre un email valide.";
+          tmp.querySelector(".dialog__icon").onclick   = rmvParent;
+          tmp.querySelector(".dialog__btn2").innerHTML = `<span>${__t.close || "Fermer"}</span>`;
+          tmp.querySelector(".dialog__btn2").onclick   = rmvParent;
+          document.querySelector("body").appendChild(tmp);
+          email.style.border = "1px solid red";
+          return;
         }
-        tmp.querySelector(".dialog__h2").textContent = __t.invalid_email_title || "Email invalide";
-        tmp.querySelector(".dialog__p").textContent = __t.invalid_email_desc || "Veuillez modifier l'email et mettre un email valide.";
-        tmp.querySelector(".dialog__icon").onclick = rmvParent;
-        tmp.querySelector(".dialog__btn2").innerHTML = `<span>${__t.close || "Fermer"}</span>` 
-        tmp.querySelector(".dialog__btn2").onclick = rmvParent;
-        document.querySelector("body").appendChild(tmp);
-        bookingEmail.style.border = "1px solid red"; // Petit feedback visuel
-        return; // On "dégage" : le reste du code n'est pas exécuté
-      }
-      const fields = [name, surname, email, phone, message];
-      let isFormValid = true;
-
-      fields.forEach((field) => {
-        if (field.value.trim() === "") {
-          field.classList.add("empty-field");
-          isFormValid = false; // On lève un drapeau d'erreur
-        } else {
-          field.classList.remove("empty-field"); // On enlève le rouge s'il a corrigé
-        }
-      });
-
-      if (!isFormValid) {
-        // Optionnel : un petit message ou scroll vers le haut
-        return;
+        const fields = [name, surname, email, phone];
+        let isFormValid = true;
+        fields.forEach((field) => {
+          if (!field || field.value.trim() === "") {
+            if (field) field.classList.add("empty-field");
+            isFormValid = false;
+          } else {
+            if (field) field.classList.remove("empty-field");
+          }
+        });
+        if (!isFormValid) return;
       }
 
-      const popup = document.querySelector(".confirm-popup");
-
+      const popup    = document.querySelector(".confirm-popup");
       const newPopup = popup.cloneNode(true);
       newPopup.classList.add("show");
-      newPopup.querySelector(".confirm-popup__title").textContent =
-        "Your booking has been confirmed !";
-      ((newPopup.querySelector(".confirm-popup__description").textContent =
-        "You have received an email in your inbox "),
-        email);
+      newPopup.querySelector(".confirm-popup__title").textContent = "Your booking has been confirmed !";
+      newPopup.querySelector(".confirm-popup__description").textContent = "You have received an email in your inbox";
       newPopup.querySelector(".cancel-btn").style.display = "none";
-      newPopup.classList.add("show");
       document.body.appendChild(newPopup);
+      newPopup.querySelector(".confirm-btn").onclick = () => newPopup.remove();
 
-      newPopup.querySelector(".confirm-btn").onclick = () => {
-        // onConfirm();
-        newPopup.remove();
-      };
+      const selectedService  = window.__selectedService  || null;
+      const selectedEmployee = window.__selectedEmployee || null;
 
       const request = await fetch("/create-booking", {
-        method: "post",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          date: datePicked,
-          startTime: schedulePicked,
-          company: document
-            .getElementById("bookingWrapper")
-            .getAttribute("data-company-id"),
-          name: name.value,
-          surname: surname.value,
-          email: email.value,
-          phone: phone.value,
-          message: message.value,
-          formAnswers: formAnswers,
+          date:         datePicked,
+          startTime:    schedulePicked,
+          company:      bookingWrapper.getAttribute("data-company-id"),
+          name:         name.value,
+          surname:      surname.value,
+          email:        email.value,
+          phone:        phone.value,
+          message:      message.value,
+          formAnswers,
+          serviceId:       selectedService  ? selectedService.id       : null,
+          serviceName:     selectedService  ? selectedService.name     : null,
+          serviceDuration: selectedService  ? selectedService.duration : null,
+          employeeId:      selectedEmployee ? selectedEmployee.id      : null,
+          employeeName:    selectedEmployee ? selectedEmployee.name    : null,
         }),
       });
 
       const response = await request.json();
-      if (response.success) {
-        // envoie email + popup
-      } else {
+      if (!response.success) {
         alert("mail down for the moment...");
       }
 
-      scheduleWrapper.classList.remove("show");
+      scheduleWrapper && scheduleWrapper.classList.remove("show");
       bookingWrapper.classList.remove("show");
     });
   }
 
+  // ── Month navigation ─────────────────────────────────────────────────────
   prevMonthBtn.addEventListener("click", () => {
-    prevMonthBtn.style.pointerEvents = "none"; // Empêche le clic
+    prevMonthBtn.style.pointerEvents = "none";
     prevMonthBtn.style.opacity = "0.5";
-
     const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-
+    const currentYear  = today.getFullYear();
     setTimeout(() => {
       prevMonthBtn.style.pointerEvents = "all";
       prevMonthBtn.style.opacity = "1";
     }, 500);
-
-    if (
-      currentYear > realToday.getFullYear() ||
-      currentMonth > realToday.getMonth()
-    ) {
+    if (currentYear > realToday.getFullYear() || currentMonth > realToday.getMonth()) {
       today.setMonth(today.getMonth() - 1);
       renderCalendar();
     }
   });
 
   nextMonthBtn.addEventListener("click", () => {
-    nextMonthBtn.style.pointerEvents = "none"; // Empêche le clic
+    nextMonthBtn.style.pointerEvents = "none";
     nextMonthBtn.style.opacity = "0.5";
     today.setMonth(today.getMonth() + 1);
     renderCalendar();

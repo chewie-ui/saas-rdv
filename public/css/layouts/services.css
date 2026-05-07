@@ -1,0 +1,443 @@
+.services-page {
+  padding: 0 0 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.services-page__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.services-page__header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  flex: 1;
+}
+
+.services-page__subtitle {
+  width: 100%;
+  font-size: 13px;
+  color: var(--grey-primary);
+  margin-top: -12px;
+}
+
+/* ── Service cards ─────────────────────────────────────────────── */
+.services-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.service-card {
+  background: var(--color-white);
+  border: 1.5px solid var(--border-light, #e5e5e5);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: opacity 0.2s;
+}
+
+.service-card--inactive {
+  opacity: 0.55;
+}
+
+.service-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.service-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.service-card__name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.service-card__badges {
+  display: flex;
+  gap: 6px;
+}
+
+.badge--price,
+.badge--duration {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 3px 10px;
+  letter-spacing: 0.02em;
+}
+
+.badge--price {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.badge--duration {
+  background: var(--bg-secondary, #f5f5f5);
+  color: var(--grey-primary);
+  border: 1px solid var(--border-light, #e5e5e5);
+}
+
+.service-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1.5px solid var(--border-light, #e5e5e5);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  padding: 0;
+}
+
+.btn--icon:hover {
+  background: var(--bg-secondary, #f5f5f5);
+}
+
+.btn--danger {
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.btn--danger:hover {
+  background: rgba(239, 68, 68, 0.07);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.btn--danger svg {
+  fill: #ef4444;
+}
+
+.service-card__desc {
+  font-size: 13px;
+  color: var(--grey-primary);
+  line-height: 1.5;
+}
+
+/* ── Toggle switch (réutilisé du superadmin) ───────────────────── */
+.sa-toggle {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.sa-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.sa-toggle__track {
+  position: absolute;
+  inset: 0;
+  background: var(--border-light, #e0e0e0);
+  border-radius: 99px;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.sa-toggle__track::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 16px;
+  height: 16px;
+  background: #aaa;
+  border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.sa-toggle input:checked + .sa-toggle__track {
+  background: rgba(34, 197, 94, 0.25);
+}
+
+.sa-toggle input:checked + .sa-toggle__track::after {
+  transform: translateX(18px);
+  background: #22c55e;
+}
+
+/* ── Employees row ─────────────────────────────────────────────── */
+.service-card__employees {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-light, #efefef);
+}
+
+.service-card__employees-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--grey-primary);
+  flex-shrink: 0;
+}
+
+.service-card__employees-label svg {
+  fill: var(--grey-primary);
+}
+
+.service-card__employees-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--grey-primary);
+}
+
+.service-card__employees-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.service-card__employees-none {
+  font-size: 12px;
+  color: var(--grey-soft, #aaa);
+  font-style: italic;
+}
+
+.emp-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-secondary, #f5f5f5);
+  border-radius: 20px;
+  padding: 3px 10px 3px 5px;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.emp-chip img {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* ── Empty state ───────────────────────────────────────────────── */
+.services-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 24px;
+  color: var(--grey-primary);
+  text-align: center;
+}
+
+.services-empty svg {
+  fill: var(--grey-soft, #ccc);
+}
+
+.services-empty p {
+  font-size: 14px;
+  max-width: 320px;
+  line-height: 1.6;
+}
+
+/* ── Modal ─────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: none;
+}
+
+.modal-overlay.show {
+  display: block;
+}
+
+.service-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.96);
+  background: var(--color-white);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 500px;
+  padding: 28px 24px;
+  z-index: 101;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.service-modal.show {
+  opacity: 1;
+  pointer-events: all;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.service-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.service-modal__header h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-light, #e5e5e5);
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.modal-close svg {
+  fill: var(--grey-primary);
+}
+
+.service-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.service-modal__body .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.service-modal__body .field label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--grey-primary);
+}
+
+.service-modal__body .field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.service-modal__body .field-row .field {
+  flex: 1;
+}
+
+.service-modal__footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* ── Employee select list ──────────────────────────────────────── */
+.emp-select-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.emp-select-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border-light, #e5e5e5);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.emp-select-item.selected {
+  border-color: var(--main-color, #22c55e);
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.emp-select-item img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.emp-select-item span {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.emp-select-item .check-dot {
+  margin-left: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-light, #ccc);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.emp-select-item.selected .check-dot {
+  background: var(--main-color, #22c55e);
+  border-color: var(--main-color, #22c55e);
+}
+
+.emp-no-employees {
+  font-size: 13px;
+  color: var(--grey-primary);
+  font-style: italic;
+  padding: 20px 0;
+  text-align: center;
+}
+
+.xs-comment {
+  font-size: 12px;
+  color: var(--grey-primary);
+  line-height: 1.5;
+}

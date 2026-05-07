@@ -7,13 +7,12 @@ block content
     .calendar
         .calendar__menu
             .calendar__sections
-                //- ── Gauche : mini-calendrier ──
+                //- ── Left: mini-calendar ──
                 .calendar__section.calendar__section--left
                     .mini-cal-wrapper
                         button.cal-icon-btn#miniCalTrigger(type="button" aria-label="Open month calendar")
                             svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
                                 path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm280 240q-17 0-28.5-11.5T440-480q0-17 11.5-28.5T480-520q17 0 28.5 11.5T520-480q0 17-11.5 28.5T480-440Zm-160 0q-17 0-28.5-11.5T280-480q0-17 11.5-28.5T320-520q17 0 28.5 11.5T360-480q0 17-11.5 28.5T320-440Zm320 0q-17 0-28.5-11.5T600-480q0-17 11.5-28.5T640-520q17 0 28.5 11.5T680-480q0 17-11.5 28.5T640-440ZM480-280q-17 0-28.5-11.5T440-320q0-17 11.5-28.5T480-360q17 0 28.5 11.5T520-320q0 17-11.5 28.5T480-280Zm-160 0q-17 0-28.5-11.5T280-320q0-17 11.5-28.5T320-360q17 0 28.5 11.5T360-320q0 17-11.5 28.5T320-280Zm320 0q-17 0-28.5-11.5T600-320q0-17 11.5-28.5T640-360q17 0 28.5 11.5T680-320q0 17-11.5 28.5T640-280Z")
-                        //- Dropdown mini calendar
                         .mini-cal-dropdown#miniCalDropdown
                             .mini-cal-header
                                 button.cal-icon-btn#miniCalPrev(type="button" aria-label="Mois précédent")
@@ -34,7 +33,7 @@ block content
                                     span= t.days_abbr.sunday
                                 .mini-cal-days#miniCalDays
 
-                //- ── Centre : navigation date ──
+                //- ── Center: date navigation ──
                 .calendar__section.calendar__section--center
                     a.cal-today-btn(href="/appointment")
                         svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
@@ -53,8 +52,17 @@ block content
                             svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                                 path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
 
-                //- ── Droite : Google Calendar ──
+                //- ── Right: employee filter + Google Calendar ──
                 .calendar__section.calendar__section--right
+                    //- Employee filter
+                    if employees && employees.length > 0
+                        .emp-filter-wrap
+                            select.emp-filter-select#empFilterSelect
+                                option(value="all" selected=(employeeFilter === 'all')) Tous les employés
+                                each emp in employees
+                                    option(value=String(emp._id) selected=(employeeFilter === String(emp._id)))
+                                        | #{emp.firstName} #{emp.lastName}
+
                     if user.googleCalendar && user.googleCalendar.connected
                         .gcal-connected
                             .gcal-avatar= user.googleCalendar.email.charAt(0).toUpperCase()
@@ -79,7 +87,7 @@ block content
 
         .calendar__week-strip
             each weekday in weekDays
-                a.calendar__week-day(href=`/appointment?date=${weekday.isoDate}` class=[weekday.isToday && "today", weekday.isFocused && "focused"])
+                a.calendar__week-day(href=`/appointment?date=${weekday.isoDate}&employee=${employeeFilter}` class=[weekday.isToday && "today", weekday.isFocused && "focused"])
                     span.calendar__week-day-label= weekday.initial
                     span.calendar__week-day-number= weekday.dayNumber
 
@@ -88,22 +96,46 @@ block content
             //- Current time indicator
             #current-time-line.calendar-timeline(style="display:none")
                 .timeline-circle
-            .cell.time-header GMT-5
+            .cell.time-header GMT+1
             each weekday in weekDays
                 .cell.day-header(class=[weekday.isToday && "today", weekday.isFocused && "focused"]) #{weekday.label}, #{weekday.date}
 
             each hour in hours
-                .cell.time= hour
+                - const isHalf = hour.split(':')[1] !== '00'
+                .cell.time(class=isHalf ? 'time--half' : '' data-time=hour)
+                    if !isHalf
+                        = hour
                 each day, dayIndex in weekDays
-                    .cell.day(class=day.isFocused ? "focused" : "")
-                        each appointment in appointments
-                            if appointment.isoDate === day.iso.split("T")[0] && appointment.startHour === hour
-                                a.appointment(href=`/appointement/${appointment._id}` class={ canceled: appointment.status === 'canceled' })
-                                    if appointment.status === "canceled"
-                                        .appointment-canceled= t.appt.canceled
-                                    .appointment-name= appointment.name
-                                    .appointment-time.xs-comment
-                                        | #{appointment.startHour} - #{appointment.endHour}
+                    .cell.day(class=[day.isFocused && "focused", isHalf && "day--half"])
+                        //- Collect all appointments for this cell
+                        - var cellAppts = appointments.filter(a => a.isoDate === day.iso.split("T")[0] && a.startHour === hour)
+                        if cellAppts.length > 1
+                            //- Multiple bookings at this slot: show side-by-side
+                            - var maxSlot = cellAppts.reduce(function(mx, a){ return Math.max(mx, a.slotTime || 30); }, 0)
+                            - var wrapH = Math.max(Math.round(maxSlot / 30 * 56) - 4, 20)
+                            .appt-multi-wrap(style=`height:${wrapH}px`)
+                                each appointment in cellAppts
+                                    a.appointment.appointment--compact(href=`/appointement/${appointment._id}` class={ canceled: appointment.status === 'canceled' })
+                                        if appointment.status === "canceled"
+                                            .appointment-tag.appointment-tag--canceled= t.appt.canceled
+                                        .appt-left
+                                            .appt-header
+                                                img.appointment-emp-photo(src=appointment.employeePhoto alt="" title=appointment.employeeName)
+                                                span.appointment-client= appointment.name + ' ' + appointment.surname
+                                        .appointment-time= appointment.startHour + ' — ' + appointment.endHour
+                        else if cellAppts.length === 1
+                            - var appointment = cellAppts[0]
+                            - var apptH = Math.max(Math.round((appointment.slotTime || 30) / 30 * 56) - 4, 20)
+                            a.appointment(href=`/appointement/${appointment._id}` class={ canceled: appointment.status === 'canceled' } style=`height:${apptH}px`)
+                                if appointment.status === "canceled"
+                                    .appointment-tag.appointment-tag--canceled= t.appt.canceled
+                                .appt-left
+                                    .appt-header
+                                        img.appointment-emp-photo(src=appointment.employeePhoto alt="" title=appointment.employeeName)
+                                        span.appointment-client= appointment.name + ' ' + appointment.surname
+                                    if appointment.serviceName
+                                        .appointment-service= appointment.serviceName
+                                .appointment-time= appointment.startHour + ' — ' + appointment.endHour
 
 
 block scripts

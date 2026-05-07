@@ -248,6 +248,50 @@
   display: none;
 }
 
+/* ── Promo code ─────────────────────────────────────────────────────────────── */
+.promo-code-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--color-white);
+  border: 1.5px solid var(--border-light, #e5e5e5);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.promo-code-section__label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.promo-code-section__label svg {
+  fill: var(--main-color, #22c55e);
+}
+
+.promo-code-section__input-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.promo-code-status {
+  font-size: 12px;
+  min-height: 16px;
+}
+
+.promo-code-status.valid {
+  color: #16a34a;
+}
+
+.promo-code-status.invalid {
+  color: #ef4444;
+}
+
 @media all and (min-width: 820px) {
   .subscription .subscription__top .subscription__plan {
     width: calc((100% - 20px) / 2);

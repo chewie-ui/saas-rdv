@@ -1,6 +1,6 @@
 const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
 const Stripe = require("stripe");
-const SERVICES = require("../utils/services");
+const getServices = require("../utils/services");
 
 const stripe = new Stripe(env.stripeSecretKey);
 
@@ -22,7 +22,7 @@ const htmlTemplate = pug.renderFile(path.join(__dirname, "../views/templates/ema
 exports.book = async (req, res) => {
   const { bookId } = req.params;
 
-  const client = await Booking.findById(bookId);
+  const client = await Booking.findById(bookId).populate("employee", "firstName lastName profilePicture");
   console.log(client);
 
   const company = await Company.findOne(
@@ -103,19 +103,33 @@ exports.appointment = async (req, res) => {
   if (!currentCompany) {
     return res.redirect("/register");
   }
-  const apps = await GetAllAppointments(currentCompany);
-  const rowTime = await Company.findById(currentCompany).select("slotTime schedule").lean();
+
+  // Employee filter from query param
+  const employeeFilter = req.query.employee || "all";
+
+  const Employee = require("../db/models/company/employee.model");
+  const [apps, rowTime, employees, daysOffDoc] = await Promise.all([
+    GetAllAppointments(currentCompany, employeeFilter),
+    Company.findById(currentCompany).select("slotTime schedule").lean(),
+    Employee.find({ company: currentCompany, active: true }).lean(),
+    DaysOff.findOne({ company: currentCompany }).lean(),
+  ]);
+
   const slotTime = rowTime.slotTime || 60;
 
   const formatted = apps.map((appointment) => {
     const [h, m] = appointment.startTime.split(":").map(Number);
-
-    // reconstruire la date complète
     const startDate = new Date(appointment.date.getFullYear(), appointment.date.getMonth(), appointment.date.getDate(), h, m, 0, 0);
 
-    // end = +1h (pour l’instant)
+    // Use the booking’s stored slotTime (actual service duration) for end time
+    const duration = appointment.slotTime || slotTime;
     const endDate = new Date(startDate);
-    endDate.setMinutes(endDate.getMinutes() + slotTime);
+    endDate.setMinutes(endDate.getMinutes() + duration);
+
+    // Populated employee (may be null)
+    const emp = appointment.employee;
+    const empName  = emp ? `${emp.firstName} ${emp.lastName}`.trim() : (appointment.employeeName || "");
+    const empPhoto = emp ? emp.profilePicture : "/images/no-user.webp";
 
     return {
       _id: appointment._id,
@@ -126,24 +140,21 @@ exports.appointment = async (req, res) => {
       message: appointment.message,
       weekday: (startDate.getDay() + 6) % 7,
       status: appointment.status,
+      slotTime: duration,
+      serviceName: appointment.serviceName || "",
+      employeeId:   emp ? String(emp._id) : "",
+      employeeName: empName,
+      employeePhoto: empPhoto,
 
-      slotTime: appointment.slotTime,
       isoDate: startDate.toISOString().split("T")[0],
       date: startDate.toLocaleDateString("fr-BE", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
       }),
-
-      startHour: startDate.toLocaleTimeString("fr-BE", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-
-      endHour: endDate.toLocaleTimeString("fr-BE", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      // Use stored time strings directly — locale formatting is unreliable across environments
+      startHour: appointment.startTime,
+      endHour: `${String(endDate.getHours()).padStart(2, "0")}:${String(endDate.getMinutes()).padStart(2, "0")}`,
     };
   });
   const referenceDate = req.query.date ? new Date(req.query.date) : new Date();
@@ -174,27 +185,44 @@ exports.appointment = async (req, res) => {
   const scheduleMin = scheduleHours.length > 0 ? Math.min(...scheduleHours.map((wh) => parseInt(wh.start.split(":")[0], 10))) : null;
   const scheduleMax = scheduleHours.length > 0 ? Math.max(...scheduleHours.map((wh) => parseInt(wh.end.split(":")[0], 10))) : null;
 
-  const hoursList = formatted.map((a) => {
-    const [h] = a.startHour.split(":").map(Number);
-    return h;
+  // Include special days (DaysOff with custom working hours) in range calculation
+  const weekIsos = weekDays.map((d) => d.isoDate);
+  const specialDayHours = (daysOffDoc?.dates || [])
+    .filter((d) => weekIsos.includes(new Date(d.date).toISOString().split("T")[0]))
+    .flatMap((d) => d.workingHours || [])
+    .filter((wh) => wh.start);
+  const specialMin = specialDayHours.length > 0 ? Math.min(...specialDayHours.map((wh) => parseInt(wh.start.split(":")[0], 10))) : null;
+  const specialMax = specialDayHours.length > 0 ? Math.max(...specialDayHours.map((wh) => parseInt(wh.end.split(":")[0], 10))) : null;
+
+  // Compute appointment range — use total minutes so :30 appointments extend the range correctly
+  const apptMinutesList = formatted.map((a) => {
+    const [h, m] = a.startHour.split(":").map(Number);
+    return h * 60 + m;
   });
+  const apptMin = apptMinutesList.length > 0 ? Math.floor(Math.min(...apptMinutesList) / 60) : null;
+  // +1h buffer so the appointment slot itself is always visible even at the last row
+  const apptMax = apptMinutesList.length > 0 ? Math.ceil((Math.max(...apptMinutesList) + 60) / 60) : null;
 
-  const apptMin = hoursList.length > 0 ? Math.min(...hoursList) : null;
-  const apptMax = hoursList.length > 0 ? Math.max(...hoursList) + 1 : null;
+  const candidates = [scheduleMin, specialMin, apptMin].filter((v) => v !== null);
+  const minHour = candidates.length > 0 ? Math.min(...candidates) : 8;
 
-  const minHour = scheduleMin !== null ? Math.min(scheduleMin, apptMin !== null ? apptMin : scheduleMin) : apptMin !== null ? apptMin : 8;
-  const maxHour = scheduleMax !== null ? Math.max(scheduleMax, apptMax !== null ? apptMax : scheduleMax) : apptMax !== null ? apptMax : 18;
+  const candidatesMax = [scheduleMax, specialMax, apptMax].filter((v) => v !== null);
+  const maxHour = candidatesMax.length > 0 ? Math.max(...candidatesMax) : 18;
+
+  // Always use 30-min steps so appointments at :30 are never missed
   res.render("admin/appointment", {
     pageName: "Appointment",
     title: res.locals.t.titles.calendar,
     slotTime,
-    hours: generateTimeSlots(minHour, maxHour, slotTime),
+    hours: generateTimeSlots(minHour, maxHour, 30),
     weekDays,
     appointments: formatted,
     weekLabel,
     dayLabel,
     focusedDayName,
     focusedDayDate,
+    employees,
+    employeeFilter,
   });
 };
 
@@ -233,13 +261,20 @@ exports.availability = async (req, res) => {
   if (!currentCompany) {
     return res.redirect("/register");
   }
+  const Service = require("../db/models/company/service.model");
+  const [daysOff, currentSlotTime, serviceCount] = await Promise.all([
+    getDaysOff(currentCompany),
+    getSlotTime(currentCompany),
+    Service.countDocuments({ company: currentCompany, active: true }),
+  ]);
   res.render("admin/availability", {
-    daysOff: await getDaysOff(currentCompany),
+    daysOff,
     pageName: "Availability",
     title: res.locals.t.titles.avail,
     timeSlot: [10, 15, 20, 25, 30, 45, 60, 90, 120, 180],
     hours: generateHours(10),
-    currentSlotTime: await getSlotTime(currentCompany),
+    currentSlotTime,
+    hasServices: serviceCount > 0,
   });
 };
 
@@ -418,7 +453,8 @@ exports.informationsPage = (req, res) => {
     success: req.query.success,
     title: res.locals.t.titles.infos,
     maskEmail,
-    services: SERVICES,
+    services: getServices(res.locals.lang),
+    currentCompany: res.locals.currentCompany,
   });
 };
 

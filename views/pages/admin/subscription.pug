@@ -254,6 +254,16 @@ block content
                     button(disabled)
                         span= t.subscription.soon
         .subscription__bottom
+            .promo-code-section#promoCodeSection
+                .promo-code-section__label
+                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                        path(d="M160-80q-33 0-56.5-23.5T80-160v-160h80v160h160v80H160Zm480 0v-80h160v-160h80v160q0 33-23.5 56.5T800-80H640ZM80-640v-160q0-33 23.5-56.5T160-880h160v80H160v160H80Zm720 0v-160H640v-80h160q33 0 56.5 23.5T880-800v160h-80ZM480-240q-100 0-170-70T240-480q0-100 70-170t170-70q100 0 170 70t70 170q0 100-70 170T480-240Zm0-80q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47Zm0-160Z")
+                    span Code promo
+                .promo-code-section__input-row
+                    input.input#promoCodeInput(type="text" placeholder="Ex: BETA50" style="text-transform:uppercase;max-width:220px")
+                    button.btn.secondary#applyPromoBtn
+                        span Appliquer
+                .promo-code-status#promoCodeStatus
             .subscription__payments
             .subscription__help
     +dialog()

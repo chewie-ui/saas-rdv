@@ -19,5 +19,6 @@ router.post("/espace-client/parametres/profile", isClientAuth, ctrl.updateProfil
 router.patch("/espace-client/parametres/picture", isClientAuth, upload.single("profilePicture"), ctrl.updateClientPicture);
 router.post("/espace-client/parametres/email", isClientAuth, ctrl.updateClientEmail);
 router.post("/espace-client/parametres/password", isClientAuth, ctrl.updateClientPassword);
+router.post("/espace-client/parametres/language", isClientAuth, ctrl.updateClientLang);
 
 module.exports = router;

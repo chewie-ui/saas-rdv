@@ -170,6 +170,29 @@ block content
                     button.btn#formStepNextBtn
                         span= t.forms.form_next
 
+        //- ── Service step (injecté dynamiquement après le choix de l'heure) ────
+        .service-step-wrapper#serviceStepWrapper
+            .service-step
+                .service-step-header
+                    h2= t.booking_page.choose_service || 'Choisissez un service'
+                .service-step-body
+                    .back-btn#serviceBackBtn
+                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
+                            path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                    .service-step-list#serviceStepList
+                        //- Injecté par JS
+
+        //- ── Employé step (modal overlay) ─────────────────────────────────────
+        .employee-step-wrapper#employeeStepWrapper
+            .employee-step
+                .employee-step__header
+                    h2= t.booking_page.choose_employee || 'Choisissez un employé'
+                    .back-btn#empBackBtn
+                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
+                            path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                .employee-step__body#employeeStepBody
+                    //- Injecté par JS
+
         .booking-wrapper#bookingWrapper(data-company-id=company._id)
             .booking
                 .booking-header
@@ -178,22 +201,40 @@ block content
                     .back-btn
                         svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
                             path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
-                    .form-confirm
-                        .field-container.flex.col
-                            p= t.booking_page.name
-                            input.input(placeholder="Doe" id="bookingName")
-                        .field-container.flex.col
-                            p= t.booking_page.surname
-                            input.input(placeholder="John" id="bookingSurname")
-                        .field-container.flex.col
-                            p= t.booking_page.email
-                            input.input(placeholder="john.doe@company.com" id="bookingEmail")
-                        .field-container.flex.col
-                            p= t.booking_page.phone
-                            input.input(placeholder="+32 456 56 44 35" id="bookingPhone")
-                        .field-container.flex.col
-                            p= t.booking_page.message
-                            input.input(placeholder="Write something..." id="bookingMsg")
+                    if clientUser
+                        .client-summary
+                            .client-summary__avatar
+                                svg(xmlns="http://www.w3.org/2000/svg" height="28px" viewBox="0 -960 960 960" width="28px" fill="currentColor")
+                                    path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113T480-480Zm-240 240v-32q0-34 17.5-62.5T304-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v32H240Z")
+                            .client-summary__info
+                                span.client-summary__name= clientUser.firstName + ' ' + clientUser.lastName
+                                span.client-summary__email= clientUser.email
+                        //- Champs cachés utilisés par le JS
+                        input(type="hidden" id="bookingName"    value=clientUser.firstName)
+                        input(type="hidden" id="bookingSurname" value=clientUser.lastName)
+                        input(type="hidden" id="bookingEmail"   value=clientUser.email)
+                        input(type="hidden" id="bookingPhone"   value=clientUser.phone)
+                        .form-confirm
+                            .field-container.flex.col
+                                p= t.booking_page.message
+                                input.input(placeholder="Informations supplémentaires..." id="bookingMsg")
+                    else
+                        .form-confirm
+                            .field-container.flex.col
+                                p= t.booking_page.name
+                                input.input(placeholder="Doe" id="bookingName")
+                            .field-container.flex.col
+                                p= t.booking_page.surname
+                                input.input(placeholder="John" id="bookingSurname")
+                            .field-container.flex.col
+                                p= t.booking_page.email
+                                input.input(placeholder="john.doe@company.com" id="bookingEmail")
+                            .field-container.flex.col
+                                p= t.booking_page.phone
+                                input.input(placeholder="+32 456 56 44 35" id="bookingPhone")
+                            .field-container.flex.col
+                                p= t.booking_page.message
+                                input.input(placeholder="Write something..." id="bookingMsg")
                     .booking-button
                         button.btn#confirmBooking.btn
                             span= t.booking_page.confirm
@@ -201,6 +242,12 @@ block content
     +dialog()
 
 block scripts
+    //- Services JSON is pre-serialized server-side to avoid Pug interpolation issues
+    script.
+        window.__services = !{servicesJson || '[]'};
+    if clientUser
+        script.
+            window.__clientUser = true;
 
     script(src="/js/layouts/index.js" type="module")
     script(src="/js/templates/confirm-popup.template.js")

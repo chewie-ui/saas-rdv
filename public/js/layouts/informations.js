@@ -379,6 +379,63 @@ if (sendDeleteCode) {
   });
 }
 
+// ── URL personnalisée (slug) ────────────────────────────────────────────────
+const slugInput  = document.getElementById("slugInput");
+const slugStatus = document.getElementById("slugStatus");
+const saveSlugBtn = document.getElementById("saveSlugBtn");
+
+if (slugInput && slugStatus) {
+  let slugTimer = null;
+
+  function setSlugStatus(msg, color) {
+    slugStatus.textContent = msg;
+    slugStatus.style.color = color;
+  }
+
+  slugInput.addEventListener("input", () => {
+    clearTimeout(slugTimer);
+    const val = slugInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    slugInput.value = val;
+    if (!val || val.length < 3) {
+      setSlugStatus(val.length > 0 ? "Minimum 3 caractères." : "", "#aaa");
+      return;
+    }
+    setSlugStatus("Vérification...", "#aaa");
+    slugTimer = setTimeout(async () => {
+      const res  = await fetch(`/account/check-slug?slug=${encodeURIComponent(val)}`);
+      const data = await res.json();
+      if (data.available) {
+        setSlugStatus("✓ Disponible", "#16a34a");
+      } else {
+        setSlugStatus(data.error || "✗ Ce nom est déjà utilisé.", "#ef4444");
+      }
+    }, 450);
+  });
+
+  if (saveSlugBtn) {
+    saveSlugBtn.addEventListener("click", async () => {
+      const slug = slugInput.value.trim();
+      if (!slug || slug.length < 3) { setSlugStatus("Minimum 3 caractères.", "#ef4444"); return; }
+      const btn = saveSlugBtn;
+      btn.disabled = true;
+      const res  = await fetch("/account/slug", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug }),
+      });
+      const data = await res.json();
+      btn.disabled = false;
+      if (data.success) {
+        setSlugStatus("✓ URL enregistrée !", "#16a34a");
+        btn.querySelector("span").textContent = "✓ Enregistré";
+        setTimeout(() => { btn.querySelector("span").textContent = saveSlugBtn.dataset.label || "Enregistrer l'URL"; }, 2500);
+      } else {
+        setSlugStatus(data.error || "Erreur.", "#ef4444");
+      }
+    });
+  }
+}
+
 if (confirmDeleteAccount) {
   confirmDeleteAccount.addEventListener("click", async () => {
     const code = deleteCodeInput.value.trim();
