@@ -7,12 +7,26 @@ block links
 block content
     .employees-page
         .employees-page__header
-            h2= t.employees.title
-            p.employees-page__subtitle= t.employees.subtitle
-            button.btn#addEmpBtn
-                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                    path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
-                span= t.employees.add_btn
+            .employees-page__header-left
+                h2= t.employees.title
+                p.employees-page__subtitle= t.employees.subtitle
+            .employees-page__header-right
+                if employees.length > 0
+                    button.btn.secondary#deactivateAllEmpBtn
+                        span
+                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z")
+                            | #{t.employees.deactivate_all || 'Désactiver tout'}
+                    button.btn#activateAllEmpBtn
+                        span
+                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                path(d="m424-312 282-282-56-56-226 226-114-114-56 56 170 170Zm56 232q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z")
+                            | #{t.employees.activate_all || 'Activer tout'}
+                button.btn#addEmpBtn
+                    span
+                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                            path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                        | #{t.employees.add_btn}
 
         if employees.length === 0
             .employees-empty
@@ -55,7 +69,7 @@ block content
     .service-modal#empModal
         .service-modal__header
             h3#empModalTitle= t.employees.modal_new
-            button.modal-close#closeEmpModal
+            button.modal-close#closeEmpModal.btn--icon
                 svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
                     path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
         .service-modal__body
@@ -66,9 +80,10 @@ block content
                     img#empModalPhotoPreview(src="/images/no-user.webp" alt="Photo")
                 .emp-modal__photo-info
                     button.btn.secondary.btn--sm#empModalPhotoBtn
-                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                            path(d="M480-260q75 0 127.5-52.5T660-440q0-75-52.5-127.5T480-620q-75 0-127.5 52.5T300-440q0 75 52.5 127.5T480-260Zm0-80q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71T480-340ZM160-120q-33 0-56.5-23.5T80-200v-480q0-33 23.5-56.5T160-760h126l74-80h240l74 80h126q33 0 56.5 23.5T880-680v480q0 33-23.5 56.5T800-120H160Z")
-                        span= t.employees.photo_btn
+                        span
+                            svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                path(d="M480-260q75 0 127.5-52.5T660-440q0-75-52.5-127.5T480-620q-75 0-127.5 52.5T300-440q0 75 52.5 127.5T480-260Zm0-80q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71T480-340ZM160-120q-33 0-56.5-23.5T80-200v-480q0-33 23.5-56.5T160-760h126l74-80h240l74 80h126q33 0 56.5 23.5T880-680v480q0 33-23.5 56.5T800-120H160Z")
+                            | #{t.employees.photo_btn}
                     input#empModalPhotoInput(type="file" accept="image/*" style="display:none")
                     p.xs-comment= t.employees.photo_hint
             .field-row
@@ -86,7 +101,8 @@ block content
                 label= t.employees.desc
                 textarea.textarea#empModalDesc(placeholder="Spécialités, expérience..." rows=3)
         .service-modal__footer
-            button.btn.secondary#cancelEmpModal= t.employees.cancel
+            button.btn.secondary#cancelEmpModal
+                span= t.employees.cancel
             button.btn#saveEmpBtn
                 span= t.employees.save
 

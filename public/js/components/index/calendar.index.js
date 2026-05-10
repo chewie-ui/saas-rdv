@@ -273,15 +273,21 @@ export default function () {
         window.__selectedEmployee = null;
         schedulePicked = null;
 
-        const services = window.__services || [];
+        const services  = window.__services  || [];
+        const employees = window.__employees || [];
 
         if (services.length > 0) {
-          // NEW FLOW: show services first
+          // Services ON → show service step first (employee step comes after, if linked)
           hideAllSteps();
           renderServiceStep();
           serviceStepWrapper && serviceStepWrapper.classList.add("show");
+        } else if (employees.length > 0) {
+          // Services OFF, employees ON → skip service step, pick employee directly
+          hideAllSteps();
+          renderEmployeeStep(employees);
+          employeeStepWrapper && employeeStepWrapper.classList.add("show");
         } else {
-          // No services: go straight to time slots
+          // Neither active → straight to time slots
           await fetchAndShowSlots();
         }
       });
@@ -541,14 +547,18 @@ export default function () {
     body.appendChild(skip);
   }
 
-  // ── Back: employee → service ─────────────────────────────────────────────
+  // ── Back: employee → service (or calendar if no services) ───────────────
   if (employeeStepWrapper) {
     const empBack = document.getElementById("empBackBtn");
     if (empBack) {
       empBack.addEventListener("click", () => {
         employeeStepWrapper.classList.remove("show");
-        renderServiceStep();
-        serviceStepWrapper && serviceStepWrapper.classList.add("show");
+        const services = window.__services || [];
+        if (services.length > 0 && serviceStepWrapper) {
+          renderServiceStep();
+          serviceStepWrapper.classList.add("show");
+        }
+        // If no services, calendar is always visible — nothing more needed
       });
     }
     employeeStepWrapper.addEventListener("click", (e) => {
@@ -570,18 +580,24 @@ export default function () {
     });
   }
 
-  // ── Schedule: back → service step (or just hide if no services) ─────────
+  // ── Schedule: back → service step, employee step, or calendar ───────────
   if (scheduleWrapper) {
     const scheduleBackBtn = scheduleWrapper.querySelector(".back-btn");
     if (scheduleBackBtn) {
       scheduleBackBtn.addEventListener("click", () => {
         scheduleWrapper.classList.remove("show");
-        const services = window.__services || [];
+        const services  = window.__services  || [];
+        const employees = window.__employees || [];
         if (services.length > 0 && serviceStepWrapper) {
+          // Services ON: go back to service step
           renderServiceStep();
           serviceStepWrapper.classList.add("show");
+        } else if (employees.length > 0 && employeeStepWrapper) {
+          // Services OFF, employees ON: go back to employee picker
+          renderEmployeeStep(employees);
+          employeeStepWrapper.classList.add("show");
         }
-        // If no services, calendar is always visible — nothing more needed
+        // Both off: calendar is always visible — nothing more needed
       });
     }
   }
@@ -673,7 +689,12 @@ export default function () {
 
       const response = await request.json();
       if (!response.success) {
-        alert("mail down for the moment...");
+        if (response.error === "no_employee_available") {
+          alert("Ce créneau n'est plus disponible : tous les employés sont déjà réservés à cet horaire.");
+        } else {
+          alert("Une erreur est survenue, veuillez réessayer.");
+        }
+        return;
       }
 
       scheduleWrapper && scheduleWrapper.classList.remove("show");

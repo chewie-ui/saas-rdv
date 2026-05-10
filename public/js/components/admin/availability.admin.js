@@ -1,5 +1,25 @@
 const availability = document.querySelector(".body-weekly-hour");
 
+// ── Shared helpers ────────────────────────────────────────────────────────────
+function timeToMinutes(time) {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function showTimeError(msg) {
+  // Remove any existing toast
+  document.querySelectorAll(".avail-time-error-toast").forEach(t => t.remove());
+  const toast = document.createElement("div");
+  toast.className = "avail-time-error-toast";
+  toast.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg>${msg}`;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add("show"));
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
 const inputsListener = availability.querySelectorAll(
   ".slot-hour .panel-availability",
 );
@@ -129,11 +149,6 @@ document.addEventListener("click", async (event) => {
       return;
     }
 
-    function timeToMinutes(time) {
-      const [hours, minutes] = time.split(":").map(Number);
-      return hours * 60 + minutes;
-    }
-
     function validateWorkingHours(workingHours) {
       const slots = workingHours
         .map((s) => ({
@@ -195,7 +210,7 @@ document.addEventListener("click", async (event) => {
     }
 
     if (startMinutes >= endMinutes) {
-      console.log("❌ L'heure de début doit être avant l'heure de fin");
+      showTimeError("L'heure de fin doit être supérieure à l'heure de début");
       panel.classList.remove("open");
       return;
     }
@@ -227,8 +242,7 @@ document.addEventListener("click", async (event) => {
     if (!check.ok) {
       // rollback si invalide (ex: slot2 commence avant la fin du slot1)
       display.textContent = previousValue;
-      console.log("❌", check.reason);
-
+      showTimeError(check.reason);
       panel.classList.remove("open");
       return;
     }
@@ -421,12 +435,28 @@ if (holidaysBody) {
     }
 
     if (newHour) {
-      newHour.closest(".panel-availability").classList.remove("open");
-
-      const wrapper = newHour.closest(".slot-hour");
+      const wrapper   = newHour.closest(".slot-hour");
       const displayEl = wrapper.querySelector(".hour-container");
-      const typeHour = displayEl.dataset.hours;
+      const typeHour  = displayEl.dataset.hours;
       const setNewHour = newHour.textContent.trim();
+
+      // ── Validate start < end before saving ───────────────────────────────
+      const timeSlot = wrapper.closest(".time-slot");
+      if (timeSlot) {
+        const startText = typeHour === "start"
+          ? setNewHour
+          : (timeSlot.querySelector(".start-hour .hour-container")?.textContent.trim() || "00:00");
+        const endText = typeHour === "end"
+          ? setNewHour
+          : (timeSlot.querySelector(".end-hour .hour-container")?.textContent.trim() || "23:59");
+        if (timeToMinutes(startText) >= timeToMinutes(endText)) {
+          newHour.closest(".panel-availability").classList.remove("open");
+          showTimeError("L'heure de fin doit être supérieure à l'heure de début");
+          return;
+        }
+      }
+
+      newHour.closest(".panel-availability").classList.remove("open");
 
       // Mettre à jour l'affichage
       displayEl.textContent = setNewHour;
@@ -483,7 +513,17 @@ getDaysOff();
 // ── "Réactiver" slot-time button ─────────────────────────────────────────────
 const reenableBtn = document.querySelector(".slot-reenable-btn");
 if (reenableBtn) {
-  reenableBtn.addEventListener("click", () => {
+  reenableBtn.addEventListener("click", async () => {
+    // Désactiver tous les services pour libérer le contrôle du slot time
+    try {
+      await fetch("/api/services/bulk-toggle", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: false }),
+      });
+    } catch (e) {
+      console.warn("Impossible de désactiver les services:", e);
+    }
     const section = document.querySelector(".slot-time-section");
     if (section) section.classList.remove("slot-managed");
     reenableBtn.closest(".slot-managed-info").style.display = "none";

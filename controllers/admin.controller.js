@@ -22,22 +22,18 @@ const htmlTemplate = pug.renderFile(path.join(__dirname, "../views/templates/ema
 exports.book = async (req, res) => {
   const { bookId } = req.params;
 
-  const client = await Booking.findById(bookId).populate("employee", "firstName lastName profilePicture");
-  console.log(client);
+  const Employee = require("../db/models/company/employee.model");
 
-  const company = await Company.findOne(
-    {
-      _id: res.locals.currentCompany._id,
-      "employees.user": req.user._id,
-    },
-    {
-      "employees.$": 1,
-    },
-  ).lean();
-  console.log(company);
+  const [client, company, activeEmployees] = await Promise.all([
+    Booking.findById(bookId).populate("employee", "firstName lastName profilePicture"),
+    Company.findOne(
+      { _id: res.locals.currentCompany._id, "employees.user": req.user._id },
+      { "employees.$": 1 },
+    ).lean(),
+    Employee.find({ company: res.locals.currentCompany._id, active: true }).lean(),
+  ]);
 
   const grade = company?.employees[0]?.grade;
-  console.log(grade);
 
   res.render("admin/book", {
     pageName: "Book",
@@ -45,8 +41,8 @@ exports.book = async (req, res) => {
     client,
     grade,
     isPremium: res.locals.user.isPremium,
+    employees: activeEmployees,
   });
-  // await sendEmail("quentin.rennies@gmail.com", "MAJ Horraire", htmlTemplate);
 };
 
 function getWeekDays(startDate = new Date(), locale = "fr-FR") {
@@ -65,6 +61,12 @@ function getWeekDays(startDate = new Date(), locale = "fr-FR") {
 
     const isToday = d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
 
+    // Build isoDate from local date parts so it is never shifted by UTC offset
+    const yyyy = d.getFullYear();
+    const mm   = String(d.getMonth() + 1).padStart(2, "0");
+    const dd   = String(d.getDate()).padStart(2, "0");
+    const isoDate = `${yyyy}-${mm}-${dd}`;
+
     week.push({
       label: d.toLocaleDateString(locale, { weekday: "short" }),
       initial: d.toLocaleDateString(locale, { weekday: "narrow" }),
@@ -74,8 +76,9 @@ function getWeekDays(startDate = new Date(), locale = "fr-FR") {
         month: "long",
       }),
       dayNumber: d.getDate(),
+      weekdayIndex: d.getDay(),   // 0=Sun … 6=Sat — stored while d is correct local Date
       iso: d.toISOString(),
-      isoDate: d.toISOString().split("T")[0],
+      isoDate,                    // built from local parts, never UTC-shifted
       isToday,
     });
   }
@@ -146,7 +149,9 @@ exports.appointment = async (req, res) => {
       employeeName: empName,
       employeePhoto: empPhoto,
 
-      isoDate: startDate.toISOString().split("T")[0],
+      // Build from local date parts so it always matches the local calendar day,
+      // even when the server timezone is not UTC.
+      isoDate: `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}-${String(startDate.getDate()).padStart(2, "0")}`,
       date: startDate.toLocaleDateString("fr-BE", {
         day: "2-digit",
         month: "2-digit",
@@ -209,13 +214,69 @@ exports.appointment = async (req, res) => {
   const candidatesMax = [scheduleMax, specialMax, apptMax].filter((v) => v !== null);
   const maxHour = candidatesMax.length > 0 ? Math.max(...candidatesMax) : 18;
 
+  // ── Fill status per weekday (green / orange / red) ────────────────────────
+  // Compare total MINUTES booked vs total available minutes so that services
+  // with a different duration than the company slotTime don't skew the ratio.
+  // Capacity is multiplied by the number of active employees when showing all.
+  const empCapacityFactor = (employeeFilter === "all" && employees.length > 0) ? employees.length : 1;
+
+  const weekDaysWithFill = weekDays.map((d) => {
+    // weekdayIndex is stored directly from d.getDay() in getWeekDays — always the
+    // correct local weekday, never shifted by UTC serialisation.
+    const jsWeekday = d.weekdayIndex; // 0=Sun … 6=Sat
+
+    // Special day override (congé with custom hours)?
+    // Compare using local date parts so UTC midnight never shifts the date.
+    const specialDay = (daysOffDoc?.dates || []).find((sd) => {
+      const s = new Date(sd.date);
+      const sdIso = `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, "0")}-${String(s.getDate()).padStart(2, "0")}`;
+      return sdIso === d.isoDate;
+    });
+
+    let workingHours = [];
+    if (specialDay) {
+      workingHours = specialDay.workingHours || [];
+    } else {
+      const dayConfig = (rowTime.schedule || []).find((s) => s.weekdayIndex === jsWeekday);
+      if (dayConfig && !dayConfig.dayOff) workingHours = dayConfig.workingHours || [];
+    }
+
+    // Total available minutes for this day (× employee count when viewing "all")
+    let totalAvailableMinutes = 0;
+    workingHours.forEach((period) => {
+      if (!period?.start || !period?.end) return; // guard against malformed data
+      const [sh, sm] = period.start.split(":").map(Number);
+      const [eh, em] = period.end.split(":").map(Number);
+      if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return;
+      totalAvailableMinutes += (eh * 60 + em) - (sh * 60 + sm);
+    });
+    totalAvailableMinutes *= empCapacityFactor;
+
+    // Total minutes booked on this day — use each booking's real duration so that
+    // a 60-min service doesn't count as only one 30-min slot (or vice-versa).
+    const minutesBooked = formatted
+      .filter((a) => a.isoDate === d.isoDate)
+      .reduce((sum, a) => sum + (a.slotTime || slotTime), 0);
+
+    let fillStatus = null;
+    if (totalAvailableMinutes > 0) {
+      const ratio = minutesBooked / totalAvailableMinutes;
+      // thresholds: green < 75 % ≤ orange < 100 % ≤ red
+      if      (ratio >= 1)    fillStatus = "red";
+      else if (ratio >= 0.75) fillStatus = "orange";
+      else                    fillStatus = "green";
+    }
+
+    return { ...d, fillStatus };
+  });
+
   // Always use 30-min steps so appointments at :30 are never missed
   res.render("admin/appointment", {
     pageName: "Appointment",
     title: res.locals.t.titles.calendar,
     slotTime,
     hours: generateTimeSlots(minHour, maxHour, 30),
-    weekDays,
+    weekDays: weekDaysWithFill,
     appointments: formatted,
     weekLabel,
     dayLabel,
@@ -424,7 +485,49 @@ exports.cancelBooking = async (req, res) => {
     }
   }
 
+  // Send cancellation email to the client
+  if (booking?.email) {
+    try {
+      const cancelHtml = pug.renderFile(path.join(__dirname, "../views/templates/emails/booking-cancelled.pug"), {
+        name:      booking.name     || "",
+        surname:   booking.surname  || "",
+        date:      booking.date,
+        startHour: booking.startTime || "",
+        endHour:   booking.endTime   || "",
+      });
+      await sendEmail(booking.email, "Votre rendez-vous a été annulé", cancelHtml);
+    } catch (mailErr) {
+      console.error("Cancel email error:", mailErr.message);
+    }
+  }
+
   res.json({ success: true });
+};
+
+exports.updateBookingEmployee = async (req, res) => {
+  try {
+    const { bookId } = req.params;
+    const { employeeId } = req.body;
+
+    const Employee = require("../db/models/company/employee.model");
+    let updateFields = {};
+
+    if (employeeId) {
+      const emp = await Employee.findById(employeeId).lean();
+      if (!emp) return res.json({ success: false, error: "Employé introuvable." });
+      updateFields.employee     = emp._id;
+      updateFields.employeeName = `${emp.firstName} ${emp.lastName}`.trim();
+    } else {
+      updateFields.employee     = null;
+      updateFields.employeeName = "";
+    }
+
+    await Booking.findByIdAndUpdate(bookId, updateFields);
+    return res.json({ success: true, employeeId: employeeId || null, employeeName: updateFields.employeeName });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false, error: err.message });
+  }
 };
 
 exports.getWeekData = async (req, res) => {

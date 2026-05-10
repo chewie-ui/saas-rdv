@@ -71,6 +71,19 @@ exports.deleteEmployee = async (req, res) => {
   }
 };
 
+exports.bulkToggleEmployees = async (req, res) => {
+  try {
+    const { active } = req.body;
+    await Employee.updateMany(
+      { company: res.locals.currentCompany._id },
+      { active: !!active }
+    );
+    res.json({ success: true, active: !!active });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
 exports.toggleEmployee = async (req, res) => {
   try {
     const emp = await Employee.findOne({

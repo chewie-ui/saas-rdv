@@ -1,10 +1,37 @@
 
+- var _title       = title || 'SayMiro Calendar — Réservation en ligne'
+- var _desc        = metaDescription || 'SayMiro Calendar est la plateforme de prise de rendez-vous en ligne pour les professionnels : coaches, coiffeurs, thérapeutes, et plus encore. Gérez vos réservations simplement.'
+- var _ogImage     = ogImage || 'https://www.saymiro.com/images/og-cover.jpg'
+- var _canonical   = canonical || ('https://www.saymiro.com' + (typeof reqPath !== 'undefined' ? reqPath : ''))
+- var _ogType      = ogType || 'website'
+
 doctype html
-html(lang="fr")
+html(lang=lang || "fr")
     head
         meta(name="viewport" content="width=device-width, initial-scale=1.0")
         meta(charset="UTF-8")
-        title= title || 'SayMiro'
+
+        //- Primary SEO
+        title= _title
+        meta(name="description" content=_desc)
+        meta(name="robots" content="index, follow")
+        link(rel="canonical" href=_canonical)
+
+        //- Open Graph (Facebook, LinkedIn, WhatsApp…)
+        meta(property="og:type" content=_ogType)
+        meta(property="og:title" content=_title)
+        meta(property="og:description" content=_desc)
+        meta(property="og:image" content=_ogImage)
+        meta(property="og:url" content=_canonical)
+        meta(property="og:site_name" content="SayMiro Calendar")
+        meta(property="og:locale" content=(lang === 'en' ? 'en_US' : lang === 'nl' ? 'nl_NL' : 'fr_FR'))
+
+        //- Twitter Card
+        meta(name="twitter:card" content="summary_large_image")
+        meta(name="twitter:title" content=_title)
+        meta(name="twitter:description" content=_desc)
+        meta(name="twitter:image" content=_ogImage)
+
         link(rel="shortcut icon", href="/images/icon.svg", type="image/x-icon")
         link(rel="stylesheet", href="/css/import.css")
         link(rel="stylesheet", href="/css/layouts/index.css")
@@ -12,6 +39,19 @@ html(lang="fr")
         //- Anti-flash : applique le thème AVANT le rendu
         script.
             (function(){try{var t=localStorage.getItem('saymiro-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
+        //- JSON-LD structured data (default: Organization)
+        block jsonld
+            script(type="application/ld+json").
+                {
+                  "@context": "https://schema.org",
+                  "@type": "Organization",
+                  "name": "SayMiro Calendar",
+                  "url": "https://www.saymiro.com",
+                  "logo": "https://www.saymiro.com/images/icon.svg",
+                  "description": "Plateforme de prise de rendez-vous en ligne pour les professionnels.",
+                  "sameAs": []
+                }
+
         block links
     body
     

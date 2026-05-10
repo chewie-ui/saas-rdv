@@ -16,12 +16,12 @@ block content
                     svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
                         path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
                 .sub-alert__body
-                    p.sub-alert__title Votre abonnement a expiré
-                    p.sub-alert__sub Renouvelez maintenant pour continuer à profiter de toutes les fonctionnalités Pro.
+                    p.sub-alert__title= t.subscription.alert_expired_title
+                    p.sub-alert__sub= t.subscription.alert_expired_sub
                 button.sub-alert__btn#getProPlanAlert
                     svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                         path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280L160-640v400h640v-400L480-440Zm0-80 320-200H160l320 200ZM160-640v-80 480-400Z")
-                    | Repayer maintenant
+                    | #{t.subscription.alert_expired_btn}
 
         else if user && user.isPremium && isExpiring
             .sub-alert.sub-alert--warning
@@ -30,243 +30,138 @@ block content
                         path(d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z")
                 .sub-alert__body
                     if hoursLeft
-                        p.sub-alert__title Votre abonnement expire dans #{hoursLeft} heure#{hoursLeft > 1 ? 's' : ''}
+                        p.sub-alert__title #{t.subscription.days_left} : #{hoursLeft} #{hoursLeft > 1 ? t.subscription.hours_suffix_many : t.subscription.hours_suffix_one}
                     else
-                        p.sub-alert__title Votre abonnement expire dans #{daysLeft} jour#{daysLeft > 1 ? 's' : ''}
-                    p.sub-alert__sub Pensez à renouveler votre abonnement pour éviter toute interruption.
+                        p.sub-alert__title #{t.subscription.days_left} : #{daysLeft} #{daysLeft > 1 ? t.subscription.days_suffix_many : t.subscription.days_suffix_one}
+                    p.sub-alert__sub= t.subscription.alert_expiring_sub
                 button.sub-alert__btn.sub-alert__btn--warning#getProPlanAlert
-                    | Renouveler
+                    | #{t.subscription.alert_expiring_btn}
+
+        //- ── Titre section ──
+        .sub-section-title
+            h1= t.subscription.plan_2 + ' & ' + t.subscription.plan_3
+            p= t.subscription.choose_plan
 
         .subscription__top
-            .subscription__plan
+
+            //- ─── Plan 1 : Starter (Gratuit) ───
+            .subscription__plan.plan--starter
                 .plan__header
                     .plan__title
                         h2= t.subscription.plan_1
-                    .plan__price.flex
-                        p= t.subscription.price_1
+                    .plan__price
+                        span.plan__price-amount= t.subscription.price_1
+                        span.plan__price-sub= t.subscription.price_1_sub
                 .plan__body
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_1
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_3
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_4
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_5
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_6
-                    .plan__advantage.advantage__statut-disabled
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_7
-                    .plan__advantage.advantage__statut-disabled
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_8
-                    .plan__advantage.advantage__statut-disabled
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_9
-                    .plan__advantage.advantage__statut-disabled
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_10
-                    .plan__advantage.advantage__statut-disabled
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_11
-                    .plan__advantage.advantage__statut-disabled
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_12
-                    .plan__advantage.advantage__statut-disabled
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_13
-                    if user && !user.isPremium
-                        button(disabled)
-                            span= t.subscription.btn_1_1
-                    else 
-                        button#getFreePlan
-                            span= t.subscription.btn_1_2  
-            .subscription__plan
-                .plan__recommanded= t.sub_extra.popular
+                    ul.plan__features
+                        each feature in t.subscription.plan_1_features
+                            li.plan__feature
+                                svg.feature-check(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                span= feature
+                        each feature in t.subscription.plan_1_missing
+                            li.plan__feature.plan__feature--missing
+                                svg.feature-cross(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                    path(d="M480-424 284-228q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536-480l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11z")
+                                span= feature
+                    .plan__cta
+                        if user && !user.isPremium
+                            button.btn.secondary.btn--full(disabled)
+                                span= t.subscription.btn_current
+                        else
+                            button.btn.secondary.btn--full#getFreePlan
+                                span= t.subscription.btn_downgrade
+
+            //- ─── Plan 2 : Pro ───
+            .subscription__plan.plan--pro
+                .plan__badge= t.sub_extra.popular
                 .plan__header
                     .plan__title
                         h2= t.subscription.plan_2
-                    .plan__price.flex
-                        p= t.subscription.price_2
+                    .plan__price
+                        span.plan__price-amount= t.subscription.price_2
+                        span.plan__price-sub= t.subscription.price_2_sub
                 .plan__body
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_1
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_2
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_3
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_4
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_5
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_6
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_7
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_8
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_9
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_10
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_11
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_12
-                    .plan__advantage.advantage__statut-active
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .plan__advantage-text
-                            p= t.subscription.opt_2_13
-                    if user && user.isPremium
-                        button(disabled)
-                            span= t.subscription.btn_1_1
-                        if !autoRenew
-                            .small-text.danger#retakeSubscription Retake plan
-                        if autoRenew
-                            .small-text.danger#cancelSubscriptionPro= t.subscription.btn_2
-                        .small-text.sub-time-left(class=isExpired ? 'expired' : isExpiring ? 'expiring' : '')
-                            if isExpired
-                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                    path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Z")
-                                | Abonnement expiré
-                            else if hoursLeft
-                                | #{t.subscription.days_left} :
-                                strong #{hoursLeft} heure#{hoursLeft > 1 ? 's' : ''}
-                            else
-                                | #{t.subscription.days_left} :
-                                strong #{daysLeft} #{t.subscription.days}
-                    
-                    else 
-                        button#getProPlan
-                            span= t.subscription.btn_2_1
-            .subscription__plan
+                    ul.plan__features
+                        each feature in t.subscription.plan_2_features
+                            li.plan__feature
+                                svg.feature-check(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                span= feature
+                        each feature in t.subscription.plan_2_missing
+                            li.plan__feature.plan__feature--missing
+                                svg.feature-cross(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                    path(d="M480-424 284-228q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536-480l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11z")
+                                span= feature
+                    .plan__cta
+                        if user && user.isPremium
+                            button.btn(disabled)
+                                span= t.subscription.btn_current
+                            .plan__sub-actions
+                                if !autoRenew
+                                    span.sub-action-link#retakeSubscription= t.subscription.btn_retake
+                                if autoRenew
+                                    span.sub-action-link.danger#cancelSubscriptionPro= t.subscription.btn_cancel
+                            .sub-time-left(class=isExpired ? 'expired' : isExpiring ? 'expiring' : '')
+                                if isExpired
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                        path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Z")
+                                    | #{t.subscription.expired_label}
+                                else if hoursLeft
+                                    | #{t.subscription.days_left} :&nbsp;
+                                    strong #{hoursLeft} #{hoursLeft > 1 ? t.subscription.hours_suffix_many : t.subscription.hours_suffix_one}
+                                else
+                                    | #{t.subscription.days_left} :&nbsp;
+                                    strong #{daysLeft} #{t.subscription.days}
+                        else
+                            button.btn#getProPlan
+                                span= t.subscription.btn_get_pro
+
+            //- ─── Plan 3 : Business ───
+            .subscription__plan.plan--business
+                .plan__badge.plan__badge--business= t.sub_extra.business_badge
                 .plan__header
                     .plan__title
-                        h2= t.subscription.soon
-                    .plan__price.flex
-                        p= t.subscription.soon
+                        h2= t.subscription.plan_3
+                    .plan__price
+                        span.plan__price-amount= t.subscription.price_3
+                        span.plan__price-sub= t.subscription.price_3_sub
                 .plan__body
-                    .plan__advantage.advantage__statut-disabled
-                        .plan__advantage-icon.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                        .plan__advantage-text
-                            p= t.subscription.soon
-                        
-                    button(disabled)
-                        span= t.subscription.soon
+                    ul.plan__features
+                        each feature, fi in t.subscription.plan_3_features
+                            li.plan__feature
+                                if fi === 0
+                                    svg.feature-check.feature-check--inherit(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                        path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                    strong= feature
+                                else
+                                    svg.feature-check(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                        path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                    span= feature
+                    .plan__cta
+                        button.btn.btn--business#getBusinessPlan
+                            span= t.subscription.btn_get_business
+
+        //- ── Code promo ──
         .subscription__bottom
             .promo-code-section#promoCodeSection
                 .promo-code-section__label
                     svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                         path(d="M160-80q-33 0-56.5-23.5T80-160v-160h80v160h160v80H160Zm480 0v-80h160v-160h80v160q0 33-23.5 56.5T800-80H640ZM80-640v-160q0-33 23.5-56.5T160-880h160v80H160v160H80Zm720 0v-160H640v-80h160q33 0 56.5 23.5T880-800v160h-80ZM480-240q-100 0-170-70T240-480q0-100 70-170t170-70q100 0 170 70t70 170q0 100-70 170T480-240Zm0-80q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47Zm0-160Z")
-                    span Code promo
+                    span= t.subscription.promo_label
                 .promo-code-section__input-row
-                    input.input#promoCodeInput(type="text" placeholder="Ex: BETA50" style="text-transform:uppercase;max-width:220px")
+                    input.input#promoCodeInput(type="text" placeholder=t.subscription.promo_placeholder style="text-transform:uppercase;max-width:220px")
                     button.btn.secondary#applyPromoBtn
-                        span Appliquer
+                        span= t.subscription.promo_apply
                 .promo-code-status#promoCodeStatus
             .subscription__payments
             .subscription__help
+
     +dialog()
+
 block scripts
+    - var subTJson = JSON.stringify({ checking: t.subscription.promo_checking, invalid: t.subscription.promo_invalid, cancel_title: t.subscription.dialog_cancel_title, cancel_desc: t.subscription.dialog_cancel_desc, resume_title: t.subscription.dialog_resume_title, resume_desc: t.subscription.dialog_resume_desc, confirm: t.subscription.dialog_confirm, close: t.subscription.dialog_close, success_cancel: t.subscription.dialog_success_cancel, success_resume: t.subscription.dialog_success_resume })
+    script.
+        window.__subT = !{subTJson};
     script(src="/js/templates/dialog.js")
     script(src="/js/layouts/subscription.js")

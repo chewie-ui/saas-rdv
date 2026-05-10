@@ -10,6 +10,7 @@ router.get("/services", ...guard, ctrl.servicesPage);
 
 // API admin (CRUD)
 router.post("/api/services", ...guard, ctrl.createService);
+router.patch("/api/services/bulk-toggle", ...guard, ctrl.bulkToggleServices);
 router.patch("/api/services/:id", ...guard, ctrl.updateService);
 router.patch("/api/services/:id/toggle", ...guard, ctrl.toggleService);
 router.delete("/api/services/:id", ...guard, ctrl.deleteService);

@@ -2,6 +2,7 @@ require("dotenv").config();
 const env = require(`./environment/${process.env.NODE_ENV || "development"}`);
 
 const express = require("express");
+const compression = require("compression");
 const path = require("path");
 const passport = require("passport");
 const cookieParser = require("cookie-parser");
@@ -13,6 +14,9 @@ const routes = require("./routes");
 const app = express();
 
 app.set("trust proxy", 1);
+
+// Compress all HTTP responses (gzip/br)
+app.use(compression());
 
 app.set("view engine", "pug");
 
@@ -93,6 +97,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use((req, res, next) => {
   res.locals.user = req.user;
+  // Make request path available to all views (used for canonical URL)
+  res.locals.reqPath = req.path === "/" ? "" : req.path;
   next();
 });
 

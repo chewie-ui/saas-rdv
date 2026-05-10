@@ -1,10 +1,12 @@
 import {
   initDeleteAppointment,
   initCalendarHeader,
+  initAppointmentPopup,
 } from "../components/admin/appointment.admin.js";
 
 initDeleteAppointment();
 initCalendarHeader();
+initAppointmentPopup();
 
 function toMinutes(timeStr) {
   const [h, m] = timeStr.trim().split(":").map(Number);

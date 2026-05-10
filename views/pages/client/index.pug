@@ -3,6 +3,32 @@ extends ../../layouts/index
 include ../../templates/modals/dialog.pug
 include ../../templates/confirm-popup.pug
 
+block jsonld
+    - var _businessType = (coach && coach.businessType) ? coach.businessType : 'LocalBusiness'
+    - var _bizName = (coach && (coach.businessName || coach.fullName)) || 'SayMiro Pro'
+    - var _bizDesc = (coach && coach.description) || ''
+    - var _bizImg  = (coach && (coach.businessPicture || coach.profilePicture)) || ''
+    - var _bizCity = (coach && coach.location && coach.location.city) || ''
+    - var _bizAddr = (coach && coach.location && coach.location.address) || ''
+    - var _bizZip  = (coach && coach.location && coach.location.zip) ? String(coach.location.zip) : ''
+    - var _bizUrl  = 'https://www.saymiro.com/' + (company ? String(company._id) : '')
+    script(type="application/ld+json").
+        {
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          "name": "!{_bizName}",
+          "description": "!{_bizDesc}",
+          "image": "!{_bizImg}",
+          "url": "!{_bizUrl}",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "!{_bizAddr}",
+            "addressLocality": "!{_bizCity}",
+            "postalCode": "!{_bizZip}",
+            "addressCountry": "FR"
+          }
+        }
+
 block links
     link(rel="stylesheet", href="/css/layouts/index-calendar.css")
     link(rel="stylesheet", href="/css/templates/confirm-popup.css")
@@ -242,9 +268,10 @@ block content
     +dialog()
 
 block scripts
-    //- Services JSON is pre-serialized server-side to avoid Pug interpolation issues
+    //- Services & employees JSON pre-serialized server-side
     script.
-        window.__services = !{servicesJson || '[]'};
+        window.__services  = !{servicesJson  || '[]'};
+        window.__employees = !{employeesJson || '[]'};
     if clientUser
         script.
             window.__clientUser = true;

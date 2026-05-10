@@ -1,10 +1,13 @@
-const getProPlan = document.getElementById("getProPlan");
-const getProPlanAlert = document.getElementById("getProPlanAlert");
-const cancelSubscriptionPro = document.getElementById("cancelSubscriptionPro");
-const getFreePlan = document.getElementById("getFreePlan");
-const retakeSubscription = document.getElementById("retakeSubscription");
+// Translations injected server-side
+const subT = window.__subT || {};
 
-const templateDialog = document.getElementById("templateDialog");
+const getProPlan         = document.getElementById("getProPlan");
+const getProPlanAlert    = document.getElementById("getProPlanAlert");
+const getBusinessPlan    = document.getElementById("getBusinessPlan");
+const cancelSubscriptionPro = document.getElementById("cancelSubscriptionPro");
+const getFreePlan        = document.getElementById("getFreePlan");
+const retakeSubscription = document.getElementById("retakeSubscription");
+const templateDialog     = document.getElementById("templateDialog");
 
 // ── Promo code ────────────────────────────────────────────────────────────────
 const promoCodeInput  = document.getElementById("promoCodeInput");
@@ -16,142 +19,134 @@ if (applyPromoBtn && promoCodeInput) {
   applyPromoBtn.addEventListener("click", async () => {
     const code = promoCodeInput.value.trim().toUpperCase();
     if (!code) return;
-    promoCodeStatus.textContent = "Vérification...";
-    promoCodeStatus.className = "promo-code-status";
+
+    promoCodeStatus.textContent = subT.checking || "Vérification...";
+    promoCodeStatus.className   = "promo-code-status";
 
     const res  = await fetch("/api/validate-promo", {
-      method: "POST",
+      method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
+      body:    JSON.stringify({ code }),
     });
     const data = await res.json();
 
     if (data.valid) {
       appliedPromoCode = data;
-      const discount = data.discountType === "percent"
+      const discount   = data.discountType === "percent"
         ? `-${data.discountValue}%`
         : `-${data.discountValue}€`;
       promoCodeStatus.textContent = `✓ Code appliqué : ${discount} de réduction`;
-      promoCodeStatus.className = "promo-code-status valid";
+      promoCodeStatus.className   = "promo-code-status valid";
     } else {
       appliedPromoCode = null;
-      promoCodeStatus.textContent = data.error || "Code invalide.";
-      promoCodeStatus.className = "promo-code-status invalid";
+      promoCodeStatus.textContent = data.error || subT.invalid || "Code invalide.";
+      promoCodeStatus.className   = "promo-code-status invalid";
     }
   });
 }
 
-async function startProCheckout() {
-  const body = {};
-  if (appliedPromoCode) body.promoCode = appliedPromoCode.code;
-  const response = await fetch(`/account/create-checkout`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+// ── Generic confirm dialog ────────────────────────────────────────────────────
+function openDialog(title, desc, confirmLabel, closeLabel) {
+  return new Promise((resolve) => {
+    const tmp      = templateDialog.content.cloneNode(true);
+    const parentTmp = tmp.querySelector("#dialogWrp");
+    const close    = (value) => { parentTmp.remove(); resolve(value); };
+
+    tmp.querySelector(".dialog__h2").textContent    = title;
+    tmp.querySelector(".dialog__p").textContent     = desc;
+    tmp.querySelector(".dialog__btn2").innerHTML    = `<span>${confirmLabel}</span>`;
+    tmp.querySelector(".dialog__btn1").innerHTML    = `<span>${closeLabel}</span>`;
+    tmp.querySelector(".dialog__btn1").onclick      = () => close(false);
+    tmp.querySelector(".dialog__icon").onclick      = () => close(false);
+    tmp.querySelector(".dialog__btn2").onclick      = () => close(true);
+
+    document.body.appendChild(tmp);
   });
-  const data = await response.json();
-  window.location = data.url;
 }
 
-if (getProPlan) getProPlan.onclick = startProCheckout;
-if (getProPlanAlert) getProPlanAlert.onclick = startProCheckout;
+// ── Checkout helpers ──────────────────────────────────────────────────────────
+async function startCheckout(plan) {
+  const body = { plan: plan || "pro" };
+  if (appliedPromoCode) body.promoCode = appliedPromoCode.code;
 
-// On crée la fonction une seule fois
+  const response = await fetch("/account/create-checkout", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify(body),
+  });
+  const data = await response.json();
+  if (data.url) window.location = data.url;
+}
+
+if (getProPlan)      getProPlan.onclick      = () => startCheckout("pro");
+if (getProPlanAlert) getProPlanAlert.onclick = () => startCheckout("pro");
+if (getBusinessPlan) getBusinessPlan.onclick = () => startCheckout("business");
+
+// ── Cancel subscription ───────────────────────────────────────────────────────
 const handleSubscriptionCancel = async function (e) {
   e.preventDefault();
 
-  const confirmCancel = () => {
-    return new Promise((resolve) => {
-      const tmp = templateDialog.content.cloneNode(true);
-      const parentTmp = tmp.querySelector("#dialogWrp");
-      const close = (value) => {
-        parentTmp.remove();
-        resolve(value); // On "répond" à la promesse avec true ou false
-      };
-
-      tmp.querySelector(".dialog__h2").textContent = "Stop pro plan";
-      tmp.querySelector(".dialog__p").textContent = "Are you sure you want to stop your pro plan?";
-      tmp.querySelector(".dialog__btn2").innerHTML = `<span>Confirm</span>`;
-      tmp.querySelector(".dialog__btn1").innerHTML = `<span>Close</span>`;
-      tmp.querySelector(".dialog__btn1").onclick = () => close(false);
-      tmp.querySelector(".dialog__icon").onclick = () => close(false);
-
-      tmp.querySelector(".dialog__btn2").onclick = () => close(true);
-
-      document.querySelector("body").appendChild(tmp);
-    });
-  };
-
-  const isConfirmed = await confirmCancel();
+  const isConfirmed = await openDialog(
+    subT.cancel_title || "Annuler l'abonnement",
+    subT.cancel_desc  || "Êtes-vous sûr de vouloir annuler votre abonnement ?",
+    subT.confirm      || "Confirmer",
+    subT.close        || "Fermer"
+  );
 
   if (!isConfirmed) return;
 
   try {
     const response = await fetch("/account/cancel-subscription", {
-      method: "POST",
+      method:  "POST",
       headers: { "Content-Type": "application/json" },
     });
-
     const data = await response.json();
 
     if (data.success) {
-      alert("Your subscription has been set to cancel at the end of the billing period.");
+      alert(subT.success_cancel || data.message || "Abonnement annulé.");
       window.location.reload();
     } else {
-      alert("Error: " + data.error);
+      alert(data.error || "Une erreur est survenue.");
     }
   } catch (err) {
     console.error("Fetch error:", err);
-    alert("An error occurred. Please try again.");
+    alert("Une erreur est survenue. Veuillez réessayer.");
   }
 };
 
-// On attache la fonction aux boutons s'ils existent dans la page
 if (cancelSubscriptionPro) cancelSubscriptionPro.onclick = handleSubscriptionCancel;
-if (getFreePlan) getFreePlan.onclick = handleSubscriptionCancel;
+if (getFreePlan)           getFreePlan.onclick           = handleSubscriptionCancel;
 
+// ── Resume subscription ───────────────────────────────────────────────────────
 if (retakeSubscription) {
   retakeSubscription.onclick = async function (e) {
     e.preventDefault();
 
-    const confirmRestore = () => {
-      return new Promise((resolve) => {
-        const tmp = templateDialog.content.cloneNode(true);
-        const parent = tmp.querySelector("#dialogWrp");
+    const isConfirmed = await openDialog(
+      subT.resume_title || "Reprendre le plan",
+      subT.resume_desc  || "Êtes-vous sûr de vouloir reprendre votre abonnement ?",
+      subT.confirm      || "Confirmer",
+      subT.close        || "Fermer"
+    );
 
-        const close = (value) => {
-          parent.remove();
-          resolve(true);
-        };
+    if (!isConfirmed) return;
 
-        tmp.querySelector(".dialog__h2").textContent = "Restore pro plan";
-        tmp.querySelector(".dialog__p").textContent = "Are you sure you want to restore your pro plan?";
-        tmp.querySelector(".dialog__btn2").innerHTML = `<span>Confirm</span>`;
-        tmp.querySelector(".dialog__btn1").innerHTML = `<span>Close</span>`;
-        tmp.querySelector(".dialog__btn1").onclick = () => close(false);
-        tmp.querySelector(".dialog__icon").onclick = () => close(false);
-
-        tmp.querySelector(".dialog__btn2").onclick = () => close(true);
-
-        document.querySelector("body").appendChild(tmp);
-      });
-    };
-
-    const ifConfirmed = await confirmRestore();
-
-    if (ifConfirmed) {
-      const response = await fetch(`/subscription/resume`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+    try {
+      const response = await fetch("/subscription/resume", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
       });
       const data = await response.json();
 
       if (data.success) {
-        alert(data.message);
+        alert(subT.success_resume || data.message || "Abonnement repris.");
         location.reload();
+      } else {
+        alert(data.error || "Une erreur est survenue.");
       }
+    } catch (err) {
+      console.error("Fetch error:", err);
+      alert("Une erreur est survenue. Veuillez réessayer.");
     }
   };
 }

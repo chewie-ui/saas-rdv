@@ -43,17 +43,25 @@ PAGE DU RENDEZ VOUS NOTER EMPLOYE TYPE SERVICE ETC
 AFFICHER INFO CLIENT SI Y A
 ET SI 2 EMPLOYEES SONT IDSPOS POUR UN MASSAGE THAI / EXEMPLE UN USER PRENDS RDV A 14H AVEC maxime EN MASSAGE CHEVEUX, SI theo (2EME EMPLOYE) NA RIEN, UN USER PEUT PRENDRE LE MEME RDV A 14H OU NIMPORTE QUELLE AUTRE SERVICE
 si connecte client, ajouter prendre un renvdez vous
-btn supprimer la rechercher 
-
-
-
-
-
-
-
+btn supprimer la rechercher
 
 07-05-26 17h44
 
 Page calendrier rendez vous design illisible
 Si aucun employee choisit, choisir un des 2, si pas demployee retirer tout les employes etc
 mettre les jours du calendrier en orange et rouge
+faire test complet
+
+09-05-26
+
+plusieurs essais,
+des périodes de doute,
+apprendre le marketing,
+apprendre à vendre,
+construire une audience,
+améliorer un produit grâce aux utilisateurs,
+et tenir assez longtemps.
+Changer les prix
+Refaire les designs
+Refaire plus marketing
+Trouver quelqeuun pour essayer

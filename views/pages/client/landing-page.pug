@@ -2,6 +2,60 @@ extends ../../layouts/index
 
 include ../../templates/modals/dialog.pug
 
+block jsonld
+    script(type="application/ld+json").
+        {
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "SayMiro Calendar",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web",
+          "url": "https://www.saymiro.com",
+          "description": "SayMiro Calendar est la plateforme de prise de rendez-vous en ligne pour les professionnels. Réservez avec des coaches, coiffeurs, thérapeutes et bien plus.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR",
+            "description": "Inscription et réservation gratuites"
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.8",
+            "reviewCount": "120"
+          }
+        }
+    script(type="application/ld+json").
+        {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Comment prendre rendez-vous sur SayMiro Calendar ?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Recherchez un professionnel par nom ou localisation, consultez ses disponibilités et réservez en quelques clics. Aucun compte requis pour réserver."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "SayMiro Calendar est-il gratuit ?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Oui, la prise de rendez-vous est entièrement gratuite pour les clients. Les professionnels bénéficient d'un plan gratuit avec des fonctionnalités de base."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Quels professionnels utilisent SayMiro Calendar ?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Des coaches sportifs, coiffeurs, thérapeutes, ostéopathes, kinésithérapeutes, tatoueurs et bien d'autres professionnels indépendants."
+              }
+            }
+          ]
+        }
+
 block links
     link(rel="stylesheet", href="/css/layouts/client/landing-page.css")
     link(rel="stylesheet", href="/css/templates/dialog.css")

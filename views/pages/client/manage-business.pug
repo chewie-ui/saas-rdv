@@ -1,5 +1,20 @@
 extends ../../layouts/index
 
+block jsonld
+    script(type="application/ld+json").
+        {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": "Gérer votre activité avec SayMiro Calendar",
+          "url": "https://www.saymiro.com/manage-business",
+          "description": "Créez votre page professionnelle sur SayMiro Calendar et recevez des réservations en ligne 24h/24. Gérez vos rendez-vous, employés et services facilement.",
+          "isPartOf": {
+            "@type": "WebSite",
+            "name": "SayMiro Calendar",
+            "url": "https://www.saymiro.com"
+          }
+        }
+
 block links
     link(rel="stylesheet", href="css/layouts/landing-page.css")
 

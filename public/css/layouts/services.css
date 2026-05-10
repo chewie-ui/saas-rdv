@@ -8,21 +8,44 @@
 .services-page__header {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.services-page__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.services-page__header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .services-page__header h2 {
   font-size: 22px;
   font-weight: 700;
-  flex: 1;
 }
 
 .services-page__subtitle {
-  width: 100%;
   font-size: 13px;
   color: var(--grey-primary);
-  margin-top: -12px;
+}
+
+.btn--outline {
+  background: transparent;
+  border: 1.5px solid var(--border-light);
+  color: var(--text-primary);
+}
+
+.btn--outline:hover {
+  border-color: var(--main-color-border);
+  color: var(--main-color);
+  background: var(--main-color-pale);
 }
 
 /* ── Service cards ─────────────────────────────────────────────── */
@@ -113,8 +136,15 @@
   border: 1.5px solid var(--border-light, #e5e5e5);
   background: transparent;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
   padding: 0;
+}
+
+.btn--icon svg {
+  margin: 0;
+  fill: var(--black);
 }
 
 .btn--icon:hover {
@@ -173,7 +203,9 @@
   height: 16px;
   background: #aaa;
   border-radius: 50%;
-  transition: transform 0.2s, background 0.2s;
+  transition:
+    transform 0.2s,
+    background 0.2s;
 }
 
 .sa-toggle input:checked + .sa-toggle__track {
@@ -298,7 +330,9 @@
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s, transform 0.2s;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -391,7 +425,9 @@
   border: 1.5px solid var(--border-light, #e5e5e5);
   border-radius: 10px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
   user-select: none;
 }
 
@@ -420,7 +456,9 @@
   height: 18px;
   border-radius: 50%;
   border: 1.5px solid var(--border-light, #ccc);
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .emp-select-item.selected .check-dot {

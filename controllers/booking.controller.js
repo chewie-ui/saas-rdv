@@ -1,6 +1,7 @@
 const Booking = require("../db/models/book.model");
 const User = require("../db/models/user.model");
 const Company = require("../db/models/company/company.model");
+const Employee = require("../db/models/company/employee.model");
 const { addEventToCalendar, deleteEventFromCalendar } = require("../utils/googleCalendarSync");
 const DaysOff = require("../db/models/company/daysOff.model");
 const { getAppointments } = require("../queries/booking.queries");
@@ -13,8 +14,11 @@ const { log } = require("console");
 exports.createBooking = async (req, res) => {
   try {
     const { date, startTime, company, name, surname, email, phone, message, formAnswers,
-            serviceId, serviceName, employeeId, employeeName, serviceDuration } =
-      req.body;
+            serviceId, serviceName, serviceDuration } = req.body;
+
+    // employeeId / employeeName may be auto-resolved below — use let
+    let employeeId   = req.body.employeeId   || null;
+    let employeeName = req.body.employeeName || "";
 
     const response = await Company.findById(company);
     const companySlotTime = response.slotTime;
@@ -30,6 +34,39 @@ exports.createBooking = async (req, res) => {
     const endHours   = Math.floor(endTimeInMinutes / 60);
     const endMinutes = endTimeInMinutes % 60;
     const endTime = `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
+
+    // ── Auto-assign an available employee when none was explicitly chosen ──
+    if (!employeeId) {
+      const activeEmployees = await Employee.find({ company, active: true }).lean();
+
+      if (activeEmployees.length > 0) {
+        // Find employees already booked at an overlapping slot on that date
+        const overlapping = await Booking.find({
+          company,
+          date: new Date(date),
+          status: { $ne: "canceled" },
+          employee: { $in: activeEmployees.map((e) => e._id) },
+        }).select("employee startTime slotTime").lean();
+
+        const busyIds = new Set();
+        overlapping.forEach((b) => {
+          const [bh, bm] = b.startTime.split(":").map(Number);
+          const bStart = bh * 60 + bm;
+          const bEnd   = bStart + (b.slotTime || actualDuration);
+          // Overlap: our window [startMin, endMin) intersects [bStart, bEnd)
+          if (startTimeInMinutes < bEnd && endTimeInMinutes > bStart) {
+            busyIds.add(String(b.employee));
+          }
+        });
+
+        const free = activeEmployees.find((e) => !busyIds.has(String(e._id)));
+        if (!free) {
+          return res.json({ success: false, error: "no_employee_available" });
+        }
+        employeeId   = String(free._id);
+        employeeName = `${free.firstName} ${free.lastName}`;
+      }
+    }
 
     const newBooking = await Booking.create({
       date: new Date(date),
@@ -91,40 +128,83 @@ exports.createBooking = async (req, res) => {
 exports.getBooking = async (req, res) => {
   const { date, companyId, employeeId, serviceDuration } = req.query;
 
-  const query = {
+  const specificEmployee = employeeId && employeeId !== "null" && employeeId !== "";
+
+  const baseQuery = {
     company: companyId,
     date: new Date(date),
     status: { $ne: "canceled" },
   };
 
-  // If a specific employee is requested, only show that employee's bookings
-  if (employeeId && employeeId !== "null" && employeeId !== "") {
-    query.employee = employeeId;
-  }
-
-  const bookings = await Booking.find(query).select("startTime slotTime");
-
   // Get company slotTime so we can compute slot granularity.
-  // If a service duration was passed, use it — it matches the step used in getSchedule.
-  const companyDoc = await Company.findById(companyId).select("slotTime").lean();
+  const [companyDoc, activeEmployeeCount] = await Promise.all([
+    Company.findById(companyId).select("slotTime").lean(),
+    // Only count employees when no specific one is filtered
+    specificEmployee ? Promise.resolve(0) : Employee.countDocuments({ company: companyId, active: true }),
+  ]);
+
   const granularity = (serviceDuration && Number(serviceDuration) > 0)
     ? Number(serviceDuration)
     : (companyDoc?.slotTime || 30);
 
-  // Block every slot that falls within any booking's duration window.
-  // Slot T is blocked if: booking.startMin <= T_min < booking.startMin + booking.duration
-  const blockedSet = new Set();
+  // ── Case 1: specific employee selected → block only their slots ──────────
+  if (specificEmployee) {
+    const bookings = await Booking.find({ ...baseQuery, employee: employeeId }).select("startTime slotTime");
+    const blockedSet = new Set();
+    bookings.forEach((b) => {
+      const [h, m] = b.startTime.split(":").map(Number);
+      const startMin = h * 60 + m;
+      const endMin   = startMin + (b.slotTime || granularity);
+      for (let t = startMin; t < endMin; t += granularity) {
+        blockedSet.add(`${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
+      }
+    });
+    return res.json({ bookedTimes: Array.from(blockedSet) });
+  }
+
+  // ── Case 2: no employees on this company → 1 booking blocks the slot ─────
+  if (activeEmployeeCount === 0) {
+    const bookings = await Booking.find(baseQuery).select("startTime slotTime");
+    const blockedSet = new Set();
+    bookings.forEach((b) => {
+      const [h, m] = b.startTime.split(":").map(Number);
+      const startMin = h * 60 + m;
+      const endMin   = startMin + (b.slotTime || granularity);
+      for (let t = startMin; t < endMin; t += granularity) {
+        blockedSet.add(`${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
+      }
+    });
+    return res.json({ bookedTimes: Array.from(blockedSet) });
+  }
+
+  // ── Case 3: company has employees, no filter → block slot only when ALL are busy ──
+  // Fetch all confirmed bookings for the date that belong to an active employee
+  const activeEmployees = await Employee.find({ company: companyId, active: true }).select("_id").lean();
+  const activeIds = activeEmployees.map((e) => String(e._id));
+
+  const bookings = await Booking.find({
+    ...baseQuery,
+    employee: { $in: activeEmployees.map((e) => e._id) },
+  }).select("startTime slotTime employee").lean();
+
+  // For each granularity slot, track which employee IDs are booked
+  const slotEmployeeMap = {}; // "HH:MM" → Set of employee id strings
+
   bookings.forEach((b) => {
     const [h, m] = b.startTime.split(":").map(Number);
     const startMin = h * 60 + m;
-    const duration = b.slotTime || granularity;
-    const endMin   = startMin + duration;
-
+    const endMin   = startMin + (b.slotTime || granularity);
     for (let t = startMin; t < endMin; t += granularity) {
-      const tH = Math.floor(t / 60);
-      const tM = t % 60;
-      blockedSet.add(`${String(tH).padStart(2, "0")}:${String(tM).padStart(2, "0")}`);
+      const key = `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+      if (!slotEmployeeMap[key]) slotEmployeeMap[key] = new Set();
+      slotEmployeeMap[key].add(String(b.employee));
     }
+  });
+
+  // Block slot only when every active employee is booked at that time
+  const blockedSet = new Set();
+  Object.entries(slotEmployeeMap).forEach(([slot, empSet]) => {
+    if (empSet.size >= activeEmployeeCount) blockedSet.add(slot);
   });
 
   res.json({ bookedTimes: Array.from(blockedSet) });

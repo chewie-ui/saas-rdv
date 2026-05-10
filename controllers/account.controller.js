@@ -82,14 +82,19 @@ exports.toggleSocialVisibility = async (req, res) => {
 exports.createCheckout = async (req, res) => {
   try {
     const PromoCode = require("../db/models/promoCode.model");
-    const { promoCode } = req.body || {};
+    const { promoCode, plan } = req.body || {};
+
+    // Choisir le bon price ID selon le plan demandé
+    const priceId = (plan === "business" && env.stripePricePlanBusiness)
+      ? env.stripePricePlanBusiness
+      : env.stripePricePlanPro;
 
     const sessionParams = {
       mode: "subscription",
       payment_method_types: ["card"],
       line_items: [
         {
-          price: env.stripePricePlanPro,
+          price: priceId,
           quantity: 1,
         },
       ],

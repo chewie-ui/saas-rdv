@@ -19,6 +19,69 @@ router.use(require("./superadmin"));
 router.use(require("./services"));
 router.use(require("./employees"));
 
+/* ── Sitemap ──────────────────────────────────────────────────────── */
+router.get("/sitemap.xml", async (req, res) => {
+  const BASE = "https://www.saymiro.com";
+
+  // Fetch all active company slugs to generate business profile URLs
+  let companyUrls = "";
+  try {
+    const companies = await Companies.find({}).populate({ path: "owner", match: { isPremium: true } }).lean();
+    companies
+      .filter((c) => c.owner)
+      .forEach((c) => {
+        companyUrls += `
+  <url>
+    <loc>${BASE}/${c._id}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`;
+      });
+  } catch (_) {}
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${BASE}/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${BASE}/search</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${BASE}/manage-business</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${BASE}/s-inscrire</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>${BASE}/contact</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${BASE}/confidentialite</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>${BASE}/conditions-utilisation</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>${companyUrls}
+</urlset>`;
+
+  res.setHeader("Content-Type", "application/xml");
+  res.send(xml);
+});
+
 router.get("/", async (req, res) => {
   const coachs = await Companies.find({})
     .populate({
@@ -30,7 +93,9 @@ router.get("/", async (req, res) => {
   const validCoachs = coachs.filter((c) => c.owner);
 
   res.render("client/landing-page", {
-    title: `SayMiro Calendar - ${res.locals.t.titles.home}`,
+    title: `SayMiro Calendar — Prenez rendez-vous en ligne simplement`,
+    metaDescription: "Trouvez et réservez en ligne un coach sportif, un coiffeur, un thérapeute ou tout autre professionnel près de chez vous. Prise de rendez-vous gratuite et instantanée avec SayMiro Calendar.",
+    canonical: "https://www.saymiro.com/",
     coachs: validCoachs,
     services: getServices(res.locals.lang),
   });
@@ -145,7 +210,9 @@ router.get("/conditions-utilisation", (req, res) => {
 
 router.get("/manage-business", (req, res) => {
   res.render("client/manage-business", {
-    title: res.locals.t.titles.becomeCoach,
+    title: "Gérer votre activité avec SayMiro Calendar — Agenda en ligne",
+    metaDescription: "Créez votre page professionnelle sur SayMiro Calendar et recevez des réservations en ligne 24h/24. Gérez vos rendez-vous, employés et services facilement.",
+    canonical: "https://www.saymiro.com/manage-business",
     becomeCoach: true,
   });
 });
@@ -167,11 +234,15 @@ router.get("/:company", async (req, res) => {
   const ID = company.owner;
   const coach = await User.findById(ID);
 
-  const Service = require("../db/models/company/service.model");
+  const Service  = require("../db/models/company/service.model");
+  const Employee = require("../db/models/company/employee.model");
+
   const services = await Service.find({ company: company._id, active: true })
     .populate("employees", "firstName lastName profilePicture")
     .sort("order")
     .lean();
+
+  const activeEmployees = await Employee.find({ company: company._id, active: true }).lean();
 
   // Pre-serialize services to avoid Pug interpolation issues with nested braces
   const servicesJson = JSON.stringify(services.map(function(s) {
@@ -189,6 +260,15 @@ router.get("/:company", async (req, res) => {
           profilePicture: e.profilePicture || '/images/no-user.webp'
         };
       })
+    };
+  }));
+
+  const employeesJson = JSON.stringify(activeEmployees.map(function(e) {
+    return {
+      _id: String(e._id),
+      firstName: e.firstName || '',
+      lastName: e.lastName || '',
+      profilePicture: e.profilePicture || '/images/no-user.webp'
     };
   }));
 
@@ -210,12 +290,22 @@ router.get("/:company", async (req, res) => {
     } catch (_) {}
   }
 
+  const profileTitle = `${coach.businessName || coach.fullName} — Réserver en ligne | SayMiro`;
+  const profileDesc  = coach.description
+    ? `${coach.description.slice(0, 150)}…`
+    : `Réservez en ligne avec ${coach.businessName || coach.fullName}. Prise de rendez-vous rapide et gratuite sur SayMiro Calendar.`;
+
   res.render("client/index", {
-    title: `${coach.businessName || coach.fullName}`,
+    title: profileTitle,
+    metaDescription: profileDesc,
+    ogType: "profile",
+    ogImage: coach.businessPicture || coach.profilePicture || "https://www.saymiro.com/images/og-cover.jpg",
+    canonical: `https://www.saymiro.com/${company._id}`,
     company,
     coach,
     services,
     servicesJson,
+    employeesJson,
     clientUser,
     alwaysSticky: true,
   });

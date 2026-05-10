@@ -23,6 +23,7 @@ const {
   paymentVerification,
   resumeSubscription,
   saveAdminNotes,
+  updateBookingEmployee,
 } = require("../controllers/admin.controller");
 
 const adminController = require("../controllers/admin.controller");
@@ -64,6 +65,7 @@ router.patch("/appointment/:id/cancel", cancelBooking);
 router.get("/appointment/week-data", getWeekData);
 
 router.patch("/appointement/:bookId/admin-notes", saveAdminNotes);
+router.patch("/appointement/:bookId/employee", updateBookingEmployee);
 router.get("/subscription/success", isVerified, paymentVerification);
 
 router.post("/subscription/resume", isAuth, resumeSubscription);

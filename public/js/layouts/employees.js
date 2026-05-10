@@ -142,4 +142,20 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (_) { alert("Erreur upload."); }
     }
   });
+
+  // ── Activer / Désactiver TOUS les employés ────────────────────────────────
+  async function bulkToggleEmployees(active) {
+    try {
+      const res = await fetch("/api/employees/bulk-toggle", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active }),
+      });
+      const data = await res.json();
+      if (data.success) location.reload();
+    } catch (e) { alert("Erreur réseau."); }
+  }
+
+  document.getElementById("activateAllEmpBtn")?.addEventListener("click", () => bulkToggleEmployees(true));
+  document.getElementById("deactivateAllEmpBtn")?.addEventListener("click", () => bulkToggleEmployees(false));
 });

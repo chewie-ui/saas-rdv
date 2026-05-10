@@ -157,6 +157,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // ── Activer / Désactiver TOUS ─────────────────────────────────────────────
+  async function bulkToggle(active) {
+    try {
+      const res = await fetch("/api/services/bulk-toggle", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active }),
+      });
+      const data = await res.json();
+      if (data.success) location.reload();
+    } catch (e) { alert("Erreur réseau."); }
+  }
+
+  document.getElementById("activateAllBtn")?.addEventListener("click", () => bulkToggle(true));
+  document.getElementById("deactivateAllBtn")?.addEventListener("click", () => bulkToggle(false));
+
   // ── Toggle actif/inactif ──────────────────────────────────────────────────
   servicesList.addEventListener("change", async (e) => {
     const toggle = e.target.closest(".toggle-active");

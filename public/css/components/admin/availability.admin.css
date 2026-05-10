@@ -1,3 +1,36 @@
+/* ── Time validation toast ───────────────────────────────────────────────── */
+.avail-time-error-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: #ef4444;
+  color: #fff;
+  padding: 10px 18px 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 9999;
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  pointer-events: none;
+}
+
+.avail-time-error-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.avail-time-error-toast svg {
+  flex-shrink: 0;
+}
+
+/* ── Availability section ────────────────────────────────────────────────── */
 .availability-section {
   gap: 14px;
 }
@@ -112,7 +145,7 @@
   border-radius: 7px;
   display: none;
   height: 130px;
-  z-index: 10;
+  z-index: 30;
 }
 
 .weekly-hour__time {
@@ -263,6 +296,7 @@
 .days-off__row .time-slot {
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
 }
 
 .days-off__row .time-slot .hour-container {
@@ -272,6 +306,9 @@
   background-color: var(--grey-soft, #f5f5f5);
   border: var(--border);
   cursor: pointer;
+  /* Annule la largeur fixe (100px/125px) imposée par les media queries globales */
+  width: auto !important;
+  min-width: 0;
 }
 
 .days-off__row .slot-separator {

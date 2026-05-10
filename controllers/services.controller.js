@@ -78,6 +78,20 @@ exports.updateService = async (req, res) => {
   }
 };
 
+// ── API : activer / désactiver TOUS les services ─────────────────────────────
+exports.bulkToggleServices = async (req, res) => {
+  try {
+    const { active } = req.body;
+    await Service.updateMany(
+      { company: res.locals.currentCompany._id },
+      { active: !!active }
+    );
+    res.json({ success: true, active: !!active });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
 // ── API : toggle actif/inactif ────────────────────────────────────────────────
 exports.toggleService = async (req, res) => {
   try {
