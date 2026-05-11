@@ -1,15 +1,11 @@
-extends ../../layouts/index
-
-include ../../templates/modals/dialog.pug
-include ../../templates/confirm-popup.pug
+extends ../../layouts/booking
 
 block jsonld
-    - var _businessType = (coach && coach.businessType) ? coach.businessType : 'LocalBusiness'
     - var _bizName = (coach && (coach.businessName || coach.fullName)) || 'BranShee Pro'
     - var _bizDesc = (coach && coach.description) || ''
     - var _bizImg  = (coach && (coach.businessPicture || coach.profilePicture)) || ''
     - var _bizCity = (coach && coach.location && coach.location.city) || ''
-    - var _bizAddr = (coach && coach.location && coach.location.address) || ''
+    - var _bizAddr = (coach && coach.location && coach.location.street) || ''
     - var _bizZip  = (coach && coach.location && coach.location.zip) ? String(coach.location.zip) : ''
     - var _bizUrl  = 'https://www.saymiro.com/' + (company ? String(company._id) : '')
     script(type="application/ld+json").
@@ -29,254 +25,87 @@ block jsonld
           }
         }
 
-block links
-    link(rel="stylesheet", href="/css/layouts/index-calendar.css")
-    link(rel="stylesheet", href="/css/templates/confirm-popup.css")
-    link(rel="stylesheet", href="/css/templates/dialog.css")
-    if coach && coach.calendarSettings && coach.calendarSettings.font && coach.calendarSettings.font !== 'Inter'
-        - var gfontName = coach.calendarSettings.font.replace(/ /g, '+')
-        link(rel="stylesheet" href="https://fonts.googleapis.com/css2?family=" + gfontName + ":wght@400;600&display=swap")
-
 block content
-    - var cs            = (coach && coach.calendarSettings) ? coach.calendarSettings : {}
-    - var calFont       = cs.font        || 'Inter'
-    - var layoutStyle   = cs.layoutStyle || 'classic'
-    - var showInfo      = cs.showInfo    !== false
-    - var showSocials   = cs.showSocials !== false
-    - var showEmailPro  = cs.showEmailPro  !== false
-    - var showPhonePro  = cs.showPhonePro  !== false
-    - var showInstagram = cs.showInstagram !== false
-    - var showWhatsapp  = cs.showWhatsapp  !== false
-    - var showFacebook  = cs.showFacebook  !== false
-    - var showWebsite   = cs.showWebsite   !== false
-    - var pageBgType    = cs.pageBgType  || 'color'
-    - var bgStyle     = (pageBgType === 'image' && cs.pageBgImage) ? ('background-image: url("' + cs.pageBgImage + '"); background-size: cover; background-position: center; background-attachment: fixed;') : ('background-color: ' + (cs.pageBg || '#f3f4f6') + ';')
+    -
+        var cs          = (coach && coach.calendarSettings) ? coach.calendarSettings : {}
+        var accentColor = cs.accentColor || '#22c55e'
+        var accentText  = cs.accentText  || '#ffffff'
 
-    if coach && cs
-        style.
-            :root {
-                --cal-bg: #{cs.calBg || '#ffffff'};
-                --cal-accent: #{cs.accentColor || '#22c55e'};
-                --cal-accent-text: #{cs.accentText || '#ffffff'};
-                --cal-day-bg: #{cs.dayBg || 'transparent'};
-                --cal-day-text: #{cs.dayText || 'inherit'};
-                --cal-btn-bg: #{cs.btnBg || '#111111'};
-                --cal-btn-text: #{cs.btnText || '#ffffff'};
-            }
-            body { font-family: "#{calFont}", sans-serif; !{bgStyle} }
-            #prevMonthBtn, #nextMonthBtn {
-                background-color: var(--cal-btn-bg) !important;
-                color: var(--cal-btn-text) !important;
-            }
+        // Compute soft accent (rgba) server-side from hex
+        function hexToRgb(hex) {
+            if (!hex || hex.length < 7) return '34,197,94';
+            return parseInt(hex.slice(1,3),16)+','+parseInt(hex.slice(3,5),16)+','+parseInt(hex.slice(5,7),16);
+        }
+        var accentRgb = hexToRgb(accentColor)
 
-    div.space-on-screen
+        var bizName    = (coach && (coach.businessName || coach.fullName)) || 'BranShee'
+        var bizType    = (coach && coach.businessType) || ''
+        var bizStreet  = (coach && coach.location && coach.location.street) || ''
+        var bizCity    = (coach && coach.location && coach.location.city)   || ''
+        var bizAddress = [bizStreet, bizCity].filter(Boolean).join(', ')
+        var bizPic     = coach && (coach.businessPicture || coach.profilePicture) ? (coach.businessPicture || coach.profilePicture) : null
+        var initials   = bizName.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase()
 
-    .content-wrapper(class=layoutStyle)
-        if layoutStyle === 'title'
-            .booking-title
-                h1= coach.businessName || coach.fullName
+    style.
+        :root {
+            --bk-accent:      #{accentColor};
+            --bk-accent-text: #{accentText};
+            --bk-accent-soft: rgba(#{accentRgb}, 0.10);
+            --bk-accent-border: rgba(#{accentRgb}, 0.35);
+            --bk-accent-ink:  #{accentColor};
+        }
 
-        if cancelBooking
-            +dialog(company._id)
+    //- ── Top bar ────────────────────────────────────────────────────────────
+    header.bk-top
+        a.bk-brand(href="/")
+            .bk-brand__mark B
+            span.bk-brand__name BranShee
+        .bk-top__right
+            if clientUser
+                a.bk-sign-btn(href="/client/dashboard") Mon espace
+            else
+                a.bk-sign-btn(href="/login") Se connecter
 
-        if showInfo
-            .informations
-                .informations__container
-                    .informations__top
-                        .informations__user
-                            .user__image
-                                img.cover(alt="Profile Picture" src=(coach.businessPicture || "/images/no-user.webp"))
-                            .user__details
-                                h3.user__business-name= coach.businessName || ""
-                                if coach.businessType
-                                    span.user__business-badge= coach.businessType
-                                if coach.isPremium
-                                    .user__contacts
-                                        if coach.emailPro && showEmailPro
-                                            .user__contact-row
-                                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px")
-                                                    path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280L160-640v400h640v-400L480-440Zm0-80 320-200H160l320 200ZM160-640v-80 480-400Z")
-                                                span= coach.emailPro
-                                        if coach.phonePro && showPhonePro
-                                            .user__contact-row
-                                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px")
-                                                    path(d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12Z")
-                                                span= coach.phonePro
+    //- ── Main ───────────────────────────────────────────────────────────────
+    main.bk-main
+        .bk-inner
 
-                    -
-                        var hasAnyLink = showSocials && (
-                            (coach.instagramLink && showInstagram) ||
-                            (coach.facebookLink  && showFacebook)  ||
-                            (coach.whatsappLink  && showWhatsapp)  ||
-                            (coach.website       && showWebsite)
-                        )
-                        var showBottom = (coach.isPremium && hasAnyLink) || !coach.isPremium
-                    if showBottom
-                        .informations__bottom
-                            if coach.isPremium
-                                .informations__links
-                                    h2= t.booking_page.links
-                                    if coach.instagramLink && showInstagram
-                                        .informations__links-wrapper
-                                            a(href=coach.instagramLink target="_blank").links__row
-                                                .links__row-logo
-                                                    img(alt="Instagram logo" src="/images/logos/instagram-logo.webp")
-                                                .links__row-name
-                                                    h3= t.profile.social.instagram
-                                    if coach.facebookLink && showFacebook
-                                        .informations__links-wrapper
-                                            a(href=coach.facebookLink target="_blank").links__row
-                                                .links__row-logo
-                                                    img(alt="Facebook logo" src="/images/logos/facebook-logo.webp")
-                                                .links__row-name
-                                                    h3= t.profile.social.facebook
-                                    if coach.whatsappLink && showWhatsapp
-                                        .informations__links-wrapper
-                                            a(href=coach.whatsappLink target="_blank").links__row
-                                                .links__row-logo
-                                                    img(alt="Whatsapp logo" src="/images/logos/whatsapp-logo.webp")
-                                                .links__row-name
-                                                    h3= t.profile.social.whatsapp
-                                    if coach.website && showWebsite
-                                        .informations__links-wrapper
-                                            a(href=coach.website target="_blank").links__row
-                                                .links__row-logo
-                                                    img(alt="Website logo" src="/images/logos/website-logo.webp")
-                                                .links__row-name
-                                                    h3= t.profile.social.website
-                            else
-                                .informations__links
-                                    h2= t.booking_page.join_us
-                                    a.btn(href="/register")
-                                        span= t.booking_page.register
-                                    a.btn.secondary(href="/login")
-                                        span= t.booking_page.login
-
-        .calendar-wrapper
-            .calendar
-                .calendar-header
-                    .prev-month
-                        button.btn#prevMonthBtn.sec
-                            span= t.booking_page.prev
-                    .this-month
-                        h2
-                    .next-month
-                        button.btn#nextMonthBtn.sec
-                            span= t.booking_page.next
-                .calendar-body
-                    .weekdays
-                        //- Injected from JS
-                    .days
-                        //- Injected from JS
-
-        .schedule-wrapper#scheduleWrapper
-            .schedule
-                .schedule-header
-                    h2= t.booking_page.choose_schedule
-                .schedule-body
-                    .back-btn
-                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
-                            path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
-                    .schedule-rows
-                        //- Injected from JS
-
-        //- Form step (shown between schedule & booking if form is active)
-        .form-step-wrapper#formStepWrapper(data-company-id=company._id)
-            .form-step
-                .form-step-header
-                    h2#formStepTitle= t.forms.form_step_title
-                    p.xs-comment#formStepSubtitle= t.forms.form_step_subtitle
-                .form-step-body
-                    .back-btn
-                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
-                            path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
-                    #formStepQuestions.form-step-questions
-                        //- Injected from JS
-                .form-step-footer
-                    button.btn#formStepNextBtn
-                        span= t.forms.form_next
-
-        //- ── Service step (injecté dynamiquement après le choix de l'heure) ────
-        .service-step-wrapper#serviceStepWrapper
-            .service-step
-                .service-step-header
-                    h2= t.booking_page.choose_service || 'Choisissez un service'
-                .service-step-body
-                    .back-btn#serviceBackBtn
-                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
-                            path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
-                    .service-step-list#serviceStepList
-                        //- Injecté par JS
-
-        //- ── Employé step (modal overlay) ─────────────────────────────────────
-        .employee-step-wrapper#employeeStepWrapper
-            .employee-step
-                .employee-step__header
-                    h2= t.booking_page.choose_employee || 'Choisissez un employé'
-                    .back-btn#empBackBtn
-                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
-                            path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
-                .employee-step__body#employeeStepBody
-                    //- Injecté par JS
-
-        .booking-wrapper#bookingWrapper(data-company-id=company._id)
-            .booking
-                .booking-header
-                    h2= t.booking_page.confirm_title
-                .booking-body
-                    .back-btn
-                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
-                            path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
-                    if clientUser
-                        .client-summary
-                            .client-summary__avatar
-                                svg(xmlns="http://www.w3.org/2000/svg" height="28px" viewBox="0 -960 960 960" width="28px" fill="currentColor")
-                                    path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113T480-480Zm-240 240v-32q0-34 17.5-62.5T304-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v32H240Z")
-                            .client-summary__info
-                                span.client-summary__name= clientUser.firstName + ' ' + clientUser.lastName
-                                span.client-summary__email= clientUser.email
-                        //- Champs cachés utilisés par le JS
-                        input(type="hidden" id="bookingName"    value=clientUser.firstName)
-                        input(type="hidden" id="bookingSurname" value=clientUser.lastName)
-                        input(type="hidden" id="bookingEmail"   value=clientUser.email)
-                        input(type="hidden" id="bookingPhone"   value=clientUser.phone)
-                        .form-confirm
-                            .field-container.flex.col
-                                p= t.booking_page.message
-                                input.input(placeholder="Informations supplémentaires..." id="bookingMsg")
+            //- ── Company header ─────────────────────────────────────────────
+            .bk-head
+                .bk-cover
+                    if bizPic
+                        img(src=bizPic alt=bizName)
                     else
-                        .form-confirm
-                            .field-container.flex.col
-                                p= t.booking_page.name
-                                input.input(placeholder="Doe" id="bookingName")
-                            .field-container.flex.col
-                                p= t.booking_page.surname
-                                input.input(placeholder="John" id="bookingSurname")
-                            .field-container.flex.col
-                                p= t.booking_page.email
-                                input.input(placeholder="john.doe@company.com" id="bookingEmail")
-                            .field-container.flex.col
-                                p= t.booking_page.phone
-                                input.input(placeholder="+32 456 56 44 35" id="bookingPhone")
-                            .field-container.flex.col
-                                p= t.booking_page.message
-                                input.input(placeholder="Write something..." id="bookingMsg")
-                    .booking-button
-                        button.btn#confirmBooking.btn
-                            span= t.booking_page.confirm
-    +confirmPopup()
-    +dialog()
+                        span= initials
+                .bk-head__info
+                    h1.bk-head__name= bizName
+                    if bizType || bizAddress
+                        p.bk-head__meta
+                            if bizType
+                                span= bizType
+                            if bizType && bizAddress
+                                |  ·
+                            if bizAddress
+                                span= bizAddress
+                    .bk-head__pills
+                        if coach && coach.isPremium
+                            span.bk-pill.bk-pill--accent Ouvert aujourd'hui
+                        span.bk-pill Réservation en ligne
+
+            //- ── Stepper ────────────────────────────────────────────────────
+            nav.bk-stepper#bkStepper
+
+            //- ── Step pane (JS-rendered) ────────────────────────────────────
+            #bkPane
+
+    //- ── Sticky cart (JS-rendered) ──────────────────────────────────────────
+    #bkCart
 
 block scripts
-    //- Services & employees JSON pre-serialized server-side
     script.
         window.__services  = !{servicesJson  || '[]'};
         window.__employees = !{employeesJson || '[]'};
     if clientUser
         script.
-            window.__clientUser = true;
-
+            window.__clientUser = !{JSON.stringify(clientUser)};
     script(src="/js/layouts/index.js" type="module")
-    script(src="/js/templates/confirm-popup.template.js")
-    script(src="/js/templates/dialog.js")
-    script(src="/js/components/topbar.js")

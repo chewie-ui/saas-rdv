@@ -128,14 +128,38 @@ function applyClientFilters() {
   const daysVal   = dateFilter   ? parseInt(dateFilter.value) || 0 : 0;
   const cutoff    = daysVal && daysVal !== 0 ? Date.now() - daysVal * 86400000 : 0;
 
+  const filtersActive = statusVal !== "all" || empVal !== "all";
+
   const rows = document.querySelectorAll(".hist-row");
+  let visibleCount = 0;
+
   rows.forEach((row) => {
     const matchStatus = statusVal === "all" || row.dataset.status === statusVal;
     const matchEmp    = empVal    === "all" || row.dataset.employee === empVal;
     const rowDate     = row.dataset.date ? new Date(row.dataset.date).getTime() : Infinity;
     const matchDate   = !cutoff || rowDate >= cutoff;
-    row.style.display = matchStatus && matchEmp && matchDate ? "" : "none";
+    const visible     = matchStatus && matchEmp && matchDate;
+    row.style.display = visible ? "" : "none";
+    if (visible) visibleCount++;
   });
+
+  // Show "no results" row if all rows are hidden
+  const noResultsRow = document.getElementById("histNoResults");
+  if (noResultsRow) {
+    noResultsRow.style.display = visibleCount === 0 ? "" : "none";
+  } else if (visibleCount === 0 && tbody) {
+    const tr = document.createElement("tr");
+    tr.id = "histNoResults";
+    tr.innerHTML = `<td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">${(window.__t && window.__t.no_client_found) || "No results found"}</td>`;
+    tbody.appendChild(tr);
+  }
+
+  // Hide server-side pagination when client filters are active
+  // (page numbers are meaningless when rows are filtered client-side)
+  const pagination = document.querySelector(".hist-pagination");
+  if (pagination) {
+    pagination.style.display = filtersActive ? "none" : "";
+  }
 }
 
 if (statusFilter) statusFilter.addEventListener("change", applyClientFilters);

@@ -107,7 +107,7 @@ block content
                 .cell.day-header(class=[weekday.isToday && "today", weekday.isFocused && "focused", dhIsSun && "off-day"])
                     .dh-inner
                         span.dh-name= weekday.label
-                        span.dh-num= weekday.date
+                        span.dh-num= weekday.dayNumber
                     if dhIsSun
                         span.dh-off Off
 
@@ -123,7 +123,7 @@ block content
                         if cellAppts.length >= 2
                             //- 2+ bookings: pills side-by-side (or summary if 4+)
                             - var maxSlot = cellAppts.reduce(function(mx, a){ return Math.max(mx, a.slotTime || 30); }, 0)
-                            - var wrapH = Math.max(Math.round(maxSlot / 30 * 56) - 4, 20)
+                            - var wrapH = Math.max(Math.round(maxSlot / 30 * 52) - 4, 20)
                             if cellAppts.length > 3
                                 //- 4+ → summary pill linking to day view
                                 a.appt-pill.appt-pill--summary(href=`/appointment?date=${day.isoDate}` style=`height:${wrapH}px`)
@@ -154,7 +154,7 @@ block content
                                             span.appt-pill__time= appointment.startHour
                         else if cellAppts.length === 1
                             - var appointment = cellAppts[0]
-                            - var apptH = Math.max(Math.round((appointment.slotTime || 30) / 30 * 56) - 4, 20)
+                            - var apptH = Math.max(Math.round((appointment.slotTime || 30) / 30 * 52) - 4, 20)
                             div.appt-pill(
                                 role="button" tabindex="0"
                                 class={ 'appt-pill--canceled': appointment.status === 'canceled' }

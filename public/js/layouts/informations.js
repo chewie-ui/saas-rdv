@@ -72,7 +72,7 @@ if (saveChanges && accountForm) {
   };
 }
 
-const socialContainer = document.querySelector(".social__container");
+const socialContainer = document.querySelector(".social-grid");
 
 if (socialContainer) {
   /* ── Visibility toggles ── */
@@ -81,12 +81,12 @@ if (socialContainer) {
     if (!checkbox) return;
 
     const label   = checkbox.closest(".social-visibility-toggle");
-    const box     = checkbox.closest(".social__box");
+    const box     = checkbox.closest(".social-box");
     const field   = label.dataset.toggle;
     const enabled = checkbox.checked;
 
     // Optimistic UI: dim the box if disabled
-    box.classList.toggle("social__box--hidden", !enabled);
+    box.classList.toggle("social-box--hidden", !enabled);
 
     const response = await fetch("/account/toggle-social", {
       method: "PATCH",
@@ -98,7 +98,7 @@ if (socialContainer) {
     if (!data.success) {
       // Revert on error
       checkbox.checked = !enabled;
-      box.classList.toggle("social__box--hidden", enabled);
+      box.classList.toggle("social-box--hidden", enabled);
     }
   });
 
@@ -106,7 +106,7 @@ if (socialContainer) {
   socialContainer.onclick = async function (e) {
     const button = e.target.closest(".btn__social-save");
     if (button) {
-      const box = button.closest(".social__box");
+      const box = button.closest(".social-box");
       const name = box.dataset.name;
       const value = box.querySelector("input").value;
 
@@ -119,7 +119,7 @@ if (socialContainer) {
       const data = await response.json();
 
       if (data.success) {
-        const box = button.closest(".social__box");
+        const box = button.closest(".social-box");
         let msg = box.querySelector(".status-msg");
         if (!msg) {
           msg = document.createElement("span");

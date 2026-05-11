@@ -24,7 +24,7 @@ const closeModalBtn    = document.getElementById("closeModalBtn");
 const cancelModalBtn   = document.getElementById("cancelModalBtn");
 const confirmModalBtn  = document.getElementById("confirmModalBtn");
 const labelInput       = document.getElementById("questionLabelInput");
-const typeBtns         = document.querySelectorAll(".type-btn");
+const typeBtns         = document.querySelectorAll(".forms-type-btn");
 const optionsSection   = document.getElementById("optionsSection");
 const optionsList      = document.getElementById("optionsList");
 const addOptionBtn     = document.getElementById("addOptionBtn");
@@ -37,10 +37,10 @@ let drag = null;       // active drag session
 // ─── Active toggle ────────────────────────────────────────────────────────────
 function syncActiveUI(active) {
   if (active) {
-    formStatusBadge.classList.add("is-active");
+    formStatusBadge.classList.add("forms-status-badge--on");
     formStatusLabel.textContent = T.active_label || "Actif";
   } else {
-    formStatusBadge.classList.remove("is-active");
+    formStatusBadge.classList.remove("forms-status-badge--on");
     formStatusLabel.textContent = T.inactive_label || "Inactif";
   }
 }
@@ -65,7 +65,7 @@ function renderQuestions() {
   const qs = formData.questions;
 
   emptyState.style.display = qs.length === 0 ? "" : "none";
-  questionsCount.textContent = qs.length > 0 ? `${qs.length}` : "";
+  if (questionsCount) questionsCount.textContent = qs.length > 0 ? `${qs.length}` : "";
 
   qs.forEach((q, i) => {
     const card = document.createElement("div");
@@ -305,12 +305,12 @@ function openModal(index = -1) {
     optionsList.innerHTML = "";
   }
 
-  overlay.classList.add("open");
+  overlay.classList.add("show");
   labelInput.focus();
 }
 
 function closeModal() {
-  overlay.classList.remove("open");
+  overlay.classList.remove("show");
   editingIndex = -1;
   optionsList.innerHTML = "";
 }

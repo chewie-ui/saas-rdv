@@ -335,7 +335,45 @@ inputsWeekday.forEach((input) => {
       }),
     });
     const data = await res.json();
-    console.log(data);
+
+    // ── Update DOM immediately — no page refresh needed ──────────────
+    const row = input.closest(".avail-day-row");
+    if (!row) return;
+
+    const timesContainer = row.querySelector(".avail-day-times");
+    if (!timesContainer) return;
+
+    if (dayOff) {
+      // Day turned OFF → add class + replace slots with dashes
+      row.classList.add("day-off");
+      timesContainer.innerHTML =
+        '<span class="avail-dash">—</span>' +
+        '<span class="avail-dash">—</span>' +
+        '<span class="avail-dash">—</span>';
+    } else {
+      // Day turned ON → remove class + insert default 09:00–18:00 slot
+      row.classList.remove("day-off");
+
+      // Build the hours list from the existing panel (grab from another row)
+      // or fall back to a simple time-input approach
+      const existingPanel = document.querySelector(".panel-availability");
+      const hoursHTML = existingPanel
+        ? existingPanel.innerHTML
+        : Array.from({ length: 25 }, (_, i) => `<div class="hour">${String(i).padStart(2,"0")}:00</div>`).join("");
+
+      timesContainer.innerHTML = `
+        <div class="time-slot flex-c" data-weekday-index="${weekdayIndex}">
+          <div class="start-hour slot-hour">
+            <div class="avail-time-box hour-container start-hour-" data-hours="start">09:00</div>
+            <div class="panel-availability">${hoursHTML}</div>
+          </div>
+          <span class="avail-sep">—</span>
+          <div class="end-hour slot-hour">
+            <div class="avail-time-box hour-container end-hour-" data-hours="end">18:00</div>
+            <div class="panel-availability">${hoursHTML}</div>
+          </div>
+        </div>`;
+    }
   });
 });
 

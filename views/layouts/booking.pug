@@ -1,0 +1,38 @@
+- var _title     = title || 'Réserver en ligne | BranShee'
+- var _desc      = metaDescription || 'Réservez votre rendez-vous en ligne.'
+- var _ogImage   = ogImage || 'https://www.saymiro.com/images/og-cover.jpg'
+- var _canonical = canonical || ('https://www.saymiro.com' + (typeof reqPath !== 'undefined' ? reqPath : ''))
+- var _ogType    = ogType || 'website'
+
+doctype html
+html(lang=lang || "fr")
+    head
+        meta(name="viewport" content="width=device-width, initial-scale=1.0")
+        meta(charset="UTF-8")
+        title= _title
+        meta(name="description" content=_desc)
+        meta(name="robots" content="index, follow")
+        link(rel="canonical" href=_canonical)
+        meta(property="og:type" content=_ogType)
+        meta(property="og:title" content=_title)
+        meta(property="og:description" content=_desc)
+        meta(property="og:image" content=_ogImage)
+        meta(property="og:url" content=_canonical)
+        meta(property="og:site_name" content="BranShee")
+        meta(name="twitter:card" content="summary_large_image")
+        meta(name="twitter:title" content=_title)
+        meta(name="twitter:description" content=_desc)
+        meta(name="twitter:image" content=_ogImage)
+        link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
+        link(rel="preconnect" href="https://fonts.googleapis.com")
+        link(rel="preconnect" href="https://fonts.gstatic.com" crossorigin)
+        link(rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap")
+        link(rel="stylesheet" href="/css/layouts/client-booking.css")
+        block links
+        block jsonld
+    body
+        block content
+        block scripts
+        script.
+            const COMPANY_ID = !{company ? `"${company._id}"` : "null"};
+            window.__t = !{JSON.stringify(t.js)};
