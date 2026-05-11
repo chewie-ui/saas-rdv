@@ -1,8 +1,8 @@
-# AI Agent Instructions for SayMiro SaaS Booking Platform
+# AI Agent Instructions for BranShee SaaS Booking Platform
 
 ## Project Overview
 
-**SayMiro** is a multi-tenant SaaS appointment booking platform (`saas-rdv` = SaaS Rendez-vous). It enables service providers to manage bookings, integrate with Google Calendar, accept payments via Stripe, and communicate with clients. The platform supports 6 languages and has both admin (staff) and client interfaces.
+**BranShee** is a multi-tenant SaaS appointment booking platform (`saas-rdv` = SaaS Rendez-vous). It enables service providers to manage bookings, integrate with Google Calendar, accept payments via Stripe, and communicate with clients. The platform supports 6 languages and has both admin (staff) and client interfaces.
 
 ## Tech Stack
 
@@ -410,5 +410,5 @@ SESSION_SECRET=your_session_secret
 ---
 
 **Last Updated**: May 5, 2026  
-**Project**: SayMiro SaaS Booking Platform  
+**Project**: BranShee SaaS Booking Platform  
 **Target Audience**: AI coding agents, new developers

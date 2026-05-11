@@ -6,67 +6,37 @@ html(lang="fr")
     head
         meta(name="viewport" content="width=device-width, initial-scale=1.0")
         meta(charset="UTF-8")
-        title= title || 'SayMiro Calendar Admin'
+        title= title || 'BranShee Admin'
         link(rel="shortcut icon", href="/images/icon.svg", type="image/x-icon")
         link(rel="stylesheet", href="/css/import.css")
         link(rel="stylesheet", href="/css/layouts/admin.css")
         //- Anti-flash : applique le thème AVANT le rendu
         script.
-            (function(){try{var t=localStorage.getItem('saymiro-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
+            (function(){try{var t=localStorage.getItem('branshee-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
         block links
     body
         div.layout
             include ../common/sidebar
             .main
                 .admin-nav
-                    h2= title || pageName || "Undefined page"
-                    .admin__menu
-                        .admin__lang#langSelector
-                            .admin__lang-active
-                                p #{lang === 'fr' ? "Français" : lang === 'nl' ? "Nederlands" : lang === 'es' ? "Español" : lang === 'it' ? "Italiano" : lang === 'de' ? "Deutsch" : "English"}
-                                img(src=`/images/${lang === "en" ? 'en.jpg' : lang === 'nl' ? 'nl.jpg' : lang === 'es' ? 'es.jpg' : lang === 'it' ? 'it.png' : lang === 'de' ? 'de.png' : 'fr.webp'}`)
-                            .admin__lang-panel
-                                .lang(onclick="changeLanguage('fr')")
-                                    p Français
-                                    img(src="/images/fr.webp")
-                                .lang(onclick="changeLanguage('en')")
-                                    p English
-                                    img(src="/images/en.jpg")
-                                .lang(onclick="changeLanguage('nl')")
-                                    p Nederlands
-                                    img(src="/images/nl.jpg")
-                                .lang(onclick="changeLanguage('es')")
-                                    p Español
-                                    img(src="/images/es.jpg")
-                                .lang(onclick="changeLanguage('it')")
-                                    p Italiano
-                                    img(src="/images/it.png")
-                                .lang(onclick="changeLanguage('de')")
-                                    p Deutsch
-                                    img(src="/images/de.png")
-                        button.theme-toggle(type="button" aria-label="Changer le thème" title="Changer le thème")
-                            svg.theme-toggle__moon(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")
-                                path(d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z")
-                            svg.theme-toggle__sun.hidden(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")
-                                circle(cx="12" cy="12" r="5")
-                                line(x1="12" y1="1" x2="12" y2="3")
-                                line(x1="12" y1="21" x2="12" y2="23")
-                                line(x1="4.22" y1="4.22" x2="5.64" y2="5.64")
-                                line(x1="18.36" y1="18.36" x2="19.78" y2="19.78")
-                                line(x1="1" y1="12" x2="3" y2="12")
-                                line(x1="21" y1="12" x2="23" y2="12")
-                                line(x1="4.22" y1="19.78" x2="5.64" y2="18.36")
-                                line(x1="18.36" y1="5.64" x2="19.78" y2="4.22")
-                        .admin__profile
-                            .admin__profile-image
-                                img(src=user.profilePicture)
-                            .admin__profile-name= user.fullName.split(" ")
-                            if user.isPremium
-                                .admin__profile-premium--icon.flex-c
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffe600"><path d="M200-160v-80h560v80H200Zm0-140-51-321q-2 0-4.5.5t-4.5.5q-25 0-42.5-17.5T80-680q0-25 17.5-42.5T140-740q25 0 42.5 17.5T200-680q0 7-1.5 13t-3.5 11l125 56 125-171q-11-8-18-21t-7-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820q0 15-7 28t-18 21l125 171 125-56q-2-5-3.5-11t-1.5-13q0-25 17.5-42.5T820-740q25 0 42.5 17.5T880-680q0 25-17.5 42.5T820-620q-2 0-4.5-.5t-4.5-.5l-51 321H200Zm68-80h424l26-167-105 46-133-183-133 183-105-46 26 167Zm212 0Z"/></svg>
                     #openMenu.flex-c
-                        svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                        svg(xmlns="http://www.w3.org/2000/svg" height="22" viewBox="0 -960 960 960" width="22" fill="currentColor")
                             path(d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z")
+                    h2.admin-nav__title= title || pageName || "Undefined page"
+                    .admin-nav__actions
+                        -
+                            var navCtaMap = {
+                                'Appointment':   { label: t.sidebar.new_appointment || 'New appointment', href: '/appointment/new' },
+                                'Services':      { label: t.sidebar.new_service     || 'New service',     href: '/services' },
+                                'Employees':     { label: t.sidebar.new_employee    || 'New employee',    href: '/employees' },
+                                'History':       { label: t.sidebar.export          || 'Export',             href: '#export-history' },
+                            }
+                            var navCta = navCtaMap[pageName]
+                        if navCta
+                            a.nav-cta-btn(href=navCta.href)
+                                svg(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
+                                    path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                                span= navCta.label
                 .main-wrapper
                     block content
         +dialog()

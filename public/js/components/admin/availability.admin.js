@@ -339,9 +339,7 @@ inputsWeekday.forEach((input) => {
   });
 });
 
-const rowOptions = document.querySelector(
-  ".availability-section .availability-section__body .body-weekly-hour",
-);
+const rowOptions = document.querySelector(".body-weekly-hour");
 if (rowOptions) {
   rowOptions.addEventListener("click", async (event) => {
     const deleteBtn = event.target.closest(".delete-time-slot");
@@ -563,8 +561,15 @@ calendar.addEventListener("click", async (event) => {
     dayEl.classList.add("clicked");
 
     const clone = dayOffRowTemplate.content.cloneNode(true);
-    clone.querySelector("p.input").textContent =
-      `${day}/${month.padStart(2, "0")}/${year}`;
+    // Update date label in new design (span.avail-doff-date-label) + legacy p.input
+    const MONTHS_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const DAYS_ABBR   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const dateObj     = new Date(`${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`);
+    const dateFormatted = `${DAYS_ABBR[dateObj.getDay()]}, ${MONTHS_ABBR[dateObj.getMonth()]} ${parseInt(day)}`;
+    const labelEl = clone.querySelector(".avail-doff-date-label");
+    if (labelEl) labelEl.textContent = dateFormatted;
+    const pInput = clone.querySelector("p.input");
+    if (pInput) pInput.textContent = `${day}/${month.padStart(2,"0")}/${year}`;
 
     // Stocker le dateEntry (avec _id) pour pouvoir supprimer/éditer ensuite
     const rowEl = clone.querySelector(".days-off__row");
@@ -575,3 +580,46 @@ calendar.addEventListener("click", async (event) => {
     holidaysBody.appendChild(clone);
   }
 });
+
+/* ── Slot duration pill buttons ──────────────────────────────── */
+document.querySelectorAll(".slot-pill").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    const slotSection = document.querySelector(".slot-time-section");
+    if (slotSection && slotSection.classList.contains("slot-managed")) return;
+
+    const slot = Number(btn.dataset.time);
+
+    await fetch("/edit-interval", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slot }),
+    });
+
+    document.querySelectorAll(".slot-pill").forEach((p) => p.classList.remove("active"));
+    btn.classList.add("active");
+
+    // Keep legacy hidden input in sync
+    const legacyInput = document.querySelector("#timeslotPanel .input");
+    if (legacyInput) legacyInput.textContent = `${slot}min`;
+  });
+});
+
+/* ── Buffer between bookings slider ─────────────────────────── */
+const bufferRange = document.getElementById("bufferRange");
+const bufferVal   = document.getElementById("bufferVal");
+
+if (bufferRange) {
+  // Live update display
+  bufferRange.addEventListener("input", () => {
+    if (bufferVal) bufferVal.textContent = `${bufferRange.value} min`;
+  });
+
+  // Save on release
+  bufferRange.addEventListener("change", async () => {
+    await fetch("/company/buffer", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bufferTime: Number(bufferRange.value) }),
+    }).catch(() => {});
+  });
+}

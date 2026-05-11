@@ -1,115 +1,102 @@
 extends ../../layouts/admin
 
 block links
-    link(rel="stylesheet", href="/css/components/admin/forms.admin.css")
+    link(rel="stylesheet", href="/css/layouts/forms.css")
 
 block content
-    .section__container.flex.col
-        .forms-builder
-            //- Header
-            .forms-builder__header.flex-c.space-b
-                .forms-builder__header-left
-                    h2= t.forms.title
-                    p.xs-comment= t.forms.subtitle
-                .forms-builder__header-right.flex-c
-                    .forms-status-badge#formStatusBadge
-                        span#formStatusLabel= (form && form.active) ? t.forms.active_label : t.forms.inactive_label
-                    label.switch.forms-toggle
-                        input#formActiveToggle(type="checkbox" checked=(form && form.active))
-                        span.slider
-                    button.btn#saveFormBtn(type="button")
-                        span
-                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                path(d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z")
-                            | #{t.forms.save}
+    .forms-page
 
-            //- Main body: question list + editor
-            .forms-builder__body.flex
+        //- ── Page header ────────────────────────────────────────────
+        .forms-page__header
+            .forms-page__header-left
+                h2= t.forms.title
+                p.forms-page__subtitle= t.forms.subtitle
+            .forms-page__header-right
+                .forms-status-badge#formStatusBadge(class=(form && form.active) ? 'forms-status-badge--on' : '')
+                    span#formStatusLabel= (form && form.active) ? t.forms.active_label : t.forms.inactive_label
+                label.forms-active-toggle
+                    input#formActiveToggle(type="checkbox" checked=(form && form.active))
+                    .forms-active-toggle__track
+                button.btn#saveFormBtn(type="button")
+                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                        path(d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z")
+                    span= t.forms.save
 
-                //- LEFT: question list
-                .forms-builder__left.flex.col
-                    .forms-builder__list-header.flex-c.space-b
-                        h3 Questions
-                        span.questions-count#questionsCount
-                    #questionsList.questions-list
-                        //- Rendered by JS
+        //- ── Two-column grid ────────────────────────────────────────
+        .forms-grid
 
-                    .forms-builder__empty#emptyState(style=(form && form.questions && form.questions.length > 0) ? "display:none" : "")
-                        svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor" opacity="0.3")
-                            path(d="M160-200v-80h400v80H160Zm0-160v-80h640v80H160Zm0-160v-80h640v80H160Zm0-160v-80h640v80H160Z")
-                        p= t.forms.empty
-                        p.xs-comment= t.forms.empty_desc
+            //- ── LEFT: Form builder ─────────────────────────────────
+            .forms-builder-card
+                .forms-builder-card__head
+                    h3.forms-card-title Form builder
+                    span.forms-autosave
+                        svg(xmlns="http://www.w3.org/2000/svg" height="12px" viewBox="0 -960 960 960" width="12px" fill="currentColor")
+                            path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        | Auto-sauvegardé
 
-                    .forms-builder__add
-                        button.btn.secondary#addQuestionBtn(type="button")
-                            span
-                                svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                    path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
-                                | #{t.forms.add_question}
+                .forms-question-list#questionsList
 
-                //- RIGHT: preview
-                .forms-builder__right.flex.col
-                    .forms-preview
-                        .forms-preview__header.flex-c
-                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                path(d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54 137-174 218.5T480-200Z")
-                            h3= t.forms.preview_title
+                .forms-builder__empty#emptyState(style=(form && form.questions && form.questions.length > 0) ? "display:none" : "")
+                    svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor")
+                        path(d="M160-200v-80h400v80H160Zm0-160v-80h640v80H160Zm0-160v-80h640v80H160Zm0-160v-80h640v80H160Z")
+                    p.forms-empty__title= t.forms.empty
+                    p.forms-empty__desc= t.forms.empty_desc
 
-                        .forms-preview__body#previewBody
-                            .preview-phone
-                                .preview-phone__header
-                                    .preview-step-title#previewTitle= t.forms.form_step_title
-                                    .preview-step-subtitle#previewSubtitle= t.forms.form_step_subtitle
-                                .preview-phone__questions#previewQuestions
-                                    //- Rendered by JS
-                                .preview-phone__footer
-                                    button.btn.preview-btn(disabled)
-                                        span= t.forms.form_next
+                button.forms-add-dashed#addQuestionBtn(type="button")
+                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                        path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                    span= t.forms.add_question
 
-    //- Modal: add / edit question
-    .forms-modal-overlay#modalOverlay
-        .forms-modal
-            .forms-modal__header.flex-c.space-b
-                h3#modalTitle= t.forms.add_question
-                button.square#closeModalBtn(type="button" aria-label="close")
-                    span
-                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                            path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+            //- ── RIGHT: Live preview ─────────────────────────────────
+            .forms-preview-card
+                .forms-preview-card__head
+                    h3.forms-card-title= t.forms.preview_title
 
-            .forms-modal__body.flex.col
+                .forms-preview-card__body
+                    .forms-preview-phone
+                        .forms-preview-phone__inner
+                            h3.preview-step-title#previewTitle= t.forms.form_step_title
+                            p.preview-step-sub#previewSubtitle= t.forms.form_step_subtitle
+                            .preview-phone__questions#previewQuestions
+                                //- Rendered by JS
+                            button.btn.preview-confirm-btn(disabled)= t.forms.form_next
 
-                .field-container.flex.col
-                    p= t.forms.question_label
-                    input.input#questionLabelInput(type="text" placeholder=t.forms.question_placeholder)
+    //- ── Modal: add / edit question ─────────────────────────────────
+    .modal-overlay#modalOverlay
+    .forms-modal#questionModal
+        .forms-modal__header
+            h3#modalTitle= t.forms.add_question
+            button.btn--icon.modal-close#closeModalBtn(type="button")
+                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                    path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
 
-                .field-container.flex.col
-                    p= t.forms.question_type
-                    .type-selector#typeSelector
-                        button.type-btn.active(type="button" data-type="text")= t.forms.type_text
-                        button.type-btn(type="button" data-type="choice")= t.forms.type_choice
-                        button.type-btn(type="button" data-type="yes_no")= t.forms.type_yes_no
+        .forms-modal__body
+            .field
+                label.forms-modal__label= t.forms.question_label
+                input.input#questionLabelInput(type="text" placeholder=t.forms.question_placeholder)
 
-                .field-container.flex-c#optionsSection(style="display:none")
-                    .options-builder.flex.col
-                        p= t.forms.options_label
-                        #optionsList.options-list
-                        button.btn.secondary.sm#addOptionBtn(type="button")
-                            svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
-                            span= t.forms.add_option
+            .field
+                label.forms-modal__label= t.forms.question_type
+                .forms-type-selector#typeSelector
+                    button.forms-type-btn.active(type="button" data-type="text")= t.forms.type_text
+                    button.forms-type-btn(type="button" data-type="yes_no")= t.forms.type_yes_no
+                    button.forms-type-btn(type="button" data-type="choice")= t.forms.type_choice
 
-                .field-container.flex-c.required-row
-                    label.flex-c(for="questionRequired")
-                        input#questionRequired(type="checkbox")
-                        span= t.forms.required
-                    .required-badge
-                        span ✱
+            .field#optionsSection(style="display:none")
+                label.forms-modal__label= t.forms.options_label
+                #optionsList.forms-options-list
+                button.btn.ghost.btn--sm#addOptionBtn(type="button")
+                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                        path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                    span= t.forms.add_option
 
-            .forms-modal__footer.flex-c
-                button.btn.secondary#cancelModalBtn(type="button")
-                    span= t.forms.cancel
-                button.btn#confirmModalBtn(type="button")
-                    span= t.forms.confirm
+            label.forms-check-row
+                input#questionRequired(type="checkbox")
+                span= t.forms.required
+
+        .forms-modal__footer
+            button.btn.ghost#cancelModalBtn(type="button")= t.forms.cancel
+            button.btn#confirmModalBtn(type="button")= t.forms.confirm
 
     //- Hidden data for JS
     script.

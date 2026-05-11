@@ -7,188 +7,256 @@ block links
     link(rel="stylesheet", href="/css/components/index/calendar.index.css")
 
 block content
-    .section__container.flex.col
-        .availability-section.flex.col
-            .availability-section__header
-                h3= t.avail.t1
-            .availability-section__body.flex
-                .body-weekly-hour.flex.col
-                    - const weekday = [t.days.sunday, t.days.monday, t.days.tuesday, t.days.wednesday, t.days.thursday, t.days.friday, t.days.saturday]
-                    - const sortedSchedule = [...currentCompany.schedule].sort((a, b) => { const order = i => i === 0 ? 7 : i; return order(a.weekdayIndex) - order(b.weekdayIndex); })
-                    each day in sortedSchedule
-                        .row-weekday.flex
-                            .weekday-toggle.flex
-                                .weekly-switcher
-                                    label.switch
-                                        input.input-weekday(type="checkbox" data-weekday-index=day.weekdayIndex data-company=currentCompany._id checked=!day.dayOff)
-                                        span.slider
-                                .weekly-hour__weekday= weekday[day.weekdayIndex] 
-                            .weekly-hour__time.flex.col
-                                if day.workingHours.length > 0
-                                    each slot, index in day.workingHours
+    - const weekday = [t.days.sunday, t.days.monday, t.days.tuesday, t.days.wednesday, t.days.thursday, t.days.friday, t.days.saturday]
+    - const weekdayAbbr = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+    - const sortedSchedule = [...currentCompany.schedule].sort((a, b) => { const order = i => i === 0 ? 7 : i; return order(a.weekdayIndex) - order(b.weekdayIndex); })
+    - const activeDays = sortedSchedule.filter(d => !d.dayOff && d.workingHours && d.workingHours.length > 0)
+    - const tzLabel = currentCompany.timezone ? 'GMT+1' : 'GMT+1'
+
+    .avail-page
+
+        .avail-layout
+
+            //- ── LEFT: main column ───────────────────────────────────
+            .avail-main
+
+                //- Weekly schedule card
+                .avail-card
+                    .avail-card__hd
+                        span.avail-card__title= t.avail.t1
+                        span.avail-tz Times shown in Brussels (#{tzLabel})
+                    .avail-rows.body-weekly-hour
+                        each day in sortedSchedule
+                            .avail-day-row.row-weekday(class=day.dayOff ? 'day-off' : '')
+                                //- Toggle
+                                label.avail-switch
+                                    input.input-weekday(
+                                        type="checkbox"
+                                        data-weekday-index=day.weekdayIndex
+                                        data-company=currentCompany._id
+                                        checked=!day.dayOff
+                                    )
+                                    span.avail-switch__track
+                                        span.avail-switch__thumb
+
+                                //- Day name
+                                span.avail-day-name= weekday[day.weekdayIndex]
+
+                                //- Time slots
+                                .avail-day-times.weekly-hour__time
+                                    if day.dayOff
+                                        span.avail-dash —
+                                        span.avail-dash —
+                                        span.avail-dash —
+                                    else if day.workingHours && day.workingHours.length > 0
+                                        each slot, index in day.workingHours
+                                            .time-slot.flex-c(data-weekday-index=day.weekdayIndex)
+                                                .start-hour.slot-hour
+                                                    .avail-time-box.hour-container.start-hour-(data-hours="start")= slot.start || "09:00"
+                                                    .panel-availability
+                                                        each hour in hours
+                                                            .hour= hour
+                                                span.avail-sep —
+                                                .end-hour.slot-hour
+                                                    .avail-time-box.hour-container.end-hour-(data-hours="end")= slot.end || "18:00"
+                                                    .panel-availability
+                                                        each hour in hours
+                                                            .hour= hour
+                                                if index > 0
+                                                    button.avail-del-slot.delete-time-slot(type="button" data-id=slot._id title="Remove")
+                                                        svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
+                                                            path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
+                                    else
                                         .time-slot.flex-c(data-weekday-index=day.weekdayIndex)
                                             .start-hour.slot-hour
-                                                .input.hour-container.start-hour-(data-hours="start")= slot.start || "08:00"
+                                                .avail-time-box.hour-container.start-hour-(data-hours="start") 09:00
+                                                .panel-availability
+                                                    each hour in hours
+                                                        .hour= hour
+                                            span.avail-sep —
+                                            .end-hour.slot-hour
+                                                .avail-time-box.hour-container.end-hour-(data-hours="end") 18:00
                                                 .panel-availability
                                                     each hour in hours
                                                         .hour= hour
 
-                                            div -
-                                            .end-hour.slot-hour
-                                                .input.hour-container.end-hour-(data-hours="end")= slot.end || "17:00"
-                                                .panel-availability
-                                                    each hour in hours
-                                                        .hour= hour
-                                            if index > 0
-                                                .delete-time-slot(data-id=slot._id)
-                                                    svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
+                                //- Actions
+                                .avail-day-actions
+                                    if !day.dayOff
+                                        button.avail-range-btn.option-add-plage(type="button")
+                                            svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
+                                                path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                                            | Range
+                                    button.avail-more-btn(type="button")
+                                        svg(viewBox="0 0 20 20" fill="currentColor" height="16" width="16")
+                                            circle(cx="4" cy="10" r="1.5")
+                                            circle(cx="10" cy="10" r="1.5")
+                                            circle(cx="16" cy="10" r="1.5")
+
+                //- Days off card
+                .avail-card
+                    .avail-card__hd
+                        span.avail-card__title= t.avail.t3
+                        if user && user.isPremium
+                            button.avail-add-btn#addDaysOffBtn(type="button")
+                                svg(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
+                                    path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                                | #{t.avail.btn1}
+                        else
+                            a.avail-add-btn.avail-add-btn--lock(href="/subscription" title=t.avail.premium_only)
+                                svg(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
+                                    path(d="M220-80q-24 0-42-18t-18-42v-400q0-24 18-42t42-18h40v-120q0-83 58.5-141.5T460-920q83 0 141.5 58.5T660-720v120h40q24 0 42 18t18 42v400q0 24-18 42T700-80H220Zm240-200q33 0 56.5-23.5T540-360q0-33-23.5-56.5T460-440q-33 0-56.5 23.5T380-360q0 33 23.5 56.5T460-280Z")
+                                | #{t.avail.btn1}
+
+                    #holidaysBody.avail-days-grid
+                        if daysOff && daysOff.dates
+                            each day in daysOff.dates
+                                - var d = new Date(day.date)
+                                - var dMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                                - var dDays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+                                - var dateLabel = dDays[d.getDay()] + ', ' + dMonths[d.getMonth()] + ' ' + d.getDate()
+                                .avail-doff-card.days-off__row(data-date=day)
+                                    .avail-doff-top.day-card__top
+                                        .avail-doff-date
+                                            span.avail-doff-date-label= dateLabel
+                                        button.avail-doff-del.days-off__button.delete-btn.flex-c(title=t.avail.delete_day)
+                                            svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                                path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
+                                    .avail-doff-body.days-off__schedule.flex-c
+                                        if day.workingHours && day.workingHours.length > 0 && day.workingHours[0].start
+                                            .time-slot.flex-c
+                                                .start-hour.slot-hour
+                                                    .avail-time-box.hour-container.start-hour-(data-hours="start")= day.workingHours[0].start
+                                                    .panel-availability
+                                                        each hour in hours
+                                                            .hour= hour
+                                                span.avail-sep —
+                                                .end-hour.slot-hour
+                                                    .avail-time-box.hour-container.end-hour-(data-hours="end")= day.workingHours[0].end
+                                                    .panel-availability
+                                                        each hour in hours
+                                                            .hour= hour
+                                                button.avail-del-slot.delete-time-slot(type="button" title=t.avail.remove_schedule)
+                                                    svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
                                                         path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
-   
-                                else 
-                                    .time-slot.flex-c
-                                        .start-hour.slot-hour
-                                            .input.hour-container.start-hour-(data-hours="start") 08:00
-                                            .panel-availability
-                                                each hour in hours
-                                                    .hour= hour
+                                        else
+                                            .avail-doff-type All day
+                                    if day.label
+                                        p.avail-doff-note= day.label
+                                    .day-card__footer
+                                        button.avail-doff-addtime.days-off__button.schedule-btn.flex-c(title=t.avail.add_schedule)
+                                            svg(viewBox="0 -960 960 960" height="13" width="13" fill="currentColor")
+                                                path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                                            span= t.avail.add_schedule
 
-                                        div -
-                                        .end-hour.slot-hour
-                                            .input.hour-container.end-hour-(data-hours="end") 17:00
-                                            .panel-availability
-                                                each hour in hours
-                                                    .hour= hour
-                            .weekly-hour__options.flex-c
-                                .option.flex-c.option-add-plage
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                        path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+            //- ── RIGHT: sidebar ──────────────────────────────────────
+            .avail-side
 
-                               
-        .availability-section.flex.col
-            .availability-section__header
-                h3= t.avail.t2
-            .availability-section__body.flex.col
-                if !user.isPremium
-                    a(href="/subscription").get__premium= t.avail.get_premium
-                if user && user.isPremium
-                    .slot-time-section(class=hasServices ? 'slot-managed' : '')
-                        .time-slot__container
-                            .slot-input__container#timeslotPanel
-                                .input #{currentSlotTime || "30"}min
-                                .panel
-                                    each time in timeSlot
-                                        .time(data-time=time) #{time}min
-                        if hasServices
-                            .slot-managed-info
-                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                    path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z")
-                                span= t.avail.slot_managed_hint
-                                button.slot-reenable-btn(type="button")= t.avail.slot_reenable
-                else
-                    .time-slot__container
-                        .slot-input__container
-                            .input(disabled) #{currentSlotTime || "30"}min
-                
+                //- Slot duration
+                .avail-card
+                    .avail-card__hd
+                        span.avail-card__title= t.avail.t2
+                    p.avail-card__sub= t.avail.slot_desc || 'Default block size for online bookings.'
+                    if !user.isPremium
+                        a.avail-premium-lock(href="/subscription")= t.avail.get_premium
+                    else
+                        .slot-time-section(class=hasServices ? 'slot-managed' : '')
+                            .avail-slot-pills#slotPills
+                                each time in timeSlot
+                                    button.slot-pill(
+                                        type="button"
+                                        data-time=time
+                                        class=(currentSlotTime == time || String(currentSlotTime) === String(time)) ? 'active' : ''
+                                    )= time + 'm'
+                            //- Hidden legacy panel (JS still targets it for fetch)
+                            .time-slot__container(style="display:none")
+                                .slot-input__container#timeslotPanel
+                                    .input #{currentSlotTime || "30"}min
+                                    .panel
+                                        each time in timeSlot
+                                            .time(data-time=time) #{time}min
+                            if hasServices
+                                .slot-managed-info
+                                    svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
+                                        path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Z")
+                                    span= t.avail.slot_managed_hint
+                                    button.slot-reenable-btn(type="button")= t.avail.slot_reenable
 
-        .availability-section.flex.col
-            .availability-section__header
-                h3= t.avail.t3
-            .availability-section__body.flex.col
-                if !user.isPremium
-                    a(href="/subscription").get__premium= t.avail.get_premium
-                if user && user.isPremium
-                    button#addDaysOffBtn(type="button" style='width:auto')
-                        span
-                            svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                                path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm280 240q-17 0-28.5-11.5T440-440q0-17 11.5-28.5T480-480q17 0 28.5 11.5T520-440q0 17-11.5 28.5T480-400Zm-160 0q-17 0-28.5-11.5T280-440q0-17 11.5-28.5T320-480q17 0 28.5 11.5T360-440q0 17-11.5 28.5T320-400Zm320 0q-17 0-28.5-11.5T600-440q0-17 11.5-28.5T640-480q17 0 28.5 11.5T680-440q0 17-11.5 28.5T640-400ZM480-240q-17 0-28.5-11.5T440-280q0-17 11.5-28.5T480-320q17 0 28.5 11.5T520-280q0 17-11.5 28.5T480-240Zm-160 0q-17 0-28.5-11.5T280-280q0-17 11.5-28.5T320-320q17 0 28.5 11.5T360-280q0 17-11.5 28.5T320-240Zm320 0q-17 0-28.5-11.5T600-280q0-17 11.5-28.5T640-320q17 0 28.5 11.5T680-280q0 17-11.5 28.5T640-240Z")
-                            | #{t.avail.btn1}
-                else
-                    button.secondary(disabled title=t.avail.premium_only)
-                        span= t.avail.btn1
+                //- Buffer between bookings
+                .avail-card
+                    .avail-card__hd
+                        span.avail-card__title= t.avail.buffer_title || 'Buffer between bookings'
+                    .avail-buffer
+                        input.avail-buffer__range#bufferRange(
+                            type="range"
+                            min="0"
+                            max="60"
+                            step="5"
+                            value=currentCompany.bufferTime || 0
+                        )
+                        .avail-buffer__row
+                            span 0
+                            span#bufferVal.avail-buffer__val= (currentCompany.bufferTime || 0) + ' min'
+                            span 60
 
-                #holidaysBody.days-off__grid
-                    if daysOff
-                        each day in daysOff.dates
-                            .days-off__row(data-date=day)
-                                .day-card__top
-                                    .day-card__date-area
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                            path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
-                                        p.input= day.date.toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric'})
-                                    .days-off__button.delete-btn.flex-c(title=t.avail.delete_day)
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                            path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
-                                .days-off__schedule.flex-c
-                                    if day.workingHours && day.workingHours.length > 0 && day.workingHours[0].start
-                                        .time-slot.flex-c
-                                            .start-hour.slot-hour
-                                                .input.hour-container.start-hour-(data-hours="start")= day.workingHours[0].start
-                                                .panel-availability
-                                                    each hour in hours
-                                                        .hour= hour
-                                            span.slot-separator —
-                                            .end-hour.slot-hour
-                                                .input.hour-container.end-hour-(data-hours="end")= day.workingHours[0].end
-                                                .panel-availability
-                                                    each hour in hours
-                                                        .hour= hour
-                                            .delete-time-slot(title=t.avail.remove_schedule)
-                                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                                    path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
-                                    else
-                                        .day-card__badge
-                                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                                path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z")
-                                            span= t.avail.day_off
-                                .day-card__footer
-                                    .days-off__button.schedule-btn.flex-c(title=t.avail.add_schedule)
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                            path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
-                                        span= t.avail.add_schedule
+                //- Preview this week
+                .avail-card
+                    .avail-card__hd
+                        span.avail-card__title= t.avail.preview_title || 'Preview · this week'
+                    .avail-preview
+                        if activeDays && activeDays.length
+                            each day in activeDays
+                                - var startStr = (day.workingHours[0] && day.workingHours[0].start) || '09:00'
+                                - var endStr   = (day.workingHours[0] && day.workingHours[0].end)   || '18:00'
+                                - var startM = parseInt(startStr.split(':')[0])*60 + parseInt(startStr.split(':')[1])
+                                - var endM   = parseInt(endStr.split(':')[0])*60   + parseInt(endStr.split(':')[1])
+                                - var pct    = Math.min(100, Math.round((endM - startM) / 720 * 100))
+                                .avail-preview-row
+                                    span.avail-preview-day= weekdayAbbr[day.weekdayIndex]
+                                    .avail-preview-bar
+                                        .avail-preview-fill(style=`width:${pct}%`)
+                                    span.avail-preview-pct #{pct}%
+                        else
+                            p.avail-preview-empty No active days
 
+    //- ── Hidden templates / calendar ─────────────────────────────
     #calendarWrapper
     template#plageTemplate
         .time-slot.flex-c
             .start-hour.slot-hour
-                .input.hour-container.start-hour-(data-hours="start") 08:00
+                .avail-time-box.hour-container.start-hour-(data-hours="start") 09:00
                 .panel-availability
                     each hour in hours
                         .hour= hour
-
-            div -
+            span.avail-sep —
             .end-hour.slot-hour
-                .input.hour-container.end-hour-(data-hours="end") 17:00
+                .avail-time-box.hour-container.end-hour-(data-hours="end") 18:00
                 .panel-availability
                     each hour in hours
                         .hour= hour
-            .delete-time-slot
-                svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                    path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+            button.avail-del-slot.delete-time-slot(type="button")
+                svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
+                    path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
+
     +calendar()
+
     template#daysOffTemplate
         .days-off__rows
     template#dayOffRow
-        .days-off__row
-            .day-card__top
-                .day-card__date-area
-                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                        path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
-                    p.input
-                .days-off__button.delete-btn.flex-c
-                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+        .avail-doff-card.days-off__row
+            .avail-doff-top.day-card__top
+                .avail-doff-date
+                    span.avail-doff-date-label
+                button.avail-doff-del.days-off__button.delete-btn.flex-c
+                    svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                         path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
-            .days-off__schedule.flex-c
-                .day-card__badge
-                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                        path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z")
-                    p.schedule-status= t.avail.day_off
+            .avail-doff-body.days-off__schedule.flex-c
+                .avail-doff-type All day
             .day-card__footer
-                .days-off__button.schedule-btn.flex-c
-                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                button.avail-doff-addtime.days-off__button.schedule-btn.flex-c
+                    svg(viewBox="0 -960 960 960" height="13" width="13" fill="currentColor")
                         path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
                     span= t.avail.add_schedule
-
-
 
 block scripts
     script(src="js/components/admin/availability.admin.js" type="module")

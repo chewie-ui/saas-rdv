@@ -87,11 +87,14 @@ block content
 
         .calendar__week-strip
             each weekday in weekDays
-                a.calendar__week-day(href=`/appointment?date=${weekday.isoDate}&employee=${employeeFilter}` class=[weekday.isToday && "today", weekday.isFocused && "focused"])
+                - var wdIsSun = new Date(weekday.isoDate).getDay() === 0
+                a.calendar__week-day(href=`/appointment?date=${weekday.isoDate}&employee=${employeeFilter}` class=[weekday.isToday && "today", weekday.isFocused && "focused", wdIsSun && "off-day"])
                     span.calendar__week-day-label= weekday.initial
                     span.calendar__week-day-number= weekday.dayNumber
-                    if weekday.fillStatus
+                    if weekday.fillStatus && !wdIsSun
                         span.fill-dot(class=`fill-dot--${weekday.fillStatus}`)
+                    if wdIsSun
+                        span.calendar__week-day-off Off
 
     .calendar-section
         .grid-section
@@ -100,7 +103,13 @@ block content
                 .timeline-circle
             .cell.time-header GMT+1
             each weekday in weekDays
-                .cell.day-header(class=[weekday.isToday && "today", weekday.isFocused && "focused"]) #{weekday.label}, #{weekday.date}
+                - var dhIsSun = new Date(weekday.isoDate).getDay() === 0
+                .cell.day-header(class=[weekday.isToday && "today", weekday.isFocused && "focused", dhIsSun && "off-day"])
+                    .dh-inner
+                        span.dh-name= weekday.label
+                        span.dh-num= weekday.date
+                    if dhIsSun
+                        span.dh-off Off
 
             each hour in hours
                 - const isHalf = hour.split(':')[1] !== '00'
@@ -108,7 +117,8 @@ block content
                     if !isHalf
                         = hour
                 each day, dayIndex in weekDays
-                    .cell.day(class=[day.isFocused && "focused", isHalf && "day--half"])
+                    - var dayCellIsSun = new Date(day.isoDate).getDay() === 0
+                    .cell.day(class=[day.isFocused && "focused", isHalf && "day--half", dayCellIsSun && "off-day"])
                         - var cellAppts = appointments.filter(a => a.isoDate === day.isoDate && a.startHour === hour)
                         if cellAppts.length >= 2
                             //- 2+ bookings: pills side-by-side (or summary if 4+)

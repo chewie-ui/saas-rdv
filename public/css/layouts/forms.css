@@ -1,0 +1,760 @@
+/* ============================================================
+   Forms builder page — BranShee Design System
+   ============================================================ */
+
+/* ── Page layout ──────────────────────────────────────────────────────────── */
+.forms-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 60px;
+}
+
+.forms-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.forms-page__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.forms-page__header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.forms-page__subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.forms-page__header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Status badge ─────────────────────────────────────────────────────────── */
+.forms-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  color: var(--text-muted);
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.forms-status-badge--on {
+  background: var(--accent-soft);
+  border-color: var(--accent-border, rgba(30, 122, 78, 0.3));
+  color: var(--accent);
+}
+
+/* ── Active toggle ────────────────────────────────────────────────────────── */
+.forms-active-toggle {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.forms-active-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.forms-active-toggle__track {
+  position: absolute;
+  inset: 0;
+  background: var(--border-medium);
+  border-radius: 99px;
+  transition: background 0.22s;
+}
+
+.forms-active-toggle__track::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.22s;
+}
+
+.forms-active-toggle input:checked + .forms-active-toggle__track {
+  background: var(--accent);
+}
+
+.forms-active-toggle input:checked + .forms-active-toggle__track::after {
+  transform: translateX(16px);
+}
+
+/* ── Two-column grid ──────────────────────────────────────────────────────── */
+.forms-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* ── Builder card ─────────────────────────────────────────────────────────── */
+.forms-builder-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.forms-builder-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.forms-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.forms-autosave {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.forms-autosave svg {
+  fill: var(--accent);
+}
+
+/* ── Question list ────────────────────────────────────────────────────────── */
+.forms-question-list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+/* Question row — rendered by JS as .question-card */
+.question-card {
+  display: grid;
+  grid-template-columns: 20px 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--surface-card);
+  transition: background 0.12s;
+}
+
+.question-card:last-child {
+  border-bottom: none;
+}
+
+.question-card:hover {
+  background: var(--surface);
+}
+
+/* Drag handle */
+.question-card__drag {
+  color: var(--border-medium);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.question-card__drag:active {
+  cursor: grabbing;
+}
+
+.question-card__drag svg {
+  fill: currentColor;
+}
+
+/* Ghost clone while dragging */
+.drag-ghost {
+  background: var(--surface-card);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 10px 16px;
+  display: grid;
+  grid-template-columns: 20px 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  cursor: grabbing !important;
+  will-change: top;
+}
+
+.question-card.drag-placeholder {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Content area */
+.question-card__content {
+  min-width: 0;
+}
+
+.question-card__label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.question-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.question-card__type {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Required / optional pill */
+.question-card__required {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.question-card__optional {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Action buttons */
+.question-card__actions {
+  display: flex;
+  gap: 4px;
+}
+
+.question-card__actions button {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border-light);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+
+.question-card__actions button svg {
+  fill: var(--text-muted);
+  margin: 0;
+}
+
+.question-card__actions button:hover {
+  background: var(--surface);
+  border-color: var(--border-medium);
+}
+
+.question-card__actions .delete-btn:hover {
+  background: var(--danger-pale);
+  border-color: var(--danger-border);
+}
+
+.question-card__actions .delete-btn:hover svg {
+  fill: var(--danger);
+}
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+.forms-builder__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.forms-builder__empty svg {
+  fill: var(--border-medium);
+}
+
+.forms-empty__title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-2);
+  margin: 4px 0 0;
+}
+
+.forms-empty__desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* ── Add dashed button ────────────────────────────────────────────────────── */
+.forms-add-dashed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: calc(100% - 32px);
+  margin: 8px 16px 16px;
+  padding: 10px;
+  border: 1.5px dashed var(--border-medium);
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: var(--font-primary);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
+}
+
+.forms-add-dashed svg {
+  fill: currentColor;
+}
+
+.forms-add-dashed:hover {
+  border-color: var(--accent);
+  color: var(--white);
+  background: var(--accent-soft);
+}
+
+/* ── Preview card ─────────────────────────────────────────────────────────── */
+.forms-preview-card {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  position: sticky;
+  top: 20px;
+}
+
+.forms-preview-card__head {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--surface-card);
+}
+
+.forms-preview-card__body {
+  padding: 24px;
+}
+
+/* Phone preview */
+.forms-preview-phone {
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.forms-preview-phone__inner {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.preview-step-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.preview-step-sub {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: -10px 0 0;
+}
+
+/* Questions in preview — rendered by JS */
+.preview-phone__questions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 40px;
+}
+
+.preview-question {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.preview-question__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.preview-question__label .req {
+  color: var(--danger);
+}
+
+.preview-question__input {
+  height: 34px;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 0 10px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  width: 100%;
+}
+
+.preview-question__yesno {
+  display: flex;
+  gap: 6px;
+}
+
+.preview-question__yesno button {
+  flex: 1;
+  padding: 7px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-family: var(--font-primary);
+  cursor: default;
+}
+
+.preview-question__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preview-question__choice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.preview-question__choice input {
+  accent-color: var(--accent);
+}
+
+.preview-empty {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* Confirm button */
+.preview-confirm-btn {
+  width: 100%;
+  justify-content: center;
+  opacity: 0.5;
+  cursor: default !important;
+  font-size: 13px;
+}
+
+/* ── Modal overlay ────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: none;
+}
+
+.modal-overlay.show {
+  display: block;
+}
+
+/* ── Modal ────────────────────────────────────────────────────────────────── */
+
+.forms-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.96);
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  z-index: 101;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.15);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Opened via JS: add 'show' to .modal-overlay, 'show' to .forms-modal */
+.modal-overlay.show + .forms-modal,
+.forms-modal.show {
+  opacity: 1;
+  pointer-events: all;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.forms-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.forms-modal__header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.forms-modal__body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.forms-modal__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Type selector (segmented) */
+.forms-type-selector {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.forms-type-btn {
+  padding: 7px 14px;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font-primary);
+  color: var(--text-muted);
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    color 0.12s;
+}
+
+.forms-type-btn:hover {
+  background: var(--surface);
+  border-color: var(--border-medium);
+  color: var(--ink);
+}
+
+.forms-type-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Options list */
+.forms-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.option-row .input {
+  flex: 1;
+}
+
+.option-row .remove-option {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.12s;
+}
+
+.option-row .remove-option:hover {
+  color: var(--danger);
+}
+
+.option-row .remove-option svg {
+  fill: currentColor;
+  margin: 0;
+}
+
+/* Required checkbox row */
+.forms-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+.forms-check-row input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Modal footer */
+.forms-modal__footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-light);
+}
+
+/* ── Forms toast notification ─────────────────────────────────────────────── */
+.forms-toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 11px 18px;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  z-index: 9999;
+  transform: translateY(16px);
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  pointer-events: none;
+  box-shadow: var(--shadow-p);
+  color: var(--ink);
+}
+
+.forms-toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.forms-toast.success {
+  border-color: var(--accent-border, rgba(30, 122, 78, 0.3));
+}
+.forms-toast.success .toast-dot {
+  background: var(--accent);
+}
+.forms-toast.error {
+  border-color: var(--danger-border);
+}
+.forms-toast.error .toast-dot {
+  background: var(--danger);
+}
+
+.toast-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .forms-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .forms-preview-card {
+    position: static;
+  }
+}
+
+@media (max-width: 540px) {
+  .forms-page__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .forms-page__header-right {
+    width: 100%;
+  }
+}

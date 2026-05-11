@@ -1,0 +1,31 @@
+- var _title = title || 'BranShee — Réservation en ligne'
+
+doctype html
+html(lang=lang || "fr")
+    head
+        meta(name="viewport" content="width=device-width, initial-scale=1.0")
+        meta(charset="UTF-8")
+        title= _title
+        meta(name="robots" content="noindex, nofollow")
+
+        link(rel="shortcut icon", href="/images/icon.svg", type="image/x-icon")
+        link(rel="stylesheet", href="/css/import.css")
+        link(rel="stylesheet", href="/css/layouts/auth.css")
+
+        //- Anti-flash: apply theme BEFORE render
+        script.
+            (function(){try{var t=localStorage.getItem('branshee-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
+
+        block links
+
+    body.auth-body
+
+        block content
+
+        block scripts
+
+        script(src="/js/import.js")
+        script(src="/js/theme.js")
+        script.
+            const COMPANY_ID = !{company ? `"${company._id}"` : "null"};
+            window.__t = !{JSON.stringify(t ? t.js : {})};

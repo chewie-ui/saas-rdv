@@ -2,109 +2,145 @@ const history__actionsPanel = document.querySelector(".history__actions-panel");
 const templateDialog = document.getElementById("templateDialog");
 import { initDialog } from "../templates/dialog.js";
 let idTransfer;
+
 document.addEventListener("click", async (event) => {
-  const button = event.target.closest(".btn-icon.btn-panel");
   const rowDelete = event.target.closest(".history__actions-row.delete");
-  const rowEdit = event.target.closest(".history__actions-row.edit");
-  const rowShow = event.target.closest(".history__actions-row.show");
+  const rowEdit   = event.target.closest(".history__actions-row.edit");
+  const rowShow   = event.target.closest(".history__actions-row.show");
 
-  if (rowEdit) {
-    location.href = `/history/edit/${idTransfer}`;
-  }
-
-  if (rowShow) {
-    location.href = `/appointement/${idTransfer}`;
-  }
+  if (rowEdit)  { location.href = `/history/edit/${idTransfer}`; return; }
+  if (rowShow)  { location.href = `/appointement/${idTransfer}`; return; }
 
   if (rowDelete) {
     const tmp = templateDialog.content.cloneNode(true);
-
-    tmp.querySelector("h2").textContent = window.__t.delete_confirm_title;
-    tmp.querySelector(".dialog__p").textContent = window.__t.delete_confirm_desc;
+    tmp.querySelector("h2").textContent          = window.__t.delete_confirm_title;
+    tmp.querySelector(".dialog__p").textContent  = window.__t.delete_confirm_desc;
     tmp.querySelector(".dialog__btn1").innerHTML = `<span>${window.__t.cancel}</span>`;
     tmp.querySelector(".dialog__btn2").innerHTML = `<span>${window.__t.confirm_delete}</span>`;
-
     document.querySelector("body").appendChild(tmp);
 
-    const isTrue = await initDialog("/history", "DELETE", {
-      id: idTransfer,
-    });
-
+    const isTrue = await initDialog("/history", "DELETE", { id: idTransfer });
     if (isTrue) {
-      document.querySelector(`tr[data-id="${idTransfer}"]`).remove();
+      document.querySelector(`tr[data-id="${idTransfer}"]`)?.remove();
     }
-
     return;
   }
 
-  if (button) {
-    history__actionsPanel.style.display = "flex";
-
-    const row = button.closest("tr") || button.closest(".history__card");
-    idTransfer = row.dataset.id;
-
-    const rect = button.getBoundingClientRect();
-    const panelWidth = 200; // min-width du panel
-    history__actionsPanel.style.top = `${rect.bottom + 5}px`;
-
-    // Eviter que le panel sorte à droite de l'écran
-    const rawLeft = rect.right - panelWidth;
-    const safeLeft = Math.max(8, Math.min(rawLeft, window.innerWidth - panelWidth - 8));
-    history__actionsPanel.style.left = `${safeLeft}px`;
-    return;
-  } else {
-    history__actionsPanel.style.display = `none`;
-    return;
+  // Close panel on outside click
+  if (history__actionsPanel && !event.target.closest(".history__actions-panel")) {
+    history__actionsPanel.style.display = "none";
   }
 });
 
+/* ── Search (server-side) ──────────────────────────────────── */
 const searchClient = document.getElementById("searchClient");
-const tbody = document.querySelector(".history__table tbody");
+const tbody        = document.querySelector(".hist-table tbody");
 let debounceTimer;
 
 if (searchClient) {
-  searchClient.addEventListener("input", async () => {
+  searchClient.addEventListener("input", () => {
     clearTimeout(debounceTimer);
     const v = searchClient.value.trim();
     debounceTimer = setTimeout(async () => {
-      const response = await fetch(`/history/search?client=${encodeURIComponent(v)}`);
-      const data = await response.json();
-
+      const res  = await fetch(`/history/search?client=${encodeURIComponent(v)}`);
+      const data = await res.json();
       renderData(data.results);
     }, 300);
   });
 }
 
-function renderData(appointments) {
-  console.log(appointments);
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-  if (appointments.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;max-width: none;">${(window.__t && window.__t.no_client_found) || "Aucun client trouvé"}</td></tr>`;
+function pillClass(status) {
+  const s = (status || "").toLowerCase();
+  if (s === "canceled" || s === "cancelled") return "cancelled";
+  if (s === "no-show")  return "no-show";
+  if (s === "completed") return "completed";
+  return "confirmed";
+}
+
+function pillLabel(status) {
+  const pc = pillClass(status);
+  const t = window.__t || {};
+  if (pc === "confirmed")  return t.status_confirmed || "Confirmed";
+  if (pc === "cancelled")  return t.status_canceled  || "Cancelled";
+  if (pc === "completed")  return t.status_completed || "Completed";
+  return t.status_noshow || "No-show";
+}
+
+function avatarIdx(name, surname) {
+  return (((name || "A").charCodeAt(0) + (surname || "A").charCodeAt(0)) % 8);
+}
+
+function renderData(appointments) {
+  if (!tbody) return;
+
+  if (!appointments || appointments.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">${(window.__t && window.__t.no_client_found) || "No results found"}</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = appointments
-    .map(
-      (h) => `
-        <tr data-id="${h._id}">
-            <td>${h.name} ${h.surname}</td>
-            <td>${h.email}</td>
-            <td>${h.phone}</td>
-            <td>${new Date(h.date).toLocaleDateString("fr-FR")} | ${h.startTime}-${h.endTime}</td>
-            <td>${h.message || ""}</td>
-            <td style="padding:8px 1.5rem">
-                <div class="${h.status}">${h.status === "canceled" ? window.__t.status_canceled : window.__t.status_confirmed}</div>
-            </td>
-            <td class="btn-td flex-c j-start">
-                <button class="btn-icon flex-c btn-panel">
-                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-160q-33 0-56.5-23.5T400-240q0-33 23.5-56.5T480-320q33 0 56.5 23.5T560-240q0 33-23.5 56.5T480-160Zm0-240q-33 0-56.5-23.5T400-480q0-33 23.5-56.5T480-560q33 0 56.5 23.5T560-480q0 33-23.5 56.5T480-400Zm0-240q-33 0-56.5-23.5T400-720q0-33 23.5-56.5T480-800q33 0 56.5 23.5T560-720q0 33-23.5 56.5T480-640Z"/></svg>
-                </button>
-            </td>
-        </tr>
-    `,
-    )
-    .join("");
+  tbody.innerHTML = appointments.map((h) => {
+    const initials = ((h.name||"").charAt(0) + (h.surname||"").charAt(0)).toUpperCase();
+    const idx      = avatarIdx(h.name, h.surname);
+    const d        = h.date ? new Date(h.date) : null;
+    const dateStr  = d ? `${MONTHS[d.getMonth()]} ${d.getDate()}, ${h.startTime||""}` : "-";
+    const sk       = (h.status || "confirmed").toLowerCase();
+    const pc       = pillClass(sk);
+    const pl       = pillLabel(sk);
+    const dur      = h.slotTime ? `${h.slotTime} min` : "-";
+
+    return `
+      <tr class="hist-row" data-id="${h._id}" data-status="${sk}" data-employee="${h.employeeId||""}">
+        <td class="hist-td hist-td--client">
+          <div class="hist-avatar av-${idx}">${initials}</div>
+          <span class="hist-name">${h.name||""} ${h.surname||""}</span>
+        </td>
+        <td class="hist-td">${h.serviceName||"-"}</td>
+        <td class="hist-td">${h.employeeName||"-"}</td>
+        <td class="hist-td hist-td--mono">${dateStr}</td>
+        <td class="hist-td">${dur}</td>
+        <td class="hist-td">
+          <span class="pill pill--${pc}">
+            <span class="pill__dot"></span>${pl}
+          </span>
+        </td>
+        <td class="hist-td hist-td--action">
+          <a class="hist-open-btn" href="/history/edit/${h._id}">
+            Open
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+              <path d="M5 12h14M13 6l6 6-6 6"/>
+            </svg>
+          </a>
+        </td>
+      </tr>`;
+  }).join("");
 }
+
+/* ── Client-side filters (status + employee) ────────────────── */
+const statusFilter = document.getElementById("statusFilter");
+const empFilter    = document.getElementById("empFilterHist");
+const dateFilter   = document.getElementById("dateFilter");
+
+function applyClientFilters() {
+  const statusVal = statusFilter ? statusFilter.value : "all";
+  const empVal    = empFilter    ? empFilter.value    : "all";
+  const daysVal   = dateFilter   ? parseInt(dateFilter.value) || 0 : 0;
+  const cutoff    = daysVal && daysVal !== 0 ? Date.now() - daysVal * 86400000 : 0;
+
+  const rows = document.querySelectorAll(".hist-row");
+  rows.forEach((row) => {
+    const matchStatus = statusVal === "all" || row.dataset.status === statusVal;
+    const matchEmp    = empVal    === "all" || row.dataset.employee === empVal;
+    const rowDate     = row.dataset.date ? new Date(row.dataset.date).getTime() : Infinity;
+    const matchDate   = !cutoff || rowDate >= cutoff;
+    row.style.display = matchStatus && matchEmp && matchDate ? "" : "none";
+  });
+}
+
+if (statusFilter) statusFilter.addEventListener("change", applyClientFilters);
+if (empFilter)    empFilter.addEventListener("change", applyClientFilters);
+if (dateFilter)   dateFilter.addEventListener("change", applyClientFilters);
 
 /* ── Status pills (edit page) ── */
 const statusPills = document.querySelectorAll(".status-pill");

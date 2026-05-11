@@ -4,118 +4,108 @@ block links
     link(rel="stylesheet", href="/css/components/admin/panel.admin.css")
 
 block content
-    .client-card
-        .client-card__main
-            .client-card__icon.flex-c
-                if currentCompany.informations && currentCompany.informations.services && currentCompany.informations.services.toLowerCase() === 'haircut'
-                    svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                        path(d="M200-80 40-520l200-120v-240h160v240l200 120L440-80H200Zm480 0q-17 0-28.5-11.5T640-120q0-17 11.5-28.5T680-160h120v-80H680q-17 0-28.5-11.5T640-280q0-17 11.5-28.5T680-320h120v-80H680q-17 0-28.5-11.5T640-440q0-17 11.5-28.5T680-480h120v-80H680q-17 0-28.5-11.5T640-600q0-17 11.5-28.5T680-640h120v-80H680q-17 0-28.5-11.5T640-760q0-17 11.5-28.5T680-800h160q33 0 56.5 23.5T920-720v560q0 33-23.5 56.5T840-80H680Zm-424-80h128l118-326-124-74H262l-124 74 118 326Zm64-200Z")
-                else if currentCompany.informations && currentCompany.informations.services && currentCompany.informations.services.toLowerCase() === 'coaching'
-                    svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                        path(d="M440-200q-100 0-170-70t-70-170q0-11 1-22t3-22q-5 2-12 3t-12 1q-42 0-71-29t-29-71q0-42 27.5-71t69.5-29q33 0 59.5 18.5T274-614q33-30 75.5-48t90.5-18h440v160H680v80q0 100-70 170t-170 70ZM208.5-551.5Q220-563 220-580t-11.5-28.5Q197-620 180-620t-28.5 11.5Q140-597 140-580t11.5 28.5Q163-540 180-540t28.5-11.5ZM539-341q41-41 41-99t-41-99q-41-41-99-41t-99 41q-41 41-41 99t41 99q41 41 99 41t99-41Zm-42.5-42.5Q520-407 520-440t-23.5-56.5Q473-520 440-520t-56.5 23.5Q360-473 360-440t23.5 56.5Q407-360 440-360t56.5-23.5ZM440-440Z")
+    -
+        var companyName = currentCompany && currentCompany.name ? currentCompany.name : 'Studio'
+        var companyInitials = companyName.split(' ').slice(0,2).map(function(w){return w[0]}).join('').toUpperCase() || 'BS'
+        var dashStats = [
+            { label: 'Revenue',      value: '€3 412', delta: '+12%', period: 'vs. last week', pts: '6,18 18,14 30,16 42,10 54,12 66,6 78,8 90,4' },
+            { label: 'Bookings',     value: '47',     delta: '+8%',  period: 'this week',     pts: '6,16 18,14 30,18 42,12 54,8 66,10 78,6 90,4' },
+            { label: 'Show-up rate', value: '96%',    delta: '+2pt', period: '30-day',        pts: '6,14 18,16 30,12 42,14 54,10 66,8 78,10 90,6' },
+            { label: 'New clients',  value: '11',     delta: '+3',   period: 'this week',     pts: '6,18 18,12 30,14 42,8 54,12 66,6 78,8 90,4' }
+        ]
+        var activityFeed = [
+            { type: 'New booking',   sub: 'Tanya Kim · Wed Jun 21 13:00',  when: '2m',  kind: 'accent' },
+            { type: 'Cancelled',     sub: 'Pierre M. cancelled Tue 14:30', when: '12m', kind: 'danger' },
+            { type: 'Review (5★)',   sub: '"Amazing!" — Camille D.',       when: '1h',  kind: 'warning' },
+            { type: 'Reminder sent', sub: '12 SMS reminders for tomorrow', when: '2h',  kind: 'muted' },
+            { type: 'New client',    sub: 'Iris V. created an account',    when: '3h',  kind: 'muted' }
+        ]
+
+    //- ── Greeting card ──────────────────────────────────────────
+    .dash-greeting
+        .dash-greeting__avatar= companyInitials
+        .dash-greeting__text
+            .dash-greeting__hello Good morning, #{companyName} ☀️
+            .dash-greeting__sub Today's overview — stay on top of your day!
+        .dash-greeting__btns
+            button.ghost.btn-sm Today's view
+            a.btn.btn-sm(href="/appointment/new")
+                svg(xmlns="http://www.w3.org/2000/svg" height="14" viewBox="0 -960 960 960" width="14" fill="currentColor")
+                    path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                span Quick book
+
+    //- ── Stats grid ─────────────────────────────────────────────
+    .dash-stats
+        each s in dashStats
+            .dash-stat-card
+                .dash-stat-card__label= s.label
+                .dash-stat-card__value= s.value
+                .dash-stat-card__row
+                    span.pill.pill--confirmed.pill--sm= s.delta
+                    span.dash-stat-period= s.period
+                svg.dash-sparkline(viewBox="0 0 100 24" width="100%" height="24" aria-hidden="true")
+                    polyline(fill="none" stroke="var(--accent)" stroke-width="1.6" points=s.pts)
+                    polyline(fill="var(--accent)" opacity="0.08" stroke="none" points=`6,24 ${s.pts} 90,24`)
+
+    //- ── Main two-column grid ────────────────────────────────────
+    .dash-grid
+
+        //- Today's appointments
+        .section__container.dash-appts
+            .section__container-header
+                .section__container-header__name
+                    svg(xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 -960 960 960" width="18" fill="currentColor")
+                        path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
+                    h3 Today's appointments
+                .dash-appts__filter
+                    span.pill.pill--default All staff ▾
+            .dash-appts__body
+                if appointments && appointments.length
+                    each appt in appointments
+                        .dash-appt-row
+                            .dash-appt-row__time= appt.time
+                            .dash-appt-row__info
+                                .dash-appt-row__name= appt.clientName || appt.displayDate || 'Client'
+                                .dash-appt-row__svc= appt.serviceName || '—'
+                            span.pill(class=appt.status === 'pending' ? 'pill--no-show' : 'pill--confirmed')
+                                span.pill__dot
+                                | #{appt.status === 'pending' ? 'Pending' : 'Confirmed'}
+                            a.btn.ghost.btn-sm(href=`/appointment/${appt._id}`) Open →
                 else
-                    svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                        path(d="M540-80q-108 0-184-76t-76-184v-23q-86-14-143-80.5T80-600v-240h120v-40h80v160h-80v-40h-40v160q0 66 47 113t113 47q66 0 113-47t47-113v-160h-40v40h-80v-160h80v40h120v240q0 90-57 156.5T360-363v23q0 75 52.5 127.5T540-160q75 0 127.5-52.5T720-340v-67q-35-12-57.5-43T640-520q0-50 35-85t85-35q50 0 85 35t35 85q0 39-22.5 70T800-407v67q0 108-76 184T540-80Zm248.5-411.5Q800-503 800-520t-11.5-28.5Q777-560 760-560t-28.5 11.5Q720-537 720-520t11.5 28.5Q743-480 760-480t28.5-11.5ZM760-520Z")
-            .client-card__content
-                .client-card__name= currentCompany.name || "Skelio app"
-                .client-card__meta Tue, June 19 - 09:21 AM
-                    span ☀️
-        .client-card__actions
-            button.btn New appointment
+                    -
+                        var sampleAppts = [
+                            { time: '09:00', name: 'Sara Mehmet',     svc: 'Cut & blow-dry · 60 min',  status: 'confirmed' },
+                            { time: '10:30', name: 'Benjamin Garcia', svc: 'Color refresh · 90 min',   status: 'confirmed' },
+                            { time: '13:00', name: 'Tanya Kim',       svc: 'Curly cut consult · 75 min', status: 'pending' },
+                            { time: '14:30', name: 'Joachim Lefèvre', svc: 'Cut · 45 min',             status: 'confirmed' },
+                            { time: '16:30', name: 'Ana Reyes',       svc: 'Highlights · 120 min',     status: 'confirmed' }
+                        ]
+                    each appt in sampleAppts
+                        .dash-appt-row
+                            .dash-appt-row__time= appt.time
+                            .dash-appt-row__info
+                                .dash-appt-row__name= appt.name
+                                .dash-appt-row__svc= appt.svc
+                            span.pill(class=appt.status === 'pending' ? 'pill--no-show' : 'pill--confirmed')
+                                span.pill__dot
+                                | #{appt.status === 'pending' ? 'Pending' : 'Confirmed'}
+                            a.btn.ghost.btn-sm(href="#") Open →
 
-    .stats-section.section__container
-        .stats-card
-            .stats-card__header.flex-c
-                .stats-card__title
-                    h3 Statistics
-                .stats-card__filter Last 7 Days
-
-            .stats-card__content
-                .stats-item
-                    .stats-item__label Revenue
-                    .stats-item__body
-                        .stats-item__numbers
-                            .stats-item__value $34,120
-                            .stats-item__trend.stats-item__trend--up +12%
-                        .stats-item__period vs. last period
-                .stats-item
-                    .stats-item__label Revenue
-                    .stats-item__body
-                        .stats-item__numbers
-                            .stats-item__value $34,120
-                            .stats-item__trend.stats-item__trend--up +12%
-                        .stats-item__period vs. last period
-                .stats-item
-                    .stats-item__label Revenue
-                    .stats-item__body
-                        .stats-item__numbers
-                            .stats-item__value $34,120
-                            .stats-item__trend.stats-item__trend--up +12%
-                        .stats-item__period vs. last period
-                .stats-item
-                    .stats-item__label Revenue
-                    .stats-item__body
-                        .stats-item__numbers
-                            .stats-item__value $34,120
-                            .stats-item__trend.stats-item__trend--up +12%
-                        .stats-item__period vs. last period
-
-    .block-section__row.height-100
-        .appointments-section.section__container  
-            .appointments-section__header.section__container-header
+        //- Latest activity
+        .section__container.dash-activity
+            .section__container-header
                 .section__container-header__name
-                    .flex-c
-                        svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                            path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z")
-                    h3 Today's Appointments
-                .section__container-header__options
-                    .select All clients
-            .appointments-section__body
-                if appointments
-                    each appointment in appointments
-                        .appointments-card
-                            .appointments-card__content
-                                .appointments-card__content-type.xs-comment= appointment.time 
-                                .appointments-card__content-informations Garcia, Benjamin - Today at 14:30
-                            .appointments-card__date.grey-light= appointment.displayDate
-        .notifications-section.section__container  
-            .notifications-section__header.section__container-header
-                .section__container-header__name
-                    .flex-c
-                        svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                            path(d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z")
-                    h3 Latest Activity
-            .notifications-section__body
-                
-                .notification-card
-                    .notification-card__content
-                        .notification-card__content-type.xs-comment Appointment cancelled
-                        .notification-card__content-informations Garcia, Benjamin - Today at 189898:30
-                    .notification-card__date.grey-light 2min ago
-                .notification-card
-                    .notification-card__content
-                        .notification-card__content-type.xs-comment Appointment cancelled
-                        .notification-card__content-informations Garcia, Benjamin - Today at 14:30
-                    .notification-card__date.grey-light 2min ago
-                .notification-card
-                    .notification-card__content
-                        .notification-card__content-type.xs-comment Appointment cancelled
-                        .notification-card__content-informations Garcia, Benjamin - Today at 14:30
-                    .notification-card__date.grey-light 2min ago
-                .notification-card
-                    .notification-card__content
-                        .notification-card__content-type.xs-comment Appointment cancelled
-                        .notification-card__content-informations Garcia, Benjamin - Today at 14:30
-                    .notification-card__date.grey-light 2min ago
-                .notification-card
-                    .notification-card__content
-                        .notification-card__content-type.xs-comment Appointment cancelled
-                        .notification-card__content-informations Garcia, Benjamin - Today at 14:30
-                    .notification-card__date.grey-light 2min ago
-                .notification-card
-                    .notification-card__content
-                        .notification-card__content-type.xs-comment Appointment cancelled
-                        .notification-card__content-informations Garcia, Benjamin - Today at 14:30
-                    .notification-card__date.grey-light 2min ago
+                    svg(xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 -960 960 960" width="18" fill="currentColor")
+                        path(d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z")
+                    h3 Latest activity
+                a.more(href="#") View all
+            .dash-activity__body
+                each act in activityFeed
+                    .dash-act-row
+                        .dash-act-row__dot(class=`dash-act-dot--${act.kind}`)
+                        .dash-act-row__body
+                            .dash-act-row__title= act.type
+                            .dash-act-row__sub= act.sub
+                        .dash-act-row__when= act.when
 
 block scripts

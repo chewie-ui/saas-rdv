@@ -8,77 +8,82 @@ block links
     link(rel="stylesheet", href="/css/templates/dialog.css")
 
 block content
-    .wrapper.account
-        .account__container
-            .account__left
-                .account__avatar
-                    img(alt="Profile picture" src=user.profilePicture || "/images/no-user.webp" id="avatarPreview")
-                .account__avatar-btn
+    .info-page
+
+        .info-page__header
+            h2= t.profile.title || 'Informations générales'
+            p.info-page__subtitle= t.info.page_subtitle || 'Gérez votre profil et les informations de votre établissement.'
+
+        //- ── Profil personnel ─────────────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3= t.profile.section_title || 'Profil personnel'
+            .profile-row
+                .profile-photo-col
+                    .profile-avatar
+                        img(alt="Photo de profil" src=user.profilePicture || "/images/no-user.webp" id="avatarPreview")
                     input#fileInput(type="file" style="display:none" accept="image/*")
-                    button.btn#uploadBtn
+                    button.btn.secondary.btn--sm#uploadBtn
                         span= t.profile.upload_photo
-            .account__right
-                h2= t.profile.title
-                .account__form
+                .profile-fields
                     .field
                         label(for="fullname")= t.profile.fullname
                         input#fullname.input(value=user.fullName name="fullName")
                     .field
                         label(for="email")= t.profile.email
                         input#email.input(disabled value=maskEmail name="email")
-                        div(style="width:fit-content")
-                            .more#emailOpen= t.profile.edit_email
+                        .more#emailOpen= t.profile.edit_email
                     .field
                         label(for="phone")= t.profile.phone
                         input#phone.input(value=user.phone name="phone" placeholder=t.profile.phone)
                     .field
                         label(for="password")= t.profile.password
                         input#password.input(placeholder="●●●●●●●●●●●" disabled)
-                        a(href="/forgot-password").more#passwordOpen= t.profile.change_pwd
+                        a.more#passwordOpen(href="/forgot-password")= t.profile.change_pwd
                         .success= success
-                    .account__actions
-                        button#saveChanges
-                            span= t.profile.save
-                        button#deleteAccountBtn.danger(type="button")
-                            span= t.profile.delete_account
-        //- ── URL personnalisée (slug) ────────────────────────────────────────
-        .account__container
-            .account__right(style="width:100%")
-                h2= t.info.custom_url_title || 'URL personnalisée'
-                p.field-hint(style="margin-bottom:14px;color:var(--grey-primary)")= t.info.custom_url_desc || 'Choisissez une URL unique pour votre page de réservation publique.'
-                .account__form
-                    .field
-                        label= t.info.custom_url_label || 'Nom d\'URL'
-                        .slug-field-wrapper
-                            span.slug-prefix= '/'
-                            input.input#slugInput(
-                                type="text"
-                                value=(currentCompany && currentCompany.slug ? currentCompany.slug : '')
-                                placeholder="mon-salon"
-                                autocomplete="off"
-                            )
-                        .slug-status#slugStatus(style="font-size:12px;margin-top:6px;min-height:18px")
-                    .account__actions
-                        button#saveSlugBtn
-                            span= t.info.custom_url_save || 'Enregistrer l\'URL'
+            .info-card__actions
+                button.btn.danger#deleteAccountBtn(type="button")
+                    span= t.profile.delete_account
+                button.btn#saveChanges
+                    span= t.profile.save
 
-        .account__container.reversed
-            .account__left
-                .business-pic-wrapper
-                    .business-pic-preview
+        //- ── URL personnalisée ────────────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3= t.info.custom_url_title || 'URL personnalisée'
+                p.info-card__desc= t.info.custom_url_desc || 'Choisissez une URL unique pour votre page de réservation publique.'
+            .field
+                label= t.info.custom_url_label || 'Nom d\'URL'
+                .slug-field-wrapper
+                    span.slug-prefix /
+                    input.input#slugInput(
+                        type="text"
+                        value=(currentCompany && currentCompany.slug ? currentCompany.slug : '')
+                        placeholder="mon-salon"
+                        autocomplete="off"
+                    )
+                .slug-status#slugStatus
+            .info-card__actions
+                button.btn#saveSlugBtn
+                    span= t.info.custom_url_save || 'Enregistrer l\'URL'
+
+        //- ── Informations entreprise ──────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3= t.info.business_section_title
+            .biz-row
+                .biz-photo-col
+                    .biz-photo-preview
                         if user.businessPicture
-                            img(alt="Photo établissement" src=user.businessPicture id="businessPicPreview")
+                            img#businessPicPreview(alt="Photo établissement" src=user.businessPicture)
                         else
-                            .business-pic-placeholder#businessPicPreview
-                                svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor")
-                                    path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80ZM480-320q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113T480-320Zm0-80q33 0 56.5-23.5T560-480q0-33-23.5-56.5T480-560q-33 0-56.5 23.5T400-480q0 33 23.5 56.5T480-400Z")
-                    .account__avatar-btn
-                        input#businessFileInput(type="file" style="display:none" accept="image/*")
-                        button.btn#uploadBusinessBtn
-                            span= t.info.business_photo
-            .account__right
-                h2= t.info.business_section_title
-                .account__form
+                            .biz-photo-placeholder#businessPicPreview
+                                svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
+                                    path(d="M160-120q-33 0-56.5-23.5T80-200v-480q0-33 23.5-56.5T160-760h126l74-80h240l74 80h126q33 0 56.5 23.5T880-680v480q0 33-23.5 56.5T800-120H160Zm0-80h640v-480H160v480Zm320-80q-58 0-99-41t-41-99q0-58 41-99t99-41q58 0 99 41t41 99q0 58-41 99t-99 41Zm0-80q25 0 42.5-17.5T540-420q0-25-17.5-42.5T480-480q-25 0-42.5 17.5T420-420q0 25 17.5 42.5T480-360Z")
+                    input#businessFileInput(type="file" style="display:none" accept="image/*")
+                    button.btn.secondary.btn--sm#uploadBusinessBtn
+                        span= t.info.business_photo
+                .biz-fields
                     .field
                         label= t.info.business_name
                         input.input#businessNameInput(
@@ -93,115 +98,93 @@ block content
                     .field
                         label= t.info.business_type_label
                         .service-select-wrapper
-                            input.input.service-input(
+                            input.input#businessTypeInput(
                                 type="text"
-                                id="businessTypeInput"
                                 placeholder="Ex: Coiffeur, Médecin, Coach sportif..."
                                 autocomplete="off"
                                 value=user.businessType || ""
                             )
                             .service-dropdown#businessTypeDropdown
-                    .account__actions
-                        button#saveBusinessInfo
-                            span= t.info.business_save
+            .info-card__actions
+                button.btn#saveBusinessInfo
+                    span= t.info.business_save
 
-        //- ---- Delete account modal ----
-        .delete-account-modal#deleteAccountModal(style="display:none")
-            .delete-account-modal__overlay#deleteAccountOverlay
-            .delete-account-modal__box
-                .delete-account-modal__header
-                    h3= t.info.delete_title
-                    button.delete-account-modal__close#closeDeleteModal
-                        svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor")
-                            path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
-                .delete-account-modal__body
-                    .delete-account-step#deleteStep1
-                        p.delete-account-modal__desc!= t.info.delete_desc1
-                        p.delete-account-modal__desc= t.info.delete_desc2
-                        button#sendDeleteCode.btn.danger(type="button")= t.info.send_code
-                        .delete-account-modal__status#deleteCodeStatus
-                    .delete-account-step#deleteStep2(style="display:none")
-                        p.delete-account-modal__desc= t.info.enter_code
-                        input#deleteCodeInput.input(type="text" placeholder=t.info.code_placeholder maxlength="6")
-                        button#confirmDeleteAccount.btn.danger(type="button")= t.info.confirm_delete
-                        .delete-account-modal__status#deleteConfirmStatus
-
-        .location__container
-            .location__map(id="mapContainer")
-                if user.location.iframeUrl
-                    iframe(src=user.location.iframeUrl height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade")
-                else
-                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1299500.656531456!2d3.147172292480064!3d50.495334442699736!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c17d64edf39797%3A0x47ebf2b439e60ff2!2sBelgique!5e0!3m2!1sfr!2sbe!4v1775722964111!5m2!1sfr!2sbe" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-            .location__form
-                h2= t.info.location_title
-                .location__form-body
-                    input(type="hidden", id="latInput")
-                    input(type="hidden", id="lonInput")
-                    .form__navigation
+        //- ── Localisation ─────────────────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3= t.info.location_title
+            .location-layout
+                .location-map#mapContainer
+                    if user.location && user.location.iframeUrl
+                        iframe(src=user.location.iframeUrl style="border:0;width:100%;min-height:300px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade")
+                    else
+                        iframe(src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1299500.656531456!2d3.147172292480064!3d50.495334442699736!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c17d64edf39797%3A0x47ebf2b439e60ff2!2sBelgique!5e0!3m2!1sfr!2sbe!4v1775722964111!5m2!1sfr!2sbe" style="border:0;width:100%;min-height:300px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade")
+                .location-form
+                    input(type="hidden" id="latInput")
+                    input(type="hidden" id="lonInput")
+                    .field
                         .radio-group
                             .radio-item
-                                input(id='onlineService' type="radio" name="serviceType" checked=(user.location.serviceType !== 'en_ligne'))
+                                input#onlineService(type="radio" name="serviceType" checked=(user.location && user.location.serviceType !== 'en_ligne'))
                                 label(for="onlineService")
                                     span.custom-radio
                                     = t.info.on_site
                             .radio-item
-                                input(id='homeService' type="radio" name="serviceType" checked=(user.location.serviceType === 'en_ligne'))
+                                input#homeService(type="radio" name="serviceType" checked=(user.location && user.location.serviceType === 'en_ligne'))
                                 label(for="homeService")
                                     span.custom-radio
                                     = t.info.online_svc
-                    //- Shown for "Service sur place" (full address)
-                    .form__top#addressSearchBlock
-                        .form-group
-                            label= t.info.search_addr
-                            input.input(placeholder=t.info.addr_placeholder id="addressInput" autocomplete="chrome-off")
-                            #results.results
-                    .form__bottom#fullAddressBlock
-                        .form-group
+                    #addressSearchBlock.field
+                        label= t.info.search_addr
+                        input.input(placeholder=t.info.addr_placeholder id="addressInput" autocomplete="chrome-off")
+                        #results.results
+                    #fullAddressBlock
+                        .field
                             label= t.info.address
-                            input.input(id='streetInput' value=user.location.address || "")
-                        .form-group
+                            input.input(id='streetInput' value=(user.location && user.location.address) || "")
+                        .field
                             label= t.info.zip
-                            input.input(id='zipInput' value=user.location.zip || "")
-                        .form-group
+                            input.input(id='zipInput' value=(user.location && user.location.zip) || "")
+                        .field
                             label= t.info.city
-                            input.input(id='cityInput' value=user.location.city || "")
-                        .form-group
+                            input.input(id='cityInput' value=(user.location && user.location.city) || "")
+                        .field
                             label= t.info.country
-                            input.input(id='countryInput' value=user.location.country || "")
-                    //- Shown for "Service en ligne" (only country + optional city)
-                    .form__bottom#onlineAddressBlock(style="display:none")
-                        .form-group
+                            input.input(id='countryInput' value=(user.location && user.location.country) || "")
+                    #onlineAddressBlock(style="display:none")
+                        .field
                             label= t.info.country
-                            input.input(id='countryInputOnline' value=user.location.country || "")
-                        .form-group
+                            input.input(id='countryInputOnline' value=(user.location && user.location.country) || "")
+                        .field
                             label= t.info.city_optional
-                            input.input(id='cityInputOnline' value=user.location.city || "")
-                    .form-action
-                        button(id="confirmLocation" style="width:auto")
+                            input.input(id='cityInputOnline' value=(user.location && user.location.city) || "")
+                    .info-card__actions(style="margin-top:4px")
+                        button.btn#confirmLocation
                             span= t.info.confirm_location
-        .social
-            .social__container
+
+        //- ── Réseaux sociaux ──────────────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3= t.profile.social_title || 'Réseaux sociaux'
+                p.info-card__desc= t.info.social_desc || 'Affichez vos coordonnées sur votre page publique.'
+            .social-grid
                 -
                     var cs = (user.calendarSettings) ? user.calendarSettings : {}
                     var socials = [
-                        { name: 'emailPro',       toggle: 'showEmailPro',  logo: 'email-logo.webp',     alt: 'Email logo',     label: t.profile.social.email_pro,   val: user.emailPro    || '' },
-                        { name: 'phonePro',       toggle: 'showPhonePro',  logo: 'phone-logo.webp',     alt: 'Phone logo',     label: t.profile.social.phone_pro,   val: user.phonePro    || '' },
-                        { name: 'instagramLink',  toggle: 'showInstagram', logo: 'instagram-logo.webp', alt: 'Instagram logo', label: t.profile.social.instagram,   val: user.instagramLink || '' },
-                        { name: 'whatsappLink',   toggle: 'showWhatsapp',  logo: 'whatsapp-logo.webp',  alt: 'Whatsapp logo',  label: t.profile.social.whatsapp,    val: user.whatsappLink  || '' },
-                        { name: 'facebookLink',   toggle: 'showFacebook',  logo: 'facebook-logo.webp',  alt: 'Facebook logo',  label: t.profile.social.facebook,    val: user.facebookLink  || '' },
-                        { name: 'website',        toggle: 'showWebsite',   logo: 'website-logo.webp',   alt: 'Website logo',   label: t.profile.social.website,     val: user.website       || '' }
+                        { name: 'emailPro',       toggle: 'showEmailPro',  logo: 'email-logo.webp',     alt: 'Email logo',     label: t.profile.social.email_pro,   val: user.emailPro       || '' },
+                        { name: 'phonePro',       toggle: 'showPhonePro',  logo: 'phone-logo.webp',     alt: 'Phone logo',     label: t.profile.social.phone_pro,   val: user.phonePro       || '' },
+                        { name: 'instagramLink',  toggle: 'showInstagram', logo: 'instagram-logo.webp', alt: 'Instagram logo', label: t.profile.social.instagram,   val: user.instagramLink  || '' },
+                        { name: 'whatsappLink',   toggle: 'showWhatsapp',  logo: 'whatsapp-logo.webp',  alt: 'Whatsapp logo',  label: t.profile.social.whatsapp,    val: user.whatsappLink   || '' },
+                        { name: 'facebookLink',   toggle: 'showFacebook',  logo: 'facebook-logo.webp',  alt: 'Facebook logo',  label: t.profile.social.facebook,    val: user.facebookLink   || '' },
+                        { name: 'website',        toggle: 'showWebsite',   logo: 'website-logo.webp',   alt: 'Website logo',   label: t.profile.social.website,     val: user.website        || '' }
                     ]
                 each s in socials
                     -
                         var isOn = (cs[s.toggle] !== false)
-                    .social__box(data-name=s.name class=(!isOn ? 'social__box--hidden' : ''))
+                    .social-box(data-name=s.name class=(!isOn ? 'social-box--hidden' : ''))
                         if !user.isPremium
-                            a(href="/subscription").get__premium= t.profile.get_premium
-                        //- Toggle on/off
-                        label.social-visibility-toggle(
-                            title=t.info.toggle_visibility
-                            data-toggle=s.toggle
-                        )
+                            a.get__premium(href="/subscription")= t.profile.get_premium
+                        label.social-visibility-toggle(title=t.info.toggle_visibility data-toggle=s.toggle)
                             input.social-visibility-toggle__input(
                                 type="checkbox"
                                 checked=isOn
@@ -209,16 +192,37 @@ block content
                             )
                             span.social-visibility-toggle__track
                                 span.social-visibility-toggle__thumb
-                        .social__logo
+                        .social-box__logo
                             img(src="/images/logos/" + s.logo alt=s.alt)
-                        .social__title= s.label
-                        .social__field
+                        .social-box__title= s.label
+                        .social-box__field
                             input.input(placeholder=t.info.link_placeholder value=s.val disabled=(!user.isPremium))
-                            button.btn__social-save
+                            button.btn.secondary.btn--sm.btn__social-save
                                 span= t.avail.save
+
+    //- ── Delete account modal ─────────────────────────────────────────────────
+    .delete-account-modal#deleteAccountModal(style="display:none")
+        .delete-account-modal__overlay#deleteAccountOverlay
+        .delete-account-modal__box
+            .delete-account-modal__header
+                h3= t.info.delete_title
+                button.delete-account-modal__close#closeDeleteModal
+                    svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor")
+                        path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
+            .delete-account-modal__body
+                .delete-account-step#deleteStep1
+                    p.delete-account-modal__desc!= t.info.delete_desc1
+                    p.delete-account-modal__desc= t.info.delete_desc2
+                    button.btn.danger#sendDeleteCode(type="button")= t.info.send_code
+                    .delete-account-modal__status#deleteCodeStatus
+                .delete-account-step#deleteStep2(style="display:none")
+                    p.delete-account-modal__desc= t.info.enter_code
+                    input.input#deleteCodeInput(type="text" placeholder=t.info.code_placeholder maxlength="6")
+                    button.btn.danger#confirmDeleteAccount(type="button")= t.info.confirm_delete
+                    .delete-account-modal__status#deleteConfirmStatus
+
     +dialog()
     +prompt()
-
 
 block scripts
     script(src='/js/layouts/informations.js')
@@ -307,13 +311,11 @@ block scripts
                     const file = businessFileInput.files[0];
                     if (!file) return;
 
-                    // Preview immédiat
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         if (businessPicPreview.tagName === 'IMG') {
                             businessPicPreview.src = e.target.result;
                         } else {
-                            // Remplacer le placeholder par une vraie image
                             const img = document.createElement('img');
                             img.src = e.target.result;
                             img.alt = 'Photo établissement';
@@ -323,7 +325,6 @@ block scripts
                     };
                     reader.readAsDataURL(file);
 
-                    // Upload
                     const formData = new FormData();
                     formData.append('businessPicture', file);
                     const res = await fetch('/account/business-picture', { method: 'PATCH', body: formData });

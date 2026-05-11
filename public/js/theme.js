@@ -1,9 +1,9 @@
 /**
- * SayMiro Calendar — Dark / Light mode toggle
+ * BranShee — Dark / Light mode toggle
  * Persiste le choix dans localStorage, appliqué tôt pour éviter le flash.
  */
 
-const STORAGE_KEY = 'saymiro-theme';
+const STORAGE_KEY = 'branshee-theme';
 
 function applyTheme(theme) {
   const html = document.documentElement;

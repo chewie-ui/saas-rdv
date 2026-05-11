@@ -7,52 +7,22 @@ block jsonld
         {
           "@context": "https://schema.org",
           "@type": "SoftwareApplication",
-          "name": "SayMiro Calendar",
+          "name": "BranShee",
           "applicationCategory": "BusinessApplication",
           "operatingSystem": "Web",
           "url": "https://www.saymiro.com",
-          "description": "SayMiro Calendar est la plateforme de prise de rendez-vous en ligne pour les professionnels. Réservez avec des coaches, coiffeurs, thérapeutes et bien plus.",
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "EUR",
-            "description": "Inscription et réservation gratuites"
-          },
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.8",
-            "reviewCount": "120"
-          }
+          "description": "BranShee est la plateforme de prise de rendez-vous en ligne pour les professionnels.",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
         }
     script(type="application/ld+json").
         {
           "@context": "https://schema.org",
           "@type": "FAQPage",
           "mainEntity": [
-            {
-              "@type": "Question",
-              "name": "Comment prendre rendez-vous sur SayMiro Calendar ?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Recherchez un professionnel par nom ou localisation, consultez ses disponibilités et réservez en quelques clics. Aucun compte requis pour réserver."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "SayMiro Calendar est-il gratuit ?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Oui, la prise de rendez-vous est entièrement gratuite pour les clients. Les professionnels bénéficient d'un plan gratuit avec des fonctionnalités de base."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "Quels professionnels utilisent SayMiro Calendar ?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Des coaches sportifs, coiffeurs, thérapeutes, ostéopathes, kinésithérapeutes, tatoueurs et bien d'autres professionnels indépendants."
-              }
-            }
+            { "@type": "Question", "name": "Comment prendre rendez-vous sur BranShee ?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Recherchez un professionnel, consultez ses disponibilités et réservez en quelques clics." } },
+            { "@type": "Question", "name": "BranShee est-il gratuit ?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Oui, la prise de rendez-vous est entièrement gratuite pour les clients." } }
           ]
         }
 
@@ -61,63 +31,136 @@ block links
     link(rel="stylesheet", href="/css/templates/dialog.css")
 
 block content
-    .landing__client
-        .hero
-            .hero__blur
-            .hero__container.container
-                h1= t.search.hero_title
-                p= t.search.hero_subtitle
-        .hero__form
-            .hero__form-container.container
-                .form-group
-                    label= t.search.label_name
-                    input.input.search-input#inputName(placeholder=t.search.placeholder_name value=searchName || "" autocomplete='off')
-                    .menu-search.menu-names
-                .form-group
-                    label= t.search.label_location
-                    input.search-input#inputLocation(type="text" placeholder=t.search.placeholder_location value=searchLocation || "").input
-                    .menu-search.menu-locations
-                .form__action
-                    button.btn#searchBtn
-                        span= t.search.btn_search
-            .hero__results
-            .hero__suggestions.container
-                each coach in coachs
-                    .suggestions__row
-                        .row__avatar
-                            img(src=coach.owner.businessPicture || coach.owner.profilePicture || '/images/no-user.webp')
-                        .row__informations
-                            .informations__left
-                                .informations__name
-                                    h2 #{coach.owner.businessName || coach.owner.fullName} - #{coach.owner.businessType}
-                                if coach.owner.email
-                                    .informations__email
-                                        a(href=`mailto:${coach.owner.email}`)= coach.owner.emailPro
-                                if coach.owner.phone
-                                    .informations__phone
-                                        a(href=`tel:${coach.owner.phone}`)= coach.owner.phonePro
-                                .informations__description
-                                    p= coach.owner.description || ""
-                                if coach.owner.location
-                                    .informations__location
-                                        a(href="#") #{coach.owner.location.address} #{coach.owner.location.city} #{coach.owner.location.zip} #{coach.owner.location.country}
-                                else
-                                    .informations__location
-                                        p= t.search.online_service
+    - var cats = [{key:'all',label:'All'},{key:'hair',label:'Hair'},{key:'barber',label:'Barber'},{key:'coach',label:'Coach'},{key:'wellness',label:'Wellness'},{key:'tattoo',label:'Tattoo'},{key:'nails',label:'Nails'}]
 
-                            .informations__right
-                                .infos__coach
-                                    if coach.owner.recommanded
-                                        button.hidden.flex-c.recommanded__coach
-                                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M365.39-271.54h215.38q13.54 0 24.58-6.39 11.03-6.38 15.88-18.69l76.31-177.53q2.38-6.16 3.57-11.93 1.2-5.77 1.2-11.15v-25.08q0-12.77-8.23-21t-21-8.23H477.54l23.29-125.97q1.94-9.26-1.06-17.49-3-8.23-9.23-14.46l-18.23-18.23L317.54-560q-6.08 6.24-9.12 14.04-3.03 7.81-3.03 17.5v196.92q0 24.75 17.62 42.37 17.63 17.63 42.38 17.63ZM480.07-100q-78.84 0-148.21-29.92t-120.68-81.21q-51.31-51.29-81.25-120.63Q100-401.1 100-479.93q0-78.84 29.92-148.21t81.21-120.68q51.29-51.31 120.63-81.25Q401.1-860 479.93-860q78.84 0 148.21 29.92t120.68 81.21q51.31 51.29 81.25 120.63Q860-558.9 860-480.07q0 78.84-29.92 148.21t-81.21 120.68q-51.29 51.31-120.63 81.25Q558.9-100 480.07-100Zm-.07-60q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
-                                    if coach.owner.verified
-                                        button.hidden.flex-c.verified__profile 
-                                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M438-351.85 650.15-564l-42.77-42.77L438-437.38l-84.77-84.77-42.77 42.77L438-351.85Zm42 251.08q-129.77-35.39-214.88-152.77Q180-370.92 180-516v-230.15l300-112.31 300 112.31V-516q0 145.08-85.12 262.46Q609.77-136.16 480-100.77Zm0-63.23q104-33 172-132t68-220v-189l-240-89.62L240-705v189q0 121 68 220t172 132Zm0-315.62Z"/></svg>
-                                    button.hidden.flex-c.favorite__btn
-                                        <svg xmlns="http://www.w3.org/2000/svg" height="35px" viewBox="0 -960 960 960" width="35px" fill="#e3e3e3"><path d="m480-146.93-44.15-39.69q-99.46-90.23-164.5-155.07-65.04-64.85-103.08-115.43-38.04-50.57-53.15-92.27Q100-591.08 100-634q0-85.15 57.42-142.58Q214.85-834 300-834q52.38 0 99 24.5t81 70.27q34.38-45.77 81-70.27 46.62-24.5 99-24.5 85.15 0 142.58 57.42Q860-719.15 860-634q0 42.92-15.12 84.61-15.11 41.7-53.15 92.27-38.04 50.58-102.89 115.43Q624-276.85 524.15-186.62L480-146.93Zm0-81.07q96-86.38 158-148.08 62-61.69 98-107.19t50-80.81q14-35.3 14-69.92 0-60-40-100t-100-40q-47.38 0-87.58 26.88-40.19 26.89-63.65 74.81h-57.54q-23.85-48.31-63.85-75Q347.38-774 300-774q-59.62 0-99.81 40Q160-694 160-634q0 34.62 14 69.92 14 35.31 50 80.81t98 107q62 61.5 158 148.27Zm0-273Z"/></svg>
-                                a(href=`/${coach._id}` target="_blank").btn
-                                    span= t.search.btn_book
-    +dialog()   
+    main.lp
+
+        //- ── HERO ──────────────────────────────────────────────────────
+        section.lp__hero
+            .lp__hero-inner.container
+
+                //- Trust badge
+                .lp__trust
+                    span.lp__trust-dot
+                    span Trusted by 1 200+ professionals
+
+                //- Headline
+                h1.lp__h1
+                    | Book your next&nbsp;
+                    span.lp__word#lpWord haircut
+                    | ,
+                    br
+                    | coaching session
+                    br
+                    | or massage in seconds.
+
+                //- Subtitle
+                p.lp__sub
+                    | One simple link, real-time availability, no calls.
+                    br
+                    | BranShee connects you with independent professionals near you.
+
+                //- Search bar
+                .lp__searchbar
+                    .lp__sf#sfName
+                        svg.lp__sf-icon(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                            circle(cx="11" cy="11" r="8")
+                            line(x1="21" y1="21" x2="16.65" y2="16.65")
+                        input#inputName(
+                            type="text"
+                            placeholder="Hair stylist, coach…"
+                            autocomplete="off"
+                            value=searchName || ""
+                        )
+                        .lp__dropdown#menuNames
+
+                    .lp__sf-sep
+
+                    .lp__sf#sfLocation
+                        svg.lp__sf-icon(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                            path(d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z")
+                            circle(cx="12" cy="10" r="3")
+                        input#inputLocation(
+                            type="text"
+                            placeholder="Brussels, Paris…"
+                            autocomplete="off"
+                            value=searchLocation || ""
+                        )
+                        .lp__dropdown#menuLocations
+
+                    button#searchBtn.btn.lp__search-btn Search
+
+                //- Category quick-filters
+                .lp__cats
+                    each cat in cats
+                        button.lp__cat(data-cat=cat.key class=(cat.key === 'all' ? 'lp__cat--active' : ''))= cat.label
+
+        //- ── BODY (sidebar + cards) ────────────────────────────────────
+        .lp__body.container
+
+            //- Sidebar (desktop only)
+            aside.lp__sidebar
+                .lp__sb-group
+                    span.lp__sb-label Filters
+                    each cat in cats
+                        button.lp__sb-item(data-cat=cat.key class=(cat.key === 'all' ? 'active' : ''))
+                            span= cat.label
+                            if cat.key === 'all'
+                                span.lp__sb-count= coachs ? coachs.length : 0
+
+                .lp__sb-group
+                    span.lp__sb-label Distance
+                    .lp__range-wrap
+                        input.lp__range#distanceRange(type="range" min="5" max="100" value="100")
+                        span.lp__range-val#distanceVal 100 km
+
+            //- Cards
+            .lp__main
+                if coachs && coachs.length
+                    .lp__results-hd
+                        p.lp__results-count
+                            span#visibleCount= coachs.length
+                            |  results
+
+                if !coachs || coachs.length === 0
+                    .lp__empty
+                        svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40")
+                            circle(cx="11" cy="11" r="8")
+                            line(x1="21" y1="21" x2="16.65" y2="16.65")
+                        p No professionals found. Try a different search.
+                else
+                    .lp__cards#lpCards
+                        each coach in coachs
+                            a.lp__card(
+                                href=`/${coach._id}`
+                                data-type=(coach.owner.businessType || '').toLowerCase()
+                            )
+                                .lp__card-photo
+                                    img(
+                                        src=coach.owner.businessPicture || coach.owner.profilePicture || '/images/no-user.webp'
+                                        alt=coach.owner.businessName || coach.owner.fullName
+                                        loading="lazy"
+                                    )
+                                .lp__card-body
+                                    .lp__card-head
+                                        span.lp__card-name= coach.owner.businessName || coach.owner.fullName
+                                        if coach.owner.verified
+                                            span.lp__card-verified
+                                                svg(viewBox="0 0 20 20" fill="currentColor" width="14" height="14")
+                                                    path(fill-rule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd")
+                                                | Verified
+                                    .lp__card-meta
+                                        if coach.owner.businessType
+                                            span= coach.owner.businessType
+                                        if coach.owner.location && coach.owner.location.city
+                                            span.lp__sep ·
+                                            span= coach.owner.location.city
+                                    if coach.owner.description
+                                        p.lp__card-desc= coach.owner.description.length > 120 ? coach.owner.description.slice(0, 120) + '…' : coach.owner.description
+                                .lp__card-cta
+                                    span.lp__book-btn Book →
+
+    +dialog()
 
 block scripts
     script.

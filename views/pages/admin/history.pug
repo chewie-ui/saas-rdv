@@ -4,116 +4,188 @@ block links
     link(rel="stylesheet", href="/css/layouts/history.css")
 
 block content
-    .page.page--history
-        .history
-            .history__container.flex.col
-                .history__nav.flex-c.space-b
-                    .flex
-                    .flex
-                        .searchmenu
-                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M779.38-153.85 528.92-404.31q-30 25.54-69 39.54t-78.38 14q-95.92 0-162.58-66.65-66.65-66.66-66.65-162.58 0-95.92 66.65-162.58 66.66-66.65 162.58-66.65 95.92 0 162.58 66.65 66.65 66.66 66.65 162.58 0 41.69-14.77 80.69t-38.77 66.69l250.46 250.47-28.31 28.3ZM381.54-390.77q79.61 0 134.42-54.81 54.81-54.8 54.81-134.42 0-79.62-54.81-134.42-54.81-54.81-134.42-54.81-79.62 0-134.42 54.81-54.81 54.8-54.81 134.42 0 79.62 54.81 134.42 54.8 54.81 134.42 54.81Z"/></svg>
-                            input(placeholder=t.hist_page.search id="searchClient")
-                            .searchmenu__drop-icon.flex-c
-                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="m322.15-293.08-29.07-29.07L450.92-480 293.08-636.85l29.07-29.07L480-508.08l156.85-157.84 29.07 29.07L508.08-480l157.84 157.85-29.07 29.07L480-450.92 322.15-293.08Z"/></svg>
+    .hist-page
 
-                //- Desktop table
-                table.table__schema.history__table.desktop-table
-                    thead
-                        tr
-                            th= t.hist.table.name
-                            th= t.hist.table.email
-                            th= t.hist.table.phone
-                            th= t.hist.table.date
-                            th= t.hist.table.notes
-                            th= t.hist.table.status
-                            th= t.hist.table.actions
-                    tbody
-                        each h in history
-                            tr(data-id=h._id)
-                                td #{h.name} #{h.surname}
-                                td #{h.email}
-                                td #{h.phone}
-                                td #{h.date.toLocaleDateString('fr-FR')} | #{h.startTime}-#{h.endTime}
-                                td #{h.message}
-                                td(style='padding:8px 1.5rem')
-                                    div(class=h.status) #{h.status === 'canceled' ? t.appt.canceled : t.appt.confirmed}
-                                td.btn-td.flex-c.j-start
-                                    button.btn-icon.flex-c.btn-panel.ghost(style='width:100%; justify-content:flex-start')
-                                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000"><path d="M480-160q-33 0-56.5-23.5T400-240q0-33 23.5-56.5T480-320q33 0 56.5 23.5T560-240q0 33-23.5 56.5T480-160Zm0-240q-33 0-56.5-23.5T400-480q0-33 23.5-56.5T480-560q33 0 56.5 23.5T560-480q0 33-23.5 56.5T480-400Zm0-240q-33 0-56.5-23.5T400-720q0-33 23.5-56.5T480-800q33 0 56.5 23.5T560-720q0 33-23.5 56.5T480-640Z"/></svg>
-                    tfoot
-                        tr
-                            td
-                                .table__schema-pagination.flex-c
-                                    .pagination__showing Page #{currentPage} / #{totalPages}
-                                    .pagination__btns.flex-c
-                                        if currentPage > 1
-                                            a(href=`/history?page=${currentPage - 1}`).btn-icon.flex-c
-                                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z"/></svg>
-                                        else
-                                            span.btn-icon.flex-c.btn-disabled
-                                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e360"><path d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z"/></svg>
-                                        if currentPage < totalPages
-                                            a(href=`/history?page=${currentPage + 1}`).btn-icon.flex-c
-                                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z"/></svg>
-                                        else
-                                            span.btn-icon.flex-c.btn-disabled
-                                                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e360"><path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z"/></svg>
+        //- ── Filter bar ──────────────────────────────────────────────
+        .hist-filters
+            .hist-search
+                svg.hist-search__icon(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                    circle(cx="11" cy="11" r="8")
+                    line(x1="21" y1="21" x2="16.65" y2="16.65")
+                input#searchClient.hist-search__input(
+                    type="text"
+                    placeholder=t.hist_page.search
+                    autocomplete="off"
+                )
 
-                //- Mobile cards
-                .history__cards.mobile-cards
+            .hist-selects
+                select.hist-select#statusFilter
+                    option(value="all")= t.hist_page.all_status || 'All status'
+                    option(value="confirmed")= t.hist_page.status_confirmed || 'Confirmed'
+                    option(value="completed")= t.hist_page.status_completed || 'Completed'
+                    option(value="canceled")= t.hist_page.status_canceled || 'Cancelled'
+                    option(value="no-show")= t.hist_page.status_noshow || 'No-show'
+
+                select.hist-select#dateFilter
+                    option(value="30")= t.hist_page.last_30 || 'Last 30 days'
+                    option(value="7")= t.hist_page.last_7 || 'Last 7 days'
+                    option(value="90")= t.hist_page.last_90 || 'Last 90 days'
+                    option(value="all")= t.hist_page.all_time || 'All time'
+
+                if employees && employees.length
+                    select.hist-select#empFilterHist
+                        option(value="all")= t.hist_page.all_employees || 'All employees'
+                        each emp in employees
+                            option(value=String(emp._id)) #{emp.firstName} #{emp.lastName}
+                else
+                    select.hist-select#empFilterHist
+                        option(value="all")= t.hist_page.all_employees || 'All employees'
+
+        //- ── Desktop table ───────────────────────────────────────────
+        .hist-table-wrap
+            table.hist-table#histTable
+                thead
+                    tr
+                        th= t.hist.table.name || 'CLIENT'
+                        th= t.hist.table.service || 'SERVICE'
+                        th= t.hist.table.employee || 'EMPLOYEE'
+                        th= t.hist.table.date || 'DATE'
+                        th= t.hist.table.duration || 'DURATION'
+                        th= t.hist.table.status || 'STATUS'
+                        th
+
+                tbody
                     each h in history
-                        .history__card(data-id=h._id)
-                            .history__card-top
-                                .history__card-name #{h.name} #{h.surname}
-                                div(class=`history__card-status ${h.status}`) #{h.status === 'canceled' ? t.appt.canceled : t.appt.confirmed}
-                            .history__card-body
-                                .history__card-row
-                                    span.history__card-label= t.hist_page.date
-                                    span #{h.date.toLocaleDateString('fr-FR')} #{h.startTime}-#{h.endTime}
-                                .history__card-row
-                                    span.history__card-label= t.hist.table.email
-                                    span #{h.email}
-                                if h.phone
-                                    .history__card-row
-                                        span.history__card-label= t.hist_page.phone
-                                        span #{h.phone}
-                                if h.message
-                                    .history__card-row
-                                        span.history__card-label= t.hist_page.note
-                                        span #{h.message}
-                            .history__card-actions
-                                button.btn-icon.flex-c.btn-panel
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#e3e3e3"><path d="M480-160q-33 0-56.5-23.5T400-240q0-33 23.5-56.5T480-320q33 0 56.5 23.5T560-240q0 33-23.5 56.5T480-160Zm0-240q-33 0-56.5-23.5T400-480q0-33 23.5-56.5T480-560q33 0 56.5 23.5T560-480q0 33-23.5 56.5T480-400Zm0-240q-33 0-56.5-23.5T400-720q0-33 23.5-56.5T480-800q33 0 56.5 23.5T560-720q0 33-23.5 56.5T480-640Z"/></svg>
+                        - var initials = (h.name||'').charAt(0).toUpperCase() + (h.surname||'').charAt(0).toUpperCase()
+                        - var colorIdx = (((h.name||'A').charCodeAt(0) + (h.surname||'A').charCodeAt(0)) % 8)
+                        - var d = h.date ? new Date(h.date) : null
+                        - var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                        - var dateStr = d ? months[d.getMonth()] + ' ' + d.getDate() + ', ' + (h.startTime||'') : '-'
+                        - var statusKey = (h.status || 'confirmed').toLowerCase()
+                        - var pillClass = statusKey === 'canceled' || statusKey === 'cancelled' ? 'cancelled' : statusKey === 'no-show' ? 'no-show' : statusKey === 'completed' ? 'completed' : 'confirmed'
+                        - var statusLabel = pillClass === 'confirmed' ? (t.hist_page.status_confirmed||'Confirmed') : pillClass === 'cancelled' ? (t.hist_page.status_canceled||'Cancelled') : pillClass === 'completed' ? (t.hist_page.status_completed||'Completed') : (t.hist_page.status_noshow||'No-show')
+                        tr.hist-row(
+                            data-id=h._id
+                            data-status=statusKey
+                            data-employee=(h.employeeId ? String(h.employeeId) : '')
+                            data-date=(h.date ? h.date.toISOString().slice(0,10) : '')
+                        )
+                            td.hist-td.hist-td--client
+                                .hist-avatar(class=`av-${colorIdx}`)= initials
+                                span.hist-name= (h.name||'') + ' ' + (h.surname||'')
+                            td.hist-td= h.serviceName || '-'
+                            td.hist-td= h.employeeName || '-'
+                            td.hist-td.hist-td--mono= dateStr
+                            td.hist-td= h.slotTime ? h.slotTime + ' min' : '-'
+                            td.hist-td
+                                span(class=`pill pill--${pillClass}`)
+                                    span.pill__dot
+                                    = statusLabel
+                            td.hist-td.hist-td--action
+                                a.hist-open-btn(href=`/history/edit/${h._id}`)
+                                    | Open
+                                    svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13")
+                                        path(d="M5 12h14M13 6l6 6-6 6")
 
-                    .history__cards-pagination.flex-c
-                        .pagination__showing Page #{currentPage} / #{totalPages}
-                        .pagination__btns.flex-c
-                            if currentPage > 1
-                                a(href=`/history?page=${currentPage - 1}`).btn-icon.flex-c
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z"/></svg>
-                            else
-                                span.btn-icon.flex-c.btn-disabled
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e360"><path d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z"/></svg>
-                            if currentPage < totalPages
-                                a(href=`/history?page=${currentPage + 1}`).btn-icon.flex-c
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z"/></svg>
-                            else
-                                span.btn-icon.flex-c.btn-disabled
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e360"><path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z"/></svg>
+            //- Pagination
+            .hist-pagination
+                span.hist-pag-info Page #{currentPage} / #{totalPages}
+                .hist-pag-btns
+                    if currentPage > 1
+                        a.hist-pag-btn(href=`/history?page=${currentPage - 1}`)
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                    else
+                        span.hist-pag-btn.disabled
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                    if currentPage < totalPages
+                        a.hist-pag-btn(href=`/history?page=${currentPage + 1}`)
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                    else
+                        span.hist-pag-btn.disabled
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
 
-            .history__actions-panel
-                .history__actions-row.show
-                    .row__icon.flex-c
-                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M607.5-372.5Q660-425 660-500t-52.5-127.5Q555-680 480-680t-127.5 52.5Q300-575 300-500t52.5 127.5Q405-320 480-320t127.5-52.5Zm-204-51Q372-455 372-500t31.5-76.5Q435-608 480-608t76.5 31.5Q588-545 588-500t-31.5 76.5Q525-392 480-392t-76.5-31.5ZM214-281.5Q94-363 40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54 137-174 218.5T480-200q-146 0-266-81.5ZM480-500Zm207.5 160.5Q782-399 832-500q-50-101-144.5-160.5T480-720q-113 0-207.5 59.5T128-500q50 101 144.5 160.5T480-280q113 0 207.5-59.5Z"/></svg>
-                    .row__text= t.hist_page.view
-                .history__actions-row.edit
-                    .row__icon.flex-c
-                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M200-200h50.46l409.46-409.46-50.46-50.46L200-250.46V-200Zm-60 60v-135.38l527.62-527.39q9.07-8.24 20.03-12.73 10.97-4.5 23-4.5t23.3 4.27q11.28 4.27 19.97 13.58l48.85 49.46q9.31 8.69 13.27 20 3.96 11.31 3.96 22.62 0 12.07-4.12 23.03-4.12 10.97-13.11 20.04L275.38-140H140Zm620.38-570.15-50.23-50.23 50.23 50.23Zm-126.13 75.9-24.79-25.67 50.46 50.46-25.67-24.79Z"/></svg>
-                    .row__text= t.hist.edit
-                .history__actions-row.delete
-                    .row__icon.flex-c
-                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M292.31-140q-29.92 0-51.12-21.19Q220-182.39 220-212.31V-720h-40v-60h180v-35.38h240V-780h180v60h-40v507.69Q740-182 719-161q-21 21-51.31 21H292.31ZM680-720H280v507.69q0 5.39 3.46 8.85t8.85 3.46h375.38q4.62 0 8.46-3.85 3.85-3.84 3.85-8.46V-720ZM376.16-280h59.99v-360h-59.99v360Zm147.69 0h59.99v-360h-59.99v360ZM280-720v520-520Z"/></svg>
-                    .row__text= t.hist.del
+        //- ── Mobile cards ────────────────────────────────────────────
+        .hist-cards.mobile-only
+            each h in history
+                - var initials = (h.name||'').charAt(0).toUpperCase() + (h.surname||'').charAt(0).toUpperCase()
+                - var colorIdx2 = (((h.name||'A').charCodeAt(0) + (h.surname||'A').charCodeAt(0)) % 8)
+                - var d2 = h.date ? new Date(h.date) : null
+                - var months2 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                - var dateStr2 = d2 ? months2[d2.getMonth()] + ' ' + d2.getDate() + ', ' + (h.startTime||'') : '-'
+                - var sk2 = (h.status||'confirmed').toLowerCase()
+                - var pk2 = sk2 === 'canceled' || sk2 === 'cancelled' ? 'cancelled' : sk2 === 'no-show' ? 'no-show' : sk2 === 'completed' ? 'completed' : 'confirmed'
+                - var sl2 = pk2 === 'confirmed' ? (t.hist_page.status_confirmed||'Confirmed') : pk2 === 'cancelled' ? (t.hist_page.status_canceled||'Cancelled') : pk2 === 'completed' ? (t.hist_page.status_completed||'Completed') : (t.hist_page.status_noshow||'No-show')
+                .hist-card(data-id=h._id data-status=sk2)
+                    .hist-card__top
+                        .hist-card__client
+                            .hist-avatar(class=`av-${colorIdx2}`)= initials
+                            span.hist-card__name= (h.name||'') + ' ' + (h.surname||'')
+                        span(class=`pill pill--${pk2}`)
+                            span.pill__dot
+                            = sl2
+                    .hist-card__body
+                        if h.serviceName
+                            .hist-card__row
+                                span.hist-card__lbl Service
+                                span= h.serviceName
+                        if h.employeeName
+                            .hist-card__row
+                                span.hist-card__lbl Employee
+                                span= h.employeeName
+                        .hist-card__row
+                            span.hist-card__lbl Date
+                            span= dateStr2
+                        if h.slotTime
+                            .hist-card__row
+                                span.hist-card__lbl Duration
+                                span= h.slotTime + ' min'
+                    .hist-card__footer
+                        a.hist-open-btn(href=`/history/edit/${h._id}`)
+                            | Open
+                            svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13")
+                                path(d="M5 12h14M13 6l6 6-6 6")
+
+            .hist-pagination
+                span.hist-pag-info Page #{currentPage} / #{totalPages}
+                .hist-pag-btns
+                    if currentPage > 1
+                        a.hist-pag-btn(href=`/history?page=${currentPage - 1}`)
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                    else
+                        span.hist-pag-btn.disabled
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                    if currentPage < totalPages
+                        a.hist-pag-btn(href=`/history?page=${currentPage + 1}`)
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                    else
+                        span.hist-pag-btn.disabled
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+
+        //- ── Actions panel (kept for delete via JS) ──────────────────
+        .history__actions-panel
+            .history__actions-row.show
+                .row__icon.flex-c
+                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                        path(d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-134 0-244.5-72.5T61-500q54-137 164.5-209.5T480-782q134 0 244.5 72.5T899-500q-54 137-164.5 209.5T480-200Z")
+                .row__text= t.hist_page.view
+            .history__actions-row.edit
+                .row__icon.flex-c
+                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                        path(d="M200-200h50l391-391-50-50-391 391v50Zm-60 60v-135l527-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l49 49q12 11 17 26t5 30q0 16-5 30.5T817-647L290-120H140Zm620-571-49-49 49 49Zm-126 77-25-25 50 50-25-25Z")
+                .row__text= t.hist.edit
+            .history__actions-row.delete
+                .row__icon.flex-c
+                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                        path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+                .row__text= t.hist.del
 
 block scripts
     script(src="/js/layouts/history.js" type="module")

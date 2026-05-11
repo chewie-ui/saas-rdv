@@ -1,492 +1,392 @@
-/* ── Time validation toast ───────────────────────────────────────────────── */
-.avail-time-error-toast {
-  position: fixed;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%) translateY(12px);
-  background: #ef4444;
-  color: #fff;
-  padding: 10px 18px 10px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 500;
-  z-index: 9999;
-  opacity: 0;
+/* ============================================================
+   Availability page — redesign
+   ============================================================ */
+
+/* ── Page layout ────────────────────────────────────────────── */
+.avail-page {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35);
-  transition: opacity 0.22s ease, transform 0.22s ease;
-  pointer-events: none;
+  flex-direction: column;
+  gap: 0;
+  padding-bottom: 48px;
 }
 
-.avail-time-error-toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
+.avail-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
 }
 
-.avail-time-error-toast svg {
-  flex-shrink: 0;
+.avail-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
-
-/* ── Availability section ────────────────────────────────────────────────── */
-.availability-section {
+.avail-side {
+  display: flex;
+  flex-direction: column;
   gap: 14px;
 }
 
-.availability-section .availability-section__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 14px;
-  border-bottom: var(--border);
-}
-
-.availability-section .availability-section__header h3 {
-  font-weight: 400;
-}
-
-.availability-section .availability-section__body .body-weekly-hour {
-  gap: 25px;
-}
-
-.availability-section .availability-section__body .body-weekly-hour,
-.availability-section .availability-section__body .body-specific-hour {
-  width: 100%;
-}
-
-.availability-section .availability-section__body .body-weekly-hour .row-weekday {
-  gap: 5px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.availability-section .availability-section__body .body-weekly-hour .row-weekday .weekday-toggle {
-  width: auto;
-  gap: 5px;
-  align-items: center;
-  /* top: 10px; */
-  position: relative;
-}
-
-.time-slot .hour-container {
-  width: auto;
-  padding: 4px;
-}
-
-.availability-section .availability-section__body .body-weekly-hour .row-weekday .weekly-hour__options {
-  gap: 12.5px;
-}
-
-.time-slot {
-  gap: 3px;
-}
-
-.availability-section .availability-section__body .body-weekly-hour .row-weekday .weekly-hour__options {
-  /* top: 10px; */
-  position: relative;
-}
-
-.availability-section .availability-section__body .body-weekly-hour .row-weekday .weekly-hour__options .option {
-  cursor: pointer;
-}
-
-.time-slot .slot-hour {
-  position: relative;
-  cursor: pointer;
-}
-
-.time-slot .slot-hour .panel-availability {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background-color: var(--color-white);
-  box-shadow: var(--shadow);
-  border: var(--border);
-  overflow-x: hidden;
-  overflow-y: auto;
-  border-radius: 7px;
-  display: none;
-  height: 130px;
-  z-index: 10;
-}
-
-.time-slot .slot-hour .panel-availability.open,
-.time-slot__container .slot-input__container .panel.open {
-  display: initial;
-}
-
-.time-slot .slot-hour .panel-availability .hour,
-.time-slot__container .slot-input__container .panel .time {
-  padding: 10px 60px 10px 8px;
-  cursor: pointer;
-}
-
-.time-slot .slot-hour .panel-availability .hour:hover,
-.time-slot__container .slot-input__container .panel .time:hover {
-  background-color: var(--grey-soft);
-}
-
-.time-slot__container .slot-input__container {
-  position: relative;
-  width: 125px;
-}
-
-.time-slot__container .slot-input__container .panel {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background-color: var(--color-white);
-  box-shadow: var(--shadow);
-  border: var(--border);
-  overflow-x: hidden;
-  overflow-y: auto;
-  border-radius: 7px;
-  display: none;
-  height: 130px;
-  z-index: 30;
-}
-
-.weekly-hour__time {
-  gap: 7px;
-}
-
-.time-slot {
-  position: relative;
-}
-
-.time-slot .delete-time-slot {
-  position: absolute;
-  left: 101%;
-  cursor: pointer;
-}
-
-#renderCalendar {
-  position: fixed;
-  top: 0;
-  display: none;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgb(255, 255, 255, 0.2);
-  justify-content: center;
-  align-items: center;
-  backdrop-filter: blur(3px);
-}
-
-#renderCalendar.show {
-  display: flex;
-}
-
-.calendar-wrapper .calendar {
-  box-shadow: var(--shadow);
-  border: var(--border);
-}
-
-.availability-section .availability-section__body {
-  justify-content: flex-start;
-  align-items: flex-start;
-  gap: 17px;
-}
-
-/* ---- Days Off grid cards ---- */
-.days-off__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 12px;
-  width: 100%;
-}
-
-.days-off__row {
-  background-color: var(--color-white);
-  border: var(--border);
-  border-radius: 12px;
-  padding: 14px 16px;
+/* ── Card shell ─────────────────────────────────────────────── */
+.avail-card {
+  background: var(--color-white);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  user-select: none;
-  transition: box-shadow 0.15s ease;
+  gap: 16px;
 }
 
-.days-off__row:hover {
-  box-shadow: var(--shadow);
-}
-
-/* Card top: date + delete */
-.day-card__top {
+.avail-card__hd {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.day-card__date-area {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--color-text, #1e272e);
+.avail-card__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink, #0c0d0e);
+  letter-spacing: -0.1px;
 }
 
-.day-card__date-area svg {
-  opacity: 0.5;
+.avail-tz {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.avail-card__sub {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: -8px 0 0;
+}
+
+/* ── iOS-style toggle switch ────────────────────────────────── */
+.avail-switch {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
   flex-shrink: 0;
 }
 
-.day-card__date-area p.input {
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.3px;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: default;
+.avail-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
 }
 
-/* Delete button (top-right corner) */
-.days-off__button.delete-btn {
-  width: 28px;
-  height: 28px;
+.avail-switch__track {
+  width: 40px;
+  height: 22px;
+  background: #d1d5db;
+  border-radius: 999px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+
+.avail-switch__thumb {
+  width: 18px;
+  height: 18px;
+  background: #fff;
   border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+  pointer-events: none;
+}
+
+.avail-switch input:checked ~ .avail-switch__track {
+  background: var(--accent);
+}
+
+.avail-switch input:checked ~ .avail-switch__track .avail-switch__thumb {
+  transform: translateX(18px);
+}
+
+/* ── Day rows ───────────────────────────────────────────────── */
+.avail-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.avail-day-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.avail-day-row:last-child {
+  border-bottom: none;
+}
+
+.avail-day-name {
+  width: 90px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.avail-day-row.day-off .avail-day-name {
+  color: var(--text-muted);
+}
+
+/* ── Time slot area ─────────────────────────────────────────── */
+.avail-day-times {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.time-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.avail-sep {
+  color: var(--text-muted);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.avail-dash {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* Time box (replaces old .input inside .slot-hour) */
+.avail-time-box {
+  min-width: 72px;
+  padding: 7px 12px;
+  border: 1.5px solid var(--border-light);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: var(--font-mono, monospace);
+  color: var(--ink, #0c0d0e);
+  background: var(--color-white);
   cursor: pointer;
+  user-select: none;
+  text-align: center;
+  transition: border-color 0.15s;
+}
+
+.avail-time-box:hover,
+.slot-hour:focus-within .avail-time-box {
+  border-color: var(--accent-border);
+}
+
+.avail-day-row.day-off .avail-time-box {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Panel dropdown (kept for JS) */
+.slot-hour {
+  position: relative;
+  cursor: pointer;
+}
+
+.slot-hour .panel-availability {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: var(--color-white);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  overflow-y: auto;
+  height: 160px;
+  z-index: 50;
+  display: none;
+  min-width: 90px;
+}
+
+.slot-hour .panel-availability.open {
+  display: block;
+}
+
+.slot-hour .panel-availability .hour {
+  padding: 9px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: var(--font-mono, monospace);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+
+.slot-hour .panel-availability .hour:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Delete slot button */
+.avail-del-slot {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.15s ease, color 0.15s ease;
-  color: var(--grey-primary);
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition:
+    background 0.12s,
+    color 0.12s;
   flex-shrink: 0;
 }
 
-.days-off__button.delete-btn:hover {
-  background-color: #fff0f0;
-  color: #e84545;
+.avail-del-slot:hover {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
-.days-off__button.delete-btn:hover svg {
-  fill: #e84545;
-}
-
-/* Schedule area */
-.days-off__schedule {
-  min-height: 30px;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-/* Badge "Congé" */
-.day-card__badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background-color: #fff4e5;
-  color: #c87800;
-  border-radius: 20px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.day-card__badge svg {
-  fill: #c87800;
-  flex-shrink: 0;
-}
-
-/* Time slot inside card */
-.days-off__row .time-slot {
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.days-off__row .time-slot .hour-container {
-  font-size: 12px;
-  padding: 3px 7px;
-  border-radius: 6px;
-  background-color: var(--grey-soft, #f5f5f5);
-  border: var(--border);
-  cursor: pointer;
-  /* Annule la largeur fixe (100px/125px) imposée par les media queries globales */
-  width: auto !important;
-  min-width: 0;
-}
-
-.days-off__row .slot-separator {
-  color: var(--grey-primary);
-  font-size: 11px;
-}
-
-.days-off__row .delete-time-slot {
-  position: static;
-  left: auto;
-  cursor: pointer;
-  opacity: 0.5;
-  transition: opacity 0.15s ease;
-  display: flex;
-  align-items: center;
-}
-
-.days-off__row .delete-time-slot:hover {
-  opacity: 1;
-}
-
-/* Card footer: add schedule button */
-.day-card__footer {
-  border-top: var(--border);
-  padding-top: 8px;
-  display: flex;
-}
-
-.days-off__button.schedule-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  font-size: 12px;
-  color: var(--grey-primary);
-  padding: 3px 8px;
-  border-radius: 6px;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.days-off__button.schedule-btn svg {
+.avail-del-slot svg {
   fill: currentColor;
 }
 
-.days-off__button.schedule-btn:hover {
-  background-color: var(--grey-soft, #f5f5f5);
-  color: var(--color-text, #1e272e);
+/* ── Day actions: + Range, ... ──────────────────────────────── */
+.avail-day-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
-@media all and (min-width: 820px) {
-  .time-slot .hour-container {
-    width: 100px;
-    padding: 10px 10px 10px 12px;
-  }
-
-  .availability-section .availability-section__body .body-weekly-hour .row-weekday .weekday-toggle {
-    width: 120px;
-  }
-
-  .time-slot {
-    gap: 13px;
-  }
-
-  .availability-section .availability-section__body .body-weekly-hour .row-weekday {
-    gap: 15px;
-  }
-
-  .availability-section .availability-section__body .body-weekly-hour .row-weekday .weekday-toggle {
-    gap: 10px;
-    top: 10px;
-  }
-
-  .availability-section .availability-section__body .body-weekly-hour .row-weekday {
-    align-items: flex-start;
-  }
-
-  .availability-section .availability-section__body .body-weekly-hour .row-weekday .weekly-hour__options {
-    top: 10px;
-  }
+.avail-range-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 11px;
+  border: 1.5px solid var(--border-light);
+  border-radius: 8px;
+  background: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: var(--font-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
 }
 
-@media all and (min-width: 1280px) {
-  .availability-section .availability-section__body .body-weekly-hour,
-  .availability-section .availability-section__body .body-specific-hour {
-    width: 50%;
-  }
-
-  .time-slot .hour-container {
-    width: 125px;
-  }
-
-  .availability-section .availability-section__body .body-weekly-hour {
-    gap: 7px;
-  }
-
-  .time-slot .delete-time-slot {
-    left: 106%;
-  }
+.avail-range-btn svg {
+  fill: currentColor;
+  flex-shrink: 0;
 }
 
-/* ---- Responsive mobile availability ---- */
-@media all and (max-width: 819px) {
-  .availability-section .availability-section__body .body-weekly-hour {
-    width: 100%;
-    gap: 16px;
-  }
-
-  .availability-section .availability-section__body .body-weekly-hour .row-weekday {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 10px 0;
-    border-bottom: var(--border);
-  }
-
-  .availability-section .availability-section__body .body-weekly-hour .row-weekday .weekday-toggle {
-    width: 100%;
-    justify-content: flex-start;
-    gap: 10px;
-  }
-
-  .weekly-hour__time {
-    width: 100%;
-    gap: 8px;
-  }
-
-  .time-slot {
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .time-slot .hour-container {
-    width: 90px;
-    padding: 8px;
-    font-size: 13px;
-  }
-
-  .time-slot .delete-time-slot {
-    position: static;
-    left: auto;
-  }
-
-  .availability-section .availability-section__body .body-weekly-hour .row-weekday .weekly-hour__options {
-    top: 0;
-    margin-left: 0;
-  }
-
-  /* Days off grid on mobile */
-  .days-off__grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  }
+.avail-range-btn:hover {
+  border-color: var(--accent-border);
+  color: var(--white);
+  background: var(--accent-soft);
 }
 
-/* ============================================================
-   Slot-time section — managed by services state
-   ============================================================ */
+.avail-day-row.day-off .avail-range-btn {
+  display: none;
+}
+
+.avail-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-light);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+
+.avail-more-btn svg {
+  fill: currentColor;
+}
+.avail-more-btn:hover {
+  background: var(--surface);
+  border-color: var(--text-muted);
+}
+
+.avail-more-btn:hover svg {
+  fill: var(--white);
+}
+
+/* ── Slot duration pills ────────────────────────────────────── */
+.avail-slot-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.slot-pill {
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-light);
+  background: var(--color-white);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: var(--font-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+}
+
+.slot-pill:hover,
+.slot-pill.active:hover {
+  border-color: var(--accent-border);
+  color: var(--white);
+}
+
+.slot-pill.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Slot managed info */
 .slot-time-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-/* When services control slot duration: dim the input */
-.slot-time-section.slot-managed .slot-input__container {
+.slot-time-section.slot-managed .avail-slot-pills {
   opacity: 0.45;
   pointer-events: none;
-  user-select: none;
 }
 
-/* Info banner shown when slot is managed */
 .slot-managed-info {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
   border-radius: 10px;
-  background-color: #fff8ed;
+  background: #fff8ed;
   border: 1px solid #ffe0a0;
   font-size: 0.82rem;
   color: #8a5c00;
@@ -497,7 +397,6 @@
   fill: #c87800;
   flex-shrink: 0;
 }
-
 .slot-managed-info span {
   flex: 1;
   min-width: 0;
@@ -514,10 +413,385 @@
   font-family: var(--font-primary);
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .slot-reenable-btn:hover {
-  background-color: #c87800;
+  background: #c87800;
   color: #fff;
+}
+
+/* ── Buffer slider ──────────────────────────────────────────── */
+.avail-buffer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.avail-buffer__range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border-light);
+  outline: none;
+  cursor: pointer;
+}
+
+.avail-buffer__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 2px 6px var(--accent-glow);
+  border: 2px solid #fff;
+  transition: transform 0.12s;
+}
+
+.avail-buffer__range::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.avail-buffer__range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px var(--accent-glow);
+}
+
+.avail-buffer__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.avail-buffer__val {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ── Preview bar chart ──────────────────────────────────────── */
+.avail-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.avail-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avail-preview-day {
+  width: 30px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.avail-preview-bar {
+  flex: 1;
+  height: 7px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.avail-preview-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.avail-preview-pct {
+  width: 34px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.avail-preview-empty {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 8px 0;
+}
+
+/* ── "Add a day off" button ─────────────────────────────────── */
+.avail-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: var(--font-primary);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.avail-add-btn svg {
+  fill: currentColor;
+  flex-shrink: 0;
+}
+.avail-add-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+.avail-add-btn--lock {
+  opacity: 0.7;
+}
+
+/* ── Days off grid ──────────────────────────────────────────── */
+.avail-days-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.avail-doff-card {
+  background: var(--surface, #f5f4f1);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 14px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: box-shadow 0.15s;
+}
+
+.avail-doff-card:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+}
+
+.avail-doff-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.avail-doff-date-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink, #0c0d0e);
+}
+
+.avail-doff-del {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.12s,
+    color 0.12s;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.avail-doff-del svg {
+  fill: currentColor;
+}
+.avail-doff-del:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.avail-doff-body {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.avail-doff-type {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.avail-doff-note {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* Reuse time-slot inside days off */
+.avail-doff-card .avail-time-box {
+  font-size: 0.8rem;
+  padding: 4px 9px;
+  min-width: 60px;
+}
+
+/* Footer link */
+.day-card__footer {
+  border-top: 1px solid var(--border-light);
+  padding-top: 8px;
+  margin-top: 2px;
+}
+
+.avail-doff-addtime {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-family: var(--font-primary);
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.avail-doff-addtime svg {
+  fill: currentColor;
+}
+.avail-doff-addtime:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Premium lock link */
+.avail-premium-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 7px 12px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  transition: background 0.15s;
+}
+
+.avail-premium-lock:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── Toast error ────────────────────────────────────────────── */
+.avail-time-error-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: #ef4444;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 9999;
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35);
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease;
+  pointer-events: none;
+}
+
+.avail-time-error-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Calendar modal (legacy) ────────────────────────────────── */
+#renderCalendar,
+#calendarWrapper {
+  position: fixed;
+  top: 0;
+  display: none;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.2);
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(3px);
+  z-index: 200;
+}
+
+#renderCalendar.show,
+#calendarWrapper.show {
+  display: flex;
+}
+
+/* ── Responsive: 2-col at 1024px ───────────────────────────── */
+@media (min-width: 1024px) {
+  .avail-layout {
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+  }
+
+  .avail-side {
+    position: sticky;
+    top: 16px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .avail-layout {
+    grid-template-columns: 1fr 320px;
+  }
+}
+
+/* ── Mobile ─────────────────────────────────────────────────── */
+@media (max-width: 820px) {
+  .avail-day-row {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px 0;
+  }
+
+  .avail-day-name {
+    width: 80px;
+  }
+  .avail-day-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .avail-days-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
 }

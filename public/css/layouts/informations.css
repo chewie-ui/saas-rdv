@@ -1,37 +1,341 @@
-.account {
+/* ── Page layout ─────────────────────────────────────────────────────────── */
+.info-page {
   display: flex;
   flex-direction: column;
-  gap: 30px;
-  padding-bottom: 35px;
+  gap: 24px;
+  padding-bottom: 60px;
 }
 
-.business-type__container {
-  background: var(--white, #f9f9f9);
-  border: 1px solid var(--border, #e5e5e5);
-  border-radius: 14px;
+.info-page__header {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.info-page__header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.info-page__subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ── Shared card ──────────────────────────────────────────────────────────── */
+.info-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
   padding: 24px;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow);
-  gap: 16px;
+  gap: 20px;
 }
 
-.business-type__container h2 {
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.business-type__body {
+.info-card__header {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 4px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
 }
 
-.business-type__action {
+.info-card__header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.info-card__desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.info-card__actions {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
+  align-items: center;
 }
 
+/* ── Field shared ─────────────────────────────────────────────────────────── */
+.info-card .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-card .field label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.field-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+/* ── .more helper link ────────────────────────────────────────────────────── */
+.more {
+  font-size: 12px;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.more:hover {
+  text-decoration: underline;
+}
+
+.success {
+  font-size: 12px;
+  color: var(--success, #16a34a);
+  min-height: 18px;
+}
+
+/* ── Profile row ──────────────────────────────────────────────────────────── */
+.profile-row {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+.profile-photo-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.profile-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--border-light);
+  flex-shrink: 0;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* ── Business info row ────────────────────────────────────────────────────── */
+.biz-row {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.biz-photo-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.biz-photo-preview {
+  width: 120px;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 2px dashed var(--border-medium);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.biz-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.biz-photo-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.biz-fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* ── Slug / URL field ─────────────────────────────────────────────────────── */
+.slug-field-wrapper {
+  display: flex;
+  align-items: stretch;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-sm, 8px);
+  overflow: hidden;
+  background: var(--surface-card);
+  transition: border-color 0.15s;
+}
+
+.slug-field-wrapper:focus-within {
+  border-color: var(--accent);
+}
+
+.slug-prefix {
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface);
+  border-right: 1.5px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.slug-field-wrapper .input {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent;
+  flex: 1;
+  box-shadow: none !important;
+}
+
+/* ── Location layout ──────────────────────────────────────────────────────── */
+.location-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.location-map {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  min-height: 300px;
+  border: 1px solid var(--border-light);
+}
+
+.location-map iframe {
+  display: block;
+  width: 100%;
+  min-height: 300px;
+  border: none;
+}
+
+.location-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Radio group ──────────────────────────────────────────────────────────── */
+.radio-group {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.radio-item {
+  display: flex;
+  align-items: center;
+}
+
+.radio-item input[type="radio"] {
+  display: none;
+}
+
+.radio-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.custom-radio {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border-medium);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
+  box-sizing: border-box;
+}
+
+.radio-item input[type="radio"]:checked + label .custom-radio {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3px var(--surface-card);
+}
+
+/* ── Address search results ───────────────────────────────────────────────── */
+#addressSearchBlock {
+  position: relative;
+}
+
+.results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 220px;
+  overflow-y: auto;
+  display: none;
+}
+
+.results.active {
+  display: block;
+}
+
+.result-item {
+  padding: 10px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.result-item:hover {
+  background: var(--surface);
+}
+
+/* ── Business type autocomplete ───────────────────────────────────────────── */
 .service-select-wrapper {
   position: relative;
 }
@@ -42,8 +346,8 @@
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: var(--bg-primary, #fff);
-  border: 1px solid var(--border, #e5e5e5);
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   z-index: 999;
@@ -59,312 +363,130 @@
 }
 
 .service-dropdown__item:hover {
-  background: var(--bg-secondary, #f5f5f5);
+  background: var(--surface);
 }
 
-.account .account__container,
-.location__container {
-  display: flex;
-  gap: 30px;
-  align-items: flex-start;
-  position: relative;
-  flex-direction: column-reverse;
-}
-
-.account .account__container .account__left {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  padding: 50px 15px;
-  background-color: var(--color-white);
-  box-shadow: var(--shadow);
-  border-radius: var(--radius-md);
-  width: 100%;
-  justify-content: center;
-  align-items: center;
-  position: sticky;
-  top: 50px;
-}
-
-.account .account__container .account__right,
-.location__container .location__form {
-  width: 100%;
-  background-color: var(--color-white);
-  box-shadow: var(--shadow);
-  border-radius: var(--radius-md);
-  display: flex;
-  flex-direction: column;
-}
-
-.account .account__container .account__right h2,
-.location__container .location__form h2 {
-  font-size: 20px;
-  font-weight: 400;
-  margin-bottom: 20px;
-  padding: 20px;
-  border-bottom: var(--border);
-}
-
-.account .account__container .account__left .account__avatar {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  overflow: hidden;
-}
-
-.account .account__container .account__left .account__avatar img {
-  object-fit: cover;
-}
-
-/* ── Photo établissement ── */
-.business-pic-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+/* ── Social grid ──────────────────────────────────────────────────────────── */
+.social-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
-  width: 100%;
 }
 
-.business-pic-preview {
-  width: 100%;
-  max-width: 200px;
-  aspect-ratio: 4 / 3;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 2px dashed var(--border-light);
-  background: var(--color-surface-2);
-}
-
-.business-pic-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.business-pic-placeholder {
-  width: 100%;
-  height: 100%;
+.social-box {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: 20px 16px 16px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-}
-
-/* ── Textarea description counter ── */
-.field-hint {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  text-align: right;
-}
-
-.account .account__container .account__right .account__form,
-.location__container .location__form .location__form-body {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.location__container .location__form .location__form-body {
-  gap: 35px;
-}
-
-.location__container .location__form .location__form-body .form__bottom {
-  display: flex;
-  flex-direction: column;
   gap: 10px;
-}
-
-.account .account__container .account__right .account__form .account__actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.description .description__container {
-  width: 100%;
-  background-color: var(--color-white);
-  display: block;
-  gap: 15px;
-  box-shadow: var(--shadow);
-  border-radius: var(--radius-md);
-  padding: 10px;
   position: relative;
+  transition: border-color 0.15s;
 }
 
-.description .description__container textarea.textarea {
-  max-height: 210px;
-  height: 210px;
+.social-box:hover {
+  border-color: var(--border-medium);
 }
 
-.description .description__container .description__action {
-  margin-top: 25px;
-}
-
-.social .social__container {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.social .social__container .social__box {
-  width: 100%;
-  background-color: var(--color-white);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  gap: 15px;
-  box-shadow: var(--shadow);
-  border-radius: var(--radius-md);
-  padding: 50px 35px;
-  position: relative;
-}
-
-.social .social__container .social__box .get__premium {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-}
-
-/* ── Social box hidden state ── */
-.social .social__container .social__box--hidden .social__logo,
-.social .social__container .social__box--hidden .social__title,
-.social .social__container .social__box--hidden .social__field {
+.social-box--hidden .social-box__logo,
+.social-box--hidden .social-box__title,
+.social-box--hidden .social-box__field {
   opacity: 0.35;
   pointer-events: none;
 }
 
-/* ── Visibility toggle (top-right of each box) ── */
+.get__premium {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 2px 8px;
+  border-radius: 99px;
+  text-decoration: none;
+}
+
+.social-box__logo {
+  width: 40px;
+  height: 40px;
+}
+
+.social-box__logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.social-box__title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.social-box__field {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Social visibility toggle (top-right of each box) ────────────────────── */
 .social-visibility-toggle {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
   cursor: pointer;
-  user-select: none;
 }
 
 .social-visibility-toggle__input {
-  position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
-  pointer-events: none;
+  position: absolute;
 }
 
 .social-visibility-toggle__track {
+  width: 36px;
+  height: 20px;
+  background: var(--border-medium);
+  border-radius: 99px;
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  width: 40px;
-  height: 22px;
-  border-radius: 999px;
-  background: var(--border, #d4d4d4);
-  transition: background 0.22s ease;
-  flex-shrink: 0;
+  transition: background 0.2s;
+  display: block;
 }
 
 .social-visibility-toggle__thumb {
   position: absolute;
   left: 3px;
-  width: 16px;
-  height: 16px;
+  top: 3px;
+  width: 14px;
+  height: 14px;
+  background: #aaa;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
-  transition: transform 0.22s ease;
+  transition: transform 0.2s, background 0.2s;
 }
 
-/* checked state */
 .social-visibility-toggle__input:checked + .social-visibility-toggle__track {
-  background: var(--green-primary, #22c55e);
+  background: var(--accent-soft);
 }
 
 .social-visibility-toggle__input:checked + .social-visibility-toggle__track .social-visibility-toggle__thumb {
-  transform: translateX(18px);
+  transform: translateX(16px);
+  background: var(--accent);
 }
 
-/* disabled (non-premium) */
-.social-visibility-toggle__input:disabled + .social-visibility-toggle__track {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
 .social-visibility-toggle:has(.social-visibility-toggle__input:disabled) {
   cursor: not-allowed;
   pointer-events: none;
 }
 
-.social .social__container .social__box .social__logo {
-  width: 50px;
-  height: 50px;
-}
-
-.social .social__container .social__box .social__title {
-  color: var(--grey-primary);
-}
-
-.social .social__container .social__box .social__field {
-  width: 100%;
-  display: flex;
-  gap: 10px;
-  flex-direction: column;
-}
-
-.status-msg {
-  position: absolute;
-  left: 50%;
-  bottom: 15px;
-  color: var(--success);
-  transform: translateX(-50%);
-}
-
-.location__container .location__map,
-.location__container .location__map iframe {
-  width: 100%;
-  height: 100%;
-  border-radius: 1rem;
-}
-
-.location__container .location__form-body .form__top {
-  position: relative;
-}
-
-.location__container .location__form-body .form__top .results {
-  position: absolute;
-  top: 107%;
-  left: 0;
-  width: 100%;
-  background: white;
-  border: 1px solid #cccccc00;
-  border-top: none;
-  max-height: 220px;
-  overflow-y: auto;
-  z-index: 1000;
-}
-
-.location__container .location__form-body .form__top .results.active {
-  border: 1px solid #ccc;
-  border-radius: 0.8rem;
-  box-shadow: var(--shadow-p);
-}
-
-.location__container .location__form-body .form__top .results .result-item {
-  padding: 0.8rem;
-  cursor: pointer;
-}
-
-.location__container .location__form-body .form__top .results .result-item:hover {
-  background-color: rgb(250, 250, 250);
-}
-
-/* ---- Delete account modal ---- */
+/* ── Delete account modal ─────────────────────────────────────────────────── */
 .delete-account-modal {
   position: fixed;
   inset: 0;
@@ -383,7 +505,7 @@
 
 .delete-account-modal__box {
   position: relative;
-  background: #fff;
+  background: var(--surface-card);
   border-radius: 14px;
   padding: 28px 28px 24px;
   width: 90%;
@@ -411,7 +533,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #666;
+  color: var(--text-muted);
   padding: 4px;
   display: flex;
   align-items: center;
@@ -419,8 +541,9 @@
   border-radius: 6px;
   transition: background 0.2s;
 }
+
 .delete-account-modal__close:hover {
-  background: #f5f5f5;
+  background: var(--surface);
 }
 
 .delete-account-step {
@@ -432,7 +555,7 @@
 .delete-account-modal__desc {
   font-size: 14px;
   line-height: 1.6;
-  color: #444;
+  color: var(--text-muted);
 }
 
 .delete-account-modal__status {
@@ -440,134 +563,41 @@
   min-height: 18px;
 }
 
-/* ── Slug / URL personnalisée ────────────────────────────────────────────────── */
-.slug-field-wrapper {
-  display: flex;
-  align-items: stretch;
-  border: 1.5px solid var(--border-light, #e5e5e5);
-  border-radius: var(--radius-sm, 8px);
-  overflow: hidden;
-  background: var(--color-white);
-  transition: border-color 0.15s;
+/* ── Btn size helper ──────────────────────────────────────────────────────── */
+.btn--sm {
+  padding: 7px 14px !important;
+  font-size: 13px !important;
 }
 
-.slug-field-wrapper:focus-within {
-  border-color: var(--main-color, #22c55e);
-}
-
-.slug-prefix {
-  padding: 0 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--grey-primary);
-  background: var(--bg-secondary, #f5f5f5);
-  border-right: 1.5px solid var(--border-light, #e5e5e5);
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  user-select: none;
-}
-
-.slug-field-wrapper .input {
-  border: none !important;
-  border-radius: 0 !important;
-  background: transparent;
-  flex: 1;
-  box-shadow: none !important;
-}
-
-/* ── Toggle visibility (social) ─────────────────────────────────────────────── */
-.social-visibility-toggle {
-  position: relative;
-  display: inline-flex;
-  cursor: pointer;
-  margin-left: auto;
-}
-
-.social-visibility-toggle__input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-  position: absolute;
-}
-
-.social-visibility-toggle__track {
-  width: 40px;
-  height: 22px;
-  background: var(--border-light, #ddd);
-  border-radius: 99px;
-  position: relative;
-  transition: background 0.2s;
-  display: block;
-}
-
-.social-visibility-toggle__thumb {
-  position: absolute;
-  left: 3px;
-  top: 3px;
-  width: 16px;
-  height: 16px;
-  background: #aaa;
-  border-radius: 50%;
-  transition: transform 0.2s, background 0.2s;
-}
-
-.social-visibility-toggle__input:checked + .social-visibility-toggle__track {
-  background: rgba(34, 197, 94, 0.25);
-}
-
-.social-visibility-toggle__input:checked + .social-visibility-toggle__track .social-visibility-toggle__thumb {
-  transform: translateX(18px);
-  background: #22c55e;
-}
-
-.social__box--hidden .social__logo,
-.social__box--hidden .social__title,
-.social__box--hidden .social__field {
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-@media all and (min-width: 820px) {
-  .social .social__container .social__box {
-    width: calc((100% - (20px * 3)) / 2);
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .social-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .account .account__container .account__right .account__form .account__actions {
-    flex-direction: row;
-  }
-
-  .description .description__container {
-    padding: 50px 35px;
-  }
-
-  .description .description__container textarea.textarea {
-    max-height: 110px;
-    min-height: 44px;
+  .location-layout {
+    grid-template-columns: 1fr;
   }
 }
 
-@media all and (min-width: 1280px) {
-  .account .account__container,
-  .location__container {
-    flex-direction: row;
+@media (max-width: 768px) {
+  .profile-row,
+  .biz-row {
+    flex-direction: column;
+    align-items: center;
   }
 
-  .account .account__container .account__right,
-  .location__container .location__form {
-    width: 70%;
+  .profile-photo-col,
+  .biz-photo-col {
+    width: 100%;
+    align-items: center;
   }
 
-  .account .account__container .account__left,
-  .location__container .location__map {
-    width: 30%;
+  .biz-photo-preview {
+    width: 160px;
   }
 
-  .social .social__container .social__box {
-    width: calc((100% - (10px * 4)) / 3);
-  }
-
-  .social .social__container .social__box .social__field {
-    flex-direction: row;
+  .social-grid {
+    grid-template-columns: 1fr;
   }
 }

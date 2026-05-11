@@ -7,7 +7,7 @@ const Booking = require("../db/models/book.model");
 exports.getRegister = (req, res) => {
   if (req.session.clientId) return res.redirect("/espace-client");
   res.render("client/client-register", {
-    title: "Créer un compte — SayMiro Calendar",
+    title: "Créer un compte — BranShee",
     alwaysSticky: true,
     clientAuth: true,
     error: null,
@@ -19,7 +19,7 @@ exports.postRegister = async (req, res) => {
 
   if (!fullName || !email || !password) {
     return res.render("client/client-register", {
-      title: "Créer un compte — SayMiro Calendar",
+      title: "Créer un compte — BranShee",
       alwaysSticky: true,
       clientAuth: true,
       error: "Veuillez remplir tous les champs obligatoires.",
@@ -28,7 +28,7 @@ exports.postRegister = async (req, res) => {
 
   if (password !== confirmPassword) {
     return res.render("client/client-register", {
-      title: "Créer un compte — SayMiro Calendar",
+      title: "Créer un compte — BranShee",
       alwaysSticky: true,
       clientAuth: true,
       error: "Les mots de passe ne correspondent pas.",
@@ -37,7 +37,7 @@ exports.postRegister = async (req, res) => {
 
   if (password.length < 8) {
     return res.render("client/client-register", {
-      title: "Créer un compte — SayMiro Calendar",
+      title: "Créer un compte — BranShee",
       alwaysSticky: true,
       clientAuth: true,
       error: "Le mot de passe doit contenir au moins 8 caractères.",
@@ -47,7 +47,7 @@ exports.postRegister = async (req, res) => {
   const existing = await Client.findOne({ email: email.toLowerCase().trim() });
   if (existing) {
     return res.render("client/client-register", {
-      title: "Créer un compte — SayMiro Calendar",
+      title: "Créer un compte — BranShee",
       alwaysSticky: true,
       clientAuth: true,
       error: "Cette adresse email est déjà utilisée.",
@@ -77,7 +77,7 @@ exports.postRegister = async (req, res) => {
 exports.getLogin = (req, res) => {
   if (req.session.clientId) return res.redirect("/espace-client");
   res.render("client/client-login", {
-    title: "Connexion client — SayMiro Calendar",
+    title: "Connexion client — BranShee",
     alwaysSticky: true,
     clientAuth: true,
     error: null,
@@ -90,7 +90,7 @@ exports.postLogin = async (req, res) => {
   const client = await Client.findOne({ email: email?.toLowerCase().trim() });
   if (!client) {
     return res.render("client/client-login", {
-      title: "Connexion client — SayMiro Calendar",
+      title: "Connexion client — BranShee",
       alwaysSticky: true,
       clientAuth: true,
       error: "Email ou mot de passe incorrect.",
@@ -100,7 +100,7 @@ exports.postLogin = async (req, res) => {
   const match = await bcrypt.compare(password, client.password);
   if (!match) {
     return res.render("client/client-login", {
-      title: "Connexion client — SayMiro Calendar",
+      title: "Connexion client — BranShee",
       alwaysSticky: true,
       clientAuth: true,
       error: "Email ou mot de passe incorrect.",
@@ -144,7 +144,7 @@ exports.getDashboard = async (req, res) => {
   );
 
   return res.render("client/client-dashboard", {
-    title: "Mon espace — SayMiro Calendar",
+    title: "Mon espace — BranShee",
     pageName: "Dashboard",
     client,
     bookings: { upcoming, past },
@@ -155,7 +155,7 @@ exports.getDashboard = async (req, res) => {
 
 exports.getSettings = (req, res) => {
   return res.render("client/client-settings", {
-    title: "Paramètres — SayMiro Calendar",
+    title: "Paramètres — BranShee",
     pageName: "Settings",
     client: req.client,
     success: req.query.success || null,

@@ -1,32 +1,80 @@
-extends ../../layouts/index
+extends ../../layouts/auth
 
-block links 
-    link(rel="stylesheet", href="/css/components/index/auth.index.css")
 block content
-    .content-wrapper
-        .auth-wrapper
-            .auth-image       
-                img(src='/images/auth-bg.png' alt="Men writing on computer")
-                .image-content
-            .auth-form.flex
-                .auth-form__container
-                    .form-body.flex.col
-                        .form-title.flex.col
-                            h1= t.auth.login_title
-                            p= t.auth.login_desc
-                        form.form-fields.flex.col(action="/login" method="POST")
-                            .field-container.flex.col
-                                p= t.auth.email
-                                input.input(placeholder="Email" type="text" name="email")
-                            .field-container.flex.col
-                                p= t.auth.password
-                                input.input(placeholder="**************" type="password" name="password")
-                                a(href="/forgot-password")= t.auth.forgot_link
-                            button(type="submit")
-                                span= t.auth.login_btn
-                        .no-acc.flex= t.auth.no_account
-                            a(href="/register")= t.auth.register_link
-                        if error
-                            p.xs-comment.error= error
-block scripts       
+    .auth-split
+
+        //- ── Left: brand art panel ─────────────────────────────────
+        .auth-art
+            a.auth-art__logo(href="/")
+                .auth-art__logo-mark B
+                span BranShee
+
+            .auth-art__body
+                .auth-art__headline Run your bookings on autopilot. Spend more time on your clients.
+                .auth-art__stats
+                    .auth-art__stat
+                        .auth-art__stat-num 3 200+
+                        .auth-art__stat-label appointments
+                    .auth-art__stat
+                        .auth-art__stat-num 98%
+                        .auth-art__stat-label show-up rate
+                    .auth-art__stat
+                        .auth-art__stat-num 12 min
+                        .auth-art__stat-label saved per day
+
+            .auth-art__foot © BranShee · Brussels
+
+        //- ── Right: form panel ─────────────────────────────────────
+        .auth-form-panel
+            .auth-form-inner
+                h1= t.auth.login_title
+                p.auth-sub= t.auth.login_desc
+
+                if error
+                    .auth-error= error
+
+                //- Google SSO
+                a.auth-social-btn(href="/auth/google")
+                    svg(width="16" height="16" viewBox="0 0 48 48")
+                        path(fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8a12 12 0 1 1 0-24c3.1 0 5.8 1.2 7.9 3l5.7-5.7A20 20 0 1 0 24 44c11 0 20-9 20-20 0-1.3-.1-2.6-.4-3.9z")
+                        path(fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7A20 20 0 0 0 6.3 14.7z")
+                        path(fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2A12 12 0 0 1 12.7 28L6.2 33A20 20 0 0 0 24 44z")
+                        path(fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z")
+                    span Continue with Google
+
+                .auth-divider-row
+                    hr
+                    span OR
+                    hr
+
+                form(action="/login" method="POST")
+                    .auth-field
+                        label.auth-label= t.auth.email
+                        input.auth-input(
+                            type="email"
+                            name="email"
+                            placeholder="you@studio.com"
+                            autocomplete="email"
+                            required
+                        )
+
+                    .auth-field
+                        .auth-label-row
+                            label.auth-label= t.auth.password
+                            a(href="/forgot-password")= t.auth.forgot_link
+                        input.auth-input(
+                            type="password"
+                            name="password"
+                            placeholder="••••••••"
+                            autocomplete="current-password"
+                            required
+                        )
+
+                    button.auth-submit(type="submit")= t.auth.login_btn
+
+                .auth-bottom-link
+                    = t.auth.no_account + ' '
+                    a(href="/register")= t.auth.register_link
+
+block scripts
     script(src="/js/components/topbar.js")

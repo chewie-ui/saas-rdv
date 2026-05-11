@@ -414,7 +414,7 @@ exports.cancelBooking = async (req, res) => {
 // ─── CLIENT PANEL ───────────────────────────────────────────────────────────
 exports.getClientPanel = async (req, res) => {
   res.render("client/my-bookings", {
-    title: "Mes rendez-vous — SayMiro Calendar",
+    title: "Mes rendez-vous — BranShee",
     alwaysSticky: true,
     bookings: null,
     email: null,
@@ -427,7 +427,7 @@ exports.postClientPanel = async (req, res) => {
 
   if (!email || !email.includes("@")) {
     return res.render("client/my-bookings", {
-      title: "Mes rendez-vous — SayMiro Calendar",
+      title: "Mes rendez-vous — BranShee",
       alwaysSticky: true,
       bookings: null,
       email: null,
@@ -451,7 +451,7 @@ exports.postClientPanel = async (req, res) => {
   );
 
   return res.render("client/my-bookings", {
-    title: "Mes rendez-vous — SayMiro Calendar",
+    title: "Mes rendez-vous — BranShee",
     alwaysSticky: true,
     bookings: { upcoming, past },
     email,

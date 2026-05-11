@@ -1,8 +1,8 @@
 
-- var _title       = title || 'SayMiro Calendar — Réservation en ligne'
-- var _desc        = metaDescription || 'SayMiro Calendar est la plateforme de prise de rendez-vous en ligne pour les professionnels : coaches, coiffeurs, thérapeutes, et plus encore. Gérez vos réservations simplement.'
-- var _ogImage     = ogImage || 'https://www.saymiro.com/images/og-cover.jpg'
-- var _canonical   = canonical || ('https://www.saymiro.com' + (typeof reqPath !== 'undefined' ? reqPath : ''))
+- var _title       = title || 'BranShee — Réservation en ligne'
+- var _desc        = metaDescription || 'BranShee est la plateforme de prise de rendez-vous en ligne pour les professionnels : coaches, coiffeurs, thérapeutes, et plus encore. Gérez vos réservations simplement.'
+- var _ogImage     = ogImage || 'https://www.branshee.com/images/og-cover.jpg'
+- var _canonical   = canonical || ('https://www.branshee.com' + (typeof reqPath !== 'undefined' ? reqPath : ''))
 - var _ogType      = ogType || 'website'
 
 doctype html
@@ -23,7 +23,7 @@ html(lang=lang || "fr")
         meta(property="og:description" content=_desc)
         meta(property="og:image" content=_ogImage)
         meta(property="og:url" content=_canonical)
-        meta(property="og:site_name" content="SayMiro Calendar")
+        meta(property="og:site_name" content="BranShee")
         meta(property="og:locale" content=(lang === 'en' ? 'en_US' : lang === 'nl' ? 'nl_NL' : 'fr_FR'))
 
         //- Twitter Card
@@ -38,16 +38,16 @@ html(lang=lang || "fr")
         script(src="https://kit.fontawesome.com/be29c06db4.js" crossorigin="anonymous")
         //- Anti-flash : applique le thème AVANT le rendu
         script.
-            (function(){try{var t=localStorage.getItem('saymiro-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
+            (function(){try{var t=localStorage.getItem('branshee-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
         //- JSON-LD structured data (default: Organization)
         block jsonld
             script(type="application/ld+json").
                 {
                   "@context": "https://schema.org",
                   "@type": "Organization",
-                  "name": "SayMiro Calendar",
-                  "url": "https://www.saymiro.com",
-                  "logo": "https://www.saymiro.com/images/icon.svg",
+                  "name": "BranShee",
+                  "url": "https://www.branshee.com",
+                  "logo": "https://www.branshee.com/images/icon.svg",
                   "description": "Plateforme de prise de rendez-vous en ligne pour les professionnels.",
                   "sameAs": []
                 }

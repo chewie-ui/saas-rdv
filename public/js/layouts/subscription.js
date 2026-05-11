@@ -1,6 +1,41 @@
 // Translations injected server-side
 const subT = window.__subT || {};
 
+/* ── Billing toggle (Monthly / Yearly) ───────────────────────── */
+let isYearly = false;
+
+const billMonthly = document.getElementById("billMonthly");
+const billYearly  = document.getElementById("billYearly");
+const priceEls    = document.querySelectorAll(".sub-plan__price[data-monthly]");
+
+function updatePrices() {
+  priceEls.forEach((el) => {
+    const monthly = el.dataset.monthly;
+    const yearly  = el.dataset.yearly;
+    const val     = isYearly ? yearly : monthly;
+    if (!val) return;
+    // Keep the currency symbol if present
+    const prefix = el.textContent.replace(/[\d.]+/, "").trim() || "€";
+    el.textContent = `${prefix}${val}`;
+  });
+}
+
+if (billMonthly && billYearly) {
+  billMonthly.addEventListener("click", () => {
+    isYearly = false;
+    billMonthly.classList.add("active");
+    billYearly.classList.remove("active");
+    updatePrices();
+  });
+
+  billYearly.addEventListener("click", () => {
+    isYearly = true;
+    billYearly.classList.add("active");
+    billMonthly.classList.remove("active");
+    updatePrices();
+  });
+}
+
 const getProPlan         = document.getElementById("getProPlan");
 const getProPlanAlert    = document.getElementById("getProPlanAlert");
 const getBusinessPlan    = document.getElementById("getBusinessPlan");
@@ -66,7 +101,7 @@ function openDialog(title, desc, confirmLabel, closeLabel) {
 
 // ── Checkout helpers ──────────────────────────────────────────────────────────
 async function startCheckout(plan) {
-  const body = { plan: plan || "pro" };
+  const body = { plan: plan || "pro", billing: isYearly ? "yearly" : "monthly" };
   if (appliedPromoCode) body.promoCode = appliedPromoCode.code;
 
   const response = await fetch("/account/create-checkout", {

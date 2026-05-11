@@ -1,8 +1,8 @@
-/* ── Page header ────────────────────────────────────────────────────────────── */
+/* ── Page layout ──────────────────────────────────────────────────────────── */
 .employees-page {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
   padding-bottom: 60px;
 }
 
@@ -30,74 +30,102 @@
 .employees-page__header h2 {
   font-size: 22px;
   font-weight: 700;
+  color: var(--ink);
 }
 
 .employees-page__subtitle {
   font-size: 13px;
-  color: var(--grey-primary);
-  order: 1;
-  margin-top: -10px;
+  color: var(--text-muted);
 }
 
-/* ── Empty state ────────────────────────────────────────────────────────────── */
+/* ── Empty state ──────────────────────────────────────────────────────────── */
 .employees-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
   padding: 60px 20px;
-  color: var(--grey-primary);
+  color: var(--text-muted);
   text-align: center;
-  background: var(--color-white);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow);
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
 }
 
 .employees-empty p {
   font-size: 14px;
 }
 
-/* ── List ───────────────────────────────────────────────────────────────────── */
+/* ── Card grid ────────────────────────────────────────────────────────────── */
 .employees-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  align-content: start;
+}
+
+/* ── Employee card ────────────────────────────────────────────────────────── */
+.emp-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-
-/* ── Employee card ──────────────────────────────────────────────────────────── */
-.emp-card {
-  background: var(--color-white);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow);
-  border: 1.5px solid var(--border-light, #efefef);
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 18px 20px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    box-shadow 0.15s,
+    border-color 0.15s;
 }
 
 .emp-card:hover {
-  border-color: var(--border, #ddd);
-  box-shadow: var(--shadow-md, 0 4px 20px rgba(0,0,0,0.08));
+  border-color: var(--border-medium);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .emp-card--inactive {
   opacity: 0.55;
 }
 
-/* Photo */
-.emp-card__left {
+/* Top row: avatar + badge */
+.emp-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+/* Avatar (initials) */
+.emp-card__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 16px;
+  font-family: var(--font-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
+.emp-card__avatar--primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Photo avatar (when photo available) */
 .emp-card__photo {
-  position: relative;
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   overflow: hidden;
-  border: 2.5px solid var(--border-light, #ececec);
+  border: 1px solid var(--border-light);
+  flex-shrink: 0;
+  position: relative;
 }
 
 .emp-card__photo img {
@@ -110,14 +138,14 @@
 .emp-photo-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.45);
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.18s;
-  border-radius: 50%;
+  border-radius: 12px;
 }
 
 .emp-photo-overlay svg {
@@ -127,70 +155,115 @@
 .emp-card__photo:hover .emp-photo-overlay {
   opacity: 1;
 }
-
 .emp-photo-input {
   display: none;
 }
 
-/* Body */
-.emp-card__body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+/* Owner badge */
+.emp-card__badge-owner {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
-.emp-card__name-row {
+/* Name + role */
+.emp-card__info {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .emp-card__name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
-  color: var(--text-primary, #111);
+  color: var(--ink);
 }
 
-.emp-card__desc {
-  font-size: 13px;
-  color: var(--grey-primary);
-  line-height: 1.5;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+.emp-card__role {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 
-/* Badges */
+/* Age badge (kept for compat) */
 .badge--age {
   font-size: 11px;
   font-weight: 600;
   padding: 2px 9px;
   border-radius: 20px;
-  background: var(--bg-secondary, #f5f5f5);
-  color: var(--grey-primary);
-  border: 1px solid var(--border-light, #e5e5e5);
+  background: var(--surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
   flex-shrink: 0;
 }
 
-/* Actions */
+/* Divider above actions */
+.emp-card__divider {
+  border: none;
+  height: 1px;
+  background: var(--border-light);
+  margin: 0;
+}
+
+/* Bottom action row: toggle + edit + delete */
 .emp-card__actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+}
+
+/* Edit button stretches to fill remaining space */
+.emp-card__actions .edit-emp-btn {
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+  font-size: 13px;
+  gap: 6px;
+}
+
+.emp-card__actions .edit-emp-btn svg {
+  fill: currentColor;
   flex-shrink: 0;
 }
 
-/* Toggle (réutilise .sa-toggle de services.css) */
+/* Delete button stays icon-only */
+.emp-card__actions .delete-emp-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-md);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.emp-card__actions .delete-emp-btn svg {
+  fill: #ef4444;
+  flex-shrink: 0;
+}
+
+.emp-card__actions .delete-emp-btn:hover {
+  background: rgba(239, 68, 68, 0.07);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Toggle (shared with services) */
 .sa-toggle {
   position: relative;
   display: inline-block;
-  width: 40px;
-  height: 22px;
+  width: 36px;
+  height: 20px;
   flex-shrink: 0;
   cursor: pointer;
 }
@@ -205,33 +278,87 @@
 .sa-toggle__track {
   position: absolute;
   inset: 0;
-  background: var(--border, #d4d4d4);
+  background: var(--border-medium, #d4d4d4);
   border-radius: 99px;
   transition: background 0.22s ease;
 }
 
 .sa-toggle__track::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 3px;
   top: 3px;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   background: #fff;
   border-radius: 50%;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
   transition: transform 0.22s ease;
 }
 
 .sa-toggle input:checked + .sa-toggle__track {
-  background: var(--main-color, #22c55e);
+  background: var(--accent);
 }
 
 .sa-toggle input:checked + .sa-toggle__track::after {
-  transform: translateX(18px);
+  transform: translateX(16px);
+  background: var(--white);
 }
 
-/* ── Modal photo row ────────────────────────────────────────────────────────── */
+/* ── Invite card ──────────────────────────────────────────────────────────── */
+.emp-card--invite {
+  border: 1.5px dashed var(--border-medium);
+  background: transparent;
+  box-shadow: none;
+  min-height: 200px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-align: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.emp-card--invite:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.emp-invite__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emp-card--invite:hover .emp-invite__icon {
+  background: var(--accent);
+  color: #fff;
+  text-align: center;
+}
+
+.emp-card--invite:hover .emp-invite__title,
+.emp-card--invite:hover .emp-invite__desc {
+  color: var(--white);
+}
+
+.emp-invite__title {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+
+.emp-invite__desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ── Modal photo row ──────────────────────────────────────────────────────── */
 .emp-modal__photo-row {
   display: flex;
   align-items: center;
@@ -240,11 +367,11 @@
 }
 
 .emp-modal__photo-preview {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
   overflow: hidden;
-  border: 2px solid var(--border-light, #e5e5e5);
+  border: 1px solid var(--border-light);
   flex-shrink: 0;
 }
 
@@ -262,7 +389,7 @@
 
 .xs-comment {
   font-size: 11px;
-  color: var(--grey-primary);
+  color: var(--text-muted);
 }
 
 .btn--sm {
@@ -270,14 +397,15 @@
   font-size: 13px !important;
 }
 
-/* ── Responsive ─────────────────────────────────────────────────────────────── */
-@media (max-width: 600px) {
-  .emp-card {
-    flex-wrap: wrap;
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .employees-list {
+    grid-template-columns: repeat(2, 1fr);
   }
+}
 
-  .emp-card__actions {
-    width: 100%;
-    justify-content: flex-end;
+@media (max-width: 640px) {
+  .employees-list {
+    grid-template-columns: 1fr;
   }
 }

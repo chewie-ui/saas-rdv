@@ -93,8 +93,8 @@ router.get("/", async (req, res) => {
   const validCoachs = coachs.filter((c) => c.owner);
 
   res.render("client/landing-page", {
-    title: `SayMiro Calendar — Prenez rendez-vous en ligne simplement`,
-    metaDescription: "Trouvez et réservez en ligne un coach sportif, un coiffeur, un thérapeute ou tout autre professionnel près de chez vous. Prise de rendez-vous gratuite et instantanée avec SayMiro Calendar.",
+    title: `BranShee — Prenez rendez-vous en ligne simplement`,
+    metaDescription: "Trouvez et réservez en ligne un coach sportif, un coiffeur, un thérapeute ou tout autre professionnel près de chez vous. Prise de rendez-vous gratuite et instantanée avec BranShee.",
     canonical: "https://www.saymiro.com/",
     coachs: validCoachs,
     services: getServices(res.locals.lang),
@@ -160,7 +160,7 @@ router.get("/search", async (req, res) => {
 });
 
 router.get("/contact", (req, res) => {
-  res.render("client/contact", { title: "Contact — SayMiro Calendar", alwaysSticky: true });
+  res.render("client/contact", { title: "Contact — BranShee", alwaysSticky: true });
 });
 
 router.post("/contact", async (req, res) => {
@@ -168,7 +168,7 @@ router.post("/contact", async (req, res) => {
 
   if (!name || !surname || !email || !subject || !message) {
     return res.render("client/contact", {
-      title: "Contact — SayMiro Calendar",
+      title: "Contact — BranShee",
       error: "Veuillez remplir tous les champs.",
       formData: req.body,
     });
@@ -178,16 +178,16 @@ router.post("/contact", async (req, res) => {
     const adminEmail = process.env.ADMIN_EMAIL;
     const html = pug.renderFile(path.join(__dirname, "../views/templates/emails/contact.pug"), { name, surname, email, subject, message });
 
-    await sendEmail(adminEmail, `[Contact SayMiro Calendar] ${subject}`, html);
+    await sendEmail(adminEmail, `[Contact BranShee] ${subject}`, html);
 
     return res.render("client/contact", {
-      title: "Contact — SayMiro Calendar",
+      title: "Contact — BranShee",
       success: true,
     });
   } catch (err) {
     console.error(err);
     return res.render("client/contact", {
-      title: "Contact — SayMiro Calendar",
+      title: "Contact — BranShee",
       error: "Une erreur est survenue. Veuillez réessayer.",
       formData: req.body,
     });
@@ -196,22 +196,22 @@ router.post("/contact", async (req, res) => {
 
 router.get("/confidentialite", (req, res) => {
   res.render("client/confidentialite", {
-    title: "Politique de confidentialité — SayMiro Calendar",
+    title: "Politique de confidentialité — BranShee",
     alwaysSticky: true,
   });
 });
 
 router.get("/conditions-utilisation", (req, res) => {
   res.render("client/conditions-utilisation", {
-    title: "Conditions d'utilisation — SayMiro Calendar",
+    title: "Conditions d'utilisation — BranShee",
     alwaysSticky: true,
   });
 });
 
 router.get("/manage-business", (req, res) => {
   res.render("client/manage-business", {
-    title: "Gérer votre activité avec SayMiro Calendar — Agenda en ligne",
-    metaDescription: "Créez votre page professionnelle sur SayMiro Calendar et recevez des réservations en ligne 24h/24. Gérez vos rendez-vous, employés et services facilement.",
+    title: "Gérer votre activité avec BranShee — Agenda en ligne",
+    metaDescription: "Créez votre page professionnelle sur BranShee et recevez des réservations en ligne 24h/24. Gérez vos rendez-vous, employés et services facilement.",
     canonical: "https://www.saymiro.com/manage-business",
     becomeCoach: true,
   });
@@ -219,7 +219,7 @@ router.get("/manage-business", (req, res) => {
 
 router.get("/s-inscrire", (req, res) => {
   res.render("auth/choose-account", {
-    title: "Créer un compte — SayMiro Calendar",
+    title: "Créer un compte — BranShee",
     alwaysSticky: true,
   });
 });
@@ -290,10 +290,10 @@ router.get("/:company", async (req, res) => {
     } catch (_) {}
   }
 
-  const profileTitle = `${coach.businessName || coach.fullName} — Réserver en ligne | SayMiro`;
+  const profileTitle = `${coach.businessName || coach.fullName} — Réserver en ligne | BranShee`;
   const profileDesc  = coach.description
     ? `${coach.description.slice(0, 150)}…`
-    : `Réservez en ligne avec ${coach.businessName || coach.fullName}. Prise de rendez-vous rapide et gratuite sur SayMiro Calendar.`;
+    : `Réservez en ligne avec ${coach.businessName || coach.fullName}. Prise de rendez-vous rapide et gratuite sur BranShee.`;
 
   res.render("client/index", {
     title: profileTitle,

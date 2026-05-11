@@ -1,54 +1,100 @@
-extends ../../layouts/index
+extends ../../layouts/auth
 
 block links
-    link(rel="stylesheet", href="/css/components/index/auth.index.css")
+    link(rel="stylesheet", href="/css/layouts/auth-register.css")
 
 block content
-    .content-wrapper
-        .auth-wrapper
-            .auth-image
-                img(src='/images/auth-bg.png' alt="Men writing on computer")
-                .image-content
-            .auth-form.flex
-                .auth-form__container.flex.col
-                    .company
-                        .logo
-                            img(src="/images/icon.webp")
-                        h2 SayMiro
-                    .form-body.flex.col
-                        .form-title.flex.col
-                            h1= t.auth.register_title
-                            p= t.auth.register_desc
-                        form.form-fields.flex.col(action="/register" method="POST")
-                            .field-container.flex.col
-                                p= t.auth.full_name
-                                input.input(placeholder="John Doe" type="text" name="fullname")
-                            .field-container.flex.col
-                                p= t.auth.work_email
-                                input.input(placeholder="business@example.com" type="text" name="email")
-                            .field-container.flex.col
-                                p Votre métier / secteur
-                                .service-select-wrapper
-                                    input.input.service-input(
-                                        type="text"
-                                        id="serviceInput"
-                                        placeholder="Ex: Coiffeur, Médecin..."
-                                        autocomplete="off"
-                                    )
-                                    input(type="hidden" name="businessType" id="businessTypeInput")
-                                    .service-dropdown#serviceDropdown
-                            .field-container.flex.col
-                                p= t.auth.password
-                                input.input(placeholder="**************" type="password" name="password")
-                            .field-container.flex.col
-                                p= t.auth.confirm_pwd2
-                                input.input(placeholder="**************" type="password" name="conformPassword")
-                            button(type="submit")
-                                span= t.auth.continue
-                            .no-acc.flex= t.auth.already_account
-                                a(href="/login")= t.auth.login_link
-                        if error
-                            p.xs-comment.error= error
+    .auth-register-page
+        .auth-register-inner
+
+            //- ── Logo + heading ─────────────────────────────────────
+            .auth-register-top
+                a.auth-art__logo(href="/")
+                    .auth-art__logo-mark B
+                    span BranShee
+                h1= t.auth.register_title
+                p.auth-sub= t.auth.register_desc
+
+            if error
+                .auth-error= error
+
+            //- ── Card form ─────────────────────────────────────────
+            .auth-register-card
+                form.auth-register-form(action="/register" method="POST")
+
+                    //- Name row
+                    .auth-register-row
+                        .auth-field
+                            label.auth-label= t.auth.full_name || 'Full name'
+                            input.auth-input(
+                                type="text"
+                                name="fullname"
+                                placeholder="Léa Bernard"
+                                autocomplete="name"
+                                required
+                            )
+
+                    //- Email
+                    .auth-field
+                        label.auth-label= t.auth.work_email || 'Email'
+                        input.auth-input(
+                            type="email"
+                            name="email"
+                            placeholder="lea@studio.com"
+                            autocomplete="email"
+                            required
+                        )
+
+                    //- Business type
+                    .auth-field
+                        label.auth-label Votre métier / secteur
+                        .auth-service-wrap
+                            input.auth-input.service-input(
+                                type="text"
+                                id="serviceInput"
+                                placeholder="Ex: Coiffeur, Coach..."
+                                autocomplete="off"
+                            )
+                            input(type="hidden" name="businessType" id="businessTypeInput")
+                            .auth-service-dropdown#serviceDropdown
+
+                    //- Password
+                    .auth-field
+                        label.auth-label= t.auth.password
+                        input.auth-input(
+                            type="password"
+                            name="password"
+                            placeholder="••••••••"
+                            autocomplete="new-password"
+                            required
+                        )
+
+                    //- Confirm password
+                    .auth-field
+                        label.auth-label= t.auth.confirm_pwd2
+                        input.auth-input(
+                            type="password"
+                            name="conformPassword"
+                            placeholder="••••••••"
+                            autocomplete="new-password"
+                            required
+                        )
+
+                    //- Terms
+                    label.auth-check-row
+                        input(type="checkbox" name="terms" required style="accent-color:var(--accent)")
+                        span.auth-check-text
+                            | I agree to the
+                            a(href="/conditions-utilisation") Terms
+                            |  and
+                            a(href="/confidentialite") Privacy Policy
+                            | .
+
+                    button.auth-submit(type="submit")= t.auth.continue
+
+            .auth-bottom-link
+                = t.auth.already_account + ' '
+                a(href="/login")= t.auth.login_link
 
 block scripts
     script(src="/js/components/topbar.js")
@@ -66,13 +112,10 @@ block scripts
 
             function renderList(items) {
                 dropdown.innerHTML = '';
-                if (items.length === 0) {
-                    dropdown.style.display = 'none';
-                    return;
-                }
+                if (items.length === 0) { dropdown.style.display = 'none'; return; }
                 items.forEach(function(item) {
-                    const li = document.createElement('div');
-                    li.className = 'service-dropdown__item';
+                    var li = document.createElement('div');
+                    li.className = 'auth-service-item';
                     li.textContent = item;
                     li.addEventListener('mousedown', function(e) {
                         e.preventDefault();
@@ -87,19 +130,15 @@ block scripts
             }
 
             input.addEventListener('input', function() {
-                const q = normalize(input.value.trim());
+                var q = normalize(input.value.trim());
                 hidden.value = input.value.trim();
                 if (!q) { dropdown.style.display = 'none'; return; }
-                const filtered = __services.filter(s => normalize(s).includes(q));
-                renderList(filtered.slice(0, 8));
+                renderList(__services.filter(function(s){ return normalize(s).includes(q); }).slice(0, 8));
             });
 
             input.addEventListener('focus', function() {
-                const q = normalize(input.value.trim());
-                if (q) {
-                    const filtered = __services.filter(s => normalize(s).includes(q));
-                    renderList(filtered.slice(0, 8));
-                }
+                var q = normalize(input.value.trim());
+                if (q) renderList(__services.filter(function(s){ return normalize(s).includes(q); }).slice(0, 8));
             });
 
             input.addEventListener('blur', function() {
