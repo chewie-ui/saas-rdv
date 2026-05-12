@@ -143,6 +143,12 @@ block content
                                             .avail-doff-type All day
                                     if day.label
                                         p.avail-doff-note= day.label
+                                    .avail-doff-emps
+                                        if day.employees && day.employees.length > 0
+                                            each emp in day.employees
+                                                span.emp-chip= emp.firstName + ' ' + emp.lastName
+                                        else
+                                            span.emp-chip.emp-chip--all Tous
                                     .day-card__footer
                                         button.avail-doff-addtime.days-off__button.schedule-btn.flex-c(title=t.avail.add_schedule)
                                             svg(viewBox="0 -960 960 960" height="13" width="13" fill="currentColor")
@@ -252,12 +258,43 @@ block content
                         path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
             .avail-doff-body.days-off__schedule.flex-c
                 .avail-doff-type All day
+            .avail-doff-emps
             .day-card__footer
                 button.avail-doff-addtime.days-off__button.schedule-btn.flex-c
                     svg(viewBox="0 -960 960 960" height="13" width="13" fill="currentColor")
                         path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
                     span= t.avail.add_schedule
 
+    //- ── Employee picker modal ───────────────────────────────────
+    #empPickerModal.emp-picker(style="display:none")
+        .emp-picker__backdrop
+        .emp-picker__card
+            .emp-picker__hd
+                h3.emp-picker__title#empPickerTitle Pour qui est ce congé ?
+            .emp-picker__body
+                label.emp-picker-opt
+                    input#empModeAll(type="radio" name="empMode" value="all" checked)
+                    .emp-picker-opt__dot
+                    span Tous les employés
+                if employees && employees.length > 0
+                    label.emp-picker-opt
+                        input#empModeSpecific(type="radio" name="empMode" value="specific")
+                        .emp-picker-opt__dot
+                        span Sélectionner des employés
+                    .emp-picker-list#empPickerList
+                        each emp in employees
+                            label.emp-picker-emp
+                                input(type="checkbox" data-id=String(emp._id))
+                                .emp-picker-emp__check
+                                    svg(viewBox="0 -960 960 960" height="12" width="12" fill="currentColor")
+                                        path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                span= emp.firstName + ' ' + emp.lastName
+            .emp-picker__ft
+                button.emp-picker__cancel#empPickerCancel(type="button") Annuler
+                button.emp-picker__confirm#empPickerConfirm(type="button") Confirmer
+
 block scripts
+    script.
+        window.__employees = !{JSON.stringify(employees || [])};
     script(src="js/components/admin/availability.admin.js" type="module")
     script(src="js/templates/calendar.js" type="module")

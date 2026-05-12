@@ -277,33 +277,43 @@ exports.renderAppointments = async (req, res, next) => {
 };
 
 exports.getSchedule = async (req, res) => {
-  const { index, COMPANY_ID, date, serviceDuration } = req.body;
+  const { index, COMPANY_ID, date, serviceDuration, employeeId } = req.body;
   const jsWeekdayIndex = parseInt(index);
   // 1. Récupérer la config de base (pour le slotTime et les horaires par défaut)
   const company = await Company.findById(COMPANY_ID)
     .select("schedule slotTime")
     .lean();
 
-  // 2. CHERCHER UNE EXCEPTION (DaysOff)
-  // Comparaison par date ISO UTC → timezone-safe quel que soit le serveur
+  // 2. CHERCHER UNE EXCEPTION (DaysOff) — filtrée par employé si précisé
   const searchDateStr = new Date(date).toISOString().split("T")[0];
+  const specificEmp   = employeeId && employeeId !== "null" && employeeId !== "";
 
   const exceptionsDoc = await DaysOff.findOne({ company: COMPANY_ID });
   let target = company.schedule.find((d) => d.weekdayIndex === jsWeekdayIndex);
 
   if (exceptionsDoc && exceptionsDoc.dates) {
-    const specificDate = exceptionsDoc.dates.find((d) =>
-      new Date(d.date).toISOString().split("T")[0] === searchDateStr
-    );
-
-    if (specificDate) {
-      // Si l'exception a des horaires spécifiques → utiliser ces horaires (journée partielle)
-      // Si l'exception est dayOff sans horaires → jour bloqué complètement
-      if (specificDate.workingHours && specificDate.workingHours.length > 0 &&
-          specificDate.workingHours[0].start) {
-        target = specificDate; // Journée avec horaires spéciaux
+    // Trouver une exception pertinente pour cet employé (ou pour tous si pas d'employé)
+    const relevantException = exceptionsDoc.dates.find((d) => {
+      if (new Date(d.date).toISOString().split("T")[0] !== searchDateStr) return false;
+      const empIds = (d.employees || []).map((e) => String(e));
+      if (specificEmp) {
+        // Exception pertinente si : tous les employés (vide) OU cet employé
+        return empIds.length === 0 || empIds.includes(String(employeeId));
       } else {
-        return res.json({ slots: [] }); // Jour complètement bloqué
+        // Pas de préférence : ne bloquer que si l'exception concerne TOUS les employés
+        return empIds.length === 0;
+      }
+    });
+
+    if (relevantException) {
+      if (
+        relevantException.workingHours &&
+        relevantException.workingHours.length > 0 &&
+        relevantException.workingHours[0].start
+      ) {
+        target = relevantException; // Journée avec horaires spéciaux
+      } else {
+        return res.json({ slots: [] }); // Jour bloqué pour cet employé/tous
       }
     }
   }
@@ -355,9 +365,24 @@ exports.getDaysOff = async (req, res) => {
 
 exports.getDisabledDays = async (req, res) => {
   const { companyId } = req.params;
+  const employeeId  = req.query.employeeId;
+  const specificEmp = employeeId && employeeId !== "null" && employeeId !== "";
 
   const doc = await DaysOff.findOne({ company: companyId }).select("dates");
-  return res.json(doc ? doc.dates : []);
+  if (!doc) return res.json([]);
+
+  const filtered = doc.dates.filter((d) => {
+    const empIds = (d.employees || []).map((e) => String(e));
+    if (specificEmp) {
+      // Bloquer ce jour si l'exception concerne tous (vide) OU cet employé
+      return empIds.length === 0 || empIds.includes(String(employeeId));
+    } else {
+      // Pas de préférence : griser le jour seulement si tous les employés sont off (tableau vide)
+      return empIds.length === 0;
+    }
+  });
+
+  return res.json(filtered);
 };
 
 exports.getBookingC = async (req, res) => {

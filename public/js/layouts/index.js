@@ -292,12 +292,21 @@ let _disabledDays     = null;
 let _specificBookings = null;
 let _slotTime         = null;
 let _calDataLoaded    = false;
+let _calLoadedEmpId   = undefined; // track which employee the cache was built for
 
 async function loadCalendarData() {
-  if (_calDataLoaded) return;
+  const empId = STATE.employee ? STATE.employee.id : "";
+  // Invalidate cache if the employee changed since last load
+  if (_calDataLoaded && _calLoadedEmpId === empId) return;
+
+  _calDataLoaded  = false;
+  _calLoadedEmpId = empId;
+
+  const empParam = empId ? `?employeeId=${empId}` : "";
+
   const [daysOffRes, disabledRes, bookingsRes, infoRes] = await Promise.all([
-    fetch("/get-days-off",     { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ COMPANY_ID }) }),
-    fetch(`/get-disabled-days/${COMPANY_ID}`),
+    fetch("/get-days-off", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ COMPANY_ID }) }),
+    fetch(`/get-disabled-days/${COMPANY_ID}${empParam}`),
     fetch(`/get-booking/${COMPANY_ID}`),
     fetch(`/company/get-infos/${COMPANY_ID}`),
   ]);
@@ -554,7 +563,7 @@ async function fetchSlots() {
     fetch("/get-schedule", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ index: dayOfWeek, COMPANY_ID, date: STATE.date, serviceDuration: serviceDur }),
+      body: JSON.stringify({ index: dayOfWeek, COMPANY_ID, date: STATE.date, serviceDuration: serviceDur, employeeId: empId }),
     }),
     fetch(`/get-booking?date=${STATE.date}&companyId=${COMPANY_ID}&employeeId=${empId}${serviceDur ? `&serviceDuration=${serviceDur}` : ""}`),
   ]);

@@ -9,6 +9,7 @@ const {
   scheduleDayOff,
   setScheduleDayOff,
   companyInfos,
+  updateDayOffEmployees,
 } = require("../controllers/company.controller");
 const injectCompany = require("../middlewares/injectCompany");
 
@@ -19,6 +20,7 @@ router.patch("/company/add-days-off", injectCompany, addDaysOff);
 router.patch("/company/remove-days-off", injectCompany, removeDaysOff);
 
 router.delete("/company/days-off/:dayId", injectCompany, removeDayOff);
+router.patch("/company/days-off/:dayId/employees", injectCompany, updateDayOffEmployees);
 
 router.delete("/company/time-slot", injectCompany, deleteTimeSlot);
 

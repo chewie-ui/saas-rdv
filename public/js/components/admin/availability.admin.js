@@ -567,55 +567,230 @@ if (reenableBtn) {
 }
 
 import { getDays, addDay, removeDay } from "/js/components/calendarState.js";
+
+/* ── Employee picker ─────────────────────────────────────────────────────── */
+const EMPLOYEES = window.__employees || [];
+const empPickerModal   = document.getElementById("empPickerModal");
+const empPickerCancel  = document.getElementById("empPickerCancel");
+const empPickerConfirm = document.getElementById("empPickerConfirm");
+const empPickerList    = document.getElementById("empPickerList");
+const empModeAll       = document.getElementById("empModeAll");
+const empModeSpecific  = document.getElementById("empModeSpecific");
+
+// Show/hide the specific employee list when mode changes
+if (empModeAll && empModeSpecific && empPickerList) {
+  const toggleList = () => {
+    empPickerList.classList.toggle("is-open", empModeSpecific.checked);
+  };
+  empModeAll.addEventListener("change", toggleList);
+  empModeSpecific.addEventListener("change", toggleList);
+}
+
+// Return selected employee IDs ([] = all)
+function getSelectedEmployeeIds() {
+  if (!empModeSpecific || !empModeSpecific.checked) return [];
+  return Array.from(
+    empPickerList?.querySelectorAll("input[type=checkbox]:checked") || []
+  ).map(cb => cb.dataset.id);
+}
+
+// Pending state
+let _pendingDayEl   = null;
+let _pendingDateKey = null;
+let _pendingEditId  = null; // null = add mode, string = edit mode
+
+// ── Open picker in ADD mode ───────────────────────────────────────────────
+function openEmpPicker(dayEl, dateKey) {
+  _pendingDayEl   = dayEl;
+  _pendingDateKey = dateKey;
+  _pendingEditId  = null;
+
+  if (!EMPLOYEES.length) {
+    // No employees configured → save immediately (applies to whole company)
+    saveDayOff(dayEl, dateKey, []);
+    return;
+  }
+
+  // Reset state
+  if (empModeAll) empModeAll.checked = true;
+  if (empPickerList) {
+    empPickerList.classList.remove("is-open");
+    empPickerList.querySelectorAll("input[type=checkbox]").forEach(cb => (cb.checked = false));
+  }
+  const titleEl = document.getElementById("empPickerTitle");
+  if (titleEl) titleEl.textContent = "Pour qui est ce congé ?";
+  if (empPickerModal) empPickerModal.style.display = "flex";
+}
+
+// ── Open picker in EDIT mode (pre-fill current employees) ────────────────
+function openEmpPickerEdit(dayEl, dateKey, entryId, currentEmployees) {
+  if (!EMPLOYEES.length) return; // nothing to configure
+
+  _pendingDayEl   = dayEl;
+  _pendingDateKey = dateKey;
+  _pendingEditId  = entryId;
+
+  // Normalize current employee IDs (they may be objects or plain strings)
+  const currentIds = (currentEmployees || []).map(e =>
+    typeof e === "object" ? String(e._id) : String(e)
+  );
+
+  if (currentIds.length === 0) {
+    if (empModeAll) empModeAll.checked = true;
+    if (empPickerList) empPickerList.classList.remove("is-open");
+  } else {
+    if (empModeSpecific) empModeSpecific.checked = true;
+    if (empPickerList) {
+      empPickerList.classList.add("is-open");
+      empPickerList.querySelectorAll("input[type=checkbox]").forEach(cb => {
+        cb.checked = currentIds.includes(cb.dataset.id);
+      });
+    }
+  }
+  const titleEl = document.getElementById("empPickerTitle");
+  if (titleEl) titleEl.textContent = "Modifier le congé";
+  if (empPickerModal) empPickerModal.style.display = "flex";
+}
+
+// ── Close picker ──────────────────────────────────────────────────────────
+function closeEmpPicker() {
+  if (empPickerModal) empPickerModal.style.display = "none";
+  _pendingDayEl   = null;
+  _pendingDateKey = null;
+  _pendingEditId  = null;
+}
+
+if (empPickerCancel) empPickerCancel.addEventListener("click", closeEmpPicker);
+if (empPickerModal) {
+  empPickerModal.addEventListener("click", e => {
+    if (e.target === empPickerModal || e.target.classList.contains("emp-picker__backdrop")) {
+      closeEmpPicker();
+    }
+  });
+}
+
+if (empPickerConfirm) {
+  empPickerConfirm.addEventListener("click", () => {
+    if (!_pendingDayEl || !_pendingDateKey) return;
+    const ids = getSelectedEmployeeIds();
+    if (empPickerModal) empPickerModal.style.display = "none";
+
+    if (_pendingEditId) {
+      updateDayOffEmployees(_pendingDateKey, _pendingEditId, ids);
+    } else {
+      saveDayOff(_pendingDayEl, _pendingDateKey, ids);
+    }
+    _pendingDayEl   = null;
+    _pendingDateKey = null;
+    _pendingEditId  = null;
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+// Build employee chips HTML
+function buildEmpChips(employeeIds) {
+  if (!employeeIds || employeeIds.length === 0) {
+    return `<span class="emp-chip emp-chip--all">Tous</span>`;
+  }
+  return employeeIds.map(id => {
+    const emp = EMPLOYEES.find(e => String(e._id) === String(id));
+    const name = emp ? `${emp.firstName} ${emp.lastName}` : String(id);
+    return `<span class="emp-chip">${name}</span>`;
+  }).join("");
+}
+
+// Find the card in holidaysBody matching a dateKey
+function findCardByDateKey(dateKey) {
+  return Array.from(holidaysBody.querySelectorAll(".days-off__row")).find(card => {
+    try {
+      const entry = JSON.parse(card.dataset.date);
+      return new Date(entry.date).toISOString().split("T")[0] === dateKey;
+    } catch { return false; }
+  });
+}
+
+// ── ADD: save a new day-off ───────────────────────────────────────────────
+async function saveDayOff(dayEl, dateKey, employeeIds) {
+  const [year, month, day] = dateKey.split("-");
+
+  const response = await fetch("/company/add-days-off", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dateKey, employeeIds }),
+  });
+  const data = await response.json();
+
+  addDay(dateKey);
+  dayEl.classList.add("clicked");
+
+  const clone = dayOffRowTemplate.content.cloneNode(true);
+  const MONTHS_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const DAYS_ABBR   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const dateObj     = new Date(`${year}-${month}-${day}`);
+  const dateFormatted = `${DAYS_ABBR[dateObj.getDay()]}, ${MONTHS_ABBR[dateObj.getMonth()]} ${parseInt(day)}`;
+
+  const labelEl = clone.querySelector(".avail-doff-date-label");
+  if (labelEl) labelEl.textContent = dateFormatted;
+
+  const empsEl = clone.querySelector(".avail-doff-emps");
+  if (empsEl) empsEl.innerHTML = buildEmpChips(employeeIds);
+
+  const rowEl = clone.querySelector(".days-off__row");
+  if (rowEl && data.dateEntry) {
+    rowEl.dataset.date = JSON.stringify(data.dateEntry);
+  }
+  holidaysBody.appendChild(clone);
+}
+
+// ── EDIT: update employees on an existing day-off ─────────────────────────
+async function updateDayOffEmployees(dateKey, entryId, employeeIds) {
+  await fetch(`/company/days-off/${entryId}/employees`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ employeeIds }),
+  });
+
+  // Update chips on the card
+  const card = findCardByDateKey(dateKey);
+  if (card) {
+    const empsEl = card.querySelector(".avail-doff-emps");
+    if (empsEl) empsEl.innerHTML = buildEmpChips(employeeIds);
+
+    // Keep data-date in sync so the next edit has fresh employee IDs
+    try {
+      const entry = JSON.parse(card.dataset.date);
+      entry.employees = employeeIds.map(id => {
+        const emp = EMPLOYEES.find(e => String(e._id) === String(id));
+        return emp ? { _id: id, firstName: emp.firstName, lastName: emp.lastName } : { _id: id };
+      });
+      card.dataset.date = JSON.stringify(entry);
+    } catch (_) {}
+  }
+}
+
+// ── Calendar click: add OR edit ───────────────────────────────────────────
 calendar.addEventListener("click", async (event) => {
-  const dayEl = event.target.closest(".day:not(.empty):not(.clicked)");
+  // Allow clicking already-clicked days (edit mode) — remove :not(.clicked)
+  const dayEl = event.target.closest(".day:not(.empty)");
   if (!dayEl) return;
 
   const { day, month, year } = dayEl.dataset;
-
   const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
   const isAlreadyOff = getDays().includes(dateKey);
 
   if (isAlreadyOff) {
-    await fetch("/company/remove-days-off", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dateKey }),
-    });
-
-    removeDay(dateKey);
-    dayEl.classList.remove("clicked");
+    // ── Edit mode: find entry and open picker pre-filled ──────────────────
+    if (!EMPLOYEES.length) return; // no employees → nothing to refine
+    const card = findCardByDateKey(dateKey);
+    if (!card) return;
+    try {
+      const entry = JSON.parse(card.dataset.date);
+      openEmpPickerEdit(dayEl, dateKey, String(entry._id), entry.employees || []);
+    } catch (_) {}
   } else {
-    const response = await fetch("/company/add-days-off", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dateKey }),
-    });
-
-    const data = await response.json();
-
-    addDay(dateKey);
-    dayEl.classList.add("clicked");
-
-    const clone = dayOffRowTemplate.content.cloneNode(true);
-    // Update date label in new design (span.avail-doff-date-label) + legacy p.input
-    const MONTHS_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    const DAYS_ABBR   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-    const dateObj     = new Date(`${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`);
-    const dateFormatted = `${DAYS_ABBR[dateObj.getDay()]}, ${MONTHS_ABBR[dateObj.getMonth()]} ${parseInt(day)}`;
-    const labelEl = clone.querySelector(".avail-doff-date-label");
-    if (labelEl) labelEl.textContent = dateFormatted;
-    const pInput = clone.querySelector("p.input");
-    if (pInput) pInput.textContent = `${day}/${month.padStart(2,"0")}/${year}`;
-
-    // Stocker le dateEntry (avec _id) pour pouvoir supprimer/éditer ensuite
-    const rowEl = clone.querySelector(".days-off__row");
-    if (rowEl && data.dateEntry) {
-      rowEl.dataset.date = JSON.stringify(data.dateEntry);
-    }
-
-    holidaysBody.appendChild(clone);
+    // ── Add mode ──────────────────────────────────────────────────────────
+    openEmpPicker(dayEl, dateKey);
   }
 });
 

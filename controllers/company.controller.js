@@ -15,13 +15,18 @@ exports.getDaysOff = async (req, res) => {
 };
 
 exports.addDaysOff = async (req, res) => {
-  const { dateKey } = req.body;
+  const { dateKey, employeeIds } = req.body;
 
   const result = await DaysOff.findOneAndUpdate(
     { company: res.locals.currentCompany._id },
     {
       $push: {
-        dates: { date: new Date(dateKey), workingHours: [], dayOff: true },
+        dates: {
+          date: new Date(dateKey),
+          workingHours: [],
+          dayOff: true,
+          employees: Array.isArray(employeeIds) ? employeeIds : [],
+        },
       },
     },
     { upsert: true, new: true },
@@ -134,6 +139,21 @@ exports.scheduleDayOff = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.json(err);
+  }
+};
+
+exports.updateDayOffEmployees = async (req, res) => {
+  try {
+    const { dayId } = req.params;
+    const { employeeIds } = req.body;
+    await DaysOff.updateOne(
+      { company: res.locals.currentCompany._id, "dates._id": dayId },
+      { $set: { "dates.$.employees": Array.isArray(employeeIds) ? employeeIds : [] } }
+    );
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false });
   }
 };
 

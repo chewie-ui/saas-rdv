@@ -304,7 +304,9 @@ async function getSlotTime(companyId) {
 }
 
 async function getDaysOff(companyId) {
-  const doc = await DaysOff.findOne({ company: companyId }).select("dates");
+  const doc = await DaysOff.findOne({ company: companyId })
+    .populate("dates.employees", "firstName lastName")
+    .lean();
 
   if (!doc) return { dates: [] };
 
@@ -322,14 +324,17 @@ exports.availability = async (req, res) => {
   if (!currentCompany) {
     return res.redirect("/register");
   }
-  const Service = require("../db/models/company/service.model");
-  const [daysOff, currentSlotTime, serviceCount] = await Promise.all([
+  const Service  = require("../db/models/company/service.model");
+  const Employee = require("../db/models/company/employee.model");
+  const [daysOff, currentSlotTime, serviceCount, activeEmployees] = await Promise.all([
     getDaysOff(currentCompany),
     getSlotTime(currentCompany),
     Service.countDocuments({ company: currentCompany, active: true }),
+    Employee.find({ company: currentCompany._id, active: true }).select("firstName lastName").lean(),
   ]);
   res.render("admin/availability", {
     daysOff,
+    employees: activeEmployees,
     pageName: "Availability",
     title: res.locals.t.titles.avail,
     timeSlot: [10, 15, 20, 25, 30, 45, 60, 90, 120, 180],

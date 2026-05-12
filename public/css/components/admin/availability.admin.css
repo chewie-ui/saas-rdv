@@ -734,6 +734,255 @@
   transform: translateX(-50%) translateY(0);
 }
 
+/* ── Calendar: already-off days show edit cursor (from calendar.index.css) */
+.calendar .day.clicked {
+  cursor: pointer;
+}
+
+/* ── Employee chips (on day-off cards) ──────────────────────── */
+.avail-doff-emps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 18px;
+}
+
+.emp-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-primary);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+  white-space: nowrap;
+  line-height: 1.6;
+}
+
+.emp-chip--all {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #cbd5e1;
+}
+
+/* ── Employee picker modal ──────────────────────────────────── */
+.emp-picker {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.emp-picker__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 20, 18, 0.45);
+  backdrop-filter: blur(3px);
+}
+
+.emp-picker__card {
+  position: relative;
+  background: var(--color-white);
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  width: 100%;
+  max-width: 380px;
+  margin: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: empPickerIn 0.22s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+@keyframes empPickerIn {
+  from { opacity: 0; transform: scale(0.94) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.emp-picker__hd {
+  padding: 20px 22px 0;
+}
+
+.emp-picker__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink, #0c0d0e);
+  margin: 0;
+}
+
+.emp-picker__body {
+  padding: 16px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.emp-picker-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-light);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.emp-picker-opt:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.emp-picker-opt input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.emp-picker-opt__dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border-light);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  transition: border-color 0.15s;
+}
+
+.emp-picker-opt:has(input:checked) .emp-picker-opt__dot {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3px white;
+}
+
+.emp-picker-opt span {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Specific employee list (hidden until "specific" radio selected) */
+.emp-picker-list {
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0 0 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.emp-picker-list.is-open {
+  display: flex;
+}
+
+.emp-picker-emp {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: background 0.12s;
+  user-select: none;
+}
+
+.emp-picker-emp:hover {
+  background: var(--surface, #f5f4f1);
+}
+
+.emp-picker-emp input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.emp-picker-emp__check {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 2px solid var(--border-light);
+  background: var(--color-white);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.emp-picker-emp__check svg {
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.emp-picker-emp:has(input:checked) .emp-picker-emp__check {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.emp-picker-emp:has(input:checked) .emp-picker-emp__check svg {
+  opacity: 1;
+  fill: #fff;
+}
+
+.emp-picker-emp span {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.emp-picker__ft {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 22px 20px;
+  border-top: 1px solid var(--border-light);
+}
+
+.emp-picker__cancel {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-light);
+  background: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: var(--font-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.emp-picker__cancel:hover {
+  background: var(--surface);
+  border-color: var(--text-muted);
+}
+
+.emp-picker__confirm {
+  height: 38px;
+  padding: 0 20px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: var(--font-primary);
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+
+.emp-picker__confirm:hover {
+  opacity: 0.88;
+}
+
 /* ── Calendar modal (legacy) ────────────────────────────────── */
 #renderCalendar,
 #calendarWrapper {

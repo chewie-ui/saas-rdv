@@ -17,6 +17,8 @@ const daysOffSchema = new schema({
       },
       workingHours: [{ start: String, end: String }],
       dayOff: Boolean,
+      // [] = applies to ALL employees; [id1, id2] = specific employees only
+      employees: [{ type: schema.Types.ObjectId, ref: "Employee" }],
     },
   ],
 });
