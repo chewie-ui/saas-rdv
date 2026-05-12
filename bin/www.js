@@ -1,8 +1,8 @@
 const http = require("http");
 const https = require("https");
-const PORT = process.env.PORT || 3000;
 
 const app = require("../app.js");
+const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
 
 const { Server } = require("socket.io");
