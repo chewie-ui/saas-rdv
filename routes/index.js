@@ -113,6 +113,8 @@ router.get("/", async (req, res) => {
     })
     .limit(10);
 
+  console.log({ coachsHEREEEEEEEEEEEEE: coachs });
+
   const validCoachs = coachs.filter((c) => c.owner);
 
   console.log({ validCoachs });
