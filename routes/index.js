@@ -26,7 +26,9 @@ router.get("/sitemap.xml", async (req, res) => {
   // Fetch all active company slugs to generate business profile URLs
   let companyUrls = "";
   try {
-    const companies = await Companies.find({}).populate({ path: "owner", match: { isPremium: true } }).lean();
+    const companies = await Companies.find({})
+      .populate({ path: "owner", match: { isPremium: true } })
+      .lean();
     companies
       .filter((c) => c.owner)
       .forEach((c) => {
@@ -89,6 +91,8 @@ router.get("/", async (req, res) => {
       match: { isPremium: true },
     })
     .limit(10);
+
+  console.log(coachs);
 
   const validCoachs = coachs.filter((c) => c.owner);
 
@@ -234,43 +238,44 @@ router.get("/:company", async (req, res) => {
   const ID = company.owner;
   const coach = await User.findById(ID);
 
-  const Service  = require("../db/models/company/service.model");
+  const Service = require("../db/models/company/service.model");
   const Employee = require("../db/models/company/employee.model");
 
-  const services = await Service.find({ company: company._id, active: true })
-    .populate("employees", "firstName lastName profilePicture")
-    .sort("order")
-    .lean();
+  const services = await Service.find({ company: company._id, active: true }).populate("employees", "firstName lastName profilePicture").sort("order").lean();
 
   const activeEmployees = await Employee.find({ company: company._id, active: true }).lean();
 
   // Pre-serialize services to avoid Pug interpolation issues with nested braces
-  const servicesJson = JSON.stringify(services.map(function(s) {
-    return {
-      _id: String(s._id),
-      name: s.name,
-      description: s.description || '',
-      price: s.price,
-      duration: s.duration,
-      employees: (s.employees || []).map(function(e) {
-        return {
-          _id: String(e._id),
-          firstName: e.firstName || '',
-          lastName: e.lastName || '',
-          profilePicture: e.profilePicture || '/images/no-user.webp'
-        };
-      })
-    };
-  }));
+  const servicesJson = JSON.stringify(
+    services.map(function (s) {
+      return {
+        _id: String(s._id),
+        name: s.name,
+        description: s.description || "",
+        price: s.price,
+        duration: s.duration,
+        employees: (s.employees || []).map(function (e) {
+          return {
+            _id: String(e._id),
+            firstName: e.firstName || "",
+            lastName: e.lastName || "",
+            profilePicture: e.profilePicture || "/images/no-user.webp",
+          };
+        }),
+      };
+    }),
+  );
 
-  const employeesJson = JSON.stringify(activeEmployees.map(function(e) {
-    return {
-      _id: String(e._id),
-      firstName: e.firstName || '',
-      lastName: e.lastName || '',
-      profilePicture: e.profilePicture || '/images/no-user.webp'
-    };
-  }));
+  const employeesJson = JSON.stringify(
+    activeEmployees.map(function (e) {
+      return {
+        _id: String(e._id),
+        firstName: e.firstName || "",
+        lastName: e.lastName || "",
+        profilePicture: e.profilePicture || "/images/no-user.webp",
+      };
+    }),
+  );
 
   // Client connecté → pré-remplir le formulaire de réservation
   let clientUser = null;
@@ -282,7 +287,7 @@ router.get("/:company", async (req, res) => {
         const parts = (client.fullName || "").trim().split(" ");
         clientUser = {
           firstName: parts[0] || "",
-          lastName:  parts.slice(1).join(" ") || "",
+          lastName: parts.slice(1).join(" ") || "",
           email: client.email || "",
           phone: client.phone || "",
         };
@@ -291,9 +296,7 @@ router.get("/:company", async (req, res) => {
   }
 
   const profileTitle = `${coach.businessName || coach.fullName} — Réserver en ligne | BranShee`;
-  const profileDesc  = coach.description
-    ? `${coach.description.slice(0, 150)}…`
-    : `Réservez en ligne avec ${coach.businessName || coach.fullName}. Prise de rendez-vous rapide et gratuite sur BranShee.`;
+  const profileDesc = coach.description ? `${coach.description.slice(0, 150)}…` : `Réservez en ligne avec ${coach.businessName || coach.fullName}. Prise de rendez-vous rapide et gratuite sur BranShee.`;
 
   res.render("client/index", {
     title: profileTitle,
