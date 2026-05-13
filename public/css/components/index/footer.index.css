@@ -1,75 +1,252 @@
-.footer .footer__container {
-  display: flex;
-  flex-direction: column;
+/* ============================================================
+   BranShee — Footer redesign
+   Dark surface · warm green accents · full responsive
+   ============================================================ */
+
+.ft {
+  background: #0e100f;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: var(--font-primary, "Plus Jakarta Sans", sans-serif);
+  position: relative;
+  overflow: hidden;
 }
 
-.footer .footer__container .footer__top {
+/* Subtle green gradient glow at the top edge */
+.ft::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(30, 122, 78, 0.6) 30%,
+    rgba(30, 122, 78, 0.9) 50%,
+    rgba(30, 122, 78, 0.6) 70%,
+    transparent 100%
+  );
+}
+
+/* Faint ambient blob — purely decorative */
+.ft::after {
+  content: "";
+  position: absolute;
+  bottom: -120px;
+  right: -80px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(30, 122, 78, 0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── Inner wrapper ─────────────────────────────────────────── */
+.ft__inner {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 64px 32px 28px;
   display: flex;
   flex-direction: column;
-  gap: 25px;
-  margin-bottom: 25px;
-  justify-content: center;
-  padding-bottom: 25px;
+  gap: 52px;
+}
+
+/* ── Top section ───────────────────────────────────────────── */
+.ft__top {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 48px 64px;
+  align-items: start;
+}
+
+/* ── Brand column ──────────────────────────────────────────── */
+.ft__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ft__logo {
+  display: inline-flex;
   align-items: center;
-  border-bottom: var(--border);
+  gap: 10px;
+  text-decoration: none;
+  color: #fff;
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  width: fit-content;
 }
 
-.footer .footer__container .footer__top .footer__logo img {
-  width: 45px;
-  display: none;
+.ft__logo-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--accent, #1e7a4e);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  font-weight: 800;
+  flex-shrink: 0;
 }
 
-.footer .footer__container .footer__top .footer__logo h2 {
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--text-primary);
+.ft__tagline {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.42);
+  margin: 0;
+  max-width: 210px;
+}
+
+/* ── Social icons ──────────────────────────────────────────── */
+.ft__socials {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ft__social {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.5);
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+  transition: border-color 0.18s, background 0.18s, color 0.18s;
+}
+
+.ft__social:hover {
+  border-color: rgba(30, 122, 78, 0.55);
+  background: rgba(30, 122, 78, 0.12);
+  color: #6ed9a3;
+}
+
+/* ── Nav columns ───────────────────────────────────────────── */
+.ft__cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.ft__col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ft__col-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  letter-spacing: 10px;
-  font-family: var(--family-primary);
+  color: rgba(255, 255, 255, 0.28);
 }
 
-.footer .footer__container .footer__bottom {
-  text-align: center;
-  padding-bottom: 25px;
-}
-
-.footer .footer__container .footer__bottom p {
-  color: var(--grey-primary);
-}
-
-.footer .footer__container .footer__bottom a {
-  color: var(--green-primary);
-}
-
-.footer .footer__container .footer__top .footer__links {
+.ft__col nav {
   display: flex;
-  gap: 25px;
-  font-weight: 600;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
+  gap: 11px;
 }
 
-.footer .footer__container .footer__top .footer__links a {
-  color: var(--text-secondary);
+.ft__link {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.52);
+  text-decoration: none;
+  transition: color 0.15s;
+  width: fit-content;
+  position: relative;
 }
 
-.footer .footer__container .footer__legal {
+.ft__link::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: rgba(110, 217, 163, 0.7);
+  transition: width 0.22s ease;
+}
+
+.ft__link:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.ft__link:hover::after {
+  width: 100%;
+}
+
+/* ── Bottom bar ────────────────────────────────────────────── */
+.ft__bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 24px;
   display: flex;
-  gap: 1.5rem;
-  justify-content: center;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   flex-wrap: wrap;
-  padding: 0.75rem 0 1rem;
-  border-top: 1px solid var(--border);
-  margin-top: 0.5rem;
 }
 
-.footer .footer__container .footer__legal a {
-  color: var(--grey-primary);
-  font-size: 0.8rem;
+.ft__copy,
+.ft__made {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.28);
+  margin: 0;
+}
+
+.ft__made a {
+  color: rgba(110, 217, 163, 0.7);
   text-decoration: none;
   transition: color 0.15s;
 }
 
-.footer .footer__container .footer__legal a:hover {
-  color: var(--green-primary);
+.ft__made a:hover {
+  color: #6ed9a3;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .ft__top {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  .ft__tagline {
+    max-width: 100%;
+  }
+
+  .ft__cols {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+}
+
+@media (max-width: 540px) {
+  .ft__inner {
+    padding: 48px 20px 24px;
+    gap: 36px;
+  }
+
+  .ft__cols {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px 20px;
+  }
+
+  .ft__bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 360px) {
+  .ft__cols {
+    grid-template-columns: 1fr;
+  }
 }

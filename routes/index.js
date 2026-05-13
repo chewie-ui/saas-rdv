@@ -106,24 +106,21 @@ router.get("/sitemap.xml", async (req, res) => {
 // });
 
 router.get("/", async (req, res) => {
-  const coachs = await Companies.find({})
-    .populate({
-      path: "owner",
-      match: { isPremium: true },
-    })
-    .limit(10);
+  // 1. Récupérer d'abord tous les users premium
+  const premiumUsers = await User.find({ isPremium: true }).select("_id").lean();
+  const premiumIds   = premiumUsers.map((u) => u._id);
 
-  console.log({ coachs: JSON.stringify(coachs) });
-
-  const validCoachs = coachs.filter((c) => c.owner);
-
-  console.log({ validCoachs });
+  // 2. Trouver uniquement les companies dont l'owner est premium → limit correct
+  const coachs = await Companies.find({ owner: { $in: premiumIds } })
+    .populate("owner")
+    .limit(20)
+    .lean();
 
   res.render("client/landing-page", {
     title: `BranShee — Prenez rendez-vous en ligne simplement`,
     metaDescription: "Trouvez et réservez en ligne un coach sportif, un coiffeur, un thérapeute ou tout autre professionnel près de chez vous. Prise de rendez-vous gratuite et instantanée avec BranShee.",
     canonical: "https://www.saymiro.com/",
-    coachs: validCoachs,
+    coachs,
     services: getServices(res.locals.lang),
   });
 });
@@ -165,14 +162,14 @@ router.get("/search", async (req, res) => {
       userQuery = { $and: conditions };
     }
 
-    const coachs = await Companies.find({})
-      .populate({
-        path: "owner",
-        match: userQuery,
-      })
-      .limit(20);
+    // Trouver les users qui correspondent aux critères (incluant isPremium: true)
+    const matchingUsers = await User.find(userQuery).select("_id").lean();
+    const matchingIds   = matchingUsers.map((u) => u._id);
 
-    const filteredCoachs = coachs.filter((coach) => coach.owner !== null);
+    const filteredCoachs = await Companies.find({ owner: { $in: matchingIds } })
+      .populate("owner")
+      .limit(20)
+      .lean();
 
     res.render("client/landing-page", {
       coachs: filteredCoachs,

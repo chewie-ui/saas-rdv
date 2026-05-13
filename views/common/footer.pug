@@ -1,17 +1,54 @@
-footer.footer
-    .footer__container.container
-        .footer__top
-            .footer__logo
-                img(src="/images/icon.svg" alt="GymIo Logo")
-                h2 BranShee
-            .footer__links
-                a(href="/")= t.footer.book_now
-                a(href="/manage-business")= t.footer.become_coach
-                a(href="/login")= t.footer.login
-                a(href="/contact")= t.footer.contact
-        .footer__legal
-            a(href="/confidentialite") Politique de confidentialité
-            a(href="/conditions-utilisation") Conditions d'utilisation
-        .footer__bottom
-            p #{t.footer.rights} #{new Date().getFullYear()} BranShee. #{t.footer.made_by} 
-                a(href="https://skydev.be" target="_blank") Skydev
+footer.ft
+    .ft__inner
+        //- ── Top: brand + columns ─────────────────────────────────
+        .ft__top
+            //- Brand column
+            .ft__brand
+                a.ft__logo(href="/")
+                    .ft__logo-mark B
+                    span BranShee
+                p.ft__tagline Gérez vos rendez-vous,<br>développez votre activité.
+                .ft__socials
+                    a.ft__social(href="https://instagram.com" target="_blank" rel="noopener" aria-label="Instagram")
+                        svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round")
+                            rect(x="2" y="2" width="20" height="20" rx="5" ry="5")
+                            path(d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z")
+                            line(x1="17.5" y1="6.5" x2="17.51" y2="6.5")
+                    a.ft__social(href="https://linkedin.com" target="_blank" rel="noopener" aria-label="LinkedIn")
+                        svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round")
+                            path(d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z")
+                            rect(x="2" y="9" width="4" height="12")
+                            circle(cx="4" cy="4" r="2")
+                    a.ft__social(href="https://twitter.com" target="_blank" rel="noopener" aria-label="Twitter / X")
+                        svg(viewBox="0 0 24 24" width="18" height="18" fill="currentColor")
+                            path(d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.912-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z")
+
+            //- Nav columns
+            .ft__cols
+                .ft__col
+                    span.ft__col-title Produit
+                    nav
+                        a.ft__link(href="/") Réserver
+                        a.ft__link(href="/manage-business") Pour les pros
+                        a.ft__link(href="/subscription") Tarifs
+                        a.ft__link(href="/contact") Contact
+
+                .ft__col
+                    span.ft__col-title Compte
+                    nav
+                        a.ft__link(href="/login") Se connecter
+                        a.ft__link(href="/register") Créer un compte
+                        a.ft__link(href="/client/dashboard") Mon espace
+
+                .ft__col
+                    span.ft__col-title Légal
+                    nav
+                        a.ft__link(href="/confidentialite") Confidentialité
+                        a.ft__link(href="/conditions-utilisation") CGU
+
+        //- ── Bottom bar ───────────────────────────────────────────
+        .ft__bottom
+            p.ft__copy © #{new Date().getFullYear()} BranShee. Tous droits réservés.
+            p.ft__made
+                | Fait avec ♥ par&nbsp;
+                a(href="https://skydev.be" target="_blank" rel="noopener") Skydev
