@@ -106,8 +106,6 @@ router.get("/sitemap.xml", async (req, res) => {
 // });
 
 router.get("/", async (req, res) => {
-  console.log(await Companies.find({}).populate("owner"));
-
   const coachs = await Companies.find({})
     .populate({
       path: "owner",
@@ -115,9 +113,9 @@ router.get("/", async (req, res) => {
     })
     .limit(10);
 
-  console.log({ coachs });
-
   const validCoachs = coachs.filter((c) => c.isPremium === true);
+
+  console.log({ validCoachs });
 
   res.render("client/landing-page", {
     title: `BranShee — Prenez rendez-vous en ligne simplement`,
