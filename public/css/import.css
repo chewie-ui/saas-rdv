@@ -349,11 +349,15 @@ button img, .btn img {
 }
 
 /* span inside button — keep old markup working */
-button span, .btn span {
+button span, .btn span, a.btn span {
   position: relative; z-index: 1;
   display: inline-flex; align-items: center;
   padding: 0;  /* reset old padding model */
   color: inherit;
+}
+
+a.btn:not(.secondary):hover span {
+  color: var(--white);
 }
 
 button:hover:not(:disabled), .btn:hover:not(:disabled) {

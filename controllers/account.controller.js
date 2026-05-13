@@ -85,9 +85,9 @@ exports.createCheckout = async (req, res) => {
     const { promoCode, plan } = req.body || {};
 
     // Choisir le bon price ID selon le plan demandé
-    const priceId = (plan === "business" && env.stripePricePlanBusiness)
-      ? env.stripePricePlanBusiness
-      : env.stripePricePlanPro;
+    const priceId = (plan === "business" && env.stripePriceBusinessMonthly)
+      ? env.stripePriceBusinessMonthly
+      : env.stripePricePremiumMonthly;
 
     const sessionParams = {
       mode: "subscription",
@@ -99,8 +99,8 @@ exports.createCheckout = async (req, res) => {
         },
       ],
       client_reference_id: req.user._id.toString(),
-      success_url: `${process.env.BASE_URL || "https://gymio.be"}/subscription/success`,
-      cancel_url:  `${process.env.BASE_URL || "https://gymio.be"}/subscription`,
+      success_url: `${process.env.BASE_URL || "https://branshee.com"}/subscription/success`,
+      cancel_url:  `${process.env.BASE_URL || "https://branshee.com"}/subscription`,
     };
 
     // Appliquer le code promo si fourni
