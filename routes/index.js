@@ -113,7 +113,7 @@ router.get("/", async (req, res) => {
     })
     .limit(10);
 
-  console.log({ coachsHEREEEEEEEEEEEEE: coachs });
+  console.dir({ coachsHEREEEEEEEEEEEEE: coachs }, { depth: null, colors: true });
 
   const validCoachs = coachs.filter((c) => c.owner);
 
