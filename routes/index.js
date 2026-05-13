@@ -106,8 +106,7 @@ router.get("/sitemap.xml", async (req, res) => {
 // });
 
 router.get("/", async (req, res) => {
-
-  // console.log(await Companies.find({})).populate("owner");
+  console.log(await Companies.find({}).populate("owner"));
 
   const coachs = await Companies.find({})
     .populate({
