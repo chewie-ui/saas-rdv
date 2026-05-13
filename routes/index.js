@@ -113,7 +113,7 @@ router.get("/", async (req, res) => {
     })
     .limit(10);
 
-  const validCoachs = coachs.filter((c) => c.isPremium === true);
+  const validCoachs = coachs.filter((c) => c.owner);
 
   console.log({ validCoachs });
 
