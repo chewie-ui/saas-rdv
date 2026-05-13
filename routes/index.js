@@ -84,7 +84,30 @@ router.get("/sitemap.xml", async (req, res) => {
   res.send(xml);
 });
 
+// router.get("/", async (req, res) => {
+//   const coachs = await Companies.find({})
+//     .populate({
+//       path: "owner",
+//       match: { isPremium: true },
+//     })
+//     .limit(10);
+
+//   console.log({ coachs });
+
+//   const validCoachs = coachs.filter((c) => c.isPremium === true);
+
+//   res.render("client/landing-page", {
+//     title: `BranShee — Prenez rendez-vous en ligne simplement`,
+//     metaDescription: "Trouvez et réservez en ligne un coach sportif, un coiffeur, un thérapeute ou tout autre professionnel près de chez vous. Prise de rendez-vous gratuite et instantanée avec BranShee.",
+//     canonical: "https://www.saymiro.com/",
+//     coachs: validCoachs,
+//     services: getServices(res.locals.lang),
+//   });
+// });
+
 router.get("/", async (req, res) => {
+  console.log(await Companies.find({})).populate("owner");
+
   const coachs = await Companies.find({})
     .populate({
       path: "owner",
@@ -92,9 +115,9 @@ router.get("/", async (req, res) => {
     })
     .limit(10);
 
-  console.log(coachs);
+  console.log({ coachs });
 
-  const validCoachs = coachs.filter((c) => c.owner);
+  const validCoachs = coachs.filter((c) => c.isPremium === true);
 
   res.render("client/landing-page", {
     title: `BranShee — Prenez rendez-vous en ligne simplement`,

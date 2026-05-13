@@ -66,8 +66,7 @@ exports.createUser = async (req, res) => {
       company: companyId,
       businessType: businessType || "",
     });
-    console.log(`USER : : : : ${user}`);
-    console.log(`USER ID: ${user._id}`);
+    console.log({ user });
     await Company.create({
       _id: companyId,
       owner: user._id,
