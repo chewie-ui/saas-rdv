@@ -113,7 +113,7 @@ router.get("/", async (req, res) => {
     })
     .limit(10);
 
-  console.dir({ coachsHEREEEEEEEEEEEEE: coachs }, { depth: null, colors: true });
+  console.log({ coachs: JSON.stringify(coachs) });
 
   const validCoachs = coachs.filter((c) => c.owner);
 
