@@ -11,7 +11,8 @@ body {
 .lp__hero {
   padding: 64px 0 52px;
   position: relative;
-  overflow: hidden;
+  overflow-x: clip;   /* bloque le scroll horizontal (pseudo-éléments) */
+  overflow-y: visible; /* laisse le dropdown descendre en dehors du hero */
 }
 
 /* Subtle green glow emanating from top-left */
@@ -78,14 +79,13 @@ body {
   letter-spacing: -2px;
   color: var(--ink);
   max-width: 700px;
-  white-space: nowrap;
 }
 
 .lp__word {
   color: var(--accent);
   display: inline;
   letter-spacing: 0;
-  font-size: 60px;
+  font-size: 44px;
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
@@ -375,7 +375,7 @@ body {
 /* ── Result card ── */
 .lp__card {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   background: var(--surface-card);
   border: 1.5px solid var(--border-light);
   border-radius: var(--radius-lg);
@@ -399,6 +399,7 @@ body {
   flex-shrink: 0;
   overflow: hidden;
   background: var(--surface-2);
+  align-self: stretch;
 }
 .lp__card-photo img {
   width: 100%;
@@ -425,6 +426,7 @@ body {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .lp__card-name {
@@ -516,6 +518,103 @@ body {
   stroke: var(--border-medium);
 }
 
+/* ══ MOBILE FIXES (≤ 600px) ════════════════════════════ */
+@media (max-width: 600px) {
+
+  /* ── Hero word: force onto its own line so it never clips ── */
+  .lp__h1 {
+    font-size: 38px;
+    letter-spacing: -1.5px;
+  }
+
+  .lp__word {
+    display: block;
+    font-size: 38px;
+    margin-top: -2px;
+  }
+
+  /* keep block during fade animation too */
+  .lp__word.fade-out {
+    display: block;
+  }
+
+  /* The <br> after the word was needed when word was inline.
+     Now that it's display:block the <br> creates a double gap — hide it. */
+  .lp__word + br {
+    display: none;
+  }
+
+  /* ── Card: photo+text top row / button full-width bottom row ── */
+  .lp__card {
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 12px 14px 10px;
+    gap: 10px;
+    overflow: visible; /* allow photo border-radius to show */
+    border-radius: 14px;
+  }
+
+  /* Small square photo with rounded corners */
+  .lp__card-photo {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  /* Text block: fills remaining space on top row */
+  .lp__card-body {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    gap: 2px;
+    justify-content: center;
+  }
+
+  .lp__card-name {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  /* Hide description */
+  .lp__card-desc {
+    display: none;
+  }
+
+  .lp__card-meta {
+    flex-wrap: nowrap;
+    font-size: 12px;
+    overflow: hidden;
+  }
+
+  /* CTA: full width → wraps to its own row */
+  .lp__card-cta {
+    width: 100%;
+    padding: 0;
+  }
+
+  /* Full-width "Réserver" button */
+  .lp__book-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 10px;
+  }
+
+  /* Search bar tighter */
+  .lp__sf {
+    padding: 12px 14px;
+  }
+
+  .lp__search-btn {
+    margin: 8px !important;
+    padding: 10px 18px !important;
+  }
+}
+
 /* ══ DESKTOP (820px+) ══════════════════════════════════ */
 @media (min-width: 820px) {
   .lp__hero {
@@ -525,6 +624,11 @@ body {
   .lp__h1 {
     font-size: 52px;
     letter-spacing: -2px;
+    white-space: nowrap;
+  }
+
+  .lp__word {
+    font-size: 52px;
   }
 
   /* Search bar — horizontal pill */

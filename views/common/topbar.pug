@@ -35,10 +35,16 @@
                             a.btn(href="/client/register")
                                 span= t.header.register
                     else
-                        a.btn.secondary.header__btn--ghost(href="/client/login")
-                            span= t.header.login
-                        a.btn(href="/manage-business")
-                            span= t.common.become_coach
+                        if clientUser
+                            a.btn.secondary.header__btn--ghost(href="/espace-client")
+                                span= t.header.my_space
+                            a.btn(href="/manage-business")
+                                span= t.common.become_coach
+                        else
+                            a.btn.secondary.header__btn--ghost(href="/client/login")
+                                span= t.header.client_account
+                            a.btn(href="/manage-business")
+                                span= t.common.become_coach
 
             //- Séparateur desktop
             .header__sep
@@ -115,10 +121,16 @@
                         a.btn.header__btn--ghost.sec(href="/client/register")
                             span= t.header.register
                 else
-                    a.btn(href="/client/login")
-                        span= t.header.login
-                    a.btn.secondary(href="/manage-business")
-                        span= t.common.become_coach
+                    if clientUser
+                        a.btn(href="/espace-client")
+                            span= t.header.my_space
+                        a.btn.secondary(href="/manage-business")
+                            span= t.common.become_coach
+                    else
+                        a.btn(href="/client/login")
+                            span= t.header.client_account
+                        a.btn.secondary(href="/manage-business")
+                            span= t.common.become_coach
 
         .header__panel-bottom
             //- Langue dans le panel

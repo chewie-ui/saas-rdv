@@ -65,3 +65,7 @@ Changer les prix
 Refaire les designs
 Refaire plus marketing
 Trouver quelqeuun pour essayer
+
+14-05-26
+
+Si user annule son plan NE PLUS SPAM STRIPE !!!
