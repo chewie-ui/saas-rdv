@@ -83,6 +83,14 @@ html(lang="fr")
                 .field
                     label Date d'expiration
                     input(type="date" id="newExpiresAt")
+                .field
+                    label Plan applicable
+                    select#newApplicablePlan
+                        option(value="all") 🌐 Tous les plans
+                        option(value="premium_monthly") ⭐ Premium Mensuel
+                        option(value="premium_yearly") ⭐ Premium Annuel
+                        option(value="business_monthly") 🏢 Business Mensuel
+                        option(value="business_yearly") 🏢 Business Annuel
             button.btn-create#createPromoBtn Créer le code
 
         if codes.length === 0
@@ -93,12 +101,14 @@ html(lang="fr")
                     tr
                         th Code
                         th Réduction
+                        th Plan
                         th Utilisations
                         th Expiration
                         th Actif
                         th
                 tbody#promoTableBody
                     each c in codes
+                        - var planLabels = { all: '🌐 Tous', premium_monthly: '⭐ Premium / mois', premium_yearly: '⭐ Premium / an', business_monthly: '🏢 Business / mois', business_yearly: '🏢 Business / an' }
                         tr(data-id=c._id)
                             td
                                 span.code-badge= c.code
@@ -107,6 +117,9 @@ html(lang="fr")
                                     span.badge.badge--blue -#{c.discountValue}%
                                 else
                                     span.badge.badge--blue -#{c.discountValue}€
+                            td
+                                span.badge(class=c.applicablePlan === 'all' ? 'badge--gray' : 'badge--green')
+                                    = planLabels[c.applicablePlan || 'all'] || c.applicablePlan
                             td
                                 = c.usedCount
                                 if c.maxUses !== null
@@ -135,9 +148,10 @@ html(lang="fr")
                 const discountValue = document.getElementById('newValue').value;
                 const maxUses = document.getElementById('newMaxUses').value;
                 const expiresAt = document.getElementById('newExpiresAt').value;
+                const applicablePlan = document.getElementById('newApplicablePlan').value;
                 if (!code || !discountValue) { errorEl.textContent = 'Le code et la valeur sont requis.'; errorEl.style.display = 'block'; return; }
                 try {
-                    const res = await fetch('/superadmin/promo-codes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, discountType, discountValue, maxUses, expiresAt }) });
+                    const res = await fetch('/superadmin/promo-codes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, discountType, discountValue, maxUses, expiresAt, applicablePlan }) });
                     const data = await res.json();
                     if (data.success) { location.reload(); }
                     else { errorEl.textContent = data.error || 'Erreur.'; errorEl.style.display = 'block'; }

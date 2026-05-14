@@ -881,9 +881,5 @@ function renderConfirmPane() {
 }
 
 /* ── Init ───────────────────────────────────────────────────────────────── */
-// If no services and no employees, start at time step
-if (STEPS[0]?.id === "time") {
-  renderTimePane().then(renderCart);
-} else {
-  render();
-}
+// render() already dispatches to the right pane based on the first step id
+render();

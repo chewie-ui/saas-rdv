@@ -10,7 +10,7 @@ block jsonld
           "name": "BranShee",
           "applicationCategory": "BusinessApplication",
           "operatingSystem": "Web",
-          "url": "https://www.saymiro.com",
+          "url": "https://www.branshee.com",
           "description": "BranShee est la plateforme de prise de rendez-vous en ligne pour les professionnels.",
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
         }
@@ -31,7 +31,7 @@ block links
     link(rel="stylesheet", href="/css/templates/dialog.css")
 
 block content
-    - var cats = [{key:'all',label:'All'},{key:'hair',label:'Hair'},{key:'barber',label:'Barber'},{key:'coach',label:'Coach'},{key:'wellness',label:'Wellness'},{key:'tattoo',label:'Tattoo'},{key:'nails',label:'Nails'}]
+    - var lp = t.landing
 
     main.lp
 
@@ -42,23 +42,17 @@ block content
                 //- Trust badge
                 .lp__trust
                     span.lp__trust-dot
-                    span Trusted by 1 200+ professionals
+                    span= lp.trust
 
                 //- Headline
                 h1.lp__h1
-                    | Book your next&nbsp;
-                    span.lp__word#lpWord haircut
-                    | ,
+                    | #{lp.h1_1}&nbsp;
+                    span.lp__word#lpWord= lp.words[0]
                     br
-                    | coaching session
-                    br
-                    | or massage in seconds.
+                    | #{lp.h1_2}
 
                 //- Subtitle
-                p.lp__sub
-                    | One simple link, real-time availability, no calls.
-                    br
-                    | BranShee connects you with independent professionals near you.
+                p.lp__sub= lp.sub_1 + ' ' + lp.sub_2
 
                 //- Search bar
                 .lp__searchbar
@@ -68,7 +62,7 @@ block content
                             line(x1="21" y1="21" x2="16.65" y2="16.65")
                         input#inputName(
                             type="text"
-                            placeholder="Hair stylist, coach…"
+                            placeholder=lp.search_name_ph
                             autocomplete="off"
                             value=searchName || ""
                         )
@@ -82,17 +76,17 @@ block content
                             circle(cx="12" cy="10" r="3")
                         input#inputLocation(
                             type="text"
-                            placeholder="Brussels, Paris…"
+                            placeholder=lp.search_loc_ph
                             autocomplete="off"
                             value=searchLocation || ""
                         )
                         .lp__dropdown#menuLocations
 
-                    button#searchBtn.btn.lp__search-btn Search
+                    button#searchBtn.btn.lp__search-btn= lp.search_btn
 
                 //- Category quick-filters
                 .lp__cats
-                    each cat in cats
+                    each cat in lp.cats
                         button.lp__cat(data-cat=cat.key class=(cat.key === 'all' ? 'lp__cat--active' : ''))= cat.label
 
         //- ── BODY (sidebar + cards) ────────────────────────────────────
@@ -101,15 +95,15 @@ block content
             //- Sidebar (desktop only)
             aside.lp__sidebar
                 .lp__sb-group
-                    span.lp__sb-label Filters
-                    each cat in cats
+                    span.lp__sb-label= lp.filter_label
+                    each cat in lp.cats
                         button.lp__sb-item(data-cat=cat.key class=(cat.key === 'all' ? 'active' : ''))
                             span= cat.label
                             if cat.key === 'all'
                                 span.lp__sb-count= coachs ? coachs.length : 0
 
                 .lp__sb-group
-                    span.lp__sb-label Distance
+                    span.lp__sb-label= lp.distance_label
                     .lp__range-wrap
                         input.lp__range#distanceRange(type="range" min="5" max="100" value="100")
                         span.lp__range-val#distanceVal 100 km
@@ -120,19 +114,19 @@ block content
                     .lp__results-hd
                         p.lp__results-count
                             span#visibleCount= coachs.length
-                            |  results
+                            |  #{lp.results}
 
                 if !coachs || coachs.length === 0
                     .lp__empty
                         svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40")
                             circle(cx="11" cy="11" r="8")
                             line(x1="21" y1="21" x2="16.65" y2="16.65")
-                        p No professionals found. Try a different search.
+                        p= lp.empty
                 else
                     .lp__cards#lpCards
                         each coach in coachs
                             a.lp__card(
-                                href=`/${coach._id}`
+                                href=`/${coach.slug || coach._id}`
                                 data-type=(coach.owner.businessType || '').toLowerCase()
                             )
                                 .lp__card-photo
@@ -158,12 +152,13 @@ block content
                                     if coach.owner.description
                                         p.lp__card-desc= coach.owner.description.length > 120 ? coach.owner.description.slice(0, 120) + '…' : coach.owner.description
                                 .lp__card-cta
-                                    span.lp__book-btn Book →
+                                    span.lp__book-btn= lp.book_btn
 
     +dialog()
 
 block scripts
     script.
+        window.__lpWords = !{JSON.stringify(t.landing.words)};
         window.__services = !{JSON.stringify(services)};
     script(src="/js/layouts/client/landing-page.js" type="module")
     script(src='/js/templates/dialog.js' type="module")

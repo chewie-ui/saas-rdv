@@ -22,6 +22,11 @@ const companySchema = schema(
       default: 30,
     },
 
+    bufferTime: {
+      type: Number,
+      default: 0,
+    },
+
     schedule: [
       {
         weekdayIndex: {

@@ -59,7 +59,7 @@ exports.promoCodesPage = async (req, res) => {
 
 exports.createPromoCode = async (req, res) => {
   try {
-    const { code, discountType, discountValue, maxUses, expiresAt } = req.body;
+    const { code, discountType, discountValue, maxUses, expiresAt, applicablePlan } = req.body;
     if (!code || !discountType || !discountValue) {
       return res.status(400).json({ error: "Champs requis manquants." });
     }
@@ -69,6 +69,7 @@ exports.createPromoCode = async (req, res) => {
       discountValue: Number(discountValue),
       maxUses: maxUses !== undefined && maxUses !== "" ? Number(maxUses) : null,
       expiresAt: expiresAt ? new Date(expiresAt) : null,
+      applicablePlan: applicablePlan || "all",
     });
     res.json({ success: true, promo });
   } catch (err) {
@@ -103,7 +104,7 @@ exports.deletePromoCode = async (req, res) => {
 // ── Validation promo code (public API pour le checkout) ───────────────────────
 exports.validatePromoCode = async (req, res) => {
   try {
-    const { code } = req.body;
+    const { code, plan, billing } = req.body;
     if (!code) return res.status(400).json({ error: "Code requis." });
 
     const promo = await PromoCode.findOne({
@@ -121,11 +122,29 @@ exports.validatePromoCode = async (req, res) => {
       return res.json({ valid: false, error: "Ce code a atteint sa limite d'utilisation." });
     }
 
+    // Vérifier si le code s'applique au plan sélectionné
+    if (promo.applicablePlan && promo.applicablePlan !== "all" && plan && billing) {
+      const selectedKey = `${plan}_${billing}`; // ex: "premium_monthly"
+      if (promo.applicablePlan !== selectedKey) {
+        const planLabels = {
+          premium_monthly: "Premium Mensuel",
+          premium_yearly: "Premium Annuel",
+          business_monthly: "Business Mensuel",
+          business_yearly: "Business Annuel",
+        };
+        return res.json({
+          valid: false,
+          error: `Ce code est réservé au plan ${planLabels[promo.applicablePlan] || promo.applicablePlan}.`,
+        });
+      }
+    }
+
     res.json({
       valid: true,
       discountType: promo.discountType,
       discountValue: promo.discountValue,
       code: promo.code,
+      applicablePlan: promo.applicablePlan || "all",
     });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });

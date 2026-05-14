@@ -48,36 +48,39 @@ const templateDialog     = document.getElementById("templateDialog");
 const promoCodeInput  = document.getElementById("promoCodeInput");
 const applyPromoBtn   = document.getElementById("applyPromoBtn");
 const promoCodeStatus = document.getElementById("promoCodeStatus");
-let appliedPromoCode  = null; // { code, discountType, discountValue }
+let appliedPromoCode  = null; // { code, discountType, discountValue, applicablePlan }
+let currentPlan       = "pro"; // plan courant sélectionné pour le checkout
+
+async function validatePromo() {
+  const code = promoCodeInput.value.trim().toUpperCase();
+  if (!code) return;
+
+  promoCodeStatus.textContent = subT.checking || "Vérification...";
+  promoCodeStatus.className   = "promo-code-status";
+
+  const res  = await fetch("/api/validate-promo", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ code, plan: currentPlan, billing: isYearly ? "yearly" : "monthly" }),
+  });
+  const data = await res.json();
+
+  if (data.valid) {
+    appliedPromoCode = data;
+    const discount   = data.discountType === "percent"
+      ? `-${data.discountValue}%`
+      : `-${data.discountValue}€`;
+    promoCodeStatus.textContent = `✓ Code appliqué : ${discount} de réduction`;
+    promoCodeStatus.className   = "promo-code-status valid";
+  } else {
+    appliedPromoCode = null;
+    promoCodeStatus.textContent = data.error || subT.invalid || "Code invalide.";
+    promoCodeStatus.className   = "promo-code-status invalid";
+  }
+}
 
 if (applyPromoBtn && promoCodeInput) {
-  applyPromoBtn.addEventListener("click", async () => {
-    const code = promoCodeInput.value.trim().toUpperCase();
-    if (!code) return;
-
-    promoCodeStatus.textContent = subT.checking || "Vérification...";
-    promoCodeStatus.className   = "promo-code-status";
-
-    const res  = await fetch("/api/validate-promo", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ code }),
-    });
-    const data = await res.json();
-
-    if (data.valid) {
-      appliedPromoCode = data;
-      const discount   = data.discountType === "percent"
-        ? `-${data.discountValue}%`
-        : `-${data.discountValue}€`;
-      promoCodeStatus.textContent = `✓ Code appliqué : ${discount} de réduction`;
-      promoCodeStatus.className   = "promo-code-status valid";
-    } else {
-      appliedPromoCode = null;
-      promoCodeStatus.textContent = data.error || subT.invalid || "Code invalide.";
-      promoCodeStatus.className   = "promo-code-status invalid";
-    }
-  });
+  applyPromoBtn.addEventListener("click", validatePromo);
 }
 
 // ── Generic confirm dialog ────────────────────────────────────────────────────
@@ -101,7 +104,8 @@ function openDialog(title, desc, confirmLabel, closeLabel) {
 
 // ── Checkout helpers ──────────────────────────────────────────────────────────
 async function startCheckout(plan) {
-  const body = { plan: plan || "pro", billing: isYearly ? "yearly" : "monthly" };
+  currentPlan = plan || "pro";
+  const body = { plan: currentPlan, billing: isYearly ? "yearly" : "monthly" };
   if (appliedPromoCode) body.promoCode = appliedPromoCode.code;
 
   const response = await fetch("/account/create-checkout", {
@@ -111,11 +115,12 @@ async function startCheckout(plan) {
   });
   const data = await response.json();
   if (data.url) window.location = data.url;
+  else if (data.error) alert(data.error);
 }
 
-if (getProPlan)      getProPlan.onclick      = () => startCheckout("pro");
-if (getProPlanAlert) getProPlanAlert.onclick = () => startCheckout("pro");
-if (getBusinessPlan) getBusinessPlan.onclick = () => startCheckout("business");
+if (getProPlan)      getProPlan.onclick      = () => { currentPlan = "pro";      startCheckout("pro"); };
+if (getProPlanAlert) getProPlanAlert.onclick = () => { currentPlan = "pro";      startCheckout("pro"); };
+if (getBusinessPlan) getBusinessPlan.onclick = () => { currentPlan = "business"; startCheckout("business"); };
 
 // ── Cancel subscription ───────────────────────────────────────────────────────
 const handleSubscriptionCancel = async function (e) {

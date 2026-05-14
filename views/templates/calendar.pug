@@ -1,18 +1,17 @@
 mixin calendar()
     #renderCalendar
-        .calendar-wrapper
-            .calendar
-                .calendar-header
-                    .prev-month
-                        button.btn#prevMonthBtn.sec= t.calendar_t.prev
-                    .this-month
-                        h2
-                    .next-month
-                        button.btn#nextMonthBtn.sec= t.calendar_t.next
-                .calendar-body
-                    .weekdays
-                        //- Injected from JS
-                    .days
-                        //- Injected from JS
-                .calendar-action
-                    button.btn#closeCalendar.sec= t.calendar_t.close
+        .avail-cal-popup
+            .avail-cal-hd
+                button.avail-cal-nav#prevMonthBtn(type="button" aria-label="Mois précédent")
+                    svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                        path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                h3.avail-cal-month-lbl#calMonthLabel
+                button.avail-cal-nav#nextMonthBtn(type="button" aria-label="Mois suivant")
+                    svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                        path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                button.avail-cal-close#closeCalendar(type="button" aria-label="Fermer")
+                    svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                        path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
+            .avail-cal-week
+            .calendar.avail-cal-days
+            .calendar-action(style="display:none")

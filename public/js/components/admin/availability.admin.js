@@ -220,8 +220,8 @@ document.addEventListener("click", async (event) => {
     display.textContent = hourItem.textContent.trim();
 
     // ---- Rebuild + validation globale (slot2 après slot1, pas de chevauchement) ----
-    const row = hourItem.closest(".row-weekday");
-    const switcherInput = row.querySelector(".switch input");
+    const row = hourItem.closest(".avail-day-row");
+    const switcherInput = row.querySelector(".input-weekday");
     const weekdayIndex = switcherInput.getAttribute("data-weekday-index");
     const companyId = switcherInput.getAttribute("data-company");
     const timeSlots = row.querySelectorAll(".time-slot");
@@ -275,9 +275,7 @@ document.addEventListener("click", async (event) => {
 
   if (addDaysOffBtn) {
     const renderCalendar = document.querySelector("#renderCalendar");
-    const actionCalendar = renderCalendar.querySelector(".calendar-action");
     renderCalendar.classList.add("show");
-    actionCalendar.classList.add("show");
     getDaysOff();
   }
   const dayOffBtnDelete = event.target.closest(".days-off__button.delete-btn");
@@ -354,8 +352,7 @@ inputsWeekday.forEach((input) => {
       // Day turned ON → remove class + insert default 09:00–18:00 slot
       row.classList.remove("day-off");
 
-      // Build the hours list from the existing panel (grab from another row)
-      // or fall back to a simple time-input approach
+      // Build the hours list from an existing panel or generate them
       const existingPanel = document.querySelector(".panel-availability");
       const hoursHTML = existingPanel
         ? existingPanel.innerHTML
@@ -373,6 +370,18 @@ inputsWeekday.forEach((input) => {
             <div class="panel-availability">${hoursHTML}</div>
           </div>
         </div>`;
+
+      // Restore the Range button in the actions area
+      const actionsContainer = row.querySelector(".avail-day-actions");
+      if (actionsContainer && !actionsContainer.querySelector(".avail-range-btn")) {
+        actionsContainer.insertAdjacentHTML("afterbegin", `
+          <button class="avail-range-btn option-add-plage" type="button">
+            <svg viewBox="0 -960 960 960" height="14" width="14" fill="currentColor">
+              <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/>
+            </svg>
+            Range
+          </button>`);
+      }
     }
   });
 });
@@ -406,17 +415,18 @@ if (rowOptions) {
     if (!addPlageBtn) return;
 
     if (addPlageBtn) {
-      const row = addPlageBtn.closest(".row-weekday");
-      const plagesWrapper = row.querySelector(".weekly-hour__time");
+      const row = addPlageBtn.closest(".avail-day-row");
+      const plagesWrapper = row.querySelector(".avail-day-times");
       const template = document.getElementById("plageTemplate");
       const clone = template.content.cloneNode(true);
 
-      const endHour = row
-        .querySelector(".hour-container.end-hour-")
-        .textContent.trim();
+      // Get the last end-hour displayed in this row
+      const allEndHours = row.querySelectorAll(".hour-container.end-hour-");
+      const lastEnd = allEndHours[allEndHours.length - 1];
+      const endHour = lastEnd ? lastEnd.textContent.trim() : "18:00";
 
       const [hour] = endHour.split(":");
-      const nextHour = parseInt(hour, 10) + 1;
+      const nextHour = Math.min(parseInt(hour, 10) + 1, 23);
 
       const cloneStartHour = clone.querySelector(".hour-container.start-hour-");
       const cloneEndHour = clone.querySelector(".hour-container.end-hour-");
@@ -425,6 +435,27 @@ if (rowOptions) {
       cloneEndHour.textContent = `${String(nextHour).padStart(2, "0")}:00`;
 
       plagesWrapper.appendChild(clone);
+
+      // Save updated working hours to backend
+      const switcherInput = row.querySelector(".input-weekday");
+      const weekdayIndex = switcherInput?.getAttribute("data-weekday-index");
+      const companyId = switcherInput?.getAttribute("data-company");
+
+      if (weekdayIndex != null && companyId) {
+        const timeSlots = row.querySelectorAll(".time-slot");
+        const workingHours = [];
+        timeSlots.forEach((slot) => {
+          const start = slot.querySelector(".start-hour .hour-container")?.textContent.trim();
+          const end   = slot.querySelector(".end-hour .hour-container")?.textContent.trim();
+          if (start && end) workingHours.push({ start, end });
+        });
+
+        await fetch("/edit-availability", {
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+          body: JSON.stringify({ companyId, weekdayIndex, workingHours }),
+        });
+      }
     }
   });
 }

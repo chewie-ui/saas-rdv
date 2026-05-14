@@ -15,11 +15,53 @@ if (uploadBtn && fileInput && avatarPreview) {
     formData.append("profilePicture", file);
 
     try {
-      const response = fetch("/account/profile-picture", {
+      await fetch("/account/profile-picture", {
         method: "PATCH",
         body: formData,
       });
-      console.log(await response);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+}
+
+// ── Business photo upload ─────────────────────────────────────────────────────
+const uploadBusinessBtn  = document.getElementById("uploadBusinessBtn");
+const businessFileInput  = document.getElementById("businessFileInput");
+const businessPicWrapper = document.getElementById("businessPicPreview");
+
+if (uploadBusinessBtn && businessFileInput) {
+  uploadBusinessBtn.onclick = () => businessFileInput.click();
+
+  businessFileInput.onchange = async () => {
+    const file = businessFileInput.files[0];
+    if (!file) return;
+
+    // Show immediate preview — replace placeholder div with img if needed
+    if (businessPicWrapper) {
+      if (businessPicWrapper.tagName === "IMG") {
+        businessPicWrapper.src = URL.createObjectURL(file);
+      } else {
+        // Was a placeholder div — swap to an img
+        const img = document.createElement("img");
+        img.id = "businessPicPreview";
+        img.alt = "Photo établissement";
+        img.src = URL.createObjectURL(file);
+        img.style.width = "100%";
+        img.style.height = "100%";
+        img.style.objectFit = "cover";
+        businessPicWrapper.replaceWith(img);
+      }
+    }
+
+    const formData = new FormData();
+    formData.append("businessPicture", file);
+
+    try {
+      await fetch("/account/business-picture", {
+        method: "PATCH",
+        body: formData,
+      });
     } catch (err) {
       console.error(err);
     }
@@ -27,9 +69,8 @@ if (uploadBtn && fileInput && avatarPreview) {
 }
 
 const saveChanges = document.getElementById("saveChanges");
-const accountForm = document.querySelector(".account__form");
 
-if (saveChanges && accountForm) {
+if (saveChanges) {
   saveChanges.onclick = async function (e) {
     e.preventDefault();
 
@@ -119,22 +160,17 @@ if (socialContainer) {
       const data = await response.json();
 
       if (data.success) {
-        const box = button.closest(".social-box");
-        let msg = box.querySelector(".status-msg");
-        if (!msg) {
-          msg = document.createElement("span");
-          msg.className = "status-msg";
-          msg.textContent = (window.__t && window.__t.changes_saved) || "Modifications enregistrées !";
-          box.appendChild(msg);
+        const btnSpan = button.querySelector("span");
+        if (btnSpan) {
+          const orig = btnSpan.textContent;
+          btnSpan.textContent = "✓ Enregistré";
+          button.disabled = true;
+          if (button._saveTimer) clearTimeout(button._saveTimer);
+          button._saveTimer = setTimeout(() => {
+            btnSpan.textContent = orig;
+            button.disabled = false;
+          }, 2200);
         }
-        msg.classList.remove("visible");
-        void msg.offsetWidth;
-        msg.classList.add("visible");
-        if (box.timer) clearTimeout(box.timer);
-        box.timer = setTimeout(() => {
-          msg.classList.remove("visible");
-          setTimeout(() => msg.remove(), 300);
-        }, 3000);
       }
     }
   };
@@ -427,13 +463,55 @@ if (slugInput && slugStatus) {
       btn.disabled = false;
       if (data.success) {
         setSlugStatus("✓ URL enregistrée !", "#16a34a");
-        btn.querySelector("span").textContent = "✓ Enregistré";
-        setTimeout(() => { btn.querySelector("span").textContent = saveSlugBtn.dataset.label || "Enregistrer l'URL"; }, 2500);
+        const btnSpan = btn.querySelector("span");
+        if (btnSpan) {
+          btnSpan.textContent = "✓ Enregistré";
+          setTimeout(() => { btnSpan.textContent = saveSlugBtn.dataset.label || "Enregistrer l'URL"; }, 2500);
+        }
+        // Update the share URL display
+        const shareEl = document.getElementById("slugShareUrl");
+        if (shareEl) shareEl.textContent = "branshee.com/" + slug;
+        // Show the share row if it was hidden
+        const shareRow = document.querySelector(".slug-share-row");
+        if (shareRow) shareRow.style.display = "";
       } else {
         setSlugStatus(data.error || "Erreur.", "#ef4444");
       }
     });
   }
+}
+
+// ── Copy share link ────────────────────────────────────────────────────────
+const copySlugBtn  = document.getElementById("copySlugBtn");
+const slugShareUrl = document.getElementById("slugShareUrl");
+
+if (copySlugBtn && slugShareUrl) {
+  copySlugBtn.addEventListener("click", async () => {
+    const url = "https://" + slugShareUrl.textContent.trim();
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch (_) {
+      // Fallback for older browsers
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    const span = copySlugBtn.querySelector("span");
+    if (span) {
+      const orig = span.textContent;
+      span.textContent = "✓ Copié !";
+      copySlugBtn.disabled = true;
+      setTimeout(() => {
+        span.textContent = orig;
+        copySlugBtn.disabled = false;
+      }, 2000);
+    }
+  });
 }
 
 if (confirmDeleteAccount) {

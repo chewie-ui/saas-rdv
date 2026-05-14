@@ -189,3 +189,15 @@ exports.setScheduleDayOff = async (req, res) => {
     return res.status(500).json({ success: false, error: "Server error" });
   }
 };
+
+exports.updateBuffer = async (req, res) => {
+  try {
+    const { bufferTime } = req.body;
+    const value = Math.max(0, Math.min(60, Number(bufferTime) || 0));
+    await Company.findByIdAndUpdate(res.locals.currentCompany._id, { bufferTime: value });
+    return res.json({ success: true, bufferTime: value });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: "Server error" });
+  }
+};

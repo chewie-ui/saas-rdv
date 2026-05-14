@@ -55,7 +55,7 @@ block content
             .field
                 label= t.info.custom_url_label || 'Nom d\'URL'
                 .slug-field-wrapper
-                    span.slug-prefix /
+                    span.slug-prefix branshee.com/
                     input.input#slugInput(
                         type="text"
                         value=(currentCompany && currentCompany.slug ? currentCompany.slug : '')
@@ -63,6 +63,13 @@ block content
                         autocomplete="off"
                     )
                 .slug-status#slugStatus
+            if currentCompany && (currentCompany.slug || currentCompany._id)
+                .slug-share-row
+                    .slug-share-url#slugShareUrl= 'branshee.com/' + (currentCompany.slug || String(currentCompany._id))
+                    button.btn.secondary.btn--sm#copySlugBtn(type="button")
+                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                            path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z")
+                        span Copier le lien
             .info-card__actions
                 button.btn#saveSlugBtn
                     span= t.info.custom_url_save || 'Enregistrer l\'URL'

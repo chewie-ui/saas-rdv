@@ -1,0 +1,186 @@
+const fs = require("fs");
+const path = require("path");
+
+const translations = {
+  fr: {
+    header_my_space: "Mon espace",
+    landing: {
+      trust: "Faites confiance à 1 200+ professionnels",
+      h1_1: "Réservez votre prochain",
+      h1_2: "en quelques secondes.",
+      words: ["coiffeur", "coach", "massage", "yoga", "tatouage", "manucure"],
+      sub_1: "Un lien simple, disponibilités en temps réel, sans appel.",
+      sub_2: "BranShee vous connecte avec des professionnels indépendants près de chez vous.",
+      search_name_ph: "Coiffeur, coach…",
+      search_loc_ph: "Bruxelles, Paris…",
+      search_btn: "Rechercher",
+      cats: [
+        { key: "all", label: "Tous" },
+        { key: "hair", label: "Coiffure" },
+        { key: "barber", label: "Barbier" },
+        { key: "coach", label: "Coach" },
+        { key: "wellness", label: "Bien-être" },
+        { key: "tattoo", label: "Tatouage" },
+        { key: "nails", label: "Ongles" },
+      ],
+      filter_label: "Filtres",
+      distance_label: "Distance",
+      results: "résultats",
+      empty: "Aucun professionnel trouvé. Essayez une autre recherche.",
+      book_btn: "Réserver →",
+    },
+  },
+  en: {
+    header_my_space: "My space",
+    landing: {
+      trust: "Trusted by 1 200+ professionals",
+      h1_1: "Book your next",
+      h1_2: "in seconds.",
+      words: ["haircut", "coaching", "massage", "yoga", "tattoo", "nails"],
+      sub_1: "One simple link, real-time availability, no calls.",
+      sub_2: "BranShee connects you with independent professionals near you.",
+      search_name_ph: "Hair stylist, coach…",
+      search_loc_ph: "Brussels, Paris…",
+      search_btn: "Search",
+      cats: [
+        { key: "all", label: "All" },
+        { key: "hair", label: "Hair" },
+        { key: "barber", label: "Barber" },
+        { key: "coach", label: "Coach" },
+        { key: "wellness", label: "Wellness" },
+        { key: "tattoo", label: "Tattoo" },
+        { key: "nails", label: "Nails" },
+      ],
+      filter_label: "Filters",
+      distance_label: "Distance",
+      results: "results",
+      empty: "No professionals found. Try a different search.",
+      book_btn: "Book →",
+    },
+  },
+  de: {
+    header_my_space: "Mein Bereich",
+    landing: {
+      trust: "Vertrauen von über 1.200 Profis",
+      h1_1: "Buchen Sie Ihr nächstes",
+      h1_2: "in Sekunden.",
+      words: ["Haarschnitt", "Coaching", "Massage", "Yoga", "Tattoo", "Nägel"],
+      sub_1: "Ein einfacher Link, Echtzeit-Verfügbarkeit, keine Anrufe.",
+      sub_2: "BranShee verbindet Sie mit unabhängigen Profis in Ihrer Nähe.",
+      search_name_ph: "Friseur, Coach…",
+      search_loc_ph: "Berlin, München…",
+      search_btn: "Suchen",
+      cats: [
+        { key: "all", label: "Alle" },
+        { key: "hair", label: "Haare" },
+        { key: "barber", label: "Barbier" },
+        { key: "coach", label: "Coach" },
+        { key: "wellness", label: "Wellness" },
+        { key: "tattoo", label: "Tattoo" },
+        { key: "nails", label: "Nägel" },
+      ],
+      filter_label: "Filter",
+      distance_label: "Entfernung",
+      results: "Ergebnisse",
+      empty: "Keine Profis gefunden. Versuchen Sie eine andere Suche.",
+      book_btn: "Buchen →",
+    },
+  },
+  es: {
+    header_my_space: "Mi espacio",
+    landing: {
+      trust: "Con la confianza de más de 1.200 profesionales",
+      h1_1: "Reserva tu próximo",
+      h1_2: "en segundos.",
+      words: ["corte de pelo", "coaching", "masaje", "yoga", "tatuaje", "manicura"],
+      sub_1: "Un enlace simple, disponibilidad en tiempo real, sin llamadas.",
+      sub_2: "BranShee te conecta con profesionales independientes cerca de ti.",
+      search_name_ph: "Peluquero, coach…",
+      search_loc_ph: "Madrid, Barcelona…",
+      search_btn: "Buscar",
+      cats: [
+        { key: "all", label: "Todos" },
+        { key: "hair", label: "Peluquería" },
+        { key: "barber", label: "Barbería" },
+        { key: "coach", label: "Coach" },
+        { key: "wellness", label: "Bienestar" },
+        { key: "tattoo", label: "Tatuaje" },
+        { key: "nails", label: "Uñas" },
+      ],
+      filter_label: "Filtros",
+      distance_label: "Distancia",
+      results: "resultados",
+      empty: "No se encontraron profesionales. Prueba otra búsqueda.",
+      book_btn: "Reservar →",
+    },
+  },
+  it: {
+    header_my_space: "Il mio spazio",
+    landing: {
+      trust: "Scelti da oltre 1.200 professionisti",
+      h1_1: "Prenota il tuo prossimo",
+      h1_2: "in pochi secondi.",
+      words: ["taglio di capelli", "coaching", "massaggio", "yoga", "tatuaggio", "manicure"],
+      sub_1: "Un semplice link, disponibilità in tempo reale, senza chiamate.",
+      sub_2: "BranShee ti mette in contatto con professionisti indipendenti vicino a te.",
+      search_name_ph: "Parrucchiere, coach…",
+      search_loc_ph: "Milano, Roma…",
+      search_btn: "Cerca",
+      cats: [
+        { key: "all", label: "Tutti" },
+        { key: "hair", label: "Capelli" },
+        { key: "barber", label: "Barbiere" },
+        { key: "coach", label: "Coach" },
+        { key: "wellness", label: "Benessere" },
+        { key: "tattoo", label: "Tatuaggio" },
+        { key: "nails", label: "Unghie" },
+      ],
+      filter_label: "Filtri",
+      distance_label: "Distanza",
+      results: "risultati",
+      empty: "Nessun professionista trovato. Prova un'altra ricerca.",
+      book_btn: "Prenota →",
+    },
+  },
+  nl: {
+    header_my_space: "Mijn ruimte",
+    landing: {
+      trust: "Vertrouwd door meer dan 1.200 professionals",
+      h1_1: "Boek je volgende",
+      h1_2: "in seconden.",
+      words: ["knipbeurt", "coaching", "massage", "yoga", "tattoo", "nagels"],
+      sub_1: "Één eenvoudige link, realtime beschikbaarheid, geen telefoontjes.",
+      sub_2: "BranShee verbindt je met onafhankelijke professionals bij jou in de buurt.",
+      search_name_ph: "Kapper, coach…",
+      search_loc_ph: "Brussel, Amsterdam…",
+      search_btn: "Zoeken",
+      cats: [
+        { key: "all", label: "Alle" },
+        { key: "hair", label: "Haar" },
+        { key: "barber", label: "Barbier" },
+        { key: "coach", label: "Coach" },
+        { key: "wellness", label: "Wellness" },
+        { key: "tattoo", label: "Tattoo" },
+        { key: "nails", label: "Nagels" },
+      ],
+      filter_label: "Filters",
+      distance_label: "Afstand",
+      results: "resultaten",
+      empty: "Geen professionals gevonden. Probeer een andere zoekopdracht.",
+      book_btn: "Boeken →",
+    },
+  },
+};
+
+const localesDir = path.join(__dirname, "../locales");
+
+for (const [lang, data] of Object.entries(translations)) {
+  const filePath = path.join(localesDir, `${lang}.json`);
+  const json = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+
+  json.header.my_space = data.header_my_space;
+  json.landing = data.landing;
+
+  fs.writeFileSync(filePath, JSON.stringify(json, null, 2), "utf-8");
+  console.log(`OK ${lang}.json`);
+}

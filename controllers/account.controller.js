@@ -82,12 +82,19 @@ exports.toggleSocialVisibility = async (req, res) => {
 exports.createCheckout = async (req, res) => {
   try {
     const PromoCode = require("../db/models/promoCode.model");
-    const { promoCode, plan } = req.body || {};
+    const { promoCode, plan, billing } = req.body || {};
 
-    // Choisir le bon price ID selon le plan demandé
-    const priceId = (plan === "business" && env.stripePriceBusinessMonthly)
-      ? env.stripePriceBusinessMonthly
-      : env.stripePricePremiumMonthly;
+    // Choisir le bon price ID selon le plan et la période
+    const isYearly = billing === "yearly";
+    let priceId;
+    if (plan === "business") {
+      priceId = isYearly ? env.stripePriceBusinessYearly : env.stripePriceBusinessMonthly;
+    } else {
+      priceId = isYearly ? env.stripePricePremiumYearly : env.stripePricePremiumMonthly;
+    }
+    if (!priceId) {
+      return res.status(400).json({ error: "Prix non configuré pour ce plan. Contactez le support." });
+    }
 
     const sessionParams = {
       mode: "subscription",
@@ -130,8 +137,9 @@ exports.createCheckout = async (req, res) => {
     const session = await stripe.checkout.sessions.create(sessionParams);
     res.json({ url: session.url });
   } catch (err) {
-    console.error("createCheckout error:", err);
-    res.status(500).json({ error: "Erreur lors de la création du checkout." });
+    console.error("createCheckout error:", err.message || err);
+    const stripeMsg = err.raw?.message || err.message || "Erreur lors de la création du checkout.";
+    res.status(500).json({ error: stripeMsg });
   }
 };
 

@@ -35,6 +35,11 @@ const promoCodeSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    applicablePlan: {
+      type: String,
+      enum: ["all", "premium_monthly", "premium_yearly", "business_monthly", "business_yearly"],
+      default: "all",
+    },
   },
   { timestamps: true }
 );

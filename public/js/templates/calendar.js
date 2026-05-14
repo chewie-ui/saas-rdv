@@ -1,26 +1,8 @@
-const weekdaysArray = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
+const weekdaysArray = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
 const monthsArray = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December",
 ];
 
 import { getDays, setDays } from "/js/components/calendarState.js";
@@ -28,113 +10,79 @@ import { getDays, setDays } from "/js/components/calendarState.js";
 async function getDaysOff() {
   const res = await fetch("/company/get-days-off");
   const data = await res.json();
-
   if (data?.dates) {
-    const formatted = data.dates.map(
-      (d) => new Date(d.date).toISOString().split("T")[0],
-    );
-
-    setDays(formatted);
+    setDays(data.dates.map((d) => new Date(d.date).toISOString().split("T")[0]));
   }
 }
 
 async function initCalendar() {
   await getDaysOff();
-  const renderCalendar = document.getElementById("renderCalendar");
 
-  const calHeader = renderCalendar.querySelector(".calendar-header");
-  const prevBtn = renderCalendar.querySelector(".prev-month .btn#prevMonthBtn");
-  const nextBtn = renderCalendar.querySelector(".next-month .btn#nextMonthBtn");
-  const calBody = renderCalendar.querySelector(".calendar-body");
-  const closeCalendar = document.querySelector("#closeCalendar");
+  const renderCalendar = document.getElementById("renderCalendar");
+  const prevBtn        = document.getElementById("prevMonthBtn");
+  const nextBtn        = document.getElementById("nextMonthBtn");
+  const closeCalendar  = document.getElementById("closeCalendar");
+  const monthLabel     = document.getElementById("calMonthLabel");
+  const weekdayRow     = renderCalendar.querySelector(".avail-cal-week");
+  const daysGrid       = renderCalendar.querySelector(".avail-cal-days");
 
   const currentDate = new Date();
   let today = new Date();
 
-  const weekdays = calBody.querySelector(".weekdays");
-  const days = calBody.querySelector(".days");
-  weekdaysArray.forEach((element) => {
-    const weekday = document.createElement("div");
-    weekday.textContent = element.slice(0, 3);
-    weekday.className = "weekday";
-    weekdays.appendChild(weekday);
+  // Build weekday headers once
+  weekdaysArray.forEach((d) => {
+    const el = document.createElement("div");
+    el.className = "avail-cal-dow";
+    el.textContent = d;
+    weekdayRow.appendChild(el);
   });
 
   function loadCalendar() {
-    const daysOffArray = getDays();
+    const daysOffArray  = getDays();
+    const currentMonth  = today.getMonth();
+    const currentYear   = today.getFullYear();
+    const firstDayOfMonth  = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth      = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const daysInPrevMonth  = new Date(currentYear, currentMonth, 0).getDate();
 
-    days.innerHTML = ``;
+    monthLabel.textContent = monthsArray[currentMonth] + " " + currentYear;
+    daysGrid.innerHTML = "";
 
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-
-    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
-
-    const currentMonthText = calHeader.querySelector(".this-month h2");
-
-    // const savedDays = JSON.parse(localStorage.getItem("daysOff")) || [];
-
-    currentMonthText.textContent =
-      monthsArray[currentMonth] + " " + currentYear;
-
-    function addEmptyCell(dayCounter) {
-      const empty = document.createElement("div");
-      empty.classList.add("day");
-      empty.classList.add("empty");
-      empty.textContent = dayCounter;
-      days.appendChild(empty);
+    function addEmpty(n) {
+      const el = document.createElement("div");
+      el.className = "avail-cal-cell is-empty";
+      el.textContent = n;
+      daysGrid.appendChild(el);
     }
 
-    for (let i = firstDayOfMonth - 1; i >= 0; i--) {
-      addEmptyCell(daysInPrevMonth - i);
-    }
+    for (let i = firstDayOfMonth - 1; i >= 0; i--) addEmpty(daysInPrevMonth - i);
 
     for (let i = 1; i <= daysInMonth; i++) {
-      const day = document.createElement("div");
-      day.className = "day";
-      day.textContent = i;
-      day.dataset.day = i;
-      day.dataset.month = currentMonth + 1;
-      day.dataset.year = currentYear;
-      const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
-      if (daysOffArray.includes(dateKey)) {
-        day.classList.add("clicked");
-      }
+      const el = document.createElement("div");
+      el.className = "avail-cal-cell day";
+      el.textContent = i;
+      el.dataset.day   = i;
+      el.dataset.month = currentMonth + 1;
+      el.dataset.year  = currentYear;
 
+      const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2,"0")}-${String(i).padStart(2,"0")}`;
+      if (daysOffArray.includes(dateKey)) el.classList.add("clicked");
       if (
         i === currentDate.getDate() &&
         currentMonth === currentDate.getMonth() &&
         currentYear === currentDate.getFullYear()
-      ) {
-        day.classList.add("today");
-      }
-      days.appendChild(day);
+      ) el.classList.add("today");
+
+      daysGrid.appendChild(el);
     }
 
-    const totalCells = days.children.length;
-
-    const remainingCells = 7 * 6 - totalCells;
-
-    for (let i = 1; i <= remainingCells; i++) {
-      addEmptyCell(i);
-    }
+    const remaining = 7 * 6 - daysGrid.children.length;
+    for (let i = 1; i <= remaining; i++) addEmpty(i);
   }
 
-  prevBtn.addEventListener("click", () => {
-    today.setMonth(today.getMonth() - 1);
-    loadCalendar();
-  });
-
-  nextBtn.addEventListener("click", () => {
-    today.setMonth(today.getMonth() + 1);
-    loadCalendar();
-  });
-
-  closeCalendar.addEventListener("click", () => {
-    renderCalendar.classList.remove("show");
-  });
+  prevBtn.addEventListener("click", () => { today.setMonth(today.getMonth() - 1); loadCalendar(); });
+  nextBtn.addEventListener("click", () => { today.setMonth(today.getMonth() + 1); loadCalendar(); });
+  closeCalendar.addEventListener("click", () => renderCalendar.classList.remove("show"));
 
   loadCalendar();
 }

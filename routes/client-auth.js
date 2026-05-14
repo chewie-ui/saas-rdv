@@ -2,6 +2,81 @@ const router = require("express").Router();
 const ctrl = require("../controllers/client.controller");
 const isClientAuth = require("../middlewares/isClientAuth");
 const upload = require("../config/multer");
+const { google } = require("googleapis");
+const { createOAuthClient } = require("../config/googleCalendar");
+const Client = require("../db/models/client.model");
+const crypto = require("crypto");
+
+function buildClientRedirectUri(req) {
+  const proto = req.headers["x-forwarded-proto"] || req.protocol;
+  const host = req.headers["x-forwarded-host"] || req.get("host");
+  return `${proto}://${host}/auth/google/client/callback`;
+}
+
+// ─── Google OAuth for clients ────────────────────────────────────────────────
+
+router.get("/auth/google/client", (req, res) => {
+  const redirectUri = buildClientRedirectUri(req);
+  const oauth2Client = createOAuthClient(redirectUri);
+  const returnTo = req.query.returnTo || "/espace-client";
+  const state = Buffer.from(JSON.stringify({ returnTo })).toString("base64url");
+
+  const url = oauth2Client.generateAuthUrl({
+    access_type: "online",
+    scope: [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile",
+    ],
+    state,
+  });
+
+  res.redirect(url);
+});
+
+router.get("/auth/google/client/callback", async (req, res) => {
+  const { code, state } = req.query;
+
+  let returnTo = "/espace-client";
+  try {
+    const parsed = JSON.parse(Buffer.from(state, "base64url").toString());
+    returnTo = parsed.returnTo || "/espace-client";
+  } catch (_) {}
+
+  try {
+    const redirectUri = buildClientRedirectUri(req);
+    const oauth2Client = createOAuthClient(redirectUri);
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    const oauth2 = google.oauth2({ auth: oauth2Client, version: "v2" });
+    const me = await oauth2.userinfo.get();
+    const googleId = me.data.id;
+    const email = (me.data.email || "").toLowerCase();
+    const name = me.data.name || email.split("@")[0];
+
+    let client = await Client.findOne({ $or: [{ googleId }, { email }] });
+
+    if (client) {
+      if (!client.googleId) {
+        client.googleId = googleId;
+        await client.save();
+      }
+    } else {
+      client = await Client.create({
+        fullName: name,
+        email,
+        password: crypto.randomBytes(32).toString("hex"),
+        googleId,
+      });
+    }
+
+    req.session.clientId = client._id.toString();
+    return res.redirect(returnTo);
+  } catch (err) {
+    console.error("Google client OAuth error:", err);
+    return res.redirect("/client/login?error=google");
+  }
+});
 
 router.get("/client/register", ctrl.getRegister);
 router.post("/client/register", ctrl.postRegister);

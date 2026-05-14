@@ -17,7 +17,11 @@ const clientSchema = schema(
     },
     password: {
       type: String,
-      required: true,
+      default: "",
+    },
+    googleId: {
+      type: String,
+      default: "",
     },
     phone: {
       type: String,

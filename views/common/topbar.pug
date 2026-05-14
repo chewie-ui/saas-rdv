@@ -24,13 +24,19 @@
                         a.btn(href="/register")
                             span= t.header.register
                     else if clientAuth
-                        a.btn.secondary.header__btn--ghost(href="/client/login")
-                            span= t.header.login
-                        a.btn(href="/client/register")
-                            span= t.header.register
+                        if clientUser
+                            a.btn.secondary.header__btn--ghost(href="/espace-client")
+                                span= t.header.my_space
+                            a.btn(href="/client/logout")
+                                span= t.header.logout
+                        else
+                            a.btn.secondary.header__btn--ghost(href="/client/login")
+                                span= t.header.login
+                            a.btn(href="/client/register")
+                                span= t.header.register
                     else
                         a.btn.secondary.header__btn--ghost(href="/client/login")
-                            span Compte client
+                            span= t.header.login
                         a.btn(href="/manage-business")
                             span= t.common.become_coach
 
@@ -98,15 +104,21 @@
                     a.btn.header__btn--ghost.sec(href="/register")
                         span= t.header.register
                 else if clientAuth
+                    if clientUser
+                        a.btn(href="/espace-client")
+                            span= t.header.my_space
+                        a.btn.header__btn--ghost.sec(href="/client/logout")
+                            span= t.header.logout
+                    else
+                        a.btn(href="/client/login")
+                            span= t.header.login
+                        a.btn.header__btn--ghost.sec(href="/client/register")
+                            span= t.header.register
+                else
                     a.btn(href="/client/login")
                         span= t.header.login
-                    a.btn.header__btn--ghost.sec(href="/client/register")
-                        span= t.booking_page.register
-                else
-                    a.btn(href="/login")
-                        span= t.header.login
-                    a.btn.secondary(href="/manage-business")  
-                        span Gérer un établissement
+                    a.btn.secondary(href="/manage-business")
+                        span= t.common.become_coach
 
         .header__panel-bottom
             //- Langue dans le panel

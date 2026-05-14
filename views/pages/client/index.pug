@@ -7,7 +7,7 @@ block jsonld
     - var _bizCity = (coach && coach.location && coach.location.city) || ''
     - var _bizAddr = (coach && coach.location && coach.location.street) || ''
     - var _bizZip  = (coach && coach.location && coach.location.zip) ? String(coach.location.zip) : ''
-    - var _bizUrl  = 'https://www.saymiro.com/' + (company ? String(company._id) : '')
+    - var _bizUrl  = 'https://www.branshee.com/' + (company ? (company.slug || String(company._id)) : '')
     script(type="application/ld+json").
         {
           "@context": "https://schema.org",

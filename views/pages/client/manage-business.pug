@@ -6,95 +6,321 @@ block jsonld
           "@context": "https://schema.org",
           "@type": "WebPage",
           "name": "Gérer votre activité avec BranShee",
-          "url": "https://www.saymiro.com/manage-business",
+          "url": "https://www.branshee.com/manage-business",
           "description": "Créez votre page professionnelle sur BranShee et recevez des réservations en ligne 24h/24. Gérez vos rendez-vous, employés et services facilement.",
           "isPartOf": {
             "@type": "WebSite",
             "name": "BranShee",
-            "url": "https://www.saymiro.com"
+            "url": "https://www.branshee.com"
           }
         }
 
 block links
-    link(rel="stylesheet", href="css/layouts/landing-page.css")
+    link(rel="stylesheet", href="/css/layouts/landing-page.css")
 
 block content
-    .content-wrapper
-        .landing-page__content
-            .landing-page
-                .landing-page__background
-                    video(autoplay loop muted playsinline)
-                        source(src='/videos/background.mp4' type="video/mp4")
-                .landing-page__container
-                    .landing-page__title.flex-c
-                        h1 #{t.hero.title} 
-                    .landing-page__description.flex-c
-                        p= t.hero.description
-                    .landing-page__actions.flex-c
-                        a.btn(href='/register')
-                            span= t.hero.btn_1
-                        //- a.btn.secondary(href='/register')= t.hero.btn_2
-            section.features.container
-                .features__container
-                    each item in t.features.items
-                        .features__box
-                            .box__icon!= item.icon
-                            .box__title
-                                h2= item.title
-                            .box__description
-                                p= item.description
-            section.promotion.padding-d
-                .promotion__container
-                    .promotion__title
-                        h2= t.promotion.title
-                    .promotion__description
-                        p= t.promotion.description
-                    .promotion__actions
-                        //- button.btn.secondary= t.promotion.btn_1
-                        a.btn(href="/register")
-                            span= t.promotion.btn_2
-            section.functionalities
-                .functionalities__container.container
-                    each row, index in t.functionalities.rows
-                        .functionalities__row(class=index === 1 ? "second": "")
-                            .row__left
-                                .row__body
-                                    .row__title
-                                        h2= row.title
-                                    .row__description 
-                                        p= row.description
-                                    .row__functionality
-                                        each item in row.items
-                                            .functionality
-                                                .functionality__icon.flex-c
-                                                    svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3")
-                                                        path(d="m422.46-323.69 255.85-255.85L650-607.85 422.46-380.31l-114-114L280.15-466l142.31 142.31ZM480.13-120q-74.67 0-140.41-28.34-65.73-28.34-114.36-76.92-48.63-48.58-76.99-114.26Q120-405.19 120-479.87q0-74.67 28.34-140.41 28.34-65.73 76.92-114.36 48.58-48.63 114.26-76.99Q405.19-840 479.87-840q74.67 0 140.41 28.34 65.73 28.34 114.36 76.92 48.63 48.58 76.99 114.26Q840-554.81 840-480.13q0 74.67-28.34 140.41-28.34 65.73-76.92 114.36-48.58 48.63-114.26 76.99Q554.81-120 480.13-120Zm-.13-40q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z")
-                                                .functionality__text= item
-                                .row__actions
-                                    //- button.btn.secondary= row.btn_1
-                                    a(href="/register").btn
-                                        span= row.btn_2
-                            .row__right
-                                .row__image
-                                    img(src=row.image)
-                       
+    - var pl = t.pro_landing
 
-            section.faq.padding-d
+    .pro-lp
+
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- HERO
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.pro-hero
+            .container
+                .pro-hero__inner
+
+                    //- Left — headline + CTA
+                    .pro-hero__left
+                        .pro-badge
+                            span.pro-badge__dot
+                            = pl.hero.badge
+                        h1.pro-h1
+                            = pl.hero.title_1
+                            br
+                            em= pl.hero.title_2
+                        p.pro-sub= t.hero.description
+                        .pro-actions
+                            a.btn(href="/register")= t.hero.btn_1
+                            a.btn.secondary(href="#hiw")= pl.hero.cta_secondary
+                        .pro-micro
+                            span
+                                svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                = pl.hero.check_1
+                            span
+                                svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                = pl.hero.check_2
+                            span
+                                svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                = pl.hero.check_3
+
+                    //- Right — product mockup (UI démo, non traduit)
+                    .pro-hero__right
+                        .pro-mock
+                            .pro-mock__bar
+                                span.dot-r
+                                span.dot-y
+                                span.dot-g
+                            .pro-mock__grid
+                                .pro-mock__head-cell GMT
+                                .pro-mock__head-cell Lun 17
+                                .pro-mock__head-cell Mar 18
+                                .pro-mock__head-cell.today Mer 19
+                                .pro-mock__head-cell Jeu 20
+                                .pro-mock__head-cell Ven 21
+                                .pro-mock__time 09:00
+                                .pro-mock__slot
+                                    .pro-mock__event.pro-mock__event--soft Sara M.
+                                .pro-mock__slot
+                                .pro-mock__slot.today-col
+                                .pro-mock__slot
+                                .pro-mock__slot
+                                .pro-mock__time 10:00
+                                .pro-mock__slot
+                                .pro-mock__slot
+                                    .pro-mock__event.pro-mock__event--amber Pierre L.
+                                .pro-mock__slot.today-col
+                                    .pro-mock__event.pro-mock__event--solid Sara M.
+                                .pro-mock__slot
+                                .pro-mock__slot
+                                .pro-mock__time 11:00
+                                .pro-mock__slot
+                                .pro-mock__slot
+                                .pro-mock__slot.today-col
+                                    .pro-mock__event.pro-mock__event--solid Benjamin
+                                .pro-mock__slot
+                                    .pro-mock__event.pro-mock__event--soft Camille
+                                .pro-mock__slot
+                                .pro-mock__time 12:00
+                                .pro-mock__slot
+                                .pro-mock__slot
+                                .pro-mock__slot.today-col
+                                .pro-mock__slot
+                                .pro-mock__slot
+                                    .pro-mock__event.pro-mock__event--solid Joachim
+                                .pro-mock__time 13:00
+                                .pro-mock__slot
+                                .pro-mock__slot
+                                .pro-mock__slot.today-col
+                                    .pro-mock__event.pro-mock__event--solid Léa P.
+                                .pro-mock__slot
+                                .pro-mock__slot
+                                    .pro-mock__event.pro-mock__event--blue Iris V.
+
+                            .pro-mock__notif
+                                .pro-mock__notif-head
+                                    .pro-mock__notif-av BG
+                                    div
+                                        .pro-mock__notif-title
+                                            if lang === 'en'
+                                                | New booking
+                                            else if lang === 'de'
+                                                | Neue Buchung
+                                            else if lang === 'es'
+                                                | Nueva reserva
+                                            else if lang === 'it'
+                                                | Nuova prenotazione
+                                            else if lang === 'nl'
+                                                | Nieuwe boeking
+                                            else
+                                                | Nouveau rendez-vous
+                                        .pro-mock__notif-time
+                                            if lang === 'en'
+                                                | 2 min ago
+                                            else if lang === 'de'
+                                                | Vor 2 Min.
+                                            else if lang === 'es'
+                                                | Hace 2 min
+                                            else if lang === 'it'
+                                                | 2 min fa
+                                            else if lang === 'nl'
+                                                | 2 min geleden
+                                            else
+                                                | Il y a 2 min
+                                .pro-mock__notif-body
+                                    strong Benjamin G.
+                                    |
+                                    if lang === 'en'
+                                        | booked Color refresh
+                                    else if lang === 'de'
+                                        | hat Farbauffrischung gebucht
+                                    else if lang === 'es'
+                                        | reservó Retoque de color
+                                    else if lang === 'it'
+                                        | ha prenotato Ritocco colore
+                                    else if lang === 'nl'
+                                        | boekte Kleurbehandeling
+                                    else
+                                        | a réservé Soin colorant
+                                .pro-mock__notif-pills
+                                    .pro-mock__pill Mar 19 · 10:30
+                                    .pro-mock__pill.pro-mock__pill--green 90 €
+
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- TRUST STRIP
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.pro-trust
+            .container
+                p.pro-trust__label= pl.trust.label
+                .pro-trust__logos
+                    span STUDIO LÉA
+                    span MAISON ATLAS
+                    span MARC COACHING
+                    span INKHOUSE
+                    span REIKI BXL
+                    span BARBER & CO
+
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- STATS
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.pro-stats
+            .container
+                .pro-stats__grid
+                    each stat in pl.stats
+                        .pro-stat
+                            .pro-stat__n= stat.n
+                            .pro-stat__l= stat.l
+                            .pro-stat__s= stat.s
+
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- FEATURES — 6 boxes
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.pro-features
+            .container
+                .pro-sec-hd
+                    .pro-pill= pl.features.pill
+                    h2.pro-h2
+                        = pl.features.title
+                        br
+                        em= pl.features.title_em
+                    p.pro-desc= pl.features.desc
+                .pro-features__grid
+                    each item, idx in t.features.items
+                        .pro-feat
+                            .pro-feat__icon
+                                != item.icon
+                            .pro-feat__tag= pl.features.tags[idx]
+                            h3.pro-feat__title= item.title
+                            p.pro-feat__desc= item.description
+
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- FUNCTIONALITIES — alternating rows
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.pro-funcs
+            .container
+                each row, index in t.functionalities.rows
+                    .pro-func(class=index % 2 !== 0 ? 'pro-func--flip' : '')
+                        .pro-func__text
+                            .pro-func__tag= pl.func_tags[index]
+                            h3.pro-func__title= row.title
+                            p.pro-func__desc= row.description
+                            ul.pro-func__bullets
+                                each item in row.items
+                                    li= item
+                            .pro-func__actions
+                                a.btn(href="/register")= row.btn_2
+                        .pro-func__visual
+                            img.pro-func__img(src=row.image alt=row.title)
+
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- HOW IT WORKS
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.pro-hiw#hiw
+            .container
+                .pro-sec-hd
+                    .pro-pill= pl.hiw.pill
+                    h2.pro-h2
+                        = pl.hiw.title
+                        |
+                        em= pl.hiw.title_em
+                .pro-hiw__steps
+                    each step, idx in pl.hiw.steps
+                        .pro-step
+                            .pro-step__n= idx + 1
+                            h3.pro-step__title= step.title
+                            p.pro-step__desc= step.desc
+
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- TESTIMONIALS
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.pro-tests
+            .container
+                .pro-sec-hd
+                    .pro-pill= pl.tests.pill
+                    h2.pro-h2
+                        = pl.tests.title
+                        |
+                        em= pl.tests.title_em
+                .pro-tests__grid
+                    each item, idx in pl.tests.items
+                        .pro-test
+                            .pro-test__stars
+                                - for(var i=0;i<5;i++)
+                                    svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="13" height="13")
+                                        path(d="m233-80 65-281L80-550l288-25 112-265 112 265 288 25-218 189 65 281-247-149L233-80Z")
+                            p.pro-test__quote "#{item.q}"
+                            .pro-test__author
+                                .pro-test__av(class="pro-test__av--" + (idx + 1))= item.n.split(' ').map(function(w){return w[0]}).join('')
+                                div
+                                    .pro-test__name= item.n
+                                    .pro-test__role= item.r
+
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- PRICING CTA
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.pro-pricing
+            .container
+                .pro-pricing__card
+                    div
+                        .pro-pricing__label
+                            span.pro-badge__dot(style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.8);display:inline-block;margin-right:4px")
+                            = pl.pricing.label
+                        h2.pro-pricing__h2= pl.pricing.title
+                        p.pro-pricing__sub= pl.pricing.desc
+                    .pro-pricing__actions
+                        a.btn(href="/subscription")= pl.pricing.cta_1
+                        a.btn.ghost(href="/register")= pl.pricing.cta_2
+
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- FAQ
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.pro-faq.faq.padding-d
+            .container
                 .faq__container
                     .faq__title
                         h2= t.faq.title
-                        p= t.faq.description  .faq__body
+                        p= t.faq.description
                     .faq__body
-                        each item in t.faq.items
-                            .faq__question
+                        each item, idx in t.faq.items
+                            .faq__question(class=idx === 0 ? 'open' : '')
                                 .faq__answer-container
                                     .faq__answer= item.q
-                                    .faq__icon.flex-c 
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="#e3e3e3")
+                                    .faq__icon.flex-c
+                                        svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")
                                             path(d="M0 0h24v24H0V0z" fill="none")
                                             path(d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6-6-6z")
-                                .faq__response
-                                    p= item.a
-block scripts       
-    script(src="/js/layouts/landing-page.js" type="module") 
-    script(src="/js/layouts/client/landing-page.js" type="module") 
+                                .faq__response= item.a
+
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- FINAL CTA
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.pro-cta
+            .container
+                .pro-cta__brand
+                    .pro-cta__mark B
+                    .pro-cta__name BranShee
+                h2.pro-cta__h2
+                    = pl.cta.title
+                    br
+                    span= pl.cta.title_em
+                p.pro-cta__sub= pl.cta.desc
+                .pro-cta__actions
+                    a.btn(href="/register")= pl.cta.btn_1
+                    a.btn.ghost(href="/contact")= pl.cta.btn_2
+
+block scripts
+    script(src="/js/layouts/landing-page.js" type="module")
+    script(src="/js/layouts/client/landing-page.js" type="module")

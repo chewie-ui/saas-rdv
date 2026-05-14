@@ -21,7 +21,7 @@ router.use(require("./employees"));
 
 /* ── Sitemap ──────────────────────────────────────────────────────── */
 router.get("/sitemap.xml", async (req, res) => {
-  const BASE = "https://www.saymiro.com";
+  const BASE = "https://www.branshee.com";
 
   // Fetch all active company slugs to generate business profile URLs
   let companyUrls = "";
@@ -99,7 +99,7 @@ router.get("/sitemap.xml", async (req, res) => {
 //   res.render("client/landing-page", {
 //     title: `BranShee — Prenez rendez-vous en ligne simplement`,
 //     metaDescription: "Trouvez et réservez en ligne un coach sportif, un coiffeur, un thérapeute ou tout autre professionnel près de chez vous. Prise de rendez-vous gratuite et instantanée avec BranShee.",
-//     canonical: "https://www.saymiro.com/",
+//     canonical: "https://www.branshee.com/",
 //     coachs: validCoachs,
 //     services: getServices(res.locals.lang),
 //   });
@@ -119,7 +119,7 @@ router.get("/", async (req, res) => {
   res.render("client/landing-page", {
     title: `BranShee — Prenez rendez-vous en ligne simplement`,
     metaDescription: "Trouvez et réservez en ligne un coach sportif, un coiffeur, un thérapeute ou tout autre professionnel près de chez vous. Prise de rendez-vous gratuite et instantanée avec BranShee.",
-    canonical: "https://www.saymiro.com/",
+    canonical: "https://www.branshee.com/",
     coachs,
     services: getServices(res.locals.lang),
   });
@@ -236,7 +236,7 @@ router.get("/manage-business", (req, res) => {
   res.render("client/manage-business", {
     title: "Gérer votre activité avec BranShee — Agenda en ligne",
     metaDescription: "Créez votre page professionnelle sur BranShee et recevez des réservations en ligne 24h/24. Gérez vos rendez-vous, employés et services facilement.",
-    canonical: "https://www.saymiro.com/manage-business",
+    canonical: "https://www.branshee.com/manage-business",
     becomeCoach: true,
   });
 });
@@ -322,8 +322,8 @@ router.get("/:company", async (req, res) => {
     title: profileTitle,
     metaDescription: profileDesc,
     ogType: "profile",
-    ogImage: coach.businessPicture || coach.profilePicture || "https://www.saymiro.com/images/og-cover.jpg",
-    canonical: `https://www.saymiro.com/${company._id}`,
+    ogImage: coach.businessPicture || coach.profilePicture || "https://www.branshee.com/images/og-cover.jpg",
+    canonical: `https://www.branshee.com/${company.slug || company._id}`,
     company,
     coach,
     services,
@@ -331,6 +331,7 @@ router.get("/:company", async (req, res) => {
     employeesJson,
     clientUser,
     alwaysSticky: true,
+    clientAuth: true,
   });
 });
 

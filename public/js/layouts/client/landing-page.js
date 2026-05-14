@@ -3,7 +3,7 @@
    ══════════════════════════════════════════════════════ */
 
 // ── Animated headline word ──────────────────────────────
-const WORDS = ["haircut", "coaching", "massage", "yoga", "tatoo", "nails"];
+const WORDS = window.__lpWords || ["haircut", "coaching", "massage", "yoga", "tattoo", "nails"];
 let wordIdx = 0;
 const wordEl = document.getElementById("lpWord");
 

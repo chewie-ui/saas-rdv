@@ -9,13 +9,42 @@ body {
 /* ══ HERO ══════════════════════════════════════════════ */
 
 .lp__hero {
-  padding: 52px 0 44px;
+  padding: 64px 0 52px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle green glow emanating from top-left */
+.lp__hero::before {
+  content: '';
+  position: absolute;
+  top: -120px;
+  left: -80px;
+  width: 600px;
+  height: 500px;
+  background: radial-gradient(ellipse at center, oklch(0.72 0.18 158 / 0.10) 0%, transparent 68%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Dot grid texture */
+.lp__hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--border-light) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .lp__hero-inner {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 22px;
+  position: relative;
+  z-index: 1;
 }
 
 /* Trust badge */
@@ -43,18 +72,18 @@ body {
 
 /* Headline */
 .lp__h1 {
-  font-size: 38px;
+  font-size: 44px;
   font-weight: 800;
-  line-height: 1.08;
-  letter-spacing: -1.5px;
+  line-height: 1.05;
+  letter-spacing: -2px;
   color: var(--ink);
-  max-width: 680px;
+  max-width: 700px;
 }
 
 .lp__word {
   color: var(--accent);
-  display: inline-block;
-  letter-spacing: 0;
+  display: inline;
+  letter-spacing: inherit;
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
@@ -62,6 +91,7 @@ body {
 .lp__word.fade-out {
   opacity: 0;
   transform: translateY(-6px);
+  display: inline-block;
 }
 .lp__word.fade-in {
   opacity: 1;
@@ -70,11 +100,11 @@ body {
 
 /* Subtitle */
 .lp__sub {
-  font-size: 15px;
+  font-size: 16px;
   color: var(--text-secondary);
   font-weight: 400;
-  line-height: 1.7;
-  max-width: 460px;
+  line-height: 1.65;
+  max-width: 500px;
 }
 
 /* ══ SEARCH BAR ════════════════════════════════════════ */
