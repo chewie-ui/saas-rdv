@@ -16,20 +16,20 @@ body {
 
 /* Subtle green glow emanating from top-left */
 .lp__hero::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -120px;
   left: -80px;
   width: 600px;
   height: 500px;
-  background: radial-gradient(ellipse at center, oklch(0.72 0.18 158 / 0.10) 0%, transparent 68%);
+  background: radial-gradient(ellipse at center, oklch(0.72 0.18 158 / 0.1) 0%, transparent 68%);
   pointer-events: none;
   z-index: 0;
 }
 
 /* Dot grid texture */
 .lp__hero::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background-image: radial-gradient(circle, var(--border-light) 1px, transparent 1px);
@@ -78,12 +78,14 @@ body {
   letter-spacing: -2px;
   color: var(--ink);
   max-width: 700px;
+  white-space: nowrap;
 }
 
 .lp__word {
   color: var(--accent);
   display: inline;
-  letter-spacing: inherit;
+  letter-spacing: 0;
+  font-size: 60px;
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
