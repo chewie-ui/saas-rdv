@@ -267,7 +267,12 @@ exports.appointment = async (req, res) => {
       else                    fillStatus = "green";
     }
 
-    return { ...d, fillStatus };
+    // A day is "off" when there is no special override and the schedule marks it dayOff
+    // (or there is simply no schedule entry for this weekday at all)
+    const dayConfig2 = (rowTime.schedule || []).find((s) => s.weekdayIndex === jsWeekday);
+    const isDayOff = !specialDay && (!dayConfig2 || dayConfig2.dayOff === true);
+
+    return { ...d, fillStatus, isDayOff };
   });
 
   // Always use 30-min steps so appointments at :30 are never missed

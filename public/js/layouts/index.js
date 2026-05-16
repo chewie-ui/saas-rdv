@@ -99,7 +99,10 @@ function renderCart() {
     (sid === "service"  && STATE.service) ||
     (sid === "employee" && STATE.employee !== undefined) || // null = "no pref"
     (sid === "time"     && STATE.date && STATE.time) ||
-    (sid === "details"  && STATE.form.firstName && STATE.form.lastName && STATE.form.email);
+    // When logged in we trust CLIENT data; when guest require the 3 key fields
+    (sid === "details"  && (CLIENT
+      ? !!(CLIENT.firstName && CLIENT.email)
+      : !!(STATE.form.firstName && STATE.form.lastName && STATE.form.email)));
 
   const isDetails = sid === "details";
   const nextLabel = isDetails ? "Confirmer la réservation" : "Continuer";
@@ -852,6 +855,23 @@ function renderConfirmPane() {
 
   const firstName = CLIENT ? CLIENT.firstName : STATE.form.firstName;
   const email     = CLIENT ? CLIENT.email     : STATE.form.email;
+  const info      = window.__companyInfo || {};
+
+  // Location row
+  let locationText = "";
+  if (info.serviceType === "en_ligne") {
+    locationText = "En ligne";
+  } else if (info.address || info.city) {
+    locationText = [info.address, info.city].filter(Boolean).join(", ");
+  }
+
+  // Form answers rows
+  let answersHtml = "";
+  if (STATE.formAnswers && STATE.formAnswers.length > 0) {
+    answersHtml = STATE.formAnswers.map(a =>
+      `<div class="bk-conf__row"><span class="k">${escHtml(a.question || a.label || "Question")}</span><span class="v">${escHtml(String(a.answer ?? ""))}</span></div>`
+    ).join("");
+  }
 
   pane.innerHTML = `<div class="bk-pane">
     <div class="bk-conf">
@@ -864,12 +884,13 @@ function renderConfirmPane() {
       <p class="bk-conf__lead">Un email de confirmation est en route vers <strong>${escHtml(email)}</strong>.</p>
 
       <div class="bk-conf__recap">
-        ${STATE.service ? `<div class="bk-conf__row"><span class="k">Service</span><span class="v">${escHtml(STATE.service.name)}</span></div>` : ""}
+        ${STATE.service ? `<div class="bk-conf__row"><span class="k">Service</span><span class="v">${escHtml(STATE.service.name)}${STATE.service.duration ? ` · ${STATE.service.duration} min` : ""}</span></div>` : ""}
         ${STATE.employee ? `<div class="bk-conf__row"><span class="k">Avec</span><span class="v">${escHtml(STATE.employee.name)}</span></div>` : ""}
         <div class="bk-conf__row"><span class="k">Quand</span><span class="v">${fmtDate(STATE.date)} · ${STATE.time}</span></div>
-        <hr class="bk-conf__divider" />
+        ${locationText ? `<div class="bk-conf__row"><span class="k">Lieu</span><span class="v">${escHtml(locationText)}</span></div>` : ""}
+        ${answersHtml}
         ${STATE.service && STATE.service.price !== null && STATE.service.price !== undefined
-          ? `<div class="bk-conf__row"><span class="k">Total</span><span class="v" style="font-size:15px;">${STATE.service.price}€</span></div>`
+          ? `<hr class="bk-conf__divider" /><div class="bk-conf__row"><span class="k">Total</span><span class="v bk-conf__price">${STATE.service.price}€</span></div>`
           : ""}
       </div>
 

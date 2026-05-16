@@ -62,9 +62,9 @@ block content
             span.bk-brand__name BranShee
         .bk-top__right
             if clientUser
-                a.bk-sign-btn(href="/client/dashboard") Mon espace
+                a.bk-sign-btn(href="/espace-client") Mon espace
             else
-                a.bk-sign-btn(href="/login") Se connecter
+                a.bk-sign-btn(href="/client/login") Se connecter
 
     //- ── Main ───────────────────────────────────────────────────────────────
     main.bk-main
@@ -88,9 +88,22 @@ block content
                             if bizAddress
                                 span= bizAddress
                     .bk-head__pills
-                        if coach && coach.isPremium
+                        if isOpenToday
                             span.bk-pill.bk-pill--accent Ouvert aujourd'hui
                         span.bk-pill Réservation en ligne
+                        if coach && coach.isPremium
+                            if coach.emailPro && coach.emailPro !== 'on'
+                                button.bk-pill.bk-pill--social.bk-pill--copy(type="button" data-copy=coach.emailPro title="Copier l'email")= coach.emailPro
+                            if coach.phonePro && coach.phonePro !== 'on'
+                                button.bk-pill.bk-pill--social.bk-pill--copy(type="button" data-copy=coach.phonePro title="Copier le téléphone")= coach.phonePro
+                            if coach.instagramLink
+                                a.bk-pill.bk-pill--social(href=coach.instagramLink target="_blank" rel="noopener") Instagram
+                            if coach.facebookLink
+                                a.bk-pill.bk-pill--social(href=coach.facebookLink target="_blank" rel="noopener") Facebook
+                            if coach.whatsappLink
+                                a.bk-pill.bk-pill--social(href=coach.whatsappLink target="_blank" rel="noopener") WhatsApp
+                            if coach.website
+                                a.bk-pill.bk-pill--social(href=coach.website target="_blank" rel="noopener") Site web
 
             //- ── Stepper ────────────────────────────────────────────────────
             nav.bk-stepper#bkStepper
@@ -102,10 +115,37 @@ block content
     #bkCart
 
 block scripts
+    -
+        var _companyInfo = {
+            address:     (coach && coach.location && coach.location.address)     ? coach.location.address     : '',
+            city:        (coach && coach.location && coach.location.city)        ? coach.location.city        : '',
+            serviceType: (coach && coach.location && coach.location.serviceType) ? coach.location.serviceType : 'sur_place'
+        }
     script.
-        window.__services  = !{servicesJson  || '[]'};
-        window.__employees = !{employeesJson || '[]'};
+        window.__services    = !{servicesJson  || '[]'};
+        window.__employees   = !{employeesJson || '[]'};
+        window.__companyInfo = !{JSON.stringify(_companyInfo)};
     if clientUser
         script.
             window.__clientUser = !{JSON.stringify(clientUser)};
     script(src="/js/layouts/index.js" type="module")
+    script.
+        document.querySelectorAll('.bk-pill--copy').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var val = btn.dataset.copy;
+                if (!val) return;
+                navigator.clipboard.writeText(val).then(function() {
+                    var orig = btn.textContent;
+                    btn.textContent = 'Copié !';
+                    btn.style.background = 'var(--bk-accent-soft)';
+                    btn.style.borderColor = 'var(--bk-accent-border)';
+                    btn.style.color = 'var(--bk-accent-ink)';
+                    setTimeout(function() {
+                        btn.textContent = orig;
+                        btn.style.background = '';
+                        btn.style.borderColor = '';
+                        btn.style.color = '';
+                    }, 1500);
+                });
+            });
+        });

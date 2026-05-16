@@ -88,26 +88,52 @@ exports.createBooking = async (req, res) => {
       employeeName: employeeName || "",
     });
 
+    // ── Fetch owner for location + Google Calendar ──────────────────────────
+    const companyOwner = await User.findById(response.owner).lean();
+
+    // Build location text
+    let locationText = "";
+    const loc = companyOwner?.location;
+    if (loc?.serviceType === "en_ligne") {
+      locationText = "En ligne";
+    } else if (loc?.address || loc?.city) {
+      locationText = [loc.address, loc.city].filter(Boolean).join(", ");
+    }
+
+    // Cancel URL
+    const baseUrl = process.env.BASE_URL || "https://www.branshee.com";
+    const cancelUrl = `${baseUrl}/cancel-booking/${newBooking._id}?token=${newBooking.cancelToken}`;
+
+    // Formatted date (fr-FR)
+    const formattedDate = new Date(date).toLocaleDateString("fr-FR", {
+      weekday: "long", day: "2-digit", month: "long", year: "numeric",
+    });
+
     const htmlTemplate = pug.renderFile(
       path.join(__dirname, "../views/templates/emails/booking-confirmed.pug"),
       {
         name,
         surname,
         date,
+        formattedDate,
         startHour: startTime,
-        message,
         endHour: endTime,
         slotTime: actualDuration,
-        bookingId: newBooking._id,
+        message,
+        serviceName:  serviceName  || "",
+        employeeName: employeeName || "",
+        formAnswers:  Array.isArray(formAnswers) ? formAnswers : [],
+        locationText,
+        cancelUrl,
+        bookingId:   newBooking._id,
         cancelToken: newBooking.cancelToken,
       },
     );
 
-    await sendEmail(email, "Appointement Confirmation", htmlTemplate);
+    await sendEmail(email, "Confirmation de votre rendez-vous — BranShee", htmlTemplate);
 
     // Sync Google Calendar
     try {
-      const companyOwner = await User.findById(response.owner);
       if (companyOwner?.googleCalendar?.connected && companyOwner.googleCalendar.refreshToken) {
         const eventId = await addEventToCalendar(companyOwner.googleCalendar.refreshToken, newBooking);
         if (eventId) {

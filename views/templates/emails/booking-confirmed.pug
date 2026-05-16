@@ -1,49 +1,81 @@
-div(style="background-color: #f8fbf9; padding: 40px 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #2d3436;")
-  div(style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05);")
+div(style="background-color:#f4f7f5;padding:40px 20px;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;color:#2d3436;")
+  div(style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.07);")
 
-    //- Header
-    div(style="padding: 40px 20px; text-align: center;")
-      div(style="width: 60px; height: 60px; background-color: #4CAF50; border-radius: 50%; margin: 0 auto 20px; display: flow-root;")
-        span(style="color: white; font-size: 30px; line-height: 60px; justify-content: center;") ✓
+    //- ── Header ─────────────────────────────────────────────────────────────
+    div(style="background:#1a7a4a;padding:36px 40px 28px;text-align:center;")
+      div(style="width:56px;height:56px;background:rgba(255,255,255,0.18);border-radius:50%;margin:0 auto 18px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;line-height:1;")
+        | ✓
+      h1(style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;") Rendez-vous confirmé
+      p(style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.80);") Votre réservation a bien été enregistrée.
 
-      h1(style="margin: 0; font-size: 24px; color: #1e272e;") Rendez-vous confirmé
-      p(style="margin-top: 10px; color: #636e72;") Votre rendez-vous a bien été enregistré.
-      p(style="margin: 0; color: #636e72;") Voici le récapitulatif :
+    //- ── Greeting ────────────────────────────────────────────────────────────
+    div(style="padding:28px 40px 0;")
+      p(style="margin:0;font-size:15px;color:#2d3436;")
+        | Bonjour&nbsp;
+        strong= name + (surname ? ' ' + surname : '')
+        | ,
 
-    //- Carte de détails
-    div(style="padding: 0 40px 40px;")
-      div(style="background-color: #f1f8f4; border-radius: 10px; padding: 25px;")
+    //- ── Detail card ─────────────────────────────────────────────────────────
+    div(style="padding:20px 40px 32px;")
+      div(style="background:#f8faf9;border:1px solid #e0ebe5;border-radius:10px;padding:24px 28px;")
 
-        //- Date
-        div(style="display: flex; align-items: center; margin-bottom: 20px;")
-          span(style="font-size: 20px; margin-right: 15px;") 📅
+        //- Date / time
+        div(style="display:flex;align-items:flex-start;margin-bottom:16px;")
+          span(style="font-size:18px;margin-right:14px;flex-shrink:0;") 📅
           div
-            p(style="margin: 0; font-weight: bold; color: #2d3436;")= new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
-            p(style="margin: 0; font-size: 14px; color: #636e72;") #{startHour} — #{endHour}
+            p(style="margin:0;font-weight:600;font-size:14px;color:#1e272e;text-transform:capitalize;")= formattedDate
+            p(style="margin:4px 0 0;font-size:13px;color:#636e72;") #{startHour} — #{endHour}&nbsp;(#{slotTime} min)
 
-        //- Durée
-        div(style="display: flex; align-items: center; margin-bottom: 20px;")
-          span(style="font-size: 20px; margin-right: 15px;") 📋
-          div
-            p(style="margin: 0; font-weight: bold; color: #2d3436;") Séance de coaching
-            p(style="margin: 0; font-size: 14px; color: #636e72;") Durée : #{slotTime} min
-
-        //- Message (si présent)
-        if message && message.length > 0
-          div(style="display: flex; align-items: center;")
-            span(style="font-size: 20px; margin-right: 15px;") 💬
+        //- Service (if any)
+        if serviceName && serviceName.length > 0
+          div(style="display:flex;align-items:flex-start;margin-bottom:16px;")
+            span(style="font-size:18px;margin-right:14px;flex-shrink:0;") 🗂
             div
-              p(style="margin: 0; font-weight: bold; color: #2d3436;") Message
-              p(style="margin: 0; font-size: 14px; color: #636e72;") "#{message}"
+              p(style="margin:0;font-weight:600;font-size:14px;color:#1e272e;") Prestation
+              p(style="margin:4px 0 0;font-size:13px;color:#636e72;")= serviceName
 
-      //- Bouton annulation
-      div(style="text-align: center; margin-top: 30px;")
-        a(
-          href=`https://www.gymio.be/cancel-booking/${bookingId}?token=${cancelToken}`
-          style="background-color: #f1f2f6; color: #313439; padding: 15px 35px; text-decoration: none; border-radius: 30px; font-weight: bold; display: inline-block; margin: 5px; font-size: 14px; border: 1px solid #dfe4ea;"
-        ) Annuler le rendez-vous
+        //- Employee (if any)
+        if employeeName && employeeName.length > 0
+          div(style="display:flex;align-items:flex-start;margin-bottom:16px;")
+            span(style="font-size:18px;margin-right:14px;flex-shrink:0;") 👤
+            div
+              p(style="margin:0;font-weight:600;font-size:14px;color:#1e272e;") Avec
+              p(style="margin:4px 0 0;font-size:13px;color:#636e72;")= employeeName
 
-    //- Footer
-    div(style="text-align: center; padding: 20px; background-color: #fafafa; border-top: 1px solid #f1f1f1;")
-      p(style="font-size: 14px; color: #b2bec3; margin: 0;") Nous avons hâte de vous retrouver !
-      p(style="font-size: 12px; color: #dfe6e9; margin-top: 10px;") © #{new Date().getFullYear()} BranShee. Tous droits réservés.
+        //- Location (if any)
+        if locationText && locationText.length > 0
+          div(style="display:flex;align-items:flex-start;margin-bottom:16px;")
+            span(style="font-size:18px;margin-right:14px;flex-shrink:0;") 📍
+            div
+              p(style="margin:0;font-weight:600;font-size:14px;color:#1e272e;") Lieu
+              p(style="margin:4px 0 0;font-size:13px;color:#636e72;")= locationText
+
+        //- Form answers (if any)
+        if formAnswers && formAnswers.length > 0
+          each item in formAnswers
+            div(style="display:flex;align-items:flex-start;margin-bottom:16px;")
+              span(style="font-size:18px;margin-right:14px;flex-shrink:0;") 💬
+              div
+                p(style="margin:0;font-weight:600;font-size:14px;color:#1e272e;")= item.question || item.label || 'Réponse'
+                p(style="margin:4px 0 0;font-size:13px;color:#636e72;")= String(item.answer != null ? item.answer : '')
+
+        //- Message (free text, if any)
+        if message && message.length > 0
+          div(style="display:flex;align-items:flex-start;")
+            span(style="font-size:18px;margin-right:14px;flex-shrink:0;") 📝
+            div
+              p(style="margin:0;font-weight:600;font-size:14px;color:#1e272e;") Message
+              p(style="margin:4px 0 0;font-size:13px;color:#636e72;font-style:italic;") "#{message}"
+
+    //- ── Cancel button ───────────────────────────────────────────────────────
+    div(style="padding:0 40px 36px;text-align:center;")
+      p(style="font-size:13px;color:#8c9aaa;margin:0 0 14px;") Si vous souhaitez annuler votre rendez-vous, cliquez ci-dessous&nbsp;:
+      a(
+        href=cancelUrl
+        style="display:inline-block;background:#f1f4f2;color:#4a5568;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;border:1px solid #d1dbd5;"
+      ) Annuler le rendez-vous
+
+    //- ── Footer ──────────────────────────────────────────────────────────────
+    div(style="text-align:center;padding:20px 40px;background:#f8faf9;border-top:1px solid #edf1ee;")
+      p(style="font-size:13px;color:#a0adb5;margin:0;") À bientôt — L'équipe BranShee
+      p(style="font-size:11px;color:#c8d3cc;margin:8px 0 0;") © #{new Date().getFullYear()} BranShee. Tous droits réservés.

@@ -149,7 +149,7 @@ if (socialContainer) {
     if (button) {
       const box = button.closest(".social-box");
       const name = box.dataset.name;
-      const value = box.querySelector("input").value;
+      const value = box.querySelector("input.input").value;
 
       const response = await fetch("/account/update-social", {
         method: "PATCH",

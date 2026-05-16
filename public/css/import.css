@@ -4,6 +4,7 @@
    ============================================================ */
 
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@import url("/css/btn-normalize.css");
 
 /* ============================================================
    1. TOKENS — LIGHT MODE
@@ -356,8 +357,15 @@ button span, .btn span, a.btn span {
   color: inherit;
 }
 
-a.btn:not(.secondary):hover span {
+a.btn:not(.secondary):not(.ghost):hover span {
   color: var(--white);
+}
+/* Secondary & ghost keep dark text on hover */
+a.btn.secondary:hover span,
+button.secondary:hover span,
+a.btn.ghost:hover span,
+button.ghost:hover span {
+  color: inherit;
 }
 
 button:hover:not(:disabled), .btn:hover:not(:disabled) {

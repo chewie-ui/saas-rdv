@@ -107,7 +107,9 @@ const fs = require("fs");
 app.use((req, res, next) => {
   const lang = req.cookies.user_lang || "fr";
 
-  const filePath = path.join(__dirname, `./locales/${lang}.json`);
+  const supported = ["fr", "en", "nl", "de", "es", "it"];
+  const safeLang = supported.includes(lang) ? lang : "fr";
+  const filePath = path.join(__dirname, `./locales/${safeLang}.json`);
   const translations = JSON.parse(fs.readFileSync(filePath, "utf-8"));
 
   res.locals.t = translations;

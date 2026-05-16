@@ -45,9 +45,9 @@
 }
 
 .sb-logo__mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
   background: var(--accent);
   display: flex;
   align-items: center;
@@ -57,7 +57,7 @@
 }
 
 .sb-logo__mark span {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 900;
   color: #fff;
   font-family: var(--font-primary);
@@ -438,15 +438,34 @@
 }
 
 [data-theme="dark"] .sb-logo__name {
-  color: #f0f0f0;
+  color: var(--text-primary);
 }
 
+/* Language selector — dark mode */
+[data-theme="dark"] .sb-lang__btn {
+  color: var(--text-primary);
+  border-color: var(--border-light);
+  background: transparent;
+}
+[data-theme="dark"] .sb-lang__btn:hover,
+[data-theme="dark"] .sb-lang.open .sb-lang__btn {
+  background: rgba(30,122,78,0.12);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+[data-theme="dark"] .sb-lang__caret {
+  color: var(--text-primary);
+}
 [data-theme="dark"] .sb-lang__panel {
-  background: var(--surface-card, #1e1e1e);
+  background: var(--surface-card);
+  border-color: var(--border-light);
 }
-
+[data-theme="dark"] .sb-lang__opt {
+  color: var(--text-primary);
+}
 [data-theme="dark"] .sb-lang__opt:hover {
   background: rgba(255,255,255,0.06);
+  color: var(--text-primary);
 }
 
 /* ── Responsive ─────────────────────────────────────────────── */

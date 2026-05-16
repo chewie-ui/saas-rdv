@@ -297,6 +297,35 @@ router.get("/:company", async (req, res) => {
     }),
   );
 
+  // ── Is the business open today? ─────────────────────────────────────────
+  let isOpenToday = false;
+  try {
+    const DaysOff = require("../db/models/company/daysOff.model");
+    const now        = new Date();
+    const todayDow   = now.getDay();                            // 0=Sun … 6=Sat
+    const todayIso   = now.toISOString().split("T")[0];
+
+    // Base: regular weekly schedule
+    const schedEntry = company.schedule
+      ? company.schedule.find((d) => d.weekdayIndex === todayDow)
+      : null;
+    isOpenToday = !!(schedEntry && !schedEntry.dayOff &&
+                     schedEntry.workingHours && schedEntry.workingHours.length > 0);
+
+    // Override: specific date exception (affects all employees)
+    const daysOffDoc = await DaysOff.findOne({ company: company._id }).lean();
+    if (daysOffDoc && daysOffDoc.dates) {
+      const exc = daysOffDoc.dates.find((d) => {
+        const excIso = new Date(d.date).toISOString().split("T")[0];
+        return excIso === todayIso && (!d.employees || d.employees.length === 0);
+      });
+      if (exc) {
+        // Exception with hours → open with custom hours; without → closed
+        isOpenToday = !!(exc.workingHours && exc.workingHours.length > 0 && exc.workingHours[0].start);
+      }
+    }
+  } catch (_) { isOpenToday = false; }
+
   // Client connecté → pré-remplir le formulaire de réservation
   let clientUser = null;
   if (req.session && req.session.clientId) {
@@ -330,6 +359,7 @@ router.get("/:company", async (req, res) => {
     servicesJson,
     employeesJson,
     clientUser,
+    isOpenToday,
     alwaysSticky: true,
     clientAuth: true,
   });

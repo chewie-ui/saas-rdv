@@ -71,40 +71,84 @@ svg {
   flex-shrink: 0;
 }
 
-/* ── Topnav CTA button ── */
+/* ── Topnav CTA button — mirrors .btn from import.css ── */
 .nav-cta-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 10px;
+  gap: 7px;
+  padding: 10px 18px;
+  border-radius: var(--radius-md, 10px);
   background: var(--accent);
   color: #fff;
-  font-size: 0.85rem;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   font-family: var(--font-primary);
   text-decoration: none;
-  border: none;
+  border: 1.5px solid transparent;
   cursor: pointer;
   white-space: nowrap;
+  line-height: 1;
+  flex-shrink: 0;
   transition:
-    background 0.15s,
-    transform 0.12s,
-    box-shadow 0.15s;
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.12s ease;
   box-shadow: 0 2px 8px var(--accent-glow, rgba(30, 122, 78, 0.25));
 }
 
 .nav-cta-btn:hover {
   background: var(--accent-hover, #185f3d);
+  border-color: var(--accent-hover, #185f3d);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px var(--accent-glow, rgba(30, 122, 78, 0.3));
+  box-shadow: 0 4px 16px var(--accent-glow, rgba(30, 122, 78, 0.3));
+}
+.nav-cta-btn span {
+  color: inherit;
+  position: relative;
+  z-index: 1;
 }
 .nav-cta-btn:hover span {
-  color: var(--white);
+  color: #fff;
 }
 .nav-cta-btn svg {
-  fill: #fff;
+  fill: currentColor;
   flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+}
+
+/* Ghost variant — mirrors .btn.secondary */
+.nav-cta-btn--ghost {
+  background: var(--surface-card, #fff);
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+  box-shadow: none;
+}
+.nav-cta-btn--ghost:hover {
+  background: var(--surface-2);
+  border-color: var(--border-medium);
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+.nav-cta-btn--ghost span {
+  color: var(--text-primary);
+}
+.nav-cta-btn--ghost:hover span {
+  color: var(--text-primary);
+}
+[data-theme="dark"] .nav-cta-btn--ghost {
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+}
+[data-theme="dark"] .nav-cta-btn--ghost:hover {
+  background: var(--surface-2);
+}
+[data-theme="dark"] .nav-cta-btn--ghost span,
+[data-theme="dark"] .nav-cta-btn--ghost:hover span {
+  color: var(--text-primary);
 }
 
 .section__container {

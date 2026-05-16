@@ -1,37 +1,21 @@
-# 🚨 P0 - CRITIQUE
-
-- APPELER DES GENS SINON L APP NE VA JAMAIS ETRE CONNUE CA SERT LIMITE MEME A RIEN DE FAIRE TOUT CE QUI EST AU DESSUS TANT QUE J APPELLE PAS !!!
-
-# ✨ P2 - UX / COMPLETION (améliorations nécessaires)
-
 - Personnaliser le calendrier
   - Retirer 'Afficher panneau dinfos' et 'affciher lien'
   - Couelrus texte bouton nav lmarchent pas
   - apercu buguer
 
-# 🎨 P3 - ESTHETIQUE (PAS FAIRE AVEC IA CAR MAUVAIS)
-
 - Couleurs du site choisir et refaire
-- Police a choisri
-- Buttons
+- Buttons A faire !
 
 To do New :
 
-Changer nom de domaine
 File dattente si quelquun annule rdv proposer au client via mail
 Code promo possible a creer (pour les rdvs moins cher)
 mettre des paiements en 6 mois, 1 an etc avec engagement.
-Creer page employee
-Si services dure 1h30 et temps des rdvs normaux cest 30min, bloque les 3rdvs ! mettre genre Reservation pour service X duree 1h30 et lafficher dans le planning
-
-Refaire page calendrier !
 
 MAC UPDATE :
 
 Si aucun resultat afficher message
 Landing page gerer teablissement changer images et contenu
-footer changer login
-faire les langues sur tout le site
 degager la page voir rdv avec email
 compte client si clique sur rdv il voit les infos de letablissemnt etc
 parametre client langue principalke fonctionnel
@@ -69,3 +53,14 @@ Trouver quelqeuun pour essayer
 14-05-26
 
 Si user annule son plan NE PLUS SPAM STRIPE !!!
+Couleurs
+Langues
+oblige de mettre service et bloquer service olbige ecrire comme jai mis
+oblige lieu
+
+POUR AJD 15-05-26
+
+possibilite de persoinnalise
+facile a iunterger
+mettre autre photo par defaut
+faire les trucs FREE / PREMIUM / BUSINESS (ou trucs en + genre nom de domaine)

@@ -16,7 +16,12 @@ const userSchema = schema(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
+    },
+
+    googleId: {
+      type: String,
+      default: null,
     },
     company: {
       type: schema.Types.ObjectId,
