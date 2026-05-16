@@ -7,16 +7,15 @@ const { createOAuthClient } = require("../config/googleCalendar");
 const Client = require("../db/models/client.model");
 const crypto = require("crypto");
 
-function buildClientRedirectUri(req) {
-  const proto = req.headers["x-forwarded-proto"] || req.protocol;
-  const host = req.headers["x-forwarded-host"] || req.get("host");
-  return `${proto}://${host}/auth/google/client/callback`;
+function buildClientRedirectUri() {
+  const base = (process.env.BASE_URL || "http://localhost:3000").replace(/\/$/, "");
+  return `${base}/auth/google/client/callback`;
 }
 
 // ─── Google OAuth for clients ────────────────────────────────────────────────
 
 router.get("/auth/google/client", (req, res) => {
-  const redirectUri = buildClientRedirectUri(req);
+  const redirectUri = buildClientRedirectUri();
   const oauth2Client = createOAuthClient(redirectUri);
   const returnTo = req.query.returnTo || "/espace-client";
   const state = Buffer.from(JSON.stringify({ returnTo })).toString("base64url");
@@ -43,7 +42,7 @@ router.get("/auth/google/client/callback", async (req, res) => {
   } catch (_) {}
 
   try {
-    const redirectUri = buildClientRedirectUri(req);
+    const redirectUri = buildClientRedirectUri();
     const oauth2Client = createOAuthClient(redirectUri);
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);

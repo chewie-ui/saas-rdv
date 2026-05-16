@@ -15,10 +15,9 @@ const Company = require("../db/models/company/company.model");
 const mongoose = require("mongoose");
 const crypto = require("crypto");
 
-function buildUserRedirectUri(req) {
-  const proto = req.headers["x-forwarded-proto"] || req.protocol;
-  const host = req.headers["x-forwarded-host"] || req.get("host");
-  return `${proto}://${host}/auth/google/callback`;
+function buildUserRedirectUri() {
+  const base = (process.env.BASE_URL || "http://localhost:3000").replace(/\/$/, "");
+  return `${base}/auth/google/callback`;
 }
 
 router.get("/register", (req, res) => {
@@ -57,7 +56,7 @@ router.get("/logout", logout);
 // ─── Google OAuth for users (admin/pro) ─────────────────────────────────────
 
 router.get("/auth/google", (req, res) => {
-  const redirectUri = buildUserRedirectUri(req);
+  const redirectUri = buildUserRedirectUri();
   console.log("🔑 Google OAuth redirect URI:", redirectUri);
   const oauth2Client = createOAuthClient(redirectUri);
 
@@ -76,7 +75,7 @@ router.get("/auth/google/callback", async (req, res) => {
   const { code } = req.query;
 
   try {
-    const redirectUri = buildUserRedirectUri(req);
+    const redirectUri = buildUserRedirectUri();
     const oauth2Client = createOAuthClient(redirectUri);
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
