@@ -93,7 +93,7 @@ block content
                                 path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
                             span= feature
                 .sub-plan__cta
-                    if user && user.isPremium
+                    if currentPlan === 'pro' && isPro
                         button.sub-btn.sub-btn--current.sub-btn--premium-current(disabled)= t.subscription.btn_current
                         .sub-plan__links
                             if !autoRenew
@@ -103,13 +103,15 @@ block content
                         .sub-time-left(class=isExpired ? 'expired' : isExpiring ? 'expiring' : '')
                             if isExpired
                                 | #{t.subscription.expired_label}
+                            else if isBetaAccess && daysLeft === null
+                                | 🧪 Accès bêta
                             else if hoursLeft
                                 | #{t.subscription.days_left} :&nbsp;
                                 strong #{hoursLeft} #{hoursLeft > 1 ? t.subscription.hours_suffix_many : t.subscription.hours_suffix_one}
                             else
                                 | #{t.subscription.days_left} :&nbsp;
                                 strong #{daysLeft} #{t.subscription.days}
-                    else
+                    else if currentPlan !== 'business'
                         button.sub-btn.sub-btn--upgrade#getProPlan= t.subscription.btn_get_pro
 
             //- ─── Studio ─────────────────────────────────────────────
@@ -135,7 +137,26 @@ block content
                             else
                                 span= feature
                 .sub-plan__cta
-                    button.sub-btn.sub-btn--outline#getBusinessPlan= t.subscription.btn_get_business
+                    if currentPlan === 'business' && isPro
+                        button.sub-btn.sub-btn--current.sub-btn--premium-current(disabled)= t.subscription.btn_current
+                        .sub-plan__links
+                            if !autoRenew
+                                span.sub-link#retakeSubscription= t.subscription.btn_retake
+                            if autoRenew
+                                span.sub-link.sub-link--danger#cancelSubscriptionPro= t.subscription.btn_cancel
+                        .sub-time-left(class=isExpired ? 'expired' : isExpiring ? 'expiring' : '')
+                            if isExpired
+                                | #{t.subscription.expired_label}
+                            else if isBetaAccess && daysLeft === null
+                                | 🧪 Accès bêta
+                            else if hoursLeft
+                                | #{t.subscription.days_left} :&nbsp;
+                                strong #{hoursLeft} #{hoursLeft > 1 ? t.subscription.hours_suffix_many : t.subscription.hours_suffix_one}
+                            else
+                                | #{t.subscription.days_left} :&nbsp;
+                                strong #{daysLeft} #{t.subscription.days}
+                    else
+                        button.sub-btn.sub-btn--outline#getBusinessPlan= t.subscription.btn_get_business
 
         //- ── Promo code ──────────────────────────────────────────────
         .sub-promo#promoCodeSection

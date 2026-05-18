@@ -52,27 +52,45 @@ block content
             .info-card__header
                 h3= t.info.custom_url_title || 'URL personnalisée'
                 p.info-card__desc= t.info.custom_url_desc || 'Choisissez une URL unique pour votre page de réservation publique.'
-            .field
-                label= t.info.custom_url_label || 'Nom d\'URL'
-                .slug-field-wrapper
-                    span.slug-prefix branshee.com/
-                    input.input#slugInput(
-                        type="text"
-                        value=(currentCompany && currentCompany.slug ? currentCompany.slug : '')
-                        placeholder="mon-salon"
-                        autocomplete="off"
-                    )
-                .slug-status#slugStatus
-            if currentCompany && (currentCompany.slug || currentCompany._id)
-                .slug-share-row
-                    .slug-share-url#slugShareUrl= 'branshee.com/' + (currentCompany.slug || String(currentCompany._id))
-                    button.btn.secondary.btn--sm#copySlugBtn(type="button")
-                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                            path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z")
-                        span Copier le lien
-            .info-card__actions
-                button.btn#saveSlugBtn
-                    span= t.info.custom_url_save || 'Enregistrer l\'URL'
+            if !canUseCustomUrl
+                .info-addon-gate
+                    svg(xmlns="http://www.w3.org/2000/svg" height="28px" viewBox="0 -960 960 960" width="28px" fill="currentColor")
+                        path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z")
+                    .info-addon-gate__text
+                        strong URL personnalisée — Business
+                        if isPro
+                            p Incluse dans le plan Business. Disponible également en add-on (+5€/mois).
+                        else
+                            p Incluse dans le plan Business, ou en add-on (+5€/mois) à partir du plan Pro.
+                        .info-addon-gate__preview
+                            span.info-addon-gate__preview-dim branshee.com/
+                            span.info-addon-gate__preview-slug= (currentCompany && currentCompany.slug) ? currentCompany.slug : (user.businessName ? user.businessName.toLowerCase().replace(/\s+/g, '-') : 'mon-salon')
+                    if isPro
+                        a.btn-upgrade-business(href="/subscription") Passer au Business
+                    else
+                        a.btn-upgrade-pro(href="/subscription") Passer au Pro
+            else
+                .field
+                    label= t.info.custom_url_label || 'Nom d\'URL'
+                    .slug-field-wrapper
+                        span.slug-prefix branshee.com/
+                        input.input#slugInput(
+                            type="text"
+                            value=(currentCompany && currentCompany.slug ? currentCompany.slug : '')
+                            placeholder="mon-salon"
+                            autocomplete="off"
+                        )
+                    .slug-status#slugStatus
+                if currentCompany && (currentCompany.slug || currentCompany._id)
+                    .slug-share-row
+                        .slug-share-url#slugShareUrl= 'branshee.com/' + (currentCompany.slug || String(currentCompany._id))
+                        button.btn.secondary.btn--sm#copySlugBtn(type="button")
+                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z")
+                            span Copier le lien
+                .info-card__actions
+                    button.btn#saveSlugBtn
+                        span= t.info.custom_url_save || 'Enregistrer l\'URL'
 
         //- ── Informations entreprise ──────────────────────────────────────────
         .info-card
@@ -189,13 +207,13 @@ block content
                     -
                         var isOn = (cs[s.toggle] !== false)
                     .social-box(data-name=s.name class=(!isOn ? 'social-box--hidden' : ''))
-                        if !user.isPremium
-                            a.get__premium(href="/subscription")= t.profile.get_premium
+                        if !canUseSocial
+                            a.btn-upgrade-pro.get__premium(href="/subscription") Passer au Pro
                         label.social-visibility-toggle(title=t.info.toggle_visibility data-toggle=s.toggle)
                             input.social-visibility-toggle__input(
                                 type="checkbox"
                                 checked=isOn
-                                disabled=(!user.isPremium)
+                                disabled=(!canUseSocial)
                             )
                             span.social-visibility-toggle__track
                                 span.social-visibility-toggle__thumb
@@ -203,7 +221,7 @@ block content
                             img(src="/images/logos/" + s.logo alt=s.alt)
                         .social-box__title= s.label
                         .social-box__field
-                            input.input(placeholder=t.info.link_placeholder value=s.val disabled=(!user.isPremium))
+                            input.input(placeholder=t.info.link_placeholder value=s.val disabled=(!canUseSocial))
                             button.btn.secondary.btn--sm.btn__social-save
                                 span= t.avail.save
 

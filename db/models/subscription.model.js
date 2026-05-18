@@ -7,16 +7,15 @@ const subscriptionSchema = new schema(
       type: schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true,
     },
     plan: {
       type: String,
-      enum: ["basic", "premium"],
+      enum: ["basic", "pro", "business", "premium"],
       required: true,
     },
     status: {
       type: String,
-      enum: ["active", "cancelled", "expired", "pending"],
+      enum: ["active", "cancelled", "expired", "pending", "superseded", "inactive"],
       default: "pending",
     },
 

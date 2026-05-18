@@ -1,6 +1,7 @@
 const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
 const Stripe = require("stripe");
 const getServices = require("../utils/services");
+const { getLimit } = require("../utils/planLimits");
 
 const stripe = new Stripe(env.stripeSecretKey);
 
@@ -337,6 +338,7 @@ exports.availability = async (req, res) => {
     Service.countDocuments({ company: currentCompany, active: true }),
     Employee.find({ company: currentCompany._id, active: true }).select("firstName lastName").lean(),
   ]);
+  const availFeatures = getLimit("availability", req.user);
   res.render("admin/availability", {
     daysOff,
     employees: activeEmployees,
@@ -346,6 +348,7 @@ exports.availability = async (req, res) => {
     hours: generateHours(10),
     currentSlotTime,
     hasServices: serviceCount > 0,
+    availFeatures,
   });
 };
 
@@ -560,6 +563,8 @@ exports.getWeekData = async (req, res) => {
 exports.informationsPage = (req, res) => {
   const email = req.user.email;
   const maskEmail = email.replace(/^(..)(.*)(?=@)/, "$1...");
+  const canUseSocial  = getLimit("socialLinks", req.user);
+  const canUseCustomUrl = require("../utils/planLimits").LIMITS.customUrl.hasFeature(req.user);
 
   res.render("admin/informations", {
     pageName: "Informations",
@@ -568,6 +573,8 @@ exports.informationsPage = (req, res) => {
     maskEmail,
     services: getServices(res.locals.lang),
     currentCompany: res.locals.currentCompany,
+    canUseSocial,
+    canUseCustomUrl,
   });
 };
 
@@ -715,18 +722,79 @@ exports.historyEditRowPatch = async (req, res) => {
 
 exports.paymentVerification = async (req, res) => {
   const { session_id } = req.query;
+  const renderSuccess = () => res.render("admin/payment-success", { t: res.locals.t });
 
-  if (!session_id) return res.redirect("/subscription");
+  // No session_id: can't verify — show success anyway (Stripe redirected here)
+  if (!session_id) return renderSuccess();
+
   try {
     const session = await stripe.checkout.sessions.retrieve(session_id);
+    if (session.payment_status !== "paid") return res.redirect("/subscription");
 
-    if (session.payment_status === "paid") {
-      return res.render("admin/payment-success");
-    } else {
-      return res.redirect("/subscription");
+    // ── Determine plan from line items ───────────────────────────────────────
+    const Subscription = require("../db/models/subscription.model");
+    const lineItems = await stripe.checkout.sessions.listLineItems(session_id, { limit: 5 });
+    const priceId = lineItems.data[0]?.price?.id || "";
+    const isBusinessPrice = [
+      env.stripePriceBusinessMonthly,
+      env.stripePriceBusinessYearly,
+      env.stripePricePlanBusiness,
+    ].filter(Boolean).includes(priceId);
+    const planName = isBusinessPrice ? "business" : "pro";
+
+    const userId = session.client_reference_id || (req.user && req.user._id.toString());
+
+    if (userId) {
+      // Update user document
+      await User.findByIdAndUpdate(userId, {
+        isPremium: true,
+        manualPremium: false,
+        "subscription.plan":                 planName,
+        "subscription.status":               "active",
+        "subscription.stripeCustomerId":     session.customer,
+        "subscription.stripeSubscriptionId": session.subscription,
+      });
+
+      // Désactiver tous les anciens docs Subscription actifs
+      await Subscription.updateMany(
+        { user: userId, status: "active" },
+        { status: "superseded" }
+      );
+
+      // Créer/mettre à jour le Subscription document (clé = stripeSubscriptionId)
+      const expDate = new Date();
+      expDate.setMonth(expDate.getMonth() + 1);
+      await Subscription.findOneAndUpdate(
+        { user: userId, stripeSubscriptionId: session.subscription },
+        {
+          user:                   userId,
+          plan:                   planName,
+          status:                 "active",
+          startDate:              new Date(),
+          endDate:                expDate,
+          stripeCustomerId:       session.customer,
+          stripeSubscriptionId:   session.subscription,
+          amount:                 (session.amount_total || 0) / 100,
+          currency:               session.currency,
+        },
+        { upsert: true, new: true }
+      );
+
+      // Update session so the current request sees the new plan immediately
+      if (req.user) {
+        req.user.isPremium = true;
+        req.user.subscription = req.user.subscription || {};
+        req.user.subscription.plan = planName;
+        req.user.subscription.status = "active";
+      }
+      console.log(`✅ [paymentVerification] Plan activé : ${planName} pour user ${userId}`);
     }
-  } catch (err) {}
-  return res.redirect("/subscription");
+
+    return renderSuccess();
+  } catch (err) {
+    console.error("[paymentVerification] Erreur :", err.message);
+    return renderSuccess();
+  }
 };
 
 const Subscription = require("../db/models/subscription.model");
@@ -774,13 +842,16 @@ exports.saveAdminNotes = async (req, res) => {
 const Form = require("../db/models/form.model");
 
 exports.formsIndex = async (req, res) => {
+  const { getLimit } = require("../utils/planLimits");
   try {
     const companyId = res.locals.currentCompany._id;
     const form = await Form.findOne({ company: companyId }).lean();
+    const maxQuestions = getLimit("formQuestions", req.user);
     return res.render("admin/forms", {
       pageName: res.locals.t.sidebar.a_9,
       form: form || null,
       title: res.locals.t.sidebar.a_9,
+      maxQuestions,
     });
   } catch (err) {
     console.error(err);
@@ -788,6 +859,7 @@ exports.formsIndex = async (req, res) => {
       pageName: res.locals.t.sidebar.a_9,
       form: null,
       title: res.locals.t.sidebar.a_9,
+      maxQuestions: 0,
     });
   }
 };
@@ -803,11 +875,23 @@ exports.getFormData = async (req, res) => {
 };
 
 exports.saveForm = async (req, res) => {
+  const { getLimit } = require("../utils/planLimits");
   try {
     const companyId = res.locals.currentCompany._id;
     const { active, questions } = req.body;
 
-    const form = await Form.findOneAndUpdate({ company: companyId }, { active, questions }, { upsert: true, new: true, setDefaultsOnInsert: true });
+    // Enforce plan limit server-side
+    const maxQuestions = getLimit("formQuestions", req.user);
+    if (maxQuestions === 0) {
+      return res.json({ success: false, error: "plan_limit", message: "Votre plan ne permet pas d'utiliser le formulaire." });
+    }
+    const limitedQuestions = Array.isArray(questions) ? questions.slice(0, maxQuestions) : [];
+
+    const form = await Form.findOneAndUpdate(
+      { company: companyId },
+      { active: maxQuestions > 0 ? active : false, questions: limitedQuestions },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
     return res.json({ success: true, form });
   } catch (err) {

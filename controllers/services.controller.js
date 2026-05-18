@@ -1,5 +1,6 @@
 const Service = require("../db/models/company/service.model");
 const User = require("../db/models/user.model");
+const { getLimit } = require("../utils/planLimits");
 
 // ── Page admin ────────────────────────────────────────────────────────────────
 exports.servicesPage = async (req, res) => {
@@ -7,10 +8,12 @@ exports.servicesPage = async (req, res) => {
     .populate("employees", "firstName lastName profilePicture")
     .sort("order")
     .lean();
+  const maxServices = getLimit("services", req.user);
   res.render("admin/services", {
     pageName: "Services",
     title: "Services",
     services,
+    maxServices,
   });
 };
 
@@ -34,13 +37,25 @@ exports.getServices = async (req, res) => {
 // ── API : créer un service ────────────────────────────────────────────────────
 exports.createService = async (req, res) => {
   try {
+    const companyId = res.locals.currentCompany._id;
+    const maxServices = getLimit("services", req.user);
+
+    if (maxServices === 0) {
+      return res.status(403).json({ error: "plan_limit", message: "Votre plan ne permet pas de créer des services." });
+    }
+
+    const count = await Service.countDocuments({ company: companyId });
+
+    if (count >= maxServices) {
+      return res.status(403).json({ error: "plan_limit", message: `Limite de ${maxServices} services atteinte.` });
+    }
+
     const { name, description, price, duration } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ error: "Le nom du service est requis." });
     }
-    const count = await Service.countDocuments({ company: res.locals.currentCompany._id });
     const service = await Service.create({
-      company: res.locals.currentCompany._id,
+      company: companyId,
       name: name.trim(),
       description: (description || "").trim(),
       price: price !== undefined && price !== "" ? Number(price) : null,

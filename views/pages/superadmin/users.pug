@@ -181,46 +181,55 @@ html(lang="fr")
                 gap: 10px;
             }
             /* Toggle switch */
-            .sa-toggle {
-                position: relative;
-                display: inline-block;
-                width: 44px;
-                height: 24px;
-                flex-shrink: 0;
-            }
-            .sa-toggle input { opacity: 0; width: 0; height: 0; }
-            .sa-toggle__track {
-                position: absolute;
-                inset: 0;
-                background: #2a2a2a;
-                border-radius: 99px;
-                transition: background 0.2s;
+            .plan-select {
+                appearance: none;
+                -webkit-appearance: none;
+                background: #1a1a1a;
+                border: 1.5px solid #2a2a2a;
+                border-radius: 8px;
+                color: #ccc;
+                font-size: 12.5px;
+                font-weight: 600;
+                padding: 6px 28px 6px 10px;
                 cursor: pointer;
+                outline: none;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 8px center;
+                transition: border-color 0.15s;
             }
-            .sa-toggle__track::after {
-                content: '';
-                position: absolute;
-                left: 3px;
-                top: 3px;
-                width: 18px;
-                height: 18px;
-                background: #555;
-                border-radius: 50%;
-                transition: transform 0.2s, background 0.2s;
-            }
-            .sa-toggle input:checked + .sa-toggle__track {
-                background: rgba(34,197,94,0.25);
-            }
-            .sa-toggle input:checked + .sa-toggle__track::after {
-                transform: translateX(20px);
-                background: #22c55e;
-            }
-            .toggle-label {
-                font-size: 12px;
-                color: #555;
-            }
-            .toggle-label.active { color: #22c55e; font-weight: 600; }
+            .plan-select:focus { border-color: #444; }
+            .plan-select[data-plan="free"] { color: #666; }
+            .plan-select[data-plan="pro"] { color: #22c55e; border-color: rgba(34,197,94,0.3); }
+            .plan-select[data-plan="business"] { color: #a78bfa; border-color: rgba(167,139,250,0.3); }
+            .plan-saving { font-size: 11px; color: #555; margin-left: 6px; }
             .date-col { color: #444; font-size: 12px; }
+            .trial-select {
+                appearance: none;
+                -webkit-appearance: none;
+                background: #1a1a1a;
+                border: 1.5px solid #2a2a2a;
+                border-radius: 8px;
+                color: #888;
+                font-size: 12px;
+                font-weight: 600;
+                padding: 6px 28px 6px 10px;
+                cursor: pointer;
+                outline: none;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 8px center;
+                transition: border-color 0.15s;
+            }
+            .trial-select:disabled { opacity: 0.3; cursor: not-allowed; }
+            .trial-select:focus { border-color: #444; }
+            .trial-expiry {
+                font-size: 11px;
+                color: #555;
+                margin-top: 4px;
+            }
+            .trial-expiry.expiring { color: #f59e0b; }
+            .trial-expiry.expired  { color: #f87171; }
             .empty-state {
                 text-align: center;
                 padding: 60px 24px;
@@ -243,16 +252,22 @@ html(lang="fr")
                 span.badge= users.length + ' utilisateurs'
                 a.logout-btn(href="/superadmin/logout") Déconnexion
 
+        - var totalFree = users.filter(function(u){ return !u.isPremium && !u.manualPremium; }).length
+        - var totalBusiness = users.filter(function(u){ return u.subscription && u.subscription.plan === 'business'; }).length
+        - var totalPro = users.filter(function(u){ return (u.manualPremium || u.isPremium) && (!u.subscription || u.subscription.plan !== 'business'); }).length
         .stats-row
             .stat-card
                 .stat-card__value= users.length
                 .stat-card__label Total
             .stat-card
-                .stat-card__value= users.filter(u => u.isPremium).length
-                .stat-card__label Premium
+                .stat-card__value= totalFree
+                .stat-card__label Free
             .stat-card
-                .stat-card__value= users.filter(u => u.manualPremium).length
-                .stat-card__label Bêta (manuels)
+                .stat-card__value= totalPro
+                .stat-card__label Pro
+            .stat-card
+                .stat-card__value= totalBusiness
+                .stat-card__label Business
 
         .search-bar
             form(method="GET" action="/superadmin")
@@ -268,71 +283,132 @@ html(lang="fr")
                 thead
                     tr
                         th Utilisateur
-                        th Premium bêta
-                        th Stripe premium
+                        th Plan
+                        th Durée bêta
+                        th Source
                         th Inscrit le
                 tbody
                     each u in users
-                        tr(data-user-id=u._id)
+                        - var currentPlan = (u.subscription && u.subscription.plan === 'business' && (u.subscription.status === 'active' || u.manualPremium)) ? 'business' : (u.isPremium || u.manualPremium) ? 'pro' : 'free'
+                        - var isStripe = !!(u.subscription && u.subscription.stripeSubscriptionId)
+                        - var isManual = u.manualPremium && !isStripe
+                        - var expiry = u.manualPremiumExpiry ? new Date(u.manualPremiumExpiry) : null
+                        - var now = new Date()
+                        - var daysLeft = expiry ? Math.ceil((expiry - now) / (1000*60*60*24)) : null
+                        - var expiryStr = expiry ? expiry.toLocaleDateString('fr-FR') : null
+                        tr(data-user-id=String(u._id))
                             td
                                 .user-info
                                     .user-info__name= u.fullName
                                     .user-info__email= u.email
                             td
-                                .toggle-wrap
-                                    label.sa-toggle
-                                        input(
-                                            type="checkbox"
-                                            class="manual-premium-toggle"
-                                            checked=u.manualPremium
-                                            data-user-id=String(u._id)
-                                        )
-                                        .sa-toggle__track
-                                    span.toggle-label(class=u.manualPremium ? 'active' : '')
-                                        = u.manualPremium ? 'Actif' : 'Inactif'
+                                select.plan-select(data-user-id=String(u._id) data-plan=currentPlan)
+                                    option(value="free" selected=(currentPlan === 'free')) Free
+                                    option(value="pro" selected=(currentPlan === 'pro')) Pro
+                                    option(value="business" selected=(currentPlan === 'business')) Business
                             td
-                                if u.isPremium && !u.manualPremium
+                                select.trial-select(
+                                    data-user-id=String(u._id)
+                                    disabled=(!isManual || currentPlan === 'free')
+                                )
+                                    option(value="infinite" selected=(!expiry)) ∞ Infini
+                                    option(value="1d" selected=(daysLeft !== null && daysLeft <= 1 && daysLeft > 0)) 1 jour
+                                    option(value="7d" selected=(daysLeft !== null && daysLeft > 1 && daysLeft <= 7)) 7 jours
+                                    option(value="30d" selected=(daysLeft !== null && daysLeft > 7 && daysLeft <= 30)) 1 mois
+                                    option(value="90d" selected=(daysLeft !== null && daysLeft > 30)) 3 mois
+                                if isManual && expiryStr
+                                    .trial-expiry(class=(daysLeft !== null && daysLeft <= 0) ? 'expired' : (daysLeft !== null && daysLeft <= 3) ? 'expiring' : '')
+                                        if daysLeft !== null && daysLeft <= 0
+                                            | ❌ Expiré le #{expiryStr}
+                                        else if daysLeft !== null
+                                            | Expire le #{expiryStr} (#{daysLeft}j)
+                                else if isManual && !expiry
+                                    .trial-expiry ∞ Sans limite
+                            td
+                                if isStripe
                                     span.badge.badge--green Stripe ✓
-                                else if u.isPremium && u.manualPremium
+                                else if u.manualPremium
                                     span.badge.badge--yellow Manuel
                                 else
                                     span.badge —
                             td.date-col= new Date(u.createdAt).toLocaleDateString('fr-FR')
 
         script.
-            document.querySelectorAll('.manual-premium-toggle').forEach(function(checkbox) {
-                checkbox.addEventListener('change', async function() {
+            // ── Plan select ──────────────────────────────────────────
+            document.querySelectorAll('.plan-select').forEach(function(select) {
+                select.addEventListener('change', async function() {
                     const userId = this.dataset.userId;
-                    const enabled = this.checked;
-                    const label = this.closest('.toggle-wrap').querySelector('.toggle-label');
-
-                    // Optimistic UI
-                    label.textContent = enabled ? 'Actif' : 'Inactif';
-                    label.classList.toggle('active', enabled);
+                    const plan = this.value;
+                    const prevPlan = this.dataset.plan;
+                    this.dataset.plan = plan;
 
                     try {
-                        const res = await fetch('/superadmin/toggle-premium/' + userId, {
+                        const res = await fetch('/superadmin/set-plan/' + userId, {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ manualPremium: enabled })
+                            body: JSON.stringify({ plan })
                         });
                         const data = await res.json();
                         if (!data.success) throw new Error('Failed');
 
-                        // Update stripe badge cell
                         const row = this.closest('tr');
-                        const badgeCell = row.querySelector('td:nth-child(3)');
-                        if (enabled) {
-                            badgeCell.innerHTML = '<span class="badge badge--yellow">Manuel</span>';
-                        } else {
+                        // Update source badge
+                        const badgeCell = row.querySelector('td:nth-child(4)');
+                        if (plan === 'free') {
                             badgeCell.innerHTML = '<span class="badge">—</span>';
+                        } else {
+                            badgeCell.innerHTML = '<span class="badge badge--yellow">Manuel</span>';
+                        }
+                        // Enable/disable trial select
+                        const trialSelect = row.querySelector('.trial-select');
+                        if (trialSelect) {
+                            trialSelect.disabled = (plan === 'free');
                         }
                     } catch(e) {
-                        // Revert
-                        this.checked = !enabled;
-                        label.textContent = !enabled ? 'Actif' : 'Inactif';
-                        label.classList.toggle('active', !enabled);
+                        this.value = prevPlan;
+                        this.dataset.plan = prevPlan;
                         alert('Erreur lors de la mise à jour.');
+                    }
+                });
+            });
+
+            // ── Trial duration select ─────────────────────────────────
+            document.querySelectorAll('.trial-select').forEach(function(select) {
+                select.addEventListener('change', async function() {
+                    const userId = this.dataset.userId;
+                    const duration = this.value;
+                    const prevVal = this._prevVal || this.value;
+                    this._prevVal = duration;
+
+                    try {
+                        const res = await fetch('/superadmin/set-trial/' + userId, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ duration })
+                        });
+                        const data = await res.json();
+                        if (!data.success) throw new Error('Failed');
+
+                        // Update expiry display
+                        const row = this.closest('tr');
+                        let expiryEl = row.querySelector('.trial-expiry');
+                        if (!expiryEl) {
+                            expiryEl = document.createElement('div');
+                            expiryEl.className = 'trial-expiry';
+                            this.parentNode.appendChild(expiryEl);
+                        }
+                        if (data.expiry) {
+                            const d = new Date(data.expiry);
+                            const days = Math.ceil((d - new Date()) / (1000*60*60*24));
+                            expiryEl.className = 'trial-expiry' + (days <= 3 ? ' expiring' : '');
+                            expiryEl.textContent = 'Expire le ' + d.toLocaleDateString('fr-FR') + ' (' + days + 'j)';
+                        } else {
+                            expiryEl.className = 'trial-expiry';
+                            expiryEl.textContent = '∞ Sans limite';
+                        }
+                    } catch(e) {
+                        this.value = prevVal;
+                        alert('Erreur lors de la mise à jour de la durée.');
                     }
                 });
             });

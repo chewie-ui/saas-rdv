@@ -15,8 +15,28 @@ document.addEventListener("DOMContentLoaded", () => {
   const empModalPhotoInput  = document.getElementById("empModalPhotoInput");
   const empModalPhotoPreview = document.getElementById("empModalPhotoPreview");
   const employeesList  = document.getElementById("employeesList");
+  const empCounter     = document.getElementById("empCounter");
+
+  const MAX_EMPLOYEES = window.__maxEmployees || 0;
+  let currentCount    = window.__empCount || 0;
 
   let pendingPhotoFile = null;
+
+  function updateCounter() {
+    if (!empCounter) return;
+    empCounter.textContent = `${currentCount} / ${MAX_EMPLOYEES}`;
+    empCounter.classList.toggle("employees-counter--full", currentCount >= MAX_EMPLOYEES);
+  }
+
+  function updateAddBtn() {
+    if (!addEmpBtn) return;
+    const atLimit = MAX_EMPLOYEES > 0 && currentCount >= MAX_EMPLOYEES;
+    addEmpBtn.classList.toggle("emp-card--disabled", atLimit);
+    addEmpBtn.title = atLimit ? `Limite de ${MAX_EMPLOYEES} employé(s) atteinte` : "";
+  }
+
+  updateCounter();
+  updateAddBtn();
 
   function openModal()  { empModalOverlay.classList.add("show"); empModal.classList.add("show"); }
   function closeModal() { empModalOverlay.classList.remove("show"); empModal.classList.remove("show"); }
@@ -46,7 +66,12 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Open create modal
-  addEmpBtn.addEventListener("click", () => { resetModal(); openModal(); empModalFirstName.focus(); });
+  addEmpBtn.addEventListener("click", () => {
+    if (MAX_EMPLOYEES > 0 && currentCount >= MAX_EMPLOYEES) return;
+    resetModal();
+    openModal();
+    empModalFirstName.focus();
+  });
 
   [closeEmpModal, cancelEmpModal].forEach((el) => el.addEventListener("click", closeModal));
   empModalOverlay.addEventListener("click", (e) => { if (e.target === empModalOverlay) closeModal(); });
@@ -73,8 +98,14 @@ document.addEventListener("DOMContentLoaded", () => {
       saveEmpBtn.disabled = true;
       const res  = await fetch(url, { method, body: formData });
       const data = await res.json();
-      if (data.success) { location.reload(); }
-      else { alert(data.error || "Erreur."); saveEmpBtn.disabled = false; }
+      if (data.success) {
+        if (!id) { currentCount++; }
+        location.reload();
+      } else {
+        const msg = data.error === "plan_limit" ? data.message : (data.error || "Erreur.");
+        alert(msg);
+        saveEmpBtn.disabled = false;
+      }
     } catch (_) { alert("Erreur réseau."); saveEmpBtn.disabled = false; }
   });
 
@@ -104,7 +135,12 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         const res  = await fetch(`/api/employees/${delBtn.dataset.id}`, { method: "DELETE" });
         const data = await res.json();
-        if (data.success) delBtn.closest(".emp-card").remove();
+        if (data.success) {
+          delBtn.closest(".emp-card").remove();
+          currentCount = Math.max(0, currentCount - 1);
+          updateCounter();
+          updateAddBtn();
+        }
       } catch (_) { alert("Erreur réseau."); }
     }
   });

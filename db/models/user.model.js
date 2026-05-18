@@ -67,7 +67,7 @@ const userSchema = schema(
     subscription: {
       plan: {
         type: String,
-        enum: ["basic", "pro"],
+        enum: ["basic", "pro", "business"],
         default: "basic",
       },
 
@@ -82,6 +82,11 @@ const userSchema = schema(
       },
     },
 
+    // Add-ons (purchased separately)
+    addons: {
+      customUrl: { type: Boolean, default: false },
+    },
+
     isPremium: {
       type: Boolean,
       default: false,
@@ -90,6 +95,11 @@ const userSchema = schema(
     manualPremium: {
       type: Boolean,
       default: false,
+    },
+
+    manualPremiumExpiry: {
+      type: Date,
+      default: null,
     },
 
     location: {

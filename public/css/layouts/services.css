@@ -1,3 +1,42 @@
+/* ── Plan lock hint (inside empty state) ─────────────────────────────────── */
+.plan-lock-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 7px 14px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: 99px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.plan-lock-hint svg {
+  fill: var(--accent);
+  flex-shrink: 0;
+}
+
+/* upgrade button inside plan-lock-hint — .btn-upgrade-pro handles its own styles */
+
+/* ── Counter badge ────────────────────────────────────────────────────────── */
+.services-counter {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface-hover, #f4f4f5);
+  border: 1px solid var(--border-light);
+  border-radius: 99px;
+  padding: 4px 12px;
+}
+
+.services-counter--full {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.07);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
 .services-page {
   padding: 0 0 60px;
   display: flex;
@@ -410,6 +449,13 @@
 
 .service-modal__body .field-row .field {
   flex: 1;
+  min-width: 0;
+}
+
+.service-modal__body .field input,
+.service-modal__body .field textarea {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .service-modal__footer {
@@ -488,4 +534,52 @@
   font-size: 12px;
   color: var(--text-muted);
   line-height: 1.5;
+}
+
+/* ── Add-service invite card ─────────────────────────────────────── */
+.svc-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: var(--shadow-card);
+  transition: opacity 0.2s, border-color 0.15s;
+}
+
+.svc-card--invite {
+  border: 1.5px dashed var(--border-medium);
+  background: transparent;
+  box-shadow: none;
+  min-height: 80px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-align: center;
+  gap: 8px;
+  text-decoration: none;
+  padding: 24px;
+  width: 100%;
+}
+
+.svc-card--invite:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.svc-card--invite:hover .emp-invite__icon {
+  background: var(--accent);
+  color: #fff;
+}
+
+.svc-card--invite:hover .emp-invite__title,
+.svc-card--invite:hover .emp-invite__desc {
+  color: var(--accent);
+}
+
+.svc-card--locked-invite {
+  opacity: 0.55;
+  cursor: default;
 }

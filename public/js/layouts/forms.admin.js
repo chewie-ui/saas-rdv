@@ -1,6 +1,7 @@
 // Forms Admin — Pre-booking form builder
 
 const T = window.__tForms || {};
+const MAX_QUESTIONS = window.__maxQuestions ?? 0; // 0 = plan doesn't allow forms
 let formData = window.__formData || { active: false, questions: [] };
 
 // Ensure questions array exists
@@ -33,6 +34,41 @@ const requiredCheck    = document.getElementById("questionRequired");
 // ─── State ────────────────────────────────────────────────────────────────────
 let editingIndex = -1; // -1 = new question
 let drag = null;       // active drag session
+let isDirty = false;   // unsaved changes
+
+const unsavedBar    = document.getElementById("formsUnsavedBar");
+const unsavedSaveBtn = document.getElementById("unsavedSaveBtn");
+
+function markDirty() {
+  isDirty = true;
+  unsavedBar.classList.add("is-visible");
+}
+function markClean() {
+  isDirty = false;
+  unsavedBar.classList.remove("is-visible");
+}
+
+// Warn before leaving page with unsaved changes
+window.addEventListener("beforeunload", (e) => {
+  if (!isDirty) return;
+  e.preventDefault();
+  e.returnValue = "";
+});
+
+// Intercept all sidebar/nav links
+document.addEventListener("click", (e) => {
+  if (!isDirty) return;
+  const link = e.target.closest("a[href]");
+  if (!link) return;
+  const href = link.getAttribute("href");
+  // Ignore anchors, external links, and javascript:
+  if (!href || href.startsWith("#") || href.startsWith("javascript") || link.target === "_blank") return;
+  e.preventDefault();
+  if (confirm("Vous avez des modifications non sauvegardées. Quitter sans sauvegarder ?")) {
+    isDirty = false;
+    window.location.href = href;
+  }
+});
 
 // ─── Active toggle ────────────────────────────────────────────────────────────
 function syncActiveUI(active) {
@@ -48,6 +84,7 @@ function syncActiveUI(active) {
 activeToggle.addEventListener("change", () => {
   formData.active = activeToggle.checked;
   syncActiveUI(formData.active);
+  markDirty();
 });
 
 syncActiveUI(formData.active);
@@ -112,6 +149,7 @@ function renderQuestions() {
       formData.questions.splice(i, 1);
       renderQuestions();
       renderPreview();
+      markDirty();
     });
 
     questionsList.appendChild(card);
@@ -228,6 +266,7 @@ function onDragEnd() {
     formData.questions.splice(insertIndex, 0, moved);
     renderQuestions();
     renderPreview();
+    markDirty();
   }
 }
 
@@ -381,6 +420,7 @@ function confirmModal() {
 
   renderQuestions();
   closeModal();
+  markDirty();
 }
 
 // ─── Modal events ─────────────────────────────────────────────────────────────
@@ -398,6 +438,8 @@ labelInput.addEventListener("keydown", (e) => {
 });
 
 // ─── Save ─────────────────────────────────────────────────────────────────────
+unsavedSaveBtn.addEventListener("click", () => saveBtn.click());
+
 saveBtn.addEventListener("click", async () => {
   saveBtn.disabled = true;
   try {
@@ -417,6 +459,7 @@ saveBtn.addEventListener("click", async () => {
     if (data.success) {
       showToast(T.saved || "Formulaire enregistré !", "success");
       if (data.form) formData = { ...formData, ...data.form };
+      markClean();
     } else {
       showToast(T.save_error || "Erreur lors de la sauvegarde", "error");
     }
@@ -457,5 +500,53 @@ function escHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
+// ─── Plan gate ────────────────────────────────────────────────────────────────
+function applyPlanGate() {
+  if (MAX_QUESTIONS === 0) {
+    // Lock everything: hide builder, show upgrade banner
+    document.querySelector(".forms-builder-card").innerHTML = `
+      <div class="forms-plan-gate">
+        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor">
+          <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/>
+        </svg>
+        <p style="font-weight:600;font-size:15px;margin:12px 0 4px;">Fonctionnalité Pro</p>
+        <p style="font-size:13px;color:var(--text-secondary);margin:0 0 18px;">Les formulaires de pré-réservation sont disponibles à partir du plan <strong>Pro</strong>.</p>
+        <a href="/subscription" class="btn">Passer au Pro</a>
+      </div>`;
+    saveBtn.style.display = "none";
+    unsavedBar.style.display = "none";
+    return;
+  }
+
+  // Show remaining questions count
+  const counter = document.createElement("span");
+  counter.id = "questionsCounter";
+  counter.style.cssText = "font-size:12px;color:var(--text-muted);margin-left:auto;";
+  counter.textContent = `${formData.questions.length} / ${MAX_QUESTIONS} questions`;
+  document.querySelector(".forms-builder-card__head").appendChild(counter);
+
+  // Disable "add question" when limit reached
+  function updateAddBtn() {
+    const count = formData.questions.length;
+    const counter = document.getElementById("questionsCounter");
+    if (counter) counter.textContent = `${count} / ${MAX_QUESTIONS} questions`;
+    addQuestionBtn.disabled = count >= MAX_QUESTIONS;
+    addQuestionBtn.title = count >= MAX_QUESTIONS
+      ? `Limite de ${MAX_QUESTIONS} questions atteinte (plan actuel)`
+      : "";
+  }
+
+  // Patch renderQuestions to call updateAddBtn
+  const origRender = renderQuestions;
+  window._origRenderQuestions = origRender;
+  renderQuestions = function() {
+    origRender();
+    updateAddBtn();
+  };
+
+  updateAddBtn();
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 renderQuestions();
+applyPlanGate();

@@ -14,7 +14,7 @@ block content
                     h3 #{t.book_detail.title_prefix}#{client._id}
                 .appointment-header__top-actions.flex
                     if !isPremium
-                        a(href="/subscription" style="display:flex; align-items:center;").get__premium= t.book_detail.get_premium
+                        a.btn-upgrade-pro(href="/subscription") Passer au Pro
 
                     if isPast
                         span.badge-past= t.book_detail.past

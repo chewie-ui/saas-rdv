@@ -166,12 +166,8 @@ block content
             .container
                 p.pro-trust__label= pl.trust.label
                 .pro-trust__logos
-                    span STUDIO LÉA
-                    span MAISON ATLAS
-                    span MARC COACHING
-                    span INKHOUSE
-                    span REIKI BXL
-                    span BARBER & CO
+                    span SKYDEV
+                    span NOSOUCY
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //- STATS
@@ -246,27 +242,28 @@ block content
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //- TESTIMONIALS
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        section.pro-tests
-            .container
-                .pro-sec-hd
-                    .pro-pill= pl.tests.pill
-                    h2.pro-h2
-                        = pl.tests.title
-                        |
-                        em= pl.tests.title_em
-                .pro-tests__grid
-                    each item, idx in pl.tests.items
-                        .pro-test
-                            .pro-test__stars
-                                - for(var i=0;i<5;i++)
-                                    svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="13" height="13")
-                                        path(d="m233-80 65-281L80-550l288-25 112-265 112 265 288 25-218 189 65 281-247-149L233-80Z")
-                            p.pro-test__quote "#{item.q}"
-                            .pro-test__author
-                                .pro-test__av(class="pro-test__av--" + (idx + 1))= item.n.split(' ').map(function(w){return w[0]}).join('')
-                                div
-                                    .pro-test__name= item.n
-                                    .pro-test__role= item.r
+        if pl.tests.items && pl.tests.items.length > 0
+            section.pro-tests
+                .container
+                    .pro-sec-hd
+                        .pro-pill= pl.tests.pill
+                        h2.pro-h2
+                            = pl.tests.title
+                            |
+                            em= pl.tests.title_em
+                    .pro-tests__grid
+                        each item, idx in pl.tests.items
+                            .pro-test
+                                .pro-test__stars
+                                    - for(var i=0;i<5;i++)
+                                        svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="13" height="13")
+                                            path(d="m233-80 65-281L80-550l288-25 112-265 112 265 288 25-218 189 65 281-247-149L233-80Z")
+                                p.pro-test__quote "#{item.q}"
+                                .pro-test__author
+                                    .pro-test__av(class="pro-test__av--" + (idx + 1))= item.n.split(' ').map(function(w){return w[0]}).join('')
+                                    div
+                                        .pro-test__name= item.n
+                                        .pro-test__role= item.r
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //- PRICING CTA

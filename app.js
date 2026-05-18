@@ -60,14 +60,31 @@ app.post("/account/webhook", express.raw({ type: "application/json" }), async (r
     expirationDate.setMonth(expirationDate.getMonth() + 1);
 
     try {
+      // Determine plan from the Stripe price ID used
+      const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 5 });
+      const priceId = lineItems.data[0]?.price?.id || "";
+      const env = require("./environment");
+      const isBusinessPrice = [
+        env.stripePriceBusinessMonthly,
+        env.stripePriceBusinessYearly,
+        env.stripePricePlanBusiness,
+      ].filter(Boolean).includes(priceId);
+      const planName = isBusinessPrice ? "business" : "pro";
+
+      // Désactiver les anciens docs Subscription actifs
+      await Subscription.updateMany(
+        { user: session.client_reference_id, status: "active" },
+        { status: "superseded" }
+      );
+
       await Subscription.findOneAndUpdate(
-        { user: session.client_reference_id },
+        { user: session.client_reference_id, stripeSubscriptionId: session.subscription },
         {
           user: session.client_reference_id,
-          plan: "premium", // "premium" et pas "pro" pour matcher ton enum !
+          plan: planName,
           status: "active",
           startDate: new Date(),
-          endDate: expirationDate, // Requis par ton modèle
+          endDate: expirationDate,
           stripeCustomerId: session.customer,
           stripeSubscriptionId: session.subscription,
           amount: session.amount_total / 100,
@@ -75,10 +92,15 @@ app.post("/account/webhook", express.raw({ type: "application/json" }), async (r
         },
         { upsert: true, new: true },
       );
-      // On met à jour l'utilisateur pour qu'il soit Premium directement
+      // Update user: isPremium + subscription.plan
       await User.findByIdAndUpdate(session.client_reference_id, {
         isPremium: true,
+        "subscription.plan":   planName,
+        "subscription.status": "active",
+        "subscription.stripeCustomerId":    session.customer,
+        "subscription.stripeSubscriptionId": session.subscription,
       });
+      console.log(`✅ Plan activé : ${planName} pour user ${session.client_reference_id}`);
     } catch (dbErr) {
       console.log("❌ Erreur lors du Subscription.create :", dbErr.message);
     }

@@ -769,8 +769,14 @@ function validateDetails() {
       if (type === "yes_no") answered = !!q.querySelector(".bk-yesno-btn.selected");
       if (type === "choice") answered = !!q.querySelector(".bk-choice-btn.selected");
       if (!answered) {
-        q.style.outline = "2px solid #ef4444";
-        q.style.borderRadius = "8px";
+        // Outline only the input element, not the whole question block
+        const input = q.querySelector(".bk-choice-input, .bk-yesno, .bk-choices");
+        if (input) {
+          input.style.outline = "2px solid #ef4444";
+          input.style.borderRadius = "8px";
+          input.addEventListener("input", () => { input.style.outline = ""; }, { once: true });
+          input.addEventListener("click", () => { input.style.outline = ""; }, { once: true });
+        }
         ok = false;
       }
     });

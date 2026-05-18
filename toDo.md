@@ -62,5 +62,8 @@ POUR AJD 15-05-26
 
 possibilite de persoinnalise
 facile a iunterger
+faire paiement local fonctionnel avec ws
+
+Logo branshee tous les memes !
 mettre autre photo par defaut
 faire les trucs FREE / PREMIUM / BUSINESS (ou trucs en + genre nom de domaine)

@@ -23,6 +23,7 @@ const SERVICES = {
     // Automobile & Mécanique
     "Garagiste / Mécanicien auto", "Carrossier", "Contrôle technique",
     "Électricien automobile", "Pneumaticien", "Mécanicien moto",
+    "Detailing / Lavage de voiture",
     // Bâtiment & Habitat
     "Architecte", "Décorateur d'intérieur", "Électricien", "Plombier", "Charpentier",
     "Menuisier", "Peintre en bâtiment", "Maçon", "Serrurier", "Vitrier",
@@ -74,7 +75,7 @@ const SERVICES = {
     "Golf coach", "Physical trainer", "CrossFit coach",
     // Automotive & Mechanics
     "Garage / Car mechanic", "Body repair shop", "Vehicle inspection", "Auto electrician",
-    "Tire specialist", "Motorcycle mechanic",
+    "Tire specialist", "Motorcycle mechanic", "Car detailing / Car wash",
     // Construction & Home
     "Architect", "Interior designer", "Electrician", "Plumber", "Carpenter", "Joiner",
     "Painter", "Mason", "Locksmith", "Glazier", "Gardener / Landscaper", "Tiler",
@@ -125,7 +126,7 @@ const SERVICES = {
     "Golfcoach", "Fysieke trainer", "CrossFit-coach",
     // Auto & Mechanica
     "Garagist / Automonteur", "Carrosseriebedrijf", "APK-keuring", "Auto-elektricien",
-    "Bandenmonteur", "Motorfietsmonteur",
+    "Bandenmonteur", "Motorfietsmonteur", "Autodetailing / Autowassen",
     // Bouw & Woning
     "Architect", "Interieurdesigner", "Elektricien", "Loodgieter", "Timmerman",
     "Schrijnwerker", "Schilder", "Metselaar", "Slotenmaker", "Glazenier",
@@ -176,7 +177,7 @@ const SERVICES = {
     "Golftrainer", "Konditionstrainer", "CrossFit-Trainer",
     // Automobil & Mechanik
     "Automechaniker", "Karosseriebauer", "Hauptuntersuchung", "Kfz-Elektriker",
-    "Reifenservice", "Motorradmechaniker",
+    "Reifenservice", "Motorradmechaniker", "Fahrzeugdetailing / Autowäsche",
     // Bau & Wohnen
     "Architekt", "Innenarchitekt", "Elektriker", "Klempner", "Zimmermann",
     "Tischler", "Maler", "Maurer", "Schlosser", "Glaser",
@@ -229,7 +230,7 @@ const SERVICES = {
     "Preparador físico", "Entrenador de CrossFit",
     // Automoción & Mecánica
     "Mecánico / Taller", "Chapista", "Inspección técnica", "Electricista de vehículos",
-    "Especialista en neumáticos", "Mecánico de motos",
+    "Especialista en neumáticos", "Mecánico de motos", "Detailing / Lavado de coches",
     // Construcción & Hogar
     "Arquitecto", "Diseñador de interiores", "Electricista", "Fontanero", "Carpintero",
     "Ebanista", "Pintor", "Albañil", "Cerrajero", "Cristalero",
@@ -282,7 +283,7 @@ const SERVICES = {
     "Preparatore atletico", "Allenatore CrossFit",
     // Automotive & Meccanica
     "Meccanico / Autofficina", "Carrozziere", "Revisione veicolo", "Elettrauto",
-    "Gommista", "Meccanico moto",
+    "Gommista", "Meccanico moto", "Detailing / Lavaggio auto",
     // Edilizia & Casa
     "Architetto", "Designer d'interni", "Elettricista", "Idraulico", "Falegname",
     "Ebanista", "Imbianchino", "Muratore", "Fabbro", "Vetraio",

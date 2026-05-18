@@ -473,6 +473,53 @@ button.square svg, .btn.square svg { margin:0 }
 .btn-sm   { padding:7px 13px; font-size:13px; border-radius:var(--radius-sm) }
 .btn--full{ width:100%; justify-content:center }
 
+/* ── Upgrade CTA buttons (plan gates) ────────────────────────── */
+.btn-upgrade-pro,
+.btn-upgrade-business {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none !important;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 1.5px solid;
+  line-height: 1;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    transform 0.12s,
+    box-shadow 0.15s;
+}
+.btn-upgrade-pro {
+  background: #fff;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.btn-upgrade-pro:hover {
+  background: var(--accent);
+  color: #fff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(30, 122, 78, 0.25);
+}
+.btn-upgrade-pro svg { fill: currentColor; flex-shrink: 0; }
+.btn-upgrade-business {
+  background: #fff;
+  color: #7c3aed;
+  border-color: #7c3aed;
+}
+.btn-upgrade-business:hover {
+  background: #7c3aed;
+  color: #fff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(124, 58, 237, 0.25);
+}
+.btn-upgrade-business svg { fill: currentColor; flex-shrink: 0; }
+
 /* ── icon-btn (small square ghost) ── */
 .icon-btn {
   width:36px; height:36px; padding:0;

@@ -28,7 +28,7 @@ exports.usersPage = async (req, res) => {
     query = { $or: [{ fullName: regex }, { email: regex }] };
   }
   const users = await User.find(query)
-    .select("fullName email isPremium manualPremium createdAt")
+    .select("fullName email isPremium manualPremium manualPremiumExpiry subscription createdAt")
     .sort("-createdAt")
     .lean();
   res.render("superadmin/users", { users, search: search || "" });
@@ -42,10 +42,61 @@ exports.toggleManualPremium = async (req, res) => {
     await User.findByIdAndUpdate(userId, {
       manualPremium: val,
       isPremium: val,
+      manualPremiumExpiry: null,   // reset l'expiry au toggle
     });
     res.json({ success: true, manualPremium: val });
   } catch (err) {
     console.error("toggleManualPremium error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.setPlan = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { plan } = req.body; // "free" | "pro" | "business"
+
+    const validPlans = ["free", "pro", "business"];
+    if (!validPlans.includes(plan)) {
+      return res.status(400).json({ error: "Plan invalide." });
+    }
+
+    const isFree = plan === "free";
+    const update = {
+      manualPremium: !isFree,
+      isPremium: !isFree,
+      manualPremiumExpiry: null,        // reset l'expiry à chaque changement de plan
+      "subscription.plan": isFree ? "basic" : plan,
+      "subscription.status": isFree ? "inactive" : "active",
+    };
+
+    await User.findByIdAndUpdate(userId, update);
+    res.json({ success: true, plan });
+  } catch (err) {
+    console.error("setPlan error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.setTrialDuration = async (req, res) => {
+  try {
+    const { userId }   = req.params;
+    const { duration } = req.body; // "1d" | "7d" | "30d" | "90d" | "infinite"
+
+    const daysMap = { "1d": 1, "7d": 7, "30d": 30, "90d": 90 };
+    let expiry = null;
+
+    if (duration !== "infinite") {
+      const days = daysMap[duration];
+      if (!days) return res.status(400).json({ error: "Durée invalide." });
+      expiry = new Date();
+      expiry.setDate(expiry.getDate() + days);
+    }
+
+    await User.findByIdAndUpdate(userId, { manualPremiumExpiry: expiry });
+    res.json({ success: true, expiry });
+  } catch (err) {
+    console.error("setTrialDuration error:", err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 };

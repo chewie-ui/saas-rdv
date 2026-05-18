@@ -96,18 +96,58 @@ exports.createCheckout = async (req, res) => {
       return res.status(400).json({ error: "Prix non configuré pour ce plan. Contactez le support." });
     }
 
+    const planName = plan === "business" ? "business" : "pro";
+
+    // ── Upgrade via Stripe subscription update (proration automatique) ────────
+    const existingSub = await Subscription.findOne({
+      user: req.user._id,
+      status: "active",
+      stripeSubscriptionId: { $exists: true, $ne: null },
+    }).lean();
+
+    if (existingSub?.stripeSubscriptionId) {
+      try {
+        const stripeSub = await stripe.subscriptions.retrieve(existingSub.stripeSubscriptionId);
+        const itemId = stripeSub.items.data[0]?.id;
+
+        if (itemId) {
+          // Mettre à jour le prix → Stripe prorate automatiquement
+          await stripe.subscriptions.update(existingSub.stripeSubscriptionId, {
+            items: [{ id: itemId, price: priceId }],
+            proration_behavior: "create_prorations",
+          });
+
+          // Mettre à jour notre DB
+          await User.findByIdAndUpdate(req.user._id, {
+            isPremium: true,
+            "subscription.plan":   planName,
+            "subscription.status": "active",
+          });
+          await Subscription.findByIdAndUpdate(existingSub._id, { plan: planName });
+
+          // Mettre à jour la session
+          if (req.user) {
+            req.user.isPremium = true;
+            if (req.user.subscription) req.user.subscription.plan = planName;
+          }
+
+          console.log(`✅ Upgrade vers ${planName} pour user ${req.user._id}`);
+          return res.json({ upgraded: true, plan: planName });
+        }
+      } catch (upgradeErr) {
+        console.error("Subscription update failed, fallback to checkout:", upgradeErr.message);
+        // On continue vers le checkout classique si l'update Stripe échoue
+      }
+    }
+
+    // ── Nouveau checkout (premier abonnement) ─────────────────────────────────
     const sessionParams = {
       mode: "subscription",
       payment_method_types: ["card"],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: priceId, quantity: 1 }],
       client_reference_id: req.user._id.toString(),
-      success_url: `${process.env.BASE_URL || "https://branshee.com"}/subscription/success`,
-      cancel_url:  `${process.env.BASE_URL || "https://branshee.com"}/subscription`,
+      success_url: `${env.stripeSuccessUrl || "https://branshee.com"}`,
+      cancel_url:  `${env.stripeCancelUrl  || "https://branshee.com"}`,
     };
 
     // Appliquer le code promo si fourni
@@ -194,9 +234,7 @@ exports.cancelSubscription = async (req, res) => {
     });
   } catch (err) {
     console.error("Stripe Cancel Error:", err);
-    res
-      .status(500)
-      .json({ error: "An error occurred while canceling your subscription." });
+    res.status(500).json({ error: "An error occurred while canceling your subscription." });
   }
 };
 
@@ -208,9 +246,7 @@ exports.editEmailConfirmation = async (req, res) => {
     const user = await User.findById(req.user._id).select("email");
 
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Utilisateur non trouvé" });
+      return res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
     }
     console.log(user.email.trim());
     console.log(email.trim());
@@ -229,9 +265,7 @@ exports.editEmailConfirmation = async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    res
-      .status(500)
-      .json({ success: false, message: "Impossible d'envoyer le mail" });
+    res.status(500).json({ success: false, message: "Impossible d'envoyer le mail" });
   }
 };
 
@@ -267,8 +301,7 @@ exports.editEmail = async (req, res) => {
   try {
     const { email } = req.body;
 
-    if (!email)
-      return res.json({ success: false, message: "Email is required" });
+    if (!email) return res.json({ success: false, message: "Email is required" });
 
     const isEmail = await User.findOne({ email });
 
@@ -345,7 +378,7 @@ exports.editBusinessInfo = async (req, res) => {
     const { businessName, description, businessType } = req.body;
     await User.findByIdAndUpdate(req.user._id, {
       businessName: businessName || "",
-      description:  description  || "",
+      description: description || "",
       businessType: businessType || "",
     });
     return res.json({ success: true });
@@ -424,16 +457,25 @@ exports.deleteAccount = async (req, res) => {
 
 exports.updateCalendarSettings = async (req, res) => {
   try {
-    const {
-      pageBg, calBg, accentColor, accentText, dayBg, dayText, btnBg, btnText,
-      lang, font, showInfo, showSocials, layoutStyle, pageBgType, pageBgImage
-    } = req.body;
+    const { pageBg, calBg, accentColor, accentText, dayBg, dayText, btnBg, btnText, lang, font, showInfo, showSocials, layoutStyle, pageBgType, pageBgImage } = req.body;
     await User.findByIdAndUpdate(req.user._id, {
       calendarSettings: {
-        pageBg, calBg, accentColor, accentText, dayBg, dayText, btnBg, btnText,
-        lang, font, showInfo, showSocials, layoutStyle, pageBgType,
-        pageBgImage: pageBgImage || ''
-      }
+        pageBg,
+        calBg,
+        accentColor,
+        accentText,
+        dayBg,
+        dayText,
+        btnBg,
+        btnText,
+        lang,
+        font,
+        showInfo,
+        showSocials,
+        layoutStyle,
+        pageBgType,
+        pageBgImage: pageBgImage || "",
+      },
     });
     return res.json({ success: true });
   } catch (err) {
@@ -448,9 +490,9 @@ exports.editCalendarBgImage = async (req, res) => {
     const imagePath = `/uploads/profiles/${filename}`;
     await User.findByIdAndUpdate(req.user._id, {
       $set: {
-        'calendarSettings.pageBgImage': imagePath,
-        'calendarSettings.pageBgType':  'image',
-      }
+        "calendarSettings.pageBgImage": imagePath,
+        "calendarSettings.pageBgType": "image",
+      },
     });
     return res.json({ success: true, path: imagePath });
   } catch (err) {

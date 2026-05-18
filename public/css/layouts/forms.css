@@ -1,3 +1,41 @@
+/* ── Unsaved changes bar ────────────────────────────────────────────────── */
+.forms-unsaved-bar {
+  position: fixed;
+  bottom: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px 12px 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+  min-width: 340px;
+  transition: bottom 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.forms-unsaved-bar.is-visible {
+  bottom: 28px;
+}
+.forms-unsaved-bar__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.forms-unsaved-bar__left svg {
+  color: var(--warning, #f59e0b);
+  flex-shrink: 0;
+}
+.forms-unsaved-bar #unsavedSaveBtn {
+  flex-shrink: 0;
+}
+
 /* ── Forms page layout ─────────────────────────────────────────────────── */
 .forms-page {
   display: flex;
@@ -707,6 +745,40 @@
 }
 
 /* ── Avail time error toast (shared pattern) ─────────────────────────── */
+/* ── Plan gate (shown in place of the form grid when plan=basic) ─────────── */
+.forms-plan-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 80px 24px;
+  text-align: center;
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.forms-plan-gate svg {
+  fill: var(--border-medium);
+  margin-bottom: 4px;
+}
+
+.forms-plan-gate__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.forms-plan-gate__desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 320px;
+  margin: 0 0 4px;
+}
+
 .avail-time-error-toast {
   position: fixed;
   bottom: 24px;

@@ -4,8 +4,7 @@ aside.sidebar#sidebar
         //- ── Header: logo + close ──────────────────────────────────
         .sb-header
             a.sb-logo(href="/")
-                .sb-logo__mark
-                    span B
+                img.sb-logo__mark(src="/images/icon.svg" alt="BranShee")
                 span.sb-logo__name BranShee
             button.sb-close#closeSidebar(type="button" aria-label="Close menu")
                 svg(viewBox="0 -960 960 960" height="20" width="20" fill="currentColor")
@@ -101,10 +100,13 @@ aside.sidebar#sidebar
                     img(src=user.profilePicture alt=user.fullName)
                 .sb-user__info
                     span.sb-user__name= user.fullName
-                    if user.isPremium
-                        span.sb-user__badge
+                    if isPro
+                        span.sb-user__badge(class=currentPlan === 'business' ? 'sb-user__badge--business' : '')
                             svg(viewBox="0 -960 960 960" height="10" width="10" fill="currentColor")
                                 path(d="M200-160v-80h560v80H200Zm0-140-51-321q-2 0-4.5.5t-4.5.5q-25 0-42.5-17.5T80-680q0-25 17.5-42.5T140-740q25 0 42.5 17.5T200-680q0 7-1.5 13t-3.5 11l125 56 125-171q-11-8-18-21t-7-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820q0 15-7 28t-18 21l125 171 125-56q-2-5-3.5-11t-1.5-13q0-25 17.5-42.5T820-740q25 0 42.5 17.5T880-680q0 25-17.5 42.5T820-620q-2 0-4.5-.5t-4.5-.5l-51 321H200Zm68-80h424l26-167-105 46-133-183-133 183-105-46 26 167Zm212 0Z")
-                            | Premium
+                            if currentPlan === 'business'
+                                | Business
+                            else
+                                | Pro
                     else
                         span.sb-user__plan Free

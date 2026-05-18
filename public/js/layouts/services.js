@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   // ── Références DOM ─────────────────────────────────────────────────────────
   const addServiceBtn      = document.getElementById("addServiceBtn");
+  const addServiceCardBtn  = document.getElementById("addServiceCardBtn");
   const serviceModal       = document.getElementById("serviceModal");
   const serviceModalOverlay = document.getElementById("serviceModalOverlay");
   const closeServiceModal  = document.getElementById("closeServiceModal");
@@ -13,6 +14,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const serviceModalPrice  = document.getElementById("serviceModalPrice");
   const serviceModalDuration = document.getElementById("serviceModalDuration");
   const servicesList       = document.getElementById("servicesList");
+  const svcCounter         = document.getElementById("svcCounter");
+
+  const MAX_SERVICES = window.__maxServices || 0;
+  let currentCount   = window.__svcCount   || 0;
 
   const empModal           = document.getElementById("empModal");
   const empModalOverlay    = document.getElementById("empModalOverlay");
@@ -24,6 +29,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let currentEmpServiceId  = null;
   let allEmployees         = [];
+
+  function updateCounter() {
+    if (!svcCounter) return;
+    svcCounter.textContent = `${currentCount} / ${MAX_SERVICES}`;
+    svcCounter.classList.toggle("services-counter--full", currentCount >= MAX_SERVICES);
+  }
+
+  function updateAddBtn() {
+    if (!addServiceBtn) return;
+    const atLimit = MAX_SERVICES > 0 && currentCount >= MAX_SERVICES;
+    addServiceBtn.disabled = atLimit;
+    addServiceBtn.title = atLimit ? `Limite de ${MAX_SERVICES} services atteinte` : "";
+  }
+
+  updateCounter();
+  updateAddBtn();
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function openModal(modal, overlay) {
@@ -47,11 +68,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ── Ouvrir modal création ─────────────────────────────────────────────────
-  addServiceBtn.addEventListener("click", () => {
+  function openNewServiceModal() {
     resetServiceModal();
     openModal(serviceModal, serviceModalOverlay);
     serviceModalName.focus();
-  });
+  }
+
+  addServiceBtn.addEventListener("click", openNewServiceModal);
+  if (addServiceCardBtn && !addServiceCardBtn.classList.contains("svc-card--locked-invite")) {
+    addServiceCardBtn.addEventListener("click", openNewServiceModal);
+  }
 
   [closeServiceModal, cancelServiceModal, serviceModalOverlay].forEach((el) => {
     el.addEventListener("click", (e) => {
@@ -80,9 +106,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const res  = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
       if (data.success) {
+        if (!id) { currentCount++; }
         location.reload();
       } else {
-        alert(data.error || "Erreur lors de l'enregistrement.");
+        const msg = data.error === "plan_limit" ? data.message : (data.error || "Erreur lors de l'enregistrement.");
+        alert(msg);
       }
     } catch (e) {
       alert("Erreur réseau.");
@@ -118,7 +146,12 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         const res = await fetch(`/api/services/${id}`, { method: "DELETE" });
         const data = await res.json();
-        if (data.success) delBtn.closest(".service-card").remove();
+        if (data.success) {
+          delBtn.closest(".service-card").remove();
+          currentCount = Math.max(0, currentCount - 1);
+          updateCounter();
+          updateAddBtn();
+        }
       } catch (e) { alert("Erreur réseau."); }
     }
 

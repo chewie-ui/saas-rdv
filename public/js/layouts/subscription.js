@@ -115,6 +115,7 @@ async function startCheckout(plan) {
   });
   const data = await response.json();
   if (data.url) window.location = data.url;
+  else if (data.upgraded) window.location = "/subscription/success";
   else if (data.error) alert(data.error);
 }
 

@@ -1,18 +1,33 @@
 const Employee = require("../db/models/company/employee.model");
+const { getLimit } = require("../utils/planLimits");
 
 exports.employeesPage = async (req, res) => {
   const employees = await Employee.find({ company: res.locals.currentCompany._id })
     .sort({ createdAt: -1 })
     .lean();
+  const maxEmployees = getLimit("employees", req.user);
   res.render("admin/employees", {
     pageName: "Employees",
     title: "Employés",
     employees,
+    maxEmployees,
   });
 };
 
 exports.createEmployee = async (req, res) => {
   try {
+    const companyId = res.locals.currentCompany._id;
+    const maxEmployees = getLimit("employees", req.user);
+
+    if (maxEmployees === 0) {
+      return res.status(403).json({ error: "plan_limit", message: "Votre plan ne permet pas d'ajouter des employés." });
+    }
+
+    const count = await Employee.countDocuments({ company: companyId });
+    if (count >= maxEmployees) {
+      return res.status(403).json({ error: "plan_limit", message: `Limite de ${maxEmployees} employé(s) atteinte.` });
+    }
+
     const { firstName, lastName, age, description } = req.body;
     if (!firstName || !lastName) {
       return res.status(400).json({ error: "Prénom et nom sont requis." });
@@ -22,7 +37,7 @@ exports.createEmployee = async (req, res) => {
       : "/images/no-user.webp";
 
     const employee = await Employee.create({
-      company: res.locals.currentCompany._id,
+      company: companyId,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       age: age !== undefined && age !== "" ? Number(age) : null,

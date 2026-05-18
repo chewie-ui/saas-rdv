@@ -67,6 +67,7 @@ router.get("/appointment/week-data", getWeekData);
 router.patch("/appointement/:bookId/admin-notes", saveAdminNotes);
 router.patch("/appointement/:bookId/employee", updateBookingEmployee);
 router.get("/subscription/success", isVerified, paymentVerification);
+router.get("/payment/success", isVerified, paymentVerification);
 
 router.post("/subscription/resume", isAuth, resumeSubscription);
 
