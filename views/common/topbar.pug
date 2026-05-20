@@ -13,37 +13,37 @@
             //- Boutons nav (desktop inline, mobile dans le panel)
             nav.header__nav
                 if user
-                    a.btn.secondary.header__btn--ghost(href="/appointment")
+                    a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/appointment")
                         span= t.header.dashboard
-                    a.btn(href="/logout")
+                    a.sm-btn.sm-btn--primary(href="/logout")
                         span= t.header.logout
                 else
                     if becomeCoach
-                        a.btn.secondary.header__btn--ghost(href="/login")
+                        a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/login")
                             span= t.header.login
-                        a.btn(href="/register")
+                        a.sm-btn.sm-btn--primary(href="/register")
                             span= t.header.register
                     else if clientAuth
                         if clientUser
-                            a.btn.secondary.header__btn--ghost(href="/espace-client")
+                            a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/espace-client")
                                 span= t.header.my_space
-                            a.btn(href="/client/logout")
+                            a.sm-btn.sm-btn--primary(href="/client/logout")
                                 span= t.header.logout
                         else
-                            a.btn.secondary.header__btn--ghost(href="/client/login")
+                            a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/client/login")
                                 span= t.header.login
-                            a.btn(href="/client/register")
+                            a.sm-btn.sm-btn--primary(href="/client/register")
                                 span= t.header.register
                     else
                         if clientUser
-                            a.btn.secondary.header__btn--ghost(href="/espace-client")
+                            a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/espace-client")
                                 span= t.header.my_space
-                            a.btn(href="/manage-business")
+                            a.sm-btn.sm-btn--primary(href="/manage-business")
                                 span= t.common.become_coach
                         else
-                            a.btn.secondary.header__btn--ghost(href="/client/login")
+                            a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/client/login")
                                 span= t.header.client_account
-                            a.btn(href="/manage-business")
+                            a.sm-btn.sm-btn--primary(href="/manage-business")
                                 span= t.common.become_coach
 
             //- Séparateur desktop
@@ -56,35 +56,30 @@
                 <svg class='theme-toggle__sun hidden' xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M440-760v-160h80v160h-80Zm266 110-55-55 112-115 56 57-113 113Zm54 210v-80h160v80H760ZM440-40v-160h80v160h-80ZM254-652 140-763l57-56 113 113-56 54Zm508 512L651-255l54-54 114 110-57 59ZM40-440v-80h160v80H40Zm157 300-56-57 112-112 29 27 29 28-114 114Zm113-170q-70-70-70-170t70-170q70-70 170-70t170 70q70 70 70 170t-70 170q-70 70-170 70t-170-70Z"/></svg>
             //- Sélecteur de langue
             .header__lang#headerLang
-                button.selector.secondary(type="button" aria-label="Langue")
-                    span.header__lang-code
-                        img.header__lang-img(src=(lang === 'fr' ? '/images/fr.webp' : lang === 'nl' ? '/images/nl.jpg' : lang === 'es' ? '/images/es.jpg' : lang === 'it' ? '/images/it.png' : lang === 'de' ? '/images/de.png' : "/images/en.jpg"))
-                        | #{lang === 'fr' ? 'FR' : lang === 'nl' ? 'NL' : lang === 'es' ? 'ES' : lang === 'it' ? 'IT' : lang === 'de' ? 'DE' : 'EN'}
-                .header__lang-panel.selector-btn
-                    button.secondary(type="button" onclick="changeLanguage('fr')")
-                        span
-                            img(src='/images/fr.webp')
-                            | Français
-                    button.secondary(type="button" onclick="changeLanguage('en')")
-                        span 
-                            img(src='/images/en.jpg')
-                            | English
-                    button.secondary(type="button" onclick="changeLanguage('nl')")
-                        span
-                            img(src='/images/nl.jpg')
-                            | Nederlands
-                    button.secondary(type="button" onclick="changeLanguage('es')")
-                        span 
-                            img(src='/images/es.jpg')
-                            | Español
-                    button.secondary(type="button" onclick="changeLanguage('it')")
-                        span 
-                            img(src='/images/it.png')
-                            | Italiano
-                    button.secondary(type="button" onclick="changeLanguage('de')")
-                        span
-                            img(src='/images/de.png')
-                            | Deutsch
+                button.lang-trigger(type="button" aria-label="Langue")
+                    img.lang-trigger__flag(src=(lang === 'fr' ? '/images/fr.webp' : lang === 'nl' ? '/images/nl.jpg' : lang === 'es' ? '/images/es.jpg' : lang === 'it' ? '/images/it.png' : lang === 'de' ? '/images/de.png' : "/images/en.jpg") alt="flag")
+                    span.lang-trigger__code= lang === 'fr' ? 'FR' : lang === 'nl' ? 'NL' : lang === 'es' ? 'ES' : lang === 'it' ? 'IT' : lang === 'de' ? 'DE' : 'EN'
+                    svg.lang-trigger__chevron(viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                        polyline(points="6 9 12 15 18 9")
+                .header__lang-panel
+                    button.lang-option(type="button" onclick="changeLanguage('fr')" class=lang === 'fr' ? 'active' : '')
+                        img(src='/images/fr.webp' alt="FR")
+                        span Français
+                    button.lang-option(type="button" onclick="changeLanguage('en')" class=lang === 'en' ? 'active' : '')
+                        img(src='/images/en.jpg' alt="EN")
+                        span English
+                    button.lang-option(type="button" onclick="changeLanguage('nl')" class=lang === 'nl' ? 'active' : '')
+                        img(src='/images/nl.jpg' alt="NL")
+                        span Nederlands
+                    button.lang-option(type="button" onclick="changeLanguage('es')" class=lang === 'es' ? 'active' : '')
+                        img(src='/images/es.jpg' alt="ES")
+                        span Español
+                    button.lang-option(type="button" onclick="changeLanguage('it')" class=lang === 'it' ? 'active' : '')
+                        img(src='/images/it.png' alt="IT")
+                        span Italiano
+                    button.lang-option(type="button" onclick="changeLanguage('de')" class=lang === 'de' ? 'active' : '')
+                        img(src='/images/de.png' alt="DE")
+                        span Deutsch
 
             //- Burger (mobile seulement)
             label.header__burger(for="headerNav" aria-label="Menu")
@@ -99,37 +94,37 @@
     .header__panel
         nav.header__panel-nav
             if user
-                a.btn(href="/appointment")
+                a.sm-btn.sm-btn--primary(href="/appointment")
                     span= t.header.dashboard
-                a.btn.header__btn--ghost.sec(href="/logout")
+                a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/logout")
                     span= t.header.logout
             else
                 if becomeCoach
-                    a.btn(href="/login")
+                    a.sm-btn.sm-btn--primary(href="/login")
                         span= t.header.login
-                    a.btn.header__btn--ghost.sec(href="/register")
+                    a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/register")
                         span= t.header.register
                 else if clientAuth
                     if clientUser
-                        a.btn(href="/espace-client")
+                        a.sm-btn.sm-btn--primary(href="/espace-client")
                             span= t.header.my_space
-                        a.btn.header__btn--ghost.sec(href="/client/logout")
+                        a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/client/logout")
                             span= t.header.logout
                     else
-                        a.btn(href="/client/login")
+                        a.sm-btn.sm-btn--primary(href="/client/login")
                             span= t.header.login
-                        a.btn.header__btn--ghost.sec(href="/client/register")
+                        a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/client/register")
                             span= t.header.register
                 else
                     if clientUser
-                        a.btn(href="/espace-client")
+                        a.sm-btn.sm-btn--primary(href="/espace-client")
                             span= t.header.my_space
-                        a.btn.secondary(href="/manage-business")
+                        a.sm-btn.sm-btn--ghost(href="/manage-business")
                             span= t.common.become_coach
                     else
-                        a.btn(href="/client/login")
+                        a.sm-btn.sm-btn--primary(href="/client/login")
                             span= t.header.client_account
-                        a.btn.secondary(href="/manage-business")
+                        a.sm-btn.sm-btn--ghost(href="/manage-business")
                             span= t.common.become_coach
 
         .header__panel-bottom

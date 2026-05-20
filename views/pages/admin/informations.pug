@@ -23,7 +23,7 @@ block content
                     .profile-avatar
                         img(alt="Photo de profil" src=user.profilePicture || "/images/no-user.webp" id="avatarPreview")
                     input#fileInput(type="file" style="display:none" accept="image/*")
-                    button.btn.secondary.btn--sm#uploadBtn
+                    button.sm-btn.sm-btn--ghost#uploadBtn
                         span= t.profile.upload_photo
                 .profile-fields
                     .field
@@ -42,9 +42,9 @@ block content
                         a.more#passwordOpen(href="/forgot-password")= t.profile.change_pwd
                         .success= success
             .info-card__actions
-                button.btn.danger#deleteAccountBtn(type="button")
+                button.sm-btn.sm-btn--danger#deleteAccountBtn(type="button")
                     span= t.profile.delete_account
-                button.btn#saveChanges
+                button.sm-btn.sm-btn--primary#saveChanges
                     span= t.profile.save
 
         //- ── URL personnalisée ────────────────────────────────────────────────
@@ -84,12 +84,12 @@ block content
                 if currentCompany && (currentCompany.slug || currentCompany._id)
                     .slug-share-row
                         .slug-share-url#slugShareUrl= 'branshee.com/' + (currentCompany.slug || String(currentCompany._id))
-                        button.btn.secondary.btn--sm#copySlugBtn(type="button")
+                        button.sm-btn.sm-btn--ghost#copySlugBtn(type="button")
                             svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                                 path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z")
                             span Copier le lien
                 .info-card__actions
-                    button.btn#saveSlugBtn
+                    button.sm-btn.sm-btn--primary#saveSlugBtn
                         span= t.info.custom_url_save || 'Enregistrer l\'URL'
 
         //- ── Informations entreprise ──────────────────────────────────────────
@@ -106,7 +106,7 @@ block content
                                 svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
                                     path(d="M160-120q-33 0-56.5-23.5T80-200v-480q0-33 23.5-56.5T160-760h126l74-80h240l74 80h126q33 0 56.5 23.5T880-680v480q0 33-23.5 56.5T800-120H160Zm0-80h640v-480H160v480Zm320-80q-58 0-99-41t-41-99q0-58 41-99t99-41q58 0 99 41t41 99q0 58-41 99t-99 41Zm0-80q25 0 42.5-17.5T540-420q0-25-17.5-42.5T480-480q-25 0-42.5 17.5T420-420q0 25 17.5 42.5T480-360Z")
                     input#businessFileInput(type="file" style="display:none" accept="image/*")
-                    button.btn.secondary.btn--sm#uploadBusinessBtn
+                    button.sm-btn.sm-btn--ghost#uploadBusinessBtn
                         span= t.info.business_photo
                 .biz-fields
                     .field
@@ -131,7 +131,7 @@ block content
                             )
                             .service-dropdown#businessTypeDropdown
             .info-card__actions
-                button.btn#saveBusinessInfo
+                button.sm-btn.sm-btn--primary#saveBusinessInfo
                     span= t.info.business_save
 
         //- ── Localisation ─────────────────────────────────────────────────────
@@ -184,7 +184,7 @@ block content
                             label= t.info.city_optional
                             input.input(id='cityInputOnline' value=(user.location && user.location.city) || "")
                     .info-card__actions(style="margin-top:4px")
-                        button.btn#confirmLocation
+                        button.sm-btn.sm-btn--primary#confirmLocation
                             span= t.info.confirm_location
 
         //- ── Réseaux sociaux ──────────────────────────────────────────────────
@@ -222,7 +222,7 @@ block content
                         .social-box__title= s.label
                         .social-box__field
                             input.input(placeholder=t.info.link_placeholder value=s.val disabled=(!canUseSocial))
-                            button.btn.secondary.btn--sm.btn__social-save
+                            button.sm-btn.sm-btn--ghost.btn__social-save
                                 span= t.avail.save
 
     //- ── Delete account modal ─────────────────────────────────────────────────
@@ -238,12 +238,12 @@ block content
                 .delete-account-step#deleteStep1
                     p.delete-account-modal__desc!= t.info.delete_desc1
                     p.delete-account-modal__desc= t.info.delete_desc2
-                    button.btn.danger#sendDeleteCode(type="button")= t.info.send_code
+                    button.sm-btn.sm-btn--danger#sendDeleteCode(type="button")= t.info.send_code
                     .delete-account-modal__status#deleteCodeStatus
                 .delete-account-step#deleteStep2(style="display:none")
                     p.delete-account-modal__desc= t.info.enter_code
                     input.input#deleteCodeInput(type="text" placeholder=t.info.code_placeholder maxlength="6")
-                    button.btn.danger#confirmDeleteAccount(type="button")= t.info.confirm_delete
+                    button.sm-btn.sm-btn--danger#confirmDeleteAccount(type="button")= t.info.confirm_delete
                     .delete-account-modal__status#deleteConfirmStatus
 
     +dialog()

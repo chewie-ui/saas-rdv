@@ -18,7 +18,7 @@ block content
                     label.forms-active-toggle
                         input#formActiveToggle(type="checkbox" checked=(form && form.active))
                         .forms-active-toggle__track
-                    button.btn#saveFormBtn(type="button")
+                    button.sm-btn.sm-btn--primary#saveFormBtn(type="button")
                         svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                             path(d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z")
                         span= t.forms.save
@@ -70,7 +70,7 @@ block content
                                 p.preview-step-sub#previewSubtitle= t.forms.form_step_subtitle
                                 .preview-phone__questions#previewQuestions
                                     //- Rendered by JS
-                                button.btn.preview-confirm-btn(disabled)= t.forms.form_next
+                                button.sm-btn.sm-btn--primary.preview-confirm-btn(disabled)= t.forms.form_next
 
     //- ── Modal: add / edit question ─────────────────────────────────
     .modal-overlay#modalOverlay
@@ -96,7 +96,7 @@ block content
             .field#optionsSection(style="display:none")
                 label.forms-modal__label= t.forms.options_label
                 #optionsList.forms-options-list
-                button.btn.ghost.btn--sm#addOptionBtn(type="button")
+                button.sm-btn.sm-btn--ghost#addOptionBtn(type="button")
                     svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                         path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
                     span= t.forms.add_option
@@ -106,8 +106,8 @@ block content
                 span= t.forms.required
 
         .forms-modal__footer
-            button.btn.ghost#cancelModalBtn(type="button")= t.forms.cancel
-            button.btn#confirmModalBtn(type="button")= t.forms.confirm
+            button.sm-btn.sm-btn--ghost#cancelModalBtn(type="button")= t.forms.cancel
+            button.sm-btn.sm-btn--primary#confirmModalBtn(type="button")= t.forms.confirm
 
     //- ── Sticky unsaved bar ─────────────────────────────────────────────
     .forms-unsaved-bar#formsUnsavedBar
@@ -115,7 +115,7 @@ block content
             svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                 path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
             span Modifications non sauvegardées
-        button.btn#unsavedSaveBtn(type="button")
+        button.sm-btn.sm-btn--primary#unsavedSaveBtn(type="button")
             svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                 path(d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z")
             span Sauvegarder

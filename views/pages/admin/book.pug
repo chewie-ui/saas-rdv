@@ -27,7 +27,7 @@ block content
                     if client.status === "confirmed"
                         //- button(data-link=`/appointment/${user._id}/send-reminder`).btn.appointment-action Send reminder
                     else
-                        button.sec(data-link=`/appointment/${client._id}/restore` data-method="PATCH" disabled=(grade === 'staff' || isPast)).btn.appointment-action#restoreAppointment= t.book_detail.restore
+                        button.sm-btn.sm-btn--ghost.appointment-action(data-link=`/appointment/${client._id}/restore` data-method="PATCH" disabled=(grade === 'staff' || isPast))#restoreAppointment= t.book_detail.restore
 
             .appointment-header__bottom.flex.col
                 .appointment-header__bottom-col.flex.col
@@ -61,7 +61,7 @@ block content
                                 each emp in employees
                                     - var empId = String(emp._id)
                                     option(value=empId selected=(currentEmpId === empId))= emp.firstName + ' ' + emp.lastName
-                            button#bookEmpSave.btn(type="button")
+                            button#bookEmpSave.sm-btn.sm-btn--primary(type="button")
                                 span= t.book_detail.save || 'Sauvegarder'
                             span#bookEmpSaved.admin-notes__saved(style="display:none")= t.book_detail.saved || '✓ Sauvegardé'
                 else if client.employee

@@ -127,95 +127,118 @@
   display: none;
 }
 
-.header__lang-flag {
-  font-size: 16px;
-  line-height: 1;
-}
-
-.header__lang-code {
-  font-weight: 700;
-  display: flex;
-  flex-direction: row;
+/* Bouton trigger — style "select" */
+.lang-trigger {
+  display: inline-flex;
+  align-items: center;
   gap: 7px;
-  align-items: center;
-  letter-spacing: 0.05em;
+  height: 36px;
+  padding: 0 10px 0 8px;
+  background: var(--color-surface-2, #f4f2f3);
+  border: 1px solid var(--border-light, #e9e5e6);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
 }
 
-.header__lang-img {
-  border-radius: 50%;
+.lang-trigger:hover {
+  background: var(--color-surface-3, #ece8e9);
+  border-color: var(--main-color-border, #b2d8c2);
 }
 
-.header__lang-chevron {
-  width: 14px;
-  height: 14px;
-  transition: transform 0.2s ease;
+.header__lang.open .lang-trigger {
+  border-color: var(--main-color-border, #b2d8c2);
+  background: var(--color-surface-3, #ece8e9);
 }
 
-.header__lang.open .header__lang-chevron {
-  transform: rotate(180deg);
-}
-
-/* Dropdown langue */
-.header__lang-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  background: var(--color-card);
-  border: 1px solid var(--border-light);
-  border-radius: 14px;
-  box-shadow: var(--shadow-p);
-  padding: 6px;
-  min-width: 170px;
-  display: none;
-  flex-direction: column;
-  gap: 2px;
-  z-index: 300;
-  animation: fadeInDown 0.2s ease both;
-}
-
-.header__lang.open .header__lang-panel {
-  display: flex;
-}
-
-/* Boutons dans le dropdown langue */
-.header__lang-panel button.secondary {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  background: transparent;
-  border-radius: 9px;
-  width: 100%;
-  text-align: left;
-  transition: background 0.12s ease;
-  border: 0;
-}
-
-.header__lang-panel button.secondary span {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text-primary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  width: 100%;
-}
-
-.header__lang-panel button.secondary img {
-  width: 22px;
-  height: 22px;
+.lang-trigger__flag {
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
-  margin-right: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  display: block;
+}
+
+.lang-trigger__code {
+  font: 700 12px var(--font-primary);
+  color: var(--text-primary);
+  letter-spacing: 0.06em;
+}
+
+.lang-trigger__chevron {
+  color: var(--text-secondary, #7a7478);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.header__lang.open .lang-trigger__chevron {
+  transform: rotate(180deg);
+}
+
+/* Dropdown (scopé sous .header__bar pour ne pas toucher la sidebar) */
+.header__bar .header__lang-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--color-card, #fff);
+  border: 1px solid var(--border-light, #e9e5e6);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 25, 0.08), 0 2px 4px rgba(15, 23, 25, 0.04);
+  padding: 5px;
+  min-width: 160px;
+  display: none;
+  flex-direction: column;
+  gap: 1px;
+  z-index: 300;
+  animation: fadeInDown 0.15s ease both;
+}
+
+.header__bar .header__lang.open .header__lang-panel {
+  display: flex;
+}
+
+/* Items du dropdown */
+.lang-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+  font: 500 13.5px var(--font-primary);
+  color: var(--text-primary);
+}
+
+.lang-option img {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
-.header__lang-panel button.secondary:hover {
-  background: var(--color-surface-2);
+.lang-option span {
+  flex: 1;
+  color: inherit;
 }
 
-.header__lang-panel button.secondary:hover span {
-  color: var(--main-color);
+.lang-option:hover {
+  background: var(--color-surface-2, #f4f2f3);
+}
+
+.lang-option.active {
+  background: var(--main-color-pale, #edfaf3);
+  color: var(--main-color, oklch(0.56 0.13 162));
+  font-weight: 600;
 }
 
 /* ── Burger (mobile) ── */

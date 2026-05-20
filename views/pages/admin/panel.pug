@@ -28,8 +28,8 @@ block content
             .dash-greeting__hello Good morning, #{companyName} ☀️
             .dash-greeting__sub Today's overview — stay on top of your day!
         .dash-greeting__btns
-            button.ghost.btn-sm Today's view
-            a.btn.btn-sm(href="/appointment/new")
+            button.sm-btn.sm-btn--ghost Today's view
+            a.sm-btn.sm-btn--primary(href="/appointment/new")
                 svg(xmlns="http://www.w3.org/2000/svg" height="14" viewBox="0 -960 960 960" width="14" fill="currentColor")
                     path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
                 span Quick book
@@ -70,7 +70,7 @@ block content
                             span.pill(class=appt.status === 'pending' ? 'pill--no-show' : 'pill--confirmed')
                                 span.pill__dot
                                 | #{appt.status === 'pending' ? 'Pending' : 'Confirmed'}
-                            a.btn.ghost.btn-sm(href=`/appointment/${appt._id}`) Open →
+                            a.sm-btn.sm-btn--ghost(href=`/appointment/${appt._id}`) Open →
                 else
                     -
                         var sampleAppts = [
@@ -89,7 +89,7 @@ block content
                             span.pill(class=appt.status === 'pending' ? 'pill--no-show' : 'pill--confirmed')
                                 span.pill__dot
                                 | #{appt.status === 'pending' ? 'Pending' : 'Confirmed'}
-                            a.btn.ghost.btn-sm(href="#") Open →
+                            a.sm-btn.sm-btn--ghost(href="#") Open →
 
         //- Latest activity
         .section__container.dash-activity

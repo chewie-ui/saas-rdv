@@ -518,6 +518,38 @@ body {
   stroke: var(--border-medium);
 }
 
+/* ══ SEARCH RESULTS PAGE ════════════════════════════════ */
+
+.search-results {
+  padding: 28px 16px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.search-results__count {
+  font: 700 15px var(--font-primary);
+  color: var(--ink);
+}
+
+/* sm-result-card dans le contexte search */
+.search-results .sm-result-card {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.search-results .lp__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (min-width: 820px) {
+  .search-results {
+    padding: 36px 0 80px;
+  }
+}
+
 /* ══ MOBILE FIXES (≤ 600px) ════════════════════════════ */
 @media (max-width: 600px) {
   /* ── Hero word: force onto its own line so it never clips ── */

@@ -65,5 +65,14 @@ facile a iunterger
 faire paiement local fonctionnel avec ws
 
 Logo branshee tous les memes !
-mettre autre photo par defaut
+mettre autre photo par defaut des users
 faire les trucs FREE / PREMIUM / BUSINESS (ou trucs en + genre nom de domaine)
+
+PAGE calednar :
+
+- Ajouter des infos (voir treatwell)
+- Page admin pour gerer tout ca
+
+Changer email quand rdv rappel
+
+Verifier les boutons (tous les memes CREER VARIABLE CSS)
