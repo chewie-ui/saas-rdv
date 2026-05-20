@@ -68,6 +68,10 @@ Logo branshee tous les memes !
 mettre autre photo par defaut des users
 faire les trucs FREE / PREMIUM / BUSINESS (ou trucs en + genre nom de domaine)
 
+20-05-26
+
+Login et register faire toutes les pages, pas de reload, jolie erreure etc !
+
 PAGE calednar :
 
 - Ajouter des infos (voir treatwell)
