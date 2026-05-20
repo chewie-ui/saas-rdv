@@ -6,54 +6,40 @@ const { sendEmail } = require("../utils/mailer");
 const getServices = require("../utils/services");
 
 exports.createUser = async (req, res) => {
+  const isAjax = req.headers["x-requested-with"] === "fetch";
+
+  function fail(msg) {
+    if (isAjax) return res.status(400).json({ error: msg });
+    return res.render("auth/register", {
+      becomeCoach: true, alwaysSticky: true,
+      services: getServices(res.locals.lang), error: msg,
+    });
+  }
+
   const { fullname, email, password, conformPassword, businessType } = req.body;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return res.render("auth/register", {
-      becomeCoach: true,
-      alwaysSticky: true,
-      services: getServices(res.locals.lang),
-      error: res.locals.t?.auth?.error_invalid_email || "Veuillez entrer une adresse email valide.",
-    });
-  }
+  if (!emailRegex.test(email))
+    return fail(res.locals.t?.auth?.error_invalid_email || "Veuillez entrer une adresse email valide.");
+
+  // Validate businessType against the allowed list
+  const allowedServices = getServices(res.locals.lang || "fr");
+  if (!businessType || !allowedServices.includes(businessType))
+    return fail("Veuillez choisir votre métier dans la liste proposée.");
 
   const checkName = await User.findOne({ fullName: fullname }).lean();
-  if (checkName) {
-    return res.render("auth/register", {
-      becomeCoach: true,
-      alwaysSticky: true,
-      services: getServices(res.locals.lang),
-      error: res.locals.t?.auth?.error_name_taken || "Ce nom est déjà utilisé.",
-    });
-  }
+  if (checkName)
+    return fail(res.locals.t?.auth?.error_name_taken || "Ce nom est déjà utilisé.");
+
   const checkEmail = await User.findOne({ email }).lean();
-  if (checkEmail) {
-    return res.render("auth/register", {
-      becomeCoach: true,
-      alwaysSticky: true,
-      services: getServices(res.locals.lang),
-      error: res.locals.t?.auth?.error_email_taken || "Cette adresse email est déjà utilisée.",
-    });
-  }
+  if (checkEmail)
+    return fail(res.locals.t?.auth?.error_email_taken || "Cette adresse email est déjà utilisée.");
 
-  if (password.trim() !== conformPassword.trim()) {
-    return res.render("auth/register", {
-      becomeCoach: true,
-      alwaysSticky: true,
-      services: getServices(res.locals.lang),
-      error: res.locals.t?.auth?.error_pwd_match || "Les mots de passe ne correspondent pas.",
-    });
-  }
+  if (password.trim() !== conformPassword.trim())
+    return fail(res.locals.t?.auth?.error_pwd_match || "Les mots de passe ne correspondent pas.");
 
-  if (password.trim().length < 8) {
-    return res.render("auth/register", {
-      becomeCoach: true,
-      alwaysSticky: true,
-      services: getServices(res.locals.lang),
-      error: res.locals.t?.auth?.error_pwd_length || "Le mot de passe doit contenir au moins 8 caractères.",
-    });
-  }
+  if (password.trim().length < 8)
+    return fail(res.locals.t?.auth?.error_pwd_length || "Le mot de passe doit contenir au moins 8 caractères.");
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -66,7 +52,6 @@ exports.createUser = async (req, res) => {
       company: companyId,
       businessType: businessType || "",
     });
-    console.log({ user });
     await Company.create({
       _id: companyId,
       owner: user._id,
@@ -76,29 +61,20 @@ exports.createUser = async (req, res) => {
         { weekdayIndex: 3, workingHours: [{ start: "09:00", end: "18:00" }] },
         { weekdayIndex: 4, workingHours: [{ start: "09:00", end: "18:00" }] },
         { weekdayIndex: 5, workingHours: [{ start: "09:00", end: "18:00" }] },
-        { weekdayIndex: 6, dayOff: true }, // Samedi off
-        { weekdayIndex: 0, dayOff: true }, // Dimanche off
+        { weekdayIndex: 6, dayOff: true },
+        { weekdayIndex: 0, dayOff: true },
       ],
     });
 
     req.login(user, (err) => {
-      console.error(err);
+      if (err) return fail("Erreur lors de la connexion.");
+      if (isAjax) return res.json({ success: true, redirect: "/appointment" });
       return res.redirect("/appointment");
     });
   } catch (err) {
-    console.log(err);
-
-    if (err.code === 11000) {
-      return res.render("auth/register", {
-        error: "Email already in use",
-      });
-    }
-    return res.render("auth/register", {
-      becomeCoach: true,
-      alwaysSticky: true,
-      services: getServices(res.locals.lang),
-      error: err,
-    });
+    console.error(err);
+    if (err.code === 11000) return fail(res.locals.t?.auth?.error_email_taken || "Email déjà utilisé.");
+    return fail("Une erreur est survenue. Veuillez réessayer.");
   }
 };
 

@@ -154,6 +154,20 @@ const userSchema = schema(
       layoutStyle:    { type: String,  default: 'classic' },
       pageBgType:  { type: String,  default: 'color' },
       pageBgImage: { type: String,  default: '' },
+      showSectionAbout:      { type: Boolean, default: true  },
+      showSectionServices:   { type: Boolean, default: false },
+      showSectionTeam:       { type: Boolean, default: false },
+      showSectionReviews:    { type: Boolean, default: false },
+      showSectionAmenities:  { type: Boolean, default: false },
+      showSectionFaq:        { type: Boolean, default: false },
+      gallery:   { type: [String], default: [] },
+      amenities: {
+        cleanliness: { type: [String], default: [] },
+        comfort:     { type: [String], default: [] },
+        practical:   { type: [String], default: [] },
+      },
+      faq:    { type: [mongoose.Schema.Types.Mixed], default: [] },
+      badges: { type: [String], default: [] },
     },
 
     googleCalendar: {

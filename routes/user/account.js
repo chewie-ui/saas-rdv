@@ -56,6 +56,12 @@ router.patch(
   accountController.editCalendarBgImage
 );
 
+router.patch("/gallery", upload.array("galleryPhotos", 12), accountController.updateGallery);
+router.delete("/gallery/:index", accountController.deleteGalleryPhoto);
+router.patch("/amenities", accountController.updateAmenities);
+router.patch("/faq", accountController.updateFaq);
+router.patch("/badges", accountController.updateBadges);
+
 router.patch("/slug", isAuth, accountController.updateSlug);
 router.get("/check-slug", isAuth, accountController.checkSlug);
 

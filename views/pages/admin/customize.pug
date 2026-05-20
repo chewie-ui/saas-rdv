@@ -134,6 +134,39 @@ block content
                             input.color-swatch(type="color")
                             input.color-hex.input(type="text" maxlength=7 placeholder="#ffffff")
 
+            //- ── Section 4 : Sections de la page ──────────────────────────
+            .customize-section
+                .customize-section__header
+                    h3 Sections de la page
+                .customize-section__body
+
+                    .toggle-row
+                        .toggle-row__label
+                            span À propos
+                            small.toggle-row__hint Carte, horaires, adresse
+                        label.toggle-switch(for="toggleSectionAbout")
+                            input#toggleSectionAbout(type="checkbox")
+                            .toggle-track
+                                .toggle-thumb
+
+                    .toggle-row
+                        .toggle-row__label
+                            span Services
+                            small.toggle-row__hint Liste de vos prestations
+                        label.toggle-switch(for="toggleSectionServices")
+                            input#toggleSectionServices(type="checkbox")
+                            .toggle-track
+                                .toggle-thumb
+
+                    .toggle-row
+                        .toggle-row__label
+                            span Équipe
+                            small.toggle-row__hint Vos employés
+                        label.toggle-switch(for="toggleSectionTeam")
+                            input#toggleSectionTeam(type="checkbox")
+                            .toggle-track
+                                .toggle-thumb
+
             //- ── Actions ───────────────────────────────────────────────────
             .customize-actions
                 button.btn.secondary#resetCalendarSettings(type="button")
@@ -230,7 +263,10 @@ block scripts
                 showSocials: true,
                 layoutStyle: 'classic',
                 pageBgType:  'color',
-                pageBgImage: ''
+                pageBgImage: '',
+                showSectionAbout:    true,
+                showSectionServices: false,
+                showSectionTeam:     false
             };
 
             var settings = Object.assign({}, DEFAULTS, !{JSON.stringify(calendarSettings)});
@@ -368,6 +404,25 @@ block scripts
                     applyPreview('showSocials', showSocialsCb.checked);
                 });
 
+                // ── Section toggles ───────────────────────────────────────────
+                var sectionAboutCb    = document.getElementById('toggleSectionAbout');
+                var sectionServicesCb = document.getElementById('toggleSectionServices');
+                var sectionTeamCb     = document.getElementById('toggleSectionTeam');
+
+                sectionAboutCb.checked    = settings.showSectionAbout    !== false;
+                sectionServicesCb.checked = !!settings.showSectionServices;
+                sectionTeamCb.checked     = !!settings.showSectionTeam;
+
+                sectionAboutCb.addEventListener('change', function () {
+                    settings.showSectionAbout = sectionAboutCb.checked;
+                });
+                sectionServicesCb.addEventListener('change', function () {
+                    settings.showSectionServices = sectionServicesCb.checked;
+                });
+                sectionTeamCb.addEventListener('change', function () {
+                    settings.showSectionTeam = sectionTeamCb.checked;
+                });
+
                 // ── Font ──────────────────────────────────────────────────────
                 var fontSelect  = document.getElementById('fontSelect');
                 fontSelect.value = settings.font || 'Inter';
@@ -475,7 +530,8 @@ block scripts
                 // Colors
                 Object.keys(DEFAULTS).forEach(function (key) {
                     if (key === 'lang' || key === 'showInfo' || key === 'showSocials' ||
-                        key === 'layoutStyle' || key === 'pageBgType' || key === 'pageBgImage' || key === 'font') return;
+                        key === 'layoutStyle' || key === 'pageBgType' || key === 'pageBgImage' || key === 'font' ||
+                        key === 'showSectionAbout' || key === 'showSectionServices' || key === 'showSectionTeam') return;
                     settings[key] = DEFAULTS[key];
                     applyPreview(key, DEFAULTS[key]);
                     var row = document.querySelector('.color-row[data-key="' + key + '"]');
@@ -495,6 +551,13 @@ block scripts
                 document.getElementById('toggleShowInfo').checked    = true;
                 document.getElementById('toggleShowSocials').checked = true;
                 applyPreview('showSocials', true);
+                // Section toggles
+                settings.showSectionAbout    = true;
+                settings.showSectionServices = false;
+                settings.showSectionTeam     = false;
+                document.getElementById('toggleSectionAbout').checked    = true;
+                document.getElementById('toggleSectionServices').checked = false;
+                document.getElementById('toggleSectionTeam').checked     = false;
                 // Font
                 settings.font = 'Inter';
                 document.getElementById('fontSelect').value = 'Inter';

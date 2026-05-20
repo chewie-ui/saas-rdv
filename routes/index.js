@@ -248,6 +248,42 @@ router.get("/s-inscrire", (req, res) => {
   });
 });
 
+const AMENITY_OPTIONS = {
+  cleanliness: [
+    'Gel hydroalcoolique disponible',
+    'Salle désinfectée entre les séances',
+    'Filtre à air en service',
+    'Masques disponibles sur demande',
+    'Stérilisation UV',
+    'Serviettes à usage unique',
+  ],
+  comfort: [
+    'Table chauffante',
+    'Zone calme',
+    'Musique personnalisable',
+    'Thé / infusion offert(e)',
+    'Options aromathérapie',
+    'Lumière naturelle',
+  ],
+  practical: [
+    'Parking gratuit',
+    'Accès fauteuil roulant',
+    'Espèces acceptées',
+    'Carte / Bancontact accepté',
+    'LGBTQIA+ friendly',
+    'Chargeur disponible',
+  ],
+};
+
+const BADGE_OPTIONS = [
+  'Vérifié',
+  'LGBTQIA+ friendly',
+  'Accès fauteuil roulant',
+  'Parking gratuit',
+  'Top rated 2024',
+  'Carte acceptée',
+];
+
 router.get("/:company", async (req, res) => {
   const company = await getCompanyIfExist(req.params.company);
 
@@ -356,10 +392,13 @@ router.get("/:company", async (req, res) => {
     company,
     coach,
     services,
+    activeEmployees,
     servicesJson,
     employeesJson,
     clientUser,
     isOpenToday,
+    amenityOptions: AMENITY_OPTIONS,
+    badgeOptions: BADGE_OPTIONS,
     alwaysSticky: true,
     clientAuth: true,
   });

@@ -504,13 +504,18 @@ export default function () {
 
     serviceStepWrapper && serviceStepWrapper.classList.remove("show");
 
-    const employees = svc.employees || [];
-    if (employees.length > 0) {
-      // Show employee picker first
-      renderEmployeeStep(employees);
+    // If the service has specific employees → use those; otherwise fall back
+    // to ALL active company employees so the "Avec" step always appears when
+    // there are employees in the company.
+    const svcEmployees     = svc.employees || [];
+    const allEmployees     = window.__employees || [];
+    const employeesToShow  = svcEmployees.length > 0 ? svcEmployees : allEmployees;
+
+    if (employeesToShow.length > 0) {
+      renderEmployeeStep(employeesToShow);
       employeeStepWrapper && employeeStepWrapper.classList.add("show");
     } else {
-      // No employees — fetch slots right away
+      // No employees at all — fetch slots right away
       fetchAndShowSlots();
     }
   }

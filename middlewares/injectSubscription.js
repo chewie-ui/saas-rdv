@@ -102,6 +102,17 @@ module.exports = async (req, res, next) => {
       const diffDays  = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
       const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
 
+      // ── Sync req.user so getLimit()/getPlan() see the correct plan ──
+      // The embedded user.subscription may lag behind the Subscription collection
+      // (e.g. webhook not yet written). Overwrite in-memory so all controllers
+      // calling getPlan(req.user) get the right result for this request.
+      if (req.user.subscription) {
+        req.user.subscription.status = "active";
+        req.user.subscription.plan   = subscription.plan || "pro";
+      } else {
+        req.user.subscription = { status: "active", plan: subscription.plan || "pro" };
+      }
+
       res.locals.subscription = subscription;
       res.locals.autoRenew    = subscription.autoRenew;
       res.locals.currentPlan  = subscription.plan || "pro";

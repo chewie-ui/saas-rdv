@@ -16,11 +16,16 @@ const PLANS = {
 function getPlan(user) {
   if (!user) return "basic";
   const sub = user.subscription;
-  if (!sub || sub.status !== "active") {
-    // manualPremium bypass (dev/admin)
-    if (user.manualPremium || user.isPremium) return "pro";
-    return "basic";
+
+  // manualPremium bypass: use the stored plan if present, else "pro"
+  if (user.manualPremium || user.isPremium) {
+    const manualPlan = sub && sub.plan;
+    // Only trust the embedded plan if it's a known paid plan
+    if (manualPlan === "business") return "business";
+    return "pro";
   }
+
+  if (!sub || sub.status !== "active") return "basic";
   return sub.plan || "basic";
 }
 

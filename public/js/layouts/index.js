@@ -60,13 +60,15 @@ function recomputeSteps() {
   const svcEmployees = STATE.service
     ? (SERVICES.find(s => s._id === STATE.service.id)?.employees || [])
     : [];
-  const globalEmps   = EMPLOYEES.length > 0;
+  const globalEmps = EMPLOYEES.length > 0;
+
+  // Show "Avec" if: the service has assigned employees OR the company has any
+  // employees at all (fallback: show all company employees when service has none).
+  const showEmployeeStep = svcEmployees.length > 0 || globalEmps;
 
   const steps = [];
-  if (SERVICES.length > 0)           steps.push({ id: "service",  label: "Service" });
-  if (svcEmployees.length > 0 || (SERVICES.length === 0 && globalEmps)) {
-    steps.push({ id: "employee", label: "Avec" });
-  }
+  if (SERVICES.length > 0) steps.push({ id: "service",  label: "Service" });
+  if (showEmployeeStep)     steps.push({ id: "employee", label: "Avec" });
   steps.push({ id: "time",    label: "Créneau" });
   steps.push({ id: "details", label: "Détails" });
   steps.push({ id: "confirm", label: "Confirmer" });
@@ -221,9 +223,11 @@ function renderServicePane() {
 
       recomputeSteps();
 
-      // Auto-advance
-      const hasEmps = (svc.employees || []).length > 0;
-      if (hasEmps) {
+      // Auto-advance: go to employee step if the company has any employees
+      // (service-specific OR global fallback)
+      const svcHasEmps    = (svc.employees || []).length > 0;
+      const globalHasEmps = EMPLOYEES.length > 0;
+      if (svcHasEmps || globalHasEmps) {
         goToStep("employee");
       } else {
         goToStep("time");
@@ -236,9 +240,12 @@ function renderServicePane() {
    STEP 2 — EMPLOYEE
    ═══════════════════════════════════════════════════════════════════════════ */
 function renderEmployeePane() {
+  // Use service-specific employees if assigned; otherwise fall back to all
+  // active company employees so the step always works when employees exist.
   const svcEmployees = STATE.service
     ? (SERVICES.find(s => s._id === STATE.service.id)?.employees || [])
-    : EMPLOYEES;
+    : [];
+  const employeesToShow = svcEmployees.length > 0 ? svcEmployees : EMPLOYEES;
 
   pane.innerHTML = `<div class="bk-pane">
     <h2 class="bk-pane-title">Choisissez votre prestataire</h2>
@@ -250,7 +257,7 @@ function renderEmployeePane() {
         <div class="bk-emp__name">Pas de préférence</div>
         <div class="bk-emp__role" style="color:var(--bk-accent-ink); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.04em;">Plus rapide</div>
       </div>
-      ${svcEmployees.map(e => {
+      ${employeesToShow.map(e => {
         const fullName = `${e.firstName||""} ${e.lastName||""}`.trim();
         const initials = ((e.firstName||"")[0]||"") + ((e.lastName||"")[0]||"");
         const sel = STATE.employee && STATE.employee.id === e._id ? "is-selected" : "";
@@ -270,7 +277,7 @@ function renderEmployeePane() {
       if (el.dataset.emp === "any") {
         STATE.employee = null; // null = no preference
       } else {
-        const emp = svcEmployees.find(e => e._id === el.dataset.emp);
+        const emp = employeesToShow.find(e => e._id === el.dataset.emp);
         if (!emp) return;
         STATE.employee = {
           id:      emp._id,

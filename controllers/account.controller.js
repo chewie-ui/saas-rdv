@@ -457,25 +457,116 @@ exports.deleteAccount = async (req, res) => {
 
 exports.updateCalendarSettings = async (req, res) => {
   try {
-    const { pageBg, calBg, accentColor, accentText, dayBg, dayText, btnBg, btnText, lang, font, showInfo, showSocials, layoutStyle, pageBgType, pageBgImage } = req.body;
+    const {
+      pageBg, calBg, accentColor, accentText, dayBg, dayText, btnBg, btnText,
+      lang, font, showInfo, showSocials, layoutStyle, pageBgType, pageBgImage,
+      showSectionAbout, showSectionServices, showSectionTeam,
+      showSectionReviews, showSectionAmenities, showSectionFaq,
+    } = req.body;
     await User.findByIdAndUpdate(req.user._id, {
-      calendarSettings: {
-        pageBg,
-        calBg,
-        accentColor,
-        accentText,
-        dayBg,
-        dayText,
-        btnBg,
-        btnText,
-        lang,
-        font,
-        showInfo,
-        showSocials,
-        layoutStyle,
-        pageBgType,
-        pageBgImage: pageBgImage || "",
+      $set: {
+        "calendarSettings.pageBg":               pageBg,
+        "calendarSettings.calBg":                calBg,
+        "calendarSettings.accentColor":          accentColor,
+        "calendarSettings.accentText":           accentText,
+        "calendarSettings.dayBg":                dayBg,
+        "calendarSettings.dayText":              dayText,
+        "calendarSettings.btnBg":                btnBg,
+        "calendarSettings.btnText":              btnText,
+        "calendarSettings.lang":                 lang,
+        "calendarSettings.font":                 font,
+        "calendarSettings.showInfo":             showInfo,
+        "calendarSettings.showSocials":          showSocials,
+        "calendarSettings.layoutStyle":          layoutStyle,
+        "calendarSettings.pageBgType":           pageBgType,
+        "calendarSettings.pageBgImage":          pageBgImage || "",
+        "calendarSettings.showSectionAbout":     showSectionAbout    !== false,
+        "calendarSettings.showSectionServices":  !!showSectionServices,
+        "calendarSettings.showSectionTeam":      !!showSectionTeam,
+        "calendarSettings.showSectionReviews":   !!showSectionReviews,
+        "calendarSettings.showSectionAmenities": !!showSectionAmenities,
+        "calendarSettings.showSectionFaq":       !!showSectionFaq,
       },
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false });
+  }
+};
+
+exports.updateGallery = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.json({ success: false, message: "No files uploaded" });
+    }
+    const paths = req.files.map((f) => `/uploads/profiles/${f.filename}`);
+    await User.findByIdAndUpdate(req.user._id, {
+      $push: { "calendarSettings.gallery": { $each: paths } },
+    });
+    return res.json({ success: true, paths });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false });
+  }
+};
+
+exports.deleteGalleryPhoto = async (req, res) => {
+  try {
+    const index = parseInt(req.params.index, 10);
+    const user = await User.findById(req.user._id).select("calendarSettings.gallery");
+    const gallery = (user.calendarSettings && user.calendarSettings.gallery) || [];
+    if (index < 0 || index >= gallery.length) {
+      return res.json({ success: false, message: "Index out of bounds" });
+    }
+    gallery.splice(index, 1);
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: { "calendarSettings.gallery": gallery },
+    });
+    return res.json({ success: true, gallery });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false });
+  }
+};
+
+exports.updateAmenities = async (req, res) => {
+  try {
+    const { cleanliness, comfort, practical } = req.body;
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: {
+        "calendarSettings.amenities.cleanliness": Array.isArray(cleanliness) ? cleanliness : [],
+        "calendarSettings.amenities.comfort":     Array.isArray(comfort)     ? comfort     : [],
+        "calendarSettings.amenities.practical":   Array.isArray(practical)   ? practical   : [],
+      },
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false });
+  }
+};
+
+exports.updateFaq = async (req, res) => {
+  try {
+    const { faq } = req.body;
+    const entries = Array.isArray(faq) ? faq : [];
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: { "calendarSettings.faq": entries },
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false });
+  }
+};
+
+exports.updateBadges = async (req, res) => {
+  try {
+    const { badges } = req.body;
+    const list = Array.isArray(badges) ? badges : [];
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: { "calendarSettings.badges": list },
     });
     return res.json({ success: true });
   } catch (err) {

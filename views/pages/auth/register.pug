@@ -15,9 +15,6 @@ block content
                 h1= t.auth.register_title
                 p.auth-sub= t.auth.register_desc
 
-            if error
-                .auth-error= error
-
             //- ── Google SSO ────────────────────────────────────────
             a.auth-social-btn(href="/auth/google")
                 svg(width="16" height="16" viewBox="0 0 48 48")
@@ -34,7 +31,8 @@ block content
 
             //- ── Card form ─────────────────────────────────────────
             .auth-register-card
-                form.auth-register-form(action="/register" method="POST")
+                .auth-error#registerError(style="display:none")
+                form.auth-register-form#registerForm(action="/register" method="POST")
 
                     //- Name row
                     .auth-register-row
@@ -115,10 +113,11 @@ block scripts
     script.
         const __services = !{JSON.stringify(services)};
         (function() {
-            const input = document.getElementById('serviceInput');
-            const hidden = document.getElementById('businessTypeInput');
-            const dropdown = document.getElementById('serviceDropdown');
-            if (!input || !dropdown) return;
+
+            /* ── Dropdown business type ─────────────────────────────── */
+            var input    = document.getElementById('serviceInput');
+            var hidden   = document.getElementById('businessTypeInput');
+            var dropdown = document.getElementById('serviceDropdown');
 
             function normalize(str) {
                 return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -126,17 +125,18 @@ block scripts
 
             function renderList(items) {
                 dropdown.innerHTML = '';
-                if (items.length === 0) { dropdown.style.display = 'none'; return; }
+                if (!items.length) { dropdown.style.display = 'none'; return; }
                 items.forEach(function(item) {
                     var li = document.createElement('div');
                     li.className = 'auth-service-item';
                     li.textContent = item;
                     li.addEventListener('mousedown', function(e) {
                         e.preventDefault();
-                        input.value = item;
+                        input.value  = item;
                         hidden.value = item;
                         dropdown.style.display = 'none';
                         input.classList.add('service-input--selected');
+                        input.classList.remove('service-input--invalid');
                     });
                     dropdown.appendChild(li);
                 });
@@ -144,8 +144,10 @@ block scripts
             }
 
             input.addEventListener('input', function() {
+                // Clear the validated value whenever the user types freely
+                hidden.value = '';
+                input.classList.remove('service-input--selected', 'service-input--invalid');
                 var q = normalize(input.value.trim());
-                hidden.value = input.value.trim();
                 if (!q) { dropdown.style.display = 'none'; return; }
                 renderList(__services.filter(function(s){ return normalize(s).includes(q); }).slice(0, 8));
             });
@@ -156,6 +158,72 @@ block scripts
             });
 
             input.addEventListener('blur', function() {
-                setTimeout(function() { dropdown.style.display = 'none'; }, 150);
+                setTimeout(function() {
+                    dropdown.style.display = 'none';
+                    // If the user typed something but didn't select → clear + warn
+                    if (input.value.trim() && !hidden.value) {
+                        input.classList.add('service-input--invalid');
+                    }
+                }, 160);
             });
+
+            /* ── AJAX form submit ───────────────────────────────────── */
+            var form    = document.getElementById('registerForm');
+            var errBox  = document.getElementById('registerError');
+            var submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+
+            function showError(msg) {
+                if (!errBox) return;
+                errBox.textContent = msg;
+                errBox.style.display = 'block';
+                errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            function hideError() {
+                if (errBox) errBox.style.display = 'none';
+            }
+
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    hideError();
+
+                    // Client-side: enforce dropdown selection
+                    if (!hidden.value || !__services.includes(hidden.value)) {
+                        input.classList.add('service-input--invalid');
+                        input.focus();
+                        showError('Veuillez choisir votre métier dans la liste proposée.');
+                        return;
+                    }
+
+                    var body = new URLSearchParams(new FormData(form)).toString();
+                    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '…'; }
+
+                    fetch('/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'fetch'
+                        },
+                        body: body
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            window.location.href = data.redirect || '/appointment';
+                        } else {
+                            showError(data.error || 'Une erreur est survenue.');
+                            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = submitBtn.dataset.label || 'Continuer'; }
+                        }
+                    })
+                    .catch(function() {
+                        showError('Erreur réseau. Veuillez réessayer.');
+                        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = submitBtn.dataset.label || 'Continuer'; }
+                    });
+                });
+
+                // Store original label for restore after error
+                if (submitBtn) submitBtn.dataset.label = submitBtn.textContent;
+            }
+
         })();

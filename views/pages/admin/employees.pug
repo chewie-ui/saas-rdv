@@ -38,7 +38,7 @@ block content
                         span Disponible à partir du plan Pro
                         a.btn-upgrade-pro(href="/subscription") Passer au Pro
 
-        .employees-list#employeesList(style=(maxEmployees === 0) ? "display:none" : "")
+        .employees-list#employeesList
             each emp in employees
                 -
                     var initials = ((emp.firstName || '?')[0] + (emp.lastName || '?')[0]).toUpperCase()
