@@ -575,16 +575,32 @@ exports.informationsPage = async (req, res) => {
   const stripeCustomerId = req.user.subscription?.stripeCustomerId;
   if (stripeCustomerId) {
     try {
-      const [pmsResult, invResult] = await Promise.all([
+      const [pmsResult, invResult, customer] = await Promise.all([
         stripe.paymentMethods.list({ customer: stripeCustomerId, type: "card", limit: 10 }),
         stripe.invoices.list({ customer: stripeCustomerId, limit: 12 }),
+        stripe.customers.retrieve(stripeCustomerId),
       ]);
+
+      // Trouver la carte par défaut (customer invoice_settings ou abonnement)
+      let defaultPmId = customer.invoice_settings?.default_payment_method || null;
+      if (!defaultPmId && req.user.subscription?.stripeSubscriptionId) {
+        try {
+          const sub = await stripe.subscriptions.retrieve(req.user.subscription.stripeSubscriptionId);
+          defaultPmId = sub.default_payment_method || null;
+        } catch (_) {}
+      }
+      // Si aucune défaut explicite mais une seule carte → c'est elle la défaut
+      if (!defaultPmId && pmsResult.data.length === 1) {
+        defaultPmId = pmsResult.data[0].id;
+      }
+
       paymentMethods = pmsResult.data.map((pm) => ({
-        id:       pm.id,
-        brand:    pm.card.brand,
-        last4:    pm.card.last4,
-        expMonth: pm.card.exp_month,
-        expYear:  pm.card.exp_year,
+        id:        pm.id,
+        brand:     pm.card.brand,
+        last4:     pm.card.last4,
+        expMonth:  pm.card.exp_month,
+        expYear:   pm.card.exp_year,
+        isDefault: pm.id === defaultPmId,
       }));
       invoices = invResult.data.map((inv) => ({
         id:          inv.id,

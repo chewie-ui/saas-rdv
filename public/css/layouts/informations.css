@@ -1029,12 +1029,82 @@
   color: var(--text-muted, #888);
 }
 
+/* ── Default highlight ─────────────────────── */
+.pm-item--default {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+/* ── Actions group (badge + delete) ─────────── */
+.pm-item__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── "Par défaut" badge ─────────────────────── */
+.pm-badge--default {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pm-badge--default svg { fill: #15803d; flex-shrink: 0; }
+
+/* ── "Définir par défaut" button ────────────── */
+.pm-btn--set-default {
+  background: none;
+  border: 1px solid var(--border-light, #e8e8e8);
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted, #888);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.pm-btn--set-default:hover {
+  border-color: var(--accent, #22c55e);
+  color: var(--accent, #22c55e);
+}
+
+.pm-btn--set-default:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Delete icon button ─────────────────────── */
 .pm-item__del {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 12.5px;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-muted, #aaa);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  padding: 0;
+}
+
+.pm-item__del:hover {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #ef4444;
 }
 
 .pm-item__del svg { fill: currentColor; }

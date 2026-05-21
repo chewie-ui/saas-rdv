@@ -89,19 +89,23 @@ block content
             if paymentMethods && paymentMethods.length > 0
                 .pm-list
                     each pm in paymentMethods
-                        .pm-item
+                        .pm-item(data-pmid=pm.id class=pm.isDefault ? 'pm-item--default' : '')
                             .pm-item__icon(class='pm-brand--' + pm.brand)
                                 = pm.brand.charAt(0).toUpperCase() + pm.brand.slice(1)
                             .pm-item__info
                                 span.pm-item__number •••• #{pm.last4}
                                 span.pm-item__expiry Expire #{String(pm.expMonth).padStart(2,'0')}/#{String(pm.expYear).slice(-2)}
-                            button.sm-btn.sm-btn--ghost.pm-item__del(
-                                type="button"
-                                data-pmid=pm.id
-                            )
-                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                    path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
-                                span Supprimer
+                            .pm-item__actions
+                                if pm.isDefault
+                                    span.pm-badge--default
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="11px" viewBox="0 -960 960 960" width="11px" fill="currentColor")
+                                            path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-56-240 226-226-57-57-169 169-85-85-57 57 142 142Z")
+                                        | Par défaut
+                                else
+                                    button.pm-btn--set-default(type="button" data-pmid=pm.id) Définir par défaut
+                                button.pm-item__del(type="button" data-pmid=pm.id title="Supprimer")
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                        path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
             else
                 p.pm-empty Aucune carte enregistrée.
             .pm-add-wrap
@@ -199,7 +203,6 @@ block scripts
                     if (!confirm('Supprimer cette carte ?')) return;
                     var pmId = btn.dataset.pmid;
                     btn.disabled = true;
-                    btn.querySelector('span').textContent = '...';
                     try {
                         var res = await fetch('/account/payment-method/' + pmId, { method: 'DELETE' });
                         var data = await res.json();
@@ -208,11 +211,53 @@ block scripts
                         } else {
                             alert(data.error || 'Erreur lors de la suppression.');
                             btn.disabled = false;
-                            btn.querySelector('span').textContent = 'Supprimer';
                         }
                     } catch (e) {
                         btn.disabled = false;
-                        btn.querySelector('span').textContent = 'Supprimer';
+                    }
+                });
+            });
+
+            // ── Définir une carte par défaut ─────────────────────────────────
+            document.querySelectorAll('.pm-btn--set-default').forEach(function (btn) {
+                btn.addEventListener('click', async function () {
+                    var pmId = btn.dataset.pmid;
+                    btn.disabled = true;
+                    btn.textContent = '...';
+                    try {
+                        var res  = await fetch('/account/payment-method/' + pmId + '/set-default', { method: 'POST' });
+                        var data = await res.json();
+                        if (data.success) {
+                            // Retirer l'ancien badge par défaut
+                            document.querySelectorAll('.pm-badge--default').forEach(function (badge) {
+                                var oldItem = badge.closest('.pm-item');
+                                var actionsEl = badge.parentElement;
+                                // Remplacer le badge par un bouton "Définir par défaut"
+                                var newBtn = document.createElement('button');
+                                newBtn.className = 'pm-btn--set-default';
+                                newBtn.type = 'button';
+                                newBtn.dataset.pmid = oldItem.dataset.pmid;
+                                newBtn.textContent = 'Définir par défaut';
+                                actionsEl.replaceChild(newBtn, badge);
+                                oldItem.classList.remove('pm-item--default');
+                                // Rebind l'événement sur le nouveau bouton
+                                newBtn.addEventListener('click', arguments.callee);
+                            });
+                            // Transformer ce bouton en badge
+                            var actionsEl = btn.parentElement;
+                            var badge = document.createElement('span');
+                            badge.className = 'pm-badge--default';
+                            badge.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" height="11px" viewBox="0 -960 960 960" width="11px" fill="currentColor"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-56-240 226-226-57-57-169 169-85-85-57 57 142 142Z"/></svg> Par défaut';
+                            actionsEl.replaceChild(badge, btn);
+                            btn.closest('.pm-item').classList.add('pm-item--default');
+                        } else {
+                            alert(data.error || 'Erreur.');
+                            btn.disabled = false;
+                            btn.textContent = 'Définir par défaut';
+                        }
+                    } catch (e) {
+                        btn.disabled = false;
+                        btn.textContent = 'Définir par défaut';
                     }
                 });
             });
