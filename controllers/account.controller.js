@@ -6,6 +6,8 @@ const Stripe = require("stripe");
 const stripe = new Stripe(env.stripeSecretKey);
 const bcrypt = require("bcrypt");
 const { sendEmail } = require("../utils/mailer");
+const pug  = require("pug");
+const path = require("path");
 
 exports.editProfilePicture = async (req, res) => {
   try {
@@ -85,12 +87,15 @@ exports.createCheckout = async (req, res) => {
     const { promoCode, plan, billing } = req.body || {};
 
     // Choisir le bon price ID selon le plan et la période
-    const isYearly = billing === "yearly";
     let priceId;
     if (plan === "business") {
-      priceId = isYearly ? env.stripePriceBusinessYearly : env.stripePriceBusinessMonthly;
+      if (billing === "yearly")     priceId = env.stripePriceBusinessYearly;
+      else if (billing === "sixmonths") priceId = env.stripePriceBusinessSixMonths;
+      else                          priceId = env.stripePriceBusinessMonthly;
     } else {
-      priceId = isYearly ? env.stripePricePremiumYearly : env.stripePricePremiumMonthly;
+      if (billing === "yearly")     priceId = env.stripePricePremiumYearly;
+      else if (billing === "sixmonths") priceId = env.stripePricePremiumSixMonths;
+      else                          priceId = env.stripePricePremiumMonthly;
     }
     if (!priceId) {
       return res.status(400).json({ error: "Prix non configuré pour ce plan. Contactez le support." });
@@ -149,6 +154,14 @@ exports.createCheckout = async (req, res) => {
       success_url: `${env.stripeSuccessUrl || "https://branshee.com"}`,
       cancel_url:  `${env.stripeCancelUrl  || "https://branshee.com"}`,
     };
+
+    // Lier au customer Stripe existant (cartes enregistrées utilisables dans le checkout)
+    const existingStripeCustomerId = req.user.subscription?.stripeCustomerId;
+    if (existingStripeCustomerId) {
+      sessionParams.customer = existingStripeCustomerId;
+    } else {
+      sessionParams.customer_email = req.user.email;
+    }
 
     // Appliquer le code promo si fourni
     if (promoCode) {
@@ -261,7 +274,11 @@ exports.editEmailConfirmation = async (req, res) => {
 
     req.session.emailVerificationCode = verificationCode;
     // req.session.pendingEmail = req.body.newEmail;
-    await sendEmail(email, "Digital code", String(verificationCode));
+    const verifyHtml = pug.renderFile(
+      path.join(__dirname, "../views/templates/emails/verification-code.pug"),
+      { code: verificationCode, subject: "Vérification de votre adresse e-mail", body: "Voici votre code de vérification pour modifier votre adresse e-mail :" }
+    );
+    await sendEmail(email, "Vérification de votre adresse e-mail — BranShee", verifyHtml);
 
     res.json({ success: true });
   } catch (err) {
@@ -409,7 +426,11 @@ exports.sendDeleteCode = async (req, res) => {
     const code = Math.floor(100000 + Math.random() * 900000);
     req.session.deleteAccountCode = code;
 
-    await sendEmail(user.email, "Suppression de compte - Code de confirmation", String(code));
+    const deleteHtml = pug.renderFile(
+      path.join(__dirname, "../views/templates/emails/verification-code.pug"),
+      { code, subject: "Suppression de compte — Confirmation", body: "Voici votre code de confirmation pour supprimer définitivement votre compte BranShee :" }
+    );
+    await sendEmail(user.email, "Suppression de compte — Code de confirmation BranShee", deleteHtml);
 
     return res.json({ success: true });
   } catch (err) {
@@ -575,6 +596,52 @@ exports.updateBadges = async (req, res) => {
   }
 };
 
+exports.toggleSection = async (req, res) => {
+  try {
+    const { fieldName, enabled } = req.body;
+    const allowed = [
+      "showSectionAbout", "showSectionServices", "showSectionTeam",
+      "showSectionReviews", "showSectionAmenities", "showSectionFaq",
+      "showSectionGallery", "showSectionMap", "showSectionHours",
+    ];
+    if (!allowed.includes(fieldName)) return res.status(400).json({ error: "Invalid field" });
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: { [`calendarSettings.${fieldName}`]: !!enabled },
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    return res.json({ success: false });
+  }
+};
+
+exports.updateEquipment = async (req, res) => {
+  try {
+    const { equipment } = req.body;
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: { "calendarSettings.equipment": Array.isArray(equipment) ? equipment : [] },
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    return res.json({ success: false });
+  }
+};
+
+exports.updateCategories = async (req, res) => {
+  try {
+    const { categories } = req.body;
+    if (!Array.isArray(categories)) return res.json({ success: false });
+    const clean = categories
+      .filter(c => c && typeof c.name === "string" && c.name.trim())
+      .map(c => ({ name: c.name.trim(), icon: (c.icon || "").slice(0, 10) }));
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: { "calendarSettings.categories": clean },
+    });
+    return res.json({ success: true, categories: clean });
+  } catch (err) {
+    return res.json({ success: false });
+  }
+};
+
 exports.editCalendarBgImage = async (req, res) => {
   try {
     const { filename } = req.file;
@@ -619,6 +686,125 @@ exports.updateSlug = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Créer un SetupIntent pour ajouter une carte ───────────────────────────────
+exports.createSetupIntent = async (req, res) => {
+  try {
+    let stripeCustomerId = req.user.subscription?.stripeCustomerId;
+
+    // Vérifier que le customer existe encore dans le compte Stripe actuel
+    if (stripeCustomerId) {
+      try {
+        await stripe.customers.retrieve(stripeCustomerId);
+      } catch (e) {
+        // Customer introuvable (ex: changement de compte Stripe) → on en recrée un
+        if (e.code === "resource_missing") {
+          console.warn("Customer Stripe introuvable, recréation...", stripeCustomerId);
+          stripeCustomerId = null;
+          await User.findByIdAndUpdate(req.user._id, {
+            $unset: { "subscription.stripeCustomerId": "" },
+          });
+        } else {
+          throw e;
+        }
+      }
+    }
+
+    if (!stripeCustomerId) {
+      // Créer un customer Stripe si l'utilisateur n'en a pas encore
+      const customer = await stripe.customers.create({
+        email:    req.user.email,
+        name:     req.user.fullName || req.user.email,
+        metadata: { userId: String(req.user._id) },
+      });
+      stripeCustomerId = customer.id;
+      await User.findByIdAndUpdate(req.user._id, {
+        "subscription.stripeCustomerId": stripeCustomerId,
+      });
+    }
+
+    const setupIntent = await stripe.setupIntents.create({
+      customer:             stripeCustomerId,
+      payment_method_types: ["card"],
+      usage:                "off_session", // autorise les renouvellements automatiques hors-session
+    });
+
+    return res.json({ clientSecret: setupIntent.client_secret });
+  } catch (err) {
+    console.error("createSetupIntent error:", err.message);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// ── Détacher (supprimer) une carte ────────────────────────────────────────────
+exports.detachPaymentMethod = async (req, res) => {
+  try {
+    const { pmId } = req.params;
+    const stripeCustomerId = req.user.subscription?.stripeCustomerId;
+
+    if (!stripeCustomerId) {
+      return res.status(403).json({ error: "Aucun compte Stripe associé." });
+    }
+
+    // Vérifier que la carte appartient bien à ce client
+    let pm;
+    try {
+      pm = await stripe.paymentMethods.retrieve(pmId);
+    } catch (e) {
+      return res.status(404).json({ error: "Carte introuvable." });
+    }
+    if (pm.customer !== stripeCustomerId) {
+      return res.status(403).json({ error: "Accès refusé." });
+    }
+
+    await stripe.paymentMethods.detach(pmId);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("detachPaymentMethod error:", err.message);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// ── Définir une carte comme moyen de paiement par défaut ─────────────────────
+exports.setDefaultPaymentMethod = async (req, res) => {
+  try {
+    const { pmId } = req.params;
+    const stripeCustomerId = req.user.subscription?.stripeCustomerId;
+
+    if (!stripeCustomerId) {
+      return res.status(403).json({ error: "Aucun compte Stripe associé." });
+    }
+
+    // Vérifier que la carte appartient bien à ce client
+    const pm = await stripe.paymentMethods.retrieve(pmId);
+    if (pm.customer !== stripeCustomerId) {
+      return res.status(403).json({ error: "Accès refusé." });
+    }
+
+    // Mettre à jour le customer → factures futures & paiements one-time
+    await stripe.customers.update(stripeCustomerId, {
+      invoice_settings: { default_payment_method: pmId },
+    });
+
+    // Mettre à jour l'abonnement actif si présent
+    const stripeSubscriptionId = req.user.subscription?.stripeSubscriptionId;
+    if (stripeSubscriptionId) {
+      try {
+        await stripe.subscriptions.update(stripeSubscriptionId, {
+          default_payment_method: pmId,
+        });
+      } catch (subErr) {
+        // Non bloquant : l'abonnement peut ne plus être actif
+        console.warn("setDefaultPaymentMethod – subscription update skipped:", subErr.message);
+      }
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("setDefaultPaymentMethod error:", err.message);
+    return res.status(500).json({ error: err.message });
   }
 };
 

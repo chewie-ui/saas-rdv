@@ -26,7 +26,9 @@ exports.book = async (req, res) => {
   const Employee = require("../db/models/company/employee.model");
 
   const [client, company, activeEmployees] = await Promise.all([
-    Booking.findById(bookId).populate("employee", "firstName lastName profilePicture"),
+    Booking.findById(bookId)
+      .populate("employee", "firstName lastName profilePicture")
+      .populate("clientRef", "fullName profilePicture email phone"),
     Company.findOne(
       { _id: res.locals.currentCompany._id, "employees.user": req.user._id },
       { "employees.$": 1 },
@@ -560,21 +562,60 @@ exports.getWeekData = async (req, res) => {
   });
 };
 
-exports.informationsPage = (req, res) => {
+exports.informationsPage = async (req, res) => {
   const email = req.user.email;
   const maskEmail = email.replace(/^(..)(.*)(?=@)/, "$1...");
-  const canUseSocial  = getLimit("socialLinks", req.user);
+  const canUseSocial    = getLimit("socialLinks", req.user);
   const canUseCustomUrl = require("../utils/planLimits").LIMITS.customUrl.hasFeature(req.user);
+  const cs = req.user.calendarSettings || {};
+
+  // ── Stripe : cartes & factures ──────────────────────────────────────────
+  let paymentMethods = [];
+  let invoices       = [];
+  const stripeCustomerId = req.user.subscription?.stripeCustomerId;
+  if (stripeCustomerId) {
+    try {
+      const [pmsResult, invResult] = await Promise.all([
+        stripe.paymentMethods.list({ customer: stripeCustomerId, type: "card", limit: 10 }),
+        stripe.invoices.list({ customer: stripeCustomerId, limit: 12 }),
+      ]);
+      paymentMethods = pmsResult.data.map((pm) => ({
+        id:       pm.id,
+        brand:    pm.card.brand,
+        last4:    pm.card.last4,
+        expMonth: pm.card.exp_month,
+        expYear:  pm.card.exp_year,
+      }));
+      invoices = invResult.data.map((inv) => ({
+        id:          inv.id,
+        date:        inv.created,
+        description: inv.description || (inv.lines?.data?.[0]?.description) || "Abonnement BranShee",
+        amount:      ((inv.amount_paid || inv.amount_due || 0) / 100).toFixed(2),
+        currency:    (inv.currency || "eur").toUpperCase(),
+        status:      inv.status,
+        pdfUrl:      inv.invoice_pdf,
+        hostedUrl:   inv.hosted_invoice_url,
+      }));
+    } catch (e) {
+      console.error("Stripe billing fetch error:", e.message);
+    }
+  }
 
   res.render("admin/informations", {
     pageName: "Informations",
     success: req.query.success,
     title: res.locals.t.titles.infos,
     maskEmail,
-    services: getServices(res.locals.lang),
     currentCompany: res.locals.currentCompany,
     canUseSocial,
     canUseCustomUrl,
+    cs,
+    gallery:             cs.gallery   || [],
+    equipment:           cs.equipment || [],
+    isPro:               req.user.isPremium || (req.user.subscription && req.user.subscription.plan !== "basic"),
+    paymentMethods,
+    invoices,
+    stripePublishableKey: env.stripePublishableKey || "",
   });
 };
 
@@ -901,9 +942,20 @@ exports.saveForm = async (req, res) => {
 };
 
 exports.customizeCalendarPage = async (req, res) => {
+  const cs = req.user.calendarSettings || {};
+  const canUseSocial    = getLimit("socialLinks", req.user);
+  const canUseCustomUrl = require("../utils/planLimits").LIMITS.customUrl.hasFeature(req.user);
   return res.render("admin/customize", {
     pageName: "Customize",
     title: res.locals.t.customize.title,
-    calendarSettings: req.user.calendarSettings || {},
+    calendarSettings: cs,
+    gallery:      cs.gallery   || [],
+    equipment:    cs.equipment || [],
+    isPro:        req.user.isPremium || !!(req.user.subscription && req.user.subscription.plan !== "basic"),
+    currentPlan:  (req.user.subscription && req.user.subscription.plan) || (req.user.isPremium ? "pro" : "starter"),
+    services:     getServices(res.locals.lang),
+    currentCompany: res.locals.currentCompany,
+    canUseSocial,
+    canUseCustomUrl,
   });
 };

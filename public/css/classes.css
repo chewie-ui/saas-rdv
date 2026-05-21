@@ -6,7 +6,7 @@
   height: 38px;
   padding: 0 16px;
   border-radius: var(--r-sm, 8px);
-  font: 600 14px var(---font-primary);
+  font: 600 14px var(--font-primary);
   border: 1px solid transparent;
   cursor: pointer;
   white-space: nowrap;
@@ -17,10 +17,10 @@
     transform 0.05s;
 
   &.sm-btn--primary {
-    background: oklch(0.56 0.13 162);
+    background: var(--accent);
     color: #fff;
     &:hover {
-      background: oklch(0.51 0.13 162);
+      background: var(--accent-hover);
     }
   }
 
@@ -121,7 +121,7 @@
   transition: border-color 0.15s, box-shadow 0.15s;
 
   &:focus {
-    border-color: oklch(0.56 0.13 162);
+    border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-soft, #edfaf3);
   }
   &::placeholder {
@@ -199,7 +199,7 @@
   transition: border-color 0.15s, box-shadow 0.15s;
 
   &:focus-within {
-    border-color: oklch(0.56 0.13 162);
+    border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-soft, #edfaf3);
   }
 
@@ -301,8 +301,8 @@
   flex: none;
   transition: background 0.12s, border-color 0.12s;
 
-  .sm-check.checked  & { background: oklch(0.56 0.13 162); border-color: oklch(0.56 0.13 162); }
-  .sm-check.indeterminate & { background: oklch(0.56 0.13 162); border-color: oklch(0.56 0.13 162); }
+  .sm-check.checked  & { background: var(--accent); border-color: var(--accent); }
+  .sm-check.indeterminate & { background: var(--accent); border-color: var(--accent); }
 }
 
 /* ===== Radio ===== */
@@ -327,14 +327,14 @@
   flex: none;
   transition: border-color 0.12s;
 
-  .sm-radio.checked & { border-color: oklch(0.56 0.13 162); }
+  .sm-radio.checked & { border-color: var(--accent); }
 }
 
 .sm-radio__dot {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: oklch(0.56 0.13 162);
+  background: var(--accent);
   opacity: 0;
   transition: opacity 0.12s;
 
@@ -383,7 +383,7 @@
   }
 
   .sm-toggle-row.on & {
-    background: oklch(0.56 0.13 162);
+    background: var(--accent);
     &::after { left: 18px; }
   }
 }
@@ -404,7 +404,7 @@
       border-radius: 999px;
 
       &.active {
-        background: oklch(0.56 0.13 162);
+        background: var(--accent);
         color: #fff;
         box-shadow: none;
       }
@@ -464,7 +464,7 @@
     margin-bottom: -1px;
 
     &:hover { color: var(--ink, #12171b); }
-    &.active { color: var(--ink, #12171b); border-bottom-color: oklch(0.56 0.13 162); }
+    &.active { color: var(--ink, #12171b); border-bottom-color: var(--accent); }
   }
 
   .sm-tabs--pill & {
@@ -528,8 +528,8 @@
 
   &.done,
   &.active {
-    background: oklch(0.56 0.13 162);
-    border-color: oklch(0.56 0.13 162);
+    background: var(--accent);
+    border-color: var(--accent);
     color: white;
   }
 }
@@ -548,7 +548,7 @@
   background: var(--border, #e9e5e6);
   border-radius: 1px;
 
-  &.done { background: oklch(0.56 0.13 162); }
+  &.done { background: var(--accent); }
 }
 
 /* ===== Toast ===== */
@@ -566,7 +566,7 @@
   &.sm-toast--success { border-left: 3px solid oklch(0.62 0.13 155); }
   &.sm-toast--danger  { border-left: 3px solid oklch(0.58 0.18 25);  }
   &.sm-toast--warning { border-left: 3px solid oklch(0.74 0.14 75);  }
-  &.sm-toast--accent  { border-left: 3px solid oklch(0.56 0.13 162); }
+  &.sm-toast--accent  { border-left: 3px solid var(--accent); }
 }
 
 .sm-toast__icon {
@@ -580,7 +580,7 @@
   .sm-toast--success & { background: oklch(0.95 0.05 155); color: oklch(0.62 0.13 155); }
   .sm-toast--danger  & { background: oklch(0.95 0.04 25);  color: oklch(0.58 0.18 25);  }
   .sm-toast--warning & { background: oklch(0.96 0.06 75);  color: oklch(0.74 0.14 75);  }
-  .sm-toast--accent  & { background: var(--accent-soft, #edfaf3); color: oklch(0.56 0.13 162); }
+  .sm-toast--accent  & { background: var(--accent-soft, #edfaf3); color: var(--accent); }
 }
 
 .sm-toast__body  { flex: 1; min-width: 0; }
@@ -596,7 +596,7 @@
   border-radius: var(--r-md, 12px);
   width: 100%;
 
-  &.sm-banner--accent  { background: var(--accent-soft, #edfaf3);   color: var(--accent-ink, #003d22);      border-left: 3px solid oklch(0.56 0.13 162); }
+  &.sm-banner--accent  { background: var(--accent-soft, #edfaf3);   color: var(--accent-ink, #003d22);      border-left: 3px solid var(--accent); }
   &.sm-banner--success { background: oklch(0.95 0.05 155);          color: oklch(0.38 0.12 155);            border-left: 3px solid oklch(0.62 0.13 155); }
   &.sm-banner--warning { background: oklch(0.96 0.06 75);           color: oklch(0.42 0.13 70);             border-left: 3px solid oklch(0.74 0.14 75);  }
   &.sm-banner--danger  { background: oklch(0.95 0.04 25);           color: oklch(0.42 0.15 25);             border-left: 3px solid oklch(0.58 0.18 25);  }
@@ -624,7 +624,7 @@
 
 .sm-progress__fill {
   height: 100%;
-  background: oklch(0.56 0.13 162);
+  background: var(--accent);
   border-radius: 999px;
   transition: width 0.3s ease;
 
@@ -821,9 +821,9 @@
   &:hover { background: var(--subtle, #f4f2f3); }
 
   &.active {
-    background: oklch(0.56 0.13 162);
+    background: var(--accent);
     color: white;
-    border-color: oklch(0.56 0.13 162);
+    border-color: var(--accent);
   }
   &.sm-pagination__item--ellipsis {
     cursor: default;
@@ -930,12 +930,12 @@
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 
   &:hover {
-    border-color: oklch(0.56 0.13 162);
-    color: oklch(0.56 0.13 162);
+    border-color: var(--accent);
+    color: var(--accent);
   }
   &.active {
-    background: oklch(0.56 0.13 162);
-    border-color: oklch(0.56 0.13 162);
+    background: var(--accent);
+    border-color: var(--accent);
     color: white;
   }
   &.taken {
@@ -963,9 +963,9 @@
   &:hover { background: var(--subtle, #f4f2f3); }
 
   &.active {
-    background: oklch(0.56 0.13 162);
+    background: var(--accent);
     color: white;
-    &:hover { background: oklch(0.51 0.13 162); }
+    &:hover { background: var(--accent-hover); }
   }
   &.off {
     cursor: default;
@@ -1031,8 +1031,8 @@
 
   &:hover { background: var(--subtle, #f4f2f3); }
 
-  &.today    { border-color: oklch(0.56 0.13 162); }
-  &.selected { background: oklch(0.56 0.13 162); color: white; border-color: oklch(0.56 0.13 162); }
+  &.today    { border-color: var(--accent); }
+  &.selected { background: var(--accent); color: white; border-color: var(--accent); }
   &.past     { color: var(--faint, #b8b2b4); cursor: default; &:hover { background: transparent; } }
   &.empty    { cursor: default; &:hover { background: transparent; } }
 }
@@ -1043,7 +1043,7 @@
   width: 3px;
   height: 3px;
   border-radius: 999px;
-  background: oklch(0.56 0.13 162);
+  background: var(--accent);
 
   .selected & { background: white; }
 }
@@ -1068,7 +1068,7 @@
   margin-top: 6px;
   flex: none;
 
-  &.sm-notif__dot--accent  { background: oklch(0.56 0.13 162); }
+  &.sm-notif__dot--accent  { background: var(--accent); }
   &.sm-notif__dot--danger  { background: oklch(0.58 0.18 25);  }
   &.sm-notif__dot--warning { background: oklch(0.74 0.14 75);  }
   &.sm-notif__dot--muted   { background: var(--faint, #b8b2b4); }
@@ -1090,10 +1090,10 @@
   text-align: center;
   transition: border-color 0.15s, background 0.15s, color 0.15s;
 
-  &:hover { border-color: oklch(0.56 0.13 162); }
+  &:hover { border-color: var(--accent); }
 
   &.selected {
-    border-color: oklch(0.56 0.13 162);
+    border-color: var(--accent);
     background: var(--accent-soft, #edfaf3);
     color: var(--accent-ink, #003d22);
   }
@@ -1112,7 +1112,7 @@
   transition: box-shadow 0.15s;
 
   &.selected {
-    box-shadow: 0 0 0 3px var(--surface, #fff), 0 0 0 5px oklch(0.56 0.13 162);
+    box-shadow: 0 0 0 3px var(--surface, #fff), 0 0 0 5px var(--accent);
   }
 }
 
@@ -1137,7 +1137,7 @@
 .sm-divider { height: 1px; background: var(--border, #e9e5e6); border: 0; margin: 0; }
 .sm-row     { display: flex; align-items: center; gap: 8px; }
 
-.h-display  { font: 800 clamp(28px, 4vw, 48px) / 1.05 var(--font); letter-spacing: -0.02em; color: var(--ink, #12171b); & em { font-style: normal; color: oklch(0.56 0.13 162); } }
+.h-display  { font: 800 clamp(28px, 4vw, 48px) / 1.05 var(--font); letter-spacing: -0.02em; color: var(--ink, #12171b); & em { font-style: normal; color: var(--accent); } }
 .h-section  { font: 700 22px / 1.2 var(--font); letter-spacing: -0.01em; color: var(--ink, #12171b); margin: 0; }
 .h-card     { font: 700 16px / 1.3 var(--font); color: var(--ink, #12171b); margin: 0; }
 .t-muted    { color: var(--muted, #7a7478); }

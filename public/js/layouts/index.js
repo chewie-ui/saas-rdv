@@ -27,6 +27,7 @@ const STATE = {
   formAnswers: [],
   activeForm:  null,  // pre-booking form loaded from API
   loading:     false,
+  _openCat:    null,  // currently expanded category (null = all closed)
 };
 
 /* ── DOM refs ───────────────────────────────────────────────────────────── */
@@ -189,48 +190,112 @@ function escHtml(s) {
 /* ════════════════════════════════════════════════════════════════════════════
    STEP 1 — SERVICE
    ═══════════════════════════════════════════════════════════════════════════ */
+function renderSvcCard(s) {
+  const sel   = STATE.service && STATE.service.id === s._id ? "is-selected" : "";
+  const price = (s.price !== null && s.price !== undefined)
+    ? `<div class="bk-svc__price">${s.price}<small>€</small></div>` : "";
+  return `<div class="bk-svc ${sel}" data-svc="${s._id}">
+    <div>
+      <div class="bk-svc__name">${escHtml(s.name)}</div>
+      ${s.description ? `<div class="bk-svc__desc">${escHtml(s.description)}</div>` : ""}
+      <span class="bk-svc__dur">${s.duration} min</span>
+    </div>
+    ${price}
+    <div class="bk-svc__check">
+      <svg width="13" height="13" viewBox="0 -960 960 960" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>
+    </div>
+  </div>`;
+}
+
 function renderServicePane() {
+  const hasCategories = SERVICES.some(s => s.category && s.category.trim() !== "");
+
+  let bodyHtml;
+
+  if (!hasCategories) {
+    bodyHtml = `<div class="bk-svc-grid">${SERVICES.map(renderSvcCard).join("")}</div>`;
+  } else {
+    // Group by category, uncategorized last
+    const groups = {};
+    const uncategorized = [];
+    SERVICES.forEach(s => {
+      const cat = (s.category || "").trim();
+      if (!cat) { uncategorized.push(s); return; }
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(s);
+    });
+
+    // Open first category by default if nothing explicit; keep selected-service category open
+    const cats = Object.keys(groups);
+    if (STATE._openCat === null && cats.length > 0) STATE._openCat = cats[0];
+
+    const CATEGORIES_META = window.__categoriesMeta || [];
+
+    const groupsHtml = cats.map(cat => {
+      const svcs     = groups[cat];
+      const hasSelSvc = svcs.some(s => STATE.service && STATE.service.id === s._id);
+      const isOpen   = STATE._openCat === cat || hasSelSvc;
+      const catMeta  = CATEGORIES_META.find(c => c.name === cat);
+      const catIcon  = catMeta && catMeta.icon ? `<span class="bk-cat-icon">${escHtml(catMeta.icon)}</span>` : "";
+      return `<div class="bk-cat-group${isOpen ? " is-open" : ""}" data-cat="${escHtml(cat)}">
+        <button class="bk-cat-header" type="button" data-toggle-cat="${escHtml(cat)}">
+          ${catIcon}
+          <span class="bk-cat-name">${escHtml(cat)}</span>
+          <span class="bk-cat-count">${svcs.length} service${svcs.length > 1 ? "s" : ""}</span>
+          <svg class="bk-cat-arrow" width="16" height="16" viewBox="0 -960 960 960" fill="currentColor">
+            <path d="M480-360 280-560l56-56 144 144 144-144 56 56-200 200Z"/>
+          </svg>
+        </button>
+        <div class="bk-cat-body">
+          <div class="bk-svc-grid">${svcs.map(renderSvcCard).join("")}</div>
+        </div>
+      </div>`;
+    }).join("");
+
+    const uncatHtml = uncategorized.length > 0
+      ? `<div class="bk-svc-grid">${uncategorized.map(renderSvcCard).join("")}</div>` : "";
+
+    bodyHtml = `<div class="bk-cat-list">${groupsHtml}${uncatHtml}</div>`;
+  }
+
   pane.innerHTML = `<div class="bk-pane">
     <h2 class="bk-pane-title">Choisissez un service</h2>
     <p class="bk-pane-sub">Sélectionnez la prestation qui vous convient.</p>
-    <div class="bk-svc-grid">
-      ${SERVICES.map(s => {
-        const sel = STATE.service && STATE.service.id === s._id ? "is-selected" : "";
-        const price = (s.price !== null && s.price !== undefined) ? `<div class="bk-svc__price">${s.price}<small>€</small></div>` : "";
-        return `<div class="bk-svc ${sel}" data-svc="${s._id}">
-          <div>
-            <div class="bk-svc__name">${escHtml(s.name)}</div>
-            ${s.description ? `<div class="bk-svc__desc">${escHtml(s.description)}</div>` : ""}
-            <span class="bk-svc__dur">${s.duration} min</span>
-          </div>
-          ${price}
-          <div class="bk-svc__check">
-            <svg width="13" height="13" viewBox="0 -960 960 960" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>
-          </div>
-        </div>`;
-      }).join("")}
-    </div>
+    ${bodyHtml}
   </div>`;
 
+  // Bind service card clicks
   pane.querySelectorAll("[data-svc]").forEach(el => {
     el.onclick = () => {
       const svc = SERVICES.find(s => s._id === el.dataset.svc);
       if (!svc) return;
       STATE.service  = { id: svc._id, name: svc.name, price: svc.price, duration: svc.duration };
-      STATE.employee = undefined; // reset
+      STATE.employee = undefined;
       STATE.date     = null;
       STATE.time     = null;
-
       recomputeSteps();
-
-      // Auto-advance: go to employee step if the company has any employees
-      // (service-specific OR global fallback)
       const svcHasEmps    = (svc.employees || []).length > 0;
       const globalHasEmps = EMPLOYEES.length > 0;
       if (svcHasEmps || globalHasEmps) {
         goToStep("employee");
       } else {
         goToStep("time");
+      }
+    };
+  });
+
+  // Bind category accordion toggles
+  pane.querySelectorAll("[data-toggle-cat]").forEach(btn => {
+    btn.onclick = () => {
+      const cat   = btn.dataset.toggleCat;
+      const group = btn.closest(".bk-cat-group");
+      const isOpen = group.classList.contains("is-open");
+      pane.querySelectorAll(".bk-cat-group").forEach(g => g.classList.remove("is-open"));
+      if (!isOpen) {
+        group.classList.add("is-open");
+        STATE._openCat = cat;
+      } else {
+        STATE._openCat = null;
       }
     };
   });

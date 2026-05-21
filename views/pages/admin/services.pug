@@ -40,11 +40,19 @@ block content
 
         .services-list#servicesList
             each svc in services
-                .service-card(data-id=String(svc._id) class=(!svc.active ? 'service-card--inactive' : ''))
+                -
+                    var _catObj = svc.category ? categories.find(function(c){ return c.name === svc.category; }) : null
+                    var _catIcon = _catObj && _catObj.icon ? _catObj.icon : ''
+                .service-card(data-id=String(svc._id) data-category=svc.category || '' class=(!svc.active ? 'service-card--inactive' : ''))
                     .service-card__header
                         .service-card__name-row
                             h3.service-card__name= svc.name
                             .service-card__badges
+                                if svc.category
+                                    span.badge.badge--category
+                                        if _catIcon
+                                            span.badge-cat-icon= _catIcon + ' '
+                                        = svc.category
                                 if svc.price !== null && svc.price !== undefined
                                     span.badge.badge--price #{svc.price}€
                                 span.badge.badge--duration #{svc.duration} min
@@ -110,6 +118,18 @@ block content
                 label= t.services.service_name
                 input.input#serviceModalName(placeholder="Ex: Coupe simple, Massage détente...")
             .field
+                label= t.services.service_category
+                select.input#serviceModalCategory
+                    //- Populated by JS from window.__categories
+            #newCategorySection(style="display:none")
+                .field
+                    label= t.services.new_category_name
+                    input.input#newCategoryName(type="text" placeholder="Ex: Cheveux, Corps, Visage...")
+                .field
+                    label= t.services.new_category_icon
+                    input(type="hidden" id="newCategoryIconInput")
+                    .cat-icon-picker#catIconPicker
+            .field
                 label= t.services.service_desc
                 textarea.textarea#serviceModalDesc(placeholder="..." rows=3)
             .field-row
@@ -147,6 +167,10 @@ block content
 
 block scripts
     script.
-        window.__maxServices = !{maxServices || 0};
-        window.__svcCount    = !{services.length || 0};
+        window.__maxServices    = !{maxServices || 0};
+        window.__svcCount       = !{services.length || 0};
+        window.__categories     = !{JSON.stringify(categories || [])};
+        window.__t_no_category      = !{JSON.stringify(t.services.no_category     || 'Aucune catégorie')};
+        window.__t_create_category  = !{JSON.stringify(t.services.create_category || '+ Créer une catégorie')};
+        window.__t_new_cat_name     = !{JSON.stringify(t.services.new_category_name || 'Nom de la catégorie')};
     script(src="/js/layouts/services.js")

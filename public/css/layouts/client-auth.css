@@ -22,6 +22,27 @@
   box-shadow: var(--shadow-p);
 }
 
+/* ── Register card: wider ─────────────────────────────────── */
+.client-auth__card--wide {
+  max-width: 580px;
+}
+
+/* ── Two-column form row ──────────────────────────────────── */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 520px) {
+  .client-auth__card--wide {
+    padding: 2rem 1.25rem;
+  }
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .client-auth__header {
   margin-bottom: 1.75rem;
   text-align: center;

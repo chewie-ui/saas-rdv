@@ -1,81 +1,125 @@
-div(style="background-color:#f4f7f5;padding:40px 20px;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;color:#2d3436;")
-  div(style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.07);")
+-
+  var _year = new Date().getFullYear()
+  var _clientName = name + (surname ? ' ' + surname : '')
 
-    //- ── Header ─────────────────────────────────────────────────────────────
-    div(style="background:#1a7a4a;padding:36px 40px 28px;text-align:center;")
-      div(style="width:56px;height:56px;background:rgba(255,255,255,0.18);border-radius:50%;margin:0 auto 18px;display:inline-flex;align-items:center;justify-content:center;font-size:26px;line-height:1;")
-        | ✓
-      h1(style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;") Rendez-vous confirmé
-      p(style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.80);") Votre réservation a bien été enregistrée.
+div(style="margin:0;padding:0;background-color:#f4f7f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;")
+  table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0;padding:0;background-color:#f4f7f5;")
+    tr
+      td(align="center" style="padding:40px 16px;")
+        table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;margin:0 auto;")
 
-    //- ── Greeting ────────────────────────────────────────────────────────────
-    div(style="padding:28px 40px 0;")
-      p(style="margin:0;font-size:15px;color:#2d3436;")
-        | Bonjour&nbsp;
-        strong= name + (surname ? ' ' + surname : '')
-        | ,
+          //- ── Logo bar ───────────────────────────────────────────────────────
+          tr
+            td(align="center" style="padding:0 0 20px;")
+              a(href="https://www.branshee.com" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;")
+                span(style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:#1a7a4a;border-radius:9px;font-size:16px;font-weight:800;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,sans-serif;") B
+                span(style="font-size:15px;font-weight:700;color:#1e2923;letter-spacing:-0.2px;") BranShee
 
-    //- ── Detail card ─────────────────────────────────────────────────────────
-    div(style="padding:20px 40px 32px;")
-      div(style="background:#f8faf9;border:1px solid #e0ebe5;border-radius:10px;padding:24px 28px;")
+          //- ── Card ───────────────────────────────────────────────────────────
+          tr
+            td(style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);border:1px solid #e5ede8;")
 
-        //- Date / time
-        div(style="display:flex;align-items:flex-start;margin-bottom:16px;")
-          span(style="font-size:18px;margin-right:14px;flex-shrink:0;") 📅
-          div
-            p(style="margin:0;font-weight:600;font-size:14px;color:#1e272e;text-transform:capitalize;")= formattedDate
-            p(style="margin:4px 0 0;font-size:13px;color:#636e72;") #{startHour} — #{endHour}&nbsp;(#{slotTime} min)
+              //- Header
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="background:#1a7a4a;padding:36px 40px;text-align:center;")
+                    table(cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto 16px;")
+                      tr
+                        td(style="width:52px;height:52px;background:rgba(255,255,255,0.15);border-radius:50%;text-align:center;vertical-align:middle;")
+                          span(style="font-size:22px;line-height:52px;") ✓
+                    p(style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;") Rendez-vous confirmé
+                    p(style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.75);") Votre réservation a bien été enregistrée.
 
-        //- Service (if any)
-        if serviceName && serviceName.length > 0
-          div(style="display:flex;align-items:flex-start;margin-bottom:16px;")
-            span(style="font-size:18px;margin-right:14px;flex-shrink:0;") 🗂
-            div
-              p(style="margin:0;font-weight:600;font-size:14px;color:#1e272e;") Prestation
-              p(style="margin:4px 0 0;font-size:13px;color:#636e72;")= serviceName
+              //- Greeting
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="padding:28px 40px 0;")
+                    p(style="margin:0;font-size:15px;color:#374151;line-height:1.6;")
+                      | Bonjour&nbsp;
+                      strong(style="color:#1e2923;")= _clientName
+                      | ,
 
-        //- Employee (if any)
-        if employeeName && employeeName.length > 0
-          div(style="display:flex;align-items:flex-start;margin-bottom:16px;")
-            span(style="font-size:18px;margin-right:14px;flex-shrink:0;") 👤
-            div
-              p(style="margin:0;font-weight:600;font-size:14px;color:#1e272e;") Avec
-              p(style="margin:4px 0 0;font-size:13px;color:#636e72;")= employeeName
+              //- Detail card
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="padding:20px 40px 32px;")
+                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f8faf9;border:1px solid #e0ebe5;border-radius:12px;")
+                      tr
+                        td(style="padding:24px 28px;")
 
-        //- Location (if any)
-        if locationText && locationText.length > 0
-          div(style="display:flex;align-items:flex-start;margin-bottom:16px;")
-            span(style="font-size:18px;margin-right:14px;flex-shrink:0;") 📍
-            div
-              p(style="margin:0;font-weight:600;font-size:14px;color:#1e272e;") Lieu
-              p(style="margin:4px 0 0;font-size:13px;color:#636e72;")= locationText
+                          //- Date / time
+                          table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:18px;")
+                            tr
+                              td(width="36" valign="top" style="padding-top:1px;")
+                                span(style="font-size:20px;") 📅
+                              td(style="padding-left:12px;")
+                                p(style="margin:0;font-weight:600;font-size:14px;color:#1e2923;text-transform:capitalize;")= formattedDate
+                                p(style="margin:4px 0 0;font-size:13px;color:#6b7280;") #{startHour} — #{endHour}&nbsp;
+                                  span(style="color:#9ca3af;") (#{slotTime} min)
 
-        //- Form answers (if any)
-        if formAnswers && formAnswers.length > 0
-          each item in formAnswers
-            div(style="display:flex;align-items:flex-start;margin-bottom:16px;")
-              span(style="font-size:18px;margin-right:14px;flex-shrink:0;") 💬
-              div
-                p(style="margin:0;font-weight:600;font-size:14px;color:#1e272e;")= item.question || item.label || 'Réponse'
-                p(style="margin:4px 0 0;font-size:13px;color:#636e72;")= String(item.answer != null ? item.answer : '')
+                          //- Service
+                          if serviceName && serviceName.length > 0
+                            table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:18px;")
+                              tr
+                                td(width="36" valign="top" style="padding-top:1px;")
+                                  span(style="font-size:20px;") 🗂
+                                td(style="padding-left:12px;")
+                                  p(style="margin:0;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;") Prestation
+                                  p(style="margin:4px 0 0;font-size:14px;color:#1e2923;font-weight:500;")= serviceName
 
-        //- Message (free text, if any)
-        if message && message.length > 0
-          div(style="display:flex;align-items:flex-start;")
-            span(style="font-size:18px;margin-right:14px;flex-shrink:0;") 📝
-            div
-              p(style="margin:0;font-weight:600;font-size:14px;color:#1e272e;") Message
-              p(style="margin:4px 0 0;font-size:13px;color:#636e72;font-style:italic;") "#{message}"
+                          //- Employee
+                          if employeeName && employeeName.length > 0
+                            table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:18px;")
+                              tr
+                                td(width="36" valign="top" style="padding-top:1px;")
+                                  span(style="font-size:20px;") 👤
+                                td(style="padding-left:12px;")
+                                  p(style="margin:0;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;") Avec
+                                  p(style="margin:4px 0 0;font-size:14px;color:#1e2923;font-weight:500;")= employeeName
 
-    //- ── Cancel button ───────────────────────────────────────────────────────
-    div(style="padding:0 40px 36px;text-align:center;")
-      p(style="font-size:13px;color:#8c9aaa;margin:0 0 14px;") Si vous souhaitez annuler votre rendez-vous, cliquez ci-dessous&nbsp;:
-      a(
-        href=cancelUrl
-        style="display:inline-block;background:#f1f4f2;color:#4a5568;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;border:1px solid #d1dbd5;"
-      ) Annuler le rendez-vous
+                          //- Location
+                          if locationText && locationText.length > 0
+                            table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:18px;")
+                              tr
+                                td(width="36" valign="top" style="padding-top:1px;")
+                                  span(style="font-size:20px;") 📍
+                                td(style="padding-left:12px;")
+                                  p(style="margin:0;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;") Lieu
+                                  p(style="margin:4px 0 0;font-size:14px;color:#1e2923;font-weight:500;")= locationText
 
-    //- ── Footer ──────────────────────────────────────────────────────────────
-    div(style="text-align:center;padding:20px 40px;background:#f8faf9;border-top:1px solid #edf1ee;")
-      p(style="font-size:13px;color:#a0adb5;margin:0;") À bientôt — L'équipe BranShee
-      p(style="font-size:11px;color:#c8d3cc;margin:8px 0 0;") © #{new Date().getFullYear()} BranShee. Tous droits réservés.
+                          //- Form answers
+                          if formAnswers && formAnswers.length > 0
+                            each item in formAnswers
+                              table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:18px;")
+                                tr
+                                  td(width="36" valign="top" style="padding-top:1px;")
+                                    span(style="font-size:20px;") 💬
+                                  td(style="padding-left:12px;")
+                                    p(style="margin:0;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;")= item.question || item.label || 'Réponse'
+                                    p(style="margin:4px 0 0;font-size:14px;color:#1e2923;")= String(item.answer != null ? item.answer : '')
+
+                          //- Message
+                          if message && message.length > 0
+                            table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                              tr
+                                td(width="36" valign="top" style="padding-top:1px;")
+                                  span(style="font-size:20px;") 📝
+                                td(style="padding-left:12px;")
+                                  p(style="margin:0;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;") Message
+                                  p(style="margin:4px 0 0;font-size:14px;color:#1e2923;font-style:italic;") "#{message}"
+
+              //- Cancel button
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="padding:0 40px 36px;text-align:center;")
+                    p(style="margin:0 0 16px;font-size:13px;color:#9ca3af;") Besoin d'annuler votre rendez-vous ?
+                    a(href=cancelUrl style="display:inline-block;background:#f3f4f6;color:#374151;padding:11px 26px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;border:1px solid #d1d5db;") Annuler le rendez-vous
+
+              //- Footer
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="padding:20px 40px;background:#f8faf9;border-top:1px solid #e8efeb;text-align:center;")
+                    p(style="margin:0;font-size:13px;color:#9ca3af;") À bientôt — L'équipe BranShee
+                    p(style="margin:8px 0 0;font-size:11px;color:#d1d5db;") © #{_year} BranShee. Tous droits réservés.
+                    p(style="margin:6px 0 0;font-size:11px;")
+                      a(href="https://www.branshee.com" style="color:#b8ccbe;text-decoration:none;") www.branshee.com

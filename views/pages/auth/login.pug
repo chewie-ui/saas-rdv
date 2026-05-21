@@ -30,8 +30,7 @@ block content
                 h1= t.auth.login_title
                 p.auth-sub= t.auth.login_desc
 
-                if error
-                    .auth-error= error
+                .auth-error#loginError(style=error ? '' : 'display:none')= error || ''
 
                 //- Google SSO
                 a.auth-social-btn(href="/auth/google")
@@ -79,3 +78,52 @@ block content
 
 block scripts
     script(src="/js/components/topbar.js")
+    script.
+        (function() {
+            var form      = document.querySelector('form[action="/login"]');
+            var errBox    = document.getElementById('loginError');
+            var submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+
+            function showError(msg) {
+                if (!errBox) return;
+                errBox.textContent = msg;
+                errBox.style.display = 'block';
+                errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            if (form && submitBtn) {
+                var origLabel = submitBtn.querySelector('span') ? submitBtn.querySelector('span').textContent : submitBtn.textContent;
+
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    if (errBox) errBox.style.display = 'none';
+                    submitBtn.disabled = true;
+                    var span = submitBtn.querySelector('span');
+                    if (span) span.textContent = '…'; else submitBtn.textContent = '…';
+
+                    fetch('/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'fetch'
+                        },
+                        body: new URLSearchParams(new FormData(form)).toString()
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            window.location.href = data.redirect || '/appointment';
+                        } else {
+                            showError(data.error || 'Une erreur est survenue.');
+                            submitBtn.disabled = false;
+                            if (span) span.textContent = origLabel; else submitBtn.textContent = origLabel;
+                        }
+                    })
+                    .catch(function() {
+                        showError('Erreur réseau. Veuillez réessayer.');
+                        submitBtn.disabled = false;
+                        if (span) span.textContent = origLabel; else submitBtn.textContent = origLabel;
+                    });
+                });
+            }
+        })();

@@ -34,6 +34,7 @@ document.addEventListener("click", async (event) => {
 
 /* ── Search (server-side) ──────────────────────────────────── */
 const searchClient = document.getElementById("searchClient");
+const clearSearch  = document.getElementById("clearSearch");
 const tbody        = document.querySelector(".hist-table tbody");
 let debounceTimer;
 
@@ -41,11 +42,23 @@ if (searchClient) {
   searchClient.addEventListener("input", () => {
     clearTimeout(debounceTimer);
     const v = searchClient.value.trim();
+    if (clearSearch) clearSearch.style.display = v ? "flex" : "none";
     debounceTimer = setTimeout(async () => {
       const res  = await fetch(`/history/search?client=${encodeURIComponent(v)}`);
       const data = await res.json();
       renderData(data.results);
     }, 300);
+  });
+}
+
+if (clearSearch) {
+  clearSearch.addEventListener("click", async () => {
+    searchClient.value = "";
+    clearSearch.style.display = "none";
+    const res  = await fetch(`/history/search?client=`);
+    const data = await res.json();
+    renderData(data.results);
+    searchClient.focus();
   });
 }
 

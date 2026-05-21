@@ -4,6 +4,8 @@ const mongoose = require("mongoose");
 const Company = require("../db/models/company/company.model");
 const { sendEmail } = require("../utils/mailer");
 const getServices = require("../utils/services");
+const pug = require("pug");
+const path = require("path");
 
 exports.createUser = async (req, res) => {
   const isAjax = req.headers["x-requested-with"] === "fetch";
@@ -103,24 +105,14 @@ exports.forgotPasswordVerifyCode = async (req, res) => {
     console.log(code);
 
     req.session.forgotPwdCode = code;
+    const resetHtml = pug.renderFile(
+      path.join(__dirname, "../views/templates/emails/reset-password.pug"),
+      { code }
+    );
     const isSent = await sendEmail(
       value,
-      `Code de réinitialisation de votre mot de passe`,
-      `<html>
-    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h2 style="color: #1e272e;">Bonjour,</h2>
-      <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
-      <p>Voici votre code de vérification à 6 chiffres :</p>
-      <div style="font-size: 32px; font-weight: bold; color: #ff4757; padding: 15px 25px; border: 2px solid #ff4757; display: inline-block; border-radius: 8px; letter-spacing: 6px; margin: 10px 0;">
-        ${code}
-      </div>
-      <p>Merci de saisir ce code sur le site pour poursuivre la procédure.</p>
-      <p>Ce code est valable pendant une durée limitée. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email en toute sécurité.</p>
-      <p>Pour des raisons de sécurité, ne partagez jamais ce code avec qui que ce soit.</p>
-      <p>Si vous avez besoin d'aide, n'hésitez pas à nous contacter.</p>
-      <p>Cordialement,<br><strong>L'équipe BranShee</strong></p>
-    </body>
-  </html>`,
+      `Code de réinitialisation de votre mot de passe — BranShee`,
+      resetHtml,
     );
     console.log(isSent);
     if (isSent) {

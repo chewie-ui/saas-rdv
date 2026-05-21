@@ -13,11 +13,79 @@ document.addEventListener("DOMContentLoaded", () => {
   const serviceModalDesc   = document.getElementById("serviceModalDesc");
   const serviceModalPrice  = document.getElementById("serviceModalPrice");
   const serviceModalDuration = document.getElementById("serviceModalDuration");
+  const serviceModalCategory = document.getElementById("serviceModalCategory");
+  const newCategorySection = document.getElementById("newCategorySection");
+  const newCategoryName    = document.getElementById("newCategoryName");
+  const newCategoryIcon    = document.getElementById("newCategoryIconInput");
+  const catIconPicker      = document.getElementById("catIconPicker");
   const servicesList       = document.getElementById("servicesList");
   const svcCounter         = document.getElementById("svcCounter");
 
   const MAX_SERVICES = window.__maxServices || 0;
   let currentCount   = window.__svcCount   || 0;
+
+  // ── Category icons ─────────────────────────────────────────────────────────
+  const CAT_ICONS = [
+    { id: "✂️",  label: "Ciseaux"   }, { id: "💅",  label: "Ongles"    },
+    { id: "🧖",  label: "Visage"    }, { id: "🌿",  label: "Nature"    },
+    { id: "💪",  label: "Fitness"   }, { id: "👁️",  label: "Regard"    },
+    { id: "🌸",  label: "Floral"    }, { id: "⚡",  label: "Express"   },
+    { id: "💎",  label: "Luxe"      }, { id: "❤️",  label: "Bien-être" },
+    { id: "🎨",  label: "Beauté"    }, { id: "🔥",  label: "Intense"   },
+    { id: "☀️",  label: "Solaire"   }, { id: "💆",  label: "Massage"   },
+    { id: "🧴",  label: "Corps"     }, { id: "⭐",  label: "Premium"   },
+  ];
+
+  function buildIconPicker() {
+    if (!catIconPicker) return;
+    catIconPicker.innerHTML = CAT_ICONS.map(ic =>
+      `<button type="button" class="cat-icon-btn" data-icon="${ic.id}" title="${ic.label}">${ic.id}</button>`
+    ).join("");
+    catIconPicker.addEventListener("click", (e) => {
+      const btn = e.target.closest(".cat-icon-btn");
+      if (!btn) return;
+      catIconPicker.querySelectorAll(".cat-icon-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      if (newCategoryIcon) newCategoryIcon.value = btn.dataset.icon;
+    });
+  }
+  buildIconPicker();
+
+  function buildCategorySelect(currentValue) {
+    if (!serviceModalCategory) return;
+    const cats = window.__categories || [];
+    const noLabel     = window.__t_no_category     || "Aucune catégorie";
+    const createLabel = window.__t_create_category || "+ Créer une catégorie";
+    serviceModalCategory.innerHTML =
+      `<option value="">${noLabel}</option>` +
+      cats.map(c => {
+        const label = (c.icon ? c.icon + " " : "") + c.name;
+        const sel   = currentValue === c.name ? "selected" : "";
+        return `<option value="${c.name.replace(/"/g,"&quot;")}" ${sel}>${label}</option>`;
+      }).join("") +
+      `<option value="__create__">${createLabel}</option>`;
+    if (currentValue && !cats.some(c => c.name === currentValue)) {
+      // Value exists on service but not in categories list — add it as plain option
+      serviceModalCategory.insertAdjacentHTML("beforeend",
+        `<option value="${currentValue.replace(/"/g,"&quot;")}" selected>${currentValue}</option>`);
+    }
+  }
+
+  function showNewCategorySection(show) {
+    if (!newCategorySection) return;
+    newCategorySection.style.display = show ? "" : "none";
+    if (!show) {
+      if (newCategoryName) newCategoryName.value = "";
+      if (newCategoryIcon) newCategoryIcon.value = "";
+      if (catIconPicker) catIconPicker.querySelectorAll(".cat-icon-btn").forEach(b => b.classList.remove("selected"));
+    }
+  }
+
+  if (serviceModalCategory) {
+    serviceModalCategory.addEventListener("change", () => {
+      showNewCategorySection(serviceModalCategory.value === "__create__");
+    });
+  }
 
   const empModal           = document.getElementById("empModal");
   const empModalOverlay    = document.getElementById("empModalOverlay");
@@ -63,6 +131,8 @@ document.addEventListener("DOMContentLoaded", () => {
     serviceModalDesc.value = "";
     serviceModalPrice.value = "";
     serviceModalDuration.value = "30";
+    buildCategorySelect("");
+    showNewCategorySection(false);
     serviceModalTitle.textContent = "Nouveau service";
     saveServiceBtn.querySelector("span").textContent = "Enregistrer";
   }
@@ -91,12 +161,37 @@ document.addEventListener("DOMContentLoaded", () => {
     const name = serviceModalName.value.trim();
     if (!name) { serviceModalName.focus(); return; }
 
-    const id   = serviceModalId.value;
+    const id = serviceModalId.value;
+
+    // ── Resolve category ────────────────────────────────────────────────────
+    let categoryValue = serviceModalCategory ? serviceModalCategory.value : "";
+
+    if (categoryValue === "__create__") {
+      const newName = newCategoryName ? newCategoryName.value.trim() : "";
+      if (!newName) { if (newCategoryName) newCategoryName.focus(); return; }
+      const icon = newCategoryIcon ? newCategoryIcon.value : "";
+
+      // Add to local list and persist
+      window.__categories = window.__categories || [];
+      if (!window.__categories.some(c => c.name.toLowerCase() === newName.toLowerCase())) {
+        window.__categories.push({ name: newName, icon });
+        try {
+          await fetch("/account/categories", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ categories: window.__categories }),
+          });
+        } catch (_) {}
+      }
+      categoryValue = newName;
+    }
+
     const body = {
       name,
       description: serviceModalDesc.value.trim(),
       price: serviceModalPrice.value,
       duration: serviceModalDuration.value || 30,
+      category: categoryValue,
     };
 
     const url    = id ? `/api/services/${id}` : "/api/services";
@@ -135,6 +230,8 @@ document.addEventListener("DOMContentLoaded", () => {
       serviceModalPrice.value = priceBadge ? priceBadge.textContent.replace("€", "").trim() : "";
       const durBadge = card.querySelector(".badge--duration");
       serviceModalDuration.value = durBadge ? parseInt(durBadge.textContent) : 30;
+      buildCategorySelect(card.dataset.category || "");
+      showNewCategorySection(false);
       serviceModalTitle.textContent = "Modifier le service";
       openModal(serviceModal, serviceModalOverlay);
       serviceModalName.focus();

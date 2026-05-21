@@ -15,44 +15,30 @@ exports.getRegister = (req, res) => {
 };
 
 exports.postRegister = async (req, res) => {
+  const isAjax = req.headers["x-requested-with"] === "fetch";
   const { fullName, email, phone, password, confirmPassword } = req.body;
 
-  if (!fullName || !email || !password) {
+  function fail(msg) {
+    if (isAjax) return res.status(400).json({ error: msg });
     return res.render("client/client-register", {
       title: "Créer un compte — BranShee",
       alwaysSticky: true,
       clientAuth: true,
-      error: "Veuillez remplir tous les champs obligatoires.",
+      error: msg,
     });
   }
 
-  if (password !== confirmPassword) {
-    return res.render("client/client-register", {
-      title: "Créer un compte — BranShee",
-      alwaysSticky: true,
-      clientAuth: true,
-      error: "Les mots de passe ne correspondent pas.",
-    });
-  }
+  if (!fullName || !email || !password)
+    return fail("Veuillez remplir tous les champs obligatoires.");
 
-  if (password.length < 8) {
-    return res.render("client/client-register", {
-      title: "Créer un compte — BranShee",
-      alwaysSticky: true,
-      clientAuth: true,
-      error: "Le mot de passe doit contenir au moins 8 caractères.",
-    });
-  }
+  if (password !== confirmPassword)
+    return fail("Les mots de passe ne correspondent pas.");
+
+  if (password.length < 8)
+    return fail("Le mot de passe doit contenir au moins 8 caractères.");
 
   const existing = await Client.findOne({ email: email.toLowerCase().trim() });
-  if (existing) {
-    return res.render("client/client-register", {
-      title: "Créer un compte — BranShee",
-      alwaysSticky: true,
-      clientAuth: true,
-      error: "Cette adresse email est déjà utilisée.",
-    });
-  }
+  if (existing) return fail("Cette adresse email est déjà utilisée.");
 
   const hashed = await bcrypt.hash(password, 10);
   const client = await Client.create({
@@ -69,6 +55,7 @@ exports.postRegister = async (req, res) => {
   );
 
   req.session.clientId = client._id.toString();
+  if (isAjax) return res.json({ success: true, redirect: "/espace-client" });
   return res.redirect("/espace-client");
 };
 
@@ -85,27 +72,24 @@ exports.getLogin = (req, res) => {
 };
 
 exports.postLogin = async (req, res) => {
+  const isAjax = req.headers["x-requested-with"] === "fetch";
   const { email, password } = req.body;
 
-  const client = await Client.findOne({ email: email?.toLowerCase().trim() });
-  if (!client) {
+  function fail(msg) {
+    if (isAjax) return res.status(400).json({ error: msg });
     return res.render("client/client-login", {
       title: "Connexion client — BranShee",
       alwaysSticky: true,
       clientAuth: true,
-      error: "Email ou mot de passe incorrect.",
+      error: msg,
     });
   }
 
+  const client = await Client.findOne({ email: email?.toLowerCase().trim() });
+  if (!client) return fail("Email ou mot de passe incorrect.");
+
   const match = await bcrypt.compare(password, client.password);
-  if (!match) {
-    return res.render("client/client-login", {
-      title: "Connexion client — BranShee",
-      alwaysSticky: true,
-      clientAuth: true,
-      error: "Email ou mot de passe incorrect.",
-    });
-  }
+  if (!match) return fail("Email ou mot de passe incorrect.");
 
   req.session.clientId = client._id.toString();
 
@@ -114,6 +98,7 @@ exports.postLogin = async (req, res) => {
     res.cookie("user_lang", client.preferredLang, { maxAge: 365 * 24 * 60 * 60 * 1000, httpOnly: false });
   }
 
+  if (isAjax) return res.json({ success: true, redirect: "/espace-client" });
   return res.redirect("/espace-client");
 };
 
@@ -132,7 +117,7 @@ exports.getDashboard = async (req, res) => {
   now.setHours(0, 0, 0, 0);
 
   const allBookings = await Booking.find({ clientRef: client._id })
-    .populate("company", "fullName profilePicture")
+    .populate("company", "fullName profilePicture slug")
     .sort({ date: -1 })
     .lean();
 

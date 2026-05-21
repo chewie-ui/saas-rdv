@@ -14,6 +14,7 @@ router.use(require("./company"));
 router.use(require("./admin"));
 router.use(require("./booking"));
 router.use("/api", require("./api"));
+router.use("/reviews", require("./reviews"));
 router.use("/account", require("./user/account"));
 router.use(require("./superadmin"));
 router.use(require("./services"));
@@ -310,6 +311,7 @@ router.get("/:company", async (req, res) => {
         description: s.description || "",
         price: s.price,
         duration: s.duration,
+        category: s.category || "",
         employees: (s.employees || []).map(function (e) {
           return {
             _id: String(e._id),
@@ -362,8 +364,10 @@ router.get("/:company", async (req, res) => {
     }
   } catch (_) { isOpenToday = false; }
 
-  // Client connecté → pré-remplir le formulaire de réservation
-  let clientUser = null;
+  // Client connecté → pré-remplir le formulaire + vérifier doublon avis
+  let clientUser    = null;
+  let clientSession = null;
+  let hasReviewed   = false;
   if (req.session && req.session.clientId) {
     try {
       const Client = require("../db/models/client.model");
@@ -376,12 +380,37 @@ router.get("/:company", async (req, res) => {
           email: client.email || "",
           phone: client.phone || "",
         };
+        clientSession = {
+          _id:            String(client._id),
+          fullName:       client.fullName || "",
+          profilePicture: client.profilePicture || "/images/no-user.webp",
+        };
+        // Vérifier si cet utilisateur a déjà posté un avis
+        const Review = require("../db/models/review.model");
+        const existingReview = await Review.findOne({ company: company._id, client: client._id }).lean();
+        hasReviewed = !!existingReview;
       }
     } catch (_) {}
   }
 
+  // ── Avis ──────────────────────────────────────────────────────────────────
+  let reviews = [], avgRating = 0, reviewCount = 0;
+  try {
+    const Review = require("../db/models/review.model");
+    reviews = await Review.find({ company: company._id })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+    reviewCount = reviews.length;
+    if (reviewCount > 0) {
+      avgRating = Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviewCount) * 10) / 10;
+    }
+  } catch (_) {}
+
   const profileTitle = `${coach.businessName || coach.fullName} — Réserver en ligne | BranShee`;
   const profileDesc = coach.description ? `${coach.description.slice(0, 150)}…` : `Réservez en ligne avec ${coach.businessName || coach.fullName}. Prise de rendez-vous rapide et gratuite sur BranShee.`;
+
+  const cs = coach.calendarSettings || {};
 
   res.render("client/index", {
     title: profileTitle,
@@ -396,7 +425,15 @@ router.get("/:company", async (req, res) => {
     servicesJson,
     employeesJson,
     clientUser,
+    clientSession,
+    hasReviewed,
+    reviews,
+    avgRating,
+    reviewCount,
     isOpenToday,
+    cs,
+    gallery:   cs.gallery   || [],
+    equipment: cs.equipment || [],
     amenityOptions: AMENITY_OPTIONS,
     badgeOptions: BADGE_OPTIONS,
     alwaysSticky: true,

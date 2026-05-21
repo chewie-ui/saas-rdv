@@ -1,578 +1,489 @@
 extends ../../layouts/admin
 
 block links
-    link(rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@400;600&family=Roboto:wght@400;600&family=Montserrat:wght@400;600&family=Lato:wght@400;700&family=Nunito:wght@400;600&family=Raleway:wght@400;600&family=Open+Sans:wght@400;600&family=Playfair+Display:wght@400;600&display=swap")
+    link(rel="stylesheet" href="/css/layouts/informations.css")
     link(rel="stylesheet" href="/css/layouts/customize.css")
 
 block content
-    .customize-layout
-        .customize-panel
+    - var cs = calendarSettings || {}
 
-            //- ── Section 1 : Mise en page ──────────────────────────────────
-            .customize-section
-                .customize-section__header
-                    h3= t.customize.layout_section
-                .customize-section__body
+    .info-page
 
-                    .layout-cards
-                        label.layout-card(for="layout-classic" title=t.customize.layout_classic)
-                            input#layout-classic(type="radio" name="layoutStyle" value="classic")
-                            .layout-card__diagram
-                                .lc-col.lc-info
-                                .lc-col.lc-cal
-                                .lc-col.lc-sched
-                            span= t.customize.layout_classic
-                        label.layout-card(for="layout-centered" title=t.customize.layout_centered)
-                            input#layout-centered(type="radio" name="layoutStyle" value="centered")
-                            .layout-card__diagram.lc-centered-diag
-                                .lc-cal-wide
-                                .lc-sched-thin
-                            span= t.customize.layout_centered
-                        label.layout-card(for="layout-title" title=t.customize.layout_title)
-                            input#layout-title(type="radio" name="layoutStyle" value="title")
-                            .layout-card__diagram.lc-title-diag
-                                .lc-title-bar
-                                .lc-row
-                                    .lc-cal-sm
-                                    .lc-sched-sm
-                            span= t.customize.layout_title
+        .info-page__header
+            h2 Personnaliser votre page
+            p.info-page__subtitle Gérez votre établissement, votre URL, vos réseaux sociaux et les sections de votre page publique.
 
-                    .toggle-row
-                        span= t.customize.show_info
-                        label.toggle-switch(for="toggleShowInfo")
-                            input#toggleShowInfo(type="checkbox")
-                            .toggle-track
-                                .toggle-thumb
+        //- ── Profil de l'établissement ──────────────────────────────────────────
+        .info-card
+            .info-card__header.info-card__header--with-cb
+                .info-card__header__left
+                    h3 Profil de l'établissement
+                    p.info-card__desc Ces informations sont affichées en haut de votre page de réservation.
+                label.section-cb-label(for="toggleSectionAbout" title="Afficher la description « À propos » sur la page publique")
+                    input#toggleSectionAbout.toggle-cb(type="checkbox" checked=cs.showSectionAbout !== false)
+                    span.section-pill À propos
+            .biz-row
+                .biz-photo-col
+                    .biz-photo-preview
+                        if user.businessPicture
+                            img#businessPicPreview(alt="Photo de l'établissement" src=user.businessPicture)
+                        else
+                            .biz-photo-placeholder#businessPicPreview
+                                svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
+                                    path(d="M160-120q-33 0-56.5-23.5T80-200v-480q0-33 23.5-56.5T160-760h126l74-80h240l74 80h126q33 0 56.5 23.5T880-680v480q0 33-23.5 56.5T800-120H160Zm0-80h640v-480H160v480Zm320-80q-58 0-99-41t-41-99q0-58 41-99t99-41q58 0 99 41t41 99q0 58-41 99t-99 41Zm0-80q25 0 42.5-17.5T540-420q0-25-17.5-42.5T480-480q-25 0-42.5 17.5T420-420q0 25 17.5 42.5T480-360Z")
+                    input#businessFileInput(type="file" style="display:none" accept="image/*")
+                    button.sm-btn.sm-btn--ghost#uploadBusinessBtn
+                        span Photo
+                .biz-fields
+                    .field
+                        label Nom de l'établissement
+                        input.input#businessNameInput(
+                            type="text"
+                            value=user.businessName || ""
+                            placeholder="Ex: Salon de Marie"
+                        )
+                    .field
+                        label Description
+                        textarea.textarea#descriptionCoach(maxlength=500 placeholder="Décrivez votre activité en quelques mots...")= user.description || ''
+                        span.field-hint#descCount #{(user.description || '').length}/500
+                    .field
+                        label Type d'activité
+                        .service-select-wrapper
+                            input.input#businessTypeInput(
+                                type="text"
+                                placeholder="Ex: Coiffeur, Médecin, Coach sportif..."
+                                autocomplete="off"
+                                value=user.businessType || ""
+                            )
+                            .service-dropdown#businessTypeDropdown
+            .info-card__actions
+                button.sm-btn.sm-btn--primary#saveBusinessInfo
+                    span Enregistrer
 
-                    .toggle-row
-                        span= t.customize.show_socials
-                        label.toggle-switch(for="toggleShowSocials")
-                            input#toggleShowSocials(type="checkbox")
-                            .toggle-track
-                                .toggle-thumb
+        //- ── Localisation ───────────────────────────────────────────────────────
+        .info-card
+            .info-card__header.info-card__header--with-cb
+                .info-card__header__left
+                    h3 Localisation
+                    p.info-card__desc Votre adresse est affichée sur la carte de votre page publique.
+                .info-card__header__cbs
+                    label.section-cb-label(for="toggleSectionMap" title="Afficher la carte sur la page publique")
+                        input#toggleSectionMap.toggle-cb(type="checkbox" checked=cs.showSectionMap !== false)
+                        span.section-pill Carte
+                    label.section-cb-label(for="toggleSectionHours" title="Afficher les horaires sur la page publique")
+                        input#toggleSectionHours.toggle-cb(type="checkbox" checked=cs.showSectionHours !== false)
+                        span.section-pill Horaires
+            .location-layout
+                .location-map#mapContainer
+                    if user.location && user.location.iframeUrl
+                        iframe(src=user.location.iframeUrl style="border:0;width:100%;height:300px;display:block;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade")
+                    else
+                        iframe(src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2624.9916256937595!2d2.292292615509614!3d48.85837360866272!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47e66e2964e34e2d%3A0x8ddca9ee380ef7e0!2sTour%20Eiffel!5e0!3m2!1sfr!2sfr!4v1680000000000!5m2!1sfr!2sfr" style="border:0;width:100%;height:300px;display:block;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade")
+                .location-form
+                    input(type="hidden" id="latInput" value=(user.location && user.location.lat) || "")
+                    input(type="hidden" id="lonInput" value=(user.location && user.location.lon) || "")
 
-                    .field-row
-                        span= t.customize.font
-                        select#fontSelect.input.font-select
-                            option(value="Inter") Inter
-                            option(value="Poppins") Poppins
-                            option(value="Roboto") Roboto
-                            option(value="Montserrat") Montserrat
-                            option(value="Lato") Lato
-                            option(value="Nunito") Nunito
-                            option(value="Raleway") Raleway
-                            option(value="Open Sans") Open Sans
-                            option(value="Playfair Display") Playfair Display
+                    //- ── Type de service ────────────────────────────────────
+                    .field
+                        .radio-group
+                            .radio-item
+                                input#onlineService(type="radio" name="serviceType" checked=(!(user.location && user.location.serviceType === 'en_ligne')))
+                                label(for="onlineService")
+                                    span.custom-radio
+                                    = t.info.on_site
+                            .radio-item
+                                input#homeService(type="radio" name="serviceType" checked=(user.location && user.location.serviceType === 'en_ligne'))
+                                label(for="homeService")
+                                    span.custom-radio
+                                    = t.info.online_svc
 
-            //- ── Section 2 : Arrière-plan ──────────────────────────────────
-            .customize-section
-                .customize-section__header
-                    h3= t.customize.bg_section
-                .customize-section__body.bg-body
-                    .bg-tabs
-                        button.bg-tab.active(data-tab="color" type="button")= t.customize.bg_color
-                        button.bg-tab(data-tab="image" type="button")= t.customize.bg_image
-                    .bg-panel(data-tab="color")
-                        .color-row(data-key="pageBg")
-                            .color-row__label
-                                span= t.customize.page_bg
-                            .color-row__inputs
-                                input.color-swatch(type="color")
-                                input.color-hex.input(type="text" maxlength=7 placeholder="#f3f4f6")
-                    .bg-panel.hidden(data-tab="image")
-                        .bg-upload-area#bgUploadArea
-                            input#bgImageInput(type="file" accept="image/*" style="display:none")
-                            .bg-upload-preview#bgUploadPreview
-                                span#bgUploadHint= t.customize.upload_hint
-                        button.sm-btn.sm-btn--ghost#removeBgImage(type="button" style="display:none")= t.customize.remove_image
+                    //- ── Sélecteur de méthode ───────────────────────────────
+                    .loc-methods#locMethods
+                        button.loc-method-btn.active(type="button" data-method="address") Adresse
+                        button.loc-method-btn(type="button" data-method="gmap") Lien Google Maps
+                        button.loc-method-btn(type="button" data-method="gps") Coordonnées GPS
 
-            //- ── Section 3 : Couleurs ──────────────────────────────────────
-            .customize-section
-                .customize-section__header
-                    h3= t.customize.colors_section
-                .customize-section__body.color-list
-                    .color-row(data-key="calBg")
-                        .color-row__label
-                            span= t.customize.cal_bg
-                        .color-row__inputs
-                            input.color-swatch(type="color")
-                            input.color-hex.input(type="text" maxlength=7 placeholder="#ffffff")
-                    .color-row(data-key="accentColor")
-                        .color-row__label
-                            span= t.customize.accent_color
-                        .color-row__inputs
-                            input.color-swatch(type="color")
-                            input.color-hex.input(type="text" maxlength=7 placeholder="#22c55e")
-                    .color-row(data-key="accentText")
-                        .color-row__label
-                            span= t.customize.accent_text
-                        .color-row__inputs
-                            input.color-swatch(type="color")
-                            input.color-hex.input(type="text" maxlength=7 placeholder="#ffffff")
-                    .color-row(data-key="dayBg")
-                        .color-row__label
-                            span= t.customize.day_bg
-                        .color-row__inputs
-                            input.color-swatch(type="color")
-                            input.color-hex.input(type="text" maxlength=7 placeholder="#ffffff")
-                    .color-row(data-key="dayText")
-                        .color-row__label
-                            span= t.customize.day_text
-                        .color-row__inputs
-                            input.color-swatch(type="color")
-                            input.color-hex.input(type="text" maxlength=7 placeholder="#111111")
-                    .color-row(data-key="btnBg")
-                        .color-row__label
-                            span= t.customize.btn_bg
-                        .color-row__inputs
-                            input.color-swatch(type="color")
-                            input.color-hex.input(type="text" maxlength=7 placeholder="#111111")
-                    .color-row(data-key="btnText")
-                        .color-row__label
-                            span= t.customize.btn_text
-                        .color-row__inputs
-                            input.color-swatch(type="color")
-                            input.color-hex.input(type="text" maxlength=7 placeholder="#ffffff")
+                    //- ── Méthode 1 : Adresse ────────────────────────────────
+                    #locMethodAddress
+                        #addressSearchBlock.field
+                            label= t.info.search_addr
+                            input.input(placeholder=t.info.addr_placeholder id="addressInput" autocomplete="chrome-off")
+                            #results.results
+                        #fullAddressBlock
+                            .field
+                                label= t.info.address
+                                input.input(id='streetInput' value=(user.location && user.location.address) || "")
+                            .field
+                                label= t.info.zip
+                                input.input(id='zipInput' value=(user.location && user.location.zip) || "")
+                            .field
+                                label= t.info.city
+                                input.input(id='cityInput' value=(user.location && user.location.city) || "")
+                            .field
+                                label= t.info.country
+                                input.input(id='countryInput' value=(user.location && user.location.country) || "")
+                        #onlineAddressBlock(style="display:none")
+                            .field
+                                label= t.info.country
+                                input.input(id='countryInputOnline' value=(user.location && user.location.country) || "")
+                            .field
+                                label= t.info.city_optional
+                                input.input(id='cityInputOnline' value=(user.location && user.location.city) || "")
 
-            //- ── Section 4 : Sections de la page ──────────────────────────
-            .customize-section
-                .customize-section__header
-                    h3 Sections de la page
-                .customize-section__body
+                    //- ── Méthode 2 : Lien Google Maps ───────────────────────
+                    #locMethodGmap(style="display:none")
+                        .field
+                            label Lien Google Maps
+                            input.input#gmapUrlInput(
+                                type="text"
+                                placeholder="https://maps.google.com/?q=... ou https://www.google.com/maps/@..."
+                                value=(user.location && user.location.gmapUrl) || ""
+                            )
+                            p.field-hint Collez le lien copié depuis Google Maps (clic droit → Partager → Copier le lien).
+                        p.loc-parse-status#gmapParseStatus
 
-                    .toggle-row
-                        .toggle-row__label
-                            span À propos
-                            small.toggle-row__hint Carte, horaires, adresse
-                        label.toggle-switch(for="toggleSectionAbout")
-                            input#toggleSectionAbout(type="checkbox")
-                            .toggle-track
-                                .toggle-thumb
+                    //- ── Méthode 3 : Coordonnées GPS ────────────────────────
+                    #locMethodGps(style="display:none")
+                        .field
+                            label Latitude
+                            input.input#gpsLatInput(
+                                type="number"
+                                step="0.000001"
+                                placeholder="ex: 48.856600"
+                                value=(user.location && user.location.lat) || ""
+                            )
+                        .field
+                            label Longitude
+                            input.input#gpsLonInput(
+                                type="number"
+                                step="0.000001"
+                                placeholder="ex: 2.352200"
+                                value=(user.location && user.location.lon) || ""
+                            )
+                        p.field-hint Trouvez vos coordonnées sur Google Maps : clic droit sur le lieu → les coordonnées s'affichent en haut du menu.
 
-                    .toggle-row
-                        .toggle-row__label
-                            span Services
-                            small.toggle-row__hint Liste de vos prestations
-                        label.toggle-switch(for="toggleSectionServices")
-                            input#toggleSectionServices(type="checkbox")
-                            .toggle-track
-                                .toggle-thumb
+                    .info-card__actions(style="margin-top:4px")
+                        button.sm-btn.sm-btn--primary#confirmLocation
+                            span= t.info.confirm_location
 
-                    .toggle-row
-                        .toggle-row__label
-                            span Équipe
-                            small.toggle-row__hint Vos employés
-                        label.toggle-switch(for="toggleSectionTeam")
-                            input#toggleSectionTeam(type="checkbox")
-                            .toggle-track
-                                .toggle-thumb
+        //- ── Galerie photos ──────────────────────────────────────────────────────
+        .info-card
+            .info-card__header.info-card__header--with-cb
+                .info-card__header__left
+                    h3 Galerie photos
+                    p.info-card__desc Ajoutez jusqu'à 12 photos de votre établissement.
+                label.section-cb-label(for="toggleSectionGallery" title="Afficher la galerie sur la page publique")
+                    input#toggleSectionGallery.toggle-cb(type="checkbox" checked=!!cs.showSectionGallery)
+                    span.section-pill Galerie
+            .gallery-grid#galleryGrid
+                each photo, idx in gallery
+                    .gallery-item(data-index=idx)
+                        img(src=photo alt="Photo " + (idx+1))
+                        button.gallery-item__del(type="button" data-index=idx title="Supprimer")
+                            svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
+                if gallery.length < 12
+                    label.gallery-add-btn(for="galleryFileInput")
+                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                            path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                        span Ajouter
+                        input#galleryFileInput(type="file" accept="image/*" multiple style="display:none")
 
-            //- ── Actions ───────────────────────────────────────────────────
-            .customize-actions
-                button.sm-btn.sm-btn--ghost#resetCalendarSettings(type="button")
-                    span= t.customize.reset
-                button.sm-btn.sm-btn--primary#saveCalendarSettings(type="button")
-                    span= t.customize.save
+        //- ── URL personnalisée ────────────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3= t.info.custom_url_title || 'URL personnalisée'
+                p.info-card__desc= t.info.custom_url_desc || 'Choisissez une URL unique pour votre page de réservation publique.'
+            if !canUseCustomUrl
+                .info-addon-gate
+                    svg(xmlns="http://www.w3.org/2000/svg" height="28px" viewBox="0 -960 960 960" width="28px" fill="currentColor")
+                        path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z")
+                    .info-addon-gate__text
+                        strong URL personnalisée — Business
+                        if isPro
+                            p Incluse dans le plan Business. Disponible également en add-on (+5€/mois).
+                        else
+                            p Incluse dans le plan Business, ou en add-on (+5€/mois) à partir du plan Pro.
+                        .info-addon-gate__preview
+                            span.info-addon-gate__preview-dim branshee.com/
+                            span.info-addon-gate__preview-slug= (currentCompany && currentCompany.slug) ? currentCompany.slug : (user.businessName ? user.businessName.toLowerCase().replace(/\s+/g, '-') : 'mon-salon')
+                    if isPro
+                        a.btn-upgrade-business(href="/subscription") Passer au Business
+                    else
+                        a.btn-upgrade-pro(href="/subscription") Passer au Pro
+            else
+                .field
+                    label= t.info.custom_url_label || 'Nom d\'URL'
+                    .slug-field-wrapper
+                        span.slug-prefix branshee.com/
+                        input.input#slugInput(
+                            type="text"
+                            value=(currentCompany && currentCompany.slug ? currentCompany.slug : '')
+                            placeholder="mon-salon"
+                            autocomplete="off"
+                        )
+                    .slug-status#slugStatus
+                if currentCompany && (currentCompany.slug || currentCompany._id)
+                    .slug-share-row
+                        .slug-share-url#slugShareUrl= 'branshee.com/' + (currentCompany.slug || String(currentCompany._id))
+                        button.sm-btn.sm-btn--ghost#copySlugBtn(type="button")
+                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z")
+                            span Copier le lien
+                .info-card__actions
+                    button.sm-btn.sm-btn--primary#saveSlugBtn
+                        span= t.info.custom_url_save || 'Enregistrer l\'URL'
 
-        //- ── Preview ───────────────────────────────────────────────────────
-        .customize-preview
-            .customize-section
-                .customize-section__header
-                    h3= t.customize.preview
-                .customize-section__body.preview-body
-                    .preview-frame#previewFrame
-                        .pv-page#pvPage
-                            .pv-title-bar#pvTitleBar
-                                span.pv-biz-name Votre activité
-                            .pv-content#pvContent
-                                .pv-info#pvInfo
-                                    .pv-info__top
-                                        .pv-avatar
-                                        .pv-name
-                                            .pv-name-line
-                                            .pv-name-line.short
-                                    .pv-info__bottom#pvSocial
-                                        .pv-social-item
-                                        .pv-social-item
-                                        .pv-social-item
-                                .pv-cal
-                                    .pv-cal__nav
-                                        button.pv-nav-btn Préc.
-                                        span.pv-month-label Mai 2026
-                                        button.pv-nav-btn Suiv.
-                                    .pv-cal__weekdays
-                                        span Lu
-                                        span Ma
-                                        span Me
-                                        span Je
-                                        span Ve
-                                        span Sa
-                                        span Di
-                                    .pv-cal__days
-                                        span.pv-day.pv-empty
-                                        span.pv-day.pv-empty
-                                        span.pv-day.pv-empty
-                                        span.pv-day 1
-                                        span.pv-day 2
-                                        span.pv-day 3
-                                        span.pv-day 4
-                                        span.pv-day 5
-                                        span.pv-day 6
-                                        span.pv-day 7
-                                        span.pv-day 8
-                                        span.pv-day 9
-                                        span.pv-day 10
-                                        span.pv-day 11
-                                        span.pv-day 12
-                                        span.pv-day 13
-                                        span.pv-day 14
-                                        span.pv-day 15
-                                        span.pv-day 16
-                                        span.pv-day 17
-                                        span.pv-day 18
-                                        span.pv-day 19
-                                        span.pv-day.pv-today 20
-                                        span.pv-day 21
-                                        span.pv-day 22
-                                        span.pv-day 23
-                                        span.pv-day 24
-                                        span.pv-day 25
-                                        span.pv-day 26
-                                        span.pv-day 27
-                                        span.pv-day 28
-                                        span.pv-day 29
-                                        span.pv-day 30
-                                        span.pv-day 31
+        //- ── Réseaux sociaux ─────────────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3= t.profile.social_title || 'Réseaux sociaux'
+                p.info-card__desc= t.info.social_desc || 'Affichez vos coordonnées sur votre page publique.'
+            .social-grid
+                -
+                    var csS = (user.calendarSettings) ? user.calendarSettings : {}
+                    var socials = [
+                        { name: 'emailPro',       toggle: 'showEmailPro',  logo: 'email-logo.webp',     alt: 'Email logo',     label: t.profile.social.email_pro,   val: user.emailPro       || '' },
+                        { name: 'phonePro',       toggle: 'showPhonePro',  logo: 'phone-logo.webp',     alt: 'Phone logo',     label: t.profile.social.phone_pro,   val: user.phonePro       || '' },
+                        { name: 'instagramLink',  toggle: 'showInstagram', logo: 'instagram-logo.webp', alt: 'Instagram logo', label: t.profile.social.instagram,   val: user.instagramLink  || '' },
+                        { name: 'whatsappLink',   toggle: 'showWhatsapp',  logo: 'whatsapp-logo.webp',  alt: 'Whatsapp logo',  label: t.profile.social.whatsapp,    val: user.whatsappLink   || '' },
+                        { name: 'facebookLink',   toggle: 'showFacebook',  logo: 'facebook-logo.webp',  alt: 'Facebook logo',  label: t.profile.social.facebook,    val: user.facebookLink   || '' },
+                        { name: 'website',        toggle: 'showWebsite',   logo: 'website-logo.webp',   alt: 'Website logo',   label: t.profile.social.website,     val: user.website        || '' }
+                    ]
+                each s in socials
+                    -
+                        var isOn = (csS[s.toggle] !== false)
+                    .social-box(data-name=s.name class=(!isOn ? 'social-box--hidden' : ''))
+                        if !canUseSocial
+                            a.btn-upgrade-pro.get__premium(href="/subscription") Passer au Pro
+                        label.social-visibility-toggle(title=t.info.toggle_visibility data-toggle=s.toggle)
+                            input.social-visibility-toggle__input(
+                                type="checkbox"
+                                checked=isOn
+                                disabled=(!canUseSocial)
+                            )
+                            span.social-visibility-toggle__track
+                                span.social-visibility-toggle__thumb
+                        .social-box__logo
+                            img(src="/images/logos/" + s.logo alt=s.alt)
+                        .social-box__title= s.label
+                        .social-box__field
+                            input.input(placeholder=t.info.link_placeholder value=s.val disabled=(!canUseSocial))
+                            button.sm-btn.sm-btn--ghost.btn__social-save
+                                span= t.avail.save
+
+        //- ── Équipements & marques ───────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3 Équipements & marques utilisés
+                p.info-card__desc Affichez les outils et marques utilisés dans votre établissement.
+            .equipment-tag-input#equipmentWrap
+                each item in equipment
+                    .eq-tag
+                        span= item
+                        button.eq-tag__del(type="button" data-val=item) ×
+                input#equipmentInput.input(type="text" placeholder="Ex: Kérastase, GHD, Dyson..." autocomplete="off")
+            .info-card__actions
+                button.sm-btn.sm-btn--primary#saveEquipmentBtn
+                    span Enregistrer
+
+
+
 
 block scripts
+    script(src='/js/layouts/informations.js')
+    script.
+        // ── Equipment tags ────────────────────────────────────────────────────
+        (function() {
+            var equipWrap  = document.getElementById('equipmentWrap');
+            var equipInput = document.getElementById('equipmentInput');
+            var saveEquipBtn = document.getElementById('saveEquipmentBtn');
+            if (!equipWrap) return;
+
+            function getEquipmentList() {
+                return Array.from(equipWrap.querySelectorAll('.eq-tag span')).map(function(s) { return s.textContent.trim(); });
+            }
+            function addTag(val) {
+                val = val.trim();
+                if (!val) return;
+                var exists = getEquipmentList().some(function(t) { return t.toLowerCase() === val.toLowerCase(); });
+                if (exists) return;
+                var tag = document.createElement('div');
+                tag.className = 'eq-tag';
+                tag.innerHTML = '<span>' + val + '</span><button class="eq-tag__del" type="button" data-val="' + val + '">\xd7</button>';
+                equipWrap.insertBefore(tag, equipInput);
+            }
+            if (equipInput) {
+                equipInput.addEventListener('keydown', function(e) {
+                    if ((e.key === 'Enter' || e.key === ',') && equipInput.value.trim()) {
+                        e.preventDefault();
+                        addTag(equipInput.value);
+                        equipInput.value = '';
+                    }
+                });
+            }
+            equipWrap.addEventListener('click', function(e) {
+                var btn = e.target.closest('.eq-tag__del');
+                if (btn) btn.closest('.eq-tag').remove();
+            });
+            if (saveEquipBtn) {
+                saveEquipBtn.addEventListener('click', async function() {
+                    var list = getEquipmentList();
+                    var res = await fetch('/account/equipment', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ equipment: list })
+                    });
+                    var data = await res.json();
+                    if (data.success) {
+                        var span = saveEquipBtn.querySelector('span');
+                        var orig = span.textContent;
+                        span.textContent = '✓ Enregistré';
+                        saveEquipBtn.disabled = true;
+                        setTimeout(function() { span.textContent = orig; saveEquipBtn.disabled = false; }, 2200);
+                    }
+                });
+            }
+        })();
     script.
         (function () {
+            var __services = !{JSON.stringify(services)};
 
-            var DEFAULTS = {
-                pageBg:      '#f3f4f6',
-                calBg:       '#ffffff',
-                accentColor: '#22c55e',
-                accentText:  '#ffffff',
-                dayBg:       '#ffffff',
-                dayText:     '#111111',
-                btnBg:       '#111111',
-                btnText:     '#ffffff',
-                lang:        'fr',
-                font:        'Inter',
-                showInfo:    true,
-                showSocials: true,
-                layoutStyle: 'classic',
-                pageBgType:  'color',
-                pageBgImage: '',
-                showSectionAbout:    true,
-                showSectionServices: false,
-                showSectionTeam:     false
-            };
+            // ── Business type autocomplete ────────────────────────────────────
+            var btInput   = document.getElementById('businessTypeInput');
+            var btDropdown = document.getElementById('businessTypeDropdown');
 
-            var settings = Object.assign({}, DEFAULTS, !{JSON.stringify(calendarSettings)});
-
-            var frame     = document.getElementById('previewFrame');
-            var pvPage    = document.getElementById('pvPage');
-            var pvContent = document.getElementById('pvContent');
-            var pvInfo    = document.getElementById('pvInfo');
-            var pvSocial  = document.getElementById('pvSocial');
-            var pvTitleBar = document.getElementById('pvTitleBar');
-
-            var HEX_RE = new RegExp('^#[0-9A-Fa-f]{6}$');
-
-            var CSS_VAR_MAP = {
-                pageBg:      '--pv-page-bg',
-                calBg:       '--pv-cal-bg',
-                accentColor: '--pv-accent',
-                accentText:  '--pv-accent-text',
-                dayBg:       '--pv-day-bg',
-                dayText:     '--pv-day-text',
-                btnBg:       '--pv-btn-bg',
-                btnText:     '--pv-btn-text'
-            };
-
-            function updateBgPreview() {
-                if (settings.pageBgType === 'image' && settings.pageBgImage) {
-                    pvPage.style.backgroundImage    = 'url(' + settings.pageBgImage + ')';
-                    pvPage.style.backgroundSize     = 'cover';
-                    pvPage.style.backgroundPosition = 'center';
-                    pvPage.style.removeProperty('background-color');
-                } else {
-                    pvPage.style.backgroundImage = 'none';
-                    pvPage.style.backgroundSize  = '';
-                    pvPage.style.removeProperty('background-color');
-                    if (frame) frame.style.setProperty('--pv-page-bg', settings.pageBg || DEFAULTS.pageBg);
-                }
+            function normalize(str) {
+                return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
             }
-
-            function applyLayout(layout) {
-                pvContent.dataset.layout = layout;
-                // title bar only visible in 'title' layout
-                pvTitleBar.style.display = (layout === 'title') ? '' : 'none';
-                // in classic, info panel controlled by showInfo toggle
-                if (layout === 'classic') {
-                    pvInfo.style.display = settings.showInfo ? '' : 'none';
-                } else {
-                    pvInfo.style.display = 'none';
-                }
-            }
-
-            function activateBgTab(tabName) {
-                document.querySelectorAll('.bg-tab').forEach(function (t) {
-                    t.classList.toggle('active', t.dataset.tab === tabName);
-                });
-                document.querySelectorAll('.bg-panel').forEach(function (p) {
-                    p.classList.toggle('hidden', p.dataset.tab !== tabName);
-                });
-            }
-
-            function applyPreview(key, value) {
-                if (!frame) return;
-                if (CSS_VAR_MAP[key]) {
-                    frame.style.setProperty(CSS_VAR_MAP[key], value);
-                    if (key === 'pageBg') updateBgPreview();
-                } else if (key === 'layoutStyle') {
-                    applyLayout(value);
-                } else if (key === 'showInfo') {
-                    if (settings.layoutStyle === 'classic') {
-                        pvInfo.style.display = value ? '' : 'none';
-                    }
-                } else if (key === 'showSocials') {
-                    pvSocial.style.display = value ? '' : 'none';
-                } else if (key === 'font') {
-                    pvPage.style.fontFamily = value + ', sans-serif';
-                } else if (key === 'pageBgType' || key === 'pageBgImage') {
-                    updateBgPreview();
-                }
-            }
-
-            function initAll() {
-                // ── Colors ──────────────────────────────────────────────────
-                document.querySelectorAll('.color-row').forEach(function (row) {
-                    var key    = row.dataset.key;
-                    var swatch = row.querySelector('input[type=color]');
-                    var hex    = row.querySelector('.color-hex');
-                    var val    = (settings[key] !== undefined ? settings[key] : DEFAULTS[key]) || DEFAULTS[key];
-
-                    swatch.value = val;
-                    hex.value    = val;
-                    applyPreview(key, val);
-
-                    swatch.addEventListener('input', function () {
-                        hex.value     = swatch.value;
-                        settings[key] = swatch.value;
-                        applyPreview(key, swatch.value);
+            function renderBtList(items) {
+                btDropdown.innerHTML = '';
+                if (!items.length) { btDropdown.style.display = 'none'; return; }
+                items.forEach(function (item) {
+                    var div = document.createElement('div');
+                    div.className = 'service-dropdown__item';
+                    div.textContent = item;
+                    div.addEventListener('mousedown', function (e) {
+                        e.preventDefault();
+                        btInput.value = item;
+                        btDropdown.style.display = 'none';
                     });
-                    hex.addEventListener('input', function () {
-                        var v = hex.value.trim();
-                        if (HEX_RE.test(v)) {
-                            swatch.value  = v;
-                            settings[key] = v;
-                            applyPreview(key, v);
-                        }
-                    });
+                    btDropdown.appendChild(div);
                 });
-
-                // ── Layout cards ──────────────────────────────────────────────
-                var layoutVal   = settings.layoutStyle || 'classic';
-                var layoutRadio = document.querySelector('input[name=layoutStyle][value="' + layoutVal + '"]');
-                if (layoutRadio) layoutRadio.checked = true;
-                applyLayout(layoutVal);
-
-                document.querySelectorAll('input[name=layoutStyle]').forEach(function (radio) {
-                    radio.addEventListener('change', function () {
-                        settings.layoutStyle = radio.value;
-                        applyPreview('layoutStyle', radio.value);
-                    });
+                btDropdown.style.display = 'block';
+            }
+            if (btInput && btDropdown) {
+                btInput.addEventListener('input', function () {
+                    var q = normalize(btInput.value.trim());
+                    if (!q) { btDropdown.style.display = 'none'; return; }
+                    renderBtList(__services.filter(function (s) { return normalize(s).includes(q); }).slice(0, 8));
                 });
-
-                // ── Toggles ───────────────────────────────────────────────────
-                var showInfoCb    = document.getElementById('toggleShowInfo');
-                var showSocialsCb = document.getElementById('toggleShowSocials');
-
-                showInfoCb.checked    = settings.showInfo    !== false;
-                showSocialsCb.checked = settings.showSocials !== false;
-                applyPreview('showInfo',    showInfoCb.checked);
-                applyPreview('showSocials', showSocialsCb.checked);
-
-                showInfoCb.addEventListener('change', function () {
-                    settings.showInfo = showInfoCb.checked;
-                    applyPreview('showInfo', showInfoCb.checked);
+                btInput.addEventListener('focus', function () {
+                    var q = normalize(btInput.value.trim());
+                    if (q) renderBtList(__services.filter(function (s) { return normalize(s).includes(q); }).slice(0, 8));
                 });
-                showSocialsCb.addEventListener('change', function () {
-                    settings.showSocials = showSocialsCb.checked;
-                    applyPreview('showSocials', showSocialsCb.checked);
+                btInput.addEventListener('blur', function () {
+                    setTimeout(function () { btDropdown.style.display = 'none'; }, 150);
                 });
-
-                // ── Section toggles ───────────────────────────────────────────
-                var sectionAboutCb    = document.getElementById('toggleSectionAbout');
-                var sectionServicesCb = document.getElementById('toggleSectionServices');
-                var sectionTeamCb     = document.getElementById('toggleSectionTeam');
-
-                sectionAboutCb.checked    = settings.showSectionAbout    !== false;
-                sectionServicesCb.checked = !!settings.showSectionServices;
-                sectionTeamCb.checked     = !!settings.showSectionTeam;
-
-                sectionAboutCb.addEventListener('change', function () {
-                    settings.showSectionAbout = sectionAboutCb.checked;
-                });
-                sectionServicesCb.addEventListener('change', function () {
-                    settings.showSectionServices = sectionServicesCb.checked;
-                });
-                sectionTeamCb.addEventListener('change', function () {
-                    settings.showSectionTeam = sectionTeamCb.checked;
-                });
-
-                // ── Font ──────────────────────────────────────────────────────
-                var fontSelect  = document.getElementById('fontSelect');
-                fontSelect.value = settings.font || 'Inter';
-                applyPreview('font', fontSelect.value);
-                fontSelect.addEventListener('change', function () {
-                    settings.font = fontSelect.value;
-                    applyPreview('font', fontSelect.value);
-                });
-
-                // ── Background tabs ───────────────────────────────────────────
-                document.querySelectorAll('.bg-tab').forEach(function (tab) {
-                    tab.addEventListener('click', function () {
-                        settings.pageBgType = tab.dataset.tab;
-                        activateBgTab(tab.dataset.tab);
-                        updateBgPreview();
-                    });
-                });
-                activateBgTab(settings.pageBgType || 'color');
-
-                // ── Background image upload ───────────────────────────────────
-                var bgInput    = document.getElementById('bgImageInput');
-                var bgArea     = document.getElementById('bgUploadArea');
-                var bgPreview  = document.getElementById('bgUploadPreview');
-                var removeBgBtn = document.getElementById('removeBgImage');
-
-                if (settings.pageBgImage) {
-                    bgPreview.style.backgroundImage    = 'url(' + settings.pageBgImage + ')';
-                    bgPreview.style.backgroundSize     = 'cover';
-                    bgPreview.style.backgroundPosition = 'center';
-                    document.getElementById('bgUploadHint').style.display = 'none';
-                    removeBgBtn.style.display = '';
-                }
-
-                bgArea.addEventListener('click', function () { bgInput.click(); });
-                bgInput.addEventListener('change', function () {
-                    var file = bgInput.files[0];
-                    if (!file) return;
-                    bgArea.classList.add('loading');
-                    var fd = new FormData();
-                    fd.append('calendarBgImage', file);
-                    fetch('/account/calendar-bg-image', { method: 'PATCH', body: fd })
-                        .then(function (r) { return r.json(); })
-                        .then(function (data) {
-                            bgArea.classList.remove('loading');
-                            if (data.success) {
-                                settings.pageBgImage = data.path;
-                                settings.pageBgType  = 'image';
-                                bgPreview.style.backgroundImage    = 'url(' + data.path + ')';
-                                bgPreview.style.backgroundSize     = 'cover';
-                                bgPreview.style.backgroundPosition = 'center';
-                                document.getElementById('bgUploadHint').style.display = 'none';
-                                removeBgBtn.style.display = '';
-                                activateBgTab('image');
-                                updateBgPreview();
-                            }
-                        })
-                        .catch(function () { bgArea.classList.remove('loading'); });
-                });
-
-                removeBgBtn.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    settings.pageBgImage = '';
-                    settings.pageBgType  = 'color';
-                    bgPreview.style.backgroundImage = '';
-                    bgPreview.style.backgroundSize  = '';
-                    document.getElementById('bgUploadHint').style.display = '';
-                    removeBgBtn.style.display = 'none';
-                    bgInput.value = '';
-                    activateBgTab('color');
-                    updateBgPreview();
-                });
-
-                // Initial bg preview
-                updateBgPreview();
             }
 
-            initAll();
+            // ── Description counter ───────────────────────────────────────────
+            var textarea = document.getElementById('descriptionCoach');
+            var counter  = document.getElementById('descCount');
+            if (textarea && counter) {
+                textarea.addEventListener('input', function () {
+                    counter.textContent = textarea.value.length + '/500';
+                });
+            }
 
-            // ── Save ──────────────────────────────────────────────────────────
-            document.getElementById('saveCalendarSettings').addEventListener('click', async function () {
-                var btn  = this;
-                var span = btn.querySelector('span');
-                span.textContent = '...';
-                btn.disabled = true;
-
-                var payload = Object.assign({}, settings);
-
-                try {
-                    var r    = await fetch('/account/calendar-settings', {
-                        method:  'PATCH',
+            // ── Save business info ────────────────────────────────────────────
+            var saveBusinessInfo  = document.getElementById('saveBusinessInfo');
+            var businessNameInput = document.getElementById('businessNameInput');
+            if (saveBusinessInfo) {
+                saveBusinessInfo.addEventListener('click', async function () {
+                    var btn          = saveBusinessInfo;
+                    var businessName = businessNameInput ? businessNameInput.value.trim() : '';
+                    var description  = textarea ? textarea.value.trim() : '';
+                    var businessType = btInput ? btInput.value.trim() : '';
+                    var res = await fetch('/account/business-info', {
+                        method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
-                        body:    JSON.stringify(payload)
+                        body: JSON.stringify({ businessName, description, businessType })
                     });
-                    var data = await r.json();
-                    span.textContent = data.success ? '✓ Enregistré' : '✗ Erreur';
-                } catch (e) {
-                    span.textContent = '✗ Erreur';
-                }
-                btn.disabled = false;
-                setTimeout(function () { span.textContent = '#{t.customize.save}'; }, 2500);
-            });
-
-            // ── Reset ─────────────────────────────────────────────────────────
-            document.getElementById('resetCalendarSettings').addEventListener('click', function () {
-                // Colors
-                Object.keys(DEFAULTS).forEach(function (key) {
-                    if (key === 'lang' || key === 'showInfo' || key === 'showSocials' ||
-                        key === 'layoutStyle' || key === 'pageBgType' || key === 'pageBgImage' || key === 'font' ||
-                        key === 'showSectionAbout' || key === 'showSectionServices' || key === 'showSectionTeam') return;
-                    settings[key] = DEFAULTS[key];
-                    applyPreview(key, DEFAULTS[key]);
-                    var row = document.querySelector('.color-row[data-key="' + key + '"]');
-                    if (row) {
-                        row.querySelector('input[type=color]').value = DEFAULTS[key];
-                        row.querySelector('.color-hex').value        = DEFAULTS[key];
+                    var data = await res.json();
+                    if (data.success) {
+                        var span = btn.querySelector('span');
+                        var orig = span.textContent;
+                        span.textContent = '✓ Enregistré';
+                        btn.disabled = true;
+                        setTimeout(function () { span.textContent = orig; btn.disabled = false; }, 2500);
                     }
                 });
-                // Layout
-                settings.layoutStyle = 'classic';
-                var classicR = document.querySelector('input[name=layoutStyle][value="classic"]');
-                if (classicR) classicR.checked = true;
-                applyLayout('classic');
-                // Toggles
-                settings.showInfo    = true;
-                settings.showSocials = true;
-                document.getElementById('toggleShowInfo').checked    = true;
-                document.getElementById('toggleShowSocials').checked = true;
-                applyPreview('showSocials', true);
-                // Section toggles
-                settings.showSectionAbout    = true;
-                settings.showSectionServices = false;
-                settings.showSectionTeam     = false;
-                document.getElementById('toggleSectionAbout').checked    = true;
-                document.getElementById('toggleSectionServices').checked = false;
-                document.getElementById('toggleSectionTeam').checked     = false;
-                // Font
-                settings.font = 'Inter';
-                document.getElementById('fontSelect').value = 'Inter';
-                applyPreview('font', 'Inter');
-                // Bg
-                settings.pageBgType  = 'color';
-                settings.pageBgImage = '';
-                var bgPreview = document.getElementById('bgUploadPreview');
-                bgPreview.style.backgroundImage = '';
-                bgPreview.style.backgroundSize  = '';
-                document.getElementById('bgUploadHint').style.display = '';
-                document.getElementById('removeBgImage').style.display = 'none';
-                document.getElementById('bgImageInput').value = '';
-                activateBgTab('color');
-                updateBgPreview();
+            }
+
+            // ── Gallery ───────────────────────────────────────────────────────
+            var galleryGrid  = document.getElementById('galleryGrid');
+            var galleryInput = document.getElementById('galleryFileInput');
+            if (galleryInput && galleryGrid) {
+                galleryInput.addEventListener('change', async function () {
+                    if (!galleryInput.files.length) return;
+                    var formData = new FormData();
+                    Array.from(galleryInput.files).forEach(function (f) { formData.append('galleryPhotos', f); });
+                    var res  = await fetch('/account/gallery', { method: 'PATCH', body: formData });
+                    var data = await res.json();
+                    if (data.success && data.paths) {
+                        data.paths.forEach(function (path) {
+                            var idx  = galleryGrid.querySelectorAll('.gallery-item').length;
+                            var item = document.createElement('div');
+                            item.className = 'gallery-item';
+                            item.dataset.index = idx;
+                            item.innerHTML = '<img src="' + path + '" alt="Photo"><button class="gallery-item__del" type="button" data-index="' + idx + '" title="Supprimer"><svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z"/></svg></button>';
+                            var addBtn = galleryGrid.querySelector('.gallery-add-btn');
+                            if (addBtn) galleryGrid.insertBefore(item, addBtn);
+                            else galleryGrid.appendChild(item);
+                        });
+                        galleryInput.value = '';
+                    }
+                });
+                galleryGrid.addEventListener('click', async function (e) {
+                    var btn = e.target.closest('.gallery-item__del');
+                    if (!btn) return;
+                    var idx  = parseInt(btn.dataset.index, 10);
+                    var res  = await fetch('/account/gallery/' + idx, { method: 'DELETE' });
+                    var data = await res.json();
+                    if (data.success) {
+                        btn.closest('.gallery-item').remove();
+                        galleryGrid.querySelectorAll('.gallery-item').forEach(function (el, i) {
+                            el.dataset.index = i;
+                            var delBtn = el.querySelector('.gallery-item__del');
+                            if (delBtn) delBtn.dataset.index = i;
+                        });
+                    }
+                });
+            }
+
+            // ── Section visibility toggles ────────────────────────────────────
+            var sectionToggleMap = {
+                toggleSectionAbout:   'showSectionAbout',
+                toggleSectionHours:   'showSectionHours',
+                toggleSectionGallery: 'showSectionGallery',
+                toggleSectionMap:     'showSectionMap'
+            };
+            Object.keys(sectionToggleMap).forEach(function (id) {
+                var cb = document.getElementById(id);
+                if (!cb) return;
+                cb.addEventListener('change', async function () {
+                    var fieldName = sectionToggleMap[id];
+                    var enabled   = cb.checked;
+                    try {
+                        await fetch('/account/toggle-section', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ fieldName, enabled })
+                        });
+                    } catch (_) {}
+                });
             });
+
 
         })();

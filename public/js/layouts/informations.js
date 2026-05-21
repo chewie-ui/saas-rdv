@@ -176,6 +176,78 @@ if (socialContainer) {
   };
 }
 
+// ── Méthodes de localisation (onglets) ───────────────────────────────────────
+(function () {
+  var methodBtns = document.querySelectorAll('.loc-method-btn');
+  var blockAddress = document.getElementById('locMethodAddress');
+  var blockGmap    = document.getElementById('locMethodGmap');
+  var blockGps     = document.getElementById('locMethodGps');
+  if (!methodBtns.length) return;
+
+  var current = 'address';
+
+  function showMethod(m) {
+    current = m;
+    methodBtns.forEach(function(b) { b.classList.toggle('active', b.dataset.method === m); });
+    if (blockAddress) blockAddress.style.display = m === 'address' ? '' : 'none';
+    if (blockGmap)    blockGmap.style.display    = m === 'gmap'    ? '' : 'none';
+    if (blockGps)     blockGps.style.display     = m === 'gps'     ? '' : 'none';
+  }
+
+  methodBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() { showMethod(btn.dataset.method); });
+  });
+
+  // Parser un lien Google Maps → { lat, lon }
+  function parseGmapUrl(url) {
+    // Format @lat,lon,zoom
+    var m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (m) return { lat: m[1], lon: m[2] };
+    // Format ?q=lat,lon
+    m = url.match(/[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (m) return { lat: m[1], lon: m[2] };
+    // Format !3dLAT!4dLON (embed URLs)
+    m = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+    if (m) return { lat: m[1], lon: m[2] };
+    return null;
+  }
+
+  var gmapInput  = document.getElementById('gmapUrlInput');
+  var gmapStatus = document.getElementById('gmapParseStatus');
+  if (gmapInput) {
+    gmapInput.addEventListener('input', function() {
+      var parsed = parseGmapUrl(gmapInput.value.trim());
+      if (parsed && gmapStatus) {
+        gmapStatus.textContent = '✅ Coordonnées détectées : ' + parsed.lat + ', ' + parsed.lon;
+        gmapStatus.style.color = '#15803d';
+      } else if (gmapInput.value.trim() && gmapStatus) {
+        gmapStatus.textContent = '⚠️ Coordonnées non détectées — vérifiez le lien.';
+        gmapStatus.style.color = '#b45309';
+      } else if (gmapStatus) {
+        gmapStatus.textContent = '';
+      }
+    });
+  }
+
+  // Surcharger confirmLocation pour gérer les 3 méthodes
+  var originalConfirm = window.__locConfirmOverride;
+  window.__locGetMethod = function() { return current; };
+  window.__locGetGmapData = function() {
+    if (!gmapInput) return null;
+    var url = gmapInput.value.trim();
+    var parsed = parseGmapUrl(url);
+    return parsed ? { lat: parsed.lat, lon: parsed.lon, gmapUrl: url } : null;
+  };
+  window.__locGetGpsData = function() {
+    var latEl = document.getElementById('gpsLatInput');
+    var lonEl = document.getElementById('gpsLonInput');
+    if (!latEl || !lonEl) return null;
+    var lat = latEl.value.trim();
+    var lon = lonEl.value.trim();
+    return (lat && lon) ? { lat, lon } : null;
+  };
+})();
+
 // ---- Location / service type ----
 function generateMapIframe(fullAddress) {
   const encodedAddress = encodeURIComponent(fullAddress);
@@ -224,10 +296,48 @@ applyServiceType();
 
 let debounceTimer;
 
-if (addressInput && confirmLocation) {
+if (confirmLocation) {
   confirmLocation.addEventListener("click", async (event) => {
     const isSurPlace = radioSurPlace && radioSurPlace.checked;
+    const method = window.__locGetMethod ? window.__locGetMethod() : 'address';
 
+    // ── Méthode Lien Google Maps ─────────────────────────────────────────────
+    if (method === 'gmap') {
+      const gmap = window.__locGetGmapData ? window.__locGetGmapData() : null;
+      if (!gmap) { alert('Impossible de détecter les coordonnées dans ce lien. Vérifiez l\'URL.'); return; }
+      const iframeUrl = `https://maps.google.com/maps?q=${gmap.lat},${gmap.lon}&z=15&output=embed`;
+      const btn = confirmLocation.querySelector('span') || confirmLocation;
+      btn.textContent = '...';
+      const res = await fetch('/account/location', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat: gmap.lat, lon: gmap.lon, iframeUrl, gmapUrl: gmap.gmapUrl, serviceType: isSurPlace ? 'sur_place' : 'en_ligne' }),
+      });
+      btn.textContent = 'Confirmer';
+      const iframeHtml = `<iframe width="100%" height="300" frameborder="0" src="${iframeUrl}" allowfullscreen loading="lazy"></iframe>`;
+      if (document.getElementById('mapContainer')) document.getElementById('mapContainer').innerHTML = iframeHtml;
+      return;
+    }
+
+    // ── Méthode Coordonnées GPS ──────────────────────────────────────────────
+    if (method === 'gps') {
+      const gps = window.__locGetGpsData ? window.__locGetGpsData() : null;
+      if (!gps) { alert('Veuillez entrer la latitude et la longitude.'); return; }
+      const iframeUrl = `https://maps.google.com/maps?q=${gps.lat},${gps.lon}&z=15&output=embed`;
+      const btn = confirmLocation.querySelector('span') || confirmLocation;
+      btn.textContent = '...';
+      await fetch('/account/location', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat: gps.lat, lon: gps.lon, iframeUrl, serviceType: isSurPlace ? 'sur_place' : 'en_ligne' }),
+      });
+      btn.textContent = 'Confirmer';
+      const iframeHtml = `<iframe width="100%" height="300" frameborder="0" src="${iframeUrl}" allowfullscreen loading="lazy"></iframe>`;
+      if (document.getElementById('mapContainer')) document.getElementById('mapContainer').innerHTML = iframeHtml;
+      return;
+    }
+
+    // ── Méthode Adresse (défaut) ─────────────────────────────────────────────
     let street = "", zip = "", city = "", country = "";
 
     if (isSurPlace) {
@@ -240,7 +350,7 @@ if (addressInput && confirmLocation) {
       city = cityInputOnline ? cityInputOnline.value : "";
     }
 
-    const encodedAddress = encodeURIComponent(isSurPlace ? addressInput.value : `${city} ${country}`);
+    const encodedAddress = encodeURIComponent(isSurPlace ? (addressInput ? addressInput.value : '') : `${city} ${country}`);
     const iframeUrl = `https://maps.google.com/maps?q=${encodedAddress}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
 
     const response = await fetch(`/account/location`, {
@@ -259,9 +369,8 @@ if (addressInput && confirmLocation) {
     });
 
     const data = await response.json();
-    console.log(data);
 
-    if (isSurPlace && addressInput.value) {
+    if (isSurPlace && addressInput && addressInput.value) {
       generateMapIframe(addressInput.value);
     } else if (!isSurPlace && (city || country)) {
       generateMapIframe(`${city} ${country}`);

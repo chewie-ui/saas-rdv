@@ -1,49 +1,98 @@
-div(style="background-color: #f8fbf9; padding: 40px 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #2d3436;")
-  div(style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05);")
+-
+  var _year    = new Date().getFullYear()
+  var _dateStr = date ? new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : ''
 
-    //- Header rappel
-    div(style="padding: 40px 20px; text-align: center;")
-      div(style="width: 60px; height: 60px; background-color: #FFA726; border-radius: 50%; margin: 0 auto 20px; display: flow-root;")
-        span(style="color: white; font-size: 30px; line-height: 60px; justify-content: center;") ⏰
+div(style="margin:0;padding:0;background-color:#f4f7f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;")
+  table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0;padding:0;background-color:#f4f7f5;")
+    tr
+      td(align="center" style="padding:40px 16px;")
+        table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;margin:0 auto;")
 
-      h1(style="margin: 0; font-size: 24px; color: #1e272e;") Rappel de rendez-vous
-      p(style="margin-top: 10px; color: #636e72;") Bonjour #{name}, voici un rappel : votre rendez-vous a lieu dans moins de 24 heures.
-      p(style="margin: 0; color: #636e72;") Voici le récapitulatif :
+          //- ── Logo bar ───────────────────────────────────────────────────────
+          tr
+            td(align="center" style="padding:0 0 20px;")
+              a(href="https://www.branshee.com" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;")
+                span(style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:#1a7a4a;border-radius:9px;font-size:16px;font-weight:800;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,sans-serif;") B
+                span(style="font-size:15px;font-weight:700;color:#1e2923;letter-spacing:-0.2px;") BranShee
 
-    //- Carte de détails
-    div(style="padding: 0 40px 40px;")
-      div(style="background-color: #fff8ec; border-radius: 10px; padding: 25px;")
+          //- ── Card ───────────────────────────────────────────────────────────
+          tr
+            td(style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);border:1px solid #e5ede8;")
 
-        //- Date
-        div(style="display: flex; align-items: center; margin-bottom: 20px;")
-          span(style="font-size: 20px; margin-right: 15px;") 📅
-          div
-            p(style="margin: 0; font-weight: bold; color: #2d3436;")= new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
-            p(style="margin: 0; font-size: 14px; color: #636e72;") #{startHour} — #{endHour}
+              //- Header
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="background:linear-gradient(135deg,#1a7a4a 0%,#15623c 100%);padding:36px 40px;text-align:center;")
+                    table(cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto 16px;")
+                      tr
+                        td(style="width:52px;height:52px;background:rgba(255,255,255,0.15);border-radius:50%;text-align:center;vertical-align:middle;")
+                          span(style="font-size:24px;line-height:52px;") ⏰
+                    p(style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;") Rappel de rendez-vous
+                    p(style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.75);") Votre rendez-vous a lieu dans moins de 24 heures.
 
-        //- Durée
-        div(style="display: flex; align-items: center; margin-bottom: 20px;")
-          span(style="font-size: 20px; margin-right: 15px;") 📋
-          div
-            p(style="margin: 0; font-weight: bold; color: #2d3436;") Séance de coaching
-            p(style="margin: 0; font-size: 14px; color: #636e72;") Durée : #{slotTime} min
+              //- Greeting
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="padding:28px 40px 0;")
+                    p(style="margin:0;font-size:15px;color:#374151;line-height:1.6;")
+                      | Bonjour&nbsp;
+                      strong(style="color:#1e2923;")= name
+                      | , voici votre récapitulatif&nbsp;:
 
-        //- Message (si présent)
-        if message && message.length > 0
-          div(style="display: flex; align-items: center;")
-            span(style="font-size: 20px; margin-right: 15px;") 💬
-            div
-              p(style="margin: 0; font-weight: bold; color: #2d3436;") Message
-              p(style="margin: 0; font-size: 14px; color: #636e72;") "#{message}"
+              //- Detail card
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="padding:20px 40px 32px;")
+                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f8faf9;border:1px solid #e0ebe5;border-radius:12px;")
+                      tr
+                        td(style="padding:24px 28px;")
 
-      //- Bouton annulation
-      div(style="text-align: center; margin-top: 30px;")
-        a(
-          href=`https://www.gymio.be/cancel-booking/${bookingId}?token=${cancelToken}`
-          style="background-color: #f1f2f6; color: #313439; padding: 15px 35px; text-decoration: none; border-radius: 30px; font-weight: bold; display: inline-block; margin: 5px; font-size: 14px; border: 1px solid #dfe4ea;"
-        ) Annuler le rendez-vous
+                          //- Date / time
+                          table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:18px;")
+                            tr
+                              td(width="36" valign="top" style="padding-top:1px;")
+                                span(style="font-size:20px;") 📅
+                              td(style="padding-left:12px;")
+                                p(style="margin:0;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;") Date & heure
+                                p(style="margin:4px 0 0;font-size:14px;color:#1e2923;font-weight:500;text-transform:capitalize;")= _dateStr
+                                p(style="margin:3px 0 0;font-size:13px;color:#9ca3af;") #{startHour} — #{endHour}
 
-    //- Footer
-    div(style="text-align: center; padding: 20px; background-color: #fafafa; border-top: 1px solid #f1f1f1;")
-      p(style="font-size: 14px; color: #b2bec3; margin: 0;") Nous avons hâte de vous retrouver !
-      p(style="font-size: 12px; color: #dfe6e9; margin-top: 10px;") © #{new Date().getFullYear()} BranShee. Tous droits réservés.
+                          //- Service / durée
+                          table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:18px;")
+                            tr
+                              td(width="36" valign="top" style="padding-top:1px;")
+                                span(style="font-size:20px;") 📋
+                              td(style="padding-left:12px;")
+                                p(style="margin:0;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;") Prestation
+                                if serviceName
+                                  p(style="margin:4px 0 0;font-size:14px;color:#1e2923;font-weight:500;")= serviceName
+                                p(style="margin:3px 0 0;font-size:13px;color:#9ca3af;") Durée : #{slotTime} min
+
+                          //- Message
+                          if message && message.length > 0
+                            table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                              tr
+                                td(width="36" valign="top" style="padding-top:1px;")
+                                  span(style="font-size:20px;") 💬
+                                td(style="padding-left:12px;")
+                                  p(style="margin:0;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;") Message
+                                  p(style="margin:4px 0 0;font-size:14px;color:#1e2923;font-style:italic;") "#{message}"
+
+              //- Cancel button
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="padding:0 40px 36px;text-align:center;")
+                    p(style="margin:0 0 16px;font-size:13px;color:#9ca3af;") Vous ne pouvez plus venir ? Annulez dès maintenant.
+                    a(
+                      href=`${baseUrl}/cancel-booking/${bookingId}?token=${cancelToken}`
+                      style="display:inline-block;background:#f3f4f6;color:#374151;padding:11px 26px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;border:1px solid #d1d5db;"
+                    ) Annuler le rendez-vous
+
+              //- Footer
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="padding:20px 40px;background:#f8faf9;border-top:1px solid #e8efeb;text-align:center;")
+                    p(style="margin:0;font-size:13px;color:#9ca3af;") Nous avons hâte de vous retrouver !
+                    p(style="margin:8px 0 0;font-size:11px;color:#d1d5db;") © #{_year} BranShee. Tous droits réservés.
+                    p(style="margin:6px 0 0;font-size:11px;")
+                      a(href="https://www.branshee.com" style="color:#b8ccbe;text-decoration:none;") www.branshee.com

@@ -121,10 +121,55 @@ html(lang="fr")
                 span.badge BranShee Admin
                 h1 Accès superadmin
                 p Zone réservée à l'administrateur.
-            if error
-                .error-msg= error
-            form(method="POST" action="/superadmin/login")
+            .error-msg#superadminError(style=error ? '' : 'display:none')= error || ''
+            form#superadminForm(method="POST" action="/superadmin/login")
                 .field
                     label Mot de passe
                     input(type="password" name="secret" placeholder="••••••••" autofocus required)
-                button.btn-submit(type="submit") Connexion
+                button.btn-submit#superadminBtn(type="submit") Connexion
+            script.
+                (function() {
+                    var form      = document.getElementById('superadminForm');
+                    var errBox    = document.getElementById('superadminError');
+                    var submitBtn = document.getElementById('superadminBtn');
+                    var origLabel = 'Connexion';
+
+                    function showError(msg) {
+                        if (!errBox) return;
+                        errBox.textContent = msg;
+                        errBox.style.display = 'block';
+                    }
+
+                    if (form) {
+                        form.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            if (errBox) errBox.style.display = 'none';
+                            submitBtn.disabled = true;
+                            submitBtn.textContent = '…';
+
+                            fetch('/superadmin/login', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                    'X-Requested-With': 'fetch'
+                                },
+                                body: new URLSearchParams(new FormData(form)).toString()
+                            })
+                            .then(function(r) { return r.json(); })
+                            .then(function(data) {
+                                if (data.success) {
+                                    window.location.href = data.redirect || '/superadmin';
+                                } else {
+                                    showError(data.error || 'Une erreur est survenue.');
+                                    submitBtn.disabled = false;
+                                    submitBtn.textContent = origLabel;
+                                }
+                            })
+                            .catch(function() {
+                                showError('Erreur réseau. Veuillez réessayer.');
+                                submitBtn.disabled = false;
+                                submitBtn.textContent = origLabel;
+                            });
+                        });
+                    }
+                })();

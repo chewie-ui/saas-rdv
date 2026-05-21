@@ -32,13 +32,14 @@ router.get("/login", (req, res) => {
 router.post("/register", createUser);
 
 router.post("/login", (req, res, next) => {
+  const isAjax = req.headers["x-requested-with"] === "fetch";
   passport.authenticate("local", (err, user, info) => {
     if (err) return next(err);
 
     if (!user) {
+      if (isAjax) return res.status(400).json({ error: "Email ou mot de passe incorrect." });
       return res.render("auth/login", {
-        error: "Invalid email or password",
-        errorField: "email",
+        error: "Email ou mot de passe incorrect.",
         becomeCoach: true,
         alwaysSticky: true,
       });
@@ -46,6 +47,7 @@ router.post("/login", (req, res, next) => {
 
     req.logIn(user, (err) => {
       if (err) return next(err);
+      if (isAjax) return res.json({ success: true, redirect: "/appointment" });
       return res.redirect("/appointment");
     });
   })(req, res, next);

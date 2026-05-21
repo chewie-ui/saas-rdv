@@ -11,8 +11,8 @@ block content
     .info-page
 
         .info-page__header
-            h2= t.profile.title || 'Informations générales'
-            p.info-page__subtitle= t.info.page_subtitle || 'Gérez votre profil et les informations de votre établissement.'
+            h2= t.sidebar.a_4 || 'Paramètres'
+            p.info-page__subtitle Gérez votre profil personnel et vos informations de connexion.
 
         //- ── Profil personnel ─────────────────────────────────────────────────
         .info-card
@@ -47,183 +47,111 @@ block content
                 button.sm-btn.sm-btn--primary#saveChanges
                     span= t.profile.save
 
-        //- ── URL personnalisée ────────────────────────────────────────────────
+        //- ── Votre abonnement ────────────────────────────────────────────────────
         .info-card
             .info-card__header
-                h3= t.info.custom_url_title || 'URL personnalisée'
-                p.info-card__desc= t.info.custom_url_desc || 'Choisissez une URL unique pour votre page de réservation publique.'
-            if !canUseCustomUrl
-                .info-addon-gate
-                    svg(xmlns="http://www.w3.org/2000/svg" height="28px" viewBox="0 -960 960 960" width="28px" fill="currentColor")
-                        path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z")
-                    .info-addon-gate__text
-                        strong URL personnalisée — Business
-                        if isPro
-                            p Incluse dans le plan Business. Disponible également en add-on (+5€/mois).
-                        else
-                            p Incluse dans le plan Business, ou en add-on (+5€/mois) à partir du plan Pro.
-                        .info-addon-gate__preview
-                            span.info-addon-gate__preview-dim branshee.com/
-                            span.info-addon-gate__preview-slug= (currentCompany && currentCompany.slug) ? currentCompany.slug : (user.businessName ? user.businessName.toLowerCase().replace(/\s+/g, '-') : 'mon-salon')
-                    if isPro
-                        a.btn-upgrade-business(href="/subscription") Passer au Business
-                    else
-                        a.btn-upgrade-pro(href="/subscription") Passer au Pro
-            else
-                .field
-                    label= t.info.custom_url_label || 'Nom d\'URL'
-                    .slug-field-wrapper
-                        span.slug-prefix branshee.com/
-                        input.input#slugInput(
-                            type="text"
-                            value=(currentCompany && currentCompany.slug ? currentCompany.slug : '')
-                            placeholder="mon-salon"
-                            autocomplete="off"
-                        )
-                    .slug-status#slugStatus
-                if currentCompany && (currentCompany.slug || currentCompany._id)
-                    .slug-share-row
-                        .slug-share-url#slugShareUrl= 'branshee.com/' + (currentCompany.slug || String(currentCompany._id))
-                        button.sm-btn.sm-btn--ghost#copySlugBtn(type="button")
-                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z")
-                            span Copier le lien
-                .info-card__actions
-                    button.sm-btn.sm-btn--primary#saveSlugBtn
-                        span= t.info.custom_url_save || 'Enregistrer l\'URL'
-
-        //- ── Informations entreprise ──────────────────────────────────────────
-        .info-card
-            .info-card__header
-                h3= t.info.business_section_title
-            .biz-row
-                .biz-photo-col
-                    .biz-photo-preview
-                        if user.businessPicture
-                            img#businessPicPreview(alt="Photo établissement" src=user.businessPicture)
-                        else
-                            .biz-photo-placeholder#businessPicPreview
-                                svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
-                                    path(d="M160-120q-33 0-56.5-23.5T80-200v-480q0-33 23.5-56.5T160-760h126l74-80h240l74 80h126q33 0 56.5 23.5T880-680v480q0 33-23.5 56.5T800-120H160Zm0-80h640v-480H160v480Zm320-80q-58 0-99-41t-41-99q0-58 41-99t99-41q58 0 99 41t41 99q0 58-41 99t-99 41Zm0-80q25 0 42.5-17.5T540-420q0-25-17.5-42.5T480-480q-25 0-42.5 17.5T420-420q0 25 17.5 42.5T480-360Z")
-                    input#businessFileInput(type="file" style="display:none" accept="image/*")
-                    button.sm-btn.sm-btn--ghost#uploadBusinessBtn
-                        span= t.info.business_photo
-                .biz-fields
-                    .field
-                        label= t.info.business_name
-                        input.input#businessNameInput(
-                            type="text"
-                            value=user.businessName || ""
-                            placeholder=t.info.business_name_placeholder
-                        )
-                    .field
-                        label= t.info.business_desc_label
-                        textarea.textarea#descriptionCoach(maxlength=500 placeholder=t.info.business_desc_placeholder)= user.description || ''
-                        span.field-hint#descCount #{(user.description || '').length}/500
-                    .field
-                        label= t.info.business_type_label
-                        .service-select-wrapper
-                            input.input#businessTypeInput(
-                                type="text"
-                                placeholder="Ex: Coiffeur, Médecin, Coach sportif..."
-                                autocomplete="off"
-                                value=user.businessType || ""
-                            )
-                            .service-dropdown#businessTypeDropdown
+                h3 Votre abonnement
+                p.info-card__desc Choisissez la formule qui correspond le mieux à vos besoins.
+            .sub-summary
+                .sub-summary__row
+                    span.sub-summary__label Plan actuel :
+                    span.sub-summary__badge(class='sub-badge--' + (currentPlan || 'basic'))
+                        = currentPlan === 'business' ? 'Business' : currentPlan === 'pro' ? 'Pro' : 'Starter'
+                if isPro && !isExpired
+                    .sub-status
+                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                            path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-56-240 226-226-57-57-169 169-85-85-57 57 142 142Z")
+                        .sub-status__body
+                            strong Vous êtes sur le plan #{currentPlan === 'business' ? 'Business' : 'Pro'}
+                            span Vous profitez de toutes les fonctionnalités BranShee — merci de votre confiance !
+                else if isExpired
+                    .sub-status.sub-status--expired
+                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                            path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                        .sub-status__body
+                            strong Abonnement expiré
+                            span Réactivez votre abonnement pour retrouver toutes vos fonctionnalités.
+                else
+                    .sub-status.sub-status--inactive
+                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                            path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                        .sub-status__body
+                            strong Aucun abonnement actif
+                            span Passez à un plan payant pour débloquer toutes les fonctionnalités.
             .info-card__actions
-                button.sm-btn.sm-btn--primary#saveBusinessInfo
-                    span= t.info.business_save
+                a.sm-btn.sm-btn--ghost(href="/subscription") Gérer mon abonnement
 
-        //- ── Localisation ─────────────────────────────────────────────────────
+        //- ── Moyens de paiement ──────────────────────────────────────────────────
         .info-card
             .info-card__header
-                h3= t.info.location_title
-            .location-layout
-                .location-map#mapContainer
-                    if user.location && user.location.iframeUrl
-                        iframe(src=user.location.iframeUrl style="border:0;width:100%;min-height:300px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade")
-                    else
-                        iframe(src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1299500.656531456!2d3.147172292480064!3d50.495334442699736!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c17d64edf39797%3A0x47ebf2b439e60ff2!2sBelgique!5e0!3m2!1sfr!2sbe!4v1775722964111!5m2!1sfr!2sbe" style="border:0;width:100%;min-height:300px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade")
-                .location-form
-                    input(type="hidden" id="latInput")
-                    input(type="hidden" id="lonInput")
-                    .field
-                        .radio-group
-                            .radio-item
-                                input#onlineService(type="radio" name="serviceType" checked=(user.location && user.location.serviceType !== 'en_ligne'))
-                                label(for="onlineService")
-                                    span.custom-radio
-                                    = t.info.on_site
-                            .radio-item
-                                input#homeService(type="radio" name="serviceType" checked=(user.location && user.location.serviceType === 'en_ligne'))
-                                label(for="homeService")
-                                    span.custom-radio
-                                    = t.info.online_svc
-                    #addressSearchBlock.field
-                        label= t.info.search_addr
-                        input.input(placeholder=t.info.addr_placeholder id="addressInput" autocomplete="chrome-off")
-                        #results.results
-                    #fullAddressBlock
-                        .field
-                            label= t.info.address
-                            input.input(id='streetInput' value=(user.location && user.location.address) || "")
-                        .field
-                            label= t.info.zip
-                            input.input(id='zipInput' value=(user.location && user.location.zip) || "")
-                        .field
-                            label= t.info.city
-                            input.input(id='cityInput' value=(user.location && user.location.city) || "")
-                        .field
-                            label= t.info.country
-                            input.input(id='countryInput' value=(user.location && user.location.country) || "")
-                    #onlineAddressBlock(style="display:none")
-                        .field
-                            label= t.info.country
-                            input.input(id='countryInputOnline' value=(user.location && user.location.country) || "")
-                        .field
-                            label= t.info.city_optional
-                            input.input(id='cityInputOnline' value=(user.location && user.location.city) || "")
-                    .info-card__actions(style="margin-top:4px")
-                        button.sm-btn.sm-btn--primary#confirmLocation
-                            span= t.info.confirm_location
-
-        //- ── Réseaux sociaux ──────────────────────────────────────────────────
-        .info-card
-            .info-card__header
-                h3= t.profile.social_title || 'Réseaux sociaux'
-                p.info-card__desc= t.info.social_desc || 'Affichez vos coordonnées sur votre page publique.'
-            .social-grid
-                -
-                    var cs = (user.calendarSettings) ? user.calendarSettings : {}
-                    var socials = [
-                        { name: 'emailPro',       toggle: 'showEmailPro',  logo: 'email-logo.webp',     alt: 'Email logo',     label: t.profile.social.email_pro,   val: user.emailPro       || '' },
-                        { name: 'phonePro',       toggle: 'showPhonePro',  logo: 'phone-logo.webp',     alt: 'Phone logo',     label: t.profile.social.phone_pro,   val: user.phonePro       || '' },
-                        { name: 'instagramLink',  toggle: 'showInstagram', logo: 'instagram-logo.webp', alt: 'Instagram logo', label: t.profile.social.instagram,   val: user.instagramLink  || '' },
-                        { name: 'whatsappLink',   toggle: 'showWhatsapp',  logo: 'whatsapp-logo.webp',  alt: 'Whatsapp logo',  label: t.profile.social.whatsapp,    val: user.whatsappLink   || '' },
-                        { name: 'facebookLink',   toggle: 'showFacebook',  logo: 'facebook-logo.webp',  alt: 'Facebook logo',  label: t.profile.social.facebook,    val: user.facebookLink   || '' },
-                        { name: 'website',        toggle: 'showWebsite',   logo: 'website-logo.webp',   alt: 'Website logo',   label: t.profile.social.website,     val: user.website        || '' }
-                    ]
-                each s in socials
-                    -
-                        var isOn = (cs[s.toggle] !== false)
-                    .social-box(data-name=s.name class=(!isOn ? 'social-box--hidden' : ''))
-                        if !canUseSocial
-                            a.btn-upgrade-pro.get__premium(href="/subscription") Passer au Pro
-                        label.social-visibility-toggle(title=t.info.toggle_visibility data-toggle=s.toggle)
-                            input.social-visibility-toggle__input(
-                                type="checkbox"
-                                checked=isOn
-                                disabled=(!canUseSocial)
+                h3 Moyens de paiement
+                p.info-card__desc Vos cartes bancaires enregistrées pour le paiement de votre abonnement.
+            if paymentMethods && paymentMethods.length > 0
+                .pm-list
+                    each pm in paymentMethods
+                        .pm-item
+                            .pm-item__icon(class='pm-brand--' + pm.brand)
+                                = pm.brand.charAt(0).toUpperCase() + pm.brand.slice(1)
+                            .pm-item__info
+                                span.pm-item__number •••• #{pm.last4}
+                                span.pm-item__expiry Expire #{String(pm.expMonth).padStart(2,'0')}/#{String(pm.expYear).slice(-2)}
+                            button.sm-btn.sm-btn--ghost.pm-item__del(
+                                type="button"
+                                data-pmid=pm.id
                             )
-                            span.social-visibility-toggle__track
-                                span.social-visibility-toggle__thumb
-                        .social-box__logo
-                            img(src="/images/logos/" + s.logo alt=s.alt)
-                        .social-box__title= s.label
-                        .social-box__field
-                            input.input(placeholder=t.info.link_placeholder value=s.val disabled=(!canUseSocial))
-                            button.sm-btn.sm-btn--ghost.btn__social-save
-                                span= t.avail.save
+                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                    path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+                                span Supprimer
+            else
+                p.pm-empty Aucune carte enregistrée.
+            .pm-add-wrap
+                button.sm-btn.sm-btn--ghost#pmAddBtn(type="button")
+                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                        path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                    span Ajouter une carte
+            .pm-form-wrap#pmFormWrap(style="display:none")
+                .pm-form
+                    p.pm-form__label Informations de carte
+                    #pm-card-element.pm-card-input
+                    .pm-form__error#pmCardError
+                    .pm-form__actions
+                        button.sm-btn.sm-btn--primary#pmConfirmBtn(type="button")
+                            span Confirmer
+                        button.sm-btn.sm-btn--ghost#pmCancelBtn(type="button") Annuler
+
+        //- ── Historique de paiement ──────────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3 Historique de paiement
+                p.info-card__desc Toutes vos factures et paiements passés.
+            if invoices && invoices.length > 0
+                .inv-table
+                    .inv-table__head
+                        span Date
+                        span Description
+                        span Montant
+                        span Statut
+                        span
+                    each inv in invoices
+                        -
+                            var d = new Date(inv.date * 1000)
+                            var dateStr = d.toLocaleDateString('fr-FR', {day:'2-digit', month:'short', year:'numeric'})
+                            var statusClass = inv.status === 'paid' ? 'inv-badge--paid' : inv.status === 'open' ? 'inv-badge--open' : 'inv-badge--other'
+                            var statusLabel = inv.status === 'paid' ? 'Payé' : inv.status === 'open' ? 'En attente' : inv.status === 'void' ? 'Annulé' : inv.status
+                        .inv-row
+                            span.inv-row__date= dateStr
+                            span.inv-row__desc= inv.description
+                            span.inv-row__amount #{inv.amount} #{inv.currency}
+                            span
+                                span.inv-badge(class=statusClass)= statusLabel
+                            span.inv-row__actions
+                                if inv.pdfUrl
+                                    a.inv-dl-btn(href=inv.pdfUrl target="_blank" rel="noopener" title="Télécharger la facture")
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
+                                            path(d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z")
+                                        span PDF
+            else
+                p.pm-empty Aucun historique de paiement.
 
     //- ── Delete account modal ─────────────────────────────────────────────────
     .delete-account-modal#deleteAccountModal(style="display:none")
@@ -251,109 +179,133 @@ block content
 
 block scripts
     script(src='/js/layouts/informations.js')
-    script(src='/js/templates/dialog.js' type="module")
-    script(src='/js/templates/edit-email.js')
+    script(src="https://js.stripe.com/v3/")
     script.
-        const __services = !{JSON.stringify(services)};
-        (function() {
-            // ── Autocomplete business type ──
-            const input = document.getElementById('businessTypeInput');
-            const dropdown = document.getElementById('businessTypeDropdown');
+        // ── Payment methods ───────────────────────────────────────────────────
+        (function () {
+            var STRIPE_KEY = '!{stripePublishableKey}';
+            var pmAddBtn   = document.getElementById('pmAddBtn');
+            var pmFormWrap = document.getElementById('pmFormWrap');
+            var pmConfirmBtn = document.getElementById('pmConfirmBtn');
+            var pmCancelBtn  = document.getElementById('pmCancelBtn');
+            var pmCardError  = document.getElementById('pmCardError');
 
-            function normalize(str) {
-                return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-            }
-            function renderList(items) {
-                dropdown.innerHTML = '';
-                if (!items.length) { dropdown.style.display = 'none'; return; }
-                items.forEach(function(item) {
-                    const div = document.createElement('div');
-                    div.className = 'service-dropdown__item';
-                    div.textContent = item;
-                    div.addEventListener('mousedown', function(e) {
-                        e.preventDefault();
-                        input.value = item;
-                        dropdown.style.display = 'none';
-                    });
-                    dropdown.appendChild(div);
-                });
-                dropdown.style.display = 'block';
-            }
-            if (input && dropdown) {
-                input.addEventListener('input', function() {
-                    const q = normalize(input.value.trim());
-                    if (!q) { dropdown.style.display = 'none'; return; }
-                    renderList(__services.filter(s => normalize(s).includes(q)).slice(0, 8));
-                });
-                input.addEventListener('focus', function() {
-                    const q = normalize(input.value.trim());
-                    if (q) renderList(__services.filter(s => normalize(s).includes(q)).slice(0, 8));
-                });
-                input.addEventListener('blur', function() {
-                    setTimeout(function() { dropdown.style.display = 'none'; }, 150);
-                });
-            }
+            var stripeInstance = null;
+            var cardElement    = null;
 
-            // ── Compteur description ──
-            const textarea = document.getElementById('descriptionCoach');
-            const counter  = document.getElementById('descCount');
-            if (textarea && counter) {
-                textarea.addEventListener('input', function() {
-                    counter.textContent = textarea.value.length + '/500';
+            // ── Supprimer une carte ──────────────────────────────────────────
+            document.querySelectorAll('.pm-item__del').forEach(function (btn) {
+                btn.addEventListener('click', async function () {
+                    if (!confirm('Supprimer cette carte ?')) return;
+                    var pmId = btn.dataset.pmid;
+                    btn.disabled = true;
+                    btn.querySelector('span').textContent = '...';
+                    try {
+                        var res = await fetch('/account/payment-method/' + pmId, { method: 'DELETE' });
+                        var data = await res.json();
+                        if (data.success) {
+                            btn.closest('.pm-item').remove();
+                        } else {
+                            alert(data.error || 'Erreur lors de la suppression.');
+                            btn.disabled = false;
+                            btn.querySelector('span').textContent = 'Supprimer';
+                        }
+                    } catch (e) {
+                        btn.disabled = false;
+                        btn.querySelector('span').textContent = 'Supprimer';
+                    }
                 });
-            }
+            });
 
-            // ── Enregistrer nom + description + type en une fois ──
-            const saveBusinessInfo = document.getElementById('saveBusinessInfo');
-            const businessNameInput = document.getElementById('businessNameInput');
-            if (saveBusinessInfo) {
-                saveBusinessInfo.addEventListener('click', async function() {
-                    const btn = saveBusinessInfo;
-                    const businessName = businessNameInput ? businessNameInput.value.trim() : '';
-                    const description  = textarea ? textarea.value.trim() : '';
-                    const businessType = input ? input.value.trim() : '';
-                    const res = await fetch('/account/business-info', {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ businessName, description, businessType })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        btn.querySelector('span').textContent = '✓ Enregistré';
-                        setTimeout(() => { btn.querySelector('span').textContent = 'Enregistrer'; }, 2500);
+            // ── Ouvrir le formulaire d'ajout ─────────────────────────────────
+            if (pmAddBtn) {
+                pmAddBtn.addEventListener('click', async function () {
+                    if (!STRIPE_KEY) {
+                        alert('Configuration Stripe manquante. Ajoutez STRIPE_PUBLISHABLE_KEY_LOCAL dans votre fichier .env');
+                        return;
+                    }
+                    if (!window.Stripe) {
+                        alert('Stripe.js n\'est pas chargé. Vérifiez votre connexion internet.');
+                        return;
+                    }
+                    if (pmFormWrap.style.display !== 'none') return;
+                    pmAddBtn.disabled = true;
+                    pmAddBtn.querySelector('span').textContent = '...';
+
+                    try {
+                        var res  = await fetch('/account/payment-method/setup-intent', { method: 'POST' });
+                        var data = await res.json();
+                        if (!data.clientSecret) throw new Error(data.error || 'Erreur');
+
+                        if (!stripeInstance) {
+                            stripeInstance = Stripe(STRIPE_KEY);
+                            var elements = stripeInstance.elements();
+                            cardElement = elements.create('card', {
+                                style: {
+                                    base: {
+                                        fontSize: '15px',
+                                        color: '#111',
+                                        fontFamily: 'Inter, system-ui, sans-serif',
+                                        '::placeholder': { color: '#aaa' }
+                                    }
+                                }
+                            });
+                            cardElement.mount('#pm-card-element');
+                            cardElement.on('change', function (e) {
+                                pmCardError.textContent = e.error ? e.error.message : '';
+                            });
+                        }
+
+                        pmFormWrap.dataset.secret = data.clientSecret;
+                        pmFormWrap.style.display = 'block';
+                        pmAddBtn.querySelector('span').textContent = 'Ajouter une carte';
+                        pmAddBtn.disabled = false;
+                    } catch (e) {
+                        pmAddBtn.querySelector('span').textContent = 'Ajouter une carte';
+                        pmAddBtn.disabled = false;
+                        alert(e.message || 'Erreur lors de la création du formulaire.');
                     }
                 });
             }
 
-            // ── Upload photo établissement ──
-            const businessFileInput = document.getElementById('businessFileInput');
-            const uploadBusinessBtn = document.getElementById('uploadBusinessBtn');
-            const businessPicPreview = document.getElementById('businessPicPreview');
-
-            if (uploadBusinessBtn && businessFileInput) {
-                uploadBusinessBtn.addEventListener('click', function() { businessFileInput.click(); });
-                businessFileInput.addEventListener('change', async function() {
-                    const file = businessFileInput.files[0];
-                    if (!file) return;
-
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        if (businessPicPreview.tagName === 'IMG') {
-                            businessPicPreview.src = e.target.result;
+            // ── Confirmer la carte ───────────────────────────────────────────
+            if (pmConfirmBtn) {
+                pmConfirmBtn.addEventListener('click', async function () {
+                    if (!stripeInstance || !cardElement) return;
+                    var secret = pmFormWrap.dataset.secret;
+                    pmConfirmBtn.disabled = true;
+                    pmConfirmBtn.querySelector('span').textContent = '...';
+                    pmCardError.textContent = '';
+                    try {
+                        var result = await stripeInstance.confirmCardSetup(secret, {
+                            payment_method: { card: cardElement }
+                        });
+                        if (result.error) {
+                            pmCardError.textContent = result.error.message;
+                            pmConfirmBtn.disabled = false;
+                            pmConfirmBtn.querySelector('span').textContent = 'Confirmer';
                         } else {
-                            const img = document.createElement('img');
-                            img.src = e.target.result;
-                            img.alt = 'Photo établissement';
-                            img.id = 'businessPicPreview';
-                            businessPicPreview.replaceWith(img);
+                            // Définir la nouvelle carte comme moyen de paiement par défaut
+                            var newPmId = result.setupIntent.payment_method;
+                            try {
+                                await fetch('/account/payment-method/' + newPmId + '/set-default', { method: 'POST' });
+                            } catch (e) { /* non bloquant */ }
+                            window.location.reload();
                         }
-                    };
-                    reader.readAsDataURL(file);
+                    } catch (e) {
+                        pmCardError.textContent = e.message || 'Erreur.';
+                        pmConfirmBtn.disabled = false;
+                        pmConfirmBtn.querySelector('span').textContent = 'Confirmer';
+                    }
+                });
+            }
 
-                    const formData = new FormData();
-                    formData.append('businessPicture', file);
-                    const res = await fetch('/account/business-picture', { method: 'PATCH', body: formData });
-                    await res.json();
+            // ── Annuler ──────────────────────────────────────────────────────
+            if (pmCancelBtn) {
+                pmCancelBtn.addEventListener('click', function () {
+                    pmFormWrap.style.display = 'none';
                 });
             }
         })();
+    script(src='/js/templates/dialog.js' type="module")
+    script(src='/js/templates/edit-email.js')

@@ -160,7 +160,12 @@ const userSchema = schema(
       showSectionReviews:    { type: Boolean, default: false },
       showSectionAmenities:  { type: Boolean, default: false },
       showSectionFaq:        { type: Boolean, default: false },
-      gallery:   { type: [String], default: [] },
+      showSectionGallery:    { type: Boolean, default: false },
+      showSectionMap:        { type: Boolean, default: true  },
+      showSectionHours:      { type: Boolean, default: true  },
+      gallery:     { type: [String], default: [] },
+      equipment:   { type: [String], default: [] },
+      categories:  { type: [{ name: String, icon: { type: String, default: '' }, _id: false }], default: [] },
       amenities: {
         cleanliness: { type: [String], default: [] },
         comfort:     { type: [String], default: [] },

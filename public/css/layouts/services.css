@@ -141,6 +141,7 @@
   gap: 6px;
 }
 
+.badge--category,
 .badge--price,
 .badge--duration {
   display: inline-flex;
@@ -162,6 +163,12 @@
   background: var(--surface);
   color: var(--text-muted);
   border: 1px solid var(--border-light, #e5e5e5);
+}
+
+.badge--category {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
 }
 
 .service-card__actions {
@@ -582,4 +589,55 @@
 .svc-card--locked-invite {
   opacity: 0.55;
   cursor: default;
+}
+
+/* ── New category section ─────────────────────────────────────────────────── */
+#newCategorySection {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: -6px;
+}
+
+/* ── Category icon picker ─────────────────────────────────────────────────── */
+.cat-icon-picker {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+
+.cat-icon-btn {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+  line-height: 1;
+}
+
+.cat-icon-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.cat-icon-btn.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* ── Badge category icon ──────────────────────────────────────────────────── */
+.badge-cat-icon {
+  font-size: 10px;
+  line-height: 1;
 }

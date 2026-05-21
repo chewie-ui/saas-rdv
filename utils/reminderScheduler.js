@@ -65,14 +65,16 @@ async function sendDueReminders() {
         startHour: booking.startTime,
         endHour: booking.endTime,
         slotTime: booking.slotTime,
+        serviceName: booking.serviceName || "",
         message: booking.message || "",
         bookingId: booking._id,
         cancelToken: booking.cancelToken,
+        baseUrl: (process.env.BASE_URL || "https://www.branshee.com").replace(/\/$/, ""),
       });
 
       const ok = await sendEmail(
         booking.email,
-        "Reminder: your appointment is coming up",
+        "Rappel : votre rendez-vous est demain",
         html,
       );
 

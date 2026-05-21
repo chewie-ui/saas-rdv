@@ -119,17 +119,6 @@ block content
                             placeholder="Paris, France"
                         )
 
-                //- Langues
-                .settings__field.settings__field--full
-                    label Langues parlées
-                    .settings__langs
-                        - const allLangs = [{code:'fr',label:'Français',flag:'/images/fr.webp'},{code:'en',label:'English',flag:'/images/en.jpg'},{code:'nl',label:'Nederlands',flag:'/images/nl.jpg'},{code:'es',label:'Español',flag:'/images/es.jpg'},{code:'it',label:'Italiano',flag:'/images/it.png'},{code:'de',label:'Deutsch',flag:'/images/de.png'}]
-                        each l in allLangs
-                            label.settings__lang-chip(class=(client.languages && client.languages.includes(l.code)) ? 'active' : '')
-                                input(type="checkbox" name="languages" value=l.code checked=(client.languages && client.languages.includes(l.code)))
-                                img(src=l.flag alt=l.label)
-                                span= l.label
-
                 //- Notifications
                 .settings__field.settings__field--full
                     .settings__toggle-row

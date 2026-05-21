@@ -15,8 +15,7 @@ block content
                 h1 Bon retour !
                 p Connectez-vous pour accéder à vos rendez-vous.
 
-            if error
-                .client-auth__error= error
+            .client-auth__error#clientLoginError(style=error ? '' : 'display:none')= error || ''
 
             //- ── Google SSO ────────────────────────────────────────
             a.auth-social-btn(href="/auth/google/client")
@@ -62,3 +61,54 @@ block content
                     a(href="/client/register")  Créer un compte
                 p.client-auth__pro-link Vous êtes un professionnel ?
                     a(href="/login")  Connexion pro
+
+block scripts
+    script.
+        (function() {
+            var form      = document.querySelector('form[action="/client/login"]');
+            var errBox    = document.getElementById('clientLoginError');
+            var submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+
+            function showError(msg) {
+                if (!errBox) return;
+                errBox.textContent = msg;
+                errBox.style.display = 'block';
+                errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            if (form && submitBtn) {
+                var span = submitBtn.querySelector('span');
+                var origLabel = span ? span.textContent : submitBtn.textContent;
+
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    if (errBox) errBox.style.display = 'none';
+                    submitBtn.disabled = true;
+                    if (span) span.textContent = '…'; else submitBtn.textContent = '…';
+
+                    fetch('/client/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'fetch'
+                        },
+                        body: new URLSearchParams(new FormData(form)).toString()
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            window.location.href = data.redirect || '/espace-client';
+                        } else {
+                            showError(data.error || 'Une erreur est survenue.');
+                            submitBtn.disabled = false;
+                            if (span) span.textContent = origLabel; else submitBtn.textContent = origLabel;
+                        }
+                    })
+                    .catch(function() {
+                        showError('Erreur réseau. Veuillez réessayer.');
+                        submitBtn.disabled = false;
+                        if (span) span.textContent = origLabel; else submitBtn.textContent = origLabel;
+                    });
+                });
+            }
+        })();

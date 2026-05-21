@@ -9,11 +9,13 @@ exports.servicesPage = async (req, res) => {
     .sort("order")
     .lean();
   const maxServices = getLimit("services", req.user);
+  const categories  = (req.user.calendarSettings && req.user.calendarSettings.categories) || [];
   res.render("admin/services", {
     pageName: "Services",
     title: "Services",
     services,
     maxServices,
+    categories,
   });
 };
 
@@ -50,7 +52,7 @@ exports.createService = async (req, res) => {
       return res.status(403).json({ error: "plan_limit", message: `Limite de ${maxServices} services atteinte.` });
     }
 
-    const { name, description, price, duration } = req.body;
+    const { name, description, price, duration, category } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ error: "Le nom du service est requis." });
     }
@@ -60,6 +62,7 @@ exports.createService = async (req, res) => {
       description: (description || "").trim(),
       price: price !== undefined && price !== "" ? Number(price) : null,
       duration: duration ? Number(duration) : 30,
+      category: (category || "").trim(),
       order: count,
     });
     res.json({ success: true, service });
@@ -73,12 +76,13 @@ exports.createService = async (req, res) => {
 exports.updateService = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, duration } = req.body;
+    const { name, description, price, duration, category } = req.body;
     const update = {};
     if (name !== undefined) update.name = name.trim();
     if (description !== undefined) update.description = description.trim();
     if (price !== undefined) update.price = price !== "" ? Number(price) : null;
     if (duration !== undefined) update.duration = Number(duration);
+    if (category !== undefined) update.category = category.trim();
 
     const service = await Service.findOneAndUpdate(
       { _id: id, company: res.locals.currentCompany._id },

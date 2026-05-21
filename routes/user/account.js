@@ -59,10 +59,18 @@ router.patch(
 router.patch("/gallery", upload.array("galleryPhotos", 12), accountController.updateGallery);
 router.delete("/gallery/:index", accountController.deleteGalleryPhoto);
 router.patch("/amenities", accountController.updateAmenities);
+router.patch("/equipment", accountController.updateEquipment);
+router.patch("/categories", accountController.updateCategories);
 router.patch("/faq", accountController.updateFaq);
 router.patch("/badges", accountController.updateBadges);
+router.patch("/toggle-section", accountController.toggleSection);
 
 router.patch("/slug", isAuth, accountController.updateSlug);
 router.get("/check-slug", isAuth, accountController.checkSlug);
+
+// ── Payment methods ──────────────────────────────────────────────────────────
+router.post("/payment-method/setup-intent", isAuth, accountController.createSetupIntent);
+router.post("/payment-method/:pmId/set-default", isAuth, accountController.setDefaultPaymentMethod);
+router.delete("/payment-method/:pmId", isAuth, accountController.detachPaymentMethod);
 
 module.exports = router;

@@ -63,11 +63,9 @@ app.post("/account/webhook", express.raw({ type: "application/json" }), async (r
       // Determine plan from the Stripe price ID used
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 5 });
       const priceId = lineItems.data[0]?.price?.id || "";
-      const env = require("./environment");
       const isBusinessPrice = [
         env.stripePriceBusinessMonthly,
         env.stripePriceBusinessYearly,
-        env.stripePricePlanBusiness,
       ].filter(Boolean).includes(priceId);
       const planName = isBusinessPrice ? "business" : "pro";
 

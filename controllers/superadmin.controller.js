@@ -7,11 +7,14 @@ exports.loginPage = (req, res) => {
 };
 
 exports.login = (req, res) => {
+  const isAjax = req.headers["x-requested-with"] === "fetch";
   const { secret } = req.body;
   if (secret && secret === process.env.SUPERADMIN_SECRET) {
     req.session.isSuperAdmin = true;
+    if (isAjax) return res.json({ success: true, redirect: "/superadmin" });
     return res.redirect("/superadmin");
   }
+  if (isAjax) return res.status(400).json({ error: "Mot de passe incorrect." });
   res.render("superadmin/login", { error: "Mot de passe incorrect." });
 };
 
