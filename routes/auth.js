@@ -45,12 +45,55 @@ router.post("/login", (req, res, next) => {
       });
     }
 
+    // 2FA : si activée, stocker le userId en session et rediriger vers la vérification
+    if (user.twoFA && user.twoFA.enabled) {
+      req.session.pending2FAUserId = String(user._id);
+      if (isAjax) return res.json({ success: true, redirect: "/login/2fa" });
+      return res.redirect("/login/2fa");
+    }
+
     req.logIn(user, (err) => {
       if (err) return next(err);
       if (isAjax) return res.json({ success: true, redirect: "/appointment" });
       return res.redirect("/appointment");
     });
   })(req, res, next);
+});
+
+// ── 2FA verification page ────────────────────────────────────────────────────
+router.get("/login/2fa", (req, res) => {
+  if (!req.session.pending2FAUserId) return res.redirect("/login");
+  const error = req.query.error ? "Code incorrect. Vérifiez votre application." : null;
+  res.render("auth/login-2fa", { becomeCoach: true, alwaysSticky: true, error });
+});
+
+router.post("/login/2fa", async (req, res) => {
+  const { pending2FAUserId } = req.session;
+  if (!pending2FAUserId) return res.redirect("/login");
+
+  const { code } = req.body;
+  try {
+    const speakeasy = require("speakeasy");
+    const user = await User.findById(pending2FAUserId);
+    if (!user) return res.redirect("/login");
+
+    const isValid = speakeasy.totp.verify({
+      secret: user.twoFA.secret,
+      encoding: "base32",
+      token: String(code).replace(/\s/g, ""),
+      window: 1,
+    });
+    if (!isValid) return res.redirect("/login/2fa?error=1");
+
+    delete req.session.pending2FAUserId;
+    req.logIn(user, (err) => {
+      if (err) return res.redirect("/login");
+      return res.redirect("/appointment");
+    });
+  } catch (err) {
+    console.error("2FA login error:", err.message);
+    return res.redirect("/login/2fa?error=1");
+  }
 });
 
 router.get("/logout", logout);

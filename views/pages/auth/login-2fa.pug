@@ -1,0 +1,51 @@
+extends ../../layouts/auth
+
+block content
+    .auth-split
+
+        //- ── Left: brand art panel ─────────────────────────────────
+        .auth-art
+            a.auth-art__logo(href="/")
+                img.auth-art__logo-mark(src="/images/icon.svg" alt="BranShee")
+                span BranShee
+
+            .auth-art__body
+                .auth-art__headline Protégez votre compte avec l'authentification à deux facteurs.
+                .auth-art__stats
+                    .auth-art__stat
+                        .auth-art__stat-num 2FA
+                        .auth-art__stat-label activée
+                    .auth-art__stat
+                        .auth-art__stat-num 100%
+                        .auth-art__stat-label sécurisé
+
+            .auth-art__foot © BranShee · Brussels
+
+        //- ── Right: form panel ─────────────────────────────────────
+        .auth-form-panel
+            .auth-form-inner
+                h1 Vérification en deux étapes
+                p.auth-sub Entrez le code à 6 chiffres affiché dans votre application Google Authenticator.
+
+                .auth-error#loginError(style=error ? '' : 'display:none')= error || ''
+
+                form(action="/login/2fa" method="POST")
+                    .auth-field
+                        label.auth-label Code de vérification
+                        input.auth-input(
+                            type="text"
+                            name="code"
+                            placeholder="000 000"
+                            autocomplete="one-time-code"
+                            inputmode="numeric"
+                            maxlength="7"
+                            required
+                            autofocus
+                            style="letter-spacing:4px; font-size:1.4rem; text-align:center;"
+                        )
+
+                    button.sm-btn.sm-btn--full.sm-btn--primary(type="submit")
+                        span Vérifier
+
+                .auth-bottom-link
+                    a(href="/login") ← Retour à la connexion

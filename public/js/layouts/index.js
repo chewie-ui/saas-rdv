@@ -904,11 +904,13 @@ async function submitBooking() {
       if (nextBtn) { nextBtn.disabled = false; nextBtn.textContent = "Confirmer la réservation"; }
       if (data.error === "no_employee_available") {
         alert("Ce créneau n'est plus disponible. Veuillez en choisir un autre.");
-        // Go back to time step
         goToStep("time");
         _currentSlots = [];
         STATE.date = null;
         STATE.time = null;
+      } else if (data.error === "monthly_limit_reached") {
+        alert("Ce professionnel ne peut plus accepter de nouvelles réservations ce mois-ci. Revenez le mois prochain ou contactez-les directement.");
+        goToStep("service");
       } else {
         alert("Une erreur est survenue. Veuillez réessayer.");
       }

@@ -43,6 +43,12 @@ exports.createUser = async (req, res) => {
   if (password.trim().length < 8)
     return fail(res.locals.t?.auth?.error_pwd_length || "Le mot de passe doit contenir au moins 8 caractères.");
 
+  if (!/[0-9]/.test(password))
+    return fail(res.locals.t?.auth?.error_pwd_number || "Le mot de passe doit contenir au moins un chiffre.");
+
+  if (!/[^a-zA-Z0-9]/.test(password))
+    return fail(res.locals.t?.auth?.error_pwd_symbol || "Le mot de passe doit contenir au moins un caractère spécial (ex: !, @, #…).");
+
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const companyId = new mongoose.Types.ObjectId();

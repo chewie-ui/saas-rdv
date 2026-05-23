@@ -11,6 +11,7 @@ module.exports = {
   stripePriceBusinessYearly: env.STRIPE_PRICE_BUSINESS_YEARLY_KEY_LOCAL,
   stripeSuccessUrl:          env.STRIPE_SUCCESS_URL_LOCAL,
   stripeCancelUrl:           env.STRIPE_CANCEL_URL_LOCAL,
+  stripeWebhookSecret:       env.STRIPE_WEBHOOK_SECRET,
   dbUri:                     env.MONGO_URI_LOCAL,
   port:                      3000,
 };

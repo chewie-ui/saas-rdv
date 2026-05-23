@@ -27,25 +27,23 @@ html(lang="fr")
                         -
                             var navCtaMap = {
                                 'Appointment':   { label: t.sidebar.new_appointment || 'New appointment', href: '/appointment/new' },
-                                'Services':      { label: t.sidebar.new_service     || 'New service',     href: '/services' },
-                                'Employees':     { label: t.sidebar.new_employee    || 'New employee',    href: '/employees' },
-                                'History':       { label: t.sidebar.export          || 'Export',             href: '#export-history' },
+                                'History':       { label: t.sidebar.export          || 'Export',          href: '#export-history' },
                             }
                             var navCta = navCtaMap[pageName]
                             var calendarUrl = currentCompany ? ('/' + (currentCompany.slug || currentCompany._id)) : '/'
                             var calendarFullUrl = 'https://www.branshee.com' + calendarUrl
                         if pageName === 'Appointment'
-                            button.nav-cta-btn.nav-cta-btn--ghost#shareCalendarBtn(type="button" data-url=calendarFullUrl title=t.sidebar.share_calendar || 'Share calendar')
-                                svg(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
+                            button.sm-btn.sm-btn--ghost#shareCalendarBtn(type="button" data-url=calendarFullUrl title=t.sidebar.share_calendar || 'Share calendar')
+                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                     path(d="M680-80q-50 0-85-35t-35-85q0-6 3-28L282-392q-16 15-37 23.5t-45 8.5q-50 0-85-35t-35-85q0-50 35-85t85-35q24 0 45 8.5t37 23.5l281-164q-2-7-2.5-13.5T560-760q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35q-24 0-45-8.5T598-672L317-508q2 7 2.5 13.5t.5 14.5q0 8-.5 14.5T317-452l281 164q16-15 37-23.5t45-8.5q50 0 85 35t35 85q0 50-35 85t-85 35Z")
                                 span= t.sidebar.share_calendar || 'Share'
-                            a.nav-cta-btn(href=calendarUrl target="_blank")
-                                svg(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
+                            a.sm-btn.sm-btn--primary(href=calendarUrl target="_blank")
+                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                     path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
                                 span= t.sidebar.new_appointment || 'New appointment'
                         else if navCta
-                            a.nav-cta-btn(href=navCta.href)
-                                svg(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
+                            a.sm-btn.sm-btn--primary(href=navCta.href)
+                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                     path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
                                 span= navCta.label
                 .main-wrapper

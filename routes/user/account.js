@@ -73,4 +73,12 @@ router.post("/payment-method/setup-intent", isAuth, accountController.createSetu
 router.post("/payment-method/:pmId/set-default", isAuth, accountController.setDefaultPaymentMethod);
 router.delete("/payment-method/:pmId", isAuth, accountController.detachPaymentMethod);
 
+// ── 2FA ──────────────────────────────────────────────────────────────────────
+router.post("/2fa/setup",   isAuth, accountController.setup2FA);
+router.post("/2fa/enable",  isAuth, accountController.enable2FA);
+router.post("/2fa/disable", isAuth, accountController.disable2FA);
+
+// ── Langue de l'interface ────────────────────────────────────────────────────
+router.post("/language", isAuth, accountController.updateLanguage);
+
 module.exports = router;

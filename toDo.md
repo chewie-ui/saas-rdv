@@ -37,3 +37,4 @@ AFFICHER INFO CLIENT sur page /book SI y a (exemple il est connecte: on a sa pho
 si connecte client, ajouter prendre un btn prendre renvdez vous
 btn supprimer la rechercher page / 
 parametre client langue principalke doit etre fonctionnel et attention il est 2 fois la !
+bug en ligne Configuration Stripe manquante. Ajoutez dans : "Ajouter une carte"

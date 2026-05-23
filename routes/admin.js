@@ -20,6 +20,7 @@ const {
   historyEditRow,
   settingsInit,
   historyEditRowPatch,
+  historyCheckConflicts,
   paymentVerification,
   resumeSubscription,
   saveAdminNotes,
@@ -39,17 +40,30 @@ router.get("/panel", isAuth, injectCompany, renderAppointments, panel);
 router.get("/appointment", isAuth, injectCompany, appointment);
 router.get("/availability", isAuth, injectCompany, availability);
 router.get("/client", isAuth, injectCompany, client);
-router.get("/informations", isAuth, injectCompany, informationsPage);
-router.get("/subscription", isAuth, injectCompany, (req, res) => {
+router.get("/informations", (req, res) => res.redirect(301, "/settings"));
+router.get("/subscription", isAuth, injectCompany, async (req, res) => {
+  let monthlyBookingCount = null;
+  if (!res.locals.isPro && res.locals.currentCompany) {
+    const Booking = require("../db/models/book.model");
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    monthlyBookingCount = await Booking.countDocuments({
+      company: res.locals.currentCompany._id,
+      date:    { $gte: startOfMonth },
+      status:  { $ne: "canceled" },
+    });
+  }
   res.render("admin/subscription", {
     pageName: "Subscription",
     title: "Plans",
+    monthlyBookingCount,
   });
 });
 
 router.get("/settings", isVerified, settingsInit);
 router.get("/history/edit/:id", isVerified, historyEditRow);
 router.patch("/history/edit/:id", historyEditRowPatch);
+router.get("/history/edit/:id/conflicts", isAuth, historyCheckConflicts);
 router.get("/history", isVerified, historyInit);
 router.delete("/history", historyDeleteRow);
 router.get("/history/search", historySearch);

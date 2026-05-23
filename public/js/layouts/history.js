@@ -198,45 +198,326 @@ if (statusPills.length && editStatusInput) {
   });
 }
 
+/* ── Service selector: show duration/price chips + auto end-time ── */
+(function () {
+  const svcSelect     = document.getElementById("editService");
+  const startInput    = document.getElementById("editStartTime");
+  const endInput      = document.getElementById("editEndTime");
+  const chipsWrap     = document.getElementById("svcInfoChips");
+  const durationChip  = document.getElementById("svcDurationChip");
+  const durationLbl   = document.getElementById("svcDurationLabel");
+  const priceChip     = document.getElementById("svcPriceChip");
+  const priceLbl      = document.getElementById("svcPriceLabel");
+
+  if (!svcSelect) return;
+
+  function addMinutes(hhmm, mins) {
+    if (!hhmm || !mins) return hhmm;
+    const [h, m] = hhmm.split(":").map(Number);
+    const total = h * 60 + m + mins;
+    const nh = Math.floor(total / 60) % 24;
+    const nm = total % 60;
+    return String(nh).padStart(2, "0") + ":" + String(nm).padStart(2, "0");
+  }
+
+  function updateServiceInfo() {
+    const opt      = svcSelect.selectedOptions[0];
+    const duration = parseInt(opt?.dataset?.duration || "0", 10);
+    const price    = opt?.dataset?.price;
+    const hasInfo  = duration > 0 || (price !== undefined && price !== "");
+
+    if (hasInfo && opt.value) {
+      chipsWrap.style.display = "flex";
+      if (duration > 0) {
+        durationChip.style.display = "flex";
+        durationLbl.textContent = duration >= 60
+          ? `${Math.floor(duration / 60)}h${duration % 60 ? String(duration % 60).padStart(2, "0") : ""}  (${duration} min)`
+          : `${duration} min`;
+        // Auto-update end time
+        if (startInput && endInput && startInput.value) {
+          endInput.value = addMinutes(startInput.value, duration);
+        }
+      } else {
+        durationChip.style.display = "none";
+      }
+      if (price !== undefined && price !== "") {
+        priceChip.style.display = "flex";
+        priceLbl.textContent = parseFloat(price).toFixed(2).replace(".", ",") + " €";
+      } else {
+        priceChip.style.display = "none";
+      }
+    } else {
+      chipsWrap.style.display = "none";
+    }
+  }
+
+  svcSelect.addEventListener("change", updateServiceInfo);
+  startInput?.addEventListener("change", () => {
+    const opt = svcSelect.selectedOptions[0];
+    const dur = parseInt(opt?.dataset?.duration || "0", 10);
+    if (dur > 0 && endInput) endInput.value = addMinutes(startInput.value, dur);
+  });
+
+  // Init on load
+  updateServiceInfo();
+})();
+
+/* ── Conflict check helpers ── */
+function collectPayload() {
+  return {
+    name:       document.getElementById("editName")?.value || "",
+    surname:    document.getElementById("editSurname")?.value || "",
+    email:      document.getElementById("editEmail")?.value || "",
+    phone:      document.getElementById("editPhone")?.value || "",
+    message:    document.getElementById("editMessage")?.value || "",
+    date:       document.getElementById("editDate")?.value || "",
+    startTime:  document.getElementById("editStartTime")?.value || "",
+    endTime:    document.getElementById("editEndTime")?.value || "",
+    status:     document.getElementById("editStatus")?.value || "confirmed",
+    adminNotes: document.getElementById("editAdminNotes")?.value || "",
+    serviceId:  document.getElementById("editService")?.value ?? undefined,
+    serviceName: document.getElementById("editService")?.selectedOptions?.[0]?.dataset?.name ?? undefined,
+    employeeId: document.getElementById("editEmployee")?.value ?? undefined,
+    fullName:   (document.getElementById("editName")?.value || "") + " " + (document.getElementById("editSurname")?.value || ""),
+  };
+}
+
+async function doSave(extraFields = {}) {
+  const id    = window.__bookingId || window.location.pathname.split("/").pop();
+  const label = document.getElementById("saveBtnLabel");
+  const btn   = document.getElementById("saveBtnEdit");
+
+  btn?.classList.add("saving");
+
+  const response = await fetch(`/history/edit/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...collectPayload(), ...extraFields }),
+  });
+
+  btn?.classList.remove("saving");
+  const data = await response.json();
+
+  if (data.success) {
+    btn?.classList.add("saved");
+    if (label) label.textContent = "✓ Enregistré";
+    setTimeout(() => {
+      btn?.classList.remove("saved");
+      if (label) label.textContent = "Enregistrer";
+    }, 2500);
+  }
+}
+
 /* ── Save button (edit page) ── */
 const saveBtnEdit = document.getElementById("saveBtnEdit");
 
 if (saveBtnEdit) {
   saveBtnEdit.addEventListener("click", async () => {
-    const id = window.location.pathname.split("/").pop();
-    const label = document.getElementById("saveBtnLabel");
+    const payload = collectPayload();
+    const id      = window.__bookingId || window.location.pathname.split("/").pop();
 
-    saveBtnEdit.classList.add("saving");
+    // Only check conflicts when there's a time + date
+    if (payload.date && payload.startTime && payload.endTime) {
+      try {
+        const params = new URLSearchParams({
+          date:       payload.date,
+          startTime:  payload.startTime,
+          endTime:    payload.endTime,
+          employeeId: payload.employeeId || "",
+        });
+        const check = await fetch(`/history/edit/${id}/conflicts?${params}`);
+        const result = await check.json();
 
-    const response = await fetch(`/history/edit/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: document.getElementById("editName")?.value || "",
-        surname: document.getElementById("editSurname")?.value || "",
-        email: document.getElementById("editEmail")?.value || "",
-        phone: document.getElementById("editPhone")?.value || "",
-        message: document.getElementById("editMessage")?.value || "",
-        date: document.getElementById("editDate")?.value || "",
-        startTime: document.getElementById("editStartTime")?.value || "",
-        endTime: document.getElementById("editEndTime")?.value || "",
-        status: document.getElementById("editStatus")?.value || "confirmed",
-        adminNotes: document.getElementById("editAdminNotes")?.value || "",
-        // legacy fields kept for backward compat
-        fullName: (document.getElementById("editName")?.value || "") + " " + (document.getElementById("editSurname")?.value || ""),
-      }),
-    });
-
-    saveBtnEdit.classList.remove("saving");
-
-    const data = await response.json();
-    if (data.success) {
-      saveBtnEdit.classList.add("saved");
-      if (label) label.textContent = (window.__t && window.__t.changes_saved) || "✓ Enregistré";
-      setTimeout(() => {
-        saveBtnEdit.classList.remove("saved");
-        if (label) label.textContent = "Enregistrer";
-      }, 2500);
+        if (result.hasConflict) {
+          // Show conflict modal
+          const list = document.getElementById("conflictList");
+          if (list) {
+            list.innerHTML = result.conflicts.map(c =>
+              `<li class="conflict-item">
+                <span class="conflict-item__name">${c.name || "Client inconnu"}</span>
+                <span class="conflict-item__time">${c.time}${c.service ? " · " + c.service : ""}</span>
+              </li>`
+            ).join("");
+          }
+          document.getElementById("conflictOverlay").style.display = "flex";
+          return; // block save
+        }
+      } catch (e) {
+        console.error("Conflict check failed:", e);
+        // On network error, let the save proceed
+      }
     }
+
+    await doSave();
   });
 }
+
+/* ── Conflict modal buttons ── */
+document.getElementById("conflictCancel")?.addEventListener("click", () => {
+  document.getElementById("conflictOverlay").style.display = "none";
+});
+
+document.getElementById("conflictForce")?.addEventListener("click", async () => {
+  document.getElementById("conflictOverlay").style.display = "none";
+  await doSave({ forceDeleteConflicts: true });
+});
+
+// ── Custom date picker ────────────────────────────────────────────────────────
+(function () {
+  const trigger   = document.getElementById("datepickerTrigger");
+  const popup     = document.getElementById("datepickerPopup");
+  const hidden    = document.getElementById("editDate");
+  const display   = document.getElementById("datepickerDisplay");
+  const prevBtn   = document.getElementById("dpPrevMonth");
+  const nextBtn   = document.getElementById("dpNextMonth");
+  const monthLbl  = document.getElementById("dpMonthLabel");
+  const daysGrid  = document.getElementById("dpDays");
+
+  if (!trigger || !popup || !hidden) return;
+
+  const MONTHS_FR = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+  const DAYS_FR   = ["lun.","mar.","mer.","jeu.","ven.","sam.","dim."];
+
+  // Parse initial value (YYYY-MM-DD)
+  function parseHidden() {
+    const v = hidden.value;
+    if (v) {
+      const [y, m, d] = v.split("-").map(Number);
+      return { y, m: m - 1, d };
+    }
+    const now = new Date();
+    return { y: now.getFullYear(), m: now.getMonth(), d: now.getDate() };
+  }
+
+  let sel = parseHidden();
+  let cur = { y: sel.y, m: sel.m };
+
+  function formatDisplay(y, m, d) {
+    const date = new Date(y, m, d);
+    return date.toLocaleDateString("fr-FR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  }
+
+  function pad(n) { return String(n).padStart(2, "0"); }
+
+  function renderCalendar() {
+    monthLbl.textContent = MONTHS_FR[cur.m] + " " + cur.y;
+    daysGrid.innerHTML = "";
+
+    const firstDay = new Date(cur.y, cur.m, 1);
+    // Monday = 0
+    let startOffset = (firstDay.getDay() + 6) % 7;
+    const daysInMonth = new Date(cur.y, cur.m + 1, 0).getDate();
+    const daysInPrev  = new Date(cur.y, cur.m, 0).getDate();
+
+    // Previous month filler
+    for (let i = 0; i < startOffset; i++) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "dp-day dp-day--other";
+      btn.textContent = daysInPrev - startOffset + 1 + i;
+      btn.disabled = true;
+      daysGrid.appendChild(btn);
+    }
+
+    // Current month
+    const today = new Date();
+    for (let d = 1; d <= daysInMonth; d++) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "dp-day";
+      btn.textContent = d;
+
+      const isToday = today.getFullYear() === cur.y && today.getMonth() === cur.m && today.getDate() === d;
+      const isSel   = sel.y === cur.y && sel.m === cur.m && sel.d === d;
+
+      if (isToday) btn.classList.add("dp-day--today");
+      if (isSel)   btn.classList.add("dp-day--selected");
+
+      btn.addEventListener("click", () => {
+        sel = { y: cur.y, m: cur.m, d };
+        hidden.value   = `${cur.y}-${pad(cur.m + 1)}-${pad(d)}`;
+        display.textContent = formatDisplay(cur.y, cur.m, d);
+        popup.style.display = "none";
+        renderCalendar();
+      });
+
+      daysGrid.appendChild(btn);
+    }
+
+    // Next month filler
+    const total = startOffset + daysInMonth;
+    const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+    for (let i = 1; i <= remaining; i++) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "dp-day dp-day--other";
+      btn.textContent = i;
+      btn.disabled = true;
+      daysGrid.appendChild(btn);
+    }
+  }
+
+  function positionPopup() {
+    const rect = trigger.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const popupH = 320; // approx popup height
+
+    if (spaceBelow >= popupH || spaceBelow >= spaceAbove) {
+      // Open below
+      popup.style.top  = (rect.bottom + 6) + "px";
+      popup.style.bottom = "auto";
+    } else {
+      // Open above
+      popup.style.bottom = (window.innerHeight - rect.top + 6) + "px";
+      popup.style.top    = "auto";
+    }
+    popup.style.left  = Math.min(rect.left, window.innerWidth - 298) + "px";
+  }
+
+  trigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = popup.style.display !== "none";
+    if (isOpen) {
+      popup.style.display = "none";
+    } else {
+      // Reset to the selected date's month on every open
+      cur = { y: sel.y, m: sel.m };
+      popup.style.display = "block";
+      positionPopup();
+      renderCalendar();
+    }
+  });
+
+  prevBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    cur.m--;
+    if (cur.m < 0) { cur.m = 11; cur.y--; }
+    renderCalendar();
+  });
+
+  nextBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    cur.m++;
+    if (cur.m > 11) { cur.m = 0; cur.y++; }
+    renderCalendar();
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!trigger.contains(e.target) && !popup.contains(e.target)) {
+      popup.style.display = "none";
+    }
+  });
+
+  // Keep popup aligned when scrolling or resizing
+  window.addEventListener("scroll", () => {
+    if (popup.style.display !== "none") positionPopup();
+  }, { passive: true });
+
+  window.addEventListener("resize", () => {
+    if (popup.style.display !== "none") positionPopup();
+  }, { passive: true });
+
+  // Init display
+  renderCalendar();
+})();

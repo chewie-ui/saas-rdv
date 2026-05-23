@@ -33,6 +33,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const atLimit = MAX_EMPLOYEES > 0 && currentCount >= MAX_EMPLOYEES;
     addEmpBtn.classList.toggle("emp-card--disabled", atLimit);
     addEmpBtn.title = atLimit ? `Limite de ${MAX_EMPLOYEES} employé(s) atteinte` : "";
+    const banner = document.getElementById("employeeLimitBanner");
+    if (banner) banner.style.display = atLimit ? "" : "none";
   }
 
   updateCounter();

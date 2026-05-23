@@ -1,0 +1,212 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   settings.css  —  Paramètres page (2FA + language)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.settings-2fa {
+  padding: 0 1.5rem 1.5rem;
+}
+
+/* ── Status badge ──────────────────────────────────────────────────────────── */
+.twofa-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 1.2rem;
+}
+
+.twofa-status--on {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1.5px solid #bbf7d0;
+}
+
+.twofa-status--off {
+  background: #fafafa;
+  color: #9ca3af;
+  border: 1.5px solid #e5e7eb;
+}
+
+/* ── Hints ─────────────────────────────────────────────────────────────────── */
+.twofa-hint {
+  font-size: 13.5px;
+  color: #6b7280;
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+
+.twofa-hint--small {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 12px;
+}
+
+/* ── QR block ──────────────────────────────────────────────────────────────── */
+.twofa-qr-block {
+  margin-bottom: 1.2rem;
+}
+
+.twofa-qr-wrap {
+  display: inline-block;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff;
+  margin: 8px 0;
+}
+
+.twofa-qr-wrap img {
+  display: block;
+  border-radius: 6px;
+}
+
+.twofa-secret {
+  display: inline-block;
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  background: #f3f4f6;
+  border: 1px dashed #d1d5db;
+  border-radius: 6px;
+  padding: 6px 12px;
+  color: #374151;
+  letter-spacing: 2px;
+  user-select: all;
+  word-break: break-all;
+  margin-top: 4px;
+}
+
+/* ── Row: input + button ───────────────────────────────────────────────────── */
+.twofa-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+/* ── OTP code input ── */
+.twofa-code-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.twofa-code-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.twofa-code-input {
+  width: 160px;
+  height: 42px;
+  padding: 0 14px 0 36px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: border-color 0.15s, background 0.15s;
+  -webkit-appearance: none;
+}
+
+.twofa-code-input::placeholder {
+  letter-spacing: 4px;
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+.twofa-code-input:focus {
+  border-color: var(--accent);
+  background: var(--color-white);
+  outline: none;
+}
+
+[data-theme="dark"] .twofa-code-input {
+  background: var(--surface-card);
+  border-color: var(--border-medium);
+}
+
+/* ── Feedback messages ─────────────────────────────────────────────────────── */
+.twofa-feedback,
+.lang-feedback {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  min-height: 20px;
+}
+
+.twofa-feedback--ok,
+.lang-feedback--ok {
+  color: #15803d;
+}
+
+.twofa-feedback--err {
+  color: #dc2626;
+}
+
+.twofa-disable {
+  margin-top: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Language selector
+   ═══════════════════════════════════════════════════════════════════════════ */
+.lang-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 1.5rem 1.5rem;
+}
+
+.lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px 8px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  line-height: 1;
+}
+
+.lang-btn:hover {
+  border-color: #a3e6b8;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.lang-btn--active {
+  border-color: #22c55e;
+  background: #f0fdf4;
+  color: #15803d;
+  font-weight: 700;
+}
+
+.lang-flag {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.lang-name {
+  line-height: 1;
+}
+
+.lang-feedback {
+  padding: 0 1.5rem 1rem;
+}

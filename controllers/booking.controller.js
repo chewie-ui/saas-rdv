@@ -7,6 +7,7 @@ const DaysOff = require("../db/models/company/daysOff.model");
 const { getAppointments } = require("../queries/booking.queries");
 const pug = require("pug");
 const path = require("path");
+const { getLimit, atLeast } = require("../utils/planLimits");
 
 const { sendEmail } = require("../utils/mailer");
 const { log } = require("console");
@@ -22,6 +23,29 @@ exports.createBooking = async (req, res) => {
 
     const response = await Company.findById(company);
     const companySlotTime = response.slotTime;
+
+    // ── Plan gate: monthly bookings cap for basic (free) plan ─────────────
+    if (response.owner) {
+      const companyOwner = await User.findById(response.owner).lean();
+      const monthlyLimit = getLimit("monthlyBookings", companyOwner);
+      if (monthlyLimit !== Infinity) {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthlyCount = await Booking.countDocuments({
+          company,
+          date:   { $gte: startOfMonth },
+          status: { $ne: "canceled" },
+        });
+        if (monthlyCount >= monthlyLimit) {
+          return res.json({
+            success: false,
+            error: "monthly_limit_reached",
+            message: "Ce professionnel a atteint la limite mensuelle de réservations.",
+          });
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────
 
     // Use service duration if provided, otherwise fall back to company slot time
     const actualDuration = (serviceDuration && Number(serviceDuration) > 0)
@@ -162,6 +186,15 @@ exports.getBooking = async (req, res) => {
     status: { $ne: "canceled" },
   };
 
+  // ── Block past time slots when the requested date is today ───────────────
+  const requestedDate = new Date(date);
+  const now = new Date();
+  const isToday =
+    requestedDate.getFullYear() === now.getFullYear() &&
+    requestedDate.getMonth()    === now.getMonth()    &&
+    requestedDate.getDate()     === now.getDate();
+  const nowMinutes = isToday ? now.getHours() * 60 + now.getMinutes() : -1;
+
   // Get company slotTime so we can compute slot granularity.
   const [companyDoc, activeEmployeeCount] = await Promise.all([
     Company.findById(companyId).select("slotTime").lean(),
@@ -173,6 +206,19 @@ exports.getBooking = async (req, res) => {
     ? Number(serviceDuration)
     : (companyDoc?.slotTime || 30);
 
+  // Helper: add a slot to the blocked set (also blocks past slots for today)
+  function addBlocked(blockedSet, slotStr) {
+    blockedSet.add(slotStr);
+  }
+
+  // Helper: mark all past slots for today as blocked
+  function blockPastSlots(blockedSet, gran) {
+    if (nowMinutes < 0) return;
+    for (let t = 0; t < nowMinutes; t += gran) {
+      blockedSet.add(`${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
+    }
+  }
+
   // ── Case 1: specific employee selected → block only their slots ──────────
   if (specificEmployee) {
     const bookings = await Booking.find({ ...baseQuery, employee: employeeId }).select("startTime slotTime");
@@ -182,9 +228,10 @@ exports.getBooking = async (req, res) => {
       const startMin = h * 60 + m;
       const endMin   = startMin + (b.slotTime || granularity);
       for (let t = startMin; t < endMin; t += granularity) {
-        blockedSet.add(`${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
+        addBlocked(blockedSet, `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
       }
     });
+    blockPastSlots(blockedSet, granularity);
     return res.json({ bookedTimes: Array.from(blockedSet) });
   }
 
@@ -197,16 +244,15 @@ exports.getBooking = async (req, res) => {
       const startMin = h * 60 + m;
       const endMin   = startMin + (b.slotTime || granularity);
       for (let t = startMin; t < endMin; t += granularity) {
-        blockedSet.add(`${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
+        addBlocked(blockedSet, `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
       }
     });
+    blockPastSlots(blockedSet, granularity);
     return res.json({ bookedTimes: Array.from(blockedSet) });
   }
 
   // ── Case 3: company has employees, no filter → block slot only when ALL are busy ──
-  // Fetch all confirmed bookings for the date that belong to an active employee
   const activeEmployees = await Employee.find({ company: companyId, active: true }).select("_id").lean();
-  const activeIds = activeEmployees.map((e) => String(e._id));
 
   const bookings = await Booking.find({
     ...baseQuery,
@@ -232,6 +278,9 @@ exports.getBooking = async (req, res) => {
   Object.entries(slotEmployeeMap).forEach(([slot, empSet]) => {
     if (empSet.size >= activeEmployeeCount) blockedSet.add(slot);
   });
+
+  // Also block past slots for today
+  blockPastSlots(blockedSet, granularity);
 
   res.json({ bookedTimes: Array.from(blockedSet) });
 };

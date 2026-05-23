@@ -530,10 +530,13 @@ function applyPlanGate() {
     const count = formData.questions.length;
     const counter = document.getElementById("questionsCounter");
     if (counter) counter.textContent = `${count} / ${MAX_QUESTIONS} questions`;
-    addQuestionBtn.disabled = count >= MAX_QUESTIONS;
-    addQuestionBtn.title = count >= MAX_QUESTIONS
+    const atLimit = count >= MAX_QUESTIONS;
+    addQuestionBtn.disabled = atLimit;
+    addQuestionBtn.title = atLimit
       ? `Limite de ${MAX_QUESTIONS} questions atteinte (plan actuel)`
       : "";
+    const banner = document.getElementById("questionLimitBanner");
+    if (banner) banner.style.display = atLimit ? "" : "none";
   }
 
   // Patch renderQuestions to call updateAddBtn

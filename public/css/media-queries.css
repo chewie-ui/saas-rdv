@@ -1,0 +1,382 @@
+/* ============================================================
+   BranShee — Global Responsive Overrides
+   Breakpoints:
+     Mobile  : < 600px
+     Tablet  : 600px – 819px
+     Desktop : ≥ 820px
+     Wide    : ≥ 1280px
+   ============================================================ */
+
+/* ============================================================
+   1. ADMIN LAYOUT — Sidebar + Main
+   ============================================================ */
+
+/* On mobile/tablet the hamburger is always visible (sidebar is overlay) */
+@media (max-width: 1279px) {
+  #openMenu {
+    display: flex;
+  }
+}
+
+/* Prevent horizontal overflow on all admin pages */
+@media (max-width: 819px) {
+  .layout {
+    overflow-x: hidden;
+  }
+
+  .main {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .main-wrapper {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .admin-nav__title {
+    font-size: 14px;
+  }
+
+  .admin-nav__actions {
+    gap: 6px;
+  }
+
+  .section__container {
+    padding: 14px 12px;
+  }
+
+  .block-section__row {
+    flex-direction: column !important;
+  }
+
+  .block-section__row .section__container {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+/* ============================================================
+   2. EMPLOYEES PAGE
+   ============================================================ */
+
+@media (max-width: 819px) {
+  .emp-cards-grid,
+  .employees-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 599px) {
+  .emp-cards-grid,
+  .employees-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .emp-card {
+    padding: 14px !important;
+  }
+
+  .emp-card__top {
+    flex-direction: row !important;
+    gap: 12px !important;
+  }
+}
+
+/* ============================================================
+   3. SERVICES PAGE
+   ============================================================ */
+
+@media (max-width: 819px) {
+  .services-grid,
+  .svc-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 599px) {
+  .services-grid,
+  .svc-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svc-card__actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
+/* ============================================================
+   4. AVAILABILITY PAGE
+   ============================================================ */
+
+@media (max-width: 819px) {
+  .avail-week-grid {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .schedule-day {
+    min-width: 120px;
+  }
+
+  .avail-hours-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .avail-hours-row .input {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   5. SETTINGS PAGE
+   ============================================================ */
+
+@media (max-width: 819px) {
+  .lang-grid {
+    gap: 8px !important;
+  }
+
+  .settings-section {
+    padding: 16px 12px !important;
+  }
+
+  .plan-limit-banner {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+}
+
+/* ============================================================
+   6. INFORMATIONS / PROFILE PAGE
+   ============================================================ */
+
+@media (max-width: 819px) {
+  .informations__user {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .informations__actions {
+    width: 100%;
+  }
+
+  .informations__actions .btn,
+  .informations__actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ============================================================
+   7. HISTORY PAGE
+   ============================================================ */
+
+@media (max-width: 819px) {
+  .history-filters {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .history-filters .input,
+  .history-filters .selectmenu {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  .history-card {
+    padding: 12px !important;
+  }
+
+  .history-card__row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
+/* ============================================================
+   8. SUBSCRIPTION PAGE
+   ============================================================ */
+
+@media (max-width: 599px) {
+  .sub-plans {
+    grid-template-columns: 1fr !important;
+  }
+
+  .sub-billing-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sub-compare__wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sub-compare__table {
+    min-width: 500px;
+  }
+}
+
+/* ============================================================
+   9. FORMS PAGE
+   ============================================================ */
+
+@media (max-width: 819px) {
+  .form-question-card {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .form-question-card__actions {
+    align-self: flex-end;
+  }
+}
+
+/* ============================================================
+   10. TABLES — global scrollable
+   ============================================================ */
+
+@media (max-width: 819px) {
+  .table-wrapper,
+  .table__schema-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   11. DIALOGS / MODALS — global
+   ============================================================ */
+
+@media (max-width: 599px) {
+  #dialogWrp .dialog,
+  .dialog__box {
+    width: calc(100vw - 32px) !important;
+    max-width: 100% !important;
+    padding: 20px 16px !important;
+  }
+}
+
+/* ============================================================
+   12. ADMIN APPOINTMENT CALENDAR
+   ============================================================ */
+
+@media (max-width: 819px) {
+  .calendar .calendar__menu .calendar__sections {
+    gap: 8px;
+  }
+
+  .emp-filter-wrap {
+    width: 100%;
+  }
+
+  .emp-filter-select {
+    width: 100%;
+    max-width: 100% !important;
+  }
+}
+
+/* ============================================================
+   13. CLIENT BOOKING PAGE (public /book/:slug)
+   ============================================================ */
+
+@media (max-width: 599px) {
+  .calendar-wrapper {
+    padding: 0 4px;
+  }
+
+  .calendar .calendar-body .days .day {
+    min-height: 36px;
+    font-size: 12px;
+  }
+
+  .schedule-rows {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  .booking-form-row {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .booking-form-row .input {
+    width: 100% !important;
+  }
+}
+
+/* ============================================================
+   14. CLIENT LANDING PAGE (/)
+   ============================================================ */
+
+@media (max-width: 599px) {
+  .lp__search {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .lp__search .input,
+  .lp__search button {
+    width: 100% !important;
+  }
+
+  .lp__cats {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .lp__results-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ============================================================
+   15. AUTH PAGES (login / register)
+   ============================================================ */
+
+@media (max-width: 599px) {
+  .auth-card,
+  .auth-box {
+    padding: 24px 16px !important;
+    margin: 0 12px;
+  }
+
+  .auth-card .btn,
+  .auth-box .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ============================================================
+   16. GLOBAL — prevent horizontal scroll, safe images
+   ============================================================ */
+
+@media (max-width: 819px) {
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+@media (min-width: 820px) {
+  .mobile-only {
+    display: none !important;
+  }
+}

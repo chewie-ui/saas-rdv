@@ -1,23 +1,535 @@
 extends ../../layouts/admin
 
+include ../../templates/modals/dialog.pug
+include ../../templates/modals/prompt.pug
 include ../../templates/change-password.pug
 include ../../templates/edit-email.pug
 
 block links
     link(rel="stylesheet", href="/css/layouts/informations.css")
+    link(rel="stylesheet", href="/css/layouts/settings.css")
+    link(rel="stylesheet", href="/css/templates/dialog.css")
     link(rel="stylesheet", href="/css/templates/change-password.css")
     link(rel="stylesheet", href="/css/templates/edit-email.css")
 
 block content
-    .page.page__settings
-        .settings
-            .settings__navigation
-                .settings__navigation-link Information
-            .settings__body
-                .settings_infos
-                .settings_forms
+    .info-page
+
+        .info-page__header
+            h2= t.sidebar.a_4 || 'Paramètres'
+            p.info-page__subtitle Gérez votre profil, abonnement, sécurité et préférences.
+
+        //- ── Profil personnel ────────────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3= t.profile.section_title || 'Profil personnel'
+            .profile-row
+                .profile-photo-col
+                    .profile-avatar
+                        img(alt="Photo de profil" src=user.profilePicture || "/images/no-user.webp" id="avatarPreview")
+                    input#fileInput(type="file" style="display:none" accept="image/*")
+                    button.sm-btn.sm-btn--ghost#uploadBtn
+                        span= t.profile.upload_photo
+                .profile-fields
+                    .field
+                        label(for="fullname")= t.profile.fullname
+                        input#fullname.input(value=user.fullName name="fullName")
+                    .field
+                        label(for="email")= t.profile.email
+                        input#email.input(disabled value=maskEmail name="email")
+                        .more#emailOpen= t.profile.edit_email
+                    .field
+                        label(for="phone")= t.profile.phone
+                        input#phone.input(value=user.phone name="phone" placeholder=t.profile.phone)
+                    .field
+                        label(for="password")= t.profile.password
+                        input#password.input(placeholder="●●●●●●●●●●●" disabled)
+                        a.more#passwordOpen(href="/forgot-password")= t.profile.change_pwd
+                        .success= success
+            .info-card__actions
+                button.sm-btn.sm-btn--danger#deleteAccountBtn(type="button")
+                    span= t.profile.delete_account
+                button.sm-btn.sm-btn--primary#saveChanges
+                    span= t.profile.save
+
+        //- ── Votre abonnement ────────────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3 Votre abonnement
+                p.info-card__desc Choisissez la formule qui correspond le mieux à vos besoins.
+            .sub-summary
+                .sub-summary__row
+                    span.sub-summary__label Plan actuel :
+                    span.sub-summary__badge(class='sub-badge--' + (currentPlan || 'basic'))
+                        = currentPlan === 'business' ? 'Business' : currentPlan === 'pro' ? 'Pro' : 'Starter'
+                if isPro && !isExpired
+                    .sub-status
+                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                            path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-56-240 226-226-57-57-169 169-85-85-57 57 142 142Z")
+                        .sub-status__body
+                            strong Vous êtes sur le plan #{currentPlan === 'business' ? 'Business' : 'Pro'}
+                            span Vous profitez de toutes les fonctionnalités BranShee — merci de votre confiance !
+                else if isExpired
+                    .sub-status.sub-status--expired
+                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                            path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                        .sub-status__body
+                            strong Abonnement expiré
+                            span Réactivez votre abonnement pour retrouver toutes vos fonctionnalités.
+                else
+                    .sub-status.sub-status--inactive
+                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                            path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                        .sub-status__body
+                            strong Aucun abonnement actif
+                            span Passez à un plan payant pour débloquer toutes les fonctionnalités.
+            .info-card__actions
+                a.sm-btn.sm-btn--ghost(href="/subscription") Gérer mon abonnement
+
+        //- ── Moyens de paiement ──────────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3 Moyens de paiement
+                p.info-card__desc Vos cartes bancaires enregistrées pour le paiement de votre abonnement.
+            if paymentMethods && paymentMethods.length > 0
+                .pm-list
+                    each pm in paymentMethods
+                        .pm-item(data-pmid=pm.id class=pm.isDefault ? 'pm-item--default' : '')
+                            .pm-item__icon(class='pm-brand--' + pm.brand)
+                                = pm.brand.charAt(0).toUpperCase() + pm.brand.slice(1)
+                            .pm-item__info
+                                span.pm-item__number •••• #{pm.last4}
+                                span.pm-item__expiry Expire #{String(pm.expMonth).padStart(2,'0')}/#{String(pm.expYear).slice(-2)}
+                            .pm-item__actions
+                                if pm.isDefault
+                                    span.pm-badge--default
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="11px" viewBox="0 -960 960 960" width="11px" fill="currentColor")
+                                            path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-56-240 226-226-57-57-169 169-85-85-57 57 142 142Z")
+                                        | Par défaut
+                                else
+                                    button.pm-btn--set-default(type="button" data-pmid=pm.id) Définir par défaut
+                                button.pm-item__del(type="button" data-pmid=pm.id title="Supprimer")
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                        path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
+            else
+                p.pm-empty Aucune carte enregistrée.
+            .pm-add-wrap
+                button.sm-btn.sm-btn--ghost#pmAddBtn(type="button")
+                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                        path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                    span Ajouter une carte
+            .pm-form-wrap#pmFormWrap(style="display:none")
+                .pm-form
+                    p.pm-form__label Informations de carte
+                    #pm-card-element.pm-card-input
+                    .pm-form__error#pmCardError
+                    .pm-form__actions
+                        button.sm-btn.sm-btn--primary#pmConfirmBtn(type="button")
+                            span Confirmer
+                        button.sm-btn.sm-btn--ghost#pmCancelBtn(type="button") Annuler
+
+        //- ── Historique de paiement ──────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3 Historique de paiement
+                p.info-card__desc Toutes vos factures et paiements passés.
+            if invoices && invoices.length > 0
+                .inv-table
+                    .inv-table__head
+                        span Date
+                        span Description
+                        span Montant
+                        span Statut
+                        span
+                    each inv in invoices
+                        -
+                            var d = new Date(inv.date * 1000)
+                            var dateStr = d.toLocaleDateString('fr-FR', {day:'2-digit', month:'short', year:'numeric'})
+                            var statusClass = inv.status === 'paid' ? 'inv-badge--paid' : inv.status === 'open' ? 'inv-badge--open' : 'inv-badge--other'
+                            var statusLabel = inv.status === 'paid' ? 'Payé' : inv.status === 'open' ? 'En attente' : inv.status === 'void' ? 'Annulé' : inv.status
+                        .inv-row
+                            span.inv-row__date= dateStr
+                            span.inv-row__desc= inv.description
+                            span.inv-row__amount #{inv.amount} #{inv.currency}
+                            span
+                                span.inv-badge(class=statusClass)= statusLabel
+                            span.inv-row__actions
+                                if inv.pdfUrl
+                                    a.inv-dl-btn(href=inv.pdfUrl target="_blank" rel="noopener" title="Télécharger la facture")
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
+                                            path(d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z")
+                                        span PDF
+            else
+                p.pm-empty Aucun historique de paiement.
+
+        //- ── Authentification à deux facteurs ────────────────────────────────
+        .info-card
+            .info-card__header
+                h3 Authentification à deux facteurs
+                p.info-card__desc Protégez votre compte avec Google Authenticator. Une fois activée, un code sera demandé à chaque connexion.
+
+            .settings-2fa
+
+                if twoFAEnabled
+                    .twofa-status.twofa-status--on
+                        svg(width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round")
+                            path(d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z")
+                        span 2FA activée — votre compte est protégé
+
+                    .twofa-disable
+                        p.twofa-hint Entrez votre code Google Authenticator pour désactiver la protection.
+                        .twofa-row
+                            .twofa-code-wrap
+                                svg.twofa-code-icon(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                    path(d="M80-200v-80h400v80H80Zm0-200v-80h200v80H80Zm0-200v-80h200v80H80Zm736 400L670-336q-22 14-47.5 21t-52.5 7q-75 0-127.5-52.5T390-488q0-75 52.5-127.5T570-668q75 0 127.5 52.5T750-488q0 27-7 52.5T722-388l146 146-52 52ZM570-390q42 0 71-29t29-71q0-42-29-71t-71-29q-42 0-71 29t-29 71q0 42 29 71t71 29Z")
+                                input#disableCode.twofa-code-input(
+                                    type="tel"
+                                    placeholder="123 456"
+                                    maxlength="7"
+                                    inputmode="numeric"
+                                    autocomplete="one-time-code"
+                                    pattern="[0-9 ]*"
+                                )
+                            button.sm-btn.sm-btn--danger#disable2FABtn(type="button") Désactiver
+                        .twofa-feedback#disableFeedback
+
+                else
+                    .twofa-status.twofa-status--off
+                        svg(width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round")
+                            path(d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z")
+                        span 2FA désactivée
+
+                    .twofa-setup#twoFASetup
+
+                        .twofa-step#step1
+                            button.sm-btn.sm-btn--primary#start2FABtn(type="button")
+                                svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                                    path(d="M12 5v14M5 12h14")
+                                span Configurer la 2FA
+
+                        .twofa-step(id="step2" style="display:none")
+                            .twofa-qr-block
+                                p.twofa-hint
+                                    | 1. Ouvrez&nbsp;
+                                    strong Google Authenticator
+                                    |  sur votre téléphone
+                                p.twofa-hint 2. Scannez ce QR code
+                                .twofa-qr-wrap
+                                    img#twoFAQR(src="" alt="QR Code 2FA" width="180" height="180")
+                                p.twofa-hint.twofa-hint--small Ou entrez ce code manuellement :
+                                code.twofa-secret#twoFASecret
+                            p.twofa-hint 3. Entrez le code à 6 chiffres affiché dans l'application
+                            .twofa-row
+                                .twofa-code-wrap
+                                    svg.twofa-code-icon(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                        path(d="M80-200v-80h400v80H80Zm0-200v-80h200v80H80Zm0-200v-80h200v80H80Zm736 400L670-336q-22 14-47.5 21t-52.5 7q-75 0-127.5-52.5T390-488q0-75 52.5-127.5T570-668q75 0 127.5 52.5T750-488q0 27-7 52.5T722-388l146 146-52 52ZM570-390q42 0 71-29t29-71q0-42-29-71t-71-29q-42 0-71 29t-29 71q0 42 29 71t71 29Z")
+                                    input#enableCode.twofa-code-input(
+                                        type="tel"
+                                        placeholder="123 456"
+                                        maxlength="7"
+                                        inputmode="numeric"
+                                        autocomplete="one-time-code"
+                                        pattern="[0-9 ]*"
+                                    )
+                                button.sm-btn.sm-btn--primary#enable2FABtn(type="button") Activer
+                            .twofa-feedback#enableFeedback
+
+        //- ── Langue principale ───────────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3 Langue principale
+                p.info-card__desc Choisissez la langue de votre interface d'administration.
+
+            .lang-grid
+                - const langs = [{code:'fr',label:'Français',flag:'🇫🇷'},{code:'en',label:'English',flag:'🇬🇧'},{code:'nl',label:'Nederlands',flag:'🇳🇱'},{code:'de',label:'Deutsch',flag:'🇩🇪'},{code:'es',label:'Español',flag:'🇪🇸'},{code:'it',label:'Italiano',flag:'🇮🇹'}]
+                each l in langs
+                    button.lang-btn(
+                        type="button"
+                        data-lang=l.code
+                        class=(currentLang === l.code ? 'lang-btn--active' : '')
+                    )
+                        span.lang-flag= l.flag
+                        span.lang-name= l.label
+
+            .lang-feedback#langFeedback
+
+    //- ── Delete account modal ────────────────────────────────────────────────
+    .delete-account-modal#deleteAccountModal(style="display:none")
+        .delete-account-modal__overlay#deleteAccountOverlay
+        .delete-account-modal__box
+            .delete-account-modal__header
+                h3= t.info.delete_title
+                button.delete-account-modal__close#closeDeleteModal
+                    svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor")
+                        path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
+            .delete-account-modal__body
+                .delete-account-step#deleteStep1
+                    p.delete-account-modal__desc!= t.info.delete_desc1
+                    p.delete-account-modal__desc= t.info.delete_desc2
+                    button.sm-btn.sm-btn--danger#sendDeleteCode(type="button")= t.info.send_code
+                    .delete-account-modal__status#deleteCodeStatus
+                .delete-account-step#deleteStep2(style="display:none")
+                    p.delete-account-modal__desc= t.info.enter_code
+                    input.input#deleteCodeInput(type="text" placeholder=t.info.code_placeholder maxlength="6")
+                    button.sm-btn.sm-btn--danger#confirmDeleteAccount(type="button")= t.info.confirm_delete
+                    .delete-account-modal__status#deleteConfirmStatus
+
+    +dialog()
+    +prompt()
 
 block scripts
     script(src='/js/layouts/informations.js')
-    script(src='/js/templates/change-password.js')
+    script(src="https://js.stripe.com/v3/")
+    script(src='/js/templates/dialog.js' type="module")
     script(src='/js/templates/edit-email.js')
+    script.
+        // ── Payment methods ────────────────────────────────────────────────────
+        (function () {
+            var STRIPE_KEY = '!{stripePublishableKey}';
+            var pmAddBtn   = document.getElementById('pmAddBtn');
+            var pmFormWrap = document.getElementById('pmFormWrap');
+            var pmConfirmBtn = document.getElementById('pmConfirmBtn');
+            var pmCancelBtn  = document.getElementById('pmCancelBtn');
+            var pmCardError  = document.getElementById('pmCardError');
+            var stripeInstance = null;
+            var cardElement    = null;
+
+            document.querySelectorAll('.pm-item__del').forEach(function (btn) {
+                btn.addEventListener('click', async function () {
+                    if (!confirm('Supprimer cette carte ?')) return;
+                    var pmId = btn.dataset.pmid;
+                    btn.disabled = true;
+                    try {
+                        var res = await fetch('/account/payment-method/' + pmId, { method: 'DELETE' });
+                        var data = await res.json();
+                        if (data.success) {
+                            btn.closest('.pm-item').remove();
+                        } else {
+                            alert(data.error || 'Erreur lors de la suppression.');
+                            btn.disabled = false;
+                        }
+                    } catch (e) { btn.disabled = false; }
+                });
+            });
+
+            document.querySelectorAll('.pm-btn--set-default').forEach(function (btn) {
+                btn.addEventListener('click', async function () {
+                    var pmId = btn.dataset.pmid;
+                    btn.disabled = true;
+                    btn.textContent = '...';
+                    try {
+                        var res  = await fetch('/account/payment-method/' + pmId + '/set-default', { method: 'POST' });
+                        var data = await res.json();
+                        if (data.success) {
+                            document.querySelectorAll('.pm-badge--default').forEach(function (badge) {
+                                var oldItem = badge.closest('.pm-item');
+                                var actionsEl = badge.parentElement;
+                                var newBtn = document.createElement('button');
+                                newBtn.className = 'pm-btn--set-default';
+                                newBtn.type = 'button';
+                                newBtn.dataset.pmid = oldItem.dataset.pmid;
+                                newBtn.textContent = 'Définir par défaut';
+                                actionsEl.replaceChild(newBtn, badge);
+                                oldItem.classList.remove('pm-item--default');
+                                newBtn.addEventListener('click', arguments.callee);
+                            });
+                            var actionsEl = btn.parentElement;
+                            var badge = document.createElement('span');
+                            badge.className = 'pm-badge--default';
+                            badge.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" height="11px" viewBox="0 -960 960 960" width="11px" fill="currentColor"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-56-240 226-226-57-57-169 169-85-85-57 57 142 142Z"/></svg> Par défaut';
+                            actionsEl.replaceChild(badge, btn);
+                            btn.closest('.pm-item').classList.add('pm-item--default');
+                        } else {
+                            alert(data.error || 'Erreur.');
+                            btn.disabled = false;
+                            btn.textContent = 'Définir par défaut';
+                        }
+                    } catch (e) {
+                        btn.disabled = false;
+                        btn.textContent = 'Définir par défaut';
+                    }
+                });
+            });
+
+            if (pmAddBtn) {
+                pmAddBtn.addEventListener('click', async function () {
+                    if (!STRIPE_KEY) {
+                        alert('Configuration Stripe manquante. Ajoutez STRIPE_PUBLISHABLE_KEY_LOCAL dans votre fichier .env');
+                        return;
+                    }
+                    if (!window.Stripe) {
+                        alert('Stripe.js n\'est pas chargé. Vérifiez votre connexion internet.');
+                        return;
+                    }
+                    if (pmFormWrap.style.display !== 'none') return;
+                    pmAddBtn.disabled = true;
+                    pmAddBtn.querySelector('span').textContent = '...';
+                    try {
+                        var res  = await fetch('/account/payment-method/setup-intent', { method: 'POST' });
+                        var data = await res.json();
+                        if (!data.clientSecret) throw new Error(data.error || 'Erreur');
+                        if (!stripeInstance) {
+                            stripeInstance = Stripe(STRIPE_KEY);
+                            var elements = stripeInstance.elements();
+                            cardElement = elements.create('card', {
+                                style: { base: { fontSize: '15px', color: '#111', fontFamily: 'Inter, system-ui, sans-serif', '::placeholder': { color: '#aaa' } } }
+                            });
+                            cardElement.mount('#pm-card-element');
+                            cardElement.on('change', function (e) {
+                                pmCardError.textContent = e.error ? e.error.message : '';
+                            });
+                        }
+                        pmFormWrap.dataset.secret = data.clientSecret;
+                        pmFormWrap.style.display = 'block';
+                        pmAddBtn.querySelector('span').textContent = 'Ajouter une carte';
+                        pmAddBtn.disabled = false;
+                    } catch (e) {
+                        pmAddBtn.querySelector('span').textContent = 'Ajouter une carte';
+                        pmAddBtn.disabled = false;
+                        alert(e.message || 'Erreur lors de la création du formulaire.');
+                    }
+                });
+            }
+
+            if (pmConfirmBtn) {
+                pmConfirmBtn.addEventListener('click', async function () {
+                    if (!stripeInstance || !cardElement) return;
+                    var secret = pmFormWrap.dataset.secret;
+                    pmConfirmBtn.disabled = true;
+                    pmConfirmBtn.querySelector('span').textContent = '...';
+                    pmCardError.textContent = '';
+                    try {
+                        var result = await stripeInstance.confirmCardSetup(secret, {
+                            payment_method: { card: cardElement }
+                        });
+                        if (result.error) {
+                            pmCardError.textContent = result.error.message;
+                            pmConfirmBtn.disabled = false;
+                            pmConfirmBtn.querySelector('span').textContent = 'Confirmer';
+                        } else {
+                            var newPmId = result.setupIntent.payment_method;
+                            try { await fetch('/account/payment-method/' + newPmId + '/set-default', { method: 'POST' }); } catch (e) {}
+                            window.location.reload();
+                        }
+                    } catch (e) {
+                        pmCardError.textContent = e.message || 'Erreur.';
+                        pmConfirmBtn.disabled = false;
+                        pmConfirmBtn.querySelector('span').textContent = 'Confirmer';
+                    }
+                });
+            }
+
+            if (pmCancelBtn) {
+                pmCancelBtn.addEventListener('click', function () {
+                    pmFormWrap.style.display = 'none';
+                });
+            }
+        })();
+
+        // ── 2FA ───────────────────────────────────────────────────────────────
+        (function () {
+            var startBtn   = document.getElementById('start2FABtn');
+            var step1      = document.getElementById('step1');
+            var step2      = document.getElementById('step2');
+            var qrImg      = document.getElementById('twoFAQR');
+            var secretEl   = document.getElementById('twoFASecret');
+            var enableBtn  = document.getElementById('enable2FABtn');
+            var enableCode = document.getElementById('enableCode');
+            var enableFb   = document.getElementById('enableFeedback');
+            var disableBtn  = document.getElementById('disable2FABtn');
+            var disableCode = document.getElementById('disableCode');
+            var disableFb   = document.getElementById('disableFeedback');
+
+            function setFeedback(el, msg, ok) {
+                if (!el) return;
+                el.textContent = msg;
+                el.className = 'twofa-feedback ' + (ok ? 'twofa-feedback--ok' : 'twofa-feedback--err');
+            }
+
+            if (startBtn) {
+                startBtn.addEventListener('click', function () {
+                    startBtn.disabled = true;
+                    startBtn.querySelector('span').textContent = '…';
+                    fetch('/account/2fa/setup', { method: 'POST', headers: { 'X-Requested-With': 'fetch' } })
+                        .then(function (r) { return r.json(); })
+                        .then(function (d) {
+                            if (!d.success) { startBtn.disabled = false; startBtn.querySelector('span').textContent = 'Configurer la 2FA'; return; }
+                            qrImg.src = d.qrDataUrl;
+                            secretEl.textContent = d.secret;
+                            step1.style.display = 'none';
+                            step2.style.display = 'block';
+                        })
+                        .catch(function () { startBtn.disabled = false; startBtn.querySelector('span').textContent = 'Configurer la 2FA'; });
+                });
+            }
+
+            if (enableBtn) {
+                enableBtn.addEventListener('click', function () {
+                    var code = enableCode.value.replace(/\s/g, '');
+                    if (code.length < 6) { setFeedback(enableFb, 'Entrez un code à 6 chiffres.', false); return; }
+                    enableBtn.disabled = true;
+                    fetch('/account/2fa/enable', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' },
+                        body: JSON.stringify({ code: code })
+                    })
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        if (d.success) {
+                            setFeedback(enableFb, '2FA activée avec succès !', true);
+                            setTimeout(function () { location.reload(); }, 1200);
+                        } else {
+                            setFeedback(enableFb, d.error || 'Code incorrect.', false);
+                            enableBtn.disabled = false;
+                        }
+                    })
+                    .catch(function () { setFeedback(enableFb, 'Erreur réseau.', false); enableBtn.disabled = false; });
+                });
+            }
+
+            if (disableBtn) {
+                disableBtn.addEventListener('click', function () {
+                    var code = disableCode.value.replace(/\s/g, '');
+                    if (code.length < 6) { setFeedback(disableFb, 'Entrez un code à 6 chiffres.', false); return; }
+                    disableBtn.disabled = true;
+                    fetch('/account/2fa/disable', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' },
+                        body: JSON.stringify({ code: code })
+                    })
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        if (d.success) {
+                            setFeedback(disableFb, '2FA désactivée.', true);
+                            setTimeout(function () { location.reload(); }, 1200);
+                        } else {
+                            setFeedback(disableFb, d.error || 'Code incorrect.', false);
+                            disableBtn.disabled = false;
+                        }
+                    })
+                    .catch(function () { setFeedback(disableFb, 'Erreur réseau.', false); disableBtn.disabled = false; });
+                });
+            }
+
+            // ── Langue ────────────────────────────────────────────────────────
+            var langFb = document.getElementById('langFeedback');
+            document.querySelectorAll('.lang-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var lang = btn.getAttribute('data-lang');
+                    fetch('/account/language', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' },
+                        body: JSON.stringify({ lang: lang })
+                    })
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        if (d.success) {
+                            document.querySelectorAll('.lang-btn').forEach(function (b) { b.classList.remove('lang-btn--active'); });
+                            btn.classList.add('lang-btn--active');
+                            if (langFb) { langFb.textContent = 'Langue mise à jour.'; langFb.className = 'lang-feedback lang-feedback--ok'; }
+                            setTimeout(function () { location.reload(); }, 800);
+                        }
+                    });
+                });
+            });
+        })();

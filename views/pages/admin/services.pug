@@ -26,6 +26,24 @@ block content
                             path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
                     span= t.services.add_btn
 
+        //- ── Plan limit banner ────────────────────────────────────
+        - var svcAtLimit = maxServices > 0 && services.length >= maxServices
+        if currentPlan === 'pro' && maxServices > 0
+            .plan-limit-banner.plan-limit-banner--upgrade#serviceLimitBanner(style=!svcAtLimit ? 'display:none' : '')
+                svg.plan-limit-banner__icon(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                    path(d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z")
+                .plan-limit-banner__text
+                    strong Limite Pro atteinte — #{maxServices}/#{maxServices} services
+                    span Passez au plan Business pour créer jusqu'à 50 services et développer votre activité.
+                a.btn-upgrade-business(href="/subscription") Passer au Business →
+        else if currentPlan === 'business' && maxServices > 0
+            .plan-limit-banner.plan-limit-banner--max#serviceLimitBanner(style=!svcAtLimit ? 'display:none' : '')
+                svg.plan-limit-banner__icon(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                    path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z")
+                .plan-limit-banner__text
+                    strong Limite maximale atteinte
+                    span Vous avez atteint la limite de #{maxServices} services de votre plan Business.
+
         if services.length === 0
             .services-empty
                 svg(xmlns="http://www.w3.org/2000/svg" height="48px" viewBox="0 -960 960 960" width="48px" fill="currentColor")

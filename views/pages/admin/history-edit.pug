@@ -72,7 +72,31 @@ block content
                         .edit-fields-row
                             .field-container.flex.col
                                 label= t.hist_edit.date
-                                input.input(type="date" value=results.date.toISOString().split('T')[0] id="editDate")
+                                //- Custom calendar picker
+                                .datepicker-wrap
+                                    input(type="hidden" id="editDate" value=results.date.toISOString().split('T')[0])
+                                    button.datepicker-trigger(type="button" id="datepickerTrigger")
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                            path(d="M224.62-120q-27.62 0-46.12-18.5Q160-157 160-184.62v-510.76q0-27.62 18.5-46.12Q197-760 224.62-760h70.76v-89.23h43.08V-760h286.16v-89.23h40V-760h70.76q27.62 0 46.12 18.5Q800-723 800-695.38v510.76q0 27.62-18.5 46.12Q763-120 735.38-120H224.62Zm0-40h510.76q9.24 0 16.93-7.69 7.69-7.69 7.69-16.93v-350.76H200v350.76q0 9.24 7.69 16.93 7.69 7.69 16.93 7.69ZM200-575.39h560v-119.99q0-9.24-7.69-16.93-7.69-7.69-16.93-7.69H224.62q-9.24 0-16.93 7.69-7.69 7.69-7.69 16.93v119.99Zm0 0V-720-575.39Z")
+                                        span#datepickerDisplay= results.date.toLocaleDateString("fr-FR", {weekday:"long", year:"numeric", month:"long", day:"numeric"})
+                                    .datepicker-popup(id="datepickerPopup" style="display:none")
+                                        .datepicker-header
+                                            button.datepicker-nav(type="button" id="dpPrevMonth")
+                                                svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                                    path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                                            span.datepicker-month-label(id="dpMonthLabel")
+                                            button.datepicker-nav(type="button" id="dpNextMonth")
+                                                svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                                    path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                                        .datepicker-weekdays
+                                            span L
+                                            span M
+                                            span M
+                                            span J
+                                            span V
+                                            span S
+                                            span D
+                                        .datepicker-days(id="dpDays")
                         .edit-fields-row.two-col
                             .field-container.flex.col
                                 label= t.hist_edit.start_time
@@ -80,6 +104,40 @@ block content
                             .field-container.flex.col
                                 label= t.hist_edit.end_time
                                 input.input(type="time" value=results.endTime id="editEndTime")
+
+                        //- Service selector + info chips
+                        if services && services.length > 0
+                            .edit-fields-row
+                                .field-container.flex.col
+                                    label Service
+                                    .svc-select-row
+                                        select.input#editService
+                                            option(value="") — Aucun service —
+                                            each svc in services
+                                                - var svcId = String(svc._id)
+                                                - var currentSvcId = results.service ? String(results.service) : ''
+                                                option(value=svcId data-name=svc.name data-duration=svc.duration data-price=(svc.price || '') selected=(currentSvcId === svcId))= svc.name
+                                    .svc-info-chips#svcInfoChips(style="display:none")
+                                        .svc-chip#svcDurationChip
+                                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                                path(d="M480-120q-75 0-140.5-28.5t-114-77q-48.5-48.5-77-114T120-480q0-75 28.5-140.5t77-114q48.5-48.5 114-77T480-840q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-480q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-120Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Zm24 160v-165l-92-54-20 34 72 43v142h40Z")
+                                            span#svcDurationLabel —
+                                        .svc-chip#svcPriceChip(style="display:none")
+                                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                                path(d="M441-120v-86q-53-12-91.5-46T293-348l74-30q15 48 44.5 73t77.5 25q41 0 69.5-18.5T587-356q0-35-22-55.5T463-463q-77-27-109.5-58.5T321-600q0-41 24.5-74.5T419-717v-83h44v83q50 8 82.5 36.5T589-600l-71 29q-8-30-29.5-56T418-651q-38 0-62 19.5T332-584q0 32 23.5 52.5T445-474q68 22 102.5 57T582-324q0 57-37.5 91T441-194v74h-44v-82Z")
+                                            span#svcPriceLabel —
+
+                        //- Employee selector
+                        if employees && employees.length > 0
+                            .edit-fields-row
+                                .field-container.flex.col
+                                    label Employé
+                                    select.input#editEmployee
+                                        option(value="") — Aucun employé —
+                                        each emp in employees
+                                            - var empId = String(emp._id)
+                                            - var currentEmpId = results.employee ? String(results.employee._id || results.employee) : ''
+                                            option(value=empId selected=(currentEmpId === empId))= emp.firstName + ' ' + emp.lastName
 
                 //- Section: Client
                 .edit-section
@@ -147,5 +205,28 @@ block content
                     path(d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z")
                 span#saveBtnLabel= t.hist_edit.save
 
+    //- ── Conflict modal ──────────────────────────────────────────────────────
+    .conflict-overlay(id="conflictOverlay" style="display:none")
+        .conflict-modal(id="conflictModal")
+            .conflict-modal__icon
+                svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
+                    path(d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z")
+            h3.conflict-modal__title Conflit de rendez-vous détecté
+            p.conflict-modal__desc Le créneau choisi est déjà occupé par les rendez-vous suivants :
+            ul.conflict-list(id="conflictList")
+            .conflict-modal__warning
+                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                    path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Z")
+                span Forcer la sauvegarde supprimera définitivement ces rendez-vous.
+            .conflict-modal__actions
+                button.sm-btn.sm-btn--ghost(type="button" id="conflictCancel") Annuler
+                button.sm-btn.sm-btn--danger(type="button" id="conflictForce")
+                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                        path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-272h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+                    span Forcer et supprimer les conflits
+
 block scripts
     script(src="/js/layouts/history.js" type="module")
+    script.
+        window.__servicesData = !{JSON.stringify(services || [])};
+        window.__bookingId    = '!{results._id}';

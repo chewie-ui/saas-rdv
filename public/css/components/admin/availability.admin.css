@@ -338,16 +338,22 @@
   white-space: nowrap;
 }
 
-.slot-pill:hover,
-.slot-pill.active:hover {
-  border-color: var(--accent-border);
-  color: var(--white);
+.slot-pill:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .slot-pill.active {
-  background: var(--accent-soft);
+  background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent);
+  color: #fff;
+}
+
+.slot-pill.active:hover {
+  background: var(--accent-hover, #185f3d);
+  border-color: var(--accent-hover, #185f3d);
+  color: #fff;
 }
 
 /* Slot managed info */

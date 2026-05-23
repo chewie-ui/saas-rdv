@@ -196,7 +196,7 @@
 
 .btn--icon svg {
   margin: 0;
-  fill: var(--ink);
+  fill: currentColor;
 }
 
 .btn--icon:hover {
@@ -576,9 +576,28 @@
   background: var(--accent-soft);
 }
 
+/* ── Invite icon base (employees.css not loaded on this page) ── */
+.emp-invite__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
 .svc-card--invite:hover .emp-invite__icon {
   background: var(--accent);
   color: #fff;
+}
+
+.svc-card--invite:hover .emp-invite__icon svg {
+  color: #fff;
+  fill: currentColor;
 }
 
 .svc-card--invite:hover .emp-invite__title,

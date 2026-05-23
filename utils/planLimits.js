@@ -49,6 +49,9 @@ const LIMITS = {
   // Max employees (0 = feature locked)
   employees: { basic: 0, pro: 2, business: 10 },
 
+  // Monthly bookings cap (Infinity = unlimited)
+  monthlyBookings: { basic: 20, pro: Infinity, business: Infinity },
+
   // Availability features
   availability: {
     basic:    { ranges: false, buffer: false, slotDuration: false },
@@ -58,6 +61,21 @@ const LIMITS = {
 
   // Social links visible on public page
   socialLinks: { basic: false, pro: true, business: true },
+
+  // Email reminders sent 24h before appointment
+  emailReminders: { basic: false, pro: true, business: true },
+
+  // Google Calendar two-way sync
+  googleCalendar: { basic: false, pro: true, business: true },
+
+  // Booking page customization (colors, logo, fonts, layout)
+  calendarCustomization: { basic: false, pro: true, business: true },
+
+  // Cancel / delete / restore bookings from the admin panel
+  cancelDeleteBookings: { basic: false, pro: true, business: true },
+
+  // Send emails without "Powered by BranShee" branding
+  noBranding: { basic: false, pro: false, business: true },
 
   // Custom URL: business = included; others need addon purchase
   customUrl: {

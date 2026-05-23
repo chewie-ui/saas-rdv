@@ -40,7 +40,8 @@ app.post("/account/webhook", express.raw({ type: "application/json" }), async (r
   console.log("--- Webhook Reçu ---"); // Pour vérifier que la route est touchée
 
   const sig = req.headers["stripe-signature"];
-  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  // LOCAL : STRIPE_WEBHOOK_SECRET  |  SERVER : stripeWebhookSecret via env config
+  const endpointSecret = env.stripeWebhookSecret || process.env.STRIPE_WEBHOOK_SECRET;
 
   let event;
 

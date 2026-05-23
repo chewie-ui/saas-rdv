@@ -109,6 +109,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const atLimit = MAX_SERVICES > 0 && currentCount >= MAX_SERVICES;
     addServiceBtn.disabled = atLimit;
     addServiceBtn.title = atLimit ? `Limite de ${MAX_SERVICES} services atteinte` : "";
+    const banner = document.getElementById("serviceLimitBanner");
+    if (banner) banner.style.display = atLimit ? "" : "none";
   }
 
   updateCounter();

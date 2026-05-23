@@ -696,6 +696,8 @@ export default function () {
       if (!response.success) {
         if (response.error === "no_employee_available") {
           alert("Ce créneau n'est plus disponible : tous les employés sont déjà réservés à cet horaire.");
+        } else if (response.error === "monthly_limit_reached") {
+          alert("Ce professionnel ne peut plus accepter de nouvelles réservations ce mois-ci. Revenez le mois prochain ou contactez-les directement.");
         } else {
           alert("Une erreur est survenue, veuillez réessayer.");
         }

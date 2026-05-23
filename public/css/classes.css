@@ -19,17 +19,22 @@
   &.sm-btn--primary {
     background: var(--accent);
     color: #fff;
+    box-shadow: 0 2px 8px var(--accent-glow, rgba(30, 122, 78, 0.22));
     &:hover {
       background: var(--accent-hover);
+      color: #fff; /* explicit — prevents global a:hover from turning text/icon dark */
+      box-shadow: 0 4px 14px var(--accent-glow, rgba(30, 122, 78, 0.3));
     }
   }
 
   &.sm-btn--ghost {
-    background: #ffffff;
+    background: var(--surface-card, #fff);
     color: var(--ink, #12171b);
-    border-color: #e8e3e4;
+    border-color: var(--border-medium, #e8e3e4);
     &:hover {
-      background: #f6f2f3;
+      background: var(--surface-2, #f6f2f3);
+      color: var(--ink, #12171b); /* explicit */
+      border-color: var(--border-medium);
     }
   }
 
@@ -38,11 +43,15 @@
   }
 
   &.sm-btn--soft {
-    background: #dbfbea;
-    color: #004122;
+    background: var(--accent-soft, #e8f5ee);
+    color: var(--accent, #1e7a4e);
+    border-color: var(--accent-border, rgba(30, 122, 78, 0.22));
+    border: 1px solid var(--accent-border, rgba(30, 122, 78, 0.22));
 
     &:hover {
-      background: oklch(0.94 0.05 162);
+      background: var(--accent);
+      color: #fff; /* explicit */
+      border-color: var(--accent);
     }
   }
 
@@ -50,6 +59,17 @@
     background: #fff;
     color: #cf4040;
     border-color: #e8e3e4;
+    &:hover {
+      background: #fff1f2;
+      border-color: #fca5a5;
+      color: #cf4040; /* explicit */
+    }
+  }
+
+  & svg {
+    fill: currentColor;
+    flex-shrink: 0;
+    pointer-events: none;
   }
 
   &:active {
@@ -60,6 +80,45 @@
     pointer-events: none;
     font-weight: 600;
   }
+}
+
+/* ===== Upgrade buttons (used in plan lock hints/banners) ===== */
+.btn-upgrade-pro,
+.btn-upgrade-business {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  height: auto;
+  border-radius: var(--radius-full, 999px);
+  font: 600 12.5px var(--font-primary);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+.btn-upgrade-pro {
+  background: var(--accent-soft, #e8f5ee);
+  color: var(--accent, #1e7a4e);
+  border: 1.5px solid var(--accent-border, rgba(30, 122, 78, 0.22));
+}
+.btn-upgrade-pro:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn-upgrade-business {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1.5px solid #bfdbfe;
+}
+.btn-upgrade-business:hover {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
 }
 
 /* ===== Pills / badges ===== */

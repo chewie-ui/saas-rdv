@@ -35,30 +35,50 @@ block content
 
         //- ── Hero ───────────────────────────────────────────────────
         .sub-hero
-            .sub-hero__badge= t.sub_extra.choose_plan || 'Choose a plan'
-            h1.sub-hero__title= t.subscription.hero_title || 'Pricing that grows with you.'
-            p.sub-hero__sub= t.subscription.hero_sub || '14-day Premium trial, no credit card. Cancel anytime.'
+            .sub-hero__badge
+                svg(viewBox="0 -960 960 960" height="12" width="12" fill="currentColor")
+                    path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z")
+                | &nbsp;#{t.sub_extra.choose_plan || 'Tarifs'}
+            h1.sub-hero__title= t.subscription.hero_title || 'Des prix simples. Pas de surprises.'
+            p.sub-hero__sub= t.subscription.hero_sub || 'Commencez gratuitement. Passez au Pro quand votre activité décolle.'
 
             //- Billing toggle
             .sub-toggle
-                button.sub-toggle__btn#billMonthly(class="active")= t.subscription.monthly || 'Monthly'
+                button.sub-toggle__btn#billMonthly(class="active")= t.subscription.monthly || 'Mensuel'
                 button.sub-toggle__btn.sub-toggle__btn--yearly#billYearly
-                    = t.subscription.yearly || 'Yearly'
-                    span.sub-toggle__discount  · -20%
+                    = t.subscription.yearly || 'Annuel'
+                    span.sub-toggle__discount  −20%
+
+        //- ── Free tier usage bar ─────────────────────────────────────
+        if !isPro && monthlyBookingCount !== null
+            - var pct = Math.min(Math.round((monthlyBookingCount / 20) * 100), 100)
+            - var usageClass = pct >= 90 ? 'sub-usage--danger' : pct >= 60 ? 'sub-usage--warn' : ''
+            .sub-usage(class=usageClass)
+                .sub-usage__top
+                    span.sub-usage__label
+                        svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
+                            path(d="M200-640h560v-80H200v80Zm0 0v-80 80Zm0 560q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Z")
+                        | &nbsp;#{t.subscription.usage_label || 'Réservations ce mois'}
+                    span.sub-usage__count
+                        strong= monthlyBookingCount
+                        | &nbsp;#{t.subscription.usage_of || 'sur'}&nbsp;
+                        strong 20
+                .sub-usage__bar
+                    .sub-usage__fill(style=`width:${pct}%`)
+                p.sub-usage__hint= t.subscription.usage_limit || '20 max — passez au Pro pour supprimer cette limite'
 
         //- ── Plan cards ──────────────────────────────────────────────
         .sub-plans
 
-            //- ─── Starter ───────────────────────────────────────────
-            .sub-plan.sub-plan--starter
+            //- ─── Starter (Free) ────────────────────────────────────
+            .sub-plan.sub-plan--starter(class=(!isPro && currentPlan === 'basic') ? 'sub-plan--current' : '')
                 .sub-plan__header
                     .sub-plan__name-wrap
                         h2.sub-plan__name= t.subscription.plan_1
-                        p.sub-plan__desc= t.subscription.plan_1_desc || 'Basics, 1 employee'
+                        p.sub-plan__desc= t.subscription.plan_1_desc || 'Pour découvrir BranShee'
                     .sub-plan__pricing
                         span.sub-plan__price= t.subscription.price_1
-                        if t.subscription.price_1 !== t.subscription.price_free
-                            span.sub-plan__per= t.subscription.price_1_sub
+                        span.sub-plan__per &nbsp;#{t.subscription.price_1_sub || ''}
                 .sub-plan__divider
                 .sub-plan__features
                     each feature in t.subscription.plan_1_features
@@ -66,19 +86,24 @@ block content
                             svg.feat-check(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                 path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
                             span= feature
+                    //- What's NOT included (shown as locked items)
+                    .sub-plan__feature.sub-plan__feature--locked
+                        svg.feat-lock(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                            path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Zm120 360Z")
+                        span Rappels email, Google Calendar, personnalisation…
                 .sub-plan__cta
-                    if user && !user.isPremium
+                    if !isPro
                         button.sub-btn.sub-btn--current(disabled)= t.subscription.btn_current
                     else
                         button.sub-btn.sub-btn--outline#getFreePlan= t.subscription.btn_downgrade
 
-            //- ─── Premium ───────────────────────────────────────────
-            .sub-plan.sub-plan--premium
-                .sub-plan__popular= t.sub_extra.popular || 'Most popular'
+            //- ─── Pro ───────────────────────────────────────────────
+            .sub-plan.sub-plan--premium(class=(currentPlan === 'pro' && isPro) ? 'sub-plan--current' : '')
+                .sub-plan__popular= t.sub_extra.popular || 'Le plus populaire'
                 .sub-plan__header
                     .sub-plan__name-wrap
                         h2.sub-plan__name= t.subscription.plan_2
-                        p.sub-plan__desc= t.subscription.plan_2_desc || 'Best for growing pros'
+                        p.sub-plan__desc= t.subscription.plan_2_desc || 'Pour les indépendants'
                     .sub-plan__pricing
                         span.sub-plan__price(
                             data-monthly=t.subscription.price_2_val || '19'
@@ -112,14 +137,16 @@ block content
                                 | #{t.subscription.days_left} :&nbsp;
                                 strong #{daysLeft} #{t.subscription.days}
                     else if currentPlan !== 'business'
-                        button.sub-btn.sub-btn--upgrade#getProPlan= t.subscription.btn_get_pro
+                        button.sub-btn.sub-btn--upgrade#getProPlan
+                            | #{t.subscription.btn_get_pro || 'Passer au Pro →'}
 
-            //- ─── Studio ─────────────────────────────────────────────
-            .sub-plan.sub-plan--studio
+            //- ─── Business ──────────────────────────────────────────
+            .sub-plan.sub-plan--studio(class=(currentPlan === 'business' && isPro) ? 'sub-plan--current' : '')
+                .sub-plan__badge-business= t.subscription.plan_3_badge || 'Pour les équipes'
                 .sub-plan__header
                     .sub-plan__name-wrap
                         h2.sub-plan__name= t.subscription.plan_3
-                        p.sub-plan__desc= t.subscription.plan_3_desc || 'Multi-employee teams'
+                        p.sub-plan__desc= t.subscription.plan_3_desc || 'Pour les équipes'
                     .sub-plan__pricing
                         span.sub-plan__price(
                             data-monthly=t.subscription.price_3_val || '49'
@@ -128,13 +155,15 @@ block content
                         span.sub-plan__per= t.subscription.price_3_sub
                 .sub-plan__divider
                 .sub-plan__features
+                    .sub-plan__feature.sub-plan__feature--includes
+                        svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
+                            path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z")
+                        em= t.sub_extra.includes_pro || 'Inclut tout ce que Pro offre'
                     each feature, fi in t.subscription.plan_3_features
-                        .sub-plan__feature
-                            svg.feat-check(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                            if fi === 0
-                                strong= feature
-                            else
+                        if fi > 0
+                            .sub-plan__feature
+                                svg.feat-check.feat-check--business(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
                                 span= feature
                 .sub-plan__cta
                     if currentPlan === 'business' && isPro
@@ -156,7 +185,119 @@ block content
                                 | #{t.subscription.days_left} :&nbsp;
                                 strong #{daysLeft} #{t.subscription.days}
                     else
-                        button.sub-btn.sub-btn--outline#getBusinessPlan= t.subscription.btn_get_business
+                        button.sub-btn.sub-btn--upgrade.sub-btn--business#getBusinessPlan
+                            | #{t.subscription.btn_get_business || 'Passer au Business →'}
+
+        //- ── Comparison table ────────────────────────────────────────
+        .sub-compare
+            h2.sub-compare__title= t.subscription.compare_title || 'Comparer les fonctionnalités'
+            .sub-compare__wrap
+                table.sub-compare__table
+                    thead
+                        tr
+                            th.sub-compare__th--label
+                            th.sub-compare__th
+                                span= t.subscription.plan_1
+                            th.sub-compare__th.sub-compare__th--pro
+                                svg(viewBox="0 -960 960 960" height="12" width="12" fill="currentColor")
+                                    path(d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z")
+                                | &nbsp;#{t.subscription.plan_2}
+                            th.sub-compare__th.sub-compare__th--biz
+                                | #{t.subscription.plan_3}
+                    tbody
+                        tr
+                            td= t.subscription.compare_bookings || 'RDV / mois'
+                            td 20
+                            td
+                                svg.cmp-inf(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
+                                    path(d="M240-400q-66 0-113-47t-47-113q0-66 47-113t113-47q37 0 71 15.5t58 44.5l12 14h-76v80h208q0-100-69.5-167T240-800q-100 0-170 70T0-560q0 100 70 170t170 70h480q100 0 170-70t70-170q0-100-70-170T720-800q-100 0-170 67t-70 167v6h208v-80h-76l12-14q24-29 58-44.5T720-680q66 0 113 47t47 113q0 66-47 113t-113 47H240Z")
+                            td
+                                svg.cmp-inf(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
+                                    path(d="M240-400q-66 0-113-47t-47-113q0-66 47-113t113-47q37 0 71 15.5t58 44.5l12 14h-76v80h208q0-100-69.5-167T240-800q-100 0-170 70T0-560q0 100 70 170t170 70h480q100 0 170-70t70-170q0-100-70-170T720-800q-100 0-170 67t-70 167v6h208v-80h-76l12-14q24-29 58-44.5T720-680q66 0 113 47t47 113q0 66-47 113t-113 47H240Z")
+                        tr
+                            td= t.subscription.compare_employees || 'Employés'
+                            td 1
+                            td 2
+                            td 10
+                        tr
+                            td= t.subscription.compare_services || 'Services'
+                            td
+                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                            td 10
+                            td 50
+                        tr
+                            td= t.subscription.compare_reminders || 'Rappels email'
+                            td
+                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                            td
+                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                            td
+                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        tr
+                            td= t.subscription.compare_gcal || 'Google Calendar'
+                            td
+                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                            td
+                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                            td
+                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        tr
+                            td= t.subscription.compare_custom || 'Page personnalisable'
+                            td
+                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                            td
+                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                            td
+                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        tr
+                            td= t.subscription.compare_forms || 'Formulaires'
+                            td
+                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                            td 3 #{t.subscription.compare_forms ? '' : 'q.'}
+                            td 10 #{t.subscription.compare_forms ? '' : 'q.'}
+                        tr
+                            td= t.subscription.compare_url || 'URL personnalisée'
+                            td
+                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                            td.cmp-addon= t.subscription.compare_addon || 'Add-on'
+                            td
+                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        tr
+                            td= t.subscription.compare_branding || 'Sans branding'
+                            td
+                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                            td
+                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                            td
+                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        tr
+                            td= t.subscription.compare_support || 'Support'
+                            td= t.subscription.compare_standard || 'Standard'
+                            td= t.subscription.compare_priority || 'Prioritaire'
+                            td= t.subscription.compare_dedicated || 'Dédié'
+            //- Compare CTAs
+            .sub-compare__actions
+                if !isPro
+                    button.sub-btn.sub-btn--upgrade#getProPlan2
+                        | #{t.subscription.btn_get_pro || 'Passer au Pro →'}
+                    button.sub-btn.sub-btn--upgrade.sub-btn--business#getBusinessPlan2
+                        | #{t.subscription.btn_get_business || 'Passer au Business →'}
 
         //- ── Promo code ──────────────────────────────────────────────
         .sub-promo#promoCodeSection
@@ -182,3 +323,13 @@ block scripts
         window.__subT = !{subTJson};
     script(src="/js/templates/dialog.js")
     script(src="/js/layouts/subscription.js")
+    script.
+        // Wire getProPlan2 / getBusinessPlan2 (compare table CTAs) to the same handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            var p2 = document.getElementById('getProPlan2');
+            var b2 = document.getElementById('getBusinessPlan2');
+            var p1 = document.getElementById('getProPlan');
+            var b1 = document.getElementById('getBusinessPlan');
+            if (p2 && p1) p2.addEventListener('click', function() { p1.click(); });
+            if (b2 && b1) b2.addEventListener('click', function() { b1.click(); });
+        });

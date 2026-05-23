@@ -183,6 +183,18 @@ const userSchema = schema(
       scope: { type: String, default: "" },
       tokenType: { type: String, default: "" },
     },
+
+    preferredLang: {
+      type: String,
+      enum: ["fr", "en", "nl", "de", "es", "it"],
+      default: "fr",
+    },
+
+    twoFA: {
+      enabled:    { type: Boolean, default: false },
+      secret:     { type: String,  default: "" },
+      tempSecret: { type: String,  default: "" },
+    },
   },
 
   { timestamps: true },

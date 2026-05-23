@@ -1,7 +1,7 @@
 const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
 const Stripe = require("stripe");
 const getServices = require("../utils/services");
-const { getLimit } = require("../utils/planLimits");
+const { getLimit, atLeast } = require("../utils/planLimits");
 
 const stripe = new Stripe(env.stripeSecretKey);
 
@@ -424,6 +424,9 @@ exports.editSlotTime = async (req, res) => {
 };
 
 exports.deleteBooking = async (req, res) => {
+  if (!atLeast(req.user, "pro")) {
+    return res.status(403).json({ error: "plan_limit", message: "Nécessite un abonnement Pro ou Business." });
+  }
   const { bookId } = req.params;
 
   const data = await Booking.findByIdAndDelete(bookId);
@@ -445,6 +448,9 @@ exports.deleteBooking = async (req, res) => {
 };
 
 exports.restoreBooking = async (req, res) => {
+  if (!atLeast(req.user, "pro")) {
+    return res.status(403).json({ error: "plan_limit", message: "Nécessite un abonnement Pro ou Business." });
+  }
   try {
     const { bookId } = req.params;
 
@@ -483,6 +489,9 @@ exports.restoreBooking = async (req, res) => {
 };
 
 exports.cancelBooking = async (req, res) => {
+  if (!atLeast(req.user, "pro")) {
+    return res.status(403).json({ error: "plan_limit", message: "Nécessite un abonnement Pro ou Business." });
+  }
   const { id } = req.params;
 
   const booking = await Booking.findByIdAndUpdate(id, { status: "canceled" }, { new: false }).lean();
@@ -701,14 +710,27 @@ exports.historySearch = async (req, res) => {
 exports.historyEditRow = async (req, res) => {
   try {
     const { id } = req.params;
+    const results = await Booking.findById(id).populate("employee");
 
-    const results = await Booking.findById(id);
+    // Fetch services & employees for the booking's company (for edit selectors)
+    let services = [];
+    let employees = [];
+    if (results && results.company) {
+      const Service  = require("../db/models/company/service.model");
+      const Employee = require("../db/models/company/employee.model");
+      [services, employees] = await Promise.all([
+        Service.find({ company: results.company, active: true }).select("_id name duration price").lean(),
+        Employee.find({ company: results.company, active: true }).select("_id firstName lastName").lean(),
+      ]);
+    }
 
     return res.render("admin/history-edit", {
       rowId: id,
       pageName: "History",
       title: res.locals.t.titles.history,
       results,
+      services,
+      employees,
     });
   } catch (err) {
     console.error(err);
@@ -717,11 +739,76 @@ exports.historyEditRow = async (req, res) => {
 };
 
 exports.settingsInit = async (req, res) => {
-  console.log({ path: "admin/settings" });
+  const email     = req.user.email;
+  const maskEmail = email.replace(/^(..)(.*)(?=@)/, "$1...");
+  const canUseSocial    = getLimit("socialLinks", req.user);
+  const canUseCustomUrl = require("../utils/planLimits").LIMITS.customUrl.hasFeature(req.user);
+  const cs = req.user.calendarSettings || {};
+
+  // ── Stripe : cartes & factures ──────────────────────────────────────────
+  let paymentMethods = [];
+  let invoices       = [];
+  const stripeCustomerId = req.user.subscription?.stripeCustomerId;
+  if (stripeCustomerId) {
+    try {
+      const [pmsResult, invResult, customer] = await Promise.all([
+        stripe.paymentMethods.list({ customer: stripeCustomerId, type: "card", limit: 10 }),
+        stripe.invoices.list({ customer: stripeCustomerId, limit: 12 }),
+        stripe.customers.retrieve(stripeCustomerId),
+      ]);
+
+      let defaultPmId = customer.invoice_settings?.default_payment_method || null;
+      if (!defaultPmId && req.user.subscription?.stripeSubscriptionId) {
+        try {
+          const sub = await stripe.subscriptions.retrieve(req.user.subscription.stripeSubscriptionId);
+          defaultPmId = sub.default_payment_method || null;
+        } catch (_) {}
+      }
+      if (!defaultPmId && pmsResult.data.length === 1) defaultPmId = pmsResult.data[0].id;
+
+      paymentMethods = pmsResult.data.map((pm) => ({
+        id:        pm.id,
+        brand:     pm.card.brand,
+        last4:     pm.card.last4,
+        expMonth:  pm.card.exp_month,
+        expYear:   pm.card.exp_year,
+        isDefault: pm.id === defaultPmId,
+      }));
+      invoices = invResult.data.map((inv) => ({
+        id:          inv.id,
+        date:        inv.created,
+        description: inv.description || (inv.lines?.data?.[0]?.description) || "Abonnement BranShee",
+        amount:      ((inv.amount_paid || inv.amount_due || 0) / 100).toFixed(2),
+        currency:    (inv.currency || "eur").toUpperCase(),
+        status:      inv.status,
+        pdfUrl:      inv.invoice_pdf,
+        hostedUrl:   inv.hosted_invoice_url,
+      }));
+    } catch (e) {
+      console.error("Stripe billing fetch error:", e.message);
+    }
+  }
+
+  const twoFAEnabled = req.user?.twoFA?.enabled || false;
+  const currentLang  = req.cookies?.user_lang || req.user?.preferredLang || "fr";
 
   return res.render("admin/settings", {
     pageName: "Settings",
-    title: "Settings",
+    title: res.locals.t?.titles?.infos || "Paramètres",
+    success: req.query.success,
+    maskEmail,
+    currentCompany: res.locals.currentCompany,
+    canUseSocial,
+    canUseCustomUrl,
+    cs,
+    gallery:             cs.gallery   || [],
+    equipment:           cs.equipment || [],
+    isPro:               req.user.isPremium || (req.user.subscription && req.user.subscription.plan !== "basic"),
+    paymentMethods,
+    invoices,
+    stripePublishableKey: env.stripePublishableKey || "",
+    twoFAEnabled,
+    currentLang,
   });
 };
 
@@ -740,6 +827,9 @@ exports.historyEditRowPatch = async (req, res) => {
       endTime,
       status,
       adminNotes,
+      serviceId,
+      serviceName,
+      employeeId,
     } = req.body;
 
     // Support both separate name/surname and legacy fullName
@@ -764,6 +854,31 @@ exports.historyEditRowPatch = async (req, res) => {
     if (status && ["confirmed", "canceled"].includes(status)) {
       updateFields.status = status;
     }
+    // Service update
+    if (serviceId !== undefined) {
+      updateFields.service    = serviceId || null;
+      if (serviceName !== undefined) updateFields.serviceName = serviceName || "";
+    }
+    // Employee update (empty string = "no employee")
+    if (employeeId !== undefined) {
+      updateFields.employee     = employeeId || null;
+      updateFields.employeeName = "";
+    }
+
+    // ── Optional: force-delete conflicting bookings before saving ──────────────
+    const { forceDeleteConflicts } = req.body;
+    if (forceDeleteConflicts && req.body.date && updateFields.startTime && updateFields.endTime) {
+      const bookingCompany = (await Booking.findById(id).select("company").lean())?.company;
+      const conflictQuery = buildConflictQuery(
+        bookingCompany,
+        req.body.date,       // keep as YYYY-MM-DD string for buildConflictQuery
+        updateFields.startTime,
+        updateFields.endTime,
+        updateFields.employee ?? undefined,
+        id
+      );
+      await Booking.deleteMany(conflictQuery);
+    }
 
     const response = await Booking.findByIdAndUpdate(id, updateFields);
 
@@ -774,6 +889,70 @@ exports.historyEditRowPatch = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.json({ err });
+  }
+};
+
+// ── Shared helper: build a MongoDB conflict query ─────────────────────────────
+function buildConflictQuery(company, date, startTime, endTime, employeeId, excludeId) {
+  // Use a 24-hour window to be timezone-safe
+  const dayStart = new Date(date + "T00:00:00.000Z");
+  const dayEnd   = new Date(date + "T23:59:59.999Z");
+
+  const query = {
+    company,
+    date:      { $gte: dayStart, $lte: dayEnd },
+    status:    "confirmed",
+    startTime: { $lt: endTime },
+    endTime:   { $gt: startTime },
+    _id:       { $ne: excludeId },
+  };
+  if (employeeId) {
+    query.$or = [
+      { employee: employeeId },
+      { employee: null },
+    ];
+  }
+  return query;
+}
+
+// ── Check conflicts before saving a booking edit ──────────────────────────────
+exports.historyCheckConflicts = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, startTime, endTime, employeeId } = req.query;
+
+    if (!date || !startTime || !endTime) {
+      return res.json({ hasConflict: false, conflicts: [] });
+    }
+
+    const booking = await Booking.findById(id).select("company").lean();
+    if (!booking) return res.json({ hasConflict: false, conflicts: [] });
+
+    const query = buildConflictQuery(
+      booking.company,
+      date,
+      startTime,
+      endTime,
+      employeeId || null,
+      id
+    );
+
+    const conflicts = await Booking.find(query)
+      .select("name surname startTime endTime date serviceName employeeName")
+      .lean();
+
+    return res.json({
+      hasConflict: conflicts.length > 0,
+      conflicts: conflicts.map((c) => ({
+        id: c._id,
+        name: `${c.name || ""} ${c.surname || ""}`.trim(),
+        time: `${c.startTime} – ${c.endTime}`,
+        service: c.serviceName || "",
+      })),
+    });
+  } catch (err) {
+    console.error("[historyCheckConflicts]", err);
+    return res.json({ hasConflict: false, conflicts: [], error: err.message });
   }
 };
 

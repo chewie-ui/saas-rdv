@@ -3,6 +3,9 @@ const cron = require("node-cron");
 const pug = require("pug");
 
 const Booking = require("../db/models/book.model");
+const Company = require("../db/models/company/company.model");
+const User = require("../db/models/user.model");
+const { atLeast } = require("./planLimits");
 const { sendEmail } = require("./mailer");
 
 /**
@@ -50,12 +53,33 @@ async function sendDueReminders() {
     "../views/templates/emails/booking-reminder.pug",
   );
 
+  // Pre-fetch company owners in batch (avoid N+1 queries)
+  const companyIds = [...new Set(candidates.map((b) => String(b.company)).filter(Boolean))];
+  const companyOwnerMap = {};
+  try {
+    const companies = await Company.find({ _id: { $in: companyIds } }).select("_id owner").lean();
+    const ownerIds = [...new Set(companies.map((c) => String(c.owner)).filter(Boolean))];
+    const owners = await User.find({ _id: { $in: ownerIds } }).select("_id isPremium manualPremium subscription").lean();
+    const ownerById = Object.fromEntries(owners.map((o) => [String(o._id), o]));
+    companies.forEach((c) => { companyOwnerMap[String(c._id)] = ownerById[String(c.owner)] || null; });
+  } catch (err) {
+    console.error("[reminderScheduler] Erreur pre-fetch owners ❌", err);
+  }
+
   for (const booking of candidates) {
     const appointmentAt = getAppointmentDateTime(booking);
 
     // On envoie uniquement si le rdv est dans le futur ET dans les 24h.
     if (appointmentAt <= now || appointmentAt > in24h) continue;
     if (!booking.email) continue;
+
+    // ── Plan gate: reminders only for Pro / Business ──────────────────────
+    const owner = companyOwnerMap[String(booking.company)];
+    if (!atLeast(owner, "pro")) {
+      // Free plan owners don't get automated reminders
+      continue;
+    }
+    // ─────────────────────────────────────────────────────────────────────
 
     try {
       const html = pug.renderFile(templatePath, {

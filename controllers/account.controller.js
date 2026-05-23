@@ -8,6 +8,8 @@ const bcrypt = require("bcrypt");
 const { sendEmail } = require("../utils/mailer");
 const pug  = require("pug");
 const path = require("path");
+const speakeasy = require("speakeasy");
+const QRCode = require("qrcode");
 
 exports.editProfilePicture = async (req, res) => {
   try {
@@ -228,10 +230,23 @@ exports.updatePassword = async (req, res) => {
 
 exports.cancelSubscription = async (req, res) => {
   try {
-    const subscription = await Subscription.findOne({ user: req.user._id });
+    // Only look for an active subscription with a real Stripe ID
+    const subscription = await Subscription.findOne({
+      user: req.user._id,
+      status: "active",
+      stripeSubscriptionId: { $exists: true, $ne: null },
+    });
 
-    if (!subscription.stripeSubscriptionId) {
+    if (!subscription) {
       return res.status(400).json({ error: "No active subscription found." });
+    }
+
+    // Guard: already scheduled for cancellation → don't call Stripe again
+    if (!subscription.autoRenew) {
+      return res.json({
+        success: true,
+        message: "Subscription is already scheduled for cancellation.",
+      });
     }
 
     await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
@@ -827,5 +842,121 @@ exports.checkSlug = async (req, res) => {
     return res.json({ available: false });
   } catch (err) {
     return res.status(500).json({ available: false });
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 2FA — Google Authenticator
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// POST /account/2fa/setup  → génère un secret temporaire + QR code
+exports.setup2FA = async (req, res) => {
+  try {
+    const secretObj = speakeasy.generateSecret({
+      name: `BranShee (${req.user.email})`,
+      issuer: "BranShee",
+      length: 20,
+    });
+
+    const qrDataUrl = await QRCode.toDataURL(secretObj.otpauth_url);
+
+    // Sauvegarder le secret temp (pas encore activé)
+    await User.findByIdAndUpdate(req.user._id, { "twoFA.tempSecret": secretObj.base32 });
+
+    return res.json({ success: true, qrDataUrl, secret: secretObj.base32 });
+  } catch (err) {
+    console.error("setup2FA error:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// POST /account/2fa/enable  → vérifie le code et active la 2FA
+exports.enable2FA = async (req, res) => {
+  try {
+    const { code } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user.twoFA?.tempSecret) {
+      return res.status(400).json({ error: "Aucune configuration en cours. Recommencez." });
+    }
+
+    const isValid = speakeasy.totp.verify({
+      secret: user.twoFA.tempSecret,
+      encoding: "base32",
+      token: String(code).replace(/\s/g, ""),
+      window: 1,
+    });
+
+    if (!isValid) {
+      return res.status(400).json({ error: "Code incorrect. Vérifiez votre application." });
+    }
+
+    await User.findByIdAndUpdate(req.user._id, {
+      "twoFA.enabled":    true,
+      "twoFA.secret":     user.twoFA.tempSecret,
+      "twoFA.tempSecret": "",
+    });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("enable2FA error:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// POST /account/2fa/disable  → désactive la 2FA (vérifie le code courant)
+exports.disable2FA = async (req, res) => {
+  try {
+    const { code } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user.twoFA?.enabled) {
+      return res.status(400).json({ error: "La 2FA n'est pas activée." });
+    }
+
+    const isValid = speakeasy.totp.verify({
+      secret: user.twoFA.secret,
+      encoding: "base32",
+      token: String(code).replace(/\s/g, ""),
+      window: 1,
+    });
+
+    if (!isValid) {
+      return res.status(400).json({ error: "Code incorrect." });
+    }
+
+    await User.findByIdAndUpdate(req.user._id, {
+      "twoFA.enabled": false,
+      "twoFA.secret":  "",
+      "twoFA.tempSecret": "",
+    });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("disable2FA error:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Langue de l'interface
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// POST /account/language
+exports.updateLanguage = async (req, res) => {
+  try {
+    const { lang } = req.body;
+    const allowed = ["fr", "en", "nl", "de", "es", "it"];
+    if (!allowed.includes(lang)) {
+      return res.status(400).json({ error: "Langue non supportée." });
+    }
+
+    await User.findByIdAndUpdate(req.user._id, { preferredLang: lang });
+    res.cookie("user_lang", lang, { maxAge: 365 * 24 * 60 * 60 * 1000, httpOnly: false });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("updateLanguage error:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
   }
 };
