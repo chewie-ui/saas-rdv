@@ -40,6 +40,19 @@
 
   .admin-nav__actions {
     gap: 6px;
+    flex-shrink: 0;
+  }
+
+  /* Sur mobile : cacher les labels des boutons d'action topbar,
+     ne garder que les icônes pour éviter l'overflow */
+  .admin-nav__actions .sm-btn span {
+    display: none;
+  }
+
+  .admin-nav__actions .sm-btn {
+    padding: 0 10px !important;
+    min-width: 36px;
+    justify-content: center;
   }
 
   .section__container {
@@ -53,6 +66,29 @@
   .block-section__row .section__container {
     width: 100% !important;
     min-width: 0 !important;
+  }
+}
+
+/* Settings / Paramètres — boutons actions en bas */
+@media (max-width: 599px) {
+  .info-card__actions {
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
+  }
+
+  .info-card__actions .sm-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Profil row — colonne sur mobile */
+  .profile-row {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .profile-fields {
+    width: 100%;
   }
 }
 
@@ -235,6 +271,54 @@
 
   .form-question-card__actions {
     align-self: flex-end;
+  }
+
+  /* Unsaved changes bar — no min-width on mobile */
+  .forms-unsaved-bar {
+    min-width: 0 !important;
+    width: calc(100vw - 32px);
+    left: 50%;
+    transform: translateX(-50%);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* Header buttons wrap full width */
+  .forms-page__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .forms-page__header-right {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   9b. CUSTOMIZE PAGE — URL personnalisée / Profil établissement
+   ============================================================ */
+
+@media (max-width: 599px) {
+  /* URL gate block — stack vertically */
+  .info-addon-gate {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  /* Slug share row — wrap copy button */
+  .slug-share-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .slug-share-url {
+    width: 100%;
+  }
+
+  /* Info-card header with visibility pill — stack on very small screens */
+  .info-card__header--with-cb {
+    flex-wrap: wrap;
   }
 }
 

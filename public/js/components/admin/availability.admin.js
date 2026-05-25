@@ -543,15 +543,18 @@ if (holidaysBody) {
     }
 
     if (scheduleBtn) {
+      e.stopPropagation(); // Prevent the main document click handler from interfering
+
       const template = document.querySelector("#plageTemplate");
       const clone = template.content.cloneNode(true);
       container.innerHTML = ``;
       container.appendChild(clone);
 
-      // Lire les heures par défaut du clone qu'on vient d'insérer
-      const startHour = container.querySelector(".start-hour-").textContent.trim();
-      const endHour = container.querySelector(".end-hour-").textContent.trim();
-      const schedule = { start: startHour, end: endHour };
+      // Use template defaults directly — never read from DOM (avoids interference
+      // from open time-picker panels elsewhere on the page)
+      const startHour = "09:00";
+      const endHour   = "18:00";
+      const schedule  = { start: startHour, end: endHour };
 
       await fetch(`/company/schedule-day-off`, {
         method: "PATCH",
@@ -580,21 +583,55 @@ getDaysOff();
 // ── "Réactiver" slot-time button ─────────────────────────────────────────────
 const reenableBtn = document.querySelector(".slot-reenable-btn");
 if (reenableBtn) {
-  reenableBtn.addEventListener("click", async () => {
-    // Désactiver tous les services pour libérer le contrôle du slot time
-    try {
-      await fetch("/api/services/bulk-toggle", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ active: false }),
-      });
-    } catch (e) {
-      console.warn("Impossible de désactiver les services:", e);
-    }
-    const section = document.querySelector(".slot-time-section");
-    if (section) section.classList.remove("slot-managed");
-    reenableBtn.closest(".slot-managed-info").style.display = "none";
+  reenableBtn.addEventListener("click", () => {
+    // Afficher un popup de confirmation avant de désactiver tous les services
+    showSlotReenableConfirm();
   });
+}
+
+function showSlotReenableConfirm() {
+  // Créer le modal s'il n'existe pas déjà
+  let overlay = document.getElementById("slotReenableOverlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "slotReenableOverlay";
+    overlay.style.cssText = "position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(2px)";
+    overlay.innerHTML = `
+      <div style="background:var(--surface-card,#fff);border-radius:14px;padding:28px 28px 24px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);display:flex;flex-direction:column;gap:16px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#f59e0b"><path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg>
+          <h3 style="font-size:16px;font-weight:700;color:var(--ink,#111);margin:0;">Réactiver la durée globale ?</h3>
+        </div>
+        <p style="font-size:13.5px;color:var(--text-muted,#666);line-height:1.6;margin:0;">
+          Cette action va <strong>désactiver tous vos services</strong> afin de libérer le contrôle de la durée globale des créneaux.<br><br>
+          Vos services seront désactivés et n'apparaîtront plus sur votre page de réservation jusqu'à ce que vous les réactiviez manuellement.
+        </p>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px;">
+          <button id="slotReenableCancel" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border-light,#e5e5e5);background:none;font-size:13px;cursor:pointer;color:var(--text-secondary,#555);">Annuler</button>
+          <button id="slotReenableConfirm" style="padding:8px 18px;border-radius:8px;border:none;background:#f59e0b;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Désactiver et réactiver</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    document.getElementById("slotReenableCancel").addEventListener("click", () => overlay.remove());
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+    document.getElementById("slotReenableConfirm").addEventListener("click", async () => {
+      overlay.remove();
+      try {
+        await fetch("/api/services/bulk-toggle", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ active: false }),
+        });
+      } catch (e) {
+        console.warn("Impossible de désactiver les services:", e);
+      }
+      const section = document.querySelector(".slot-time-section");
+      if (section) section.classList.remove("slot-managed");
+      const info = document.querySelector(".slot-managed-info");
+      if (info) info.style.display = "none";
+    });
+  }
 }
 
 import { getDays, addDay, removeDay } from "/js/components/calendarState.js";
@@ -629,6 +666,80 @@ function getSelectedEmployeeIds() {
 let _pendingDayEl   = null;
 let _pendingDateKey = null;
 let _pendingEditId  = null; // null = add mode, string = edit mode
+
+// Multi-select: array of { dateKey, dayEl } accumulated before opening empPicker
+let _pendingDates = [];
+
+function updateMultiSelectUI() {
+  let floatBtn = document.getElementById("multiDayOffConfirm");
+  if (_pendingDates.length === 0) {
+    if (floatBtn) floatBtn.remove();
+    return;
+  }
+  if (!floatBtn) {
+    floatBtn = document.createElement("button");
+    floatBtn.id = "multiDayOffConfirm";
+    floatBtn.type = "button";
+    floatBtn.style.cssText = [
+      "position:fixed", "bottom:24px", "left:50%", "transform:translateX(-50%)",
+      "z-index:500", "background:var(--main-color,#22c55e)", "color:#fff",
+      "border:none", "border-radius:50px", "padding:12px 28px",
+      "font-size:14px", "font-weight:600", "cursor:pointer",
+      "box-shadow:0 4px 24px rgba(0,0,0,0.22)", "display:flex",
+      "align-items:center", "gap:10px", "white-space:nowrap",
+    ].join(";");
+    floatBtn.innerHTML = `
+      <svg viewBox="0 -960 960 960" height="18" width="18" fill="currentColor">
+        <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/>
+      </svg>
+      <span></span>
+      <button id="multiDayOffCancel" type="button" style="background:rgba(255,255,255,0.25);border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:16px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;">×</button>
+    `;
+    document.body.appendChild(floatBtn);
+
+    floatBtn.addEventListener("click", (e) => {
+      if (e.target.id === "multiDayOffCancel" || e.target.closest("#multiDayOffCancel")) {
+        clearMultiSelect();
+        return;
+      }
+      if (!_pendingDates.length) return;
+      if (!EMPLOYEES.length) {
+        // No employees → save all immediately
+        const datesToSave = [..._pendingDates];
+        clearMultiSelect();
+        saveMultipleDaysOff(datesToSave, []);
+      } else {
+        // Open empPicker for all dates
+        _pendingDayEl   = null;
+        _pendingDateKey = null;
+        _pendingEditId  = null;
+        const count = _pendingDates.length;
+        const titleEl = document.getElementById("empPickerTitle");
+        if (titleEl) titleEl.textContent = `Pour qui sont ces ${count} jour${count > 1 ? "s" : ""} de congé ?`;
+        if (empModeAll) empModeAll.checked = true;
+        if (empPickerList) {
+          empPickerList.classList.remove("is-open");
+          empPickerList.querySelectorAll("input[type=checkbox]").forEach(cb => (cb.checked = false));
+        }
+        if (empPickerModal) empPickerModal.style.display = "flex";
+      }
+    });
+  }
+  const count = _pendingDates.length;
+  floatBtn.querySelector("span").textContent = `Valider ${count} jour${count > 1 ? "s" : ""} de congé`;
+}
+
+function clearMultiSelect() {
+  _pendingDates.forEach(({ dayEl }) => dayEl.classList.remove("selected-day-off"));
+  _pendingDates = [];
+  updateMultiSelectUI();
+}
+
+async function saveMultipleDaysOff(dates, employeeIds) {
+  for (const { dateKey, dayEl } of dates) {
+    await saveDayOff(dayEl, dateKey, employeeIds);
+  }
+}
 
 // ── Open picker in ADD mode ───────────────────────────────────────────────
 function openEmpPicker(dayEl, dateKey) {
@@ -702,18 +813,27 @@ if (empPickerModal) {
 
 if (empPickerConfirm) {
   empPickerConfirm.addEventListener("click", () => {
-    if (!_pendingDayEl || !_pendingDateKey) return;
     const ids = getSelectedEmployeeIds();
     if (empPickerModal) empPickerModal.style.display = "none";
 
-    if (_pendingEditId) {
+    if (_pendingDates.length > 0) {
+      // ── Multi-date mode ──────────────────────────────────────────
+      const datesToSave = [..._pendingDates];
+      clearMultiSelect();
+      saveMultipleDaysOff(datesToSave, ids);
+    } else if (_pendingEditId) {
+      // ── Edit mode ────────────────────────────────────────────────
       updateDayOffEmployees(_pendingDateKey, _pendingEditId, ids);
-    } else {
+      _pendingDayEl   = null;
+      _pendingDateKey = null;
+      _pendingEditId  = null;
+    } else if (_pendingDayEl && _pendingDateKey) {
+      // ── Single add mode ──────────────────────────────────────────
       saveDayOff(_pendingDayEl, _pendingDateKey, ids);
+      _pendingDayEl   = null;
+      _pendingDateKey = null;
+      _pendingEditId  = null;
     }
-    _pendingDayEl   = null;
-    _pendingDateKey = null;
-    _pendingEditId  = null;
   });
 }
 
@@ -800,9 +920,8 @@ async function updateDayOffEmployees(dateKey, entryId, employeeIds) {
   }
 }
 
-// ── Calendar click: add OR edit ───────────────────────────────────────────
+// ── Calendar click: multi-select add OR edit ──────────────────────────────
 calendar.addEventListener("click", async (event) => {
-  // Allow clicking already-clicked days (edit mode) — remove :not(.clicked)
   const dayEl = event.target.closest(".day:not(.empty)");
   if (!dayEl) return;
 
@@ -812,17 +931,29 @@ calendar.addEventListener("click", async (event) => {
 
   if (isAlreadyOff) {
     // ── Edit mode: find entry and open picker pre-filled ──────────────────
-    if (!EMPLOYEES.length) return; // no employees → nothing to refine
+    // Only available if employees are configured
+    if (!EMPLOYEES.length) return;
     const card = findCardByDateKey(dateKey);
     if (!card) return;
     try {
       const entry = JSON.parse(card.dataset.date);
       openEmpPickerEdit(dayEl, dateKey, String(entry._id), entry.employees || []);
     } catch (_) {}
-  } else {
-    // ── Add mode ──────────────────────────────────────────────────────────
-    openEmpPicker(dayEl, dateKey);
+    return;
   }
+
+  // ── Multi-select mode: toggle this date ──────────────────────────────────
+  const existingIdx = _pendingDates.findIndex(d => d.dateKey === dateKey);
+  if (existingIdx >= 0) {
+    // Deselect
+    _pendingDates.splice(existingIdx, 1);
+    dayEl.classList.remove("selected-day-off");
+  } else {
+    // Select
+    _pendingDates.push({ dateKey, dayEl });
+    dayEl.classList.add("selected-day-off");
+  }
+  updateMultiSelectUI();
 });
 
 /* ── Slot duration pill buttons ──────────────────────────────── */

@@ -122,6 +122,56 @@ block content
                 else
                     p.emp-invite__desc Ajoutez un nouveau service proposé à vos clients.
 
+    //- ── Panneau : Gérer les catégories ──────────────────────────────────────
+    if categories && categories.length > 0
+        .cat-manage-panel#catManagePanel
+            .cat-manage-panel__header
+                .cat-manage-panel__title
+                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                        path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640v400q0 33-23.5 56.5T800-160H160Z")
+                    span Catégories & affichage
+                span.cat-manage-panel__hint Glissez ou utilisez ↑↓ pour réordonner
+
+            //- Style picker
+            .cat-style-picker
+                button.cat-style-opt#styleOptPills(type="button" data-style="pills")
+                    svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                        path(d="M280-400q-83 0-141.5-58.5T80-600q0-83 58.5-141.5T280-800h400q83 0 141.5 58.5T880-600q0 83-58.5 141.5T680-400H280Z")
+                    span Pills
+                button.cat-style-opt#styleOptAccordion(type="button" data-style="accordion")
+                    svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                        path(d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z")
+                    span Accordéon
+                button.cat-style-opt#styleOptGrid(type="button" data-style="grid")
+                    svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                        path(d="M120-120v-240h240v240H120Zm0-360v-240h240v240H120Zm360 360v-240h240v240H480Zm0-360v-240h240v240H480Zm360 360v-240h240v240H840Zm0-360v-240h240v240H840Z")
+                    span Sections
+
+            //- Category list (reorderable)
+            ul.cat-order-list#catOrderList
+                each cat in categories
+                    li.cat-order-item(data-name=cat.name)
+                        span.cat-order-item__grip
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-440q-33 0-56.5-23.5T280-520q0-33 23.5-56.5T360-600q33 0 56.5 23.5T440-520q0 33-23.5 56.5T360-440Zm240 0q-33 0-56.5-23.5T520-520q0-33 23.5-56.5T600-600q33 0 56.5 23.5T680-520q0 33-23.5 56.5T600-440ZM360-720q-33 0-56.5-23.5T280-800q0-33 23.5-56.5T360-880q33 0 56.5 23.5T440-800q0 33-23.5 56.5T360-720Zm240 0q-33 0-56.5-23.5T520-800q0-33 23.5-56.5T600-880q33 0 56.5 23.5T680-800q0 33-23.5 56.5T600-720Z")
+                        if cat.icon
+                            span.cat-order-item__icon= cat.icon
+                        span.cat-order-item__name= cat.name
+                        .cat-order-item__btns
+                            button.cat-order-btn(type="button" data-dir="up" title="Remonter")
+                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="m296-345-56-56 240-240 240 240-56 56-184-184-184 184Z")
+                            button.cat-order-btn(type="button" data-dir="down" title="Descendre")
+                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
+
+            .cat-manage-panel__footer
+                button.sm-btn.sm-btn--primary#saveCatSettingsBtn(type="button")
+                    svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                        path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                    span Enregistrer
+                span.cat-manage-panel__status#catSaveStatus
+
     //- ── Modal : Créer / Modifier un service ──────────────────────────────────
     .modal-overlay#serviceModalOverlay
     .service-modal#serviceModal
@@ -191,4 +241,5 @@ block scripts
         window.__t_no_category      = !{JSON.stringify(t.services.no_category     || 'Aucune catégorie')};
         window.__t_create_category  = !{JSON.stringify(t.services.create_category || '+ Créer une catégorie')};
         window.__t_new_cat_name     = !{JSON.stringify(t.services.new_category_name || 'Nom de la catégorie')};
+        window.__bookingCategoryStyle = !{JSON.stringify(bookingCategoryStyle || 'pills')};
     script(src="/js/layouts/services.js")

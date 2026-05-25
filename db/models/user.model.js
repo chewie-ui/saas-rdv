@@ -166,6 +166,7 @@ const userSchema = schema(
       gallery:     { type: [String], default: [] },
       equipment:   { type: [String], default: [] },
       categories:  { type: [{ name: String, icon: { type: String, default: '' }, _id: false }], default: [] },
+      bookingCategoryStyle: { type: String, default: 'pills' }, // 'pills' | 'accordion' | 'grid'
       amenities: {
         cleanliness: { type: [String], default: [] },
         comfort:     { type: [String], default: [] },

@@ -28,6 +28,7 @@ const STATE = {
   activeForm:  null,  // pre-booking form loaded from API
   loading:     false,
   _openCat:    null,  // currently expanded category (null = all closed)
+  _activeCat:  null,  // active category filter pill (null = "Tous")
 };
 
 /* ── DOM refs ───────────────────────────────────────────────────────────── */
@@ -207,39 +208,61 @@ function renderSvcCard(s) {
   </div>`;
 }
 
+/* ── Shared: pick a service card ─────────────────────────────────────────── */
+function bindSvcCards(container) {
+  container.querySelectorAll("[data-svc]").forEach(el => {
+    el.onclick = () => {
+      const svc = SERVICES.find(s => s._id === el.dataset.svc);
+      if (!svc) return;
+      STATE.service  = { id: svc._id, name: svc.name, price: svc.price, duration: svc.duration };
+      STATE.employee = undefined;
+      STATE.date     = null;
+      STATE.time     = null;
+      recomputeSteps();
+      const svcHasEmps    = (svc.employees || []).length > 0;
+      const globalHasEmps = EMPLOYEES.length > 0;
+      if (svcHasEmps || globalHasEmps) goToStep("employee");
+      else goToStep("time");
+    };
+  });
+}
+
+/* ── Ordered categories (respects admin-set order from __categoriesMeta) ─── */
+function getOrderedCats() {
+  const META = window.__categoriesMeta || [];
+  // Categories explicitly ordered by admin
+  const ordered = META.map(m => m.name).filter(Boolean);
+  // Any categories on services not in META (appended at end)
+  SERVICES.forEach(s => {
+    const cat = (s.category || "").trim();
+    if (cat && !ordered.includes(cat)) ordered.push(cat);
+  });
+  // Only keep cats that actually have services
+  return ordered.filter(cat => SERVICES.some(s => (s.category || "").trim() === cat));
+}
+
 function renderServicePane() {
   const hasCategories = SERVICES.some(s => s.category && s.category.trim() !== "");
+  const style = window.__bookingCategoryStyle || "pills";
 
   let bodyHtml;
 
   if (!hasCategories) {
+    // No categories → flat grid
     bodyHtml = `<div class="bk-svc-grid">${SERVICES.map(renderSvcCard).join("")}</div>`;
-  } else {
-    // Group by category, uncategorized last
-    const groups = {};
-    const uncategorized = [];
-    SERVICES.forEach(s => {
-      const cat = (s.category || "").trim();
-      if (!cat) { uncategorized.push(s); return; }
-      if (!groups[cat]) groups[cat] = [];
-      groups[cat].push(s);
-    });
+  } else if (style === "accordion") {
+    // ── Accordion style ───────────────────────────────────────────────────
+    const cats = getOrderedCats();
+    const uncategorized = SERVICES.filter(s => !(s.category || "").trim());
 
-    // Open first category by default if nothing explicit; keep selected-service category open
-    const cats = Object.keys(groups);
     if (STATE._openCat === null && cats.length > 0) STATE._openCat = cats[0];
 
-    const CATEGORIES_META = window.__categoriesMeta || [];
-
     const groupsHtml = cats.map(cat => {
-      const svcs     = groups[cat];
+      const svcs      = SERVICES.filter(s => (s.category || "").trim() === cat);
       const hasSelSvc = svcs.some(s => STATE.service && STATE.service.id === s._id);
-      const isOpen   = STATE._openCat === cat || hasSelSvc;
-      const catMeta  = CATEGORIES_META.find(c => c.name === cat);
-      const catIcon  = catMeta && catMeta.icon ? `<span class="bk-cat-icon">${escHtml(catMeta.icon)}</span>` : "";
+      const isOpen    = STATE._openCat === cat || hasSelSvc;
       return `<div class="bk-cat-group${isOpen ? " is-open" : ""}" data-cat="${escHtml(cat)}">
         <button class="bk-cat-header" type="button" data-toggle-cat="${escHtml(cat)}">
-          ${catIcon}
           <span class="bk-cat-name">${escHtml(cat)}</span>
           <span class="bk-cat-count">${svcs.length} service${svcs.length > 1 ? "s" : ""}</span>
           <svg class="bk-cat-arrow" width="16" height="16" viewBox="0 -960 960 960" fill="currentColor">
@@ -253,9 +276,51 @@ function renderServicePane() {
     }).join("");
 
     const uncatHtml = uncategorized.length > 0
-      ? `<div class="bk-svc-grid">${uncategorized.map(renderSvcCard).join("")}</div>` : "";
+      ? `<div class="bk-svc-grid" style="margin-top:8px">${uncategorized.map(renderSvcCard).join("")}</div>` : "";
 
     bodyHtml = `<div class="bk-cat-list">${groupsHtml}${uncatHtml}</div>`;
+
+  } else if (style === "grid") {
+    // ── Grid style: all services grouped by category label, no filter ─────
+    const cats = getOrderedCats();
+    const groupsHtml = cats.map(cat => {
+      const svcs = SERVICES.filter(s => (s.category || "").trim() === cat);
+      return `<div class="bk-cat-section">
+        <h3 class="bk-cat-section__title">${escHtml(cat)}</h3>
+        <div class="bk-svc-grid">${svcs.map(renderSvcCard).join("")}</div>
+      </div>`;
+    }).join("");
+    const uncategorized = SERVICES.filter(s => !(s.category || "").trim());
+    const uncatHtml = uncategorized.length > 0
+      ? `<div class="bk-svc-grid" style="margin-top:8px">${uncategorized.map(renderSvcCard).join("")}</div>` : "";
+    bodyHtml = `<div class="bk-cat-sections">${groupsHtml}${uncatHtml}</div>`;
+
+  } else {
+    // ── Pills style (default) — filter by category ────────────────────────
+    const cats = getOrderedCats();
+
+    // If selected service is in a category, pre-select it
+    if (STATE._activeCat === null && STATE.service) {
+      const selSvc = SERVICES.find(s => s._id === STATE.service.id);
+      if (selSvc && selSvc.category && selSvc.category.trim()) {
+        STATE._activeCat = selSvc.category.trim();
+      }
+    }
+
+    const filtered = STATE._activeCat
+      ? SERVICES.filter(s => (s.category || "").trim() === STATE._activeCat)
+      : SERVICES;
+
+    const pillsHtml = `
+      <div class="bk-cat-pills">
+        <button class="bk-cat-pill${STATE._activeCat === null ? " is-active" : ""}" data-filter-cat="">Tous</button>
+        ${cats.map(cat => `
+          <button class="bk-cat-pill${STATE._activeCat === cat ? " is-active" : ""}" data-filter-cat="${escHtml(cat)}">
+            ${escHtml(cat)}
+          </button>`).join("")}
+      </div>`;
+
+    bodyHtml = `${pillsHtml}<div class="bk-svc-grid" id="bkSvcGrid">${filtered.map(renderSvcCard).join("")}</div>`;
   }
 
   pane.innerHTML = `<div class="bk-pane">
@@ -264,38 +329,33 @@ function renderServicePane() {
     ${bodyHtml}
   </div>`;
 
-  // Bind service card clicks
-  pane.querySelectorAll("[data-svc]").forEach(el => {
-    el.onclick = () => {
-      const svc = SERVICES.find(s => s._id === el.dataset.svc);
-      if (!svc) return;
-      STATE.service  = { id: svc._id, name: svc.name, price: svc.price, duration: svc.duration };
-      STATE.employee = undefined;
-      STATE.date     = null;
-      STATE.time     = null;
-      recomputeSteps();
-      const svcHasEmps    = (svc.employees || []).length > 0;
-      const globalHasEmps = EMPLOYEES.length > 0;
-      if (svcHasEmps || globalHasEmps) {
-        goToStep("employee");
-      } else {
-        goToStep("time");
-      }
-    };
-  });
+  bindSvcCards(pane);
 
-  // Bind category accordion toggles
+  // ── Accordion toggles ────────────────────────────────────────────────────
   pane.querySelectorAll("[data-toggle-cat]").forEach(btn => {
     btn.onclick = () => {
       const cat   = btn.dataset.toggleCat;
       const group = btn.closest(".bk-cat-group");
       const isOpen = group.classList.contains("is-open");
       pane.querySelectorAll(".bk-cat-group").forEach(g => g.classList.remove("is-open"));
-      if (!isOpen) {
-        group.classList.add("is-open");
-        STATE._openCat = cat;
-      } else {
-        STATE._openCat = null;
+      if (!isOpen) { group.classList.add("is-open"); STATE._openCat = cat; }
+      else STATE._openCat = null;
+    };
+  });
+
+  // ── Pills filter ─────────────────────────────────────────────────────────
+  pane.querySelectorAll("[data-filter-cat]").forEach(btn => {
+    btn.onclick = () => {
+      STATE._activeCat = btn.dataset.filterCat || null;
+      pane.querySelectorAll(".bk-cat-pill").forEach(p => p.classList.remove("is-active"));
+      btn.classList.add("is-active");
+      const grid = pane.querySelector("#bkSvcGrid");
+      if (grid) {
+        const toShow = STATE._activeCat
+          ? SERVICES.filter(s => (s.category || "").trim() === STATE._activeCat)
+          : SERVICES;
+        grid.innerHTML = toShow.map(renderSvcCard).join("");
+        bindSvcCards(grid);
       }
     };
   });

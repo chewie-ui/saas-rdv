@@ -498,6 +498,47 @@ body {
   background: var(--accent-hover);
 }
 
+/* ── Stars row ── */
+.lp__card-stars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: #f59e0b;
+}
+
+.lp__card-review-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: 4px;
+  font-weight: 500;
+}
+
+/* ── Rating badge (over photo) ── */
+.lp__card-photo {
+  position: relative;
+}
+
+.lp__card-rating-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.lp__card-rating-badge svg {
+  fill: #f59e0b;
+  flex-shrink: 0;
+}
+
 /* Hidden card (category filter) */
 .lp__card.hidden {
   display: none;
@@ -575,42 +616,47 @@ body {
     display: none;
   }
 
-  /* ── Card: photo+text top row / button full-width bottom row ── */
+  /* ── Card: redesign mobile ── */
   .lp__card {
-    flex-wrap: wrap;
-    align-items: center;
-    padding: 12px 14px 10px;
-    gap: 10px;
-    overflow: visible; /* allow photo border-radius to show */
-    border-radius: 14px;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+    border-radius: 16px;
   }
 
-  /* Small square photo with rounded corners */
+  /* Photo: full-width banner */
   .lp__card-photo {
-    width: 48px;
-    height: 48px;
-    border-radius: 10px;
+    width: 100%;
+    height: 140px;
+    border-radius: 0;
     flex-shrink: 0;
-    align-self: center;
+    align-self: auto;
+    position: relative;
   }
 
-  /* Text block: fills remaining space on top row */
+  /* Body: padding interne */
   .lp__card-body {
     flex: 1;
     min-width: 0;
-    padding: 0;
-    gap: 2px;
-    justify-content: center;
+    padding: 12px 14px 10px;
+    gap: 4px;
+    justify-content: flex-start;
   }
 
   .lp__card-name {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
   }
 
-  /* Hide description */
+  /* Show description (1 line) on mobile */
   .lp__card-desc {
-    display: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 12px;
   }
 
   .lp__card-meta {
@@ -619,10 +665,10 @@ body {
     overflow: hidden;
   }
 
-  /* CTA: full width → wraps to its own row */
+  /* CTA: inside body, full-width */
   .lp__card-cta {
+    padding: 0 14px 14px;
     width: 100%;
-    padding: 0;
   }
 
   /* Full-width "Réserver" button */

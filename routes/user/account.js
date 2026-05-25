@@ -61,6 +61,7 @@ router.delete("/gallery/:index", accountController.deleteGalleryPhoto);
 router.patch("/amenities", accountController.updateAmenities);
 router.patch("/equipment", accountController.updateEquipment);
 router.patch("/categories", accountController.updateCategories);
+router.patch("/booking-category-style", accountController.updateBookingCategoryStyle);
 router.patch("/faq", accountController.updateFaq);
 router.patch("/badges", accountController.updateBadges);
 router.patch("/toggle-section", accountController.toggleSection);

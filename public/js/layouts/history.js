@@ -251,11 +251,30 @@ if (statusPills.length && editStatusInput) {
     }
   }
 
+  function subtractMinutes(hhmm, mins) {
+    if (!hhmm || !mins) return hhmm;
+    const [h, m] = hhmm.split(":").map(Number);
+    let total = h * 60 + m - mins;
+    if (total < 0) total = 0;
+    const nh = Math.floor(total / 60) % 24;
+    const nm = total % 60;
+    return String(nh).padStart(2, "0") + ":" + String(nm).padStart(2, "0");
+  }
+
   svcSelect.addEventListener("change", updateServiceInfo);
+
+  // Heure début → recalcule heure fin
   startInput?.addEventListener("change", () => {
     const opt = svcSelect.selectedOptions[0];
     const dur = parseInt(opt?.dataset?.duration || "0", 10);
     if (dur > 0 && endInput) endInput.value = addMinutes(startInput.value, dur);
+  });
+
+  // Heure fin → recalcule heure début
+  endInput?.addEventListener("change", () => {
+    const opt = svcSelect.selectedOptions[0];
+    const dur = parseInt(opt?.dataset?.duration || "0", 10);
+    if (dur > 0 && startInput) startInput.value = subtractMinutes(endInput.value, dur);
   });
 
   // Init on load

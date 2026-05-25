@@ -3,6 +3,7 @@ const router = require("express").Router();
 const { getCompanyIfExist } = require("../controllers/auth.controller");
 const User = require("../db/models/user.model");
 const Companies = require("../db/models/company/company.model");
+const Review = require("../db/models/review.model");
 const pug = require("pug");
 const path = require("path");
 const { sendEmail } = require("../utils/mailer");
@@ -107,21 +108,41 @@ router.get("/sitemap.xml", async (req, res) => {
 // });
 
 router.get("/", async (req, res) => {
-  // 1. Récupérer d'abord tous les users premium
+  // 1. Récupérer tous les users premium
   const premiumUsers = await User.find({ isPremium: true }).select("_id").lean();
   const premiumIds   = premiumUsers.map((u) => u._id);
 
-  // 2. Trouver uniquement les companies dont l'owner est premium → limit correct
+  // 2. Companies premium avec leur owner
   const coachs = await Companies.find({ owner: { $in: premiumIds } })
     .populate("owner")
-    .limit(20)
+    .limit(60)
     .lean();
+
+  // 3. Agrégation des avis : moyenne + nombre par company
+  const companyIds = coachs.map(c => c._id);
+  const ratings = await Review.aggregate([
+    { $match: { company: { $in: companyIds } } },
+    { $group: {
+        _id: "$company",
+        avgRating: { $avg: "$rating" },
+        reviewCount: { $sum: 1 }
+    }}
+  ]);
+  const ratingMap = {};
+  ratings.forEach(r => { ratingMap[r._id.toString()] = r; });
+
+  // 4. Injecter les stats de note + trier par note décroissante
+  const coachsWithRating = coachs.map(c => ({
+    ...c,
+    avgRating:   ratingMap[c._id.toString()]?.avgRating   || 0,
+    reviewCount: ratingMap[c._id.toString()]?.reviewCount || 0,
+  })).sort((a, b) => b.avgRating - a.avgRating || b.reviewCount - a.reviewCount);
 
   res.render("client/landing-page", {
     title: `BranShee — Prenez rendez-vous en ligne simplement`,
     metaDescription: "Trouvez et réservez en ligne un coach sportif, un coiffeur, un thérapeute ou tout autre professionnel près de chez vous. Prise de rendez-vous gratuite et instantanée avec BranShee.",
     canonical: "https://www.branshee.com/",
-    coachs,
+    coachs: coachsWithRating,
     services: getServices(res.locals.lang),
   });
 });
@@ -169,11 +190,25 @@ router.get("/search", async (req, res) => {
 
     const filteredCoachs = await Companies.find({ owner: { $in: matchingIds } })
       .populate("owner")
-      .limit(20)
+      .limit(60)
       .lean();
 
+    // Avis pour les résultats
+    const filteredIds = filteredCoachs.map(c => c._id);
+    const filteredRatings = await Review.aggregate([
+      { $match: { company: { $in: filteredIds } } },
+      { $group: { _id: "$company", avgRating: { $avg: "$rating" }, reviewCount: { $sum: 1 } } }
+    ]);
+    const filteredRatingMap = {};
+    filteredRatings.forEach(r => { filteredRatingMap[r._id.toString()] = r; });
+    const coachsWithRating = filteredCoachs.map(c => ({
+      ...c,
+      avgRating:   filteredRatingMap[c._id.toString()]?.avgRating   || 0,
+      reviewCount: filteredRatingMap[c._id.toString()]?.reviewCount || 0,
+    })).sort((a, b) => b.avgRating - a.avgRating || b.reviewCount - a.reviewCount);
+
     res.render("client/landing-page", {
-      coachs: filteredCoachs,
+      coachs: coachsWithRating,
       searchName: name,
       searchLocation: location,
       services: getServices(res.locals.lang),

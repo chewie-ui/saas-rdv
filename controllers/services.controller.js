@@ -9,13 +9,16 @@ exports.servicesPage = async (req, res) => {
     .sort("order")
     .lean();
   const maxServices = getLimit("services", req.user);
-  const categories  = (req.user.calendarSettings && req.user.calendarSettings.categories) || [];
+  const cs = (req.user.calendarSettings) || {};
+  const categories  = cs.categories || [];
+  const bookingCategoryStyle = cs.bookingCategoryStyle || "pills";
   res.render("admin/services", {
     pageName: "Services",
     title: "Services",
     services,
     maxServices,
     categories,
+    bookingCategoryStyle,
   });
 };
 

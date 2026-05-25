@@ -112,19 +112,32 @@ exports.logout = (req, res) => {
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
 
 exports.getDashboard = async (req, res) => {
+  const Company = require("../db/models/company/company.model");
   const client = req.client;
   const now = new Date();
   now.setHours(0, 0, 0, 0);
 
   const allBookings = await Booking.find({ clientRef: client._id })
-    .populate("company", "fullName profilePicture slug")
+    .populate("company", "fullName profilePicture businessPicture businessName businessType description")
     .sort({ date: -1 })
     .lean();
 
-  const upcoming = allBookings.filter(
+  // Récupère slugs des Company pour construire les liens établissement
+  const ownerIds = [...new Set(allBookings.map(b => b.company?._id?.toString()).filter(Boolean))];
+  const companies = await Company.find({ owner: { $in: ownerIds } }).select("owner slug _id").lean();
+  const companyByOwner = {};
+  companies.forEach(c => { companyByOwner[c.owner.toString()] = c; });
+
+  const enriched = allBookings.map(b => {
+    const ownerId = b.company?._id?.toString();
+    const comp = ownerId ? companyByOwner[ownerId] : null;
+    return { ...b, companySlug: comp ? (comp.slug || comp._id.toString()) : null };
+  });
+
+  const upcoming = enriched.filter(
     (b) => new Date(b.date) >= now && b.status === "confirmed"
   );
-  const past = allBookings.filter(
+  const past = enriched.filter(
     (b) => new Date(b.date) < now || b.status === "canceled"
   );
 

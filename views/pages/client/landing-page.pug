@@ -125,6 +125,7 @@ block content
                 else
                     .lp__cards#lpCards
                         each coach in coachs
+                            - var roundedRating = Math.round((coach.avgRating || 0) * 10) / 10
                             a.lp__card(
                                 href=`/${coach.slug || coach._id}`
                                 data-type=(coach.owner.businessType || '').toLowerCase()
@@ -135,6 +136,11 @@ block content
                                         alt=coach.owner.businessName || coach.owner.fullName
                                         loading="lazy"
                                     )
+                                    if coach.reviewCount > 0
+                                        .lp__card-rating-badge
+                                            svg(viewBox="0 0 20 20" fill="currentColor" width="11" height="11")
+                                                path(d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z")
+                                            span= roundedRating.toFixed(1)
                                 .lp__card-body
                                     .lp__card-head
                                         span.lp__card-name= coach.owner.businessName || coach.owner.fullName
@@ -142,15 +148,21 @@ block content
                                             span.lp__card-verified
                                                 svg(viewBox="0 0 20 20" fill="currentColor" width="14" height="14")
                                                     path(fill-rule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd")
-                                                | Verified
+                                                | Vérifié
                                     .lp__card-meta
                                         if coach.owner.businessType
                                             span= coach.owner.businessType
                                         if coach.owner.location && coach.owner.location.city
                                             span.lp__sep ·
                                             span= coach.owner.location.city
+                                    if coach.reviewCount > 0
+                                        .lp__card-stars
+                                            - for (var s = 1; s <= 5; s++)
+                                                svg(viewBox="0 0 20 20" width="13" height="13" fill=s <= Math.round(coach.avgRating) ? 'currentColor' : 'none' stroke="currentColor" stroke-width="1.5")
+                                                    path(d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z")
+                                            span.lp__card-review-count= `(${coach.reviewCount} avis)`
                                     if coach.owner.description
-                                        p.lp__card-desc= coach.owner.description.length > 120 ? coach.owner.description.slice(0, 120) + '…' : coach.owner.description
+                                        p.lp__card-desc= coach.owner.description.length > 100 ? coach.owner.description.slice(0, 100) + '…' : coach.owner.description
                                 .lp__card-cta
                                     span.lp__book-btn= lp.book_btn
 

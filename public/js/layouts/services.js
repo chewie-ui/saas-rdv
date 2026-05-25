@@ -333,6 +333,85 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // ── Panneau : Gestion catégories (ordre + style) ─────────────────────────
+  const catOrderList      = document.getElementById("catOrderList");
+  const saveCatSettingsBtn = document.getElementById("saveCatSettingsBtn");
+  const catSaveStatus     = document.getElementById("catSaveStatus");
+
+  // Mark active style on load
+  let currentStyle = window.__bookingCategoryStyle || "pills";
+  function updateStyleBtns() {
+    document.querySelectorAll(".cat-style-opt").forEach(btn => {
+      btn.classList.toggle("is-active", btn.dataset.style === currentStyle);
+    });
+  }
+  updateStyleBtns();
+
+  document.querySelectorAll(".cat-style-opt").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentStyle = btn.dataset.style;
+      updateStyleBtns();
+    });
+  });
+
+  // Up/Down reorder buttons
+  if (catOrderList) {
+    catOrderList.addEventListener("click", (e) => {
+      const btn = e.target.closest(".cat-order-btn");
+      if (!btn) return;
+      const item = btn.closest(".cat-order-item");
+      if (!item) return;
+      const dir = btn.dataset.dir;
+      if (dir === "up") {
+        const prev = item.previousElementSibling;
+        if (prev) catOrderList.insertBefore(item, prev);
+      } else {
+        const next = item.nextElementSibling;
+        if (next) catOrderList.insertBefore(next, item);
+      }
+    });
+  }
+
+  if (saveCatSettingsBtn) {
+    saveCatSettingsBtn.addEventListener("click", async () => {
+      // Collect ordered category names → map back to full category objects
+      const cats = window.__categories || [];
+      const orderedNames = [...catOrderList.querySelectorAll(".cat-order-item")].map(li => li.dataset.name);
+      const orderedCats  = orderedNames
+        .map(name => cats.find(c => c.name === name))
+        .filter(Boolean);
+      // Append any categories not in the list (shouldn't happen)
+      cats.forEach(c => { if (!orderedNames.includes(c.name)) orderedCats.push(c); });
+
+      try {
+        // 1. Save category order
+        await fetch("/account/categories", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ categories: orderedCats }),
+        });
+        // 2. Save style
+        await fetch("/account/booking-category-style", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ style: currentStyle }),
+        });
+
+        // Update local state
+        window.__categories = orderedCats;
+        window.__bookingCategoryStyle = currentStyle;
+
+        if (catSaveStatus) {
+          catSaveStatus.textContent = "✓ Enregistré";
+          catSaveStatus.style.color = "#22c55e";
+          setTimeout(() => { catSaveStatus.textContent = ""; }, 2500);
+        }
+      } catch (_) {
+        if (catSaveStatus) { catSaveStatus.textContent = "Erreur"; catSaveStatus.style.color = "#ef4444"; }
+      }
+    });
+  }
+
   // ── Sauvegarder les employés ──────────────────────────────────────────────
   saveEmpBtn.addEventListener("click", async () => {
     if (!currentEmpServiceId) return;

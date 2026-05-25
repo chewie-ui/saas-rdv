@@ -657,6 +657,20 @@ exports.updateCategories = async (req, res) => {
   }
 };
 
+exports.updateBookingCategoryStyle = async (req, res) => {
+  try {
+    const { style } = req.body;
+    const allowed = ["pills", "accordion", "grid"];
+    if (!allowed.includes(style)) return res.json({ success: false });
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: { "calendarSettings.bookingCategoryStyle": style },
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    return res.json({ success: false });
+  }
+};
+
 exports.editCalendarBgImage = async (req, res) => {
   try {
     const { filename } = req.file;

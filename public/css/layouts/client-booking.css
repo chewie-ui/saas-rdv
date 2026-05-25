@@ -1251,7 +1251,9 @@ img { display: block; max-width: 100%; }
 
   .bk-cart__recap { display: none; }
   .bk-cart__sep   { display: none; }
-  .bk-cart { padding: 8px; gap: 8px; }
+  .bk-cart { padding: 8px; gap: 8px; width: 100%; border-radius: 14px; }
+  .bk-cart__next { flex: 1; justify-content: center; padding: 0 12px; }
+  .bk-cart__back { flex-shrink: 0; }
 
   .bk-head__name { font-size: 20px; }
   .bk-cover { width: 58px; height: 58px; }
@@ -1331,6 +1333,54 @@ img { display: block; max-width: 100%; }
 
 .bk-cat-group.is-open .bk-cat-body {
   display: block;
+}
+
+/* ── Category filter pills ──────────────────────────────────────────────── */
+.bk-cat-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.bk-cat-pill {
+  padding: 7px 16px;
+  border-radius: 50px;
+  border: 1.5px solid var(--bk-border, #e5e7eb);
+  background: var(--bk-surface, #fff);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bk-ink, #111);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.bk-cat-pill:hover {
+  background: var(--bk-subtle, #f3f4f6);
+  border-color: var(--bk-accent, #22c55e);
+}
+
+.bk-cat-pill.is-active {
+  background: var(--bk-accent, #22c55e);
+  border-color: var(--bk-accent, #22c55e);
+  color: var(--bk-accent-text, #fff);
+}
+
+/* ── Category grid style (sections with titles) ─────────────────────────── */
+.bk-cat-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.bk-cat-section__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--bk-muted, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 10px;
 }
 
 /* ── Info sections (public page — Treatwell-style) ──────────────────────── */
