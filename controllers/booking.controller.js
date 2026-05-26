@@ -63,9 +63,8 @@ exports.createBookingPaymentIntent = async (req, res) => {
       } catch (_) {}
     }
 
-    // Fallback dev : en développement, on crée un paiement direct (sans transfert)
-    // car le compte de test n'est pas réellement connecté à la plateforme
-    const isDevFallback = process.env.NODE_ENV !== "production" && !connectedAccountId;
+    // En dev : jamais de transfer_data (les comptes test n'ont pas la capacité transfers)
+    const isDevFallback = process.env.NODE_ENV !== "production";
 
     if (!connectedAccountId && process.env.NODE_ENV === "production") {
       return res.status(400).json({
