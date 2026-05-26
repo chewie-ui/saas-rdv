@@ -45,6 +45,36 @@ const companySchema = schema(
         },
       },
     ],
+
+    // ── Pré-paiement ─────────────────────────────────────────────────────────
+    prepayment: {
+      enabled:  { type: Boolean, default: false },
+      required: { type: Boolean, default: false }, // false = client peut choisir
+    },
+
+    // ── Stripe Connect (paiement en ligne) ────────────────────────────────────
+    stripeConnect: {
+      accountId:    { type: String, default: "" },
+      status:       { type: String, enum: ["not_connected", "pending", "active"], default: "not_connected" },
+      accountEmail: { type: String, default: "" },
+    },
+
+    // ── Modes de paiement acceptés (affichés + proposés au client) ────────────
+    acceptedPayments: {
+      cash:       { type: Boolean, default: false },   // espèces sur place
+      cardOnSite: { type: Boolean, default: false },   // CB/TPE sur place
+      bankTransfer: {
+        enabled:  { type: Boolean, default: false },
+        iban:     { type: String,  default: "" },
+        bic:      { type: String,  default: "" },
+        bankName: { type: String,  default: "" },
+        note:     { type: String,  default: "" },      // instructions libres
+      },
+      paypal: {
+        enabled:  { type: Boolean, default: false },
+        paypalMe: { type: String,  default: "" },      // ex: "username" ou "https://paypal.me/username"
+      },
+    },
   },
   { timestamps: true },
 );

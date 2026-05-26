@@ -86,8 +86,13 @@ block content
             .bk-brand__mark B
             span.bk-brand__name BranShee
         .bk-top__right
-            if clientUser
-                a.bk-sign-btn(href="/espace-client") Mon espace
+            if visitorIsAdmin
+                a.bk-sign-btn(href="/appointment") Dashboard
+            else if clientUser
+                a.bk-sign-btn(href="/espace-client")
+                    svg(width="14" height="14" viewBox="0 -960 960 960" fill="currentColor")
+                        path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 129-46.5T480-440q68 0 135 15.5T744-378q29 15 46.5 43.5T808-272v112H160Z")
+                    | Espace client
             else
                 a.bk-sign-btn(href="/client/login") Se connecter
 
@@ -294,12 +299,16 @@ block scripts
             city:        (coach && coach.location && coach.location.city)        ? coach.location.city        : '',
             serviceType: (coach && coach.location && coach.location.serviceType) ? coach.location.serviceType : 'sur_place'
         }
+    if prepaymentConfig && prepaymentConfig.enabled && prepaymentConfig.stripeActive && stripePublishableKey
+        script(src="https://js.stripe.com/v3/")
     script.
         window.__services       = !{servicesJson  || '[]'};
         window.__employees      = !{employeesJson || '[]'};
         window.__companyInfo    = !{JSON.stringify(_companyInfo)};
         window.__categoriesMeta = !{JSON.stringify(cs.categories || [])};
         window.__bookingCategoryStyle = !{JSON.stringify(cs.bookingCategoryStyle || 'pills')};
+        window.__prepayment     = !{JSON.stringify(prepaymentConfig || { enabled: false, required: false })};
+        window.__stripeKey      = '!{stripePublishableKey || ""}';
     if clientUser
         script.
             window.__clientUser = !{JSON.stringify(clientUser)};

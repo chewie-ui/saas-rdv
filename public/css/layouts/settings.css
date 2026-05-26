@@ -210,3 +210,451 @@
 .lang-feedback {
   padding: 0 1.5rem 1rem;
 }
+
+/* ── Pré-paiement settings ────────────────────────────────────────────────── */
+
+.prepayment-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.prepayment-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  transition: opacity .2s;
+}
+
+.prepayment-toggle-row + .prepayment-toggle-row {
+  border-top: 1px solid var(--border-light);
+}
+
+.prepayment-toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.prepayment-toggle-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.prepayment-toggle-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Reuse the same toggle style as superadmin but using admin vars */
+.sa-toggle-wrap {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.sa-toggle-wrap input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.sa-toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--border-light);
+  border-radius: 99px;
+  transition: background .2s;
+  cursor: pointer;
+}
+
+.sa-toggle-track::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 16px;
+  height: 16px;
+  background: var(--text-secondary);
+  border-radius: 50%;
+  transition: transform .2s, background .2s;
+}
+
+.sa-toggle-wrap input:checked + .sa-toggle-track {
+  background: rgba(var(--accent-rgb, 99,102,241), .2);
+}
+
+.sa-toggle-wrap input:checked + .sa-toggle-track::after {
+  transform: translateX(18px);
+  background: var(--accent);
+}
+
+.prepayment-policy-box {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #92400e;
+  margin-top: 14px;
+}
+
+[data-theme="dark"] .prepayment-policy-box {
+  background: rgba(251,191,36,.07);
+  border-color: rgba(251,191,36,.25);
+  color: #fbbf24;
+}
+
+.prepayment-policy-box svg {
+  color: #d97706;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.prepayment-policy-box strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 6px;
+  color: #78350f;
+}
+
+[data-theme="dark"] .prepayment-policy-box strong {
+  color: #fde68a;
+}
+
+.prepayment-policy-box ul {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Stripe Connect block
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.sc-connect-block {
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  background: var(--input-bg, #fafafa);
+}
+
+[data-theme="dark"] .sc-connect-block {
+  background: rgba(255,255,255,.03);
+  border-color: rgba(255,255,255,.09);
+}
+
+.sc-connect-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary, #111);
+  margin-bottom: 14px;
+}
+
+.sc-connect-header svg { color: var(--accent, #22c55e); flex-shrink: 0; }
+
+/* ── Banners ── */
+.sc-success-banner,
+.sc-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.sc-success-banner {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.sc-error-banner {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* ── Connected state ── */
+.sc-connected-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sc-connected-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.sc-connected-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sc-connected-email {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary, #111);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-connected-id {
+  font-size: 11px;
+  color: var(--text-secondary, #6b7280);
+  font-family: ui-monospace, monospace;
+}
+
+/* ── Not connected state ── */
+.sc-not-connected {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sc-not-connected-desc {
+  font-size: 13.5px;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ── Locked state when no Stripe account ── */
+.prepayment-row--locked {
+  opacity: 1;
+}
+
+.prepayment-toggle-row--disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.prepayment-locked-notice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--text-secondary, #6b7280);
+  background: var(--subtle, #f3f4f6);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin-bottom: 12px;
+}
+
+.prepayment-locked-notice svg { flex-shrink: 0; color: var(--text-secondary, #9ca3af); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Payment methods grid (settings)
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.pm-methods-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+/* Expandable row wrapper */
+.pm-method-expandable {
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface, #fff);
+}
+
+.pm-method-expandable .pm-method-row--top {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.pm-method-expand-body {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border, #e5e7eb);
+  background: var(--input-bg, #fafafa);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+[data-theme="dark"] .pm-method-expand-body {
+  background: rgba(255,255,255,.03);
+}
+
+/* Sub-toggle inside expand body */
+.prepayment-toggle-row--sub {
+  padding: 10px 0;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+
+/* Smaller policy box inside expand */
+.prepayment-policy-box--sm {
+  font-size: 12px;
+  padding: 10px 12px;
+}
+
+.prepayment-policy-box--sm strong {
+  font-size: 10.5px;
+}
+
+/* Inline Stripe Connect inside expand */
+.sc-connect-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sc-not-connected-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sc-not-connected-inline .sc-not-connected-desc {
+  font-size: 12.5px;
+  color: var(--text-secondary, #6b7280);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.sc-manual-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sc-manual-form .input {
+  flex: 1;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  height: 36px;
+}
+
+/* Prefix label inside manual form (e.g. "paypal.me/") */
+.sc-manual-prefix {
+  font-size: 13px;
+  color: var(--muted, #6b7280);
+  white-space: nowrap;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.pm-method-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border, #e5e7eb);
+  background: var(--surface, #fff);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+
+.pm-method-row:hover {
+  border-color: var(--accent, #22c55e);
+  background: rgba(34,197,94,.04);
+}
+
+.pm-method-row input[type="checkbox"] {
+  accent-color: var(--accent, #22c55e);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.pm-method-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.pm-method-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.pm-method-info > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pm-method-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary, #111);
+}
+
+.pm-method-sub {
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+}
+
+/* IBAN fields grid */
+.pm-iban-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--input-bg, #fafafa);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  margin-top: 4px;
+}
+
+.pm-iban-grid .field {
+  margin-bottom: 0;
+}
+
+.pm-iban-grid .field:last-child,
+.pm-iban-grid .field:nth-last-child(1):nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 600px) {
+  .pm-iban-grid { grid-template-columns: 1fr; }
+}

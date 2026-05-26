@@ -29,6 +29,15 @@ block content
                     else
                         button.sm-btn.sm-btn--ghost.appointment-action(data-link=`/appointment/${client._id}/restore` data-method="PATCH" disabled=(grade === 'staff' || isPast))#restoreAppointment= t.book_detail.restore
 
+                    -
+                        var hasCard = client.payment && client.payment.method === 'online' && client.payment.status === 'card_saved' && client.payment.stripePaymentMethodId
+                    if hasCard && isPast
+                        button.sm-btn.sm-btn--danger#chargeNoShowBtn(type="button" data-id=String(client._id) data-amount=(client.payment.amount || 0))
+                            svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                rect(x="1" y="4" width="22" height="16" rx="2")
+                                line(x1="1" y1="10" x2="23" y2="10")
+                            span Encaisser absence (#{client.payment.amount}€)
+
             .appointment-header__bottom.flex.col
                 .appointment-header__bottom-col.flex.col
                     .appointment-header__bottom-col-element.flex
@@ -184,6 +193,34 @@ block scripts
                     if (data.success) {
                         empSavedMsg.style.display = 'inline';
                         setTimeout(() => { empSavedMsg.style.display = 'none'; }, 2500);
+                    }
+                });
+            }
+
+            // ── Charge no-show ────────────────────────────────────────────────
+            const noShowBtn = document.getElementById('chargeNoShowBtn');
+            if (noShowBtn) {
+                noShowBtn.addEventListener('click', async () => {
+                    const amount = noShowBtn.dataset.amount;
+                    if (!confirm(`Encaisser ${amount}€ pour absence non annulée ?`)) return;
+                    noShowBtn.disabled = true;
+                    noShowBtn.querySelector('span').textContent = 'Traitement…';
+                    try {
+                        const res  = await fetch(`/appointment/${bookId}/charge-noshow`, { method: 'PATCH' });
+                        const data = await res.json();
+                        if (data.success) {
+                            noShowBtn.querySelector('span').textContent = `✓ ${data.chargedAmount}€ encaissés`;
+                            noShowBtn.style.background = 'rgba(34,197,94,.12)';
+                            noShowBtn.style.color = '#16a34a';
+                            noShowBtn.style.borderColor = 'rgba(34,197,94,.3)';
+                        } else {
+                            alert(data.error || 'Erreur lors du prélèvement.');
+                            noShowBtn.disabled = false;
+                            noShowBtn.querySelector('span').textContent = `Encaisser absence (${amount}€)`;
+                        }
+                    } catch(e) {
+                        alert('Erreur réseau.');
+                        noShowBtn.disabled = false;
                     }
                 });
             }

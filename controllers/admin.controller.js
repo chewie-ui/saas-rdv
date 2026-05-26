@@ -810,6 +810,12 @@ exports.settingsInit = async (req, res) => {
     stripePublishableKey: env.stripePublishableKey || "",
     twoFAEnabled,
     currentLang,
+    // Stripe Connect
+    stripeConnect: res.locals.currentCompany?.stripeConnect || { status: "not_connected", accountId: "", accountEmail: "" },
+    acceptedPayments: res.locals.currentCompany?.acceptedPayments || {},
+    stripeConnectClientId: env.stripeConnectClientId || "",
+    stripeConnectSuccess:  req.query.stripeConnectSuccess === "1",
+    stripeConnectError:    req.query.stripeConnectError   || null,
   });
 };
 
@@ -1154,4 +1160,184 @@ exports.customizeCalendarPage = async (req, res) => {
     canUseSocial,
     canUseCustomUrl,
   });
+};
+
+// ── Paramètres pré-paiement ───────────────────────────────────────────────────
+exports.savePrepaymentSettings = async (req, res) => {
+  try {
+    const { enabled, required, cash, cardOnSite,
+            bankTransferEnabled, iban, bic, bankName, bankNote,
+            paypalEnabled, paypalMe } = req.body;
+    const companyId = res.locals.currentCompany._id;
+    await Company.findByIdAndUpdate(companyId, {
+      "prepayment.enabled":  !!enabled,
+      "prepayment.required": !!required,
+      // Modes de paiement acceptés
+      "acceptedPayments.cash":                  !!cash,
+      "acceptedPayments.cardOnSite":            !!cardOnSite,
+      "acceptedPayments.bankTransfer.enabled":  !!bankTransferEnabled,
+      "acceptedPayments.bankTransfer.iban":     (iban     || "").trim().replace(/\s/g, ""),
+      "acceptedPayments.bankTransfer.bic":      (bic      || "").trim().toUpperCase(),
+      "acceptedPayments.bankTransfer.bankName": (bankName || "").trim(),
+      "acceptedPayments.bankTransfer.note":     (bankNote || "").trim(),
+      "acceptedPayments.paypal.enabled":        !!paypalEnabled,
+      "acceptedPayments.paypal.paypalMe":       (paypalMe || "").trim().replace(/^https?:\/\/paypal\.me\//i, ""),
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("savePrepaymentSettings error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Stripe Connect (Express — onboarding hébergé par Stripe) ─────────────────
+
+/**
+ * Démarre l'onboarding Express :
+ *   1. Crée un compte Express Stripe (ou réutilise un compte "pending" existant)
+ *   2. Génère un lien d'onboarding hébergé par Stripe
+ *   3. Redirige l'admin vers ce lien
+ * → Aucun ca_xxx / STRIPE_CONNECT_CLIENT_ID requis.
+ */
+exports.initiateStripeConnect = async (req, res) => {
+  try {
+    const baseUrl   = env.appBaseUrl || "https://www.branshee.com";
+    const companyId = res.locals.currentCompany._id.toString();
+
+    // ── 1. Compte Express : réutiliser si "pending", sinon créer ─────────────
+    let accountId = res.locals.currentCompany?.stripeConnect?.accountId;
+    const currentStatus = res.locals.currentCompany?.stripeConnect?.status;
+
+    if (!accountId || currentStatus === "not_connected") {
+      const account = await stripe.accounts.create({
+        type: "express",
+        capabilities: {
+          card_payments: { requested: true },
+          transfers:     { requested: true },
+        },
+        metadata: { companyId },
+        ...(req.user?.email && { email: req.user.email }),
+      });
+      accountId = account.id;
+
+      // Sauvegarder le compte en attente
+      await Company.findByIdAndUpdate(companyId, {
+        "stripeConnect.accountId":    accountId,
+        "stripeConnect.status":       "pending",
+        "stripeConnect.accountEmail": req.user?.email || "",
+      });
+    }
+
+    // ── 2. Générer le lien d'onboarding ──────────────────────────────────────
+    const accountLink = await stripe.accountLinks.create({
+      account:     accountId,
+      refresh_url: `${baseUrl}/settings/stripe-connect/refresh?accountId=${accountId}`,
+      return_url:  `${baseUrl}/settings/stripe-connect/return?accountId=${accountId}`,
+      type:        "account_onboarding",
+    });
+
+    return res.redirect(accountLink.url);
+  } catch (err) {
+    console.error("initiateStripeConnect (Express) error:", err);
+    return res.redirect("/settings?stripeConnectError=init");
+  }
+};
+
+/**
+ * Retour après onboarding Stripe Express.
+ * Stripe redirige ici même si l'onboarding n'est pas terminé —
+ * on vérifie details_submitted pour savoir si c'est complet.
+ */
+exports.stripeConnectReturn = async (req, res) => {
+  const { accountId } = req.query;
+  if (!accountId) return res.redirect("/settings?stripeConnectError=missing_account");
+
+  try {
+    const account = await stripe.accounts.retrieve(accountId);
+    const isComplete = !!(account.details_submitted);
+    const email = account.email || account.business_profile?.support_email || "";
+
+    const company = await Company.findOne({ "stripeConnect.accountId": accountId });
+    if (!company) return res.redirect("/settings?stripeConnectError=not_found");
+
+    await Company.findByIdAndUpdate(company._id, {
+      "stripeConnect.status":       isComplete ? "active" : "pending",
+      "stripeConnect.accountEmail": email,
+    });
+
+    if (isComplete) {
+      return res.redirect("/settings?stripeConnectSuccess=1");
+    } else {
+      // Onboarding non terminé — on peut lui proposer de continuer
+      return res.redirect("/settings?stripeConnectError=incomplete");
+    }
+  } catch (err) {
+    console.error("stripeConnectReturn error:", err);
+    return res.redirect(`/settings?stripeConnectError=${encodeURIComponent(err.message || "return_error")}`);
+  }
+};
+
+/**
+ * Refresh : le lien d'onboarding a expiré — on en régénère un.
+ */
+exports.stripeConnectRefresh = async (req, res) => {
+  const { accountId } = req.query;
+  if (!accountId) return res.redirect("/settings?stripeConnectError=refresh");
+
+  try {
+    const baseUrl = env.appBaseUrl || "https://www.branshee.com";
+    const accountLink = await stripe.accountLinks.create({
+      account:     accountId,
+      refresh_url: `${baseUrl}/settings/stripe-connect/refresh?accountId=${accountId}`,
+      return_url:  `${baseUrl}/settings/stripe-connect/return?accountId=${accountId}`,
+      type:        "account_onboarding",
+    });
+    return res.redirect(accountLink.url);
+  } catch (err) {
+    console.error("stripeConnectRefresh error:", err);
+    return res.redirect("/settings?stripeConnectError=refresh");
+  }
+};
+
+/** Déconnecte le compte Stripe Connect (supprime la liaison en DB) */
+exports.disconnectStripeConnect = async (req, res) => {
+  try {
+    const company = res.locals.currentCompany;
+    await Company.findByIdAndUpdate(company._id, {
+      "stripeConnect.accountId":    "",
+      "stripeConnect.status":       "not_connected",
+      "stripeConnect.accountEmail": "",
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("disconnectStripeConnect error:", err);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+/** Sauvegarde manuelle d'un compte Stripe (acct_xxx) — fallback pour les pros qui ont déjà un compte */
+exports.saveStripeAccountManual = async (req, res) => {
+  try {
+    const { accountId } = req.body;
+    if (!accountId || !accountId.startsWith("acct_")) {
+      return res.status(400).json({ error: "Identifiant invalide. Il doit commencer par acct_" });
+    }
+    let accountEmail = "";
+    try {
+      const account = await stripe.accounts.retrieve(accountId);
+      accountEmail = account.email || account.business_profile?.support_email || "";
+    } catch (_) {
+      return res.status(400).json({ error: "Compte Stripe introuvable." });
+    }
+    const companyId = res.locals.currentCompany._id;
+    await Company.findByIdAndUpdate(companyId, {
+      "stripeConnect.accountId":    accountId,
+      "stripeConnect.status":       "active",
+      "stripeConnect.accountEmail": accountEmail,
+    });
+    return res.json({ success: true, accountEmail });
+  } catch (err) {
+    console.error("saveStripeAccountManual error:", err);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
 };

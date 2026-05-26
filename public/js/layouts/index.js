@@ -1,13 +1,24 @@
 /* ============================================================
    BranShee — Client Booking Wizard
-   Step flow: Service? → Employee? → Time → Details → Confirm
+   Step flow: Service? → Employee? → Time → Details → Payment? → Confirm
    All API calls preserved from the original implementation.
    ============================================================ */
 
-const __t       = window.__t        || {};
-const SERVICES  = window.__services  || [];
-const EMPLOYEES = window.__employees || [];
-const CLIENT    = window.__clientUser || null; // { firstName, lastName, email, phone }
+const __t        = window.__t        || {};
+const SERVICES   = window.__services  || [];
+const EMPLOYEES  = window.__employees || [];
+const CLIENT     = window.__clientUser || null; // { firstName, lastName, email, phone }
+const PREPAYMENT = window.__prepayment || { enabled: false, required: false };
+const STRIPE_KEY = window.__stripeKey  || "";
+
+/* ── Stripe instances (lazy) ─────────────────────────────────────────────── */
+let _stripe      = null;   // Stripe.js instance
+let _cardElement = null;   // CardElement mounted in the payment step
+
+function getStripe() {
+  if (!_stripe && STRIPE_KEY && window.Stripe) _stripe = window.Stripe(STRIPE_KEY);
+  return _stripe;
+}
 
 /* ── State ──────────────────────────────────────────────────────────────── */
 const STATE = {
@@ -29,6 +40,10 @@ const STATE = {
   loading:     false,
   _openCat:    null,  // currently expanded category (null = all closed)
   _activeCat:  null,  // active category filter pill (null = "Tous")
+  // ── Payment state ────────────────────────────────────────────────────────
+  paymentMethod:        null,   // "online" | "on_site"
+  stripePaymentIntentId: null,  // set after confirmCardPayment succeeds
+  paymentError:         null,
 };
 
 /* ── DOM refs ───────────────────────────────────────────────────────────── */
@@ -37,12 +52,20 @@ const pane    = document.getElementById("bkPane");
 const cart    = document.getElementById("bkCart");
 
 /* ── Steps ──────────────────────────────────────────────────────────────── */
+function needsPaymentStep() {
+  if (!PREPAYMENT.enabled) return false;
+  // Only show payment step if the selected service has a price > 0
+  const price = STATE.service?.price;
+  return price !== null && price !== undefined && Number(price) > 0;
+}
+
 function buildSteps() {
   const steps = [];
   if (SERVICES.length > 0)  steps.push({ id: "service",  label: "Service" });
   if (EMPLOYEES.length > 0 || hasAnyServiceEmployees()) steps.push({ id: "employee", label: "Avec" });
   steps.push({ id: "time",    label: "Créneau" });
   steps.push({ id: "details", label: "Détails" });
+  if (needsPaymentStep())     steps.push({ id: "payment",  label: "Paiement" });
   steps.push({ id: "confirm", label: "Confirmer" });
   return steps;
 }
@@ -73,6 +96,7 @@ function recomputeSteps() {
   if (showEmployeeStep)     steps.push({ id: "employee", label: "Avec" });
   steps.push({ id: "time",    label: "Créneau" });
   steps.push({ id: "details", label: "Détails" });
+  if (needsPaymentStep())   steps.push({ id: "payment",  label: "Paiement" });
   steps.push({ id: "confirm", label: "Confirmer" });
   STEPS = steps;
 }
@@ -99,17 +123,30 @@ function renderCart() {
   if (STATE.employee) recap.push({ k: "Avec",    v: STATE.employee.name });
   if (STATE.date)     recap.push({ k: "Quand",   v: fmtDate(STATE.date) + (STATE.time ? " · " + STATE.time : "") });
 
+  const detailsOk = CLIENT
+    ? !!(CLIENT.firstName && CLIENT.email)
+    : !!(STATE.form.firstName && STATE.form.lastName && STATE.form.email);
+
+  // Payment step: active as soon as any method is chosen.
+  const paymentOk =
+    STATE.paymentMethod === "on_site"       ||
+    STATE.paymentMethod === "online"        ||
+    STATE.paymentMethod === "paypal"        ||
+    STATE.paymentMethod === "bank_transfer";
+
   const canNext =
     (sid === "service"  && STATE.service) ||
-    (sid === "employee" && STATE.employee !== undefined) || // null = "no pref"
+    (sid === "employee" && STATE.employee !== undefined) ||
     (sid === "time"     && STATE.date && STATE.time) ||
-    // When logged in we trust CLIENT data; when guest require the 3 key fields
-    (sid === "details"  && (CLIENT
-      ? !!(CLIENT.firstName && CLIENT.email)
-      : !!(STATE.form.firstName && STATE.form.lastName && STATE.form.email)));
+    (sid === "details"  && detailsOk) ||
+    (sid === "payment"  && paymentOk);
 
+  const isPayment = sid === "payment";
   const isDetails = sid === "details";
-  const nextLabel = isDetails ? "Confirmer la réservation" : "Continuer";
+  let nextLabel = "Continuer";
+  if (isDetails && !needsPaymentStep()) nextLabel = "Confirmer la réservation";
+  if (isDetails &&  needsPaymentStep()) nextLabel = "Continuer";
+  if (isPayment) nextLabel = STATE.paymentMethod === "online" ? "Confirmer et payer" : "Confirmer la réservation →";
 
   const showBack = stepIdx > 0;
 
@@ -144,7 +181,23 @@ function advanceStep() {
   const sid = stepId();
 
   if (sid === "details") {
-    submitBooking();
+    // Always collect form answers here while the details pane is still in the DOM.
+    // If we proceed to the payment step, the pane will be replaced and answers
+    // would be lost if collected later.
+    STATE.formAnswers = collectFormAnswers();
+
+    if (!needsPaymentStep()) {
+      submitBooking();
+      return;
+    }
+    // Advance to payment step
+    stepIdx = Math.min(stepIdx + 1, STEPS.length - 1);
+    render();
+    return;
+  }
+
+  if (sid === "payment") {
+    submitBookingWithPayment();
     return;
   }
 
@@ -166,10 +219,11 @@ function goToStep(id) {
 function render() {
   renderStepper();
   const sid = stepId();
-  if (sid === "service")  renderServicePane();
+  if (sid === "service")       renderServicePane();
   else if (sid === "employee") renderEmployeePane();
   else if (sid === "time")     renderTimePane();
   else if (sid === "details")  renderDetailsPane();
+  else if (sid === "payment")  renderPaymentPane();
   else if (sid === "confirm")  renderConfirmPane();
   renderCart();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -918,12 +972,328 @@ function validateDetails() {
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
+   PAYMENT STEP
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function renderPaymentPane() {
+  const pane = document.getElementById("bkPane");
+  const price      = STATE.service?.price;
+  const priceLabel = price !== null && price !== undefined ? `${Number(price).toFixed(2)} €` : "";
+  const isRequired = PREPAYMENT.required;
+
+  // Build the list of available payment methods from admin config
+  const methods = [];
+  if (PREPAYMENT.stripeActive && STRIPE_KEY) {
+    methods.push("online");
+  }
+  if (PREPAYMENT.paypal && PREPAYMENT.paypalMe) {
+    methods.push("paypal");
+  }
+  if (PREPAYMENT.bankTransfer) {
+    methods.push("bank_transfer");
+  }
+  if (PREPAYMENT.cash || PREPAYMENT.cardOnSite) {
+    methods.push("on_site");
+  }
+
+  // If required and only Stripe available → force online
+  if (isRequired && methods.includes("online") && STATE.paymentMethod !== "online") {
+    STATE.paymentMethod = "online";
+  }
+  // Auto-select if only one method available and nothing selected yet
+  if (!STATE.paymentMethod && methods.length === 1) {
+    STATE.paymentMethod = methods[0];
+  }
+
+  // Reset Stripe card element when re-rendering
+  _cardElement = null;
+
+  // ── Build choice buttons ────────────────────────────────────────────────────
+  const checkSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+  function choiceBtn(id, method, icon, label, sub) {
+    const active = STATE.paymentMethod === method;
+    return `
+      <button class="bk-pay-choice ${active ? "bk-pay-choice--active" : ""}" id="${id}">
+        <span class="bk-pay-choice__icon">${icon}</span>
+        <div>
+          <span class="bk-pay-choice__label">${label}</span>
+          <span class="bk-pay-choice__sub">${sub}</span>
+        </div>
+        <div class="bk-pay-choice__check">${active ? checkSvg : ""}</div>
+      </button>`;
+  }
+
+  let choicesHtml = "";
+  if (!isRequired || methods.length > 1) {
+    const onSiteSub = [PREPAYMENT.cash && "espèces", PREPAYMENT.cardOnSite && "CB sur place"].filter(Boolean).join(" · ") || "sur place";
+    if (methods.includes("online"))
+      choicesHtml += choiceBtn("payChoiceOnline", "online", "💳",
+        "Payer maintenant par carte", "Sécurisé via Stripe · Paiement immédiat");
+    if (methods.includes("paypal"))
+      choicesHtml += choiceBtn("payChoicePaypal", "paypal", "🅿️",
+        "PayPal", "Un lien de paiement vous sera envoyé");
+    if (methods.includes("bank_transfer"))
+      choicesHtml += choiceBtn("payChoiceBankTransfer", "bank_transfer", "🏦",
+        "Virement bancaire", "Coordonnées affichées après confirmation");
+    if (methods.includes("on_site"))
+      choicesHtml += choiceBtn("payChoiceOnSite", "on_site", "🏪",
+        "Payer sur place", onSiteSub);
+  }
+
+  // ── PayPal block ────────────────────────────────────────────────────────────
+  const paypalAmount = price ? Number(price).toFixed(2) : "";
+  const paypalLink   = PREPAYMENT.paypalMe
+    ? `https://paypal.me/${PREPAYMENT.paypalMe}${paypalAmount ? "/" + paypalAmount : ""}`
+    : "";
+  const paypalBlock = STATE.paymentMethod === "paypal" && paypalLink ? `
+    <div class="bk-iban-block">
+      <div class="bk-iban-header">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Paiement PayPal
+      </div>
+      <div class="bk-iban-grid">
+        <div class="bk-iban-row"><span>Montant</span><strong>${paypalAmount ? paypalAmount + " €" : "–"}</strong></div>
+      </div>
+      <p style="font-size:12px;color:var(--muted,#6b7280);margin:8px 0 10px">
+        Cliquez sur le bouton ci-dessous après confirmation de votre rendez-vous pour effectuer le paiement.
+      </p>
+      <a class="bk-paypal-btn" href="${paypalLink}" target="_blank" rel="noopener noreferrer">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:-2px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Payer ${paypalAmount ? paypalAmount + " €" : ""} via PayPal
+      </a>
+    </div>` : "";
+
+  // ── IBAN details block ──────────────────────────────────────────────────────
+  const bd = PREPAYMENT.bankDetails || {};
+  const ibanBlock = STATE.paymentMethod === "bank_transfer" ? `
+    <div class="bk-iban-block">
+      <div class="bk-iban-header">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Coordonnées bancaires
+      </div>
+      <div class="bk-iban-grid">
+        ${bd.iban     ? `<div class="bk-iban-row"><span>IBAN</span><strong>${bd.iban}</strong></div>` : ""}
+        ${bd.bic      ? `<div class="bk-iban-row"><span>BIC</span><strong>${bd.bic}</strong></div>` : ""}
+        ${bd.bankName ? `<div class="bk-iban-row"><span>Banque</span><strong>${bd.bankName}</strong></div>` : ""}
+        ${bd.note     ? `<div class="bk-iban-note">${bd.note}</div>` : ""}
+      </div>
+    </div>` : "";
+
+  // ── Stripe card block ───────────────────────────────────────────────────────
+  const stripeBlock = STATE.paymentMethod === "online" ? `
+    <div id="bkCardWrap">
+      <div class="bk-card-label">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Informations de carte
+      </div>
+      <div id="bkStripeCard" class="bk-stripe-card-el"></div>
+      <div id="bkCardError" class="bk-card-error" style="display:none"></div>
+    </div>` : "";
+
+  // ── Required badge (if only stripe and mandatory) ──────────────────────────
+  const requiredBadge = isRequired && methods.length <= 1 ? `
+    <div class="bk-pay-required-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Paiement obligatoire pour cette réservation
+    </div>` : "";
+
+  // ── Cancel policy (Stripe only) ─────────────────────────────────────────────
+  const cancelPolicy = STATE.paymentMethod === "online" ? `
+    <div class="bk-cancel-policy">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <div>
+        <strong>Politique d'annulation</strong>
+        <ul>
+          <li>Annulation <strong>&gt; 24h</strong> : remboursement complet</li>
+          <li>Annulation <strong>&lt; 24h</strong> : 50 % prélevés</li>
+          <li>Absence sans annulation : 100 % prélevés</li>
+        </ul>
+      </div>
+    </div>` : "";
+
+  pane.innerHTML = `
+    <div class="bk-payment-step">
+      <div class="bk-payment-header">
+        <div class="bk-payment-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+            <line x1="1" y1="10" x2="23" y2="10"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="bk-payment-title">Mode de paiement</h3>
+          ${priceLabel ? `<p class="bk-payment-amount">Montant : <strong>${priceLabel}</strong></p>` : ""}
+        </div>
+      </div>
+      ${requiredBadge}
+      ${choicesHtml ? `<div class="bk-pay-choices">${choicesHtml}</div>` : ""}
+      ${stripeBlock}
+      ${paypalBlock}
+      ${ibanBlock}
+      ${cancelPolicy}
+    </div>
+  `;
+
+  // Mount Stripe card if needed
+  if (STATE.paymentMethod === "online") {
+    mountStripeCard();
+  }
+
+  // Wire choice buttons
+  document.getElementById("payChoiceOnline")?.addEventListener("click", () => selectPayMethod("online"));
+  document.getElementById("payChoicePaypal")?.addEventListener("click", () => selectPayMethod("paypal"));
+  document.getElementById("payChoiceOnSite")?.addEventListener("click", () => selectPayMethod("on_site"));
+  document.getElementById("payChoiceBankTransfer")?.addEventListener("click", () => selectPayMethod("bank_transfer"));
+}
+
+function selectPayMethod(method) {
+  if (method !== "online") {
+    STATE.stripePaymentIntentId = null;
+    if (_cardElement) { _cardElement.unmount(); _cardElement = null; }
+  }
+  STATE.paymentMethod = method;
+  STATE.paymentError  = null;
+  renderPaymentPane();
+  renderCart();
+}
+
+function mountStripeCard() {
+  const s = getStripe();
+  if (!s) { console.warn("Stripe.js not loaded"); return; }
+  const container = document.getElementById("bkStripeCard");
+  if (!container) return;
+
+  if (_cardElement) { _cardElement.unmount(); _cardElement = null; }
+
+  const elements  = s.elements({ locale: "fr" });
+  _cardElement    = elements.create("card", {
+    style: {
+      base: {
+        fontSize:    "15px",
+        color:       getComputedStyle(document.documentElement).getPropertyValue("--text-primary") || "#111",
+        fontFamily:  "'Plus Jakarta Sans', sans-serif",
+        "::placeholder": { color: "#aab" },
+      },
+      invalid: { color: "#ef4444" },
+    },
+    hidePostalCode: true,
+  });
+  _cardElement.mount(container);
+
+  _cardElement.on("change", (e) => {
+    const errEl = document.getElementById("bkCardError");
+    if (e.error && errEl) {
+      errEl.textContent = e.error.message;
+      errEl.style.display = "block";
+    } else if (errEl) {
+      errEl.style.display = "none";
+    }
+    if (STATE.stripePaymentIntentId) {
+      STATE.stripePaymentIntentId = null;
+    }
+  });
+}
+
+/* ── Payment submit (called when "Confirmer et payer" is clicked) ─────────── */
+async function submitBookingWithPayment() {
+  // On-site, bank transfer or paypal → just confirm booking, no card charge needed
+  if (STATE.paymentMethod === "on_site" || STATE.paymentMethod === "bank_transfer" || STATE.paymentMethod === "paypal") {
+    submitBooking();
+    return;
+  }
+
+  // method === "online"
+  const nextBtn = document.getElementById("cartNext");
+  const resetBtn = () => {
+    if (nextBtn) { nextBtn.disabled = false; nextBtn.textContent = "Confirmer et payer"; }
+  };
+
+  if (nextBtn) { nextBtn.disabled = true; nextBtn.textContent = "Vérification de la carte…"; }
+
+  // Guard: Stripe must be loaded
+  const s = getStripe();
+  if (!s) {
+    const errEl = document.getElementById("bkCardError");
+    if (errEl) { errEl.textContent = "Stripe non chargé. Rechargez la page."; errEl.style.display = "block"; }
+    resetBtn();
+    return;
+  }
+  if (!_cardElement) {
+    const errEl = document.getElementById("bkCardError");
+    if (errEl) { errEl.textContent = "Formulaire de carte introuvable. Rechargez la page."; errEl.style.display = "block"; }
+    resetBtn();
+    return;
+  }
+
+  try {
+    const email = CLIENT?.email || STATE.form.email;
+    const name  = CLIENT
+      ? `${CLIENT.firstName} ${CLIENT.lastName}`.trim()
+      : `${STATE.form.firstName} ${STATE.form.lastName}`.trim();
+
+    // 1. Create PaymentIntent on server (amount = service price)
+    if (nextBtn) nextBtn.textContent = "Connexion sécurisée…";
+    const amountEur   = STATE.service?.price || 0;
+    const serviceName = STATE.service?.name  || "";
+    const intentRes = await fetch("/api/booking/payment-intent", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ email, name, amountEur, currency: "eur", companyId: COMPANY_ID, serviceName }),
+    });
+    const intentData = await intentRes.json().catch(() => ({}));
+    if (!intentRes.ok) throw new Error(intentData.message || intentData.error || `Erreur serveur (${intentRes.status}).`);
+    if (!intentData.clientSecret) throw new Error(intentData.error || "Erreur Stripe.");
+
+    // 2. Confirm card payment with Stripe.js (charges the card immediately)
+    if (nextBtn) nextBtn.textContent = "Validation du paiement…";
+    const { paymentIntent, error } = await s.confirmCardPayment(intentData.clientSecret, {
+      payment_method: {
+        card: _cardElement,
+        billing_details: { name, email },
+      },
+    });
+
+    if (error) {
+      const errEl = document.getElementById("bkCardError");
+      if (errEl) { errEl.textContent = error.message; errEl.style.display = "block"; }
+      resetBtn();
+      return;
+    }
+
+    if (paymentIntent.status !== "succeeded") {
+      const errEl = document.getElementById("bkCardError");
+      if (errEl) { errEl.textContent = "Paiement non confirmé. Veuillez réessayer."; errEl.style.display = "block"; }
+      resetBtn();
+      return;
+    }
+
+    // Payment succeeded → store intentId in state
+    STATE.stripePaymentIntentId = paymentIntent.id;
+
+    // 3. Submit the booking
+    await submitBooking();
+
+  } catch (err) {
+    console.error("submitBookingWithPayment:", err);
+    const errEl = document.getElementById("bkCardError");
+    if (errEl) { errEl.textContent = err.message || "Erreur. Veuillez réessayer."; errEl.style.display = "block"; }
+    resetBtn();
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
    BOOKING SUBMIT
    ═══════════════════════════════════════════════════════════════════════════ */
 async function submitBooking() {
   if (!validateDetails()) return;
 
-  STATE.formAnswers = collectFormAnswers();
+  // Collect form answers only if the details pane is still in the DOM
+  // (i.e., we came directly from details, not from the payment step where
+  //  answers were already collected in advanceStep()).
+  if (pane.querySelector(".bk-question")) {
+    STATE.formAnswers = collectFormAnswers();
+  }
 
   // Sync form values (client may be logged in → use CLIENT object)
   const firstName = CLIENT ? CLIENT.firstName : STATE.form.firstName;
@@ -953,8 +1323,12 @@ async function submitBooking() {
         serviceId:       STATE.service  ? STATE.service.id       : null,
         serviceName:     STATE.service  ? STATE.service.name     : null,
         serviceDuration: STATE.service  ? STATE.service.duration : null,
+        servicePrice:    STATE.service  ? STATE.service.price    : null,
         employeeId:      STATE.employee ? STATE.employee.id      : null,
         employeeName:    STATE.employee ? STATE.employee.name    : null,
+        // ── Payment ──────────────────────────────────────────────────────────
+        paymentMethod:          STATE.paymentMethod          || "none",
+        stripePaymentIntentId:  STATE.stripePaymentIntentId  || null,
       }),
     });
 

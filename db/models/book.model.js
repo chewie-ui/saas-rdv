@@ -100,6 +100,17 @@ const bookingSchema = new schema(
       type: String,
       default: "",
     },
+
+    // ── Paiement ──────────────────────────────────────────────────────────────
+    payment: {
+      method:   { type: String, enum: ["online", "on_site", "bank_transfer", "paypal", "none"], default: "none" },
+      // status: paid = captured, refunded = full refund, partial = 50% kept, none = on_site/no payment
+      status:   { type: String, enum: ["none", "paid", "refunded", "partial", "failed"], default: "none" },
+      stripePaymentIntentId: { type: String, default: "" },
+      amount:   { type: Number, default: 0 },  // in euros
+      currency: { type: String, default: "eur" },
+      paidAt:   { type: Date,   default: null },
+    },
   },
   { timestamps: true },
 );

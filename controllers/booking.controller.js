@@ -1,21 +1,145 @@
-const Booking = require("../db/models/book.model");
-const User = require("../db/models/user.model");
-const Company = require("../db/models/company/company.model");
+const Booking  = require("../db/models/book.model");
+const User     = require("../db/models/user.model");
+const Company  = require("../db/models/company/company.model");
 const Employee = require("../db/models/company/employee.model");
 const { addEventToCalendar, deleteEventFromCalendar } = require("../utils/googleCalendarSync");
-const DaysOff = require("../db/models/company/daysOff.model");
+const DaysOff  = require("../db/models/company/daysOff.model");
 const { getAppointments } = require("../queries/booking.queries");
-const pug = require("pug");
+const pug  = require("pug");
 const path = require("path");
 const { getLimit, atLeast } = require("../utils/planLimits");
-
 const { sendEmail } = require("../utils/mailer");
 const { log } = require("console");
+
+const Stripe = require("stripe");
+const _env = require(`../environment/${process.env.NODE_ENV || "development"}`);
+const _stripeKey = _env.stripeSecretKey || process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY_LOCAL || "";
+const stripe = _stripeKey ? new Stripe(_stripeKey) : null;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Convert EUR float → integer cents for Stripe */
+const toCents = (eur) => Math.round(Number(eur) * 100);
+
+/** Hours between now and a booking date+time string */
+function hoursUntil(bookingDate, startTime) {
+  const [h, m] = startTime.split(":").map(Number);
+  const dt = new Date(bookingDate);
+  dt.setHours(h, m, 0, 0);
+  return (dt - Date.now()) / 3_600_000;
+}
+
+// ── Stripe: create PaymentIntent for booking (immediate charge) ───────────────
+exports.createBookingPaymentIntent = async (req, res) => {
+  try {
+    if (!stripe) return res.status(500).json({ error: "Stripe non configuré." });
+    const { email, name, amountEur, currency, companyId, serviceName } = req.body;
+    if (!email)      return res.status(400).json({ error: "Email requis." });
+    if (!amountEur || Number(amountEur) <= 0) {
+      return res.status(400).json({ error: "Montant invalide." });
+    }
+
+    const amountCents = toCents(amountEur);
+    if (amountCents < 50) return res.status(400).json({ error: "Montant minimum 0.50 €." });
+
+    // ── Récupérer le compte Stripe Connect + plan du coach ────────────────────
+    let connectedAccountId = null;
+    let coachPlan = "basic";
+
+    if (companyId) {
+      try {
+        const comp = await Company.findById(companyId).select("stripeConnect owner").lean();
+        if (comp?.stripeConnect?.status === "active" && comp.stripeConnect.accountId) {
+          connectedAccountId = comp.stripeConnect.accountId;
+        }
+        // Récupérer le plan du propriétaire pour savoir si on prend des frais
+        if (comp?.owner) {
+          const owner = await User.findById(comp.owner).select("isPremium manualPremium subscription").lean();
+          if (owner) {
+            const { getPlan } = require("../utils/planLimits");
+            coachPlan = getPlan(owner);
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Fallback dev : en développement, on crée un paiement direct (sans transfert)
+    // car le compte de test n'est pas réellement connecté à la plateforme
+    const isDevFallback = process.env.NODE_ENV !== "production" && !connectedAccountId;
+
+    if (!connectedAccountId && process.env.NODE_ENV === "production") {
+      return res.status(400).json({
+        error: "stripe_not_connected",
+        message: "Cet établissement n'a pas encore connecté Stripe. Choisissez un autre mode de paiement.",
+      });
+    }
+
+    // ── Frais plateforme Branshee (5% — plan gratuit uniquement) ──────────────
+    // Pro et Business → pas de frais
+    const PLATFORM_FEE_PCT = 0.05; // 5%
+    const applicationFee   = !isDevFallback && coachPlan === "basic"
+      ? Math.round(amountCents * PLATFORM_FEE_PCT)
+      : 0;
+
+    // ── Créer le PaymentIntent ────────────────────────────────────────────────
+    // En production avec un compte connecté : transfer_data vers le coach
+    // En dev sans compte connecté : paiement direct (test uniquement)
+    const piParams = {
+      amount:               amountCents,
+      currency:             (currency || "eur").toLowerCase(),
+      automatic_payment_methods: { enabled: true, allow_redirects: "never" },
+      description:          serviceName ? `Réservation — ${serviceName}` : "Réservation en ligne",
+      receipt_email:        email.trim().toLowerCase(),
+      ...(connectedAccountId && !isDevFallback && {
+        transfer_data: { destination: connectedAccountId },
+      }),
+      ...(applicationFee > 0 && { application_fee_amount: applicationFee }),
+      metadata: {
+        companyId:          String(companyId || ""),
+        connectedAccountId: connectedAccountId || "none",
+        coachPlan,
+        platformFee:        applicationFee > 0 ? `${(applicationFee / 100).toFixed(2)}€ (5%)` : "none",
+        serviceName:        serviceName || "",
+        clientEmail:        email.trim().toLowerCase(),
+        clientName:         name || "",
+      },
+    };
+
+    console.log("[PaymentIntent] Creating:", { amountCents, isDevFallback, connectedAccountId: connectedAccountId || "none" });
+    const pi = await stripe.paymentIntents.create(piParams);
+    console.log("[PaymentIntent] Created:", pi.id);
+
+    res.json({ clientSecret: pi.client_secret, paymentIntentId: pi.id });
+  } catch (err) {
+    console.error("createBookingPaymentIntent error:", err.message, err.raw?.message || "");
+    res.status(500).json({ error: err.raw?.message || err.message || "Erreur Stripe." });
+  }
+};
+
+// ── Stripe: no-show — payment already captured, nothing to do ─────────────────
+// This endpoint is kept for admin UI but no-show = money was already taken.
+exports.chargeNoShow = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id).lean();
+    if (!booking) return res.status(404).json({ error: "Réservation introuvable." });
+    if (booking.payment?.method !== "online") {
+      return res.status(400).json({ error: "Pas de paiement en ligne sur ce RDV." });
+    }
+    if (booking.payment?.status === "paid") {
+      // Already paid — just confirm it as "no-show acknowledged"
+      return res.json({ success: true, info: "Paiement déjà encaissé.", amount: booking.payment.amount });
+    }
+    res.json({ success: false, error: "Aucun paiement à encaisser." });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 exports.createBooking = async (req, res) => {
   try {
     const { date, startTime, company, name, surname, email, phone, message, formAnswers,
-            serviceId, serviceName, serviceDuration } = req.body;
+            serviceId, serviceName, serviceDuration,
+            paymentMethod, stripePaymentIntentId, servicePrice } = req.body;
 
     // employeeId / employeeName may be auto-resolved below — use let
     let employeeId   = req.body.employeeId   || null;
@@ -110,6 +234,15 @@ exports.createBooking = async (req, res) => {
       serviceName:  serviceName || "",
       employee:     employeeId  || null,
       employeeName: employeeName || "",
+      // ── Payment ────────────────────────────────────────────────────────────
+      payment: {
+        method: ["online", "on_site", "bank_transfer", "paypal"].includes(paymentMethod) ? paymentMethod : "none",
+        status: paymentMethod === "online" && stripePaymentIntentId ? "paid" : "none",
+        stripePaymentIntentId: stripePaymentIntentId || "",
+        amount:   servicePrice ? Number(servicePrice) : 0,
+        currency: "eur",
+        paidAt:   paymentMethod === "online" && stripePaymentIntentId ? new Date() : null,
+      },
     });
 
     // ── Fetch owner for location + Google Calendar ──────────────────────────
@@ -474,15 +607,12 @@ exports.getBookingC = async (req, res) => {
 exports.cancelBooking = async (req, res) => {
   const { userId } = req.params;
   const { token } = req.query;
-  console.log(token);
-  console.log(userId);
 
   const canceledBooking = await Booking.findOneAndUpdate(
     { _id: userId, cancelToken: token },
     { status: "canceled" },
     { new: false },
   ).lean();
-  console.log({ "booking infos": canceledBooking });
 
   if (!canceledBooking) {
     return res.status(404).render("client/404.pug", {
@@ -491,7 +621,54 @@ exports.cancelBooking = async (req, res) => {
   }
 
   const company = await Company.findById(canceledBooking.company);
-  const coach = await User.findById(company.owner);
+  const coach   = await User.findById(company.owner);
+
+  // ── Politique d'annulation + remboursement ────────────────────────────────
+  let chargeResult = null;
+  if (stripe &&
+      canceledBooking.payment?.method  === "online" &&
+      canceledBooking.payment?.status  === "paid"   &&
+      canceledBooking.payment?.stripePaymentIntentId) {
+
+    const hrs    = hoursUntil(canceledBooking.date, canceledBooking.startTime);
+    const amount = canceledBooking.payment.amount || 0;
+    const piId   = canceledBooking.payment.stripePaymentIntentId;
+
+    try {
+      // reverse_transfer: true → le montant est aussi repris du compte connecté
+      if (hrs >= 24) {
+        // > 24 h → remboursement total
+        await stripe.refunds.create({
+          payment_intent:   piId,
+          reason:           "requested_by_customer",
+          reverse_transfer: true,
+        });
+        await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "refunded" });
+        chargeResult = { refunded: true, pct: 100, amount };
+      } else if (hrs >= 0 && amount > 0) {
+        // < 24 h → remboursement 50 % (on garde 50 % pour l'établissement)
+        const refundCents = toCents(amount * 0.5);
+        if (refundCents >= 50) {
+          await stripe.refunds.create({
+            payment_intent:   piId,
+            amount:           refundCents,
+            reason:           "requested_by_customer",
+            reverse_transfer: true,
+          });
+          await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "partial" });
+          chargeResult = { refunded: true, pct: 50, amount: amount * 0.5, kept: amount * 0.5 };
+        } else {
+          // Montant trop petit → remboursement total
+          await stripe.refunds.create({ payment_intent: piId, reverse_transfer: true });
+          await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "refunded" });
+          chargeResult = { refunded: true, pct: 100, amount };
+        }
+      }
+      // RDV déjà passé : pas de remboursement — l'argent reste chez l'établissement
+    } catch (stripeErr) {
+      console.error("Refund error:", stripeErr.message);
+    }
+  }
 
   // Sync Google Calendar
   if (canceledBooking.googleEventId) {
@@ -506,6 +683,7 @@ exports.cancelBooking = async (req, res) => {
 
   res.render("client/index.pug", {
     cancelBooking: true,
+    chargeResult,
     company,
     coach,
   });

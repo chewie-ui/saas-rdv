@@ -91,4 +91,14 @@ router.post("/forms/save", isVerified, adminController.saveForm);
 
 router.get("/customize-calendar", isAuth, injectCompany, adminController.customizeCalendarPage);
 
+// ── Pré-paiement ──────────────────────────────────────────────────────────────
+router.patch("/settings/prepayment", isVerified, adminController.savePrepaymentSettings);
+
+// ── Stripe Connect (Express onboarding) ───────────────────────────────────────
+router.get("/settings/stripe-connect",          isVerified, adminController.initiateStripeConnect);
+router.get("/settings/stripe-connect/return",   adminController.stripeConnectReturn);
+router.get("/settings/stripe-connect/refresh",  adminController.stripeConnectRefresh);
+router.post("/settings/stripe-connect/manual",  isVerified, adminController.saveStripeAccountManual);
+router.delete("/settings/stripe-connect",       isVerified, adminController.disconnectStripeConnect);
+
 module.exports = router;

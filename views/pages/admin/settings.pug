@@ -235,6 +235,225 @@ block content
                             .twofa-feedback#enableFeedback
 
         //- ── Langue principale ───────────────────────────────────────────────
+        .info-card#prepaymentCard
+            .info-card__header
+                h3 Modes de paiement
+                p.info-card__desc Choisissez les modes de paiement que vous proposez à vos clients.
+
+            -
+                var scStatus   = (stripeConnect && stripeConnect.status) || 'not_connected'
+                var scEmail    = (stripeConnect && stripeConnect.accountEmail) || ''
+                var scId       = (stripeConnect && stripeConnect.accountId) || ''
+                var scIsActive = scStatus === 'active'
+                var prepayOn   = !!(currentCompany && currentCompany.prepayment && currentCompany.prepayment.enabled)
+                var prepayReq  = !!(currentCompany && currentCompany.prepayment && currentCompany.prepayment.required)
+
+            //- Banners connect/error (s'affichent si on revient de l'OAuth)
+            if stripeConnectSuccess
+                .sc-success-banner(style="margin-bottom:16px")
+                    svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5")
+                        polyline(points="20 6 9 17 4 12")
+                    | Compte Stripe connecté avec succès !
+            if stripeConnectError === 'incomplete'
+                .sc-error-banner(style="margin-bottom:16px;background:#fffbeb;border-color:#fbbf24;color:#92400e")
+                    svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+                        circle(cx="12" cy="12" r="10")
+                        line(x1="12" y1="8" x2="12" y2="12")
+                        line(x1="12" y1="16" x2="12.01" y2="16")
+                    | Configuration Stripe incomplète — veuillez terminer l'activation pour recevoir des paiements.
+            else if stripeConnectError
+                .sc-error-banner(style="margin-bottom:16px")
+                    svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+                        circle(cx="12" cy="12" r="10")
+                        line(x1="12" y1="8" x2="12" y2="12")
+                        line(x1="12" y1="16" x2="12.01" y2="16")
+                    | Erreur Stripe : #{stripeConnectError}
+
+            .pm-methods-grid
+
+                //- ── 1. Paiement en ligne à l'avance ─────────────────────────
+                .pm-method-expandable(class=(prepayOn ? 'is-open' : ''))
+                    label.pm-method-row.pm-method-row--top
+                        input#prepayEnabled(
+                            type="checkbox"
+                            checked=prepayOn
+                        )
+                        .pm-method-info
+                            span.pm-method-icon 💻
+                            div
+                                span.pm-method-label Paiement en ligne à l'avance
+                                span.pm-method-sub Le client paie par carte lors de la réservation
+
+                    //- Sous-section Stripe (visible si coché)
+                    .pm-method-expand-body#stripeExpandBody(style=(!prepayOn ? 'display:none' : ''))
+
+                        //- Stripe Connect
+                        .sc-connect-inner
+                            if scIsActive
+                                .sc-connected-row
+                                    .sc-connected-badge
+                                        svg(width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5")
+                                            polyline(points="20 6 9 17 4 12")
+                                        | Stripe connecté
+                                    .sc-connected-info
+                                        span.sc-connected-email= scEmail || scId
+                                        span.sc-connected-id= scId
+                                    button.sm-btn.sm-btn--ghost.sm-btn--sm#disconnectStripeBtn(
+                                        type="button"
+                                        data-confirm="Déconnecter votre compte Stripe ? Les paiements en ligne seront désactivés."
+                                    ) Déconnecter
+                            else if scStatus === 'pending'
+                                .sc-not-connected-inline
+                                    p.sc-not-connected-desc
+                                        | Votre compte Stripe est en cours de configuration.
+                                        br
+                                        | Cliquez sur le bouton ci-dessous pour continuer l'activation.
+                                    a.sm-btn.sm-btn--primary.sm-btn--sm(href="/settings/stripe-connect") Continuer la configuration →
+                                    span(style="display:block;font-size:11px;color:var(--muted,#6b7280);margin-top:8px") Vous serez redirigé vers Stripe, puis revenus ici automatiquement.
+
+                            else
+                                .sc-not-connected-inline
+                                    p.sc-not-connected-desc
+                                        | Connectez votre compte Stripe pour recevoir les paiements directement sur votre compte bancaire.
+                                        br
+                                        | L'inscription prend 2 minutes — Stripe s'occupe de tout.
+                                    a.sm-btn.sm-btn--primary.sm-btn--sm(href="/settings/stripe-connect")
+                                        svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:-2px")
+                                            path(d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71")
+                                            path(d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71")
+                                        | Connecter mon compte Stripe
+                                    span(style="display:block;font-size:11px;color:var(--muted,#6b7280);margin-top:8px") Vous serez redirigé vers Stripe, puis revenus ici automatiquement.
+
+                        //- Toggle obligatoire
+                        .prepayment-toggle-row.prepayment-toggle-row--sub(
+                            id="prepayRequiredRow"
+                            style=(!scIsActive ? 'opacity:.45;pointer-events:none' : '')
+                        )
+                            .prepayment-toggle-info
+                                span.prepayment-toggle-label Rendre le paiement obligatoire
+                                span.prepayment-toggle-sub Si désactivé, le client peut choisir de payer plus tard
+                            label.sa-toggle-wrap
+                                input#prepayRequired(
+                                    type="checkbox"
+                                    checked=prepayReq
+                                    disabled=(!scIsActive)
+                                )
+                                .sa-toggle-track
+
+                        //- Politique annulation
+                        .prepayment-policy-box.prepayment-policy-box--sm
+                            svg(width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                circle(cx="12" cy="12" r="10")
+                                polyline(points="12 6 12 12 16 14")
+                            div
+                                strong Politique d'annulation automatique
+                                ul
+                                    li Annulation #[strong > 24h] — remboursement complet
+                                    li Annulation #[strong < 24h] — 50 % prélevés
+                                    li Absence sans annulation — 100 % prélevés
+
+                //- ── 2. Espèces ──────────────────────────────────────────────
+                label.pm-method-row
+                    input#pmCash(
+                        type="checkbox"
+                        checked=(acceptedPayments && acceptedPayments.cash)
+                    )
+                    .pm-method-info
+                        span.pm-method-icon 💵
+                        div
+                            span.pm-method-label Espèces
+                            span.pm-method-sub Paiement en liquide sur place
+
+                //- ── 3. Carte bancaire sur place ─────────────────────────────
+                label.pm-method-row
+                    input#pmCardOnSite(
+                        type="checkbox"
+                        checked=(acceptedPayments && acceptedPayments.cardOnSite)
+                    )
+                    .pm-method-info
+                        span.pm-method-icon 💳
+                        div
+                            span.pm-method-label Carte bancaire sur place
+                            span.pm-method-sub Terminal de paiement (TPE)
+
+                //- ── 4. Virement IBAN ────────────────────────────────────────
+                .pm-method-expandable(class=(acceptedPayments && acceptedPayments.bankTransfer && acceptedPayments.bankTransfer.enabled ? 'is-open' : ''))
+                    label.pm-method-row.pm-method-row--top
+                        input#pmBankTransfer(
+                            type="checkbox"
+                            checked=(acceptedPayments && acceptedPayments.bankTransfer && acceptedPayments.bankTransfer.enabled)
+                        )
+                        .pm-method-info
+                            span.pm-method-icon 🏦
+                            div
+                                span.pm-method-label Virement bancaire (IBAN)
+                                span.pm-method-sub Les coordonnées s'afficheront au client
+
+                    .pm-method-expand-body#pmBankDetails(style=(!(acceptedPayments && acceptedPayments.bankTransfer && acceptedPayments.bankTransfer.enabled) ? 'display:none' : ''))
+                        .pm-iban-grid
+                            .field
+                                label.bk-label IBAN
+                                input.input#pmIban(
+                                    type="text"
+                                    placeholder="BE XX XXXX XXXX XXXX"
+                                    value=(acceptedPayments && acceptedPayments.bankTransfer ? acceptedPayments.bankTransfer.iban : '')
+                                )
+                            .field
+                                label.bk-label BIC / SWIFT
+                                input.input#pmBic(
+                                    type="text"
+                                    placeholder="GEBABEBB"
+                                    value=(acceptedPayments && acceptedPayments.bankTransfer ? acceptedPayments.bankTransfer.bic : '')
+                                )
+                            .field
+                                label.bk-label Nom de la banque
+                                input.input#pmBankName(
+                                    type="text"
+                                    placeholder="BNP Paribas, ING…"
+                                    value=(acceptedPayments && acceptedPayments.bankTransfer ? acceptedPayments.bankTransfer.bankName : '')
+                                )
+                            .field
+                                label.bk-label Instructions (optionnel)
+                                input.input#pmBankNote(
+                                    type="text"
+                                    placeholder="Mentionner votre nom en communication"
+                                    value=(acceptedPayments && acceptedPayments.bankTransfer ? acceptedPayments.bankTransfer.note : '')
+                                )
+
+                //- ── 5. PayPal ───────────────────────────────────────────────
+                - var ppEnabled = !!(acceptedPayments && acceptedPayments.paypal && acceptedPayments.paypal.enabled)
+                - var ppMe = (acceptedPayments && acceptedPayments.paypal) ? (acceptedPayments.paypal.paypalMe || '') : ''
+                .pm-method-expandable(class=(ppEnabled ? 'is-open' : ''))
+                    label.pm-method-row.pm-method-row--top
+                        input#pmPaypal(
+                            type="checkbox"
+                            checked=ppEnabled
+                        )
+                        .pm-method-info
+                            span.pm-method-icon 🅿️
+                            div
+                                span.pm-method-label PayPal
+                                span.pm-method-sub Envoi d'un lien PayPal.me au client
+
+                    .pm-method-expand-body#pmPaypalDetails(style=(!ppEnabled ? 'display:none' : ''))
+                        .pm-iban-grid
+                            .field
+                                label.bk-label Nom d'utilisateur PayPal.me
+                                .sc-manual-form
+                                    span.sc-manual-prefix paypal.me/
+                                    input.input#pmPaypalMe(
+                                        type="text"
+                                        placeholder="votre-nom"
+                                        autocomplete="off"
+                                        value=ppMe
+                                    )
+                            .field
+                                label.bk-label Aperçu du lien
+                                p.pm-paypal-preview(id="pmPaypalPreview" style="font-size:12px;color:var(--muted,#6b7280);margin:4px 0 0")
+                                    = ppMe ? 'https://paypal.me/' + ppMe + '/{montant}' : 'https://paypal.me/votre-nom/{montant}'
+
+            p#prepayFeedback(style="display:none;font-size:13px;color:var(--accent);margin-top:14px") ✓ Paramètres sauvegardés
+
         .info-card
             .info-card__header
                 h3 Langue principale
@@ -532,4 +751,129 @@ block scripts
                     });
                 });
             });
+
+            // ── Modes de paiement ──────────────────────────────────────────────
+            (function () {
+                var enabledCb      = document.getElementById('prepayEnabled');
+                var requiredCb     = document.getElementById('prepayRequired');
+                var reqRow         = document.getElementById('prepayRequiredRow');
+                var stripeExpand   = document.getElementById('stripeExpandBody');
+                var feedback       = document.getElementById('prepayFeedback');
+                var pmCash         = document.getElementById('pmCash');
+                var pmCardOnSite   = document.getElementById('pmCardOnSite');
+                var pmBankTransfer = document.getElementById('pmBankTransfer');
+                var pmBankDetails  = document.getElementById('pmBankDetails');
+                var pmIban         = document.getElementById('pmIban');
+                var pmBic          = document.getElementById('pmBic');
+                var pmBankName     = document.getElementById('pmBankName');
+                var pmBankNote     = document.getElementById('pmBankNote');
+                var pmPaypal       = document.getElementById('pmPaypal');
+                var pmPaypalDet    = document.getElementById('pmPaypalDetails');
+                var pmPaypalMe     = document.getElementById('pmPaypalMe');
+                var pmPaypalPrev   = document.getElementById('pmPaypalPreview');
+
+                // Expand/collapse "Paiement en ligne"
+                if (enabledCb) {
+                    enabledCb.addEventListener('change', function () {
+                        if (stripeExpand) stripeExpand.style.display = enabledCb.checked ? '' : 'none';
+                        savePrepay();
+                    });
+                }
+
+                // Expand/collapse champs IBAN
+                if (pmBankTransfer) {
+                    pmBankTransfer.addEventListener('change', function () {
+                        if (pmBankDetails) pmBankDetails.style.display = pmBankTransfer.checked ? '' : 'none';
+                        savePrepay();
+                    });
+                }
+
+                // Expand/collapse PayPal
+                if (pmPaypal) {
+                    pmPaypal.addEventListener('change', function () {
+                        if (pmPaypalDet) pmPaypalDet.style.display = pmPaypal.checked ? '' : 'none';
+                        savePrepay();
+                    });
+                }
+
+                // Mise à jour de l'aperçu PayPal en temps réel
+                if (pmPaypalMe) {
+                    pmPaypalMe.addEventListener('input', function () {
+                        var username = pmPaypalMe.value.trim().replace(/^https?:\/\/paypal\.me\//i, '');
+                        if (pmPaypalPrev) {
+                            pmPaypalPrev.textContent = username
+                                ? 'https://paypal.me/' + username + '/{montant}'
+                                : 'https://paypal.me/votre-nom/{montant}';
+                        }
+                    });
+                }
+
+                if (requiredCb) requiredCb.addEventListener('change', savePrepay);
+                [pmCash, pmCardOnSite].forEach(function(el) {
+                    if (el) el.addEventListener('change', savePrepay);
+                });
+
+                // Débounce pour les champs texte
+                var _textTimer;
+                [pmIban, pmBic, pmBankName, pmBankNote, pmPaypalMe].forEach(function(el) {
+                    if (el) el.addEventListener('input', function () {
+                        clearTimeout(_textTimer);
+                        _textTimer = setTimeout(savePrepay, 800);
+                    });
+                });
+
+                async function savePrepay() {
+                    if (feedback) feedback.style.display = 'none';
+                    try {
+                        var r = await fetch('/settings/prepayment', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                enabled:             enabledCb      ? enabledCb.checked      : false,
+                                required:            requiredCb     ? requiredCb.checked     : false,
+                                cash:                pmCash         ? pmCash.checked         : false,
+                                cardOnSite:          pmCardOnSite   ? pmCardOnSite.checked   : false,
+                                bankTransferEnabled: pmBankTransfer ? pmBankTransfer.checked : false,
+                                iban:                pmIban     ? pmIban.value     : '',
+                                bic:                 pmBic      ? pmBic.value      : '',
+                                bankName:            pmBankName ? pmBankName.value : '',
+                                bankNote:            pmBankNote ? pmBankNote.value : '',
+                                paypalEnabled:       pmPaypal   ? pmPaypal.checked   : false,
+                                paypalMe:            pmPaypalMe ? pmPaypalMe.value.trim() : '',
+                            })
+                        });
+                        var d = await r.json();
+                        if (d.success && feedback) {
+                            feedback.style.display = 'block';
+                            setTimeout(function () { feedback.style.display = 'none'; }, 2500);
+                        }
+                    } catch(e) {}
+                }
+            })();
+
+            // ── Stripe Connect — déconnexion ───────────────────────────────────
+            (function () {
+                var btn = document.getElementById('disconnectStripeBtn');
+                if (!btn) return;
+                btn.addEventListener('click', async function () {
+                    var msg = btn.getAttribute('data-confirm') || 'Déconnecter Stripe ?';
+                    if (!confirm(msg)) return;
+                    btn.disabled = true;
+                    btn.textContent = 'Déconnexion…';
+                    try {
+                        var res = await fetch('/settings/stripe-connect', { method: 'DELETE' });
+                        var data = await res.json();
+                        if (data.success) {
+                            window.location.reload();
+                        } else {
+                            btn.disabled = false;
+                            btn.textContent = 'Déconnecter';
+                            alert('Erreur lors de la déconnexion.');
+                        }
+                    } catch(e) {
+                        btn.disabled = false;
+                        btn.textContent = 'Déconnecter';
+                    }
+                });
+            })();
         })();

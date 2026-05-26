@@ -1,0 +1,28 @@
+doctype html
+html(lang="fr")
+    head
+        meta(name="viewport" content="width=device-width, initial-scale=1.0")
+        meta(charset="UTF-8")
+        title Lien invalide
+        link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
+        link(rel="stylesheet" href="/css/import.css")
+        style.
+            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+            body { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg-primary); font-family: 'Inter', sans-serif; padding: 24px; }
+            .err-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 16px; padding: 40px 36px; max-width: 420px; width: 100%; text-align: center; }
+            .err-icon { width: 56px; height: 56px; border-radius: 50%; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.25); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+            .err-icon svg { width: 28px; height: 28px; color: #ef4444; }
+            h1 { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 10px; }
+            p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 28px; }
+            a { display: inline-block; background: var(--accent); color: #fff; text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: 600; padding: 10px 24px; transition: opacity .15s; }
+            a:hover { opacity: .85; }
+    body
+        .err-card
+            .err-icon
+                svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                    circle(cx="12" cy="12" r="10")
+                    line(x1="12" y1="8" x2="12" y2="12")
+                    line(x1="12" y1="16" x2="12.01" y2="16")
+            h1 Lien invalide
+            p= message || "Ce lien d'accès est invalide ou n'est plus disponible."
+            a(href="/login") Se connecter →

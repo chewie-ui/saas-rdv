@@ -54,6 +54,13 @@ router.post("/login", (req, res, next) => {
 
     req.logIn(user, (err) => {
       if (err) return next(err);
+      const pendingCode = req.session.pendingAccessCode;
+      if (pendingCode) {
+        delete req.session.pendingAccessCode;
+        const dest = `/access/${pendingCode}`;
+        if (isAjax) return res.json({ success: true, redirect: dest });
+        return res.redirect(dest);
+      }
       if (isAjax) return res.json({ success: true, redirect: "/appointment" });
       return res.redirect("/appointment");
     });
@@ -88,6 +95,11 @@ router.post("/login/2fa", async (req, res) => {
     delete req.session.pending2FAUserId;
     req.logIn(user, (err) => {
       if (err) return res.redirect("/login");
+      const pendingCode = req.session.pendingAccessCode;
+      if (pendingCode) {
+        delete req.session.pendingAccessCode;
+        return res.redirect(`/access/${pendingCode}`);
+      }
       return res.redirect("/appointment");
     });
   } catch (err) {

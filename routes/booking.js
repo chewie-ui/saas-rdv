@@ -7,6 +7,8 @@ const {
   getDisabledDays,
   getBookingC,
   cancelBooking,
+  createBookingPaymentIntent,
+  chargeNoShow,
 } = require("../controllers/booking.controller");
 const Form = require("../db/models/form.model");
 
@@ -18,6 +20,10 @@ router.get("/get-disabled-days/:companyId", getDisabledDays);
 
 router.get("/get-booking/:companyId", getBookingC);
 router.get("/cancel-booking/:userId", cancelBooking);
+
+// ── Paiement réservation ──────────────────────────────────────────────────────
+router.post("/api/booking/payment-intent", createBookingPaymentIntent);
+router.patch("/appointment/:id/charge-noshow", chargeNoShow);
 
 router.get("/get-form/:companyId", async (req, res) => {
   try {

@@ -23,4 +23,13 @@ router.delete("/superadmin/promo-codes/:id", isSuperAdmin, ctrl.deletePromoCode)
 // Validation publique (pour le checkout)
 router.post("/api/validate-promo", ctrl.validatePromoCode);
 
+// Access links
+router.get("/superadmin/access-links", isSuperAdmin, ctrl.accessLinksPage);
+router.post("/superadmin/access-links", isSuperAdmin, ctrl.createAccessLink);
+router.patch("/superadmin/access-links/:id/toggle", isSuperAdmin, ctrl.toggleAccessLink);
+router.delete("/superadmin/access-links/:id", isSuperAdmin, ctrl.deleteAccessLink);
+
+// Public redemption (no auth required — handler checks itself)
+router.get("/access/:code", ctrl.redeemAccessLink);
+
 module.exports = router;

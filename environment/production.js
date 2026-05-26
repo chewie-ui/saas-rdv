@@ -19,6 +19,10 @@ module.exports = {
   // Webhook — supporte les deux noms de variable
   stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET_SERVER || env.STRIPE_WEBHOOK_KEY_SERVER,
 
+  // Stripe Connect — platform client ID
+  stripeConnectClientId: env.STRIPE_CONNECT_CLIENT_ID_SERVER || env.STRIPE_CONNECT_CLIENT_ID || "",
+  appBaseUrl:            env.APP_BASE_URL || "https://www.branshee.com",
+
   dbUri: env.MONGO_URI_SERVER,
   port:  Number(env.PORT) || 8080,
 };

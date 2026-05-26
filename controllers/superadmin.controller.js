@@ -1,5 +1,7 @@
-const User = require("../db/models/user.model");
-const PromoCode = require("../db/models/promoCode.model");
+const crypto     = require("crypto");
+const User       = require("../db/models/user.model");
+const PromoCode  = require("../db/models/promoCode.model");
+const AccessLink = require("../db/models/accessLink.model");
 
 exports.loginPage = (req, res) => {
   if (req.session.isSuperAdmin) return res.redirect("/superadmin");
@@ -202,5 +204,118 @@ exports.validatePromoCode = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Access Links ──────────────────────────────────────────────────────────────
+
+exports.accessLinksPage = async (req, res) => {
+  const links = await AccessLink.find({}).sort("-createdAt").lean();
+  res.render("superadmin/access-links", { links });
+};
+
+exports.createAccessLink = async (req, res) => {
+  try {
+    const { label, plan, durationDays, maxUses, expiresAt } = req.body;
+    if (!plan || !["pro", "business"].includes(plan)) {
+      return res.status(400).json({ error: "Plan invalide (pro ou business)." });
+    }
+    const code = crypto.randomBytes(5).toString("hex").toUpperCase(); // 10-char hex code
+    const link = await AccessLink.create({
+      code,
+      label:       label ? label.trim() : "",
+      plan,
+      durationDays: durationDays ? Number(durationDays) : 30,
+      maxUses:      maxUses !== undefined && maxUses !== "" ? Number(maxUses) : 1,
+      expiresAt:    expiresAt ? new Date(expiresAt) : null,
+    });
+    res.json({ success: true, link });
+  } catch (err) {
+    console.error("createAccessLink error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.toggleAccessLink = async (req, res) => {
+  try {
+    const link = await AccessLink.findById(req.params.id);
+    if (!link) return res.status(404).json({ error: "Lien introuvable." });
+    link.isActive = !link.isActive;
+    await link.save();
+    res.json({ success: true, isActive: link.isActive });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.deleteAccessLink = async (req, res) => {
+  try {
+    await AccessLink.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Public redemption (GET /access/:code) ────────────────────────────────────
+exports.redeemAccessLink = async (req, res) => {
+  const code = (req.params.code || "").toUpperCase();
+  try {
+    const link = await AccessLink.findOne({ code, isActive: true });
+
+    if (!link) {
+      return res.status(404).render("superadmin/access-error", {
+        message: "Ce lien d'accès est invalide ou a été désactivé.",
+      });
+    }
+    if (link.expiresAt && new Date() > link.expiresAt) {
+      return res.status(410).render("superadmin/access-error", {
+        message: "Ce lien d'accès a expiré.",
+      });
+    }
+    if (link.maxUses !== null && link.usedCount >= link.maxUses) {
+      return res.status(410).render("superadmin/access-error", {
+        message: "Ce lien d'accès a déjà été utilisé le nombre maximum de fois.",
+      });
+    }
+
+    // Not logged in → save code in session and redirect to login
+    if (!req.isAuthenticated()) {
+      req.session.pendingAccessCode = code;
+      return res.redirect("/login");
+    }
+
+    // Already used by this user?
+    const alreadyUsed = link.uses.some(
+      (u) => u.userId && String(u.userId) === String(req.user._id)
+    );
+    if (alreadyUsed) {
+      return res.redirect("/appointment?accessAlreadyUsed=1");
+    }
+
+    // Apply plan
+    const expiry = new Date(Date.now() + link.durationDays * 24 * 60 * 60 * 1000);
+    await User.findByIdAndUpdate(req.user._id, {
+      manualPremium:       true,
+      isPremium:           true,
+      manualPremiumExpiry: expiry,
+      "subscription.plan":   link.plan,
+      "subscription.status": "active",
+    });
+
+    // Record use
+    link.usedCount += 1;
+    link.uses.push({
+      userId: req.user._id,
+      email:  req.user.email || "",
+      ip:     req.ip || "",
+      usedAt: new Date(),
+    });
+    await link.save();
+
+    return res.redirect("/appointment?accessGranted=1");
+  } catch (err) {
+    console.error("redeemAccessLink error:", err);
+    res.status(500).send("Erreur serveur.");
   }
 };

@@ -1,4 +1,5 @@
 const router = require("express").Router();
+const _routeEnv = require(`../environment/${process.env.NODE_ENV || "development"}`);
 
 const { getCompanyIfExist } = require("../controllers/auth.controller");
 const User = require("../db/models/user.model");
@@ -447,6 +448,29 @@ router.get("/:company", async (req, res) => {
 
   const cs = coach.calendarSettings || {};
 
+  const prepaymentConfig = {
+    enabled:  !!(company.prepayment?.enabled),
+    required: !!(company.prepayment?.required),
+    // Stripe Connect disponible ?
+    stripeActive: company.stripeConnect?.status === "active" && !!(company.stripeConnect?.accountId),
+    // Autres modes de paiement
+    cash:         !!(company.acceptedPayments?.cash),
+    cardOnSite:   !!(company.acceptedPayments?.cardOnSite),
+    bankTransfer: !!(company.acceptedPayments?.bankTransfer?.enabled),
+    bankDetails: {
+      iban:     company.acceptedPayments?.bankTransfer?.iban     || "",
+      bic:      company.acceptedPayments?.bankTransfer?.bic      || "",
+      bankName: company.acceptedPayments?.bankTransfer?.bankName || "",
+      note:     company.acceptedPayments?.bankTransfer?.note     || "",
+    },
+    // PayPal
+    paypal:       !!(company.acceptedPayments?.paypal?.enabled),
+    paypalMe:     company.acceptedPayments?.paypal?.paypalMe || "",
+  };
+
+  // Detect whether the visitor is an authenticated admin user
+  const visitorIsAdmin = !!(req.isAuthenticated && req.isAuthenticated() && req.user);
+
   res.render("client/index", {
     title: profileTitle,
     metaDescription: profileDesc,
@@ -471,6 +495,9 @@ router.get("/:company", async (req, res) => {
     equipment: cs.equipment || [],
     amenityOptions: AMENITY_OPTIONS,
     badgeOptions: BADGE_OPTIONS,
+    prepaymentConfig,
+    stripePublishableKey: _routeEnv.stripePublishableKey || process.env.STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY_LOCAL || "",
+    visitorIsAdmin,
     alwaysSticky: true,
     clientAuth: true,
   });
