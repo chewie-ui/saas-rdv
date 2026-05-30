@@ -69,22 +69,13 @@
   }
 }
 
-/* Settings / Paramètres — boutons actions en bas */
+/* Settings / Paramètres — boutons actions en bas
+   Note: .info-card__actions et .profile-row sont gérés dans la section 17 ci-dessous */
 @media (max-width: 599px) {
-  .info-card__actions {
-    flex-direction: column-reverse !important;
-    gap: 8px !important;
-  }
-
-  .info-card__actions .sm-btn {
-    width: 100% !important;
-    justify-content: center !important;
-  }
-
-  /* Profil row — colonne sur mobile */
+  /* Profil row — géré dans section 17 (reste en ligne avec petite photo) */
   .profile-row {
-    flex-direction: column;
-    align-items: center;
+    flex-direction: row;
+    align-items: flex-start;
   }
 
   .profile-fields {
@@ -462,5 +453,230 @@
 @media (min-width: 820px) {
   .mobile-only {
     display: none !important;
+  }
+}
+
+/* ============================================================
+   17. INFO-CARD / CUSTOMIZE / SETTINGS — mobile tightening
+   ============================================================ */
+
+/* Réduction du padding des cards sur mobile */
+@media (max-width: 599px) {
+  .main-wrapper {
+    padding: 10px !important;
+    gap: 10px !important;
+  }
+
+  .info-card {
+    padding: 16px !important;
+    gap: 14px !important;
+    border-radius: 14px !important;
+  }
+
+  .info-page {
+    gap: 14px !important;
+  }
+
+  .info-page__header h2 {
+    font-size: 18px !important;
+  }
+
+  /* ── Profil établissement (Personnaliser) ─────────────────────── */
+  /* Sur mobile : photo à gauche en petit + champs à droite */
+  .biz-row {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 14px !important;
+  }
+
+  .biz-photo-col {
+    width: auto !important;
+    flex-shrink: 0 !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .biz-photo-preview {
+    width: 72px !important;
+    height: 72px !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 10px !important;
+  }
+
+  .biz-photo-col .sm-btn {
+    font-size: 12px !important;
+    padding: 4px 8px !important;
+  }
+
+  .biz-fields {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  /* ── Profil personnel (Settings) ─────────────────────────────── */
+  .profile-row {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 14px !important;
+  }
+
+  .profile-photo-col {
+    width: auto !important;
+    flex-shrink: 0 !important;
+    gap: 8px !important;
+  }
+
+  .profile-avatar {
+    width: 64px !important;
+    height: 64px !important;
+  }
+
+  .profile-avatar img {
+    width: 64px !important;
+    height: 64px !important;
+  }
+
+  .profile-photo-col .sm-btn {
+    font-size: 12px !important;
+    padding: 4px 8px !important;
+  }
+
+  .profile-fields {
+    flex: 1 !important;
+    min-width: 0 !important;
+    width: auto !important;
+  }
+
+  /* ── Champs texte pleine largeur ──────────────────────────────── */
+  .info-card .field,
+  .info-card .input,
+  .info-card .textarea,
+  .info-card select {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ── Modes de paiement (Settings) ────────────────────────────── */
+  .pm-methods-grid {
+    gap: 8px !important;
+  }
+
+  .pm-method-row {
+    padding: 10px 12px !important;
+  }
+
+  .pm-method-expand-body {
+    padding: 10px 12px !important;
+  }
+
+  .pm-iban-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* ── Stripe Connect ───────────────────────────────────────────── */
+  .sc-connected-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .sc-not-connected-inline .sm-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* ── Abonnement ───────────────────────────────────────────────── */
+  .sub-summary {
+    gap: 10px !important;
+  }
+
+  .info-card__actions {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .info-card__actions .sm-btn,
+  .info-card__actions a.sm-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* ── Section pills (Personnaliser) ────────────────────────────── */
+  .info-card__header--with-cb {
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .section-pill {
+    font-size: 11px !important;
+    padding: 3px 8px !important;
+  }
+
+  /* ── Social grid ─────────────────────────────────────────────── */
+  .social-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Gallery ─────────────────────────────────────────────────── */
+  .gallery-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  /* ── Slug share row ───────────────────────────────────────────── */
+  .slug-share-row {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .slug-share-url {
+    width: 100% !important;
+  }
+
+  .slug-share-row .sm-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* ── Location grid ────────────────────────────────────────────── */
+  .location-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Plan limit banner ────────────────────────────────────────── */
+  .plan-limit-banner {
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: flex-start !important;
+  }
+
+  .plan-limit-banner .sm-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* ── Section-toggles grid (Personnaliser → Sections) ──────────── */
+  .section-toggles-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── 2FA ──────────────────────────────────────────────────────── */
+  .twofa-row {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .twofa-code-wrap {
+    width: 100% !important;
+  }
+
+  .twofa-code-input {
+    width: 100% !important;
+  }
+
+  /* ── Langue ───────────────────────────────────────────────────── */
+  .lang-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
   }
 }

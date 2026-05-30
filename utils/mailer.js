@@ -10,7 +10,7 @@ const sendEmail = async (to, subject, html) => {
   try {
     await apiInstance.sendTransacEmail({
       sender: {
-        email: "noreply@branshee.com",
+        email: "noreply@gymio.be",
         name: "BranShee",
       },
       to: [{ email: to }],

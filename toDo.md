@@ -38,3 +38,10 @@ si connecte client, ajouter prendre un btn prendre renvdez vous
 btn supprimer la rechercher page / 
 parametre client langue principalke doit etre fonctionnel et attention il est 2 fois la !
 bug en ligne Configuration Stripe manquante. Ajoutez dans : "Ajouter une carte"
+
+
+Email
+prise de rdv mois nom couper et topbar 5 to 3
+page creer etablissement plsu visibler
+bloquer les heures passee du jour de ajd !
+supprimer un moment le data trop vieux, gratuit aucun data tout suprimer 1 seminea apres pro 90 jours business garder

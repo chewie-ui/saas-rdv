@@ -233,9 +233,9 @@ function render() {
 function fmtDate(iso) {
   if (!iso) return "—";
   const d = new Date(iso + "T00:00:00");
-  const months = __t.months || ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
+  const months = __t.months || ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
   const days   = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
-  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()].slice(0,3)}`;
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
 }
 
 function escHtml(s) {

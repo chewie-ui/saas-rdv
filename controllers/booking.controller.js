@@ -105,9 +105,27 @@ exports.createBookingPaymentIntent = async (req, res) => {
     };
 
     console.log("[PaymentIntent] Creating:", { amountCents, isDevFallback, connectedAccountId: connectedAccountId || "none" });
-    const pi = await stripe.paymentIntents.create(piParams);
-    console.log("[PaymentIntent] Created:", pi.id);
 
+    let pi;
+    try {
+      pi = await stripe.paymentIntents.create(piParams);
+    } catch (stripeErr) {
+      // Si le compte connecté n'a pas encore les capacités (onboarding incomplet),
+      // on retente sans transfer_data pour ne pas bloquer le client
+      const isCapabilityError = stripeErr?.raw?.code === "account_invalid" ||
+        (stripeErr?.message || "").toLowerCase().includes("capabilities") ||
+        (stripeErr?.message || "").toLowerCase().includes("destination account");
+
+      if (isCapabilityError && connectedAccountId) {
+        console.warn("[PaymentIntent] Compte connecté sans capacité transfers — paiement direct (sans transfert)");
+        const { transfer_data: _td, application_fee_amount: _af, ...fallbackParams } = piParams;
+        pi = await stripe.paymentIntents.create(fallbackParams);
+      } else {
+        throw stripeErr;
+      }
+    }
+
+    console.log("[PaymentIntent] Created:", pi.id);
     res.json({ clientSecret: pi.client_secret, paymentIntentId: pi.id });
   } catch (err) {
     console.error("createBookingPaymentIntent error:", err.message, err.raw?.message || "");
