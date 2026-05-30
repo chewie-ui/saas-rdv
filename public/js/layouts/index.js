@@ -7,7 +7,7 @@
 const __t        = window.__t        || {};
 const SERVICES   = window.__services  || [];
 const EMPLOYEES  = window.__employees || [];
-const CLIENT     = window.__clientUser || null; // { firstName, lastName, email, phone }
+let CLIENT       = window.__clientUser || null; // { firstName, lastName, email, phone } — mutable pour login inline
 const PREPAYMENT = window.__prepayment || { enabled: false, required: false };
 const STRIPE_KEY = window.__stripeKey  || "";
 
@@ -123,9 +123,11 @@ function renderCart() {
   if (STATE.employee) recap.push({ k: "Avec",    v: STATE.employee.name });
   if (STATE.date)     recap.push({ k: "Quand",   v: fmtDate(STATE.date) + (STATE.time ? " · " + STATE.time : "") });
 
+  // "Continuer" is enabled when: logged in, OR guest form is visible and filled
+  const guestFormVisible = !!document.getElementById("bkGuestForm")?.offsetParent;
   const detailsOk = CLIENT
     ? !!(CLIENT.firstName && CLIENT.email)
-    : !!(STATE.form.firstName && STATE.form.lastName && STATE.form.email);
+    : (guestFormVisible && !!(STATE.form.firstName && STATE.form.lastName && STATE.form.email));
 
   // Payment step: active as soon as any method is chosen.
   const paymentOk =
@@ -255,9 +257,11 @@ function renderSvcCard(s) {
       ${s.description ? `<div class="bk-svc__desc">${escHtml(s.description)}</div>` : ""}
       <span class="bk-svc__dur">${s.duration} min</span>
     </div>
-    ${price}
-    <div class="bk-svc__check">
-      <svg width="13" height="13" viewBox="0 -960 960 960" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>
+    <div class="bk-svc__right">
+      ${price}
+      <div class="bk-svc__check">
+        <svg width="13" height="13" viewBox="0 -960 960 960" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>
+      </div>
     </div>
   </div>`;
 }
@@ -483,6 +487,46 @@ let _slotTime         = null;
 let _calDataLoaded    = false;
 let _calLoadedEmpId   = undefined; // track which employee the cache was built for
 
+/**
+ * Returns true if the given month (year y, month m 0-based) has at least one
+ * day that is not past, not a day-off, and not fully booked.
+ */
+function monthHasAvailableDay(y, m) {
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const slotT = STATE.service ? STATE.service.duration : (_slotTime || 30);
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const c   = new Date(y, m, d);
+    const iso = `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+
+    if (c < realToday) continue;
+
+    const dayOfWeek = c.getDay();
+    const dayConfig = _dayOffArray ? _dayOffArray.find(dc => dc.weekdayIndex === dayOfWeek) : null;
+    if (dayConfig && dayConfig.dayOff) continue;
+
+    const exception = _disabledDays ? _disabledDays.find(ex => toDateStr(ex.date) === iso) : null;
+    if (exception && (!exception.workingHours || exception.workingHours.length === 0)) continue;
+
+    // Working hours
+    let activeWH = [];
+    if (exception && exception.workingHours) activeWH = exception.workingHours;
+    else if (dayConfig && !dayConfig.dayOff)  activeWH = dayConfig.workingHours || [];
+
+    if (activeWH.length === 0 && !exception) continue; // no schedule = closed
+
+    const maxSlots   = countPossibleSlots(activeWH, slotT);
+    const bookedCount = _specificBookings ? _specificBookings.filter(b => toDateStr(b.date) === iso).length : 0;
+    const markedFull  = _specificBookings ? _specificBookings.find(b => toDateStr(b.date) === iso && b.isFull) : false;
+
+    if (maxSlots > 0 && bookedCount >= maxSlots) continue;
+    if (markedFull) continue;
+
+    return true; // found at least one available day
+  }
+  return false;
+}
+
 async function loadCalendarData() {
   const empId = STATE.employee ? STATE.employee.id : "";
   // Invalidate cache if the employee changed since last load
@@ -651,6 +695,17 @@ async function renderTimePane() {
   </div>`;
 
   await loadCalendarData();
+
+  // Si le mois courant n'a plus de jours disponibles, avancer au prochain mois disponible
+  // (max 12 mois pour ne pas boucler infiniment)
+  let guard = 0;
+  while (
+    guard++ < 12 &&
+    !monthHasAvailableDay(STATE.calMonth.getFullYear(), STATE.calMonth.getMonth())
+  ) {
+    STATE.calMonth = new Date(STATE.calMonth.getFullYear(), STATE.calMonth.getMonth() + 1, 1);
+  }
+
   refreshTimePane();
 }
 
@@ -829,23 +884,112 @@ async function renderDetailsPane() {
             <div class="bk-client-info__email">${escHtml(CLIENT.email||"")}</div>
           </div>
         </div>` : `
-        <div class="bk-form-row">
-          <div class="bk-field">
-            <label class="bk-label">Prénom *</label>
-            <input class="bk-input" id="bkFirstName" type="text" placeholder="Jean" value="${escHtml(f.firstName)}" />
+
+        <!-- Connexion client inline -->
+        <div class="bk-login-section" id="bkLoginSection">
+          <div class="bk-login-header">
+            <div class="bk-login-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div>
+              <p class="bk-login-title">Déjà un compte ?</p>
+              <p class="bk-login-sub">Connectez-vous pour pré-remplir vos informations.</p>
+            </div>
           </div>
-          <div class="bk-field">
-            <label class="bk-label">Nom *</label>
-            <input class="bk-input" id="bkLastName" type="text" placeholder="Dupont" value="${escHtml(f.lastName)}" />
+          <!-- Connexion -->
+          <div class="bk-login-form" id="bkLoginForm" style="display:none">
+            <a class="bk-google-btn" href="/auth/google/client?returnTo=${encodeURIComponent(window.location.href)}">
+              <svg width="17" height="17" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.6h12.4c-.5 2.7-2.1 5-4.5 6.5v5.4h7.3c4.3-3.9 6.9-9.7 6.9-16z"/>
+                <path fill="#34A853" d="M24 47c6.5 0 12-2.1 16-5.8l-7.3-5.4c-2.1 1.4-4.8 2.2-8.7 2.2-6.7 0-12.4-4.5-14.4-10.6H2v5.6C6 41.8 14.4 47 24 47z"/>
+                <path fill="#FBBC05" d="M9.6 27.4c-.5-1.4-.8-3-.8-4.4s.3-3 .8-4.4V13H2C.7 15.6 0 18.7 0 24s.7 8.4 2 11l7.6-7.6z"/>
+                <path fill="#EA4335" d="M24 9.5c3.8 0 7.2 1.3 9.9 3.8l7.3-7.3C36.9 2.1 31.4 0 24 0 14.4 0 6 5.2 2 13l7.6 7.6C11.6 14 17.3 9.5 24 9.5z"/>
+              </svg>
+              Continuer avec Google
+            </a>
+            <div class="bk-login-divider"><span>ou</span></div>
+            <div class="bk-field">
+              <label class="bk-label">Email</label>
+              <input class="bk-input" id="bkLoginEmail" type="email" placeholder="jean@email.com" autocomplete="email" />
+            </div>
+            <div class="bk-field">
+              <label class="bk-label">Mot de passe</label>
+              <input class="bk-input" id="bkLoginPassword" type="password" placeholder="••••••••" autocomplete="current-password" />
+            </div>
+            <p class="bk-login-error" id="bkLoginError" style="display:none"></p>
+            <button class="bk-login-submit" id="bkLoginSubmit" type="button">Se connecter</button>
+            <button class="bk-login-back" id="bkBackFromLogin" type="button">← Retour</button>
+          </div>
+
+          <!-- Inscription rapide -->
+          <div class="bk-login-form" id="bkRegisterForm" style="display:none">
+            <a class="bk-google-btn" href="/auth/google/client?returnTo=${encodeURIComponent(window.location.href)}">
+              <svg width="17" height="17" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.6h12.4c-.5 2.7-2.1 5-4.5 6.5v5.4h7.3c4.3-3.9 6.9-9.7 6.9-16z"/>
+                <path fill="#34A853" d="M24 47c6.5 0 12-2.1 16-5.8l-7.3-5.4c-2.1 1.4-4.8 2.2-8.7 2.2-6.7 0-12.4-4.5-14.4-10.6H2v5.6C6 41.8 14.4 47 24 47z"/>
+                <path fill="#FBBC05" d="M9.6 27.4c-.5-1.4-.8-3-.8-4.4s.3-3 .8-4.4V13H2C.7 15.6 0 18.7 0 24s.7 8.4 2 11l7.6-7.6z"/>
+                <path fill="#EA4335" d="M24 9.5c3.8 0 7.2 1.3 9.9 3.8l7.3-7.3C36.9 2.1 31.4 0 24 0 14.4 0 6 5.2 2 13l7.6 7.6C11.6 14 17.3 9.5 24 9.5z"/>
+              </svg>
+              S'inscrire avec Google
+            </a>
+            <div class="bk-login-divider"><span>ou</span></div>
+            <div class="bk-reg-row">
+              <div class="bk-field">
+                <label class="bk-label">Prénom *</label>
+                <input class="bk-input" id="bkRegFirst" type="text" placeholder="Jean" autocomplete="given-name" />
+              </div>
+              <div class="bk-field">
+                <label class="bk-label">Nom *</label>
+                <input class="bk-input" id="bkRegLast" type="text" placeholder="Dupont" autocomplete="family-name" />
+              </div>
+            </div>
+            <div class="bk-field">
+              <label class="bk-label">Email *</label>
+              <input class="bk-input" id="bkRegEmail" type="email" placeholder="jean@email.com" autocomplete="email" />
+            </div>
+            <div class="bk-field">
+              <label class="bk-label">Mot de passe *</label>
+              <input class="bk-input" id="bkRegPwd" type="password" placeholder="8 caractères minimum" autocomplete="new-password" />
+            </div>
+            <p class="bk-login-error" id="bkRegError" style="display:none"></p>
+            <button class="bk-login-submit" id="bkRegSubmit" type="button">Créer mon compte et réserver</button>
+            <button class="bk-login-back" id="bkBackFromReg" type="button">← Retour</button>
+          </div>
+
+          <!-- Boutons choix -->
+          <div class="bk-login-toggle" id="bkLoginChoices">
+            <button class="bk-login-toggle-btn" id="bkShowLogin" type="button">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Se connecter
+            </button>
+            <button class="bk-login-toggle-btn bk-login-toggle-btn--outline" id="bkShowRegister" type="button">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+              Créer un compte
+            </button>
+            <button class="bk-login-toggle-btn bk-login-toggle-btn--ghost" id="bkShowGuest" type="button">Continuer sans compte</button>
           </div>
         </div>
-        <div class="bk-field">
-          <label class="bk-label">Email *</label>
-          <input class="bk-input" id="bkEmail" type="email" placeholder="jean@email.com" value="${escHtml(f.email)}" />
-        </div>
-        <div class="bk-field">
-          <label class="bk-label">Téléphone</label>
-          <input class="bk-input" id="bkPhone" type="tel" placeholder="+32 …" value="${escHtml(f.phone)}" />
+
+        <!-- Formulaire invité (masqué par défaut) -->
+        <div id="bkGuestForm" style="display:none">
+          <div class="bk-form-row">
+            <div class="bk-field">
+              <label class="bk-label">Prénom *</label>
+              <input class="bk-input" id="bkFirstName" type="text" placeholder="Jean" value="${escHtml(f.firstName)}" />
+            </div>
+            <div class="bk-field">
+              <label class="bk-label">Nom *</label>
+              <input class="bk-input" id="bkLastName" type="text" placeholder="Dupont" value="${escHtml(f.lastName)}" />
+            </div>
+          </div>
+          <div class="bk-field">
+            <label class="bk-label">Email *</label>
+            <input class="bk-input" id="bkEmail" type="email" placeholder="jean@email.com" value="${escHtml(f.email)}" />
+          </div>
+          <div class="bk-field">
+            <label class="bk-label">Téléphone</label>
+            <input class="bk-input" id="bkPhone" type="tel" placeholder="+32 …" value="${escHtml(f.phone)}" />
+          </div>
         </div>`}
 
       ${questionsHtml}
@@ -866,7 +1010,161 @@ async function renderDetailsPane() {
 }
 
 function bindDetailsPane() {
-  // Personal info inputs — sync to STATE.form
+  // ── Inline login (non-logged-in flow) ────────────────────────────────────
+  const showLoginBtn  = document.getElementById("bkShowLogin");
+  const showGuestBtn  = document.getElementById("bkShowGuest");
+  const loginSection  = document.getElementById("bkLoginSection");
+  const loginForm     = document.getElementById("bkLoginForm");
+  const guestForm     = document.getElementById("bkGuestForm");
+  const loginSubmit   = document.getElementById("bkLoginSubmit");
+  const loginError    = document.getElementById("bkLoginError");
+
+  const loginChoices  = document.getElementById("bkLoginChoices");
+  const registerForm  = document.getElementById("bkRegisterForm");
+
+  // Intercepter les boutons Google pour sauvegarder l'état avant la redirection
+  pane.querySelectorAll(".bk-google-btn").forEach(btn => {
+    btn.addEventListener("click", () => saveStateForOAuth());
+  });
+
+  function showChoices() {
+    if (loginForm)    loginForm.style.display    = "none";
+    if (registerForm) registerForm.style.display = "none";
+    if (loginChoices) loginChoices.style.display = "flex";
+  }
+
+  if (showLoginBtn) {
+    showLoginBtn.addEventListener("click", () => {
+      loginChoices.style.display = "none";
+      loginForm.style.display    = "flex";
+      document.getElementById("bkLoginEmail")?.focus();
+    });
+  }
+
+  document.getElementById("bkShowRegister")?.addEventListener("click", () => {
+    loginChoices.style.display  = "none";
+    registerForm.style.display  = "flex";
+    document.getElementById("bkRegFirst")?.focus();
+  });
+
+  document.getElementById("bkBackFromLogin")?.addEventListener("click", showChoices);
+  document.getElementById("bkBackFromReg")?.addEventListener("click", showChoices);
+
+  if (showGuestBtn) {
+    showGuestBtn.addEventListener("click", () => {
+      loginSection.style.display = "none";
+      guestForm.style.display    = "block";
+      renderCart();
+    });
+  }
+
+  if (loginSubmit) {
+    loginSubmit.addEventListener("click", async () => {
+      const email    = document.getElementById("bkLoginEmail")?.value.trim();
+      const password = document.getElementById("bkLoginPassword")?.value;
+      if (!email || !password) {
+        loginError.textContent = "Veuillez remplir tous les champs.";
+        loginError.style.display = "block";
+        return;
+      }
+      loginSubmit.disabled = true;
+      loginSubmit.textContent = "Connexion…";
+      loginError.style.display = "none";
+      try {
+        const res  = await fetch("/client/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          // Fetch client info from session
+          const meRes  = await fetch("/client/me", { headers: { "X-Requested-With": "fetch" } });
+          const meData = await meRes.json();
+          if (meData.client) {
+            CLIENT = meData.client;
+            STATE.form.firstName = CLIENT.firstName || "";
+            STATE.form.lastName  = CLIENT.lastName  || "";
+            STATE.form.email     = CLIENT.email     || "";
+            STATE.form.phone     = CLIENT.phone     || "";
+          }
+          renderDetailsPane(); // re-render showing logged-in state
+        } else {
+          loginError.textContent = data.error || "Email ou mot de passe incorrect.";
+          loginError.style.display = "block";
+          loginSubmit.disabled = false;
+          loginSubmit.textContent = "Se connecter";
+        }
+      } catch (_) {
+        loginError.textContent = "Erreur réseau. Réessayez.";
+        loginError.style.display = "block";
+        loginSubmit.disabled = false;
+        loginSubmit.textContent = "Se connecter";
+      }
+    });
+
+    // Enter key on password field
+    document.getElementById("bkLoginPassword")?.addEventListener("keydown", e => {
+      if (e.key === "Enter") loginSubmit.click();
+    });
+  }
+
+  // ── Register handler ──────────────────────────────────────────────────────
+  const regSubmit = document.getElementById("bkRegSubmit");
+  const regError  = document.getElementById("bkRegError");
+
+  if (regSubmit) {
+    regSubmit.addEventListener("click", async () => {
+      const first = document.getElementById("bkRegFirst")?.value.trim();
+      const last  = document.getElementById("bkRegLast")?.value.trim();
+      const email = document.getElementById("bkRegEmail")?.value.trim();
+      const pwd   = document.getElementById("bkRegPwd")?.value || "";
+
+      if (!first || !last || !email) {
+        regError.textContent = "Prénom, nom et email sont obligatoires.";
+        regError.style.display = "block"; return;
+      }
+      if (pwd.length < 8) {
+        regError.textContent = "Le mot de passe doit faire au moins 8 caractères.";
+        regError.style.display = "block"; return;
+      }
+      regSubmit.disabled = true;
+      regSubmit.textContent = "Création…";
+      regError.style.display = "none";
+
+      try {
+        const res  = await fetch("/client/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+          body: JSON.stringify({ fullName: `${first} ${last}`, email, password: pwd, confirmPassword: pwd }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          CLIENT = { firstName: first, lastName: last, email, phone: "" };
+          STATE.form.firstName = first;
+          STATE.form.lastName  = last;
+          STATE.form.email     = email;
+          renderDetailsPane();
+        } else {
+          regError.textContent = data.error || "Une erreur est survenue.";
+          regError.style.display = "block";
+          regSubmit.disabled = false;
+          regSubmit.textContent = "Créer mon compte et réserver";
+        }
+      } catch (_) {
+        regError.textContent = "Erreur réseau. Réessayez.";
+        regError.style.display = "block";
+        regSubmit.disabled = false;
+        regSubmit.textContent = "Créer mon compte et réserver";
+      }
+    });
+
+    document.getElementById("bkRegPwd")?.addEventListener("keydown", e => {
+      if (e.key === "Enter") regSubmit.click();
+    });
+  }
+
+  // ── Personal info inputs — sync to STATE.form ─────────────────────────────
   const fields = [
     ["bkFirstName", "firstName"],
     ["bkLastName",  "lastName"],
@@ -1387,8 +1685,13 @@ function renderConfirmPane() {
     ).join("");
   }
 
+  // Show account creation nudge only for guest users
+  const showSignup = !CLIENT && email;
+
   pane.innerHTML = `<div class="bk-pane">
     <div class="bk-conf">
+
+      <!-- ✅ Check -->
       <div class="bk-conf__check">
         <svg width="32" height="32" viewBox="0 -960 960 960" fill="currentColor">
           <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/>
@@ -1397,6 +1700,7 @@ function renderConfirmPane() {
       <h2>Vous êtes réservé·e !</h2>
       <p class="bk-conf__lead">Un email de confirmation est en route vers <strong>${escHtml(email)}</strong>.</p>
 
+      <!-- Recap -->
       <div class="bk-conf__recap">
         ${STATE.service ? `<div class="bk-conf__row"><span class="k">Service</span><span class="v">${escHtml(STATE.service.name)}${STATE.service.duration ? ` · ${STATE.service.duration} min` : ""}</span></div>` : ""}
         ${STATE.employee ? `<div class="bk-conf__row"><span class="k">Avec</span><span class="v">${escHtml(STATE.employee.name)}</span></div>` : ""}
@@ -1408,13 +1712,145 @@ function renderConfirmPane() {
           : ""}
       </div>
 
+      <!-- 🎯 Account nudge -->
+      ${showSignup ? `
+      <div class="bk-signup-nudge" id="bkSignupNudge">
+        <div class="bk-signup-nudge__top">
+          <span class="bk-signup-nudge__emoji">🎉</span>
+          <div>
+            <p class="bk-signup-nudge__title">Sauvegardez votre réservation</p>
+            <p class="bk-signup-nudge__sub">Créez votre compte en 10 secondes — gérez vos RDV depuis votre espace.</p>
+          </div>
+        </div>
+        <div class="bk-signup-nudge__perks">
+          <span>📋 Historique de vos RDV</span>
+          <span>❌ Annulation en 1 clic</span>
+          <span>⚡ Réservation ultra-rapide</span>
+        </div>
+        <div class="bk-signup-nudge__form" id="bkSignupForm">
+          <div class="bk-signup-nudge__email-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+            <span>${escHtml(email)}</span>
+          </div>
+          <input class="bk-input" id="bkSignupPwd" type="password" placeholder="Choisissez un mot de passe (8 car. min.)" autocomplete="new-password" />
+          <p class="bk-signup-nudge__error" id="bkSignupError" style="display:none"></p>
+          <button class="bk-signup-nudge__btn" id="bkSignupBtn" type="button">
+            Créer mon compte gratuitement →
+          </button>
+        </div>
+        <div class="bk-signup-nudge__success" id="bkSignupSuccess" style="display:none">
+          <svg width="18" height="18" viewBox="0 -960 960 960" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>
+          Compte créé ! <a href="/espace-client" style="color:inherit;font-weight:700;">Accéder à mon espace →</a>
+        </div>
+        <button class="bk-signup-nudge__skip" id="bkSignupSkip" type="button">Non merci, continuer sans compte</button>
+      </div>` : ""}
+
       <div class="bk-conf__actions">
         <button class="bk-btn bk-btn--ghost bk-btn--sm" onclick="window.location.reload()">Nouvelle réservation</button>
       </div>
     </div>
   </div>`;
+
+  // ── Signup nudge logic ──────────────────────────────────────────────────
+  if (showSignup) {
+    const signupBtn  = document.getElementById("bkSignupBtn");
+    const signupSkip = document.getElementById("bkSignupSkip");
+    const signupErr  = document.getElementById("bkSignupError");
+    const signupOk   = document.getElementById("bkSignupSuccess");
+    const signupForm = document.getElementById("bkSignupForm");
+    const nudge      = document.getElementById("bkSignupNudge");
+
+    if (signupSkip) signupSkip.onclick = () => { nudge.style.display = "none"; };
+
+    if (signupBtn) {
+      signupBtn.onclick = async () => {
+        const pwd = document.getElementById("bkSignupPwd")?.value || "";
+        if (pwd.length < 8) {
+          signupErr.textContent = "Le mot de passe doit faire au moins 8 caractères.";
+          signupErr.style.display = "block";
+          return;
+        }
+        signupBtn.disabled = true;
+        signupBtn.textContent = "Création…";
+        signupErr.style.display = "none";
+
+        const fullName = `${STATE.form.firstName || ""} ${STATE.form.lastName || ""}`.trim() || email;
+        try {
+          const res  = await fetch("/client/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+            body: JSON.stringify({ fullName, email, password: pwd, confirmPassword: pwd }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            signupForm.style.display  = "none";
+            signupOk.style.display    = "flex";
+            nudge.querySelector(".bk-signup-nudge__skip").style.display = "none";
+          } else {
+            signupErr.textContent = data.error || "Une erreur est survenue.";
+            signupErr.style.display = "block";
+            signupBtn.disabled = false;
+            signupBtn.textContent = "Créer mon compte gratuitement →";
+          }
+        } catch (_) {
+          signupErr.textContent = "Erreur réseau. Réessayez.";
+          signupErr.style.display = "block";
+          signupBtn.disabled = false;
+          signupBtn.textContent = "Créer mon compte gratuitement →";
+        }
+      };
+
+      // Enter on password
+      document.getElementById("bkSignupPwd")?.addEventListener("keydown", e => {
+        if (e.key === "Enter") signupBtn.click();
+      });
+    }
+  }
+}
+
+/* ── State persistence across OAuth redirects ────────────────────────────
+   Avant de quitter la page (Google OAuth), on sauvegarde l'état en
+   sessionStorage. Au retour, on le restaure et on reprend à l'étape details.
+   ─────────────────────────────────────────────────────────────────────── */
+
+const BK_STATE_KEY = "bk_state_" + (COMPANY_ID || "x");
+
+function saveStateForOAuth() {
+  try {
+    const snapshot = {
+      service:       STATE.service,
+      employee:      STATE.employee,
+      date:          STATE.date,
+      time:          STATE.time,
+      form:          { ...STATE.form },
+      paymentMethod: STATE.paymentMethod,
+    };
+    sessionStorage.setItem(BK_STATE_KEY, JSON.stringify(snapshot));
+  } catch (_) {}
+}
+
+function restoreStateFromOAuth() {
+  try {
+    const raw = sessionStorage.getItem(BK_STATE_KEY);
+    if (!raw) return false;
+    sessionStorage.removeItem(BK_STATE_KEY);
+    const snap = JSON.parse(raw);
+    if (snap.service)       STATE.service       = snap.service;
+    if (snap.employee !== undefined) STATE.employee = snap.employee;
+    if (snap.date)          STATE.date          = snap.date;
+    if (snap.time)          STATE.time          = snap.time;
+    if (snap.form)          Object.assign(STATE.form, snap.form);
+    if (snap.paymentMethod) STATE.paymentMethod = snap.paymentMethod;
+    return !!(snap.service); // true if we had meaningful state
+  } catch (_) { return false; }
 }
 
 /* ── Init ───────────────────────────────────────────────────────────────── */
-// render() already dispatches to the right pane based on the first step id
-render();
+const _hadSavedState = restoreStateFromOAuth();
+if (_hadSavedState) {
+  // User just came back from Google OAuth — jump straight to details step
+  // (they were on step 4 when they clicked the Google button)
+  goToStep("details");
+} else {
+  render();
+}

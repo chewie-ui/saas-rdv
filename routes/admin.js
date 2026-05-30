@@ -93,6 +93,7 @@ router.get("/customize-calendar", isAuth, injectCompany, adminController.customi
 
 // ── Pré-paiement ──────────────────────────────────────────────────────────────
 router.patch("/settings/prepayment", isVerified, adminController.savePrepaymentSettings);
+router.patch("/settings/cancellation-policy", isVerified, adminController.saveCancellationPolicy);
 
 // ── Stripe Connect (Express onboarding) ───────────────────────────────────────
 router.get("/settings/stripe-connect",          isVerified, adminController.initiateStripeConnect);

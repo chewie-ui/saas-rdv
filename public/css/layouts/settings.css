@@ -658,3 +658,65 @@
 @media (max-width: 600px) {
   .pm-iban-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Politique d'annulation ─────────────────────────────────────────────────── */
+.cancel-policy-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cancel-policy-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border-light, #e5e7eb);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+
+.cancel-policy-opt input[type="radio"] {
+  display: none;
+}
+
+.cancel-policy-opt.is-selected {
+  border-color: var(--accent, #22c55e);
+  background: rgba(34,197,94,.05);
+}
+
+.cancel-policy-opt__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--subtle, #f3f4f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-muted, #6b7280);
+  transition: background .15s, color .15s;
+}
+
+.cancel-policy-opt.is-selected .cancel-policy-opt__icon {
+  background: rgba(34,197,94,.12);
+  color: var(--accent, #22c55e);
+}
+
+.cancel-policy-opt__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cancel-policy-opt__body strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink, #111);
+}
+
+.cancel-policy-opt__body span {
+  font-size: 12.5px;
+  color: var(--text-muted, #6b7280);
+}

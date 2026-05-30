@@ -52,6 +52,14 @@ const companySchema = schema(
       required: { type: Boolean, default: false }, // false = client peut choisir
     },
 
+    // ── Politique d'annulation ────────────────────────────────────────────────
+    // "free"     = annulation toujours gratuite
+    // "half_24h" = 50% si annulation < 24h avant
+    // "full_12h" = 100% si < 12h, 50% si entre 12h et 24h
+    cancellationPolicy: {
+      rule: { type: String, enum: ["free", "half_24h", "full_12h"], default: "free" },
+    },
+
     // ── Stripe Connect (paiement en ligne) ────────────────────────────────────
     stripeConnect: {
       accountId:    { type: String, default: "" },

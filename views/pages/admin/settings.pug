@@ -454,6 +454,48 @@ block content
 
             p#prepayFeedback(style="display:none;font-size:13px;color:var(--accent);margin-top:14px") ✓ Paramètres sauvegardés
 
+        //- ── Politique d'annulation ──────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3 Politique d'annulation
+                p.info-card__desc Définissez les frais appliqués si un client annule tardivement.
+
+            -
+                var cancelRule = (currentCompany && currentCompany.cancellationPolicy && currentCompany.cancellationPolicy.rule) || 'free'
+
+            .cancel-policy-options
+                label.cancel-policy-opt(class=(cancelRule === 'free' ? 'is-selected' : ''))
+                    input(type="radio" name="cancelRule" value="free" checked=(cancelRule === 'free'))
+                    .cancel-policy-opt__icon
+                        svg(width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                            polyline(points="20 6 9 17 4 12")
+                    .cancel-policy-opt__body
+                        strong Annulation gratuite
+                        span Aucun frais, quelle que soit l'heure d'annulation.
+
+                label.cancel-policy-opt(class=(cancelRule === 'half_24h' ? 'is-selected' : ''))
+                    input(type="radio" name="cancelRule" value="half_24h" checked=(cancelRule === 'half_24h'))
+                    .cancel-policy-opt__icon
+                        svg(width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                            circle(cx="12" cy="12" r="10")
+                            polyline(points="12 6 12 12 16 14")
+                    .cancel-policy-opt__body
+                        strong 50 % si annulation &lt; 24h
+                        span Le client paie la moitié s'il annule moins de 24h avant le RDV.
+
+                label.cancel-policy-opt(class=(cancelRule === 'full_12h' ? 'is-selected' : ''))
+                    input(type="radio" name="cancelRule" value="full_12h" checked=(cancelRule === 'full_12h'))
+                    .cancel-policy-opt__icon
+                        svg(width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                            path(d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z")
+                            line(x1="12" y1="9" x2="12" y2="13")
+                            line(x1="12" y1="17" x2="12.01" y2="17")
+                    .cancel-policy-opt__body
+                        strong 100 % si &lt; 12h · 50 % si &lt; 24h
+                        span Frais progressifs selon le délai d'annulation.
+
+            p#cancelPolicyFeedback(style="display:none;font-size:13px;color:var(--accent);margin-top:12px") ✓ Politique sauvegardée
+
         .info-card
             .info-card__header
                 h3 Langue principale
@@ -849,6 +891,32 @@ block scripts
                         }
                     } catch(e) {}
                 }
+            })();
+
+            // ── Politique d'annulation ────────────────────────────────────────
+            (function () {
+                var radios = document.querySelectorAll('input[name="cancelRule"]');
+                var fb = document.getElementById('cancelPolicyFeedback');
+                radios.forEach(function (r) {
+                    r.addEventListener('change', async function () {
+                        // Update visual selection
+                        document.querySelectorAll('.cancel-policy-opt').forEach(function(opt) {
+                            opt.classList.toggle('is-selected', opt.querySelector('input').checked);
+                        });
+                        try {
+                            var res = await fetch('/settings/cancellation-policy', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ rule: r.value })
+                            });
+                            var d = await res.json();
+                            if (d.success && fb) {
+                                fb.style.display = 'block';
+                                setTimeout(function() { fb.style.display = 'none'; }, 2500);
+                            }
+                        } catch(e) {}
+                    });
+                });
             })();
 
             // ── Stripe Connect — déconnexion ───────────────────────────────────

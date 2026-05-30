@@ -83,6 +83,30 @@ router.post("/client/register", ctrl.postRegister);
 router.get("/client/login", ctrl.getLogin);
 router.post("/client/login", ctrl.postLogin);
 
+// ── Session info (AJAX) ───────────────────────────────────────────────────────
+router.get("/client/me", async (req, res) => {
+  if (!req.session?.clientId) return res.json({ client: null });
+  try {
+    const Client = require("../db/models/client.model");
+    const client = await Client.findById(req.session.clientId)
+      .select("fullName email phone profilePicture")
+      .lean();
+    if (!client) return res.json({ client: null });
+    const parts = (client.fullName || "").trim().split(" ");
+    return res.json({
+      client: {
+        firstName:      parts[0] || "",
+        lastName:       parts.slice(1).join(" ") || "",
+        email:          client.email || "",
+        phone:          client.phone || "",
+        profilePicture: client.profilePicture || "",
+      }
+    });
+  } catch (_) {
+    return res.json({ client: null });
+  }
+});
+
 router.get("/client/logout", ctrl.logout);
 
 router.get("/espace-client", isClientAuth, ctrl.getDashboard);

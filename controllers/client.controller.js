@@ -113,25 +113,41 @@ exports.logout = (req, res) => {
 
 exports.getDashboard = async (req, res) => {
   const Company = require("../db/models/company/company.model");
+  const Review  = require("../db/models/review.model");
   const client = req.client;
   const now = new Date();
   now.setHours(0, 0, 0, 0);
 
   const allBookings = await Booking.find({ clientRef: client._id })
-    .populate("company", "fullName profilePicture businessPicture businessName businessType description")
     .sort({ date: -1 })
     .lean();
 
-  // Récupère slugs des Company pour construire les liens établissement
-  const ownerIds = [...new Set(allBookings.map(b => b.company?._id?.toString()).filter(Boolean))];
-  const companies = await Company.find({ owner: { $in: ownerIds } }).select("owner slug _id").lean();
-  const companyByOwner = {};
-  companies.forEach(c => { companyByOwner[c.owner.toString()] = c; });
+  // Charger toutes les companies liées + leur owner (pour businessName, photo, adresse)
+  const companyIds = [...new Set(allBookings.map(b => b.company?.toString()).filter(Boolean))];
+  const companies  = await Company.find({ _id: { $in: companyIds } })
+    .populate("owner", "fullName businessName businessType businessPicture profilePicture description location")
+    .select("_id owner slug cancellationPolicy")
+    .lean();
+
+  const companyMap = {};
+  companies.forEach(c => { companyMap[c._id.toString()] = c; });
 
   const enriched = allBookings.map(b => {
-    const ownerId = b.company?._id?.toString();
-    const comp = ownerId ? companyByOwner[ownerId] : null;
-    return { ...b, companySlug: comp ? (comp.slug || comp._id.toString()) : null };
+    const comp  = companyMap[b.company?.toString()];
+    const owner = comp?.owner || null;
+    return {
+      ...b,
+      companySlug:        comp ? (comp.slug || comp._id.toString()) : null,
+      companyName:        owner ? (owner.businessName || owner.fullName || "Professionnel") : "Professionnel",
+      companyType:        owner?.businessType || "",
+      companyPhoto:       owner ? (owner.businessPicture || owner.profilePicture || "/images/no-user.webp") : "/images/no-user.webp",
+      companyCity:        owner?.location?.city || "",
+      companyAddr:        owner?.location?.address || "",
+      companyZip:         owner?.location?.zip || "",
+      companyLat:         owner?.location?.lat || "",
+      companyLon:         owner?.location?.lon || "",
+      cancellationRule:   comp?.cancellationPolicy?.rule || "free",
+    };
   });
 
   const upcoming = enriched.filter(
@@ -141,11 +157,41 @@ exports.getDashboard = async (req, res) => {
     (b) => new Date(b.date) < now || b.status === "canceled"
   );
 
+  // ── Avis du client ──────────────────────────────────────────────────────
+  const myReviews = await Review.find({ client: client._id })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  // Enrichir les avis avec le nom/slug de l'établissement
+  const reviewCompanyIds = [...new Set(myReviews.map(r => r.company?.toString()).filter(Boolean))];
+  const reviewCompanies  = await Company.find({ _id: { $in: reviewCompanyIds } })
+    .populate("owner", "fullName businessName businessPicture profilePicture")
+    .select("_id owner slug")
+    .lean();
+  const reviewCompanyMap = {};
+  reviewCompanies.forEach(c => { reviewCompanyMap[c._id.toString()] = c; });
+
+  const myReviewsEnriched = myReviews.map(r => {
+    const comp  = reviewCompanyMap[r.company?.toString()];
+    const owner = comp?.owner || null;
+    return {
+      ...r,
+      companySlug: comp ? (comp.slug || comp._id.toString()) : null,
+      companyName: owner ? (owner.businessName || owner.fullName || "Établissement") : "Établissement",
+      companyPhoto: owner ? (owner.businessPicture || owner.profilePicture || "/images/no-user.webp") : "/images/no-user.webp",
+    };
+  });
+
+  // Marquer les RDV passés pour lesquels le client a déjà posté un avis
+  const reviewedCompanyIds = new Set(myReviews.map(r => r.company?.toString()).filter(Boolean));
+
   return res.render("client/client-dashboard", {
     title: "Mon espace — BranShee",
     pageName: "Dashboard",
     client,
     bookings: { upcoming, past },
+    myReviews: myReviewsEnriched,
+    reviewedCompanyIds: [...reviewedCompanyIds],
   });
 };
 

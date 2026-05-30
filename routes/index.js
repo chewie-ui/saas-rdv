@@ -109,41 +109,52 @@ router.get("/sitemap.xml", async (req, res) => {
 // });
 
 router.get("/", async (req, res) => {
-  // 1. Récupérer tous les users premium
-  const premiumUsers = await User.find({ isPremium: true }).select("_id").lean();
-  const premiumIds   = premiumUsers.map((u) => u._id);
+  // 1. Tous les users premium (isPremium = pro ou business)
+  const allPremiumUsers = await User.find({ isPremium: true }).select("_id subscription").lean();
+  const premiumIds      = allPremiumUsers.map((u) => u._id);
 
-  // 2. Companies premium avec leur owner
+  // 2. Companies avec leur owner (on charge plus que nécessaire puis on filtre)
   const coachs = await Companies.find({ owner: { $in: premiumIds } })
-    .populate("owner")
+    .populate("owner", "_id fullName businessName businessType businessPicture profilePicture description location verified subscription isPremium manualPremium")
     .limit(60)
     .lean();
 
-  // 3. Agrégation des avis : moyenne + nombre par company
+  // 3. Agrégation des avis
   const companyIds = coachs.map(c => c._id);
   const ratings = await Review.aggregate([
     { $match: { company: { $in: companyIds } } },
-    { $group: {
-        _id: "$company",
-        avgRating: { $avg: "$rating" },
-        reviewCount: { $sum: 1 }
-    }}
+    { $group: { _id: "$company", avgRating: { $avg: "$rating" }, reviewCount: { $sum: 1 } } }
   ]);
   const ratingMap = {};
   ratings.forEach(r => { ratingMap[r._id.toString()] = r; });
 
-  // 4. Injecter les stats de note + trier par note décroissante
-  const coachsWithRating = coachs.map(c => ({
-    ...c,
-    avgRating:   ratingMap[c._id.toString()]?.avgRating   || 0,
-    reviewCount: ratingMap[c._id.toString()]?.reviewCount || 0,
-  })).sort((a, b) => b.avgRating - a.avgRating || b.reviewCount - a.reviewCount);
+  // 4. Enrichir + marquer les "featured" (pro/business) et trier :
+  //    featured d'abord (triés par note), puis gratuits (triés par note)
+  const { getPlan } = require("../utils/planLimits");
+  const enriched = coachs.map(c => {
+    const plan     = getPlan(c.owner);
+    const featured = plan === "pro" || plan === "business";
+    return {
+      ...c,
+      avgRating:   ratingMap[c._id.toString()]?.avgRating   || 0,
+      reviewCount: ratingMap[c._id.toString()]?.reviewCount || 0,
+      featured,
+      plan,
+    };
+  }).sort((a, b) => {
+    // Featured first, then by rating
+    if (a.featured !== b.featured) return a.featured ? -1 : 1;
+    return b.avgRating - a.avgRating || b.reviewCount - a.reviewCount;
+  });
+
+  // 5. Limiter à 5 sur la homepage
+  const coachsToShow = enriched.slice(0, 5);
 
   res.render("client/landing-page", {
     title: `BranShee — Prenez rendez-vous en ligne simplement`,
     metaDescription: "Trouvez et réservez en ligne un coach sportif, un coiffeur, un thérapeute ou tout autre professionnel près de chez vous. Prise de rendez-vous gratuite et instantanée avec BranShee.",
     canonical: "https://www.branshee.com/",
-    coachs: coachsWithRating,
+    coachs: coachsToShow,
     services: getServices(res.locals.lang),
   });
 });

@@ -1190,6 +1190,22 @@ exports.savePrepaymentSettings = async (req, res) => {
   }
 };
 
+// ── Politique d'annulation ────────────────────────────────────────────────────
+exports.saveCancellationPolicy = async (req, res) => {
+  try {
+    const { rule } = req.body;
+    const validRules = ["free", "half_24h", "full_12h"];
+    if (!validRules.includes(rule)) return res.status(400).json({ error: "Règle invalide." });
+    await Company.findByIdAndUpdate(res.locals.currentCompany._id, {
+      "cancellationPolicy.rule": rule,
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("saveCancellationPolicy error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
 // ── Stripe Connect (Express — onboarding hébergé par Stripe) ─────────────────
 
 /**

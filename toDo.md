@@ -45,3 +45,8 @@ prise de rdv mois nom couper et topbar 5 to 3
 page creer etablissement plsu visibler
 bloquer les heures passee du jour de ajd !
 supprimer un moment le data trop vieux, gratuit aucun data tout suprimer 1 seminea apres pro 90 jours business garder
+
+
+Publier et tester 
+Faire cote client
+afficher que les services quil y a pr linstant
