@@ -1,0 +1,240 @@
+doctype html
+html(lang="fr")
+    head
+        meta(name="viewport" content="width=device-width, initial-scale=1.0")
+        meta(charset="UTF-8")
+        title Superadmin — Mise en avant
+        link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
+        link(rel="stylesheet" href="/css/import.css")
+        style.
+            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+                min-height: 100vh;
+                background: #0f0f0f;
+                color: #e0e0e0;
+                font-family: 'Inter', sans-serif;
+                padding: 32px 24px 80px;
+            }
+            .sa-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 32px;
+                flex-wrap: wrap;
+                gap: 16px;
+            }
+            .sa-header__left { display: flex; flex-direction: column; gap: 4px; }
+            .sa-header__left h1 { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
+            .sa-header__left p  { font-size: 13px; color: #555; }
+            .sa-nav-links { display: flex; gap: 8px; margin-bottom: 12px; }
+            .sa-nav-link {
+                font-size: 13px; padding: 7px 16px; border-radius: 8px;
+                text-decoration: none; border: 1px solid #2a2a2a; color: #888;
+            }
+            .sa-nav-link.active { border-color: #444; color: #fff; }
+            a.logout-btn {
+                font-size: 12px; color: #555; text-decoration: none;
+                padding: 6px 12px; border: 1px solid #2a2a2a; border-radius: 8px;
+                transition: color 0.15s, border-color 0.15s;
+            }
+            a.logout-btn:hover { color: #f87171; border-color: rgba(248,113,113,0.3); }
+
+            .info-box {
+                background: rgba(250,204,21,0.07);
+                border: 1px solid rgba(250,204,21,0.2);
+                border-radius: 10px;
+                padding: 14px 18px;
+                font-size: 13px;
+                color: #a89030;
+                margin-bottom: 24px;
+                line-height: 1.6;
+            }
+
+            .boost-table {
+                width: 100%;
+                border-collapse: collapse;
+                background: #1a1a1a;
+                border: 1px solid #2a2a2a;
+                border-radius: 14px;
+                overflow: hidden;
+            }
+            .boost-table thead th {
+                text-align: left;
+                font-size: 10px; font-weight: 600;
+                text-transform: uppercase; letter-spacing: 0.08em;
+                color: #444; padding: 12px 18px;
+                border-bottom: 1px solid #222; background: #161616;
+            }
+            .boost-table tbody tr {
+                border-bottom: 1px solid #1f1f1f;
+                transition: background 0.1s;
+            }
+            .boost-table tbody tr:last-child { border-bottom: none; }
+            .boost-table tbody tr:hover { background: #1f1f1f; }
+            .boost-table tbody tr.is-boosted { background: rgba(250,204,21,0.04); }
+            .boost-table tbody td { padding: 14px 18px; font-size: 13px; color: #ccc; vertical-align: middle; }
+
+            .pro-info { display: flex; align-items: center; gap: 12px; }
+            .pro-avatar {
+                width: 40px; height: 40px; border-radius: 8px;
+                object-fit: cover; background: #2a2a2a; flex-shrink: 0;
+            }
+            .pro-avatar-placeholder {
+                width: 40px; height: 40px; border-radius: 8px;
+                background: #2a2a2a; display: flex; align-items: center;
+                justify-content: center; font-size: 16px; flex-shrink: 0;
+            }
+            .pro-name { font-size: 14px; font-weight: 600; color: #fff; }
+            .pro-sub  { font-size: 12px; color: #555; margin-top: 2px; }
+
+            .position-wrap { display: flex; align-items: center; gap: 10px; }
+            .position-input {
+                width: 70px;
+                background: #111; border: 1.5px solid #2a2a2a;
+                border-radius: 8px; color: #fff;
+                font-size: 14px; font-weight: 700; text-align: center;
+                padding: 7px 10px; outline: none;
+                transition: border-color 0.15s;
+            }
+            .position-input:focus { border-color: #facc15; }
+            .position-input[data-boosted="true"] {
+                border-color: rgba(250,204,21,0.5);
+                color: #facc15;
+            }
+            .save-btn {
+                background: #facc15; color: #111;
+                border: none; border-radius: 8px;
+                font-size: 12px; font-weight: 700;
+                padding: 7px 14px; cursor: pointer;
+                transition: opacity 0.15s;
+                white-space: nowrap;
+            }
+            .save-btn:hover { opacity: 0.85; }
+            .save-btn.saving { opacity: 0.5; cursor: wait; }
+            .save-btn.saved  { background: #22c55e; color: #fff; }
+
+            .badge-boost {
+                display: inline-flex; align-items: center; gap: 5px;
+                font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+                color: #facc15; background: rgba(250,204,21,0.1);
+                border: 1px solid rgba(250,204,21,0.25);
+                border-radius: 6px; padding: 3px 8px;
+            }
+            .badge-none { color: #333; font-size: 12px; }
+
+            .slug-link { font-size: 12px; color: #444; text-decoration: none; }
+            .slug-link:hover { color: #888; }
+    body
+        .sa-header
+            .sa-header__left
+                .sa-nav-links
+                    a.sa-nav-link(href="/superadmin") 👥 Utilisateurs
+                    a.sa-nav-link(href="/superadmin/promo-codes") 🎟️ Codes promo
+                    a.sa-nav-link(href="/superadmin/access-links") 🔗 Liens d'accès
+                    a.sa-nav-link.active(href="/superadmin/boost") ⭐ Mise en avant
+                h1 ⭐ Mise en avant homepage
+                p Définissez l'ordre des établissements mis en avant (position 1 = premier). Position 0 = pas mis en avant.
+            .sa-header__right
+                a.logout-btn(href="/superadmin/logout") Déconnexion
+
+        .info-box
+            | 💡 Les établissements avec une position &gt; 0 apparaissent en premier sur la homepage, avant les pros premium et les gratuits. Position 1 = tout en haut. En cas d'égalité de position, l'ordre est alphabétique. Mettez 0 pour désactiver la mise en avant.
+
+        table.boost-table
+            thead
+                tr
+                    th Établissement
+                    th Slug / lien
+                    th Statut
+                    th Position mise en avant
+            tbody
+                each c in companies
+                    - var name = (c.owner && (c.owner.businessName || c.owner.fullName)) || 'Sans nom'
+                    - var type = (c.owner && c.owner.businessType) || ''
+                    - var city = (c.owner && c.owner.location && c.owner.location.city) || ''
+                    - var photo = (c.owner && (c.owner.businessPicture || c.owner.profilePicture)) || null
+                    - var slug = c.slug || String(c._id)
+                    - var pos  = c.boostPosition || 0
+                    tr(class=pos > 0 ? 'is-boosted' : '' data-company-id=String(c._id))
+                        td
+                            .pro-info
+                                if photo
+                                    img.pro-avatar(src=photo alt=name)
+                                else
+                                    .pro-avatar-placeholder 🏢
+                                div
+                                    .pro-name= name
+                                    .pro-sub= [type, city].filter(Boolean).join(' · ') || '—'
+                        td
+                            a.slug-link(href=`/${slug}` target="_blank")= slug
+                        td
+                            if pos > 0
+                                span.badge-boost ⭐ Position #{pos}
+                            else
+                                span.badge-none —
+                        td
+                            .position-wrap
+                                input.position-input(
+                                    type="number"
+                                    min="0"
+                                    max="99"
+                                    value=pos
+                                    data-company-id=String(c._id)
+                                    data-boosted=pos > 0 ? 'true' : 'false'
+                                )
+                                button.save-btn(type="button" data-company-id=String(c._id)) Enregistrer
+
+        script.
+            document.querySelectorAll('.save-btn').forEach(function(btn) {
+                btn.addEventListener('click', async function() {
+                    const companyId = this.dataset.companyId;
+                    const row       = this.closest('tr');
+                    const input     = row.querySelector('.position-input');
+                    const position  = parseInt(input.value) || 0;
+
+                    this.classList.add('saving');
+                    this.textContent = '...';
+
+                    try {
+                        const res = await fetch('/superadmin/boost/' + companyId, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ position })
+                        });
+                        const data = await res.json();
+                        if (!data.success) throw new Error('Failed');
+
+                        // Mettre à jour l'UI
+                        const isBoosted = position > 0;
+                        input.dataset.boosted = isBoosted ? 'true' : 'false';
+                        row.classList.toggle('is-boosted', isBoosted);
+
+                        const statusCell = row.querySelector('td:nth-child(3)');
+                        if (isBoosted) {
+                            statusCell.innerHTML = '<span class="badge-boost">⭐ Position ' + position + '</span>';
+                        } else {
+                            statusCell.innerHTML = '<span class="badge-none">—</span>';
+                        }
+
+                        this.classList.remove('saving');
+                        this.classList.add('saved');
+                        this.textContent = '✓ Sauvegardé';
+                        setTimeout(() => {
+                            this.classList.remove('saved');
+                            this.textContent = 'Enregistrer';
+                        }, 2000);
+                    } catch(e) {
+                        this.classList.remove('saving');
+                        this.textContent = 'Enregistrer';
+                        alert('Erreur lors de la sauvegarde.');
+                    }
+                });
+            });
+
+            // Highlight input quand valeur > 0
+            document.querySelectorAll('.position-input').forEach(function(input) {
+                input.addEventListener('input', function() {
+                    const val = parseInt(this.value) || 0;
+                    this.dataset.boosted = val > 0 ? 'true' : 'false';
+                });
+            });

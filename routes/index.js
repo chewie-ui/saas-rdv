@@ -129,11 +129,16 @@ router.get("/", async (req, res) => {
   const allPremiumUsers = await User.find({ isPremium: true }).select("_id subscription").lean();
   const premiumIds      = allPremiumUsers.map((u) => u._id);
 
-  // 2. Companies avec leur owner (on charge plus que nécessaire puis on filtre)
-  const coachs = await Companies.find({ owner: { $in: premiumIds } })
+  // 2. Toutes les companies (premium + boostées) — on filtre après
+  const allCompanies = await Companies.find({})
+    .select("_id owner boostPosition slug")
     .populate("owner", "_id fullName businessName businessType businessPicture profilePicture description location verified subscription isPremium manualPremium")
-    .limit(60)
     .lean();
+
+  // Garder : boostées (boostPosition > 0) OU premium
+  const coachs = allCompanies.filter(c =>
+    c.owner && (c.boostPosition > 0 || premiumIds.some(id => String(id) === String(c.owner._id)))
+  ).slice(0, 60);
 
   // 3. Agrégation des avis
   const companyIds = coachs.map(c => c._id);
@@ -144,22 +149,28 @@ router.get("/", async (req, res) => {
   const ratingMap = {};
   ratings.forEach(r => { ratingMap[r._id.toString()] = r; });
 
-  // 4. Enrichir + marquer les "featured" (pro/business) et trier :
-  //    featured d'abord (triés par note), puis gratuits (triés par note)
+  // 4. Enrichir + trier : boostés en premier (par position), puis premium, puis par note
   const { getPlan } = require("../utils/planLimits");
   const enriched = coachs.map(c => {
     const plan     = getPlan(c.owner);
     const featured = plan === "pro" || plan === "business";
     return {
       ...c,
-      avgRating:   ratingMap[c._id.toString()]?.avgRating   || 0,
-      reviewCount: ratingMap[c._id.toString()]?.reviewCount || 0,
+      avgRating:    ratingMap[c._id.toString()]?.avgRating   || 0,
+      reviewCount:  ratingMap[c._id.toString()]?.reviewCount || 0,
       featured,
       plan,
+      boostPosition: c.boostPosition || 0,
     };
   }).sort((a, b) => {
-    // Featured first, then by rating
+    // 1. Boostés en premier (position 1 avant 2, etc.)
+    const aBoost = a.boostPosition > 0;
+    const bBoost = b.boostPosition > 0;
+    if (aBoost !== bBoost) return aBoost ? -1 : 1;
+    if (aBoost && bBoost) return a.boostPosition - b.boostPosition;
+    // 2. Featured (premium) ensuite
     if (a.featured !== b.featured) return a.featured ? -1 : 1;
+    // 3. Par note
     return b.avgRating - a.avgRating || b.reviewCount - a.reviewCount;
   });
 

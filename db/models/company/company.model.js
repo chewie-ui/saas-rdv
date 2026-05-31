@@ -83,6 +83,10 @@ const companySchema = schema(
         paypalMe: { type: String,  default: "" },      // ex: "username" ou "https://paypal.me/username"
       },
     },
+
+    // ── Mise en avant (boost) ─────────────────────────────────────────────────
+    // 0 = pas mis en avant, 1 = premier, 2 = deuxième, etc.
+    boostPosition: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

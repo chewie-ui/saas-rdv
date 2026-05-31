@@ -1,5 +1,6 @@
 const crypto     = require("crypto");
 const User       = require("../db/models/user.model");
+const Company    = require("../db/models/company/company.model");
 const PromoCode  = require("../db/models/promoCode.model");
 const AccessLink = require("../db/models/accessLink.model");
 
@@ -203,6 +204,29 @@ exports.validatePromoCode = async (req, res) => {
       applicablePlan: promo.applicablePlan || "all",
     });
   } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Boost (mise en avant homepage) ───────────────────────────────────────────
+
+exports.boostPage = async (req, res) => {
+  const companies = await Company.find({})
+    .select("_id slug boostPosition owner")
+    .populate("owner", "fullName businessName businessType location profilePicture businessPicture")
+    .sort({ boostPosition: -1, "owner.businessName": 1 })
+    .lean();
+  res.render("superadmin/boost", { companies });
+};
+
+exports.setBoost = async (req, res) => {
+  try {
+    const { companyId } = req.params;
+    const position = Math.max(0, parseInt(req.body.position) || 0);
+    await Company.findByIdAndUpdate(companyId, { boostPosition: position });
+    res.json({ success: true, position });
+  } catch (err) {
+    console.error("setBoost error:", err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 };
