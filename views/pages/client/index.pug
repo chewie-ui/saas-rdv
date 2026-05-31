@@ -1,28 +1,42 @@
 extends ../../layouts/booking
 
 block jsonld
-    - var _bizName = (coach && (coach.businessName || coach.fullName)) || 'BranShee Pro'
-    - var _bizDesc = (coach && coach.description) || ''
-    - var _bizImg  = (coach && (coach.businessPicture || coach.profilePicture)) || ''
-    - var _bizCity = (coach && coach.location && coach.location.city) || ''
-    - var _bizAddr = (coach && coach.location && coach.location.address) || ''
-    - var _bizZip  = (coach && coach.location && coach.location.zip) ? String(coach.location.zip) : ''
-    - var _bizUrl  = 'https://www.branshee.com/' + (company ? (company.slug || String(company._id)) : '')
+    - var _bizName    = (coach && (coach.businessName || coach.fullName)) || 'BranShee Pro'
+    - var _bizDesc    = (coach && coach.description) || ('Réservez en ligne avec ' + _bizName + ' sur BranShee.')
+    - var _bizImg     = (coach && (coach.businessPicture || coach.profilePicture)) || ''
+    - var _bizCity    = (coach && coach.location && coach.location.city) || ''
+    - var _bizAddr    = (coach && coach.location && coach.location.address) || ''
+    - var _bizZip     = (coach && coach.location && coach.location.zip) ? String(coach.location.zip) : ''
+    - var _bizCountry = (coach && coach.location && coach.location.country) || 'BE'
+    - var _bizPhone   = (coach && (coach.phonePro || coach.phone)) || ''
+    - var _bizUrl     = 'https://www.branshee.com/' + (company ? (company.slug || String(company._id)) : '')
+    - var _hasRating  = (typeof reviewCount !== 'undefined' && reviewCount > 0)
+    - var _svcPrices  = services && services.length ? services.filter(function(s){return s.price>0}).map(function(s){return s.price}) : []
+    - var _minPrice   = _svcPrices.length ? Math.min.apply(null, _svcPrices) : 0
+    - var _maxPrice   = _svcPrices.length ? Math.max.apply(null, _svcPrices) : 0
     script(type="application/ld+json").
         {
           "@context": "https://schema.org",
           "@type": "LocalBusiness",
-          "name": "!{_bizName}",
-          "description": "!{_bizDesc}",
+          "name": "!{_bizName.replace(/"/g,'\\\"')}",
+          "description": "!{_bizDesc.replace(/"/g,'\\\"').replace(/\n/g,' ')}",
           "image": "!{_bizImg}",
           "url": "!{_bizUrl}",
+          "telephone": "!{_bizPhone}",
           "address": {
             "@type": "PostalAddress",
-            "streetAddress": "!{_bizAddr}",
-            "addressLocality": "!{_bizCity}",
+            "streetAddress": "!{_bizAddr.replace(/"/g,'\\\"')}",
+            "addressLocality": "!{_bizCity.replace(/"/g,'\\\"')}",
             "postalCode": "!{_bizZip}",
-            "addressCountry": "FR"
+            "addressCountry": "!{_bizCountry}"
+          },
+          "makesOffer": {
+            "@type": "Offer",
+            "url": "!{_bizUrl}",
+            "description": "Réservation en ligne disponible 24h/24"
           }
+          !{_hasRating ? (',\n          "aggregateRating": { "@type": "AggregateRating", "ratingValue": "' + (Math.round(avgRating * 10)/10) + '", "reviewCount": "' + reviewCount + '", "bestRating": "5", "worstRating": "1" }') : ''}
+          !{(_minPrice > 0 && _maxPrice > 0) ? (',\n          "priceRange": "' + _minPrice + '€ – ' + _maxPrice + '€"') : ''}
         }
 
 block content

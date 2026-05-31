@@ -1,12 +1,13 @@
 
-- var _title       = title || 'BranShee — Réservation en ligne'
-- var _desc        = metaDescription || 'BranShee est la plateforme de prise de rendez-vous en ligne pour les professionnels : coaches, coiffeurs, thérapeutes, et plus encore. Gérez vos réservations simplement.'
+- var _title       = title || 'BranShee — Prise de rendez-vous en ligne'
+- var _desc        = metaDescription || 'BranShee est la plateforme de prise de rendez-vous en ligne pour les professionnels : coaches, coiffeurs, thérapeutes, et plus encore. Agenda en ligne gratuit et simple.'
 - var _ogImage     = ogImage || 'https://www.branshee.com/images/og-cover.jpg'
 - var _canonical   = canonical || ('https://www.branshee.com' + (typeof reqPath !== 'undefined' ? reqPath : ''))
 - var _ogType      = ogType || 'website'
+- var _lang        = lang || 'fr'
 
 doctype html
-html(lang=lang || "fr")
+html(lang=_lang)
     head
         meta(name="viewport" content="width=device-width, initial-scale=1.0")
         meta(charset="UTF-8")
@@ -17,39 +18,77 @@ html(lang=lang || "fr")
         meta(name="robots" content="index, follow")
         link(rel="canonical" href=_canonical)
 
+        //- Hreflang (multilingual)
+        link(rel="alternate" hreflang="fr" href=_canonical)
+        link(rel="alternate" hreflang="x-default" href=_canonical)
+
         //- Open Graph (Facebook, LinkedIn, WhatsApp…)
         meta(property="og:type" content=_ogType)
         meta(property="og:title" content=_title)
         meta(property="og:description" content=_desc)
         meta(property="og:image" content=_ogImage)
+        meta(property="og:image:width" content="1200")
+        meta(property="og:image:height" content="630")
         meta(property="og:url" content=_canonical)
         meta(property="og:site_name" content="BranShee")
-        meta(property="og:locale" content=(lang === 'en' ? 'en_US' : lang === 'nl' ? 'nl_NL' : 'fr_FR'))
+        meta(property="og:locale" content=(_lang === 'en' ? 'en_US' : _lang === 'nl' ? 'nl_NL' : 'fr_FR'))
 
         //- Twitter Card
         meta(name="twitter:card" content="summary_large_image")
         meta(name="twitter:title" content=_title)
         meta(name="twitter:description" content=_desc)
         meta(name="twitter:image" content=_ogImage)
+        meta(name="twitter:site" content="@branshee")
+
+        //- Preconnect pour la performance
+        link(rel="preconnect" href="https://kit.fontawesome.com")
+        link(rel="dns-prefetch" href="https://kit.fontawesome.com")
 
         link(rel="shortcut icon", href="/images/icon.svg", type="image/x-icon")
+        link(rel="apple-touch-icon" href="/images/icon.svg")
         link(rel="stylesheet", href="/css/import.css")
         link(rel="stylesheet", href="/css/layouts/index.css")
         script(src="https://kit.fontawesome.com/be29c06db4.js" crossorigin="anonymous")
         //- Anti-flash : applique le thème AVANT le rendu
         script.
             (function(){try{var t=localStorage.getItem('branshee-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
-        //- JSON-LD structured data (default: Organization)
+        //- JSON-LD : WebSite + SearchAction (sitelinks search box) + Organization
         block jsonld
+            script(type="application/ld+json").
+                {
+                  "@context": "https://schema.org",
+                  "@type": "WebSite",
+                  "name": "BranShee",
+                  "url": "https://www.branshee.com",
+                  "description": "Plateforme de prise de rendez-vous en ligne pour les professionnels indépendants.",
+                  "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": {
+                      "@type": "EntryPoint",
+                      "urlTemplate": "https://www.branshee.com/search?name={search_term_string}"
+                    },
+                    "query-input": "required name=search_term_string"
+                  }
+                }
             script(type="application/ld+json").
                 {
                   "@context": "https://schema.org",
                   "@type": "Organization",
                   "name": "BranShee",
                   "url": "https://www.branshee.com",
-                  "logo": "https://www.branshee.com/images/icon.svg",
-                  "description": "Plateforme de prise de rendez-vous en ligne pour les professionnels.",
-                  "sameAs": []
+                  "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://www.branshee.com/images/icon.svg",
+                    "width": 512,
+                    "height": 512
+                  },
+                  "description": "BranShee est la plateforme de prise de rendez-vous en ligne pour les professionnels indépendants : coaches, coiffeurs, thérapeutes, masseurs, tatoueurs et plus encore.",
+                  "foundingDate": "2024",
+                  "areaServed": ["FR", "BE", "LU", "CH"],
+                  "sameAs": [
+                    "https://www.linkedin.com/company/branshee",
+                    "https://www.instagram.com/branshee"
+                  ]
                 }
 
         block links

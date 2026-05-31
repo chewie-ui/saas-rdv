@@ -24,20 +24,27 @@ router.use(require("./employees"));
 
 /* ── Sitemap ──────────────────────────────────────────────────────── */
 router.get("/sitemap.xml", async (req, res) => {
-  const BASE = "https://www.branshee.com";
+  const BASE  = "https://www.branshee.com";
+  const today = new Date().toISOString().split("T")[0];
 
-  // Fetch all active company slugs to generate business profile URLs
+  // Tous les pros (premium ET gratuits) — slug en priorité, fallback sur _id
   let companyUrls = "";
   try {
     const companies = await Companies.find({})
-      .populate({ path: "owner", match: { isPremium: true } })
+      .select("_id slug updatedAt owner")
+      .populate("owner", "_id")
       .lean();
     companies
       .filter((c) => c.owner)
       .forEach((c) => {
+        const loc     = `${BASE}/${c.slug || c._id}`;
+        const lastmod = c.updatedAt
+          ? new Date(c.updatedAt).toISOString().split("T")[0]
+          : today;
         companyUrls += `
   <url>
-    <loc>${BASE}/${c._id}</loc>
+    <loc>${loc}</loc>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>`;
@@ -45,29 +52,37 @@ router.get("/sitemap.xml", async (req, res) => {
   } catch (_) {}
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+          http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
   <url>
     <loc>${BASE}/</loc>
+    <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>${BASE}/search</loc>
+    <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>${BASE}/manage-business</loc>
+    <lastmod>${today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>${BASE}/s-inscrire</loc>
+    <lastmod>${today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>${BASE}/contact</loc>
+    <lastmod>${today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -84,6 +99,7 @@ router.get("/sitemap.xml", async (req, res) => {
 </urlset>`;
 
   res.setHeader("Content-Type", "application/xml");
+  res.setHeader("Cache-Control", "public, max-age=3600");
   res.send(xml);
 });
 

@@ -11,18 +11,58 @@ block jsonld
           "applicationCategory": "BusinessApplication",
           "operatingSystem": "Web",
           "url": "https://www.branshee.com",
-          "description": "BranShee est la plateforme de prise de rendez-vous en ligne pour les professionnels.",
-          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+          "description": "BranShee est la plateforme de prise de rendez-vous en ligne pour les professionnels indépendants : agenda en ligne, calendrier de réservation, gestion des clients.",
+          "featureList": [
+            "Prise de rendez-vous en ligne 24h/24",
+            "Agenda en ligne pour professionnels",
+            "Calendrier de réservation partageable",
+            "Rappels automatiques par email",
+            "Paiement en ligne intégré",
+            "Gestion des employés et services"
+          ],
+          "screenshot": "https://www.branshee.com/images/og-cover.jpg",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR",
+            "description": "Gratuit pour les clients. Offre pro disponible pour les professionnels."
+          }
         }
     script(type="application/ld+json").
         {
           "@context": "https://schema.org",
           "@type": "FAQPage",
           "mainEntity": [
-            { "@type": "Question", "name": "Comment prendre rendez-vous sur BranShee ?",
-              "acceptedAnswer": { "@type": "Answer", "text": "Recherchez un professionnel, consultez ses disponibilités et réservez en quelques clics." } },
-            { "@type": "Question", "name": "BranShee est-il gratuit ?",
-              "acceptedAnswer": { "@type": "Answer", "text": "Oui, la prise de rendez-vous est entièrement gratuite pour les clients." } }
+            {
+              "@type": "Question",
+              "name": "Comment prendre rendez-vous en ligne avec BranShee ?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Cherchez un professionnel par nom ou ville sur BranShee.com, consultez ses disponibilités en temps réel et réservez en quelques clics. Aucune inscription requise pour les clients." }
+            },
+            {
+              "@type": "Question",
+              "name": "BranShee est-il gratuit ?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Oui, la prise de rendez-vous en ligne est entièrement gratuite pour les clients. Pour les professionnels, BranShee propose une formule gratuite pour commencer, et des offres premium avec plus de fonctionnalités." }
+            },
+            {
+              "@type": "Question",
+              "name": "Quel type de professionnels peut-on trouver sur BranShee ?",
+              "acceptedAnswer": { "@type": "Answer", "text": "BranShee permet de réserver en ligne avec des coiffeurs, coaches sportifs, masseurs, thérapeutes, tatoueurs, nail artists, yoga instructeurs et de nombreux autres professionnels indépendants." }
+            },
+            {
+              "@type": "Question",
+              "name": "Comment créer un agenda en ligne pour mon activité avec BranShee ?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Inscrivez-vous gratuitement sur BranShee, créez votre page professionnelle, configurez vos services, horaires et disponibilités. Partagez ensuite votre lien de réservation avec vos clients. Votre agenda en ligne est prêt en moins de 5 minutes." }
+            },
+            {
+              "@type": "Question",
+              "name": "BranShee est-il une bonne alternative à Calendly ou Planity ?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Oui. BranShee est une alternative française à Calendly, Planity ou SimplyBook spécialement conçue pour les indépendants et petites équipes. Il propose un calendrier de réservation en ligne, la gestion des employés, les paiements et les rappels automatiques." }
+            },
+            {
+              "@type": "Question",
+              "name": "Peut-on recevoir des paiements en ligne via BranShee ?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Oui, BranShee intègre le paiement en ligne via Stripe pour les professionnels en formule premium. Les clients peuvent payer au moment de la réservation, et les professionnels reçoivent les fonds directement." }
+            }
           ]
         }
 

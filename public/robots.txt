@@ -1,7 +1,9 @@
 User-agent: *
 Allow: /
 
-# Block admin/private routes
+# Block admin/private/authenticated routes
+Disallow: /espace-client
+Disallow: /cancel-booking/
 Disallow: /appointment
 Disallow: /history
 Disallow: /account
@@ -10,5 +12,10 @@ Disallow: /services
 Disallow: /company
 Disallow: /superadmin
 Disallow: /api/
+
+# Allow public assets explicitly
+Allow: /images/
+Allow: /css/
+Allow: /js/
 
 Sitemap: https://www.branshee.com/sitemap.xml
