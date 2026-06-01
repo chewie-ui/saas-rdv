@@ -972,7 +972,9 @@ exports.paymentVerification = async (req, res) => {
 
   try {
     const session = await stripe.checkout.sessions.retrieve(session_id);
-    if (session.payment_status !== "paid") return res.redirect("/subscription");
+    // "no_payment_required" = coupon 100% → valide aussi
+    const validStatus = ["paid", "no_payment_required"];
+    if (!validStatus.includes(session.payment_status)) return res.redirect("/subscription");
 
     // ── Determine plan from line items ───────────────────────────────────────
     const Subscription = require("../db/models/subscription.model");

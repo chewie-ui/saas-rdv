@@ -179,15 +179,25 @@ exports.validatePromoCode = async (req, res) => {
       return res.json({ valid: false, error: "Ce code a atteint sa limite d'utilisation." });
     }
 
+    // Vérifier utilisation unique par utilisateur connecté
+    if (req.user && req.user._id) {
+      const alreadyUsed = promo.usedByUsers.some(
+        (uid) => String(uid) === String(req.user._id)
+      );
+      if (alreadyUsed) {
+        return res.json({ valid: false, error: "Vous avez déjà utilisé ce code promo." });
+      }
+    }
+
     // Vérifier si le code s'applique au plan sélectionné
     if (promo.applicablePlan && promo.applicablePlan !== "all" && plan && billing) {
-      const selectedKey = `${plan}_${billing}`; // ex: "premium_monthly"
+      const selectedKey = `${plan}_${billing}`;
       if (promo.applicablePlan !== selectedKey) {
         const planLabels = {
-          premium_monthly: "Premium Mensuel",
-          premium_yearly: "Premium Annuel",
+          premium_monthly:  "Pro Mensuel",
+          premium_yearly:   "Pro Annuel",
           business_monthly: "Business Mensuel",
-          business_yearly: "Business Annuel",
+          business_yearly:  "Business Annuel",
         };
         return res.json({
           valid: false,
@@ -198,9 +208,9 @@ exports.validatePromoCode = async (req, res) => {
 
     res.json({
       valid: true,
-      discountType: promo.discountType,
-      discountValue: promo.discountValue,
-      code: promo.code,
+      discountType:   promo.discountType,
+      discountValue:  promo.discountValue,
+      code:           promo.code,
       applicablePlan: promo.applicablePlan || "all",
     });
   } catch (err) {

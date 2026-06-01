@@ -115,16 +115,18 @@ exports.createCheckout = async (req, res) => {
     if (existingSub?.stripeSubscriptionId) {
       try {
         const stripeSub = await stripe.subscriptions.retrieve(existingSub.stripeSubscriptionId);
+        // S'assurer que l'abonnement est actif en live (pas annulé, pas test)
+        if (stripeSub.status !== "active" && stripeSub.status !== "trialing") {
+          throw new Error(`Subscription status invalide: ${stripeSub.status}`);
+        }
         const itemId = stripeSub.items.data[0]?.id;
 
         if (itemId) {
-          // Mettre à jour le prix → Stripe prorate automatiquement
           await stripe.subscriptions.update(existingSub.stripeSubscriptionId, {
             items: [{ id: itemId, price: priceId }],
             proration_behavior: "create_prorations",
           });
 
-          // Mettre à jour notre DB
           await User.findByIdAndUpdate(req.user._id, {
             isPremium: true,
             "subscription.plan":   planName,
@@ -132,18 +134,18 @@ exports.createCheckout = async (req, res) => {
           });
           await Subscription.findByIdAndUpdate(existingSub._id, { plan: planName });
 
-          // Mettre à jour la session
           if (req.user) {
             req.user.isPremium = true;
             if (req.user.subscription) req.user.subscription.plan = planName;
           }
 
-          console.log(`✅ Upgrade vers ${planName} pour user ${req.user._id}`);
+          console.log(`✅ Upgrade inline vers ${planName} pour user ${req.user._id}`);
           return res.json({ upgraded: true, plan: planName });
         }
       } catch (upgradeErr) {
         console.error("Subscription update failed, fallback to checkout:", upgradeErr.message);
-        // On continue vers le checkout classique si l'update Stripe échoue
+        // Nettoyer l'ID invalide en base pour éviter de le réutiliser
+        await Subscription.findByIdAndUpdate(existingSub._id, { status: "superseded" }).catch(() => {});
       }
     }
 
@@ -190,20 +192,31 @@ exports.createCheckout = async (req, res) => {
         active: true,
       });
 
-      if (promo && !(promo.expiresAt && new Date() > promo.expiresAt) && (promo.maxUses === null || promo.usedCount < promo.maxUses)) {
+      const userId = req.user._id;
+      const alreadyUsed = promo?.usedByUsers?.some((uid) => String(uid) === String(userId));
+
+      if (
+        promo &&
+        !alreadyUsed &&
+        !(promo.expiresAt && new Date() > promo.expiresAt) &&
+        (promo.maxUses === null || promo.usedCount < promo.maxUses)
+      ) {
         // Créer un coupon Stripe à la volée
         const couponParams = { duration: "once" };
         if (promo.discountType === "percent") {
           couponParams.percent_off = promo.discountValue;
         } else {
-          couponParams.amount_off = Math.round(promo.discountValue * 100); // centimes
+          couponParams.amount_off = Math.round(promo.discountValue * 100);
           couponParams.currency = "eur";
         }
         const coupon = await stripe.coupons.create(couponParams);
         sessionParams.discounts = [{ coupon: coupon.id }];
 
-        // Incrémenter usedCount
-        await PromoCode.findByIdAndUpdate(promo._id, { $inc: { usedCount: 1 } });
+        // Incrémenter usedCount + enregistrer l'utilisateur
+        await PromoCode.findByIdAndUpdate(promo._id, {
+          $inc: { usedCount: 1 },
+          $addToSet: { usedByUsers: userId },
+        });
       }
     }
 

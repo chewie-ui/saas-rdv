@@ -27,6 +27,11 @@ const promoCodeSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // Liste des user IDs ayant déjà utilisé ce code (max 1 fois par user)
+    usedByUsers: {
+      type: [{ type: require("mongoose").Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+    },
     expiresAt: {
       type: Date,
       default: null, // null = pas d'expiration
