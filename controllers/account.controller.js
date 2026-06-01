@@ -155,6 +155,11 @@ exports.createCheckout = async (req, res) => {
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
       client_reference_id: req.user._id.toString(),
+      // Stocker le plan dans metadata → fallback fiable dans paymentVerification
+      metadata: { plan: planName, userId: req.user._id.toString() },
+      subscription_data: { metadata: { plan: planName, userId: req.user._id.toString() } },
+      // Pour les achats 0€ (coupon 100%) : ne pas forcer la carte si inutile
+      payment_method_collection: "if_required",
       success_url: `${env.stripeSuccessUrl || "https://branshee.com"}`,
       cancel_url:  `${env.stripeCancelUrl  || "https://branshee.com"}`,
     };

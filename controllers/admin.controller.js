@@ -967,79 +967,106 @@ exports.paymentVerification = async (req, res) => {
   const { session_id } = req.query;
   const renderSuccess = () => res.render("admin/payment-success", { t: res.locals.t });
 
-  // No session_id: can't verify — show success anyway (Stripe redirected here)
-  if (!session_id) return renderSuccess();
-
-  try {
-    const session = await stripe.checkout.sessions.retrieve(session_id);
-    // "no_payment_required" = coupon 100% → valide aussi
-    const validStatus = ["paid", "no_payment_required"];
-    if (!validStatus.includes(session.payment_status)) return res.redirect("/subscription");
-
-    // ── Determine plan from line items ───────────────────────────────────────
-    const Subscription = require("../db/models/subscription.model");
-    const lineItems = await stripe.checkout.sessions.listLineItems(session_id, { limit: 5 });
-    const priceId = lineItems.data[0]?.price?.id || "";
-    const isBusinessPrice = [
-      env.stripePriceBusinessMonthly,
-      env.stripePriceBusinessYearly,
-      env.stripePricePlanBusiness,
-    ].filter(Boolean).includes(priceId);
-    const planName = isBusinessPrice ? "business" : "pro";
-
-    const userId = session.client_reference_id || (req.user && req.user._id.toString());
-
-    if (userId) {
-      // Update user document
-      await User.findByIdAndUpdate(userId, {
-        isPremium: true,
-        manualPremium: false,
-        "subscription.plan":                 planName,
-        "subscription.status":               "active",
-        "subscription.stripeCustomerId":     session.customer,
-        "subscription.stripeSubscriptionId": session.subscription,
-      });
-
-      // Désactiver tous les anciens docs Subscription actifs
-      await Subscription.updateMany(
-        { user: userId, status: "active" },
-        { status: "superseded" }
-      );
-
-      // Créer/mettre à jour le Subscription document (clé = stripeSubscriptionId)
-      const expDate = new Date();
-      expDate.setMonth(expDate.getMonth() + 1);
-      await Subscription.findOneAndUpdate(
-        { user: userId, stripeSubscriptionId: session.subscription },
-        {
-          user:                   userId,
-          plan:                   planName,
-          status:                 "active",
-          startDate:              new Date(),
-          endDate:                expDate,
-          stripeCustomerId:       session.customer,
-          stripeSubscriptionId:   session.subscription,
-          amount:                 (session.amount_total || 0) / 100,
-          currency:               session.currency,
-        },
-        { upsert: true, new: true }
-      );
-
-      // Update session so the current request sees the new plan immediately
-      if (req.user) {
-        req.user.isPremium = true;
-        req.user.subscription = req.user.subscription || {};
-        req.user.subscription.plan = planName;
-        req.user.subscription.status = "active";
-      }
-      console.log(`✅ [paymentVerification] Plan activé : ${planName} pour user ${userId}`);
-    }
-
-    return renderSuccess();
-  } catch (err) {
-    console.error("[paymentVerification] Erreur :", err.message);
+  // Sans session_id on ne peut rien vérifier
+  if (!session_id) {
+    console.warn("[paymentVerification] Pas de session_id dans l'URL");
     return renderSuccess();
   }
+
+  let session;
+  try {
+    session = await stripe.checkout.sessions.retrieve(session_id);
+  } catch (retrieveErr) {
+    console.error("[paymentVerification] Impossible de récupérer la session Stripe:", retrieveErr.message);
+    return renderSuccess();
+  }
+
+  console.log(`[paymentVerification] session=${session_id} payment_status=${session.payment_status} amount=${session.amount_total} customer=${session.customer} subscription=${session.subscription}`);
+
+  // Accepter "paid" ET "no_payment_required" (promo 100%, achat 0€)
+  const validStatus = ["paid", "no_payment_required"];
+  if (!validStatus.includes(session.payment_status)) {
+    console.warn("[paymentVerification] payment_status non valide:", session.payment_status);
+    return res.redirect("/subscription");
+  }
+
+  // ── Déterminer le plan ─────────────────────────────────────────────────────
+  // Priorité : metadata du checkout (toujours dispo) → line items → fallback "pro"
+  let planName = session.metadata?.plan || null;
+
+  if (!planName) {
+    try {
+      const lineItems = await stripe.checkout.sessions.listLineItems(session_id, { limit: 5 });
+      const priceId = lineItems.data[0]?.price?.id || "";
+      const isBusinessPrice = [
+        env.stripePriceBusinessMonthly,
+        env.stripePriceBusinessYearly,
+      ].filter(Boolean).includes(priceId);
+      planName = isBusinessPrice ? "business" : "pro";
+    } catch (liErr) {
+      console.error("[paymentVerification] listLineItems error:", liErr.message);
+      planName = "pro"; // fallback
+    }
+  }
+
+  console.log(`[paymentVerification] plan détecté: ${planName}`);
+
+  // ── Activer le plan ────────────────────────────────────────────────────────
+  const Subscription = require("../db/models/subscription.model");
+  const userId = session.client_reference_id || session.metadata?.userId || (req.user && req.user._id.toString());
+
+  if (!userId) {
+    console.error("[paymentVerification] userId introuvable — plan NON activé");
+    return renderSuccess();
+  }
+
+  try {
+    await User.findByIdAndUpdate(userId, {
+      isPremium:                           true,
+      manualPremium:                       false,
+      "subscription.plan":                 planName,
+      "subscription.status":               "active",
+      "subscription.stripeCustomerId":     session.customer,
+      "subscription.stripeSubscriptionId": session.subscription || null,
+    });
+
+    await Subscription.updateMany(
+      { user: userId, status: "active" },
+      { status: "superseded" }
+    );
+
+    const expDate = new Date();
+    expDate.setMonth(expDate.getMonth() + 1);
+    await Subscription.findOneAndUpdate(
+      { user: userId, stripeSubscriptionId: session.subscription || `manual_${session_id}` },
+      {
+        user:                userId,
+        plan:                planName,
+        status:              "active",
+        startDate:           new Date(),
+        endDate:             expDate,
+        stripeCustomerId:    session.customer,
+        stripeSubscriptionId: session.subscription || null,
+        amount:              (session.amount_total || 0) / 100,
+        currency:            session.currency || "eur",
+      },
+      { upsert: true, new: true }
+    );
+
+    // Mettre à jour la session Express en cours pour affichage immédiat
+    if (req.user) {
+      req.user.isPremium = true;
+      req.user.subscription = req.user.subscription || {};
+      req.user.subscription.plan   = planName;
+      req.user.subscription.status = "active";
+    }
+
+    console.log(`✅ [paymentVerification] Plan "${planName}" activé pour user ${userId}`);
+  } catch (dbErr) {
+    console.error("[paymentVerification] Erreur DB:", dbErr.message);
+  }
+
+  return renderSuccess();
 };
 
 const Subscription = require("../db/models/subscription.model");
