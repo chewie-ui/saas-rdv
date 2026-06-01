@@ -234,6 +234,94 @@ block content
                                 button.sm-btn.sm-btn--primary#enable2FABtn(type="button") Activer
                             .twofa-feedback#enableFeedback
 
+        //- ── Parrainage ──────────────────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3 🎁 Parrainage
+                p.info-card__desc Invitez d'autres professionnels sur BranShee. Pour chaque filleul qui souscrit un abonnement payant, vous gagnez <strong>1 mois gratuit</strong> sur votre abonnement.
+            -
+                var _refCode  = user.referralCode || ''
+                var _refLink  = 'https://www.branshee.com/register?ref=' + _refCode
+                var _qrUrl    = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(_refLink)
+                var _invited  = (user.referral && user.referral.totalInvited)  || 0
+                var _paying   = (user.referral && user.referral.totalPaying)   || 0
+                var _credit   = (user.referral && user.referral.creditMonths)  || 0
+            .referral-wrap
+                //- Stats
+                .referral-stats
+                    .referral-stat
+                        .referral-stat__val= _invited
+                        .referral-stat__label Inscrits
+                    .referral-stat
+                        .referral-stat__val= _paying
+                        .referral-stat__label Payants
+                    .referral-stat.referral-stat--credit
+                        .referral-stat__val= _credit
+                        .referral-stat__label Mois offerts en attente
+
+                //- Code + lien
+                .referral-share
+                    .referral-block
+                        .referral-label Votre code
+                        .referral-code-row
+                            span.referral-code= _refCode || '—'
+                            button.referral-copy(type="button" data-copy=_refCode title="Copier le code")
+                                svg(viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                    rect(x="9" y="9" width="13" height="13" rx="2" ry="2")
+                                    path(d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1")
+                    .referral-block
+                        .referral-label Lien d'invitation
+                        .referral-code-row
+                            span.referral-link-val= _refLink
+                            button.referral-copy(type="button" data-copy=_refLink title="Copier le lien")
+                                svg(viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                    rect(x="9" y="9" width="13" height="13" rx="2" ry="2")
+                                    path(d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1")
+
+                //- QR Code
+                .referral-qr-wrap
+                    .referral-label QR Code
+                    img.referral-qr(src=_qrUrl alt="QR Code parrainage" loading="lazy")
+                    a.referral-qr-dl(href=_qrUrl download="branshee-parrainage-qr.png" target="_blank") ⬇ Télécharger
+
+                .referral-note 💡 Partagez votre code, lien ou QR code. Dès qu'un filleul prend un abonnement payant, votre prochain mois est déduit automatiquement.
+
+        style.
+            .referral-wrap { display:flex; flex-direction:column; gap:20px; }
+            .referral-stats { display:flex; gap:12px; flex-wrap:wrap; }
+            .referral-stat { background:var(--color-surface-2,#f8fafc); border:1px solid var(--border-light,#e5e7eb); border-radius:12px; padding:14px 20px; display:flex; flex-direction:column; gap:3px; min-width:100px; }
+            .referral-stat--credit { background:var(--main-color-pale,#f0fdf4); border-color:var(--main-color-border,rgba(34,197,94,.3)); }
+            .referral-stat__val { font-size:1.6rem; font-weight:800; color:var(--text-primary,#111); letter-spacing:-0.03em; line-height:1; }
+            .referral-stat--credit .referral-stat__val { color:var(--main-color,#16a34a); }
+            .referral-stat__label { font-size:11.5px; color:var(--text-muted,#6b7280); font-weight:500; }
+            .referral-share { display:flex; gap:12px; flex-wrap:wrap; }
+            .referral-block { flex:1; min-width:200px; display:flex; flex-direction:column; gap:6px; }
+            .referral-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted,#9ca3af); }
+            .referral-code-row { display:flex; align-items:center; gap:8px; background:var(--color-surface-2,#f8fafc); border:1px solid var(--border-light,#e5e7eb); border-radius:10px; padding:10px 14px; }
+            .referral-code { font-family:monospace; font-size:1.1rem; font-weight:700; color:var(--text-primary,#111); letter-spacing:.05em; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+            .referral-link-val { font-size:12px; color:var(--text-muted,#6b7280); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+            .referral-copy { background:none; border:none; cursor:pointer; color:var(--text-muted,#9ca3af); padding:2px; border-radius:6px; transition:color .15s,background .15s; display:flex; align-items:center; flex-shrink:0; }
+            .referral-copy:hover { color:var(--main-color,#16a34a); background:var(--main-color-pale,#f0fdf4); }
+            .referral-copy.copied { color:var(--main-color,#16a34a); }
+            .referral-qr-wrap { display:flex; flex-direction:column; gap:8px; }
+            .referral-qr { width:120px; height:120px; border-radius:10px; border:1px solid var(--border-light,#e5e7eb); }
+            .referral-qr-dl { font-size:12px; color:var(--main-color,#16a34a); text-decoration:none; width:fit-content; }
+            .referral-qr-dl:hover { text-decoration:underline; }
+            .referral-note { font-size:12.5px; color:var(--text-muted,#6b7280); line-height:1.5; padding:10px 14px; background:var(--color-surface-2,#f8fafc); border-radius:10px; border:1px solid var(--border-light,#e5e7eb); }
+        script.
+            document.querySelectorAll('.referral-copy').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var text = this.dataset.copy;
+                    if (!text) return;
+                    navigator.clipboard.writeText(text).then(function() {
+                        btn.classList.add('copied');
+                        var orig = btn.innerHTML;
+                        btn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+                        setTimeout(function() { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
+                    });
+                });
+            });
+
         //- ── Notifications email ─────────────────────────────────────────────
         .info-card
             .info-card__header

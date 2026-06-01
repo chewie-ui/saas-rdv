@@ -739,6 +739,21 @@ exports.historyEditRow = async (req, res) => {
 };
 
 exports.settingsInit = async (req, res) => {
+  // Générer un code de parrainage si l'utilisateur n'en a pas encore
+  if (!req.user.referralCode) {
+    const crypto = require("crypto");
+    const base = (req.user.fullName || "USER").trim().split(" ")[0]
+      .toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7);
+    let code;
+    for (let i = 0; i < 10; i++) {
+      code = `${base}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+      const exists = await User.exists({ referralCode: code });
+      if (!exists) break;
+    }
+    req.user.referralCode = code;
+    await User.findByIdAndUpdate(req.user._id, { referralCode: code });
+  }
+
   const email     = req.user.email;
   const maskEmail = email.replace(/^(..)(.*)(?=@)/, "$1...");
   const canUseSocial    = getLimit("socialLinks", req.user);

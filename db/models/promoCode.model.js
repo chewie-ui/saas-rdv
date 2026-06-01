@@ -11,13 +11,21 @@ const promoCodeSchema = new mongoose.Schema(
     },
     discountType: {
       type: String,
-      enum: ["percent", "fixed"],
+      // percent  → -X% sur la 1ère facture seulement (Stripe coupon duration:once)
+      // fixed    → -X€ sur la 1ère facture seulement (Stripe coupon duration:once)
+      // trial    → X jours d'essai gratuits, PUIS plein tarif (Stripe trial_period_days)
+      enum: ["percent", "fixed", "trial"],
       required: true,
     },
     discountValue: {
       type: Number,
       required: true,
       min: 0,
+    },
+    // Uniquement pour discountType === "trial"
+    trialDays: {
+      type: Number,
+      default: 30,
     },
     maxUses: {
       type: Number,

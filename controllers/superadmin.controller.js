@@ -116,14 +116,22 @@ exports.promoCodesPage = async (req, res) => {
 
 exports.createPromoCode = async (req, res) => {
   try {
-    const { code, discountType, discountValue, maxUses, expiresAt, applicablePlan } = req.body;
-    if (!code || !discountType || !discountValue) {
+    const { code, discountType, discountValue, trialDays, maxUses, expiresAt, applicablePlan } = req.body;
+    if (!code || !discountType) {
       return res.status(400).json({ error: "Champs requis manquants." });
+    }
+    if (discountType !== "trial" && !discountValue) {
+      return res.status(400).json({ error: "La valeur est requise pour ce type de réduction." });
+    }
+    const validTypes = ["percent", "fixed", "trial"];
+    if (!validTypes.includes(discountType)) {
+      return res.status(400).json({ error: "Type invalide." });
     }
     const promo = await PromoCode.create({
       code: code.trim().toUpperCase(),
       discountType,
-      discountValue: Number(discountValue),
+      discountValue: discountType === "trial" ? 0 : Number(discountValue),
+      trialDays:     discountType === "trial" ? (Number(trialDays) || 30) : 0,
       maxUses: maxUses !== undefined && maxUses !== "" ? Number(maxUses) : null,
       expiresAt: expiresAt ? new Date(expiresAt) : null,
       applicablePlan: applicablePlan || "all",
@@ -207,15 +215,35 @@ exports.validatePromoCode = async (req, res) => {
     }
 
     res.json({
-      valid: true,
+      valid:          true,
       discountType:   promo.discountType,
       discountValue:  promo.discountValue,
+      trialDays:      promo.trialDays || 30,
       code:           promo.code,
       applicablePlan: promo.applicablePlan || "all",
     });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
   }
+};
+
+// ── Parrainage ────────────────────────────────────────────────────────────────
+
+exports.referralsPage = async (req, res) => {
+  const users = await User.find({ "referral.totalInvited": { $gt: 0 } })
+    .select("fullName email referralCode referral subscription isPremium createdAt")
+    .sort({ "referral.totalPaying": -1 })
+    .lean();
+
+  // Enrichir avec les filleuls
+  const referrersWithFilleuls = await Promise.all(users.map(async (u) => {
+    const filleuls = await User.find({ referredBy: u._id })
+      .select("fullName email isPremium subscription createdAt")
+      .lean();
+    return { ...u, filleuls };
+  }));
+
+  res.render("superadmin/referrals", { users: referrersWithFilleuls });
 };
 
 // ── Boost (mise en avant homepage) ───────────────────────────────────────────

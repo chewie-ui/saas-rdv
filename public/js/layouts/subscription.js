@@ -79,27 +79,47 @@ function applyPromoToUI(promoData) {
     priceEl.style.display = "";
 
     if (applies) {
-      const discounted = calcDiscounted(base, promoData.discountType, promoData.discountValue);
-      if (discounted === null) return;
-
       const wrap = document.createElement("div");
       wrap.className = "sub-promo-wrap";
-      // flex baseline + même font-size que .sub-plan__price (2.5rem)
-      wrap.style.cssText = "display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font-size:2.5rem;font-weight:800;letter-spacing:-1.5px;line-height:1;";
+      wrap.style.cssText = "display:flex;flex-direction:column;gap:4px;";
 
-      const strike = document.createElement("span");
-      // même taille que le prix original, juste barré et grisé
-      strike.style.cssText = "text-decoration:line-through;color:#aaa;font-size:1em;font-weight:800;";
-      strike.textContent = priceEl.textContent.trim();
+      if (promoData.discountType === "trial") {
+        // Trial : badge "X jours gratuits" + prix normal dessous
+        const badge = document.createElement("span");
+        badge.style.cssText = "display:inline-flex;align-items:center;gap:5px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:5px 12px;font-size:0.9rem;font-weight:700;color:#16a34a;width:fit-content;";
+        badge.textContent = `🎁 ${promoData.trialDays || 30} jours gratuits`;
 
-      const newPrice = document.createElement("span");
-      newPrice.className = "sub-plan__price--discounted";
-      // même taille, couleur verte
-      newPrice.style.cssText = "font-size:1em;font-weight:800;color:#16a34a;letter-spacing:-1.5px;";
-      newPrice.textContent = "€" + discounted.toFixed(2).replace(/\.00$/, "");
+        const sub = document.createElement("span");
+        sub.style.cssText = "font-size:0.75rem;color:#6b7280;font-weight:500;";
+        sub.textContent = `puis ${priceEl.textContent.trim()}/mois`;
 
-      wrap.appendChild(strike);
-      wrap.appendChild(newPrice);
+        wrap.appendChild(badge);
+        wrap.appendChild(sub);
+      } else {
+        // Percent / fixed : prix barré + nouveau prix
+        const discounted = calcDiscounted(base, promoData.discountType, promoData.discountValue);
+        if (discounted === null) return;
+
+        const priceRow = document.createElement("div");
+        priceRow.style.cssText = "display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font-size:2.5rem;font-weight:800;letter-spacing:-1.5px;line-height:1;";
+
+        const strike = document.createElement("span");
+        strike.style.cssText = "text-decoration:line-through;color:#aaa;font-size:1em;font-weight:800;";
+        strike.textContent = priceEl.textContent.trim();
+
+        const newPrice = document.createElement("span");
+        newPrice.style.cssText = "font-size:1em;font-weight:800;color:#16a34a;letter-spacing:-1.5px;";
+        newPrice.textContent = "€" + discounted.toFixed(2).replace(/\.00$/, "");
+
+        priceRow.appendChild(strike);
+        priceRow.appendChild(newPrice);
+        wrap.appendChild(priceRow);
+
+        const sub = document.createElement("span");
+        sub.style.cssText = "font-size:0.75rem;color:#6b7280;font-weight:500;";
+        sub.textContent = "1ère facture uniquement, puis plein tarif";
+        wrap.appendChild(sub);
+      }
 
       priceEl.style.display = "none";
       priceEl.parentNode.insertBefore(wrap, priceEl.nextSibling);
@@ -167,10 +187,15 @@ async function validatePromo() {
 
   if (data.valid) {
     appliedPromoCode = data;
-    const discount = data.discountType === "percent"
-      ? `-${data.discountValue}%`
-      : `-${data.discountValue}€`;
-    promoCodeStatus.textContent = `✓ Code "${data.code}" appliqué : ${discount}`;
+    let discountLabel;
+    if (data.discountType === "trial") {
+      discountLabel = `${data.trialDays || 30} jours gratuits, puis plein tarif`;
+    } else if (data.discountType === "percent") {
+      discountLabel = `-${data.discountValue}% sur la 1ère facture`;
+    } else {
+      discountLabel = `-${data.discountValue}€ sur la 1ère facture`;
+    }
+    promoCodeStatus.textContent = `✓ Code "${data.code}" appliqué : ${discountLabel}`;
     promoCodeStatus.className   = "sub-promo__status valid";
     applyPromoToUI(data);
     showApplicablePlanBadge(data);
@@ -253,15 +278,15 @@ if (getProPlan)      getProPlan.onclick      = () => { currentPlan = "pro";     
 if (getProPlanAlert) getProPlanAlert.onclick = () => { currentPlan = "pro";      startCheckout("pro"); };
 if (getBusinessPlan) getBusinessPlan.onclick = () => { currentPlan = "business"; startCheckout("business"); };
 
-// ── Auto-checkout après inscription depuis landing/manage-business ────────────
+// ── Auto-checkout après inscription (avec promo auto-appliqué si présent) ─────
 (function() {
-  const params = new URLSearchParams(window.location.search);
-  const autoPlan    = params.get("plan");
-  const autoBilling = params.get("billing");
+  const params       = new URLSearchParams(window.location.search);
+  const autoPlan     = params.get("plan");
+  const autoBilling  = params.get("billing");
   const autoCheckout = params.get("autoCheckout");
+  const autoPromo    = params.get("promo");
   if (autoCheckout !== "1" || !autoPlan) return;
 
-  // Appliquer la bonne facturation
   if (autoBilling === "yearly" && billYearly) {
     isYearly = true;
     billYearly.classList.add("active");
@@ -269,8 +294,15 @@ if (getBusinessPlan) getBusinessPlan.onclick = () => { currentPlan = "business";
     updatePrices();
   }
 
-  // Lancer le checkout automatiquement après un court délai (laisser la page se charger)
-  setTimeout(() => startCheckout(autoPlan), 600);
+  // Si un code promo est dans l'URL → l'appliquer avant le checkout
+  if (autoPromo && promoCodeInput) {
+    promoCodeInput.value = autoPromo;
+    validatePromo().then(() => {
+      setTimeout(() => startCheckout(autoPlan), 400);
+    });
+  } else {
+    setTimeout(() => startCheckout(autoPlan), 600);
+  }
 })();
 
 // ── Cancel subscription ───────────────────────────────────────────────────────

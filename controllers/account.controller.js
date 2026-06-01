@@ -206,18 +206,30 @@ exports.createCheckout = async (req, res) => {
         !(promo.expiresAt && new Date() > promo.expiresAt) &&
         (promo.maxUses === null || promo.usedCount < promo.maxUses)
       ) {
-        // Créer un coupon Stripe à la volée
-        const couponParams = { duration: "once" };
-        if (promo.discountType === "percent") {
-          couponParams.percent_off = promo.discountValue;
+        if (promo.discountType === "trial") {
+          // ── Essai gratuit → trial_period_days Stripe ──────────────────────────
+          // Correct pour mensuel ET annuel : X jours offerts, puis plein tarif
+          const days = promo.trialDays || 30;
+          sessionParams.subscription_data = {
+            ...sessionParams.subscription_data,
+            trial_period_days: days,
+          };
+          // Pour un trial, la carte est toujours requise (sera débitée après le trial)
+          sessionParams.payment_method_collection = "always";
         } else {
-          couponParams.amount_off = Math.round(promo.discountValue * 100);
-          couponParams.currency = "eur";
+          // ── Réduction % ou € → coupon Stripe sur 1ère facture seulement ───────
+          const couponParams = { duration: "once" };
+          if (promo.discountType === "percent") {
+            couponParams.percent_off = Math.min(promo.discountValue, 99); // max 99%
+          } else {
+            couponParams.amount_off = Math.round(promo.discountValue * 100);
+            couponParams.currency = "eur";
+          }
+          const coupon = await stripe.coupons.create(couponParams);
+          sessionParams.discounts = [{ coupon: coupon.id }];
         }
-        const coupon = await stripe.coupons.create(couponParams);
-        sessionParams.discounts = [{ coupon: coupon.id }];
 
-        // Incrémenter usedCount + enregistrer l'utilisateur
+        // Enregistrer l'utilisation
         await PromoCode.findByIdAndUpdate(promo._id, {
           $inc: { usedCount: 1 },
           $addToSet: { usedByUsers: userId },

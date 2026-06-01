@@ -113,6 +113,47 @@ app.post("/account/webhook", express.raw({ type: "application/json" }), async (r
             "subscription.stripeSubscriptionId": session.subscription,
           });
           console.log(`✅ Plan activé : ${planName} pour user ${userId}`);
+
+          // ── Récompense parrainage : incrémenter le parrain ──────────────────
+          try {
+            const newUser = await User.findById(userId).select("referredBy").lean();
+            if (newUser?.referredBy) {
+              const referrer = await User.findByIdAndUpdate(
+                newUser.referredBy,
+                { $inc: { "referral.totalPaying": 1, "referral.creditMonths": 1 } },
+                { new: true }
+              ).select("email fullName subscription referral").lean();
+
+              if (referrer) {
+                console.log(`🎁 Parrainage : ${referrer.fullName} gagne 1 mois gratuit (filleul payant)`);
+                // Appliquer le mois gratuit sur l'abonnement Stripe du parrain si possible
+                const subId = referrer.subscription?.stripeSubscriptionId;
+                if (subId) {
+                  try {
+                    const monthlyAmount = planName === "business" ? 4900 : 1900; // centimes
+                    const coupon = await stripe.coupons.create({
+                      amount_off: monthlyAmount,
+                      currency: "eur",
+                      duration: "once",
+                      name: `Parrainage — 1 mois offert`,
+                    });
+                    await stripe.subscriptions.update(subId, {
+                      discounts: [{ coupon: coupon.id }],
+                    });
+                    await User.findByIdAndUpdate(newUser.referredBy, {
+                      $inc: { "referral.creditMonths": -1 },
+                    });
+                    console.log(`✅ Coupon parrainage appliqué sur sub ${subId}`);
+                  } catch (couponErr) {
+                    console.warn("Coupon parrainage non appliqué:", couponErr.message);
+                    // Le credit reste en attente, sera appliqué manuellement
+                  }
+                }
+              }
+            }
+          } catch (refErr) {
+            console.error("Referral reward error:", refErr.message);
+          }
         }
       } catch (dbErr) {
         console.log("❌ Erreur webhook:", dbErr.message);

@@ -176,6 +176,25 @@ const userSchema = schema(
       badges: { type: [String], default: [] },
     },
 
+    // ── Parrainage ────────────────────────────────────────────────────────────
+    referralCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      uppercase: true,
+      trim: true,
+    },
+    referredBy: {
+      type: schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    referral: {
+      totalInvited:  { type: Number, default: 0 }, // nb de filleuls inscrits
+      totalPaying:   { type: Number, default: 0 }, // nb de filleuls payants
+      creditMonths:  { type: Number, default: 0 }, // mois gratuits gagnés (non encore utilisés)
+    },
+
     // ── Notifications email ───────────────────────────────────────────────────
     notifications: {
       newBooking: { type: Boolean, default: true }, // recevoir un email à chaque nouvelle réservation

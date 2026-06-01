@@ -57,6 +57,7 @@ html(lang="fr")
                 a.sa-link(href="/superadmin") 👥 Utilisateurs
                 a.sa-link.active(href="/superadmin/promo-codes") 🎟️ Codes promo
                 a.sa-link(href="/superadmin/access-links") 🔗 Liens d'accès
+                a.sa-link(href="/superadmin/referrals") 🎁 Parrainage
             a.logout-btn(href="/superadmin/logout") Déconnexion
 
         .page-header
@@ -69,29 +70,37 @@ html(lang="fr")
             .form-row
                 .field
                     label Code *
-                    input(type="text" id="newCode" placeholder="EX: BETA50" style="text-transform:uppercase")
+                    input(type="text" id="newCode" placeholder="EX: BIENVENUE30" style="text-transform:uppercase")
                 .field
-                    label Type de réduction *
+                    label Type *
                     select#newType
-                        option(value="percent") Pourcentage (%)
-                        option(value="fixed") Montant fixe (€)
-                .field
+                        option(value="trial") 🎁 Essai gratuit (X jours offerts, puis plein tarif)
+                        option(value="percent") % Réduction sur 1ère facture
+                        option(value="fixed") € Montant fixe sur 1ère facture
+                .field#fieldTrialDays
+                    label Jours d'essai *
+                    input(type="number" id="newTrialDays" value="30" min="1" max="365" placeholder="Ex: 30")
+                    p(style="font-size:11px;color:#666;margin-top:4px") 30 = 1er mois gratuit, 7 = 1 semaine gratuite
+                .field#fieldValue(style="display:none")
                     label Valeur *
                     input(type="number" id="newValue" placeholder="Ex: 20" min="0" step="0.01")
                 .field
-                    label Nb d'utilisations max
-                    input(type="number" id="newMaxUses" placeholder="Laisser vide = illimité" min="1")
+                    label Max utilisations
+                    input(type="number" id="newMaxUses" placeholder="Vide = illimité" min="1")
                 .field
-                    label Date d'expiration
+                    label Expiration
                     input(type="date" id="newExpiresAt")
                 .field
                     label Plan applicable
                     select#newApplicablePlan
                         option(value="all") 🌐 Tous les plans
-                        option(value="premium_monthly") ⭐ Premium Mensuel
-                        option(value="premium_yearly") ⭐ Premium Annuel
+                        option(value="pro_monthly") ⭐ Pro Mensuel
+                        option(value="pro_yearly") ⭐ Pro Annuel
                         option(value="business_monthly") 🏢 Business Mensuel
                         option(value="business_yearly") 🏢 Business Annuel
+            .info-box(style="background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:12px 16px;font-size:12.5px;color:#166534;margin-bottom:8px;")
+                | 💡 <strong>Essai gratuit</strong> = Stripe trial — le client entre sa carte, ne paye rien pendant X jours, puis est débité automatiquement. Fonctionne identiquement que ce soit mensuel ou annuel.&nbsp;
+                | <strong>Réduction %/€</strong> = seulement sur la 1ère facture. Ne pas mettre 100% sur un plan annuel (= toute l'année gratuite).
             button.btn-create#createPromoBtn Créer le code
 
         if codes.length === 0
@@ -109,15 +118,19 @@ html(lang="fr")
                         th
                 tbody#promoTableBody
                     each c in codes
-                        - var planLabels = { all: '🌐 Tous', premium_monthly: '⭐ Premium / mois', premium_yearly: '⭐ Premium / an', business_monthly: '🏢 Business / mois', business_yearly: '🏢 Business / an' }
+                        - var planLabels = { all: '🌐 Tous', pro_monthly: '⭐ Pro / mois', pro_yearly: '⭐ Pro / an', business_monthly: '🏢 Business / mois', business_yearly: '🏢 Business / an', premium_monthly: '⭐ Pro / mois', premium_yearly: '⭐ Pro / an' }
                         tr(data-id=c._id)
                             td
                                 span.code-badge= c.code
+                                br
+                                a(href=`https://www.branshee.com/register?promo=${c.code}&plan=pro` target="_blank" style="font-size:10px;color:#555;text-decoration:underline;margin-top:3px;display:inline-block;") 🔗 Lien invitation
                             td
-                                if c.discountType === 'percent'
-                                    span.badge.badge--blue -#{c.discountValue}%
+                                if c.discountType === 'trial'
+                                    span.badge(style="background:rgba(34,197,94,.12);color:#15803d;border:1px solid rgba(34,197,94,.3);") 🎁 #{c.trialDays || 30} jours gratuits
+                                else if c.discountType === 'percent'
+                                    span.badge.badge--blue -#{c.discountValue}% (1ère facture)
                                 else
-                                    span.badge.badge--blue -#{c.discountValue}€
+                                    span.badge.badge--blue -#{c.discountValue}€ (1ère facture)
                             td
                                 span.badge(class=c.applicablePlan === 'all' ? 'badge--gray' : 'badge--green')
                                     = planLabels[c.applicablePlan || 'all'] || c.applicablePlan
@@ -140,20 +153,34 @@ html(lang="fr")
                                 button.btn-del.delete-promo(data-id=String(c._id)) Supprimer
 
         script.
+            // ── Afficher/cacher les champs selon le type ──
+            var typeSelect = document.getElementById('newType');
+            var fieldTrial = document.getElementById('fieldTrialDays');
+            var fieldValue = document.getElementById('fieldValue');
+            function updateTypeFields() {
+                var t = typeSelect.value;
+                fieldTrial.style.display = t === 'trial' ? '' : 'none';
+                fieldValue.style.display = t !== 'trial' ? '' : 'none';
+            }
+            typeSelect.addEventListener('change', updateTypeFields);
+            updateTypeFields();
+
             // ── Créer un code promo ──
             document.getElementById('createPromoBtn').addEventListener('click', async function() {
-                const errorEl = document.getElementById('createError');
+                var errorEl = document.getElementById('createError');
                 errorEl.style.display = 'none';
-                const code = document.getElementById('newCode').value.trim().toUpperCase();
-                const discountType = document.getElementById('newType').value;
-                const discountValue = document.getElementById('newValue').value;
-                const maxUses = document.getElementById('newMaxUses').value;
-                const expiresAt = document.getElementById('newExpiresAt').value;
-                const applicablePlan = document.getElementById('newApplicablePlan').value;
-                if (!code || !discountValue) { errorEl.textContent = 'Le code et la valeur sont requis.'; errorEl.style.display = 'block'; return; }
+                var code = document.getElementById('newCode').value.trim().toUpperCase();
+                var discountType = document.getElementById('newType').value;
+                var trialDays = parseInt(document.getElementById('newTrialDays').value) || 30;
+                var discountValue = discountType === 'trial' ? 0 : document.getElementById('newValue').value;
+                var maxUses = document.getElementById('newMaxUses').value;
+                var expiresAt = document.getElementById('newExpiresAt').value;
+                var applicablePlan = document.getElementById('newApplicablePlan').value;
+                if (!code) { errorEl.textContent = 'Le code est requis.'; errorEl.style.display = 'block'; return; }
+                if (discountType !== 'trial' && !discountValue) { errorEl.textContent = 'La valeur est requise.'; errorEl.style.display = 'block'; return; }
                 try {
-                    const res = await fetch('/superadmin/promo-codes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, discountType, discountValue, maxUses, expiresAt, applicablePlan }) });
-                    const data = await res.json();
+                    var res = await fetch('/superadmin/promo-codes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, discountType, discountValue: discountType === 'trial' ? 0 : discountValue, trialDays, maxUses, expiresAt, applicablePlan }) });
+                    var data = await res.json();
                     if (data.success) { location.reload(); }
                     else { errorEl.textContent = data.error || 'Erreur.'; errorEl.style.display = 'block'; }
                 } catch(e) { errorEl.textContent = 'Erreur réseau.'; errorEl.style.display = 'block'; }

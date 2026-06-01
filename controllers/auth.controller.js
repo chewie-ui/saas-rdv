@@ -1,11 +1,24 @@
 const User = require("../db/models/user.model");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const mongoose = require("mongoose");
 const Company = require("../db/models/company/company.model");
 const { sendEmail } = require("../utils/mailer");
 const getServices = require("../utils/services");
 const pug = require("pug");
 const path = require("path");
+
+/** Génère un code parrainage unique de la forme PRENOM-XXXXXX */
+async function generateReferralCode(fullName) {
+  const base = (fullName || "USER").trim().split(" ")[0]
+    .toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7);
+  for (let i = 0; i < 10; i++) {
+    const code = `${base}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+    const exists = await User.exists({ referralCode: code });
+    if (!exists) return code;
+  }
+  return `USER-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+}
 
 exports.createUser = async (req, res) => {
   const isAjax = req.headers["x-requested-with"] === "fetch";
@@ -53,13 +66,31 @@ exports.createUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const companyId = new mongoose.Types.ObjectId();
 
+    // Résoudre le parrain (code de parrainage en session)
+    let referrerId = null;
+    const pendingRef = req.session.pendingRef;
+    if (pendingRef) {
+      const referrer = await User.findOne({ referralCode: pendingRef }).lean();
+      if (referrer) referrerId = referrer._id;
+    }
+
+    const referralCode = await generateReferralCode(fullname);
+
     const user = await User.create({
       fullName: fullname,
       email,
       password: hashedPassword,
       company: companyId,
       businessType: businessType || "",
+      referralCode,
+      referredBy: referrerId,
     });
+
+    // Incrémenter les stats du parrain
+    if (referrerId) {
+      await User.findByIdAndUpdate(referrerId, { $inc: { "referral.totalInvited": 1 } });
+      delete req.session.pendingRef;
+    }
     await Company.create({
       _id: companyId,
       owner: user._id,
@@ -76,13 +107,17 @@ exports.createUser = async (req, res) => {
 
     req.login(user, (err) => {
       if (err) return fail("Erreur lors de la connexion.");
-      // Si l'utilisateur vient d'un bouton "Essai / Plan" → rediriger vers checkout
-      const pendingPlan = req.session.pendingPlan;
-      if (pendingPlan) {
+      // Si l'utilisateur vient d'un lien d'invitation ou bouton "Essai / Plan"
+      const pendingPlan  = req.session.pendingPlan;
+      const pendingPromo = req.session.pendingPromo;
+      if (pendingPlan || pendingPromo) {
+        const plan    = pendingPlan  || "pro";
         const billing = req.session.pendingBilling || "monthly";
         delete req.session.pendingPlan;
         delete req.session.pendingBilling;
-        const dest = `/subscription?plan=${pendingPlan}&billing=${billing}&autoCheckout=1`;
+        delete req.session.pendingPromo;
+        let dest = `/subscription?plan=${plan}&billing=${billing}&autoCheckout=1`;
+        if (pendingPromo) dest += `&promo=${encodeURIComponent(pendingPromo)}`;
         if (isAjax) return res.json({ success: true, redirect: dest });
         return res.redirect(dest);
       }

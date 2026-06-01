@@ -14,6 +14,9 @@ router.patch("/superadmin/toggle-premium/:userId", isSuperAdmin, ctrl.toggleManu
 router.patch("/superadmin/set-plan/:userId", isSuperAdmin, ctrl.setPlan);
 router.patch("/superadmin/set-trial/:userId", isSuperAdmin, ctrl.setTrialDuration);
 
+// Parrainage
+router.get("/superadmin/referrals", isSuperAdmin, ctrl.referralsPage);
+
 // Boost (mise en avant homepage)
 router.get("/superadmin/boost", isSuperAdmin, ctrl.boostPage);
 router.patch("/superadmin/boost/:companyId", isSuperAdmin, ctrl.setBoost);
