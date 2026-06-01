@@ -9,6 +9,10 @@ const { getPlan } = require("../utils/planLimits");
 async function revokePremium(req) {
   // Ne jamais révoquer un accès accordé manuellement (bêta testeurs)
   if (req.user && req.user.manualPremium) return;
+  // Ne pas révoquer si l'utilisateur a un plan payant dans son User doc
+  // (protège contre la désynchronisation entre Subscription collection et User doc)
+  const embeddedPlan = req.user?.subscription?.plan;
+  if (["pro", "business"].includes(embeddedPlan)) return;
   if (req.user && req.user.isPremium) {
     req.user.isPremium = false;
     await User.findByIdAndUpdate(req.user._id, { isPremium: false });
@@ -141,16 +145,58 @@ module.exports = async (req, res, next) => {
         res.locals.isExpiring = diffDays <= 3;
       }
     } else {
-      // ── Pas d'abonnement actif ──
-      res.locals.isPro        = false;
-      res.locals.currentPlan  = "basic";
-      res.locals.subscription = null;
-      res.locals.autoRenew    = false;
-      res.locals.daysLeft     = 0;
-      res.locals.hoursLeft    = null;
-      res.locals.isExpired    = false;
-      res.locals.isExpiring   = false;
-      await revokePremium(req); // DB + mémoire si isPremium était true en DB
+      // ── Pas de doc Subscription actif dans la collection ──
+      // Fallback : si User doc a un plan payant (même si isPremium est faux à cause de revokePremium)
+      // On vérifie subscription.status = "active" ET plan valide dans le User doc
+      const embeddedPlan   = req.user.subscription?.plan;
+      const embeddedStatus = req.user.subscription?.status;
+      const validPlans     = ["pro", "business"];
+      const hasPremiumUser = validPlans.includes(embeddedPlan) &&
+        (embeddedStatus === "active" || req.user.isPremium ||
+         req.user.subscription?.stripeSubscriptionId || req.user.subscription?.stripeCustomerId);
+
+      if (hasPremiumUser) {
+        // Recréer le doc Subscription manquant pour les prochaines requêtes
+        try {
+          const expDate = new Date();
+          expDate.setMonth(expDate.getMonth() + 1);
+          await Subscription.create({
+            user:     req.user._id,
+            plan:     embeddedPlan,
+            status:   "active",
+            startDate: new Date(),
+            endDate:   expDate,
+            stripeCustomerId:    req.user.subscription?.stripeCustomerId    || null,
+            stripeSubscriptionId: req.user.subscription?.stripeSubscriptionId || null,
+            amount:   0,
+            currency: "eur",
+            autoRenew: true,
+          });
+          console.log(`[injectSubscription] Doc Subscription recréé pour user ${req.user._id} (plan: ${embeddedPlan})`);
+        } catch (createErr) {
+          // Ignore si déjà existant (unique index)
+        }
+
+        res.locals.isPro        = true;
+        res.locals.currentPlan  = embeddedPlan;
+        res.locals.subscription = null;
+        res.locals.autoRenew    = true;
+        res.locals.daysLeft     = 30;
+        res.locals.hoursLeft    = null;
+        res.locals.isExpired    = false;
+        res.locals.isExpiring   = false;
+      } else {
+        // Vraiment free — pas de plan premium
+        res.locals.isPro        = false;
+        res.locals.currentPlan  = "basic";
+        res.locals.subscription = null;
+        res.locals.autoRenew    = false;
+        res.locals.daysLeft     = 0;
+        res.locals.hoursLeft    = null;
+        res.locals.isExpired    = false;
+        res.locals.isExpiring   = false;
+        await revokePremium(req);
+      }
     }
 
     next();
