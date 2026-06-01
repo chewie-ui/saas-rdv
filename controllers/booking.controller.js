@@ -306,6 +306,36 @@ exports.createBooking = async (req, res) => {
 
     await sendEmail(email, "Confirmation de votre rendez-vous — BranShee", htmlTemplate);
 
+    // ── Email de notification à l'admin (si activé) ────────────────────────
+    try {
+      if (companyOwner && companyOwner.notifications?.newBooking !== false) {
+        const adminEmail = companyOwner.emailPro || companyOwner.email;
+        if (adminEmail) {
+          const adminHtml = pug.renderFile(
+            path.join(__dirname, "../views/templates/emails/admin-new-booking.pug"),
+            {
+              name,
+              surname,
+              email,
+              phone:         phone        || "",
+              formattedDate,
+              startHour:     startTime,
+              endHour:       endTime,
+              serviceName:   serviceName  || "",
+              employeeName:  employeeName || "",
+              locationText,
+              message:       message      || "",
+              paymentAmount: newBooking.payment?.amount || 0,
+            },
+          );
+          const clientDisplay = [name, surname].filter(Boolean).join(" ") || email;
+          await sendEmail(adminEmail, `📅 Nouveau RDV — ${clientDisplay}`, adminHtml);
+        }
+      }
+    } catch (notifErr) {
+      console.error("Admin notification email error:", notifErr.message);
+    }
+
     // Sync Google Calendar
     try {
       if (companyOwner?.googleCalendar?.connected && companyOwner.googleCalendar.refreshToken) {

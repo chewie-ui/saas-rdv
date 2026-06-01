@@ -176,6 +176,11 @@ const userSchema = schema(
       badges: { type: [String], default: [] },
     },
 
+    // ── Notifications email ───────────────────────────────────────────────────
+    notifications: {
+      newBooking: { type: Boolean, default: true }, // recevoir un email à chaque nouvelle réservation
+    },
+
     googleCalendar: {
       connected: { type: Boolean, default: false },
       email: { type: String, default: "" },

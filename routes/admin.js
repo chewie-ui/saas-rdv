@@ -91,6 +91,9 @@ router.post("/forms/save", isVerified, adminController.saveForm);
 
 router.get("/customize-calendar", isAuth, injectCompany, adminController.customizeCalendarPage);
 
+// ── Notifications ─────────────────────────────────────────────────────────────
+router.patch("/settings/notifications", isVerified, adminController.saveNotificationSettings);
+
 // ── Pré-paiement ──────────────────────────────────────────────────────────────
 router.patch("/settings/prepayment", isVerified, adminController.savePrepaymentSettings);
 router.patch("/settings/cancellation-policy", isVerified, adminController.saveCancellationPolicy);

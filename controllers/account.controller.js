@@ -157,10 +157,28 @@ exports.createCheckout = async (req, res) => {
       cancel_url:  `${env.stripeCancelUrl  || "https://branshee.com"}`,
     };
 
-    // Lier au customer Stripe existant (cartes enregistrées utilisables dans le checkout)
+    // Lier au customer Stripe existant — avec vérification qu'il existe réellement
+    // (le customer peut avoir été créé en mode test et ne pas exister en live)
     const existingStripeCustomerId = req.user.subscription?.stripeCustomerId;
     if (existingStripeCustomerId) {
-      sessionParams.customer = existingStripeCustomerId;
+      try {
+        await stripe.customers.retrieve(existingStripeCustomerId);
+        // Customer valide → on l'utilise
+        sessionParams.customer = existingStripeCustomerId;
+      } catch (custErr) {
+        // Customer introuvable (test→live, ou supprimé) → créer un nouveau
+        console.warn(`Customer Stripe invalide (${existingStripeCustomerId}), création d'un nouveau...`);
+        const newCustomer = await stripe.customers.create({
+          email: req.user.email,
+          name:  req.user.fullName || req.user.email,
+          metadata: { userId: req.user._id.toString() },
+        });
+        // Sauvegarder le nouvel ID en base
+        await User.findByIdAndUpdate(req.user._id, {
+          "subscription.stripeCustomerId": newCustomer.id,
+        });
+        sessionParams.customer = newCustomer.id;
+      }
     } else {
       sessionParams.customer_email = req.user.email;
     }

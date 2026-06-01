@@ -1163,6 +1163,19 @@ exports.customizeCalendarPage = async (req, res) => {
 };
 
 // ── Paramètres pré-paiement ───────────────────────────────────────────────────
+exports.saveNotificationSettings = async (req, res) => {
+  try {
+    const { newBooking } = req.body;
+    await User.findByIdAndUpdate(req.user._id, {
+      "notifications.newBooking": !!newBooking,
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("saveNotificationSettings error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
 exports.savePrepaymentSettings = async (req, res) => {
   try {
     const { enabled, required, cash, cardOnSite,

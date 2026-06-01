@@ -76,6 +76,16 @@ exports.createUser = async (req, res) => {
 
     req.login(user, (err) => {
       if (err) return fail("Erreur lors de la connexion.");
+      // Si l'utilisateur vient d'un bouton "Essai / Plan" → rediriger vers checkout
+      const pendingPlan = req.session.pendingPlan;
+      if (pendingPlan) {
+        const billing = req.session.pendingBilling || "monthly";
+        delete req.session.pendingPlan;
+        delete req.session.pendingBilling;
+        const dest = `/subscription?plan=${pendingPlan}&billing=${billing}&autoCheckout=1`;
+        if (isAjax) return res.json({ success: true, redirect: dest });
+        return res.redirect(dest);
+      }
       if (isAjax) return res.json({ success: true, redirect: "/appointment" });
       return res.redirect("/appointment");
     });

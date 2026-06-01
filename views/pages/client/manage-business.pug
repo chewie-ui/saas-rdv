@@ -41,7 +41,7 @@ block content
                             em= pl.hero.title_2
                         p.pro-sub= t.hero.description
                         .pro-actions
-                            a.sm-btn.sm-btn--primary(href="/register")= t.hero.btn_1
+                            a.sm-btn.sm-btn--primary(href="/register?plan=pro&billing=monthly")= t.hero.btn_1
                             a.sm-btn.sm-btn--ghost(href="#hiw")= pl.hero.cta_secondary
                         .pro-micro
                             span
@@ -223,7 +223,7 @@ block content
                                 each item in row.items
                                     li= item
                             .pro-func__actions
-                                a.sm-btn.sm-btn--primary(href="/register")= row.btn_2
+                                a.sm-btn.sm-btn--primary(href="/register?plan=pro&billing=monthly")= row.btn_2
                         .pro-func__visual
                             img.pro-func__img(src=row.image alt=row.title)
 
@@ -285,7 +285,7 @@ block content
                         p.pro-pricing__sub= pl.pricing.desc
                     .pro-pricing__actions
                         a.sm-btn.sm-btn--primary(href="/subscription")= pl.pricing.cta_1
-                        a.sm-btn.sm-btn--ghost(href="/register")= pl.pricing.cta_2
+                        a.sm-btn.sm-btn--ghost(href="/register?plan=pro&billing=monthly")= pl.pricing.cta_2
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //- FAQ
@@ -321,7 +321,7 @@ block content
                     span= pl.cta.title_em
                 p.pro-cta__sub= pl.cta.desc
                 .pro-cta__actions
-                    a.sm-btn.sm-btn--primary(href="/register")= pl.cta.btn_1
+                    a.sm-btn.sm-btn--primary(href="/register?plan=pro&billing=monthly")= pl.cta.btn_1
                     a.sm-btn.sm-btn--ghost(href="/contact")= pl.cta.btn_2
 
 block scripts

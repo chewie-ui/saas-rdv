@@ -21,6 +21,12 @@ function buildUserRedirectUri() {
 }
 
 router.get("/register", (req, res) => {
+  // Si ?plan=pro ou ?plan=business, stocker en session pour rediriger vers checkout après inscription
+  const allowedPlans = ["pro", "business"];
+  if (req.query.plan && allowedPlans.includes(req.query.plan)) {
+    req.session.pendingPlan    = req.query.plan;
+    req.session.pendingBilling = req.query.billing || "monthly";
+  }
   res.render("auth/register", { becomeCoach: true, alwaysSticky: true, services: getServices(res.locals.lang) });
 });
 

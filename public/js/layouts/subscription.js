@@ -20,22 +20,6 @@ function updatePrices() {
   });
 }
 
-if (billMonthly && billYearly) {
-  billMonthly.addEventListener("click", () => {
-    isYearly = false;
-    billMonthly.classList.add("active");
-    billYearly.classList.remove("active");
-    updatePrices();
-  });
-
-  billYearly.addEventListener("click", () => {
-    isYearly = true;
-    billYearly.classList.add("active");
-    billMonthly.classList.remove("active");
-    updatePrices();
-  });
-}
-
 const getProPlan         = document.getElementById("getProPlan");
 const getProPlanAlert    = document.getElementById("getProPlanAlert");
 const getBusinessPlan    = document.getElementById("getBusinessPlan");
@@ -51,12 +35,128 @@ const promoCodeStatus = document.getElementById("promoCodeStatus");
 let appliedPromoCode  = null; // { code, discountType, discountValue, applicablePlan }
 let currentPlan       = "pro"; // plan courant sélectionné pour le checkout
 
+// Prix de base (mensuel / annuel) lus depuis les data attributes
+const PRICES = {
+  pro:      { monthly: null, yearly: null },
+  business: { monthly: null, yearly: null },
+};
+document.querySelectorAll(".sub-plan__price[data-monthly]").forEach((el) => {
+  const m = parseFloat(el.dataset.monthly);
+  const y = parseFloat(el.dataset.yearly);
+  if (el.closest(".sub-plan--premium"))  { PRICES.pro.monthly = m; PRICES.pro.yearly = y; }
+  if (el.closest(".sub-plan--studio"))   { PRICES.business.monthly = m; PRICES.business.yearly = y; }
+});
+
+function calcDiscounted(basePrice, type, value) {
+  if (!basePrice) return null;
+  if (type === "percent") return Math.max(0, basePrice * (1 - value / 100));
+  if (type === "fixed")   return Math.max(0, basePrice - value);
+  return basePrice;
+}
+
+function applyPromoToUI(promoData) {
+  // Plans ciblés par le code
+  const ap = promoData ? promoData.applicablePlan : null; // ex: "pro_monthly", "all"
+  const billing = isYearly ? "yearly" : "monthly";
+
+  ["pro", "business"].forEach((plan) => {
+    const planClass  = plan === "pro" ? ".sub-plan--premium" : ".sub-plan--studio";
+    const priceEl    = document.querySelector(`${planClass} .sub-plan__price`);
+    if (!priceEl) return;
+
+    const base = isYearly ? PRICES[plan].yearly : PRICES[plan].monthly;
+    if (!base) return;
+
+    // Déterminer si ce code s'applique à ce plan
+    const applies = promoData &&
+      (ap === "all" ||
+       ap === `${plan}_${billing}` ||
+       ap === `${plan}_monthly` || ap === `${plan}_yearly`);
+
+    // Supprimer l'ancien affichage promo s'il existe
+    const oldWrap = priceEl.parentNode.querySelector(".sub-promo-wrap");
+    if (oldWrap) oldWrap.remove();
+    priceEl.style.display = "";
+
+    if (applies) {
+      const discounted = calcDiscounted(base, promoData.discountType, promoData.discountValue);
+      if (discounted === null) return;
+
+      const wrap = document.createElement("div");
+      wrap.className = "sub-promo-wrap";
+      // flex baseline + même font-size que .sub-plan__price (2.5rem)
+      wrap.style.cssText = "display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font-size:2.5rem;font-weight:800;letter-spacing:-1.5px;line-height:1;";
+
+      const strike = document.createElement("span");
+      // même taille que le prix original, juste barré et grisé
+      strike.style.cssText = "text-decoration:line-through;color:#aaa;font-size:1em;font-weight:800;";
+      strike.textContent = priceEl.textContent.trim();
+
+      const newPrice = document.createElement("span");
+      newPrice.className = "sub-plan__price--discounted";
+      // même taille, couleur verte
+      newPrice.style.cssText = "font-size:1em;font-weight:800;color:#16a34a;letter-spacing:-1.5px;";
+      newPrice.textContent = "€" + discounted.toFixed(2).replace(/\.00$/, "");
+
+      wrap.appendChild(strike);
+      wrap.appendChild(newPrice);
+
+      priceEl.style.display = "none";
+      priceEl.parentNode.insertBefore(wrap, priceEl.nextSibling);
+    }
+  });
+}
+
+// Reset prix quand on change mensuel/annuel
+const _origUpdatePrices = updatePrices;
+function updatePricesWithPromo() {
+  _origUpdatePrices();
+  if (appliedPromoCode) applyPromoToUI(appliedPromoCode);
+}
+
+if (billMonthly && billYearly) {
+  billMonthly.addEventListener("click", () => {
+    isYearly = false;
+    billMonthly.classList.add("active");
+    billYearly.classList.remove("active");
+    updatePricesWithPromo();
+  });
+  billYearly.addEventListener("click", () => {
+    isYearly = true;
+    billYearly.classList.add("active");
+    billMonthly.classList.remove("active");
+    updatePricesWithPromo();
+  });
+}
+
+// Plan applicable badge
+function showApplicablePlanBadge(promoData) {
+  const existing = document.getElementById("promoApplicableBadge");
+  if (existing) existing.remove();
+  if (!promoData) return;
+
+  const planLabels = {
+    all:               "✅ Valable sur tous les plans",
+    pro_monthly:       "✅ Valable sur Pro Mensuel uniquement",
+    pro_yearly:        "✅ Valable sur Pro Annuel uniquement",
+    business_monthly:  "✅ Valable sur Business Mensuel uniquement",
+    business_yearly:   "✅ Valable sur Business Annuel uniquement",
+  };
+  const label = planLabels[promoData.applicablePlan] || "✅ Code appliqué";
+  const badge = document.createElement("span");
+  badge.id = "promoApplicableBadge";
+  badge.style.cssText = "display:block;font-size:12px;color:#22c55e;margin-top:4px;";
+  badge.textContent = label;
+  promoCodeStatus.insertAdjacentElement("afterend", badge);
+}
+
 async function validatePromo() {
   const code = promoCodeInput.value.trim().toUpperCase();
   if (!code) return;
 
   promoCodeStatus.textContent = subT.checking || "Vérification...";
-  promoCodeStatus.className   = "promo-code-status";
+  promoCodeStatus.className   = "sub-promo__status";
+  applyPromoToUI(null); // reset
 
   const res  = await fetch("/api/validate-promo", {
     method:  "POST",
@@ -67,20 +167,48 @@ async function validatePromo() {
 
   if (data.valid) {
     appliedPromoCode = data;
-    const discount   = data.discountType === "percent"
+    const discount = data.discountType === "percent"
       ? `-${data.discountValue}%`
       : `-${data.discountValue}€`;
-    promoCodeStatus.textContent = `✓ Code appliqué : ${discount} de réduction`;
-    promoCodeStatus.className   = "promo-code-status valid";
+    promoCodeStatus.textContent = `✓ Code "${data.code}" appliqué : ${discount}`;
+    promoCodeStatus.className   = "sub-promo__status valid";
+    applyPromoToUI(data);
+    showApplicablePlanBadge(data);
+    // Scroll vers les cartes de plan pour que l'utilisateur voie les prix mis à jour
+    const plansSection = document.querySelector(".sub-plans");
+    if (plansSection) {
+      setTimeout(() => {
+        plansSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 120);
+    }
   } else {
     appliedPromoCode = null;
+    applyPromoToUI(null);
+    showApplicablePlanBadge(null);
     promoCodeStatus.textContent = data.error || subT.invalid || "Code invalide.";
-    promoCodeStatus.className   = "promo-code-status invalid";
+    promoCodeStatus.className   = "sub-promo__status invalid";
   }
 }
 
 if (applyPromoBtn && promoCodeInput) {
   applyPromoBtn.addEventListener("click", validatePromo);
+  promoCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") validatePromo(); });
+}
+
+// ── Toast (remplace les alert() natifs) ──────────────────────────────────────
+function showToast(message, type = "success", duration = 3500) {
+  const existing = document.querySelector(".bs-toast");
+  if (existing) existing.remove();
+
+  const toast = document.createElement("div");
+  toast.className = `bs-toast bs-toast--${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add("bs-toast--out");
+    setTimeout(() => toast.remove(), 220);
+  }, duration);
 }
 
 // ── Generic confirm dialog ────────────────────────────────────────────────────
@@ -96,6 +224,8 @@ function openDialog(title, desc, confirmLabel, closeLabel) {
     tmp.querySelector(".dialog__btn1").innerHTML    = `<span>${closeLabel}</span>`;
     tmp.querySelector(".dialog__btn1").onclick      = () => close(false);
     tmp.querySelector(".dialog__icon").onclick      = () => close(false);
+    // Fermer en cliquant sur l'overlay
+    parentTmp.addEventListener("click", (e) => { if (e.target === parentTmp) close(false); });
     tmp.querySelector(".dialog__btn2").onclick      = () => close(true);
 
     document.body.appendChild(tmp);
@@ -116,12 +246,32 @@ async function startCheckout(plan) {
   const data = await response.json();
   if (data.url) window.location = data.url;
   else if (data.upgraded) window.location = "/subscription/success";
-  else if (data.error) alert(data.error);
+  else if (data.error) showToast(data.error, "error");
 }
 
 if (getProPlan)      getProPlan.onclick      = () => { currentPlan = "pro";      startCheckout("pro"); };
 if (getProPlanAlert) getProPlanAlert.onclick = () => { currentPlan = "pro";      startCheckout("pro"); };
 if (getBusinessPlan) getBusinessPlan.onclick = () => { currentPlan = "business"; startCheckout("business"); };
+
+// ── Auto-checkout après inscription depuis landing/manage-business ────────────
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const autoPlan    = params.get("plan");
+  const autoBilling = params.get("billing");
+  const autoCheckout = params.get("autoCheckout");
+  if (autoCheckout !== "1" || !autoPlan) return;
+
+  // Appliquer la bonne facturation
+  if (autoBilling === "yearly" && billYearly) {
+    isYearly = true;
+    billYearly.classList.add("active");
+    if (billMonthly) billMonthly.classList.remove("active");
+    updatePrices();
+  }
+
+  // Lancer le checkout automatiquement après un court délai (laisser la page se charger)
+  setTimeout(() => startCheckout(autoPlan), 600);
+})();
 
 // ── Cancel subscription ───────────────────────────────────────────────────────
 const handleSubscriptionCancel = async function (e) {
@@ -144,14 +294,14 @@ const handleSubscriptionCancel = async function (e) {
     const data = await response.json();
 
     if (data.success) {
-      alert(subT.success_cancel || data.message || "Abonnement annulé.");
-      window.location.reload();
+      showToast(subT.success_cancel || data.message || "Abonnement annulé.", "success");
+      setTimeout(() => window.location.reload(), 1500);
     } else {
-      alert(data.error || "Une erreur est survenue.");
+      showToast(data.error || "Une erreur est survenue.", "error");
     }
   } catch (err) {
     console.error("Fetch error:", err);
-    alert("Une erreur est survenue. Veuillez réessayer.");
+    showToast("Une erreur est survenue. Veuillez réessayer.", "error");
   }
 };
 
@@ -180,14 +330,14 @@ if (retakeSubscription) {
       const data = await response.json();
 
       if (data.success) {
-        alert(subT.success_resume || data.message || "Abonnement repris.");
-        location.reload();
+        showToast(subT.success_resume || data.message || "Abonnement repris.", "success");
+        setTimeout(() => location.reload(), 1500);
       } else {
-        alert(data.error || "Une erreur est survenue.");
+        showToast(data.error || "Une erreur est survenue.", "error");
       }
     } catch (err) {
       console.error("Fetch error:", err);
-      alert("Une erreur est survenue. Veuillez réessayer.");
+      showToast("Une erreur est survenue. Veuillez réessayer.", "error");
     }
   };
 }
