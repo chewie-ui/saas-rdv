@@ -665,7 +665,7 @@ function buildSlotsPanel(slots) {
   };
 
   const visible   = slots.filter(s => by(s.time));
-  const available = visible.filter(s => !s.taken).length;
+  const available = visible.filter(s => !s.taken && !s.isPast).length;
 
   return `<div class="bk-slots">
     <h3>${fmtDate(STATE.date)}</h3>
@@ -676,7 +676,7 @@ function buildSlotsPanel(slots) {
     <div class="bk-slot-list">
       ${visible.length === 0
         ? `<div style="grid-column:1/-1; text-align:center; color:var(--bk-muted); font-size:12.5px; padding:20px 0;">Aucun créneau</div>`
-        : visible.map(s => `<button class="bk-slot ${s.taken?"is-disabled":""} ${STATE.time===s.time?"is-selected":""}"
+        : visible.map(s => `<button class="bk-slot ${s.taken?"is-disabled":""} ${s.isPast?"is-past":""} ${STATE.time===s.time?"is-selected":""}"
             data-time="${s.time}" ${s.taken?"disabled":""}>${s.time}</button>`).join("")
       }
     </div>
@@ -816,7 +816,21 @@ async function fetchSlots() {
   const bookedData = await bookedRes.json();
   const booked     = new Set(bookedData.bookedTimes || []);
 
-  _currentSlots = (slotsData.slots || []).map(t => ({ time: t, taken: booked.has(t) }));
+  // Calculer l'heure actuelle locale (pour masquer les créneaux passés si c'est aujourd'hui)
+  const nowLocal    = new Date();
+  const todayIso    = nowLocal.getFullYear() + "-"
+    + String(nowLocal.getMonth() + 1).padStart(2, "0") + "-"
+    + String(nowLocal.getDate()).padStart(2, "0");
+  const isToday     = STATE.date === todayIso;
+  const nowMinutes  = nowLocal.getHours() * 60 + nowLocal.getMinutes();
+
+  _currentSlots = (slotsData.slots || []).map(t => {
+    const [h, m]    = t.split(":").map(Number);
+    const slotMin   = h * 60 + m;
+    // Créneau passé si c'est aujourd'hui ET que l'heure est déjà dépassée
+    const isPast    = isToday && slotMin <= nowMinutes;
+    return { time: t, taken: booked.has(t) || isPast, isPast };
+  });
 
   // Re-render just the slots panel
   const slotWrap = pane.querySelector(".bk-slots, .bk-loading");
