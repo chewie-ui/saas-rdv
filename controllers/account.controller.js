@@ -71,10 +71,17 @@ exports.updateAccountSocial = async (req, res) => {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
           return res.status(400).json({ error: "Adresse email invalide. Ex: contact@monactivite.com" });
         }
-      } else if (fieldName === "phonePro" || fieldName === "whatsappLink") {
+      } else if (fieldName === "phonePro") {
         // Accepte +32 476 12 34 56, 0476123456, etc.
         if (!/^\+?[\d\s\-().]{6,20}$/.test(val)) {
           return res.status(400).json({ error: "Numéro invalide. Ex: +32 476 12 34 56" });
+        }
+      } else if (fieldName === "whatsappLink") {
+        // Accepte un numéro OU un lien https://wa.link/... ou https://wa.me/...
+        const isWaUrl  = /^https?:\/\/(wa\.link|wa\.me|api\.whatsapp\.com)\/.+/.test(val);
+        const isPhone  = /^\+?[\d\s\-().]{6,20}$/.test(val);
+        if (!isWaUrl && !isPhone) {
+          return res.status(400).json({ error: "WhatsApp invalide. Ex: +32 476 12 34 56 ou https://wa.link/votreCode" });
         }
       } else {
         // instagramLink, facebookLink, website → doit être une URL valide

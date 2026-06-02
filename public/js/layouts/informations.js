@@ -170,6 +170,13 @@ if (socialContainer) {
         if (!/^\+?[\d\s\-().]{6,20}$/.test(value)) {
           clientError = "Numéro invalide. Ex : +32 476 12 34 56";
         }
+      } else if (type === "whatsapp") {
+        // Accepte numéro OU lien wa.link / wa.me
+        var isWaUrl  = /^https?:\/\/(wa\.link|wa\.me|api\.whatsapp\.com)\/.+/.test(value);
+        var isPhone  = /^\+?[\d\s\-().]{6,20}$/.test(value);
+        if (!isWaUrl && !isPhone) {
+          clientError = "WhatsApp invalide. Ex : +32 476 12 34 56 ou https://wa.link/votreCode";
+        }
       } else {
         if (!/^https?:\/\/.+\..+/.test(value)) {
           clientError = "Lien invalide. Il doit commencer par https:// — ex : https://facebook.com/mapage";

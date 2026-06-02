@@ -141,18 +141,23 @@ block content
                         if isOpenToday
                             span.bk-pill.bk-pill--accent Ouvert aujourd'hui
                         span.bk-pill Réservation en ligne
-                        if coach && coach.isPremium
-                            if coach.emailPro && coach.emailPro !== 'on'
+                        -
+                            var _showSocials = coach && (coach.isPremium || (coach.calendarSettings && coach.calendarSettings.showSocials !== false))
+                            var _validPhone  = function(v) { return v && v !== 'on' && /[\d+]/.test(v) }
+                            var _validUrl    = function(v) { return v && /^https?:\/\//.test(v) }
+                        if _showSocials
+                            if coach.emailPro && coach.emailPro.indexOf('@') !== -1
                                 button.bk-pill.bk-pill--social.bk-pill--copy(type="button" data-copy=coach.emailPro title="Copier l'email")= coach.emailPro
-                            if coach.phonePro && coach.phonePro !== 'on'
+                            if _validPhone(coach.phonePro)
                                 button.bk-pill.bk-pill--social.bk-pill--copy(type="button" data-copy=coach.phonePro title="Copier le téléphone")= coach.phonePro
-                            if coach.instagramLink
+                            if _validUrl(coach.instagramLink)
                                 a.bk-pill.bk-pill--social(href=coach.instagramLink target="_blank" rel="noopener") Instagram
-                            if coach.facebookLink
+                            if _validUrl(coach.facebookLink)
                                 a.bk-pill.bk-pill--social(href=coach.facebookLink target="_blank" rel="noopener") Facebook
                             if coach.whatsappLink
-                                a.bk-pill.bk-pill--social(href=coach.whatsappLink target="_blank" rel="noopener") WhatsApp
-                            if coach.website
+                                - var _waHref = /^https?:\/\//.test(coach.whatsappLink) ? coach.whatsappLink : 'https://wa.me/' + coach.whatsappLink.replace(/\D/g,'')
+                                a.bk-pill.bk-pill--social(href=_waHref target="_blank" rel="noopener") WhatsApp
+                            if _validUrl(coach.website)
                                 a.bk-pill.bk-pill--social(href=coach.website target="_blank" rel="noopener") Site web
 
             //- ── Stepper ────────────────────────────────────────────────────
