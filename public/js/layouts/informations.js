@@ -146,32 +146,74 @@ if (socialContainer) {
   /* ── Save link buttons ── */
   socialContainer.onclick = async function (e) {
     const button = e.target.closest(".btn__social-save");
-    if (button) {
-      const box = button.closest(".social-box");
-      const name = box.dataset.name;
-      const value = box.querySelector("input.input").value;
+    if (!button) return;
 
-      const response = await fetch("/account/update-social", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fieldName: name, fieldValue: value }),
-      });
+    const box   = button.closest(".social-box");
+    const name  = box.dataset.name;
+    const type  = box.dataset.type || "url";
+    const input = box.querySelector("input.input");
+    const value = input.value.trim();
 
-      const data = await response.json();
+    // Supprimer ancienne erreur
+    const oldErr = box.querySelector(".social-box__error");
+    if (oldErr) oldErr.remove();
+    input.classList.remove("input--error");
 
-      if (data.success) {
-        const btnSpan = button.querySelector("span");
-        if (btnSpan) {
-          const orig = btnSpan.textContent;
-          btnSpan.textContent = "✓ Enregistré";
-          button.disabled = true;
-          if (button._saveTimer) clearTimeout(button._saveTimer);
-          button._saveTimer = setTimeout(() => {
-            btnSpan.textContent = orig;
-            button.disabled = false;
-          }, 2200);
+    // ── Validation client-side ──────────────────────────────────────────
+    let clientError = null;
+    if (value !== "") {
+      if (type === "email") {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          clientError = "Email invalide. Ex : contact@monactivite.com";
+        }
+      } else if (type === "phone") {
+        if (!/^\+?[\d\s\-().]{6,20}$/.test(value)) {
+          clientError = "Numéro invalide. Ex : +32 476 12 34 56";
+        }
+      } else {
+        if (!/^https?:\/\/.+\..+/.test(value)) {
+          clientError = "Lien invalide. Il doit commencer par https:// — ex : https://facebook.com/mapage";
         }
       }
+    }
+
+    if (clientError) {
+      input.classList.add("input--error");
+      const errEl = document.createElement("p");
+      errEl.className = "social-box__error";
+      errEl.textContent = "⚠️ " + clientError;
+      box.querySelector(".social-box__field").insertAdjacentElement("afterend", errEl);
+      return;
+    }
+
+    // ── Envoi ───────────────────────────────────────────────────────────
+    const response = await fetch("/account/update-social", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fieldName: name, fieldValue: value }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      const btnSpan = button.querySelector("span");
+      if (btnSpan) {
+        const orig = btnSpan.textContent;
+        btnSpan.textContent = "✓ Enregistré";
+        button.disabled = true;
+        if (button._saveTimer) clearTimeout(button._saveTimer);
+        button._saveTimer = setTimeout(() => {
+          btnSpan.textContent = orig;
+          button.disabled = false;
+        }, 2200);
+      }
+    } else {
+      // Erreur serveur — afficher le message
+      input.classList.add("input--error");
+      const errEl = document.createElement("p");
+      errEl.className = "social-box__error";
+      errEl.textContent = "⚠️ " + (data.error || "Erreur lors de la sauvegarde.");
+      box.querySelector(".social-box__field").insertAdjacentElement("afterend", errEl);
     }
   };
 }

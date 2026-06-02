@@ -46,7 +46,5 @@ Faire cote client
 afficher que les services quil y a pr linstant
 cote client pp carree et mettre les infos de letablissement
 
-
-
-
-
+si le jour et heure acutelle passe grisee lheure actuelle
+preciser le lien pour facebook insta site etc

@@ -243,17 +243,21 @@ block content
                 -
                     var csS = (user.calendarSettings) ? user.calendarSettings : {}
                     var socials = [
-                        { name: 'emailPro',       toggle: 'showEmailPro',  logo: 'email-logo.webp',     alt: 'Email logo',     label: t.profile.social.email_pro,   val: user.emailPro       || '' },
-                        { name: 'phonePro',       toggle: 'showPhonePro',  logo: 'phone-logo.webp',     alt: 'Phone logo',     label: t.profile.social.phone_pro,   val: user.phonePro       || '' },
-                        { name: 'instagramLink',  toggle: 'showInstagram', logo: 'instagram-logo.webp', alt: 'Instagram logo', label: t.profile.social.instagram,   val: user.instagramLink  || '' },
-                        { name: 'whatsappLink',   toggle: 'showWhatsapp',  logo: 'whatsapp-logo.webp',  alt: 'Whatsapp logo',  label: t.profile.social.whatsapp,    val: user.whatsappLink   || '' },
-                        { name: 'facebookLink',   toggle: 'showFacebook',  logo: 'facebook-logo.webp',  alt: 'Facebook logo',  label: t.profile.social.facebook,    val: user.facebookLink   || '' },
-                        { name: 'website',        toggle: 'showWebsite',   logo: 'website-logo.webp',   alt: 'Website logo',   label: t.profile.social.website,     val: user.website        || '' }
+                        { name: 'emailPro',      toggle: 'showEmailPro',  logo: 'email-logo.webp',     alt: 'Email',      label: t.profile.social.email_pro,  val: user.emailPro      || '', ph: 'contact@monactivite.com',                   type: 'email' },
+                        { name: 'phonePro',      toggle: 'showPhonePro',  logo: 'phone-logo.webp',     alt: 'Téléphone',  label: t.profile.social.phone_pro,  val: user.phonePro      || '', ph: '+32 476 12 34 56',                          type: 'phone' },
+                        { name: 'instagramLink', toggle: 'showInstagram', logo: 'instagram-logo.webp', alt: 'Instagram',  label: t.profile.social.instagram,  val: user.instagramLink || '', ph: 'https://instagram.com/moncompte',           type: 'url'   },
+                        { name: 'whatsappLink',  toggle: 'showWhatsapp',  logo: 'whatsapp-logo.webp',  alt: 'WhatsApp',   label: t.profile.social.whatsapp,   val: user.whatsappLink  || '', ph: '+32 476 12 34 56',                          type: 'phone' },
+                        { name: 'facebookLink',  toggle: 'showFacebook',  logo: 'facebook-logo.webp',  alt: 'Facebook',   label: t.profile.social.facebook,   val: user.facebookLink  || '', ph: 'https://facebook.com/mapage',               type: 'url'   },
+                        { name: 'website',       toggle: 'showWebsite',   logo: 'website-logo.webp',   alt: 'Site Web',   label: t.profile.social.website,    val: user.website       || '', ph: 'https://monsite.com',                       type: 'url'   }
                     ]
                 each s in socials
                     -
                         var isOn = (csS[s.toggle] !== false)
-                    .social-box(data-name=s.name class=(!isOn ? 'social-box--hidden' : ''))
+                        // Détecter si la valeur actuelle semble invalide (URL attendue mais pas de http)
+                        var isInvalidUrl = s.type === 'url' && s.val && !/^https?:\/\//.test(s.val)
+                        var isInvalidEmail = s.type === 'email' && s.val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.val)
+                        var hasCurrentError = isInvalidUrl || isInvalidEmail
+                    .social-box(data-name=s.name data-type=s.type class=(!isOn ? 'social-box--hidden' : ''))
                         if !canUseSocial
                             a.btn-upgrade-pro.get__premium(href="/subscription") Passer au Pro
                         label.social-visibility-toggle(title=t.info.toggle_visibility data-toggle=s.toggle)
@@ -268,83 +272,22 @@ block content
                             img(src="/images/logos/" + s.logo alt=s.alt)
                         .social-box__title= s.label
                         .social-box__field
-                            input.input(placeholder=t.info.link_placeholder value=s.val disabled=(!canUseSocial))
+                            input.input(
+                                placeholder=s.ph
+                                value=s.val
+                                disabled=(!canUseSocial)
+                                class=(hasCurrentError ? 'input--error' : '')
+                            )
                             button.sm-btn.sm-btn--ghost.btn__social-save
                                 span= t.avail.save
-
-        //- ── Équipements & marques ───────────────────────────────────────────
-        .info-card
-            .info-card__header
-                h3 Équipements & marques utilisés
-                p.info-card__desc Affichez les outils et marques utilisés dans votre établissement.
-            .equipment-tag-input#equipmentWrap
-                each item in equipment
-                    .eq-tag
-                        span= item
-                        button.eq-tag__del(type="button" data-val=item) ×
-                input#equipmentInput.input(type="text" placeholder="Ex: Kérastase, GHD, Dyson..." autocomplete="off")
-            .info-card__actions
-                button.sm-btn.sm-btn--primary#saveEquipmentBtn
-                    span Enregistrer
+                        if hasCurrentError
+                            .social-box__error ⚠️ Valeur invalide — veuillez entrer #{s.type === 'url' ? 'un lien valide (https://...)' : 'une adresse email valide'}
 
 
 
 
 block scripts
     script(src='/js/layouts/informations.js')
-    script.
-        // ── Equipment tags ────────────────────────────────────────────────────
-        (function() {
-            var equipWrap  = document.getElementById('equipmentWrap');
-            var equipInput = document.getElementById('equipmentInput');
-            var saveEquipBtn = document.getElementById('saveEquipmentBtn');
-            if (!equipWrap) return;
-
-            function getEquipmentList() {
-                return Array.from(equipWrap.querySelectorAll('.eq-tag span')).map(function(s) { return s.textContent.trim(); });
-            }
-            function addTag(val) {
-                val = val.trim();
-                if (!val) return;
-                var exists = getEquipmentList().some(function(t) { return t.toLowerCase() === val.toLowerCase(); });
-                if (exists) return;
-                var tag = document.createElement('div');
-                tag.className = 'eq-tag';
-                tag.innerHTML = '<span>' + val + '</span><button class="eq-tag__del" type="button" data-val="' + val + '">\xd7</button>';
-                equipWrap.insertBefore(tag, equipInput);
-            }
-            if (equipInput) {
-                equipInput.addEventListener('keydown', function(e) {
-                    if ((e.key === 'Enter' || e.key === ',') && equipInput.value.trim()) {
-                        e.preventDefault();
-                        addTag(equipInput.value);
-                        equipInput.value = '';
-                    }
-                });
-            }
-            equipWrap.addEventListener('click', function(e) {
-                var btn = e.target.closest('.eq-tag__del');
-                if (btn) btn.closest('.eq-tag').remove();
-            });
-            if (saveEquipBtn) {
-                saveEquipBtn.addEventListener('click', async function() {
-                    var list = getEquipmentList();
-                    var res = await fetch('/account/equipment', {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ equipment: list })
-                    });
-                    var data = await res.json();
-                    if (data.success) {
-                        var span = saveEquipBtn.querySelector('span');
-                        var orig = span.textContent;
-                        span.textContent = '✓ Enregistré';
-                        saveEquipBtn.disabled = true;
-                        setTimeout(function() { span.textContent = orig; saveEquipBtn.disabled = false; }, 2200);
-                    }
-                });
-            }
-        })();
     script.
         (function () {
             var __services = !{JSON.stringify(services)};

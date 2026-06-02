@@ -66,12 +66,14 @@ exports.createUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const companyId = new mongoose.Types.ObjectId();
 
-    // Résoudre le parrain (code de parrainage en session)
+    // Résoudre le parrain : depuis le formulaire OU depuis la session (lien URL)
     let referrerId = null;
-    const pendingRef = req.session.pendingRef;
-    if (pendingRef) {
-      const referrer = await User.findOne({ referralCode: pendingRef }).lean();
-      if (referrer) referrerId = referrer._id;
+    const refCode = (req.body.refCode || "").trim().toUpperCase() || req.session.pendingRef;
+    if (refCode) {
+      const referrer = await User.findOne({ referralCode: refCode }).lean();
+      if (referrer && String(referrer._id) !== String(req.user?._id)) {
+        referrerId = referrer._id;
+      }
     }
 
     const referralCode = await generateReferralCode(fullname);

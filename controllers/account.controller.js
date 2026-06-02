@@ -57,10 +57,34 @@ exports.updateAccountInfo = async (req, res) => {
 exports.updateAccountSocial = async (req, res) => {
   try {
     const { fieldName, fieldValue } = req.body;
-    await User.findByIdAndUpdate(req.user._id, {
-      [fieldName]: fieldValue,
-    });
 
+    const allowed = ["emailPro", "phonePro", "instagramLink", "whatsappLink", "facebookLink", "website"];
+    if (!allowed.includes(fieldName)) {
+      return res.status(400).json({ error: "Champ invalide." });
+    }
+
+    const val = (fieldValue || "").trim();
+
+    // ── Validation selon le type de champ ────────────────────────────────
+    if (val !== "") {
+      if (fieldName === "emailPro") {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+          return res.status(400).json({ error: "Adresse email invalide. Ex: contact@monactivite.com" });
+        }
+      } else if (fieldName === "phonePro" || fieldName === "whatsappLink") {
+        // Accepte +32 476 12 34 56, 0476123456, etc.
+        if (!/^\+?[\d\s\-().]{6,20}$/.test(val)) {
+          return res.status(400).json({ error: "Numéro invalide. Ex: +32 476 12 34 56" });
+        }
+      } else {
+        // instagramLink, facebookLink, website → doit être une URL valide
+        if (!/^https?:\/\/.+\..+/.test(val)) {
+          return res.status(400).json({ error: "Lien invalide. Il doit commencer par https:// (ex: https://instagram.com/moncompte)" });
+        }
+      }
+    }
+
+    await User.findByIdAndUpdate(req.user._id, { [fieldName]: val });
     return res.json({ success: true });
   } catch (err) {
     return res.json(err);

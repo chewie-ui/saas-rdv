@@ -2,53 +2,79 @@ extends ../../layouts/auth
 
 block links
     link(rel="stylesheet", href="/css/layouts/auth-register.css")
+    style.
+        .auth-ref-row { position:relative; display:flex; align-items:center; gap:8px; }
+        .auth-ref-row .auth-input { flex:1; }
+        .auth-ref-status { font-size:12px; font-weight:600; white-space:nowrap; flex-shrink:0; }
+        .auth-ref-status.ok  { color:var(--accent,#16a34a); }
+        .auth-ref-status.err { color:#dc2626; }
 
 block content
-    .auth-register-page
-        .auth-register-inner
+    .auth-split
 
-            //- ── Logo + heading ─────────────────────────────────────
-            .auth-register-top
-                a.auth-art__logo(href="/")
-                    img.auth-art__logo-mark(src="/images/icon.svg" alt="BranShee")
-                    span BranShee
-                h1= t.auth.register_title
-                p.auth-sub= t.auth.register_desc
+        //- ── Panneau gauche décoratif ───────────────────────────────
+        .auth-art
+            a.auth-art__logo(href="/")
+                img.auth-art__logo-mark(src="/images/icon.svg" alt="BranShee")
+                span BranShee
 
-            //- ── Google SSO ────────────────────────────────────────
-            a.auth-social-btn(href="/auth/google")
-                svg(width="16" height="16" viewBox="0 0 48 48")
-                    path(fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8a12 12 0 1 1 0-24c3.1 0 5.8 1.2 7.9 3l5.7-5.7A20 20 0 1 0 24 44c11 0 20-9 20-20 0-1.3-.1-2.6-.4-3.9z")
-                    path(fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7A20 20 0 0 0 6.3 14.7z")
-                    path(fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2A12 12 0 0 1 12.7 28L6.2 33A20 20 0 0 0 24 44z")
-                    path(fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z")
-                span Continue with Google
+            .auth-art__body
+                .auth-art__headline
+                    | Votre agenda en ligne,&nbsp;
+                    br
+                    | prêt en 5 minutes.
+                .auth-art__stats
+                    .auth-art__stat
+                        .auth-art__stat-num 0 appel
+                        .auth-art__stat-label pour réserver
+                    .auth-art__stat
+                        .auth-art__stat-num 24/7
+                        .auth-art__stat-label réservations auto
+                    .auth-art__stat
+                        .auth-art__stat-num Gratuit
+                        .auth-art__stat-label pour commencer
 
-            .auth-divider-row
-                hr
-                span OR
-                hr
+            .auth-art__foot © BranShee · Bruxelles
 
-            //- ── Card form ─────────────────────────────────────────
-            .auth-register-card
+        //- ── Panneau droit : formulaire ────────────────────────────
+        .auth-form-panel
+            .auth-form-inner
+                h1= t.auth.register_title || 'Créez votre compte'
+                p.auth-sub= t.auth.register_desc || 'Vous utiliserez ce compte pour gérer votre activité et inviter votre équipe.'
+
                 .auth-error#registerError(style="display:none")
+
+                //- Google SSO
+                a.auth-social-btn(href="/auth/google")
+                    svg(width="16" height="16" viewBox="0 0 48 48")
+                        path(fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8a12 12 0 1 1 0-24c3.1 0 5.8 1.2 7.9 3l5.7-5.7A20 20 0 1 0 24 44c11 0 20-9 20-20 0-1.3-.1-2.6-.4-3.9z")
+                        path(fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7A20 20 0 0 0 6.3 14.7z")
+                        path(fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2A12 12 0 0 1 12.7 28L6.2 33A20 20 0 0 0 24 44z")
+                        path(fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z")
+                    span Continue with Google
+
+                .auth-divider-row
+                    hr
+                    span OR
+                    hr
+
+                //- Formulaire
                 form.auth-register-form#registerForm(action="/register" method="POST")
 
-                    //- Name row
-                    .auth-register-row
-                        .auth-field
-                            label.auth-label= t.auth.full_name || 'Full name'
-                            input.auth-input(
-                                type="text"
-                                name="fullname"
-                                placeholder="Léa Bernard"
-                                autocomplete="name"
-                                required
-                            )
+                    //- Nom complet
+                    .auth-field
+                        label.auth-label= t.auth.full_name || 'Nom complet'
+                        input.auth-input(
+                            type="text"
+                            name="fullname"
+                            placeholder="Léa Bernard"
+                            autocomplete="name"
+                            required
+                        )
 
                     //- Email
                     .auth-field
-                        label.auth-label= t.auth.work_email || 'Email'
+                        label.auth-label= t.auth.work_email || 'Email professionnel'
                         input.auth-input(
                             type="email"
                             name="email"
@@ -57,7 +83,7 @@ block content
                             required
                         )
 
-                    //- Business type
+                    //- Métier
                     .auth-field
                         label.auth-label Votre métier / secteur
                         .auth-service-wrap
@@ -70,51 +96,69 @@ block content
                             input(type="hidden" name="businessType" id="businessTypeInput")
                             .auth-service-dropdown#serviceDropdown
 
-                    //- Password
-                    .auth-field
-                        label.auth-label= t.auth.password
-                        input.auth-input(
-                            type="password"
-                            name="password"
-                            placeholder="••••••••"
-                            autocomplete="new-password"
-                            required
-                        )
+                    //- Mot de passe + confirmation (côte à côte sur desktop)
+                    .auth-register-row.auth-two-col
+                        .auth-field
+                            label.auth-label= t.auth.password || 'Mot de passe'
+                            input.auth-input(
+                                type="password"
+                                name="password"
+                                placeholder="••••••••"
+                                autocomplete="new-password"
+                                required
+                            )
+                        .auth-field
+                            label.auth-label= t.auth.confirm_pwd2 || 'Confirmer'
+                            input.auth-input(
+                                type="password"
+                                name="conformPassword"
+                                placeholder="••••••••"
+                                autocomplete="new-password"
+                                required
+                            )
 
-                    //- Confirm password
+                    //- Code parrain (optionnel)
                     .auth-field
-                        label.auth-label= t.auth.confirm_pwd2
-                        input.auth-input(
-                            type="password"
-                            name="conformPassword"
-                            placeholder="••••••••"
-                            autocomplete="new-password"
-                            required
-                        )
+                        label.auth-label
+                            | Code parrain&nbsp;
+                            span.auth-label-opt (optionnel)
+                        .auth-ref-row
+                            input.auth-input#refCodeInput(
+                                type="text"
+                                name="refCode"
+                                placeholder="Ex: SOPHIE-A3F2"
+                                autocomplete="off"
+                                style="text-transform:uppercase;letter-spacing:.04em;"
+                            )
+                            span.auth-ref-status#refStatus
 
-                    //- Terms
+                    //- CGU
                     label.auth-check-row
                         input(type="checkbox" name="terms" required style="accent-color:var(--accent)")
                         span.auth-check-text
-                            | I agree to the
-                            a(href="/conditions-utilisation") Terms
-                            |  and
-                            a(href="/confidentialite") Privacy Policy
+                            | J'accepte les&nbsp;
+                            a(href="/conditions-utilisation") CGU
+                            | &nbsp;et la&nbsp;
+                            a(href="/confidentialite") Politique de confidentialité
                             | .
 
-                    button.auth-submit(type="submit")= t.auth.continue
+                    button.auth-submit(type="submit")= t.auth.continue || 'Créer mon compte'
 
-            .auth-bottom-link
-                = t.auth.already_account + ' '
-                a(href="/login")= t.auth.login_link
+                .auth-bottom-link
+                    | Vous avez déjà un compte ?&nbsp;
+                    a(href="/login") Connectez-vous
 
 block scripts
     script(src="/js/components/topbar.js")
+    style.
+        .auth-two-col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .auth-label-opt { color:var(--text-muted,#9ca3af); font-weight:400; font-size:12px; }
+        @media (max-width:480px) { .auth-two-col { grid-template-columns:1fr; } }
     script.
         const __services = !{JSON.stringify(services)};
         (function() {
 
-            /* ── Dropdown business type ─────────────────────────────── */
+            /* ── Dropdown métier ──────────────────────────────────── */
             var input    = document.getElementById('serviceInput');
             var hidden   = document.getElementById('businessTypeInput');
             var dropdown = document.getElementById('serviceDropdown');
@@ -144,7 +188,6 @@ block scripts
             }
 
             input.addEventListener('input', function() {
-                // Clear the validated value whenever the user types freely
                 hidden.value = '';
                 input.classList.remove('service-input--selected', 'service-input--invalid');
                 var q = normalize(input.value.trim());
@@ -160,16 +203,54 @@ block scripts
             input.addEventListener('blur', function() {
                 setTimeout(function() {
                     dropdown.style.display = 'none';
-                    // If the user typed something but didn't select → clear + warn
                     if (input.value.trim() && !hidden.value) {
                         input.classList.add('service-input--invalid');
                     }
                 }, 160);
             });
 
-            /* ── AJAX form submit ───────────────────────────────────── */
-            var form    = document.getElementById('registerForm');
-            var errBox  = document.getElementById('registerError');
+            /* ── Code parrain ─────────────────────────────────────── */
+            var refInput  = document.getElementById('refCodeInput');
+            var refStatus = document.getElementById('refStatus');
+            var refTimer  = null;
+
+            // Pré-remplir depuis ?ref=CODE dans l'URL
+            var urlRef = new URLSearchParams(window.location.search).get('ref');
+            if (urlRef && refInput) {
+                refInput.value = urlRef.toUpperCase();
+                validateRef(urlRef);
+            }
+
+            function validateRef(code) {
+                if (!code) { refStatus.textContent = ''; refStatus.className = 'auth-ref-status'; return; }
+                refStatus.textContent = '…';
+                fetch('/api/check-ref?code=' + encodeURIComponent(code.toUpperCase()))
+                    .then(function(r) { return r.json(); })
+                    .then(function(d) {
+                        if (d.valid) {
+                            refStatus.textContent = '✓ ' + (d.name || 'Valide');
+                            refStatus.className = 'auth-ref-status ok';
+                        } else {
+                            refStatus.textContent = '✗ Invalide';
+                            refStatus.className = 'auth-ref-status err';
+                        }
+                    })
+                    .catch(function() { refStatus.textContent = ''; refStatus.className = 'auth-ref-status'; });
+            }
+
+            if (refInput) {
+                refInput.addEventListener('input', function() {
+                    var v = this.value.trim().toUpperCase();
+                    this.value = v;
+                    clearTimeout(refTimer);
+                    if (!v) { refStatus.textContent = ''; refStatus.className = 'auth-ref-status'; return; }
+                    refTimer = setTimeout(function() { validateRef(v); }, 500);
+                });
+            }
+
+            /* ── Soumission AJAX ──────────────────────────────────── */
+            var form      = document.getElementById('registerForm');
+            var errBox    = document.getElementById('registerError');
             var submitBtn = form ? form.querySelector('button[type="submit"]') : null;
 
             function showError(msg) {
@@ -179,16 +260,13 @@ block scripts
                 errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
 
-            function hideError() {
-                if (errBox) errBox.style.display = 'none';
-            }
-
             if (form) {
+                if (submitBtn) submitBtn.dataset.label = submitBtn.textContent;
+
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
-                    hideError();
+                    if (errBox) errBox.style.display = 'none';
 
-                    // Client-side: enforce dropdown selection
                     if (!hidden.value || !__services.includes(hidden.value)) {
                         input.classList.add('service-input--invalid');
                         input.focus();
@@ -201,10 +279,7 @@ block scripts
 
                     fetch('/register', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'X-Requested-With': 'fetch'
-                        },
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'fetch' },
                         body: body
                     })
                     .then(function(r) { return r.json(); })
@@ -213,17 +288,14 @@ block scripts
                             window.location.href = data.redirect || '/appointment';
                         } else {
                             showError(data.error || 'Une erreur est survenue.');
-                            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = submitBtn.dataset.label || 'Continuer'; }
+                            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = submitBtn.dataset.label; }
                         }
                     })
                     .catch(function() {
                         showError('Erreur réseau. Veuillez réessayer.');
-                        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = submitBtn.dataset.label || 'Continuer'; }
+                        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = submitBtn.dataset.label; }
                     });
                 });
-
-                // Store original label for restore after error
-                if (submitBtn) submitBtn.dataset.label = submitBtn.textContent;
             }
 
         })();
