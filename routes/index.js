@@ -22,6 +22,38 @@ router.use(require("./superadmin"));
 router.use(require("./services"));
 router.use(require("./employees"));
 
+/* ── Catégories dynamiques depuis la base ────────────────────────────────── */
+async function getDynamicCategories() {
+  const counts = await User.aggregate([
+    { $match: { businessType: { $exists: true, $ne: "" } } },
+    { $group: { _id: "$businessType", count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+  ]);
+  return counts.map(c => ({ name: c._id, count: c.count }));
+}
+
+/* ── Tri des établissements : Business > Pro > Gratuit, puis par boost, puis par note ── */
+function planPriority(plan, isPremium) {
+  if (plan === "business") return 3;
+  if (plan === "pro")      return 2;
+  if (isPremium)           return 1; // premium sans plan précis
+  return 0;                          // gratuit
+}
+
+function sortEstablishments(a, b) {
+  // 1. Boostés en premier (position 1 avant 2)
+  const aBoost = a.boostPosition > 0;
+  const bBoost = b.boostPosition > 0;
+  if (aBoost !== bBoost) return aBoost ? -1 : 1;
+  if (aBoost && bBoost)  return a.boostPosition - b.boostPosition;
+  // 2. Business > Pro > Gratuit
+  const aPlan = planPriority(a.plan, a.owner?.isPremium || a.featured);
+  const bPlan = planPriority(b.plan, b.owner?.isPremium || b.featured);
+  if (aPlan !== bPlan) return bPlan - aPlan;
+  // 3. Par note puis nb d'avis
+  return b.avgRating - a.avgRating || b.reviewCount - a.reviewCount;
+}
+
 /* ── Sitemap ──────────────────────────────────────────────────────── */
 router.get("/sitemap.xml", async (req, res) => {
   const BASE  = "https://www.branshee.com";
@@ -125,22 +157,16 @@ router.get("/sitemap.xml", async (req, res) => {
 // });
 
 router.get("/", async (req, res) => {
-  // 1. Tous les users premium (isPremium = pro ou business)
-  const allPremiumUsers = await User.find({ isPremium: true }).select("_id subscription").lean();
-  const premiumIds      = allPremiumUsers.map((u) => u._id);
+  const [allCompanies, allCategories] = await Promise.all([
+    Companies.find({})
+      .select("_id owner boostPosition slug")
+      .populate("owner", "_id fullName businessName businessType businessPicture profilePicture description location verified subscription isPremium manualPremium")
+      .lean(),
+    getDynamicCategories(),
+  ]);
 
-  // 2. Toutes les companies (premium + boostées) — on filtre après
-  const allCompanies = await Companies.find({})
-    .select("_id owner boostPosition slug")
-    .populate("owner", "_id fullName businessName businessType businessPicture profilePicture description location verified subscription isPremium manualPremium")
-    .lean();
+  const coachs = allCompanies.filter(c => c.owner).slice(0, 100);
 
-  // Garder : boostées (boostPosition > 0) OU premium
-  const coachs = allCompanies.filter(c =>
-    c.owner && (c.boostPosition > 0 || premiumIds.some(id => String(id) === String(c.owner._id)))
-  ).slice(0, 60);
-
-  // 3. Agrégation des avis
   const companyIds = coachs.map(c => c._id);
   const ratings = await Review.aggregate([
     { $match: { company: { $in: companyIds } } },
@@ -149,11 +175,10 @@ router.get("/", async (req, res) => {
   const ratingMap = {};
   ratings.forEach(r => { ratingMap[r._id.toString()] = r; });
 
-  // 4. Enrichir + trier : boostés en premier (par position), puis premium, puis par note
   const { getPlan } = require("../utils/planLimits");
   const enriched = coachs.map(c => {
     const plan     = getPlan(c.owner);
-    const featured = plan === "pro" || plan === "business";
+    const featured = plan === "pro" || plan === "business" || c.owner.isPremium;
     return {
       ...c,
       avgRating:    ratingMap[c._id.toString()]?.avgRating   || 0,
@@ -162,33 +187,24 @@ router.get("/", async (req, res) => {
       plan,
       boostPosition: c.boostPosition || 0,
     };
-  }).sort((a, b) => {
-    // 1. Boostés en premier (position 1 avant 2, etc.)
-    const aBoost = a.boostPosition > 0;
-    const bBoost = b.boostPosition > 0;
-    if (aBoost !== bBoost) return aBoost ? -1 : 1;
-    if (aBoost && bBoost) return a.boostPosition - b.boostPosition;
-    // 2. Featured (premium) ensuite
-    if (a.featured !== b.featured) return a.featured ? -1 : 1;
-    // 3. Par note
-    return b.avgRating - a.avgRating || b.reviewCount - a.reviewCount;
-  });
+  }).sort(sortEstablishments);
 
-  // 5. Limiter à 5 sur la homepage
-  const coachsToShow = enriched.slice(0, 5);
+  // Limiter à 6 sur la homepage
+  const coachsToShow = enriched.slice(0, 6);
 
   res.render("client/landing-page", {
     title: `BranShee — Prenez rendez-vous en ligne simplement`,
     metaDescription: "Trouvez et réservez en ligne un coach sportif, un coiffeur, un thérapeute ou tout autre professionnel près de chez vous. Prise de rendez-vous gratuite et instantanée avec BranShee.",
     canonical: "https://www.branshee.com/",
     coachs: coachsToShow,
+    allCategories,
     services: getServices(res.locals.lang),
   });
 });
 
 router.get("/search", async (req, res) => {
   try {
-    const { name, location } = req.query;
+    const { name, location, category } = req.query;
     let userQuery = {};
     const conditions = [];
 
@@ -201,38 +217,37 @@ router.get("/search", async (req, res) => {
     }
 
     if (location) {
-      // On remplace les espaces, tirets et apostrophes par ".*" (n'importe quoi)
       const flexibleLocation = location.trim().replace(/[\s\-\']/g, ".*");
-
       const locationFilters = [{ "location.city": { $regex: flexibleLocation, $options: "i" } }, { "location.address": { $regex: flexibleLocation, $options: "i" } }];
-
       const zipValue = parseInt(location);
-      if (!isNaN(zipValue)) {
-        locationFilters.push({ "location.zip": zipValue });
-      }
-
+      if (!isNaN(zipValue)) locationFilters.push({ "location.zip": zipValue });
       conditions.push({ $or: locationFilters });
     }
 
-    // Toujours filtrer sur isPremium actif
-    conditions.push({ isPremium: true });
+    // Filtre par catégorie (optionnel)
+    if (category && category.trim()) {
+      conditions.push({ businessType: { $regex: category.trim(), $options: "i" } });
+    }
 
-    if (conditions.length === 1) {
+    // PAS de filtre isPremium — tous les établissements, gratuits ET premium
+    if (conditions.length === 0) {
+      userQuery = {};
+    } else if (conditions.length === 1) {
       userQuery = conditions[0];
     } else {
       userQuery = { $and: conditions };
     }
 
-    // Trouver les users qui correspondent aux critères (incluant isPremium: true)
-    const matchingUsers = await User.find(userQuery).select("_id").lean();
+    const matchingUsers = await User.find(userQuery).select("_id isPremium manualPremium subscription").lean();
     const matchingIds   = matchingUsers.map((u) => u._id);
+    const premiumSet    = new Set(matchingUsers.filter(u => u.isPremium || u.manualPremium).map(u => String(u._id)));
 
     const filteredCoachs = await Companies.find({ owner: { $in: matchingIds } })
-      .populate("owner")
-      .limit(60)
+      .populate("owner", "_id fullName businessName businessType businessPicture profilePicture description location verified subscription isPremium manualPremium")
+      .select("_id owner slug boostPosition")
+      .limit(100)
       .lean();
 
-    // Avis pour les résultats
     const filteredIds = filteredCoachs.map(c => c._id);
     const filteredRatings = await Review.aggregate([
       { $match: { company: { $in: filteredIds } } },
@@ -240,16 +255,33 @@ router.get("/search", async (req, res) => {
     ]);
     const filteredRatingMap = {};
     filteredRatings.forEach(r => { filteredRatingMap[r._id.toString()] = r; });
-    const coachsWithRating = filteredCoachs.map(c => ({
-      ...c,
-      avgRating:   filteredRatingMap[c._id.toString()]?.avgRating   || 0,
-      reviewCount: filteredRatingMap[c._id.toString()]?.reviewCount || 0,
-    })).sort((a, b) => b.avgRating - a.avgRating || b.reviewCount - a.reviewCount);
 
-    res.render("client/landing-page", {
+    const { getPlan } = require("../utils/planLimits");
+    const coachsWithRating = filteredCoachs
+      .filter(c => c.owner)
+      .map(c => {
+        const plan     = getPlan(c.owner);
+        const featured = plan === "pro" || plan === "business" || c.owner.isPremium;
+        return {
+          ...c,
+          avgRating:    filteredRatingMap[c._id.toString()]?.avgRating   || 0,
+          reviewCount:  filteredRatingMap[c._id.toString()]?.reviewCount || 0,
+          featured,
+          plan,
+          boostPosition: c.boostPosition || 0,
+        };
+      })
+      .sort(sortEstablishments);
+
+    const allCategories = await getDynamicCategories();
+
+    res.render("client/search", {
+      title: `Recherche — BranShee`,
       coachs: coachsWithRating,
-      searchName: name,
-      searchLocation: location,
+      searchName: name || "",
+      searchLocation: location || "",
+      searchCategory: category || "",
+      allCategories,
       services: getServices(res.locals.lang),
     });
   } catch (err) {

@@ -1,48 +1,414 @@
 extends ../../layouts/index
 
 block links
-    link(rel="stylesheet", href="/css/layouts/client/landing-page.css")
+    link(rel="stylesheet", href="/css/layouts/client/search.css")
 
 block content
-    .landing__client
-        .hero
-            .hero__blur
-            .hero__container.container
-                h1= t.search.hero_title
-                p= t.search.hero_subtitle
-        .hero__form
-            .hero__form-container.container
-                .form-group
-                    label= t.search.label_name
-                    input.input.search-input#inputName(placeholder=t.search.placeholder_name autocomplete='off')
-                .form-group
-                    label= t.search.label_location
-                    input.search-input#inputLocation(type="text" placeholder=t.search.placeholder_location).input
-                .form__action
-                    button.sm-btn.sm-btn--ghost#searchBtn= t.search.btn_search
-            .search-results.container
-                if coachs && coachs.length > 0
-                    p.search-results__count #{coachs.length} #{t.search.results_label || 'résultats'}
-                .lp__cards
-                    each coach in coachs
-                        .sm-result-card(data-type=(coach.owner.businessType || '').toLowerCase())
-                            .sm-result-card__photo
-                                img(src=coach.owner.profilePicture || '/images/no-user.webp' alt=coach.owner.businessName)
-                            .sm-result-card__body
-                                h2.sm-result-card__name= coach.owner.businessName
-                                .sm-result-card__meta
-                                    if coach.owner.businessType
-                                        span= coach.owner.businessType
-                                    if coach.owner.location && coach.owner.location.city
-                                        span.lp__sep  ·
-                                        span= coach.owner.location.city
-                                    else
-                                        span.lp__sep  ·
-                                        span= t.search.online_service
-                                if coach.owner.description
-                                    p.sm-result-card__desc= coach.owner.description
-                            a.sm-btn.sm-btn--primary(href=`/${coach._id}`)= t.search.btn_book
+    -
+        // Seulement les catégories avec au moins 1 établissement, triées par nombre
+        var _cats    = (allCategories || []).filter(function(c){ return c.count > 0; })
+        // Top 6 (+ "Tous" = 7 max) pour les onglets du haut
+        var _topCats = _cats.slice(0, 6)
+        // Toutes pour la sidebar (max 10 visibles, le reste derrière "Voir tout")
+        var _allCats = _cats
+
+    main.srp
+
+        //- ── Barre de recherche ──────────────────────────────────────
+        .srp__header
+            .container
+                h1.srp__title Trouver un professionnel
+                .srp__searchbar
+                    .srp__sf
+                        svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17")
+                            circle(cx="11" cy="11" r="8")
+                            line(x1="21" y1="21" x2="16.65" y2="16.65")
+                        input#inputName(
+                            type="text"
+                            placeholder="Coiffeur, coach, réflexologue…"
+                            autocomplete="off"
+                            value=searchName || ""
+                        )
+                    .srp__sf-sep
+                    .srp__sf
+                        svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17")
+                            path(d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z")
+                            circle(cx="12" cy="10" r="3")
+                        input#inputLocation(
+                            type="text"
+                            placeholder="Bruxelles, Paris, Liège…"
+                            autocomplete="off"
+                            value=searchLocation || ""
+                        )
+                    button#searchBtn.srp__btn
+                        svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16")
+                            circle(cx="11" cy="11" r="8")
+                            line(x1="21" y1="21" x2="16.65" y2="16.65")
+                        span Rechercher
+
+        //- ── Onglets catégorie (top 6 + Tous) ───────────────────────
+        .srp__cats-wrap
+            .container
+                .srp__cats#srpCats
+                    button.srp__cat.is-active(data-cat="") Tous
+                    each cat in _topCats
+                        button.srp__cat(data-cat=cat.name.toLowerCase() class=(searchCategory && searchCategory.toLowerCase() === cat.name.toLowerCase() ? 'is-active' : ''))= cat.name
+
+        //- ── Corps ──────────────────────────────────────────────────
+        .srp__body.container
+
+            //- Sidebar
+            aside.srp__sidebar
+
+                //- Catégories
+                .srp__filter-group
+                    .srp__filter-label Catégorie
+                    button.srp__filter-item.is-active(data-cat="")
+                        span Tous
+                        span.srp__filter-count= coachs ? coachs.length : 0
+                    each cat, idx in _allCats
+                        button.srp__filter-item(
+                            data-cat=cat.name.toLowerCase()
+                            class=(idx >= 10 ? 'srp__filter-item--hidden' : '') + (searchCategory && searchCategory.toLowerCase() === cat.name.toLowerCase() ? ' is-active' : '')
+                            style=(idx >= 10 ? 'display:none' : '')
+                        )
+                            span= cat.name
+                            span.srp__filter-count= cat.count
+                    if _allCats.length > 10
+                        button.srp__show-more#showMoreCats
+                            span#showMoreLabel Voir tout (#{_allCats.length - 10} de plus)
+                            svg#showMoreIcon(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13")
+                                polyline(points="6 9 12 15 18 9")
+
+                //- Trier
+                .srp__filter-group
+                    .srp__filter-label Trier par
+                    .srp__sort-wrap
+                        button.srp__sort-btn.is-active(data-sort="default") Recommandés
+                        button.srp__sort-btn(data-sort="rating") Mieux notés
+                        button.srp__sort-btn(data-sort="name") A–Z
+                        button.srp__sort-btn(data-sort="distance") Distance
+
+                //- Distance
+                .srp__filter-group#distanceGroup
+                    .srp__filter-label
+                        | Distance&nbsp;
+                        span#distanceLabel (100 km)
+                    input.srp__range#distanceRange(type="range" min="1" max="200" value="100")
+                    .srp__distance-status#distanceStatus
+
+            //- Résultats
+            .srp__results
+                .srp__results-hd
+                    span.srp__count#srpCount= coachs ? coachs.length : 0
+                    span.srp__count-label  professionnel#{coachs && coachs.length > 1 ? 's' : ''} trouvé#{coachs && coachs.length > 1 ? 's' : ''}
+
+                if !coachs || coachs.length === 0
+                    .srp__empty
+                        svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="opacity:.25")
+                            circle(cx="11" cy="11" r="8")
+                            line(x1="21" y1="21" x2="16.65" y2="16.65")
+                        p Aucun résultat trouvé.
+                        p.srp__empty-sub Essayez une autre recherche ou explorez toutes les catégories.
+                        a.srp__btn(href="/search") Voir tous les professionnels
+                else
+                    .srp__grid#srpGrid
+                        each coach in coachs
+                            -
+                                var roundedRating = Math.round((coach.avgRating || 0) * 10) / 10
+                                var photo = coach.owner.businessPicture || coach.owner.profilePicture || '/images/no-user.webp'
+                                var name  = coach.owner.businessName || coach.owner.fullName || 'Professionnel'
+                                var city  = coach.owner.location && coach.owner.location.city ? coach.owner.location.city : ''
+                                var lat   = coach.owner.location && coach.owner.location.lat  ? coach.owner.location.lat  : ''
+                                var lon   = coach.owner.location && coach.owner.location.lon  ? coach.owner.location.lon  : ''
+                                var slug  = coach.slug || String(coach._id)
+                            a.srp-card(
+                                href=`/${slug}`
+                                data-type=(coach.owner.businessType || '').toLowerCase()
+                                data-name=(name).toLowerCase()
+                                data-rating=roundedRating
+                                data-lat=lat
+                                data-lon=lon
+                            )
+                                .srp-card__img-wrap
+                                    img.srp-card__img(src=photo alt=name loading="lazy")
+                                    if coach.boostPosition > 0
+                                        .srp-card__boost-badge ⭐ Mis en avant
+                                    else if coach.featured
+                                        .srp-card__pro-badge Pro
+                                    if coach.reviewCount > 0
+                                        .srp-card__rating-badge
+                                            svg(viewBox="0 0 20 20" fill="currentColor" width="10" height="10")
+                                                path(d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z")
+                                            span= roundedRating.toFixed(1)
+                                .srp-card__body
+                                    .srp-card__top
+                                        span.srp-card__name= name
+                                        if coach.owner.verified
+                                            svg.srp-card__verified(viewBox="0 0 20 20" fill="currentColor" width="14" height="14" title="Vérifié")
+                                                path(fill-rule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd")
+                                    .srp-card__meta
+                                        if coach.owner.businessType
+                                            span.srp-card__type= coach.owner.businessType
+                                        if city
+                                            span.srp-card__sep ·
+                                            span.srp-card__city
+                                                svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="10" height="10")
+                                                    path(d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z")
+                                                    circle(cx="12" cy="10" r="3")
+                                                | #{city}
+                                    if coach.reviewCount > 0
+                                        .srp-card__stars
+                                            - for (var s = 1; s <= 5; s++)
+                                                svg(viewBox="0 0 20 20" width="11" height="11" fill=s <= Math.round(coach.avgRating) ? '#f59e0b' : 'none' stroke="#f59e0b" stroke-width="1.5")
+                                                    path(d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z")
+                                            span.srp-card__review-count (#{coach.reviewCount})
+                                    if coach.owner.description
+                                        p.srp-card__desc= coach.owner.description.length > 90 ? coach.owner.description.slice(0, 90) + '…' : coach.owner.description
+                                    .srp-card__footer
+                                        span.srp-card__book Réserver →
 
 block scripts
-    script(src="/js/layouts/client/landing-page.js" type="module")
-    
+    script.
+        (function() {
+            var grid      = document.getElementById('srpGrid');
+            var countEl   = document.getElementById('srpCount');
+            var allCards  = grid ? Array.from(grid.querySelectorAll('.srp-card')) : [];
+            var activeCat = '#{searchCategory ? searchCategory.toLowerCase() : ""}';
+            var activeSort = 'default';
+            var maxDistance = 200; // km
+            var userLat = null, userLon = null;
+            var refLat  = null, refLon  = null; // ref = user position or searched city
+
+            // ── Haversine distance ────────────────────────────────────────
+            function haversine(lat1, lon1, lat2, lon2) {
+                var R = 6371;
+                var dLat = (lat2 - lat1) * Math.PI / 180;
+                var dLon = (lon2 - lon1) * Math.PI / 180;
+                var a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+                    Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+                    Math.sin(dLon/2)*Math.sin(dLon/2);
+                return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            }
+
+            function getCardDistance(card) {
+                var lat = parseFloat(card.dataset.lat);
+                var lon = parseFloat(card.dataset.lon);
+                if (!refLat || !refLon || isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) return null;
+                return haversine(refLat, refLon, lat, lon);
+            }
+
+            // Stocker les distances calculées sur chaque carte
+            function computeDistances() {
+                allCards.forEach(function(c) {
+                    var d = getCardDistance(c);
+                    c.dataset.distance = d !== null ? d.toFixed(1) : '';
+                    // Afficher la distance sur la carte si disponible
+                    var existing = c.querySelector('.srp-card__dist');
+                    if (existing) existing.remove();
+                    if (d !== null) {
+                        var distEl = document.createElement('span');
+                        distEl.className = 'srp-card__dist';
+                        distEl.textContent = d < 1 ? '< 1 km' : Math.round(d) + ' km';
+                        var footer = c.querySelector('.srp-card__footer');
+                        if (footer) footer.insertAdjacentElement('afterbegin', distEl);
+                    }
+                });
+            }
+
+            // ── Géolocalisation navigateur ────────────────────────────────
+            var distStatus = document.getElementById('distanceStatus');
+
+            function setRefCoords(lat, lon, label) {
+                refLat = lat; refLon = lon;
+                if (distStatus) {
+                    distStatus.textContent = '📍 ' + label;
+                    distStatus.style.color = 'var(--main-color,#16a34a)';
+                }
+                computeDistances();
+                filterAndSort();
+            }
+
+            function tryGeolocation() {
+                if (!navigator.geolocation) return;
+                if (distStatus) { distStatus.textContent = 'Localisation en cours…'; distStatus.style.color = '#9ca3af'; }
+                navigator.geolocation.getCurrentPosition(
+                    function(pos) {
+                        userLat = pos.coords.latitude;
+                        userLon = pos.coords.longitude;
+                        setRefCoords(userLat, userLon, 'Votre position');
+                    },
+                    function() {
+                        if (distStatus) { distStatus.textContent = 'Position non disponible'; distStatus.style.color = '#9ca3af'; }
+                    },
+                    { timeout: 5000 }
+                );
+            }
+
+            // ── Géocoder une ville via Nominatim ─────────────────────────
+            function geocodeCity(city, cb) {
+                fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(city) + '&format=json&limit=1')
+                    .then(function(r) { return r.json(); })
+                    .then(function(d) {
+                        if (d && d[0]) cb(parseFloat(d[0].lat), parseFloat(d[0].lon), d[0].display_name.split(',')[0]);
+                        else cb(null, null, null);
+                    })
+                    .catch(function() { cb(null, null, null); });
+            }
+
+            // Si une ville est déjà dans la recherche → géocoder au chargement
+            var initLoc = '#{searchLocation || ""}';
+            if (initLoc.trim()) {
+                geocodeCity(initLoc, function(lat, lon, label) {
+                    if (lat && lon) setRefCoords(lat, lon, label || initLoc);
+                    else tryGeolocation();
+                });
+            } else {
+                tryGeolocation();
+            }
+
+            // ── Distance slider ───────────────────────────────────────────
+            var rangeInput   = document.getElementById('distanceRange');
+            var distLabel    = document.getElementById('distanceLabel');
+
+            if (rangeInput) {
+                rangeInput.addEventListener('input', function() {
+                    maxDistance = parseInt(this.value);
+                    if (distLabel) distLabel.textContent = '(' + maxDistance + ' km)';
+                    filterAndSort();
+                });
+            }
+
+            // ── Filter & sort ─────────────────────────────────────────────
+            function filterAndSort() {
+                var visible = allCards.filter(function(c) {
+                    // Filtre catégorie
+                    if (activeCat) {
+                        var t = (c.dataset.type || '').toLowerCase();
+                        if (!t.includes(activeCat)) return false;
+                    }
+                    // Filtre distance (seulement si on a une position de référence)
+                    if (refLat && refLon && maxDistance < 200) {
+                        var d = parseFloat(c.dataset.distance);
+                        if (!isNaN(d) && d > maxDistance) return false;
+                    }
+                    return true;
+                });
+
+                // Tri
+                visible.sort(function(a, b) {
+                    if (activeSort === 'rating')   return parseFloat(b.dataset.rating||0) - parseFloat(a.dataset.rating||0);
+                    if (activeSort === 'name')     return (a.dataset.name||'').localeCompare(b.dataset.name||'');
+                    if (activeSort === 'distance') {
+                        var da = parseFloat(a.dataset.distance); var db = parseFloat(b.dataset.distance);
+                        var aOk = !isNaN(da); var bOk = !isNaN(db);
+                        if (!aOk && !bOk) return 0;
+                        if (!aOk) return 1;
+                        if (!bOk) return -1;
+                        return da - db;
+                    }
+                    return 0;
+                });
+
+                allCards.forEach(function(c) { c.style.display = 'none'; });
+                visible.forEach(function(c)  { c.style.display = ''; grid.appendChild(c); });
+                if (countEl) countEl.textContent = visible.length;
+
+                // Mettre à jour les counts de la sidebar
+                updateSidebarCounts(visible);
+            }
+
+            function updateSidebarCounts(visible) {
+                var countMap = {};
+                visible.forEach(function(c) {
+                    var t = (c.dataset.type || '').trim().toLowerCase();
+                    countMap[t] = (countMap[t] || 0) + 1;
+                });
+                document.querySelectorAll('.srp__filter-item').forEach(function(btn) {
+                    var cat = btn.dataset.cat || '';
+                    var span = btn.querySelector('.srp__filter-count');
+                    if (!span) return;
+                    if (!cat) { span.textContent = visible.length; return; }
+                    span.textContent = countMap[cat] || 0;
+                });
+            }
+
+            // ── Catégorie pills (top + sidebar) ─────────────────────────
+            document.querySelectorAll('[data-cat]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    activeCat = this.dataset.cat;
+                    document.querySelectorAll('[data-cat]').forEach(function(b) { b.classList.remove('is-active'); });
+                    document.querySelectorAll('[data-cat="' + activeCat + '"]').forEach(function(b) { b.classList.add('is-active'); });
+                    filterAndSort();
+                });
+            });
+
+            // ── Voir plus de catégories ─────────────────────────────────
+            var showMoreBtn = document.getElementById('showMoreCats');
+            var showMoreLabel = document.getElementById('showMoreLabel');
+            var showMoreIcon  = document.getElementById('showMoreIcon');
+            var expanded = false;
+
+            if (showMoreBtn) {
+                showMoreBtn.addEventListener('click', function() {
+                    expanded = !expanded;
+                    document.querySelectorAll('.srp__filter-item--hidden').forEach(function(el) {
+                        el.style.display = expanded ? '' : 'none';
+                    });
+                    if (showMoreLabel) showMoreLabel.textContent = expanded ? 'Voir moins' : 'Voir tout';
+                    if (showMoreIcon)  showMoreIcon.style.transform = expanded ? 'rotate(180deg)' : '';
+                });
+            }
+
+            // ── Sort buttons ─────────────────────────────────────────────
+            document.querySelectorAll('.srp__sort-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    activeSort = this.dataset.sort;
+                    document.querySelectorAll('.srp__sort-btn').forEach(function(b) { b.classList.remove('is-active'); });
+                    this.classList.add('is-active');
+                    filterAndSort();
+                });
+            });
+
+            // ── Recherche ────────────────────────────────────────────────
+            var searchBtn  = document.getElementById('searchBtn');
+            var inputName  = document.getElementById('inputName');
+            var inputLoc   = document.getElementById('inputLocation');
+
+            if (searchBtn) {
+                searchBtn.addEventListener('click', function() {
+                    var n = inputName ? inputName.value.trim() : '';
+                    var l = inputLoc  ? inputLoc.value.trim()  : '';
+                    var url = '/search';
+                    var params = [];
+                    if (n) params.push('name=' + encodeURIComponent(n));
+                    if (l) params.push('location=' + encodeURIComponent(l));
+                    if (params.length) url += '?' + params.join('&');
+                    window.location.href = url;
+                });
+            }
+
+            [inputName, inputLoc].forEach(function(inp) {
+                if (!inp) return;
+                inp.addEventListener('keydown', function(e) { if (e.key === 'Enter' && searchBtn) searchBtn.click(); });
+            });
+
+            // Géocoder si l'utilisateur change la ville
+            if (inputLoc) {
+                var locTimer;
+                inputLoc.addEventListener('input', function() {
+                    clearTimeout(locTimer);
+                    var val = this.value.trim();
+                    if (!val) { tryGeolocation(); return; }
+                    locTimer = setTimeout(function() {
+                        geocodeCity(val, function(lat, lon, label) {
+                            if (lat && lon) setRefCoords(lat, lon, label || val);
+                        });
+                    }, 800);
+                });
+            }
+
+            // Init filtre catégorie actif depuis l'URL
+            if (activeCat) filterAndSort();
+
+        })();

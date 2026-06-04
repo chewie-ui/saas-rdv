@@ -165,8 +165,12 @@ exports.appointment = async (req, res) => {
       endHour: `${String(endDate.getHours()).padStart(2, "0")}:${String(endDate.getMinutes()).padStart(2, "0")}`,
     };
   });
-  const referenceDate = req.query.date ? new Date(req.query.date) : new Date();
-  const focusedIso = referenceDate.toISOString().split("T")[0];
+  const view = req.query.view === "month" ? "month" : "week";
+  // Rejeter "undefined" / dates invalides
+  const rawDate = req.query.date;
+  const parsedDate = rawDate && rawDate !== "undefined" ? new Date(rawDate + "T12:00:00") : null;
+  const referenceDate = (parsedDate && !isNaN(parsedDate.getTime())) ? parsedDate : new Date();
+  const focusedIso = `${referenceDate.getFullYear()}-${String(referenceDate.getMonth()+1).padStart(2,"0")}-${String(referenceDate.getDate()).padStart(2,"0")}`;
   const localeMap = {
     fr: "fr-FR",
     en: "en-US",
@@ -278,6 +282,40 @@ exports.appointment = async (req, res) => {
     return { ...d, fillStatus, isDayOff };
   });
 
+  // ── Données vue mois ────────────────────────────────────────────────────
+  const monthDays = [];
+  const mYear  = referenceDate.getFullYear();
+  const mMonth = referenceDate.getMonth();
+  const mFirst = new Date(mYear, mMonth, 1);
+  const mLast  = new Date(mYear, mMonth + 1, 0);
+  // Padding debut (lundi = 0)
+  const startDow = (mFirst.getDay() + 6) % 7;
+  for (let i = startDow - 1; i >= 0; i--) {
+    const d = new Date(mYear, mMonth, -i);
+    monthDays.push({ day: d.getDate(), iso: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`, current: false });
+  }
+  for (let d = 1; d <= mLast.getDate(); d++) {
+    const iso = `${mYear}-${String(mMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const now = new Date(); const todayIso = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+    monthDays.push({ day: d, iso, current: true, isToday: iso === todayIso });
+  }
+  while (monthDays.length < 42) {
+    const prev = monthDays[monthDays.length - 1];
+    const nd = new Date(prev.iso + "T12:00:00"); nd.setDate(nd.getDate() + 1);
+    monthDays.push({ day: nd.getDate(), iso: `${nd.getFullYear()}-${String(nd.getMonth()+1).padStart(2,"0")}-${String(nd.getDate()).padStart(2,"0")}`, current: false });
+  }
+  // Compter les RDV par jour pour le mois
+  const apptByDay = {};
+  formatted.forEach(a => { apptByDay[a.isoDate] = (apptByDay[a.isoDate] || 0) + 1; });
+  monthDays.forEach(d => { d.count = apptByDay[d.iso] || 0; });
+  const monthLabel = mFirst.toLocaleDateString(locale, { month: "long", year: "numeric" });
+
+  // Mois prev/next (1er du mois)
+  const prevMonth = new Date(mYear, mMonth - 1, 1);
+  const nextMonth = new Date(mYear, mMonth + 1, 1);
+  const prevMonthIso = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth()+1).padStart(2,"0")}-01`;
+  const nextMonthIso = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth()+1).padStart(2,"0")}-01`;
+
   // Always use 30-min steps so appointments at :30 are never missed
   res.render("admin/appointment", {
     pageName: "Appointment",
@@ -290,8 +328,14 @@ exports.appointment = async (req, res) => {
     dayLabel,
     focusedDayName,
     focusedDayDate,
+    focusedIso,
     employees,
     employeeFilter,
+    view,
+    monthDays,
+    monthLabel,
+    prevMonthIso,
+    nextMonthIso,
   });
 };
 

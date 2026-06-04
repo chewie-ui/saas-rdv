@@ -13,7 +13,8 @@ module.exports = {
   stripeCancelUrl:           env.STRIPE_CANCEL_URL_LOCAL,
   stripeWebhookSecret:       env.STRIPE_WEBHOOK_SECRET,
   stripeConnectClientId:     env.STRIPE_CONNECT_CLIENT_ID_LOCAL || env.STRIPE_CONNECT_CLIENT_ID || "",
-  stripeConnectTestAccount:  env.STRIPE_CONNECT_TEST_ACCOUNT_LOCAL || "",   // fallback dev uniquement
+  stripeConnectTestAccount:  env.STRIPE_CONNECT_TEST_ACCOUNT_LOCAL || "",
+  stripePriceAddonCustomUrl: env.STRIPE_PRICE_ADDON_CUSTOM_URL_LOCAL || env.STRIPE_PRICE_ADDON_CUSTOM_URL_SERVER || "",
   appBaseUrl:                env.APP_BASE_URL_LOCAL || "http://localhost:3000",
   dbUri:                     env.MONGO_URI_LOCAL,
   port:                      3000,

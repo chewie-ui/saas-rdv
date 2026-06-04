@@ -16,6 +16,7 @@ router.patch("/update-social", accountController.updateAccountSocial);
 router.patch("/toggle-social", accountController.toggleSocialVisibility);
 
 router.post("/create-checkout", accountController.createCheckout);
+router.post("/purchase-addon/custom-url", isAuth, accountController.purchaseAddonCustomUrl);
 
 router.post(
   "/update-password",

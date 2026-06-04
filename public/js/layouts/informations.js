@@ -225,76 +225,99 @@ if (socialContainer) {
   };
 }
 
-// ── Méthodes de localisation (onglets) ───────────────────────────────────────
+// ── Localisation Google Maps ─────────────────────────────────────────────────
 (function () {
+  // Onglets legacy (si présents — ignore si non)
   var methodBtns = document.querySelectorAll('.loc-method-btn');
   var blockAddress = document.getElementById('locMethodAddress');
   var blockGmap    = document.getElementById('locMethodGmap');
   var blockGps     = document.getElementById('locMethodGps');
-  if (!methodBtns.length) return;
+  var current = 'gmap'; // défaut : lien Google Maps
 
-  var current = 'address';
-
-  function showMethod(m) {
-    current = m;
-    methodBtns.forEach(function(b) { b.classList.toggle('active', b.dataset.method === m); });
-    if (blockAddress) blockAddress.style.display = m === 'address' ? '' : 'none';
-    if (blockGmap)    blockGmap.style.display    = m === 'gmap'    ? '' : 'none';
-    if (blockGps)     blockGps.style.display     = m === 'gps'     ? '' : 'none';
+  if (methodBtns.length) {
+    function showMethod(m) {
+      current = m;
+      methodBtns.forEach(function(b) { b.classList.toggle('active', b.dataset.method === m); });
+      if (blockAddress) blockAddress.style.display = m === 'address' ? '' : 'none';
+      if (blockGmap)    blockGmap.style.display    = m === 'gmap'    ? '' : 'none';
+      if (blockGps)     blockGps.style.display     = m === 'gps'     ? '' : 'none';
+    }
+    methodBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() { showMethod(btn.dataset.method); });
+    });
   }
 
-  methodBtns.forEach(function(btn) {
-    btn.addEventListener('click', function() { showMethod(btn.dataset.method); });
-  });
-
-  // Parser un lien Google Maps → { lat, lon }
+  // ── Parser un lien Google Maps → { lat, lon } ──────────────────────────────
   function parseGmapUrl(url) {
-    // Format @lat,lon,zoom
     var m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
     if (m) return { lat: m[1], lon: m[2] };
-    // Format ?q=lat,lon
     m = url.match(/[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
     if (m) return { lat: m[1], lon: m[2] };
-    // Format !3dLAT!4dLON (embed URLs)
     m = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
     if (m) return { lat: m[1], lon: m[2] };
     return null;
   }
 
-  var gmapInput  = document.getElementById('gmapUrlInput');
-  var gmapStatus = document.getElementById('gmapParseStatus');
-  if (gmapInput) {
-    gmapInput.addEventListener('input', function() {
-      var parsed = parseGmapUrl(gmapInput.value.trim());
-      if (parsed && gmapStatus) {
-        gmapStatus.textContent = '✅ Coordonnées détectées : ' + parsed.lat + ', ' + parsed.lon;
-        gmapStatus.style.color = '#15803d';
-      } else if (gmapInput.value.trim() && gmapStatus) {
-        gmapStatus.textContent = '⚠️ Coordonnées non détectées — vérifiez le lien.';
-        gmapStatus.style.color = '#b45309';
-      } else if (gmapStatus) {
-        gmapStatus.textContent = '';
-      }
-    });
+  var gmapInput    = document.getElementById('gmapUrlInput');
+  var gmapStatus   = document.getElementById('gmapParseStatus');
+  var resolvedData = null; // { lat, lon, gmapUrl } stocké après résolution
+  var resolveTimer = null;
+
+  function setStatus(msg, color) {
+    if (!gmapStatus) return;
+    gmapStatus.textContent = msg;
+    gmapStatus.style.color = color || '';
+    gmapStatus.style.display = msg ? 'block' : 'none';
   }
 
-  // Surcharger confirmLocation pour gérer les 3 méthodes
-  var originalConfirm = window.__locConfirmOverride;
-  window.__locGetMethod = function() { return current; };
-  window.__locGetGmapData = function() {
-    if (!gmapInput) return null;
-    var url = gmapInput.value.trim();
+  async function resolveGmapUrl(url) {
+    if (!url) { setStatus('', ''); resolvedData = null; return; }
+
+    // Essai local d'abord
     var parsed = parseGmapUrl(url);
-    return parsed ? { lat: parsed.lat, lon: parsed.lon, gmapUrl: url } : null;
-  };
-  window.__locGetGpsData = function() {
-    var latEl = document.getElementById('gpsLatInput');
-    var lonEl = document.getElementById('gpsLonInput');
-    if (!latEl || !lonEl) return null;
-    var lat = latEl.value.trim();
-    var lon = lonEl.value.trim();
-    return (lat && lon) ? { lat, lon } : null;
-  };
+    if (parsed) {
+      resolvedData = { lat: parsed.lat, lon: parsed.lon, gmapUrl: url };
+      setStatus('✅ Localisation détectée — cliquez sur Confirmer', '#15803d');
+      return;
+    }
+
+    // Lien court ou sans coordonnées → appel API
+    setStatus('⏳ Résolution du lien…', '#6b7280');
+    try {
+      var r = await fetch('/api/resolve-gmap?url=' + encodeURIComponent(url));
+      var d = await r.json();
+      if (d.ok && d.lat && d.lon) {
+        resolvedData = { lat: d.lat, lon: d.lon, gmapUrl: url };
+        setStatus('✅ Localisation détectée — cliquez sur Confirmer', '#15803d');
+      } else if (d.ok && d.placeName) {
+        // On a juste un nom de lieu, utiliser comme adresse
+        resolvedData = { placeName: d.placeName, gmapUrl: url };
+        setStatus('✅ Lieu trouvé : ' + d.placeName + ' — cliquez sur Confirmer', '#15803d');
+      } else {
+        resolvedData = null;
+        setStatus('⚠️ Lien non reconnu. Essayez le bouton Partager > Copier le lien sur Google Maps.', '#b45309');
+      }
+    } catch (e) {
+      resolvedData = null;
+      setStatus('⚠️ Erreur réseau, réessayez.', '#b45309');
+    }
+  }
+
+  if (gmapInput) {
+    // Déclencher à la saisie (debounce 600ms)
+    gmapInput.addEventListener('input', function() {
+      clearTimeout(resolveTimer);
+      var url = this.value.trim();
+      resolveTimer = setTimeout(function() { resolveGmapUrl(url); }, 600);
+    });
+    // Résoudre immédiatement au chargement si une valeur existe déjà
+    if (gmapInput.value.trim()) resolveGmapUrl(gmapInput.value.trim());
+  }
+
+  // Exposer les données résolues pour le confirmLocation handler
+  window.__locGetMethod    = function() { return 'gmap'; };
+  window.__locGetGmapData  = function() { return resolvedData; };
+  window.__locGetGpsData   = function() { return null; };
 })();
 
 // ---- Location / service type ----
@@ -346,83 +369,46 @@ applyServiceType();
 let debounceTimer;
 
 if (confirmLocation) {
-  confirmLocation.addEventListener("click", async (event) => {
-    const isSurPlace = radioSurPlace && radioSurPlace.checked;
-    const method = window.__locGetMethod ? window.__locGetMethod() : 'address';
+  confirmLocation.addEventListener("click", async () => {
+    const isSurPlace = radioSurPlace ? radioSurPlace.checked : true;
 
-    // ── Méthode Lien Google Maps ─────────────────────────────────────────────
-    if (method === 'gmap') {
-      const gmap = window.__locGetGmapData ? window.__locGetGmapData() : null;
-      if (!gmap) { alert('Impossible de détecter les coordonnées dans ce lien. Vérifiez l\'URL.'); return; }
-      const iframeUrl = `https://maps.google.com/maps?q=${gmap.lat},${gmap.lon}&z=15&output=embed`;
-      const btn = confirmLocation.querySelector('span') || confirmLocation;
-      btn.textContent = '...';
-      const res = await fetch('/account/location', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat: gmap.lat, lon: gmap.lon, iframeUrl, gmapUrl: gmap.gmapUrl, serviceType: isSurPlace ? 'sur_place' : 'en_ligne' }),
-      });
-      btn.textContent = 'Confirmer';
-      const iframeHtml = `<iframe width="100%" height="300" frameborder="0" src="${iframeUrl}" allowfullscreen loading="lazy"></iframe>`;
-      if (document.getElementById('mapContainer')) document.getElementById('mapContainer').innerHTML = iframeHtml;
+    // ── Nouveau système simplifié : adresse + lien ────────────────────────────
+    const locAddr = document.getElementById('locAddressInput');
+    const locGmap = document.getElementById('locGmapInput');
+
+    const fullAddress = locAddr ? (locAddr.value || '').trim() : '';
+    const gmapUrl     = locGmap ? (locGmap.value || '').trim() : '';
+
+    if (!fullAddress) {
+      alert('Veuillez entrer votre adresse complète.');
+      if (locAddr) locAddr.focus();
       return;
     }
 
-    // ── Méthode Coordonnées GPS ──────────────────────────────────────────────
-    if (method === 'gps') {
-      const gps = window.__locGetGpsData ? window.__locGetGpsData() : null;
-      if (!gps) { alert('Veuillez entrer la latitude et la longitude.'); return; }
-      const iframeUrl = `https://maps.google.com/maps?q=${gps.lat},${gps.lon}&z=15&output=embed`;
-      const btn = confirmLocation.querySelector('span') || confirmLocation;
-      btn.textContent = '...';
+    const iframeUrl = `https://maps.google.com/maps?q=${encodeURIComponent(fullAddress)}&output=embed&hl=fr&z=16`;
+    const btn  = confirmLocation.querySelector('span') || confirmLocation;
+    const orig = btn.textContent;
+    btn.textContent = '…';
+    confirmLocation.disabled = true;
+
+    try {
       await fetch('/account/location', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat: gps.lat, lon: gps.lon, iframeUrl, serviceType: isSurPlace ? 'sur_place' : 'en_ligne' }),
+        body: JSON.stringify({
+          street: fullAddress, city: '', zip: '', country: '',
+          iframeUrl, gmapUrl,
+          serviceType: isSurPlace ? 'sur_place' : 'en_ligne',
+        }),
       });
-      btn.textContent = 'Confirmer';
-      const iframeHtml = `<iframe width="100%" height="300" frameborder="0" src="${iframeUrl}" allowfullscreen loading="lazy"></iframe>`;
-      if (document.getElementById('mapContainer')) document.getElementById('mapContainer').innerHTML = iframeHtml;
-      return;
-    }
-
-    // ── Méthode Adresse (défaut) ─────────────────────────────────────────────
-    let street = "", zip = "", city = "", country = "";
-
-    if (isSurPlace) {
-      street = streetInput ? streetInput.value : "";
-      zip = zipInput ? zipInput.value : "";
-      city = cityInput ? cityInput.value : "";
-      country = countryInput ? countryInput.value : "";
-    } else {
-      country = countryInputOnline ? countryInputOnline.value : "";
-      city = cityInputOnline ? cityInputOnline.value : "";
-    }
-
-    const encodedAddress = encodeURIComponent(isSurPlace ? (addressInput ? addressInput.value : '') : `${city} ${country}`);
-    const iframeUrl = `https://maps.google.com/maps?q=${encodedAddress}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-
-    const response = await fetch(`/account/location`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        street,
-        zip,
-        city,
-        country,
-        iframeUrl,
-        lat: latInput ? latInput.value : "",
-        lon: lonInput ? lonInput.value : "",
-        serviceType: isSurPlace ? "sur_place" : "en_ligne",
-      }),
-    });
-
-    const data = await response.json();
-
-    if (isSurPlace && addressInput && addressInput.value) {
-      generateMapIframe(addressInput.value);
-    } else if (!isSurPlace && (city || country)) {
-      generateMapIframe(`${city} ${country}`);
+      const mc = document.getElementById('mapContainer');
+      if (mc) mc.innerHTML = `<iframe width="100%" height="360" frameborder="0" src="${iframeUrl}" allowfullscreen loading="lazy"></iframe>`;
+      btn.textContent = '✓ Enregistré';
+      setTimeout(() => { btn.textContent = orig; confirmLocation.disabled = false; }, 2500);
+    } catch (e) {
+      btn.textContent = orig;
+      confirmLocation.disabled = false;
+      alert('Erreur lors de la sauvegarde.');
     }
   });
 

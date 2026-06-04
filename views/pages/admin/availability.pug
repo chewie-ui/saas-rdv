@@ -194,32 +194,21 @@ block content
                             span Fonctionnalité Pro
                             a.btn-upgrade-pro(href="/subscription") Passer au Pro
 
-                //- Buffer between bookings
-                .avail-card(class=(!availFeatures || !availFeatures.buffer) ? 'avail-card--locked' : '')
+                //- Buffer between bookings — coming soon
+                .avail-card.avail-card--coming-soon
                     .avail-card__hd
                         span.avail-card__title= t.avail.buffer_title || 'Temps tampon entre les réservations'
-                        .avail-info-tip(data-tip=t.avail.buffer_desc || 'Ajoute un délai automatique entre deux rendez-vous pour se préparer.')
-                            svg(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
-                                path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
-                            .avail-info-tip__bubble= t.avail.buffer_desc || 'Ajoute un délai automatique entre deux rendez-vous pour se préparer.'
-                    .avail-buffer
-                        input.avail-buffer__range#bufferRange(
-                            type="range"
-                            min="0"
-                            max="60"
-                            step="5"
-                            value=currentCompany.bufferTime || 0
-                        )
+                        span.avail-coming-badge
+                            svg(viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                                circle(cx="12" cy="12" r="10")
+                                polyline(points="12 6 12 12 16 14")
+                            | &nbsp;Bientôt disponible
+                    .avail-buffer.avail-buffer--disabled
+                        input.avail-buffer__range(type="range" min="0" max="60" step="5" value="0" disabled)
                         .avail-buffer__row
                             span 0
-                            span#bufferVal.avail-buffer__val= (currentCompany.bufferTime || 0) + ' min'
+                            span.avail-buffer__val 0 min
                             span 60
-                    if !availFeatures || !availFeatures.buffer
-                        .avail-lock-banner
-                            svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
-                                path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
-                            span Fonctionnalité Pro
-                            a.btn-upgrade-pro(href="/subscription") Passer au Pro
 
                 //- Preview this week
                 .avail-card

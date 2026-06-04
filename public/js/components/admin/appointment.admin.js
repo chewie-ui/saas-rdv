@@ -1,22 +1,107 @@
+/* ── Shared delete confirmation modal ───────────────────────────────────────── */
+function showDeleteConfirm({ title = "Supprimer ce rendez-vous ?", desc = "Cette action est irréversible. Le rendez-vous sera définitivement supprimé.", confirmLabel = "Supprimer", onConfirm }) {
+  // Remove any existing modal
+  document.getElementById("__deleteModal")?.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "__deleteModal";
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;animation:__dfadeIn .15s ease";
+
+  overlay.innerHTML = `
+    <style>
+      @keyframes __dfadeIn{from{opacity:0}to{opacity:1}}
+      @keyframes __dslidein{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+      #__deleteModal .dm{background:#fff;border-radius:20px;max-width:420px;width:100%;box-shadow:0 24px 48px -8px rgba(0,0,0,.22),0 8px 16px -4px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:0;overflow:hidden;animation:__dslidein .18s cubic-bezier(.34,1.4,.64,1)}
+      #__deleteModal .dm__head{padding:24px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+      #__deleteModal .dm__icon-wrap{width:44px;height:44px;border-radius:50%;background:#fef2f2;border:1px solid #fecaca;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+      #__deleteModal .dm__icon-wrap svg{stroke:#dc2626}
+      #__deleteModal .dm__close{background:none;border:none;cursor:pointer;color:#9ca3af;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;flex-shrink:0;padding:0}
+      #__deleteModal .dm__close:hover{background:#f3f4f6;color:#111}
+      #__deleteModal .dm__body{padding:16px 24px 0;display:flex;flex-direction:column;gap:6px}
+      #__deleteModal .dm__title{font-size:17px;font-weight:700;color:#111;letter-spacing:-.01em;margin:0}
+      #__deleteModal .dm__desc{font-size:13.5px;color:#6b7280;line-height:1.55;margin:0}
+      #__deleteModal .dm__actions{padding:20px 24px 24px;display:flex;gap:8px;justify-content:flex-end}
+      #__deleteModal .dm__cancel{display:inline-flex;align-items:center;justify-content:center;padding:9px 18px;border-radius:10px;font-size:13.5px;font-weight:600;background:#f3f4f6;border:1px solid #e5e7eb;color:#4b5563;cursor:pointer;font-family:inherit;transition:background .15s}
+      #__deleteModal .dm__cancel:hover{background:#e9eaec}
+      #__deleteModal .dm__confirm{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 20px;border-radius:10px;font-size:13.5px;font-weight:700;background:#dc2626;border:none;color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 1px 3px rgba(220,38,38,.3);transition:background .15s,transform .1s}
+      #__deleteModal .dm__confirm:hover{background:#b91c1c;transform:translateY(-1px)}
+      #__deleteModal .dm__confirm:active{transform:translateY(0)}
+      #__deleteModal .dm__confirm.loading{opacity:.6;cursor:wait;pointer-events:none}
+    </style>
+    <div class="dm">
+      <div class="dm__head">
+        <div class="dm__icon-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+            <path d="M10 11v6M14 11v6"></path>
+            <path d="M9 6V4h6v2"></path>
+          </svg>
+        </div>
+        <button class="dm__close" aria-label="Fermer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="dm__body">
+        <p class="dm__title">${title}</p>
+        <p class="dm__desc">${desc}</p>
+      </div>
+      <div class="dm__actions">
+        <button class="dm__cancel">Annuler</button>
+        <button class="dm__confirm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+          </svg>
+          ${confirmLabel}
+        </button>
+      </div>
+    </div>`;
+
+  function close() { overlay.remove(); }
+
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  overlay.querySelector(".dm__close").addEventListener("click", close);
+  overlay.querySelector(".dm__cancel").addEventListener("click", close);
+  overlay.querySelector(".dm__confirm").addEventListener("click", async () => {
+    const btn = overlay.querySelector(".dm__confirm");
+    btn.classList.add("loading");
+    btn.textContent = "Suppression…";
+    await onConfirm(close);
+  });
+
+  document.body.appendChild(overlay);
+  // Fermer avec Escape
+  const onKey = (e) => { if (e.key === "Escape") { close(); document.removeEventListener("keydown", onKey); } };
+  document.addEventListener("keydown", onKey);
+}
+
 export const initDeleteAppointment = function () {
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".appointment-action");
-    if (!btn) return;
+    if (!btn || btn.dataset.method !== "DELETE") return;
 
     const { link, method } = btn.dataset;
 
-    try {
-      const result = await fetch(link, { method });
-      const data = await result.json();
-
-      if (data.success) {
-        location.href = "/appointment";
-      } else {
-        alert(data.message);
+    showDeleteConfirm({
+      onConfirm: async (closeModal) => {
+        try {
+          const result = await fetch(link, { method });
+          const data = await result.json();
+          closeModal();
+          if (data.success) {
+            location.href = "/appointment";
+          } else {
+            alert(data.message || "Erreur lors de la suppression.");
+          }
+        } catch (err) {
+          closeModal();
+          console.error("Network error", err);
+        }
       }
-    } catch (err) {
-      console.error("Network error", err);
-    }
+    });
   });
 };
 
@@ -139,16 +224,21 @@ export const initAppointmentPopup = function () {
   // Action buttons
   closeBtn.addEventListener("click",  (e) => { e.stopPropagation(); hidePopup(); });
 
-  deleteBtn.addEventListener("click", async (e) => {
+  deleteBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     if (!currentId) return;
-    if (!confirm("Supprimer ce rendez-vous définitivement ?")) return;
-    try {
-      const res  = await fetch(`/appointment/${currentId}/delete`, { method: "DELETE" });
-      const data = await res.json();
-      if (data.success) { hidePopup(); window.location.reload(); }
-      else alert(data.message || "Erreur lors de la suppression.");
-    } catch (err) { console.error("Delete error:", err); }
+    const id = currentId;
+    showDeleteConfirm({
+      onConfirm: async (closeModal) => {
+        try {
+          const res  = await fetch(`/appointment/${id}/delete`, { method: "DELETE" });
+          const data = await res.json();
+          closeModal();
+          if (data.success) { hidePopup(); window.location.reload(); }
+          else alert(data.message || "Erreur lors de la suppression.");
+        } catch (err) { closeModal(); console.error("Delete error:", err); }
+      }
+    });
   });
 
   document.addEventListener("keydown", (e) => {

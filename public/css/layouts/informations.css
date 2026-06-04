@@ -1330,3 +1330,75 @@
   .inv-row__actions { grid-column: 2; grid-row: 3; justify-content: flex-end; }
   .inv-row > span:nth-child(4) { grid-column: 1; grid-row: 3; }
 }
+
+/* ── Section localisation simplifiée ──────────────────────────────────────── */
+.loc-simple-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.loc-simple-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-secondary, #4b5563);
+  letter-spacing: .01em;
+}
+
+.loc-simple-input {
+  width: 100%;
+  font-size: 14px;
+  padding: 11px 14px;
+  border-radius: var(--radius-md, 10px);
+  border: 1.5px solid var(--border-light, #e5e7eb);
+  background: var(--color-white, #fff);
+  color: var(--text-primary, #111);
+  transition: border-color .15s;
+  outline: none;
+}
+
+.loc-simple-input:focus {
+  border-color: var(--accent, #16a34a);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, .08);
+}
+
+.loc-simple-status {
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 18px;
+  display: none;
+}
+
+.loc-simple-hint {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.65;
+  background: var(--surface-card);
+  border: 1px dashed var(--border-medium);
+  border-radius: 10px;
+  padding: 11px 14px;
+}
+
+.loc-simple-hint strong {
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.loc-simple-hint code {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 11.5px;
+  font-family: 'Courier New', monospace;
+  color: var(--text-secondary);
+}
+
+/* ── Addon buttons (URL personnalisée) ───────────────────────────────────── */
+.addon-btns {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}

@@ -22,23 +22,60 @@ function buildUserRedirectUri() {
 
 router.get("/register", (req, res) => {
   const allowedPlans = ["pro", "business"];
-  if (req.query.plan && allowedPlans.includes(req.query.plan)) {
-    req.session.pendingPlan    = req.query.plan;
-    req.session.pendingBilling = req.query.billing || "monthly";
+  const plan    = req.query.plan    && allowedPlans.includes(req.query.plan) ? req.query.plan : null;
+  const billing = req.query.billing || "monthly";
+  const promo   = req.query.promo ? req.query.promo.trim().toUpperCase() : null;
+  const ref     = req.query.ref   ? req.query.ref.trim().toUpperCase()   : null;
+
+  // Stocker en session pour après inscription
+  if (plan)  { req.session.pendingPlan = plan; req.session.pendingBilling = billing; }
+  if (promo) req.session.pendingPromo = promo;
+  if (ref)   req.session.pendingRef   = ref;
+
+  // ── Déjà connecté → checkout direct ──────────────────────────────────────
+  if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+    if (plan || promo) {
+      let dest = `/subscription?autoCheckout=1`;
+      if (plan)  dest += `&plan=${plan}&billing=${billing}`;
+      if (promo) dest += `&promo=${encodeURIComponent(promo)}`;
+      return res.redirect(dest);
+    }
+    return res.redirect("/appointment");
   }
-  // Stocker le code promo en session pour l'auto-appliquer après inscription
-  if (req.query.promo) {
-    req.session.pendingPromo = req.query.promo.trim().toUpperCase();
-  }
-  // Stocker le code parrainage
-  if (req.query.ref) {
-    req.session.pendingRef = req.query.ref.trim().toUpperCase();
-  }
-  res.render("auth/register", { becomeCoach: true, alwaysSticky: true, services: getServices(res.locals.lang) });
+
+  res.render("auth/register", {
+    becomeCoach: true,
+    alwaysSticky: true,
+    services: getServices(res.locals.lang),
+    pendingPlan:  plan  || req.session.pendingPlan  || null,
+    pendingPromo: promo || req.session.pendingPromo || null,
+  });
 });
 
 router.get("/login", (req, res) => {
   const error = req.query.error === "google" ? "La connexion avec Google a échoué. Veuillez réessayer." : null;
+
+  // Conserver promo/plan si on vient d'un lien d'invitation
+  const allowedPlans = ["pro", "business"];
+  if (req.query.plan && allowedPlans.includes(req.query.plan)) {
+    req.session.pendingPlan    = req.query.plan;
+    req.session.pendingBilling = req.query.billing || "monthly";
+  }
+  if (req.query.promo) req.session.pendingPromo = req.query.promo.trim().toUpperCase();
+
+  // Déjà connecté
+  if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+    const plan  = req.session.pendingPlan;
+    const promo = req.session.pendingPromo;
+    if (plan || promo) {
+      let dest = `/subscription?autoCheckout=1`;
+      if (plan)  dest += `&plan=${plan}&billing=${req.session.pendingBilling || "monthly"}`;
+      if (promo) dest += `&promo=${encodeURIComponent(promo)}`;
+      return res.redirect(dest);
+    }
+    return res.redirect("/appointment");
+  }
+
   res.render("auth/login", { becomeCoach: true, alwaysSticky: true, error });
 });
 
@@ -67,6 +104,8 @@ router.post("/login", (req, res, next) => {
 
     req.logIn(user, (err) => {
       if (err) return next(err);
+
+      // 1. Access link
       const pendingCode = req.session.pendingAccessCode;
       if (pendingCode) {
         delete req.session.pendingAccessCode;
@@ -74,6 +113,22 @@ router.post("/login", (req, res, next) => {
         if (isAjax) return res.json({ success: true, redirect: dest });
         return res.redirect(dest);
       }
+
+      // 2. Promo / plan en attente (venu d'un lien d'invitation)
+      const pendingPlan  = req.session.pendingPlan;
+      const pendingPromo = req.session.pendingPromo;
+      if (pendingPlan || pendingPromo) {
+        const billing = req.session.pendingBilling || "monthly";
+        delete req.session.pendingPlan;
+        delete req.session.pendingBilling;
+        delete req.session.pendingPromo;
+        let dest = `/subscription?autoCheckout=1`;
+        if (pendingPlan)  dest += `&plan=${pendingPlan}&billing=${billing}`;
+        if (pendingPromo) dest += `&promo=${encodeURIComponent(pendingPromo)}`;
+        if (isAjax) return res.json({ success: true, redirect: dest });
+        return res.redirect(dest);
+      }
+
       if (isAjax) return res.json({ success: true, redirect: "/appointment" });
       return res.redirect("/appointment");
     });
@@ -108,10 +163,23 @@ router.post("/login/2fa", async (req, res) => {
     delete req.session.pending2FAUserId;
     req.logIn(user, (err) => {
       if (err) return res.redirect("/login");
+
+      // Access link
       const pendingCode = req.session.pendingAccessCode;
       if (pendingCode) {
         delete req.session.pendingAccessCode;
         return res.redirect(`/access/${pendingCode}`);
+      }
+      // Promo / plan
+      const pp = req.session.pendingPlan;
+      const pr = req.session.pendingPromo;
+      if (pp || pr) {
+        const bl = req.session.pendingBilling || "monthly";
+        delete req.session.pendingPlan; delete req.session.pendingBilling; delete req.session.pendingPromo;
+        let dest = `/subscription?autoCheckout=1`;
+        if (pp) dest += `&plan=${pp}&billing=${bl}`;
+        if (pr) dest += `&promo=${encodeURIComponent(pr)}`;
+        return res.redirect(dest);
       }
       return res.redirect("/appointment");
     });

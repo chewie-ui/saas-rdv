@@ -12,6 +12,9 @@ module.exports = {
   stripePriceBusinessMonthly: env.STRIPE_PRICE_BUSINESS_MONTHLY_KEY_SERVER || env.STRIPE_PRICE_KEY_BUSINESS_SERVER,
   stripePriceBusinessYearly:  env.STRIPE_PRICE_BUSINESS_YEARLY_KEY_SERVER  || env.STRIPE_PRICE_KEY_BUSINESS_SERVER,
 
+  // Add-on : URL personnalisée (+5€/mois)
+  stripePriceAddonCustomUrl:  env.STRIPE_PRICE_ADDON_CUSTOM_URL_SERVER || "",
+
   // URLs — défaut branshee.com si non renseignées
   stripeSuccessUrl: env.STRIPE_SUCCESS_URL_SERVER || "https://www.branshee.com/subscription/success?session_id={CHECKOUT_SESSION_ID}",
   stripeCancelUrl:  env.STRIPE_CANCEL_URL_SERVER  || "https://www.branshee.com/subscription",

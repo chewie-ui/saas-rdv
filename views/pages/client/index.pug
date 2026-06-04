@@ -61,25 +61,38 @@ block content
         var bizPic     = coach && (coach.businessPicture || coach.profilePicture) ? (coach.businessPicture || coach.profilePicture) : null
         var initials   = bizName.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase()
 
-        // Google Maps link (lien cliquable)
+        // Google Maps link — priorité : gmapUrl stocké, puis coordonnées, puis adresse
         var _googleMapsUrl = ''
         if (coach && coach.location) {
-            if (coach.location.lat && coach.location.lon) {
+            if (coach.location.gmapUrl && /^https?:\/\//.test(coach.location.gmapUrl)) {
+                _googleMapsUrl = coach.location.gmapUrl
+            } else if (coach.location.lat && coach.location.lon) {
                 _googleMapsUrl = 'https://maps.google.com/?q=' + coach.location.lat + ',' + coach.location.lon
             } else if (bizStreet || bizCity) {
                 _googleMapsUrl = 'https://maps.google.com/?q=' + encodeURIComponent([bizStreet, bizCity, bizZip].filter(Boolean).join(', '))
             }
         }
 
-        // Google Maps embed (iframe) — doit être calculé ICI avant la carte de localisation
+        // Adresse affichée (texte complet si une seule ligne, sinon composée)
+        var _displayAddress = ''
+        if (coach && coach.location) {
+            if (coach.location.address && coach.location.city && coach.location.address.toLowerCase().includes(coach.location.city.toLowerCase())) {
+                // L'adresse contient déjà la ville (enregistrée comme adresse complète)
+                _displayAddress = coach.location.address
+            } else {
+                _displayAddress = [coach.location.address, coach.location.city].filter(Boolean).join(', ')
+            }
+        }
+
+        // Google Maps embed — priorité : iframeUrl (adresse texte), puis coordonnées
         var _mapEmbedSrc = ''
         if (coach && coach.location) {
             if (coach.location.iframeUrl) {
                 _mapEmbedSrc = coach.location.iframeUrl
             } else if (coach.location.lat && coach.location.lon) {
-                _mapEmbedSrc = 'https://maps.google.com/maps?q=' + coach.location.lat + ',' + coach.location.lon + '&output=embed&hl=fr&z=15'
-            } else if (bizStreet || bizCity) {
-                _mapEmbedSrc = 'https://maps.google.com/maps?q=' + encodeURIComponent([bizStreet, bizCity, bizZip].filter(Boolean).join(', ')) + '&output=embed&hl=fr&z=15'
+                _mapEmbedSrc = 'https://maps.google.com/maps?q=' + coach.location.lat + ',' + coach.location.lon + '&output=embed&hl=fr&z=16'
+            } else if (_displayAddress) {
+                _mapEmbedSrc = 'https://maps.google.com/maps?q=' + encodeURIComponent(_displayAddress) + '&output=embed&hl=fr&z=16'
             }
         }
         var showMap   = cs.showSectionMap   !== false && _mapEmbedSrc !== ''
@@ -167,17 +180,17 @@ block content
             #bkPane
 
             //- ── Localisation ───────────────────────────────────────────────
-            if showMap || (bizAddress && bizAddress.trim())
+            if showMap || (_displayAddress && _displayAddress.trim())
                 .bk-location-card
                     h2.bk-location-card__title
                         svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                             path(d="M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 294q122-112 181-203.5T720-552q0-109-69.5-178.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186Zm0 106Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 100-79.5 217.5T480-80Z")
                         | Localisation
-                    if bizAddress && bizAddress.trim()
+                    if _displayAddress && _displayAddress.trim()
                         .bk-location-card__addr
                             svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                                 path(d="M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 294q122-112 181-203.5T720-552q0-109-69.5-178.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186Z")
-                            span= bizAddress
+                            span= _displayAddress
                             if _googleMapsUrl
                                 a.bk-location-card__gmaps(href=_googleMapsUrl target="_blank" rel="noopener")
                                     | Ouvrir dans Maps

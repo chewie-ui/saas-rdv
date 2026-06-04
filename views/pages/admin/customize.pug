@@ -97,74 +97,48 @@ block content
                                     span.custom-radio
                                     = t.info.online_svc
 
-                    //- ── Sélecteur de méthode ───────────────────────────────
-                    .loc-methods#locMethods
-                        button.loc-method-btn.active(type="button" data-method="address") Adresse
-                        button.loc-method-btn(type="button" data-method="gmap") Lien Google Maps
-                        button.loc-method-btn(type="button" data-method="gps") Coordonnées GPS
+                    //- ── Champ 1 : Adresse ───────────────────────────────────
+                    .loc-simple-block
+                        label.loc-simple-label Adresse complète
+                        input.input.loc-simple-input#locAddressInput(
+                            type="text"
+                            placeholder="Ex : Rue des Vallées 7, 1315 Incourt, Belgique"
+                            value=(user.location && user.location.address && user.location.city ? (user.location.address + ', ' + (user.location.zip || '') + ' ' + user.location.city).trim() : '') || ""
+                            autocomplete="off"
+                        )
+                        p.loc-simple-hint Entrez l'adresse complète. Elle sera utilisée pour afficher votre position sur la carte.
 
-                    //- ── Méthode 1 : Adresse ────────────────────────────────
-                    #locMethodAddress
-                        #addressSearchBlock.field
-                            label= t.info.search_addr
-                            input.input(placeholder=t.info.addr_placeholder id="addressInput" autocomplete="chrome-off")
-                            #results.results
-                        #fullAddressBlock
-                            .field
-                                label= t.info.address
-                                input.input(id='streetInput' value=(user.location && user.location.address) || "")
-                            .field
-                                label= t.info.zip
-                                input.input(id='zipInput' value=(user.location && user.location.zip) || "")
-                            .field
-                                label= t.info.city
-                                input.input(id='cityInput' value=(user.location && user.location.city) || "")
-                            .field
-                                label= t.info.country
-                                input.input(id='countryInput' value=(user.location && user.location.country) || "")
-                        #onlineAddressBlock(style="display:none")
-                            .field
-                                label= t.info.country
-                                input.input(id='countryInputOnline' value=(user.location && user.location.country) || "")
-                            .field
-                                label= t.info.city_optional
-                                input.input(id='cityInputOnline' value=(user.location && user.location.city) || "")
+                    //- ── Champ 2 : Lien Google Maps (bouton uniquement) ───────
+                    .loc-simple-block
+                        label.loc-simple-label
+                            | Lien Google Maps&nbsp;
+                            span(style="font-weight:400;color:var(--text-muted);font-size:12px;") (optionnel — pour le bouton "Ouvrir dans Maps")
+                        input.input.loc-simple-input#locGmapInput(
+                            type="text"
+                            placeholder="Collez votre lien Google Maps (long ou court maps.app.goo.gl/...)"
+                            value=(user.location && user.location.gmapUrl) || ""
+                            autocomplete="off"
+                        )
 
-                    //- ── Méthode 2 : Lien Google Maps ───────────────────────
-                    #locMethodGmap(style="display:none")
-                        .field
-                            label Lien Google Maps
-                            input.input#gmapUrlInput(
-                                type="text"
-                                placeholder="https://maps.google.com/?q=... ou https://www.google.com/maps/@..."
-                                value=(user.location && user.location.gmapUrl) || ""
-                            )
-                            p.field-hint Collez le lien copié depuis Google Maps (clic droit → Partager → Copier le lien).
-                        p.loc-parse-status#gmapParseStatus
-
-                    //- ── Méthode 3 : Coordonnées GPS ────────────────────────
-                    #locMethodGps(style="display:none")
-                        .field
-                            label Latitude
-                            input.input#gpsLatInput(
-                                type="number"
-                                step="0.000001"
-                                placeholder="ex: 48.856600"
-                                value=(user.location && user.location.lat) || ""
-                            )
-                        .field
-                            label Longitude
-                            input.input#gpsLonInput(
-                                type="number"
-                                step="0.000001"
-                                placeholder="ex: 2.352200"
-                                value=(user.location && user.location.lon) || ""
-                            )
-                        p.field-hint Trouvez vos coordonnées sur Google Maps : clic droit sur le lieu → les coordonnées s'affichent en haut du menu.
+                    //- Champs cachés compatibilité
+                    input(type="hidden" id="latInput" value=(user.location && user.location.lat) || "")
+                    input(type="hidden" id="lonInput" value=(user.location && user.location.lon) || "")
+                    input(type="hidden" id="streetInput" value=(user.location && user.location.address) || "")
+                    input(type="hidden" id="zipInput" value=(user.location && user.location.zip) || "")
+                    input(type="hidden" id="cityInput" value=(user.location && user.location.city) || "")
+                    input(type="hidden" id="countryInput" value=(user.location && user.location.country) || "")
+                    input(type="hidden" id="cityInputOnline")
+                    input(type="hidden" id="countryInputOnline")
+                    input(type="hidden" id="gmapUrlInput" value=(user.location && user.location.gmapUrl) || "")
+                    div#addressInput(style="display:none")
+                    div#results(style="display:none")
+                    div#fullAddressBlock(style="display:none")
+                    div#onlineAddressBlock(style="display:none")
+                    div#addressSearchBlock(style="display:none")
 
                     .info-card__actions(style="margin-top:4px")
                         button.sm-btn.sm-btn--primary#confirmLocation
-                            span= t.info.confirm_location
+                            span Confirmer
 
         //- ── Galerie photos ──────────────────────────────────────────────────────
         .info-card
@@ -208,7 +182,9 @@ block content
                             span.info-addon-gate__preview-dim branshee.com/
                             span.info-addon-gate__preview-slug= (currentCompany && currentCompany.slug) ? currentCompany.slug : (user.businessName ? user.businessName.toLowerCase().replace(/\s+/g, '-') : 'mon-salon')
                     if isPro
-                        a.btn-upgrade-business(href="/subscription") Passer au Business
+                        .addon-btns
+                            button.sm-btn.sm-btn--primary#buyAddonCustomUrlBtn(type="button") Activer — 5€/mois
+                            a.sm-btn.sm-btn--ghost(href="/subscription") Passer au Business
                     else
                         a.btn-upgrade-pro(href="/subscription") Passer au Pro
             else
@@ -429,4 +405,34 @@ block scripts
             });
 
 
+        })();
+
+    //- ── Achat add-on URL personnalisée ──────────────────────────────────────
+    script.
+        (function() {
+            var btn = document.getElementById('buyAddonCustomUrlBtn');
+            if (!btn) return;
+            btn.addEventListener('click', async function() {
+                btn.disabled = true;
+                var span = btn.querySelector('span');
+                if (span) span.textContent = 'Redirection…';
+                try {
+                    var r = await fetch('/account/purchase-addon/custom-url', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' }
+                    });
+                    var d = await r.json();
+                    if (d.url) {
+                        window.location.href = d.url;
+                    } else {
+                        alert(d.error || 'Erreur lors de la création du paiement.');
+                        btn.disabled = false;
+                        if (span) span.textContent = 'Activer — 5€/mois';
+                    }
+                } catch(e) {
+                    alert('Erreur réseau.');
+                    btn.disabled = false;
+                    if (span) span.textContent = 'Activer — 5€/mois';
+                }
+            });
         })();

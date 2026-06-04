@@ -20,9 +20,12 @@ block content
                         span.badge-past= t.book_detail.past
 
                     if client.status === "confirmed"
-                        button.appointment-action(data-link=`/appointment/${client._id}/cancel` data-method="PATCH" disabled=(grade === 'staff' || !isPremium || isPast))#cancelAppointment
+                        button.sm-btn.sm-btn--ghost.appointment-action(data-link=`/appointment/${client._id}/cancel` data-method="PATCH" disabled=(grade === 'staff' || !isPremium || isPast))#cancelAppointment
                             span= t.book_detail.cancel
-                    button.appointment-action(data-link=`/appointment/${client._id}/delete` data-method="DELETE" disabled=(grade === 'staff' || !isPremium))#deleteAppointment
+                    button.sm-btn.sm-btn--danger.appointment-action(data-link=`/appointment/${client._id}/delete` data-method="DELETE" disabled=(grade === 'staff' || !isPremium))#deleteAppointment
+                        svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                            polyline(points="3 6 5 6 21 6")
+                            path(d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6")
                         span= t.book_detail.delete
                     if client.status === "confirmed"
                         //- button(data-link=`/appointment/${user._id}/send-reminder`).btn.appointment-action Send reminder
@@ -147,7 +150,7 @@ block content
                 textarea#adminNotesInput.textarea(placeholder=t.book_detail.notes_placeholder rows="4")= client.adminNotes || ''
                 .admin-notes__actions
                     span#adminNotesSaved.admin-notes__saved(style="display:none")= t.book_detail.saved
-                    button#saveAdminNotes
+                    button.sm-btn.sm-btn--soft#saveAdminNotes
                         span= t.book_detail.save
 
 block scripts

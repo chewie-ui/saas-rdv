@@ -580,6 +580,25 @@ async function getDaysOff() {
 
 getDaysOff();
 
+// ── Supprimer automatiquement les congés passés ──────────────────────────────
+(async function cleanupPastDaysOff() {
+  try {
+    const res  = await fetch('/company/get-days-off');
+    const data = await res.json();
+    if (!data?.dates) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const past = data.dates.filter(function(d) { return d._id && new Date(d.date) < today; });
+    for (var i = 0; i < past.length; i++) {
+      var entry = past[i];
+      await fetch('/company/days-off/' + entry._id, { method: 'DELETE', headers: { 'Content-Type': 'application/json' } });
+      var row = document.querySelector('[data-date*="' + entry._id + '"]');
+      if (row) row.remove();
+    }
+    if (past.length > 0) console.log('[BranShee] ' + past.length + ' congé(s) passé(s) supprimé(s).');
+  } catch(e) {}
+})();
+
 // ── "Réactiver" slot-time button ─────────────────────────────────────────────
 const reenableBtn = document.querySelector(".slot-reenable-btn");
 if (reenableBtn) {
@@ -703,13 +722,12 @@ function updateMultiSelectUI() {
         return;
       }
       if (!_pendingDates.length) return;
+      // Pas d'employés → sauvegarder directement sans popup
       if (!EMPLOYEES.length) {
-        // No employees → save all immediately
         const datesToSave = [..._pendingDates];
         clearMultiSelect();
         saveMultipleDaysOff(datesToSave, []);
       } else {
-        // Open empPicker for all dates
         _pendingDayEl   = null;
         _pendingDateKey = null;
         _pendingEditId  = null;
@@ -998,3 +1016,103 @@ if (bufferRange) {
     }).catch(() => {});
   });
 }
+
+// ── Saisie intelligente des heures ────────────────────────────────────────────
+// Quand un panel d'heures s'ouvre, injecte un input de recherche en haut
+// L'utilisateur peut taper "18" → filtre sur "18:XX", "1800" → "18:00"
+
+function formatHourInput(raw) {
+  // Garder seulement chiffres et ":"
+  var digits = raw.replace(/[^0-9]/g, '');
+  if (!digits) return '';
+  if (digits.length <= 2) {
+    // "18" → afficher tel quel pour le filtre
+    return digits;
+  }
+  // "1800" ou "180" → "18:00"
+  var h = digits.slice(0, 2);
+  var m = (digits.slice(2, 4) || '00').padEnd(2, '0');
+  return h + ':' + m;
+}
+
+function injectPanelSearch(panel) {
+  if (panel.querySelector('.panel-search-input')) return; // déjà injecté
+
+  var inp = document.createElement('input');
+  inp.type = 'text';
+  inp.className = 'panel-search-input';
+  inp.placeholder = 'Taper une heure (ex: 18)';
+  inp.autocomplete = 'off';
+  inp.style.cssText = [
+    'width:100%', 'padding:7px 10px', 'border:none', 'border-bottom:1px solid var(--border-light)',
+    'font-size:13px', 'font-family:inherit', 'outline:none', 'background:var(--surface-card)',
+    'color:var(--ink)', 'box-sizing:border-box'
+  ].join(';');
+
+  panel.insertBefore(inp, panel.firstChild);
+
+  inp.addEventListener('input', function() {
+    var raw = this.value;
+    var digits = raw.replace(/[^0-9]/g, '');
+    var hours = panel.querySelectorAll('.hour');
+
+    if (!digits) {
+      hours.forEach(function(h) { h.style.display = ''; });
+      return;
+    }
+
+    // Construire pattern de recherche
+    var pattern;
+    if (digits.length <= 2) {
+      pattern = digits; // "18" → cherche toutes heures commençant par "18"
+    } else {
+      var h = digits.slice(0, 2);
+      var m = digits.slice(2, 4).padEnd(2, '0');
+      pattern = h + ':' + m;
+    }
+
+    hours.forEach(function(h) {
+      h.style.display = h.textContent.startsWith(pattern) ? '' : 'none';
+    });
+  });
+
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      // Trouver le premier heure visible et la sélectionner
+      var visible = Array.from(panel.querySelectorAll('.hour')).filter(function(h) {
+        return h.style.display !== 'none';
+      });
+      if (visible.length > 0) {
+        visible[0].click();
+        this.value = '';
+      }
+    }
+    if (e.key === 'Escape') {
+      panel.classList.remove('open');
+    }
+    e.stopPropagation();
+  });
+
+  // Focus automatique à l'ouverture
+  setTimeout(function() { inp.focus(); }, 50);
+}
+
+// Observer l'ouverture des panels
+var _panelObserver = new MutationObserver(function(mutations) {
+  mutations.forEach(function(m) {
+    if (m.type === 'attributes' && m.attributeName === 'class') {
+      var panel = m.target;
+      if (panel.classList.contains('open')) {
+        injectPanelSearch(panel);
+        var inp = panel.querySelector('.panel-search-input');
+        if (inp) { inp.value = ''; setTimeout(function(){ inp.focus(); }, 50); }
+        // Ré-afficher toutes les heures
+        panel.querySelectorAll('.hour').forEach(function(h) { h.style.display = ''; });
+      }
+    }
+  });
+});
+
+document.querySelectorAll('.panel-availability').forEach(function(panel) {
+  _panelObserver.observe(panel, { attributes: true });
+});

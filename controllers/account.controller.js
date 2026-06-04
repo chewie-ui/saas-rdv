@@ -278,32 +278,97 @@ exports.createCheckout = async (req, res) => {
 };
 
 exports.updatePassword = async (req, res) => {
+  const isAjax = req.headers["x-requested-with"] === "fetch" || req.headers["content-type"]?.includes("application/json");
   try {
     const userId = req.user._id;
     const { oldPassword, newPassword } = req.body;
 
-    const user = await User.findById(userId);
+    if (!oldPassword || !newPassword) {
+      if (isAjax) return res.status(400).json({ error: "Champs requis manquants." });
+      return res.redirect("/settings?error=missing_fields#securite");
+    }
 
+    if (newPassword.length < 8) {
+      if (isAjax) return res.status(400).json({ error: "Le mot de passe doit contenir au moins 8 caractères." });
+      return res.redirect("/settings?error=pwd_too_short#securite");
+    }
+
+    const user = await User.findById(userId);
     const isMatch = await bcrypt.compare(oldPassword, user.password);
 
     if (!isMatch) {
-      return res.render("admin/informations", {
-        invalidPassword: true,
-      });
+      if (isAjax) return res.status(400).json({ error: "Mot de passe actuel incorrect." });
+      return res.redirect("/settings?error=wrong_password#securite");
     }
 
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
-
     await user.save();
 
-    res.redirect("/informations?success=Mot de passe mis à jour");
+    if (isAjax) return res.json({ success: true });
+    return res.redirect("/settings?success=password");
   } catch (err) {
     console.error(err);
-    return res.render("admin/informations", {
-      error: "An error occurred",
-      user: req.user,
+    if (isAjax) return res.status(500).json({ error: "Erreur serveur." });
+    return res.redirect("/settings?error=server#securite");
+  }
+};
+
+// ── Acheter l'add-on URL personnalisée (+5€/mois) ─────────────────────────────
+exports.purchaseAddonCustomUrl = async (req, res) => {
+  try {
+    // Vérifier que l'utilisateur est au moins Pro
+    const { getPlan } = require("../utils/planLimits");
+    const plan = getPlan(req.user);
+    if (plan !== "pro" && plan !== "business") {
+      return res.status(400).json({ error: "Vous devez être au moins sur le plan Pro pour acheter cet add-on." });
+    }
+    // Si déjà Business, l'URL est incluse
+    if (plan === "business") {
+      return res.status(400).json({ error: "Vous êtes déjà sur le plan Business, l'URL personnalisée est incluse." });
+    }
+    // Vérifier que l'add-on n'est pas déjà actif
+    if (req.user.addons && req.user.addons.customUrl) {
+      return res.status(400).json({ error: "Vous avez déjà cet add-on." });
+    }
+
+    const priceId = env.stripePriceAddonCustomUrl;
+    if (!priceId) {
+      return res.status(500).json({ error: "Prix non configuré. Contactez le support." });
+    }
+
+    // Récupérer ou créer le customer Stripe
+    let customerId = req.user.subscription?.stripeCustomerId;
+    if (customerId) {
+      try { await stripe.customers.retrieve(customerId); }
+      catch (_) { customerId = null; }
+    }
+    if (!customerId) {
+      const c = await stripe.customers.create({
+        email: req.user.email,
+        name:  req.user.fullName || req.user.email,
+        metadata: { userId: req.user._id.toString() },
+      });
+      customerId = c.id;
+      await User.findByIdAndUpdate(req.user._id, { "subscription.stripeCustomerId": customerId });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      payment_method_types: ["card"],
+      line_items: [{ price: priceId, quantity: 1 }],
+      customer: customerId,
+      client_reference_id: req.user._id.toString(),
+      metadata: { addon: "customUrl", userId: req.user._id.toString() },
+      subscription_data: { metadata: { addon: "customUrl", userId: req.user._id.toString() } },
+      success_url: `${env.appBaseUrl || "https://www.branshee.com"}/appointment?addonSuccess=customUrl`,
+      cancel_url:  `${env.appBaseUrl || "https://www.branshee.com"}/customize`,
     });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error("purchaseAddonCustomUrl error:", err.message);
+    res.status(500).json({ error: err.raw?.message || err.message });
   }
 };
 
@@ -438,7 +503,7 @@ exports.editEmail = async (req, res) => {
 
 exports.updateLocation = async (req, res) => {
   try {
-    const { street, zip, city, country, iframeUrl, lat, lon, serviceType } = req.body;
+    const { street, zip, city, country, iframeUrl, lat, lon, serviceType, gmapUrl } = req.body;
 
     await User.findByIdAndUpdate(req.user._id, {
       location: {
@@ -449,6 +514,7 @@ exports.updateLocation = async (req, res) => {
         iframeUrl,
         lat,
         lon,
+        gmapUrl:     gmapUrl     || "",
         serviceType: serviceType || "sur_place",
       },
     });

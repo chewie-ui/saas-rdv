@@ -142,11 +142,17 @@ block content
                             a(href="/confidentialite") Politique de confidentialité
                             | .
 
-                    button.auth-submit(type="submit")= t.auth.continue || 'Créer mon compte'
+                    button.sm-btn.sm-btn--primary.sm-btn--full(type="submit")= t.auth.continue || 'Créer mon compte'
 
+                -
+                    var _loginHref = '/login'
+                    var _lparams = []
+                    if (typeof pendingPlan !== 'undefined' && pendingPlan) _lparams.push('plan=' + pendingPlan)
+                    if (typeof pendingPromo !== 'undefined' && pendingPromo) _lparams.push('promo=' + pendingPromo)
+                    if (_lparams.length) _loginHref += '?' + _lparams.join('&')
                 .auth-bottom-link
                     | Vous avez déjà un compte ?&nbsp;
-                    a(href="/login") Connectez-vous
+                    a(href=_loginHref) Connectez-vous
 
 block scripts
     script(src="/js/components/topbar.js")

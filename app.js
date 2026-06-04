@@ -114,6 +114,13 @@ app.post("/account/webhook", express.raw({ type: "application/json" }), async (r
           });
           console.log(`✅ Plan activé : ${planName} pour user ${userId}`);
 
+          // ── Activer les add-ons si présents dans les metadata ──────────────
+          const addon = session.metadata?.addon;
+          if (addon === "customUrl" && userId) {
+            await User.findByIdAndUpdate(userId, { "addons.customUrl": true });
+            console.log(`✅ Add-on customUrl activé pour user ${userId}`);
+          }
+
           // ── Récompense parrainage : incrémenter le parrain ──────────────────
           try {
             const newUser = await User.findById(userId).select("referredBy").lean();
