@@ -190,7 +190,7 @@ exports.toggleSocialVisibility = async (req, res) => {
 exports.createCheckout = async (req, res) => {
   try {
     const PromoCode = require("../db/models/promoCode.model");
-    const { promoCode, plan, billing } = req.body || {};
+    const { promoCode, plan, billing, paymentMethodId } = req.body || {};
 
     // Choisir le bon price ID selon le plan et la période
     let priceId;
@@ -226,10 +226,17 @@ exports.createCheckout = async (req, res) => {
         const itemId = stripeSub.items.data[0]?.id;
 
         if (itemId) {
-          await stripe.subscriptions.update(existingSub.stripeSubscriptionId, {
+          const updateParams = {
             items: [{ id: itemId, price: priceId }],
             proration_behavior: "create_prorations",
-          });
+          };
+          // Carte choisie dans la boîte de confirmation ("payer instant avec
+          // carte X ou changer de carte") → on l'utilise pour cette mise à
+          // jour d'abonnement (et comme moyen de paiement par défaut).
+          if (paymentMethodId) {
+            updateParams.default_payment_method = paymentMethodId;
+          }
+          await stripe.subscriptions.update(existingSub.stripeSubscriptionId, updateParams);
 
           await User.findByIdAndUpdate(req.user._id, {
             isPremium: true,

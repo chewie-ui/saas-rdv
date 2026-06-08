@@ -905,3 +905,171 @@
   background: rgba(239, 68, 68, 0.08);
   border-color: rgba(239, 68, 68, 0.3);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   BOÎTE DE CONFIRMATION D'ACHAT
+   "si déjà une carte, demande payer instant avec carte X ou changer
+   de carte, ajoute l'option code promo et une confirmation 'êtes-vous
+   sûr de vouloir payer X €' avant de débiter directement."
+   ═══════════════════════════════════════════════════════════════ */
+.sub-confirm__card {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--surface-soft, #f9fafb);
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 12px;
+}
+
+.sub-confirm__card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sub-confirm__card-label {
+  font-size: 13.5px;
+  color: var(--text-primary, #111);
+}
+
+.sub-confirm__card-switch {
+  background: none;
+  border: none;
+  color: var(--accent, #1e7a4e);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background .12s ease;
+}
+.sub-confirm__card-switch:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.sub-confirm__card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-light, #e5e7eb);
+}
+
+.sub-confirm__card-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--text-primary, #111);
+  padding: 7px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .12s ease;
+}
+.sub-confirm__card-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+.sub-confirm__card-item.active {
+  background: var(--accent-soft, #e8f5ee);
+  color: var(--accent, #1e7a4e);
+  font-weight: 600;
+}
+.sub-confirm__card-item input[type="radio"] {
+  accent-color: var(--accent, #1e7a4e);
+  cursor: pointer;
+}
+.sub-confirm__card-item small {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted, #9ca3af);
+}
+
+.sub-confirm__promo {
+  margin-top: 12px;
+}
+
+.sub-confirm__promo-toggle {
+  background: none;
+  border: none;
+  color: var(--accent, #1e7a4e);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.sub-confirm__promo-toggle:hover {
+  text-decoration: underline;
+}
+
+.sub-confirm__promo-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.sub-confirm__promo-input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  font-size: 13px;
+  border: 1.5px solid var(--border-medium, #d1d5db);
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  font-family: inherit;
+}
+.sub-confirm__promo-input:focus {
+  outline: none;
+  border-color: var(--accent, #1e7a4e);
+}
+
+.sub-confirm__promo-apply {
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent, #1e7a4e);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s ease;
+}
+.sub-confirm__promo-apply:hover {
+  background: var(--accent-hover, #166941);
+}
+
+.sub-confirm__promo-status {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.sub-confirm__promo-status.valid   { color: #16a34a; }
+.sub-confirm__promo-status.invalid { color: #ef4444; }
+
+.sub-confirm__ask {
+  margin-top: 14px !important;
+  font-weight: 600 !important;
+  color: var(--text-primary, #111) !important;
+}
+.sub-confirm__price {
+  color: var(--accent, #1e7a4e);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .sub-confirm__card-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .sub-confirm__promo-form {
+    flex-direction: column;
+  }
+  .sub-confirm__promo-apply {
+    width: 100%;
+  }
+}

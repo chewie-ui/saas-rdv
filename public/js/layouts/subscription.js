@@ -262,6 +262,7 @@ async function startCheckout(plan) {
   currentPlan = plan || "pro";
   const body = { plan: currentPlan, billing: isYearly ? "yearly" : "monthly" };
   if (appliedPromoCode) body.promoCode = appliedPromoCode.code;
+  if (selectedPaymentMethodId) body.paymentMethodId = selectedPaymentMethodId;
 
   const response = await fetch("/account/create-checkout", {
     method:  "POST",
@@ -274,9 +275,248 @@ async function startCheckout(plan) {
   else if (data.error) showToast(data.error, "error");
 }
 
-if (getProPlan)      getProPlan.onclick      = () => { currentPlan = "pro";      startCheckout("pro"); };
-if (getProPlanAlert) getProPlanAlert.onclick = () => { currentPlan = "pro";      startCheckout("pro"); };
-if (getBusinessPlan) getBusinessPlan.onclick = () => { currentPlan = "business"; startCheckout("business"); };
+/* ── Boîte de confirmation avant paiement ──────────────────────────────────────
+   "si y a déjà une carte, demande payer instant avec carte X ou changer de
+   carte, et ajoute avant de payer l'option AJOUTER UN CODE PROMO et une
+   validation 'êtes-vous sûr de vouloir payer X €' — pas question que ça
+   débite direct au clic sur 'Acheter Business', c'est abusé."
+   ───────────────────────────────────────────────────────────────────────────── */
+let selectedPaymentMethodId = null;
+
+function fmtPrice(n) {
+  if (n == null || isNaN(n)) return null;
+  return n.toFixed(2).replace(/\.00$/, "") + " €";
+}
+
+function cardLabel(pm) {
+  return (pm.brand.charAt(0).toUpperCase() + pm.brand.slice(1)) + " •••• " + pm.last4;
+}
+
+function getPlanPrice(plan) {
+  const billing = isYearly ? "yearly" : "monthly";
+  const base = PRICES[plan] ? PRICES[plan][billing] : null;
+  if (base == null) return null;
+
+  if (appliedPromoCode && appliedPromoCode.discountType !== "trial") {
+    const ap = appliedPromoCode.applicablePlan;
+    const applies = ap === "all" ||
+      ap === `${plan}_${billing}` ||
+      ap === `${plan}_monthly` || ap === `${plan}_yearly`;
+    if (applies) {
+      const discounted = calcDiscounted(base, appliedPromoCode.discountType, appliedPromoCode.discountValue);
+      if (discounted !== null) return discounted;
+    }
+  }
+  return base;
+}
+
+function confirmPurchase(plan) {
+  return new Promise((resolve) => {
+    const pms = window.__paymentMethods || [];
+    if (!selectedPaymentMethodId) {
+      const def = pms.find((pm) => pm.isDefault) || pms[0];
+      selectedPaymentMethodId = def ? def.id : null;
+    }
+
+    const planLabel    = plan === "business" ? "Business" : "Pro";
+    const billingLabel = isYearly ? "facturation annuelle" : "facturation mensuelle";
+    let   price        = getPlanPrice(plan);
+    let   priceLabel   = fmtPrice(price);
+
+    const tmp       = templateDialog.content.cloneNode(true);
+    const parentTmp = tmp.querySelector("#dialogWrp");
+    const close     = (value) => { parentTmp.remove(); resolve(value); };
+
+    tmp.querySelector(".dialog__h2").textContent = "Confirmer votre achat";
+
+    const descEl = tmp.querySelector(".dialog__description");
+    descEl.innerHTML = "";
+
+    const intro = document.createElement("p");
+    intro.className = "dialog__p";
+    intro.innerHTML = "Vous êtes sur le point de souscrire au plan <strong>" + planLabel + "</strong>" +
+      (priceLabel ? " pour <strong>" + priceLabel + "</strong>" : "") +
+      " (" + billingLabel + ").";
+    descEl.appendChild(intro);
+
+    // ── Carte : "payer instant avec carte X ou changer de carte" ─────────────
+    let showPicker = false;
+    if (pms.length) {
+      const cardWrap = document.createElement("div");
+      cardWrap.className = "sub-confirm__card";
+
+      function renderCardChoice() {
+        cardWrap.innerHTML = "";
+        const current = pms.find((pm) => pm.id === selectedPaymentMethodId) || pms[0];
+
+        const row = document.createElement("div");
+        row.className = "sub-confirm__card-row";
+        const lbl = document.createElement("span");
+        lbl.className = "sub-confirm__card-label";
+        lbl.innerHTML = "Payer instantanément avec <strong>" + cardLabel(current) + "</strong>";
+        row.appendChild(lbl);
+
+        if (pms.length > 1) {
+          const switchBtn = document.createElement("button");
+          switchBtn.type = "button";
+          switchBtn.className = "sub-confirm__card-switch";
+          switchBtn.textContent = showPicker ? "Masquer" : "Changer de carte";
+          switchBtn.onclick = () => { showPicker = !showPicker; renderCardChoice(); };
+          row.appendChild(switchBtn);
+        }
+        cardWrap.appendChild(row);
+
+        if (showPicker) {
+          const list = document.createElement("div");
+          list.className = "sub-confirm__card-list";
+          pms.forEach((pm) => {
+            const item = document.createElement("label");
+            item.className = "sub-confirm__card-item" + (pm.id === selectedPaymentMethodId ? " active" : "");
+            const radio = document.createElement("input");
+            radio.type = "radio";
+            radio.name = "confirmCardChoice";
+            radio.value = pm.id;
+            radio.checked = pm.id === selectedPaymentMethodId;
+            radio.addEventListener("change", () => {
+              selectedPaymentMethodId = pm.id;
+              showPicker = false;
+              renderCardChoice();
+            });
+            const span = document.createElement("span");
+            span.innerHTML = cardLabel(pm) + "<small>Expire " +
+              String(pm.expMonth).padStart(2, "0") + "/" + String(pm.expYear).slice(-2) + "</small>";
+            item.appendChild(radio);
+            item.appendChild(span);
+            list.appendChild(item);
+          });
+          cardWrap.appendChild(list);
+        }
+      }
+      renderCardChoice();
+      descEl.appendChild(cardWrap);
+    }
+
+    // ── "Ajouter un code promo" avant de payer ───────────────────────────────
+    let priceStrongEls = [];
+    function refreshPriceDisplays() {
+      price = getPlanPrice(plan);
+      priceLabel = fmtPrice(price);
+      priceStrongEls.forEach((el) => { el.textContent = priceLabel || ""; });
+      confirmBtnLabel.textContent = priceLabel ? ("Oui, payer " + priceLabel) : (subT.confirm || "Confirmer");
+    }
+
+    if (!appliedPromoCode) {
+      const promoWrap = document.createElement("div");
+      promoWrap.className = "sub-confirm__promo";
+
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "sub-confirm__promo-toggle";
+      toggle.textContent = "+ Ajouter un code promo";
+
+      const form = document.createElement("div");
+      form.className = "sub-confirm__promo-form";
+      form.style.display = "none";
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "sub-confirm__promo-input";
+      input.placeholder = "Code promo";
+
+      const applyBtn = document.createElement("button");
+      applyBtn.type = "button";
+      applyBtn.className = "sub-confirm__promo-apply";
+      applyBtn.textContent = "Appliquer";
+
+      const status = document.createElement("span");
+      status.className = "sub-confirm__promo-status";
+
+      form.appendChild(input);
+      form.appendChild(applyBtn);
+      promoWrap.appendChild(toggle);
+      promoWrap.appendChild(form);
+      promoWrap.appendChild(status);
+
+      toggle.addEventListener("click", () => {
+        const willShow = form.style.display === "none";
+        form.style.display = willShow ? "flex" : "none";
+        if (willShow) input.focus();
+      });
+
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter") applyBtn.click(); });
+
+      applyBtn.addEventListener("click", async () => {
+        const code = input.value.trim().toUpperCase();
+        if (!code) return;
+        status.textContent = subT.checking || "Vérification...";
+        status.className = "sub-confirm__promo-status";
+        try {
+          const res  = await fetch("/api/validate-promo", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({ code, plan, billing: isYearly ? "yearly" : "monthly" }),
+          });
+          const data = await res.json();
+          if (data.valid) {
+            appliedPromoCode = data;
+            if (promoCodeInput) promoCodeInput.value = data.code;
+            applyPromoToUI(data);
+            showApplicablePlanBadge(data);
+            status.textContent = '✓ Code "' + data.code + '" appliqué';
+            status.className   = "sub-confirm__promo-status valid";
+            form.style.display = "none";
+            toggle.style.display = "none";
+            refreshPriceDisplays();
+          } else {
+            status.textContent = data.error || subT.invalid || "Code invalide.";
+            status.className   = "sub-confirm__promo-status invalid";
+          }
+        } catch (e) {
+          status.textContent = "Erreur réseau. Veuillez réessayer.";
+          status.className   = "sub-confirm__promo-status invalid";
+        }
+      });
+
+      descEl.appendChild(promoWrap);
+    }
+
+    // ── Validation finale : "êtes-vous sûr de vouloir payer X € ?" ───────────
+    const ask = document.createElement("p");
+    ask.className = "dialog__p sub-confirm__ask";
+    const askPriceEl = document.createElement("strong");
+    askPriceEl.className = "sub-confirm__price";
+    askPriceEl.textContent = priceLabel || "";
+    priceStrongEls.push(askPriceEl);
+    ask.appendChild(document.createTextNode("Êtes-vous sûr·e de vouloir payer "));
+    ask.appendChild(askPriceEl);
+    ask.appendChild(document.createTextNode(" ?"));
+    descEl.appendChild(ask);
+
+    const confirmBtn = tmp.querySelector(".dialog__btn2");
+    confirmBtn.innerHTML = "";
+    const confirmBtnLabel = document.createElement("span");
+    confirmBtnLabel.textContent = priceLabel ? ("Oui, payer " + priceLabel) : (subT.confirm || "Confirmer");
+    confirmBtn.appendChild(confirmBtnLabel);
+    confirmBtn.onclick = () => close(true);
+
+    tmp.querySelector(".dialog__btn1").innerHTML = "<span>" + (subT.close || "Annuler") + "</span>";
+    tmp.querySelector(".dialog__btn1").onclick   = () => close(false);
+    tmp.querySelector(".dialog__icon").onclick   = () => close(false);
+    parentTmp.addEventListener("click", (e) => { if (e.target === parentTmp) close(false); });
+
+    document.body.appendChild(tmp);
+  });
+}
+
+async function handlePlanPurchaseClick(plan) {
+  currentPlan = plan;
+  const confirmed = await confirmPurchase(plan);
+  if (confirmed) startCheckout(plan);
+}
+
+if (getProPlan)      getProPlan.onclick      = () => handlePlanPurchaseClick("pro");
+if (getProPlanAlert) getProPlanAlert.onclick = () => handlePlanPurchaseClick("pro");
+if (getBusinessPlan) getBusinessPlan.onclick = () => handlePlanPurchaseClick("business");
 
 // ── Auto-checkout après inscription (avec promo auto-appliqué si présent) ─────
 (function() {

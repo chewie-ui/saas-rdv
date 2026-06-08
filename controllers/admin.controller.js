@@ -688,6 +688,44 @@ exports.informationsPage = async (req, res) => {
   });
 };
 
+// ── Helper : récupérer les cartes enregistrées d'un utilisateur (Stripe) ─────
+// Utilisé sur /subscription pour proposer "payer avec la carte X ou en
+// changer" + le récap avant paiement, au lieu de débiter instantanément
+// dès qu'une carte existe ("c'est abusé, faut demander avant").
+exports.getUserPaymentMethods = async function (user) {
+  const stripeCustomerId = user?.subscription?.stripeCustomerId;
+  if (!stripeCustomerId) return [];
+  try {
+    const [pmsResult, customer] = await Promise.all([
+      stripe.paymentMethods.list({ customer: stripeCustomerId, type: "card", limit: 10 }),
+      stripe.customers.retrieve(stripeCustomerId),
+    ]);
+
+    let defaultPmId = customer.invoice_settings?.default_payment_method || null;
+    if (!defaultPmId && user.subscription?.stripeSubscriptionId) {
+      try {
+        const sub = await stripe.subscriptions.retrieve(user.subscription.stripeSubscriptionId);
+        defaultPmId = sub.default_payment_method || null;
+      } catch (_) {}
+    }
+    if (!defaultPmId && pmsResult.data.length === 1) {
+      defaultPmId = pmsResult.data[0].id;
+    }
+
+    return pmsResult.data.map((pm) => ({
+      id:        pm.id,
+      brand:     pm.card.brand,
+      last4:     pm.card.last4,
+      expMonth:  pm.card.exp_month,
+      expYear:   pm.card.exp_year,
+      isDefault: pm.id === defaultPmId,
+    }));
+  } catch (e) {
+    console.error("getUserPaymentMethods error:", e.message);
+    return [];
+  }
+};
+
 exports.historyInit = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;

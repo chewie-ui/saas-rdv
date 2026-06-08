@@ -61,10 +61,17 @@ router.get("/subscription", isAuth, injectCompany, async (req, res) => {
       status:  { $ne: "canceled" },
     });
   }
+
+  // Cartes déjà enregistrées → on les propose dans la boîte de confirmation
+  // d'achat ("payer instant avec carte X ou changer de carte") au lieu de
+  // débiter directement quand on clique sur "Acheter Business/Pro".
+  const paymentMethods = await adminController.getUserPaymentMethods(req.user);
+
   res.render("admin/subscription", {
     pageName: "Subscription",
     title: "Plans",
     monthlyBookingCount,
+    paymentMethods,
   });
 });
 

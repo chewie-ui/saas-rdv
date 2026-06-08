@@ -335,6 +335,10 @@ block scripts
     - var subTJson = JSON.stringify({ checking: t.subscription.promo_checking, invalid: t.subscription.promo_invalid, cancel_title: t.subscription.dialog_cancel_title, cancel_desc: t.subscription.dialog_cancel_desc, resume_title: t.subscription.dialog_resume_title, resume_desc: t.subscription.dialog_resume_desc, confirm: t.subscription.dialog_confirm, close: t.subscription.dialog_close, success_cancel: t.subscription.dialog_success_cancel, success_resume: t.subscription.dialog_success_resume })
     script.
         window.__subT = !{subTJson};
+        // Cartes déjà enregistrées — utilisées par la boîte de confirmation
+        // d'achat pour proposer "payer instant avec carte X ou changer de
+        // carte" plutôt que de débiter directement au clic.
+        window.__paymentMethods = !{JSON.stringify(paymentMethods || [])};
     script(src="/js/templates/dialog.js")
     script(src="/js/layouts/subscription.js")
     script.
