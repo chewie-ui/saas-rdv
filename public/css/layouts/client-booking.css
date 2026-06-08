@@ -745,16 +745,32 @@ img { display: block; max-width: 100%; }
   background: var(--bk-faint);
 }
 
+/* Repère visuel du taux de remplissage du jour ("si un jour est full met
+   le en rouge et si la moitié des rdv est pris met orange") — mêmes teintes
+   que le code couleur déjà utilisé côté admin (fill-dot--red / --orange). */
 .bk-cal-cell.is-full {
-  color: var(--bk-faint);
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
   cursor: not-allowed;
   text-decoration: line-through;
-  text-decoration-color: var(--bk-faint);
+  text-decoration-color: rgba(239, 68, 68, 0.4);
 }
 
-.bk-cal-cell:not(.is-disabled):not(.is-empty):not(.is-full):hover {
+.bk-cal-cell.is-busy {
+  color: #ea580c;
+  background: rgba(249, 115, 22, 0.10);
+  font-weight: 700;
+}
+
+.bk-cal-cell:not(.is-disabled):not(.is-empty):not(.is-full):not(.is-busy):hover {
   background: var(--bk-accent-soft);
   color: var(--bk-accent-ink);
+}
+
+/* Un jour "à moitié plein" reste cliquable — on garde son repère orange
+   visible au survol plutôt que de le faire disparaître sous le vert. */
+.bk-cal-cell.is-busy:hover {
+  background: rgba(249, 115, 22, 0.18);
 }
 
 .bk-cal-cell.is-today {
@@ -1109,8 +1125,20 @@ img { display: block; max-width: 100%; }
   font-size: 13px;
 }
 
-.bk-conf__row .k { color: var(--bk-muted); }
-.bk-conf__row .v { color: var(--bk-ink); font-weight: 600; text-align: right; }
+/* Une réponse à une question personnalisée trop longue (champ texte libre,
+   sans limite avant) pouvait déborder de l'encadré et casser toute la mise
+   en page de l'écran de confirmation ("si ça dépasse faut faire qq chose
+   de bien"). On autorise désormais le retour à la ligne dans la valeur
+   plutôt que de la laisser filer hors de son conteneur. */
+.bk-conf__row .k { color: var(--bk-muted); flex-shrink: 0; }
+.bk-conf__row .v {
+  color: var(--bk-ink);
+  font-weight: 600;
+  text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 
 .bk-conf__divider {
   height: 1px;
@@ -1193,6 +1221,12 @@ img { display: block; max-width: 100%; }
   gap: 12px;
   font: 600 13px var(--bk-font);
   box-shadow: 0 12px 32px rgba(0,0,0,0.22);
+  /* La barre est repeinte (innerHTML) à chaque changement d'étape — sans
+     ça, un clic sur "Continuer" pile au moment d'une mise à jour du récap
+     pouvait être interprété comme une sélection de texte (surlignage bleu
+     visible sur le bouton) au lieu d'un clic, et le clic ne déclenchait
+     rien ("le dessus du bouton ne marche pas"). */
+  user-select: none;
 }
 
 .bk-cart__recap {
@@ -1201,6 +1235,10 @@ img { display: block; max-width: 100%; }
   align-items: center;
   flex: 1;
   min-width: 0;
+  /* Purement informatif (résumé de la sélection) : ne doit jamais
+     intercepter un clic destiné au bouton "Continuer" juste à côté,
+     même si le texte déborde légèrement de sa zone au survol/zoom. */
+  pointer-events: none;
 }
 
 .bk-cart__recap > div {
@@ -1236,6 +1274,12 @@ img { display: block; max-width: 100%; }
 }
 
 .bk-cart__next {
+  /* Toujours au-dessus de tout le reste de la barre (récap, séparateurs…) :
+     garantit que la totalité du bouton — y compris sa partie haute — reste
+     cliquable, quels que soient les arrondis de mise en page liés au zoom
+     ou à la largeur du texte du récap ("le dessus du bouton ne marche pas"). */
+  position: relative;
+  z-index: 1;
   height: 40px;
   border: 0;
   border-radius: var(--bk-r-pill);
@@ -1974,6 +2018,12 @@ img { display: block; max-width: 100%; }
   color: var(--bk-text-secondary, #475569);
   line-height: 1.55;
   margin: 0 0 10px;
+  /* Un avis composé d'un seul "mot" très long (sans espaces) débordait de
+     la carte et de la page entière au lieu de revenir à la ligne — on force
+     la coupure pour que le commentaire reste contenu dans son encadré
+     ("regle aussi le bug faut pas que ça dépasse"). */
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .bk-review-delete {

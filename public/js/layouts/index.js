@@ -625,6 +625,11 @@ function buildCalendar() {
         const bookedCount = _specificBookings ? _specificBookings.filter(b => toDateStr(b.date) === iso).length : 0;
         const isFull = maxSlots > 0 && bookedCount >= maxSlots;
         const markedFull = _specificBookings ? _specificBookings.find(b => toDateStr(b.date) === iso && b.isFull) : false;
+        // "si un jour est full met le en rouge et si la moitié des rdv est
+        // pris met orange" — taux de remplissage du jour, affiché en couleur
+        // pour donner un repère visuel rapide avant même d'ouvrir le créneau.
+        const fillRatio = maxSlots > 0 ? (bookedCount / maxSlots) : 0;
+        const isHalfBooked = !isFull && !markedFull && fillRatio >= 0.5;
 
         const isDisabled = isPast || isDayOff || (exception && (!exception.workingHours || exception.workingHours.length === 0));
         const isToday    = c.getTime() === realToday.getTime();
@@ -633,6 +638,7 @@ function buildCalendar() {
         let cls = "bk-cal-cell";
         if (isDisabled)      cls += " is-disabled";
         else if (isFull || markedFull) cls += " is-full";
+        else if (isHalfBooked) cls += " is-busy";
         if (isToday)         cls += " is-today";
         if (isSelected)      cls += " is-selected";
 
@@ -864,7 +870,11 @@ async function renderDetailsPane() {
         ${STATE.activeForm.questions.map((q, i) => {
           let inputHtml = "";
           if (q.type === "text") {
-            inputHtml = `<input class="bk-input bk-choice-input" data-qi="${i}" type="text" placeholder="" />`;
+            // Pas de limite ici avant -> un client pouvait coller un pavé de
+            // texte interminable, qui débordait ensuite de son champ ET de
+            // l'écran de confirmation ("limite les caractères ici car
+            // sinon…"). On aligne sur la limite du champ "Message" (500).
+            inputHtml = `<input class="bk-input bk-choice-input" data-qi="${i}" type="text" maxlength="500" placeholder="" />`;
           } else if (q.type === "yes_no") {
             const yes = __t.yes || "Oui";
             const no  = __t.no  || "Non";

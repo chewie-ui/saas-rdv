@@ -108,13 +108,14 @@ block content
                             .auth-service-dropdown#serviceDropdown
 
                     //- Mot de passe + confirmation (côte à côte sur desktop)
-                    //- NB : la checklist de règles vit maintenant DANS le
-                    //- .auth-field du mot de passe (et plus en 3ᵉ enfant du
-                    //- grid 2 colonnes) — sinon elle se glissait dans la
-                    //- grille comme une cellule à part entière et décalait
-                    //- le champ "Confirmer" ("le truc est buggé"). Elle est
-                    //- aussi affichée en permanence (plus de display:none /
-                    //- show-on-focus) comme demandé ("affiche le direct").
+                    //- NB : la checklist de règles vivait DANS le .auth-field
+                    //- du mot de passe, coincée sur la largeur d'une seule
+                    //- colonne avec son texte qui retombait à la ligne — moche
+                    //- et déséquilibré ("change le design, c'est moche la").
+                    //- Elle redevient un bloc à part entière, sous les deux
+                    //- champs, en pleine largeur, et passe d'une liste
+                    //- empilée à des "puces" compactes en ligne (qui
+                    //- s'enroulent proprement sur mobile).
                     .auth-register-row.auth-two-col
                         .auth-field
                             label.auth-label= t.auth.password || 'Mot de passe'
@@ -131,16 +132,6 @@ block content
                                     svg#pwdEyeIcon(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
                                         path(d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z")
                                         circle(cx="12" cy="12" r="3")
-                            .pwd-rules#pwdRules
-                                .pwd-rule#ruleLen
-                                    span.pwd-rule__dot ○
-                                    span 8 caractères minimum
-                                .pwd-rule#ruleNum
-                                    span.pwd-rule__dot ○
-                                    span 1 chiffre
-                                .pwd-rule#ruleSym
-                                    span.pwd-rule__dot ○
-                                    span 1 caractère spécial (!, @, #…)
                         .auth-field
                             label.auth-label= t.auth.confirm_pwd2 || 'Confirmer'
                             .auth-pwd-wrap
@@ -156,6 +147,17 @@ block content
                                     svg(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
                                         path(d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z")
                                         circle(cx="12" cy="12" r="3")
+
+                    .pwd-rules#pwdRules
+                        .pwd-rule#ruleLen
+                            span.pwd-rule__dot
+                            span 8 caractères
+                        .pwd-rule#ruleNum
+                            span.pwd-rule__dot
+                            span 1 chiffre
+                        .pwd-rule#ruleSym
+                            span.pwd-rule__dot
+                            span 1 caractère spécial
 
                     //- Code parrain (optionnel)
                     .auth-field
@@ -276,8 +278,11 @@ block scripts
                     var touched = v.length > 0;
                     [[ruleLen, v.length >= 8], [ruleNum, /[0-9]/.test(v)], [ruleSym, /[^a-zA-Z0-9]/.test(v)]].forEach(function(pair) {
                         var rule = pair[0], pass = pair[1];
+                        // Le "dot" est purement décoratif (cercle CSS coloré
+                        // par la classe ok/bad/neutre) — on ne touche plus à
+                        // son contenu, ce qui évitait le rendu "✓ / ✕ / ○"
+                        // façon liste de courses qui faisait jugé "moche".
                         rule.className = 'pwd-rule' + (pass ? ' ok' : (touched ? ' bad' : ''));
-                        rule.querySelector('.pwd-rule__dot').textContent = pass ? '✓' : (touched ? '✕' : '○');
                     });
                 });
                 pwdField.dispatchEvent(new Event('input'));

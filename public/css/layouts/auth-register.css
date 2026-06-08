@@ -129,48 +129,68 @@
 }
 
 /* ── Checklist des règles du mot de passe ─────────────────────────────
-   Cette checklist n'avait AUCUN style associé : elle s'affichait comme du
-   texte brut empilé, en plus de casser la grille 2 colonnes en s'y
-   intercalant comme 3ᵉ cellule ("le truc pour les mots de passe est
-   buggé"). Elle vit maintenant dans le .auth-field du mot de passe, est
-   affichée en permanence ("affiche le direct"), et porte un vrai style. */
+   V1 : aucun style → texte brut empilé, cassait la grille 2 colonnes.
+   V2 : remise en forme mais coincée dans la largeur d'1 seule colonne,
+   avec le texte qui retombait sur 2 lignes ("8 caractères / minimum") —
+   jugé "moche". V3 (actuelle) : bloc pleine largeur sous les 2 champs,
+   règles affichées en "puces" compactes côte à côte qui s'enroulent
+   proprement (responsive), avec un point indicateur coloré plutôt qu'un
+   glyphe ✓/✕/○ façon liste de courses. */
 .pwd-rules {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 8px;
-  padding: 10px 12px;
-  background: var(--surface-soft, #f9fafb);
-  border: 1px solid var(--border-light, #e5e7eb);
-  border-radius: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .pwd-rule {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
+  padding: 6px 12px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-muted, #9ca3af);
-  transition: color .15s ease;
+  background: var(--surface-soft, #f9fafb);
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: var(--radius-full, 999px);
+  white-space: nowrap;
+  transition: color .15s ease, background .15s ease, border-color .15s ease;
 }
 
 .pwd-rule__dot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
   flex-shrink: 0;
-  font-weight: 700;
-  font-size: 11px;
+  border-radius: 50%;
+  background: var(--border-medium, #d1d5db);
+  transition: background .15s ease;
 }
 
 .pwd-rule.ok {
   color: #16a34a;
+  background: rgba(22, 163, 74, 0.08);
+  border-color: rgba(22, 163, 74, 0.25);
+}
+.pwd-rule.ok .pwd-rule__dot {
+  background: #16a34a;
 }
 
 .pwd-rule.bad {
   color: #ef4444;
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+.pwd-rule.bad .pwd-rule__dot {
+  background: #ef4444;
+}
+
+@media (max-width: 480px) {
+  .pwd-rule {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+  }
 }
 
 /* ── Terms checkbox ──────────────────────────────────────────── */

@@ -357,7 +357,13 @@ block content
             .referral-share { display:flex; gap:12px; flex-wrap:wrap; }
             .referral-block { flex:1; min-width:200px; display:flex; flex-direction:column; gap:6px; }
             .referral-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted,#9ca3af); }
-            .referral-code-row { display:flex; align-items:center; gap:8px; background:var(--color-surface-2,#f8fafc); border:1px solid var(--border-light,#e5e7eb); border-radius:10px; padding:10px 14px; }
+            /* "Votre code" (police 1.1rem en gras) et "Lien d'invitation" (police
+               12px normale) n'avaient pas la même hauteur de ligne — les deux
+               encadrés ("inputs") paraissaient de tailles différentes
+               ("met les memes tailles dinputs"). On fixe une hauteur commune
+               pour que les deux boîtes soient identiques quel que soit le
+               texte affiché à l'intérieur. */
+            .referral-code-row { display:flex; align-items:center; gap:8px; background:var(--color-surface-2,#f8fafc); border:1px solid var(--border-light,#e5e7eb); border-radius:10px; padding:10px 14px; min-height:44px; box-sizing:border-box; }
             .referral-code { font-family:monospace; font-size:1.1rem; font-weight:700; color:var(--text-primary,#111); letter-spacing:.05em; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
             .referral-link-val { font-size:12px; color:var(--text-muted,#6b7280); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
             .referral-copy { background:none; border:none; cursor:pointer; color:var(--text-muted,#9ca3af); padding:2px; border-radius:6px; transition:color .15s,background .15s; display:flex; align-items:center; flex-shrink:0; }
