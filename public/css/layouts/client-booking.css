@@ -84,7 +84,7 @@ img { display: block; max-width: 100%; }
 .bk-brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-weight: 700;
   font-size: 15px;
   color: var(--bk-ink);
@@ -114,6 +114,7 @@ img { display: block; max-width: 100%; }
   font: 600 13px var(--bk-font);
   display: inline-flex;
   align-items: center;
+  gap: 7px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
@@ -130,7 +131,13 @@ img { display: block; max-width: 100%; }
   width: 100%;
   margin: 0 auto;
   padding: 28px 20px 0;
+  display: flex;
+  flex-direction: column;
+  /* Permet à CSS order de fonctionner sur les sections enfants */
 }
+
+/* Le stepper + pane restent fixes en tête (order: 0) */
+.bk-head, .bk-stepper, #bkPane { order: 0; }
 
 /* ── Company header ─────────────────────────────────────────────────────── */
 .bk-head {
@@ -265,6 +272,35 @@ img { display: block; max-width: 100%; }
   color: var(--bk-ink-2);
   white-space: pre-wrap;
   margin: 0;
+}
+
+/* Texte enrichi (généré par le mini-éditeur "À propos" de l'admin) */
+.bk-about-card__text--rich {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.bk-about-card__text--rich p {
+  margin: 0 0 10px;
+}
+
+.bk-about-card__text--rich p:last-child {
+  margin-bottom: 0;
+}
+
+.bk-about-card__text--rich b,
+.bk-about-card__text--rich strong {
+  font-weight: 700;
+  color: var(--bk-ink);
+}
+
+/* Repli "Voir plus / Voir moins" pour le texte enrichi : on ne peut pas couper
+   le HTML au caractère près, on s'appuie donc sur un clamp CSS multi-lignes. */
+.bk-about-card__text--rich.bk-about-card__text--short {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  overflow: hidden;
 }
 
 .bk-about-card__toggle {
@@ -1053,6 +1089,8 @@ img { display: block; max-width: 100%; }
   color: var(--bk-muted);
   font-size: 13.5px;
   margin: 6px 0 20px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .bk-conf__recap {
@@ -1502,6 +1540,8 @@ img { display: block; max-width: 100%; }
   border-radius: var(--bk-r-sm);
   overflow: hidden;
   background: var(--bk-subtle);
+  cursor: zoom-in;
+  position: relative;
 }
 
 .bk-gallery-item img {
@@ -1512,8 +1552,183 @@ img { display: block; max-width: 100%; }
   transition: transform 0.25s;
 }
 
-.bk-gallery-item:hover img {
-  transform: scale(1.04);
+.bk-gallery-item:hover img { transform: scale(1.06); }
+
+.bk-gallery-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  transition: background .2s;
+}
+
+.bk-gallery-item:hover::after { background: rgba(0,0,0,.12); }
+
+/* ── Gallery carousel (mise en page alternative, choisie dans Personnaliser) ── */
+.bk-gallery-carousel-wrap {
+  position: relative;
+}
+
+.bk-gallery-carousel {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bk-border-strong) transparent;
+}
+
+.bk-gallery-carousel::-webkit-scrollbar { height: 6px; }
+.bk-gallery-carousel::-webkit-scrollbar-track { background: transparent; }
+.bk-gallery-carousel::-webkit-scrollbar-thumb {
+  background: var(--bk-border-strong);
+  border-radius: 99px;
+}
+
+.bk-gallery-carousel__item {
+  flex: 0 0 auto;
+  width: min(72%, 320px);
+  scroll-snap-align: start;
+}
+
+.bk-gallery-carousel__item .bk-gallery-item {
+  width: 100%;
+  height: 100%;
+}
+
+.bk-gallery-carousel__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--bk-border);
+  border-radius: 50%;
+  background: var(--bk-surface);
+  color: var(--bk-ink);
+  box-shadow: 0 6px 18px rgba(0,0,0,.12);
+  cursor: pointer;
+  transition: background .15s, transform .15s, box-shadow .15s;
+  z-index: 2;
+}
+
+.bk-gallery-carousel__nav:hover {
+  background: var(--bk-subtle);
+  transform: translateY(-50%) scale(1.07);
+}
+
+.bk-gallery-carousel__nav--prev { left: -8px; }
+.bk-gallery-carousel__nav--next { right: -8px; }
+
+@media (max-width: 640px) {
+  /* Sur mobile, le défilement tactile suffit — on masque les flèches pour ne pas
+     gêner la lecture des photos en bord d'écran. */
+  .bk-gallery-carousel__nav { display: none; }
+  .bk-gallery-carousel__item { width: min(82%, 280px); }
+}
+
+/* ── Lightbox ────────────────────────────────────────────────────────────── */
+.bk-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bk-lightbox__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.88);
+  cursor: pointer;
+}
+
+.bk-lightbox__content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  max-width: min(90vw, 1100px);
+  max-height: 90vh;
+  z-index: 1;
+}
+
+.bk-lightbox__img {
+  max-width: min(80vw, 900px);
+  max-height: 85vh;
+  border-radius: 12px;
+  object-fit: contain;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  display: block;
+  animation: lb-in .18s ease;
+}
+
+@keyframes lb-in {
+  from { opacity:0; transform:scale(.96); }
+  to   { opacity:1; transform:scale(1); }
+}
+
+.bk-lightbox__close {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.15);
+  border: 1.5px solid rgba(255,255,255,.3);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+  z-index: 2;
+}
+
+.bk-lightbox__close:hover { background: rgba(255,255,255,.28); }
+
+.bk-lightbox__prev,
+.bk-lightbox__next {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.15);
+  border: 1.5px solid rgba(255,255,255,.25);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s, transform .1s;
+  margin: 0 12px;
+}
+
+.bk-lightbox__prev:hover,
+.bk-lightbox__next:hover { background: rgba(255,255,255,.28); }
+
+.bk-lightbox__prev:active { transform: translateX(-2px); }
+.bk-lightbox__next:active { transform: translateX(2px); }
+
+.bk-lightbox__counter {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,.7);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  z-index: 2;
 }
 
 /* ── Equipment tags ─────────────────────────────────────────────────────── */

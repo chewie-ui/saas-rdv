@@ -41,16 +41,76 @@ block content
                     .field
                         label(for="phone")= t.profile.phone
                         input#phone.input(value=user.phone name="phone" placeholder=t.profile.phone)
-                    .field
-                        label(for="password")= t.profile.password
-                        input#password.input(placeholder="●●●●●●●●●●●" disabled)
-                        a.more#passwordOpen(href="/forgot-password")= t.profile.change_pwd
-                        .success= success
             .info-card__actions
                 button.sm-btn.sm-btn--danger#deleteAccountBtn(type="button")
                     span= t.profile.delete_account
                 button.sm-btn.sm-btn--primary#saveChanges
                     span= t.profile.save
+
+        //- ── Mot de passe ────────────────────────────────────────────────────
+        .info-card#pwdCard
+            .info-card__header
+                h3 Mot de passe
+                p.info-card__desc Modifiez votre mot de passe de connexion.
+            .pwd-fields
+                .field
+                    label.auth-label Mot de passe actuel
+                    input.input#pwdCurrent(type="password" placeholder="••••••••" autocomplete="current-password")
+                .field
+                    label.auth-label Nouveau mot de passe
+                    input.input#pwdNew(type="password" placeholder="••••••••" autocomplete="new-password")
+                .field
+                    label.auth-label Confirmer le nouveau
+                    input.input#pwdConfirm(type="password" placeholder="••••••••" autocomplete="new-password")
+            .info-card__actions
+                a.pwd-forgot-link(href="/forgot-password") Mot de passe actuel oublié ?
+                button.sm-btn.sm-btn--primary#pwdSaveBtn(type="button")
+                    span Enregistrer
+            .pwd-status#pwdStatus
+        style.
+            .pwd-fields { display:flex; flex-direction:column; gap:14px; }
+            .pwd-forgot-link { font-size:12.5px; color:var(--accent,#16a34a); text-decoration:none; margin-right:auto; }
+            .pwd-forgot-link:hover { text-decoration:underline; }
+            .pwd-status { font-size:12.5px; padding:0 0 4px; min-height:18px; }
+            .pwd-status.ok  { color:var(--accent,#16a34a); }
+            .pwd-status.err { color:#dc2626; }
+        script.
+            (function() {
+                var saveBtn   = document.getElementById('pwdSaveBtn');
+                var statusEl  = document.getElementById('pwdStatus');
+                if (!saveBtn) return;
+                saveBtn.addEventListener('click', async function() {
+                    var cur  = (document.getElementById('pwdCurrent').value||'').trim();
+                    var nw   = (document.getElementById('pwdNew').value||'').trim();
+                    var conf = (document.getElementById('pwdConfirm').value||'').trim();
+                    statusEl.className = 'pwd-status';
+                    if (!cur || !nw || !conf) { statusEl.textContent='Veuillez remplir tous les champs.'; statusEl.className='pwd-status err'; return; }
+                    if (nw.length < 8) { statusEl.textContent='Le nouveau mot de passe doit contenir au moins 8 caractères.'; statusEl.className='pwd-status err'; return; }
+                    if (nw !== conf)   { statusEl.textContent='Les mots de passe ne correspondent pas.'; statusEl.className='pwd-status err'; return; }
+                    saveBtn.disabled = true;
+                    var span = saveBtn.querySelector('span');
+                    var orig = span ? span.textContent : '';
+                    if (span) span.textContent = '…';
+                    var r = await fetch('/account/update-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' },
+                        body: JSON.stringify({ oldPassword: cur, newPassword: nw })
+                    });
+                    var d = await r.json();
+                    saveBtn.disabled = false;
+                    if (span) span.textContent = orig;
+                    if (d.success) {
+                        statusEl.textContent = '✓ Mot de passe mis à jour.';
+                        statusEl.className = 'pwd-status ok';
+                        document.getElementById('pwdCurrent').value = '';
+                        document.getElementById('pwdNew').value = '';
+                        document.getElementById('pwdConfirm').value = '';
+                    } else {
+                        statusEl.textContent = d.error || 'Mot de passe actuel incorrect.';
+                        statusEl.className = 'pwd-status err';
+                    }
+                });
+            })();
 
         //- ── Votre abonnement ────────────────────────────────────────────────
         .info-card
@@ -161,71 +221,6 @@ block content
                                         span PDF
             else
                 p.pm-empty Aucun historique de paiement.
-
-        //- ── Changer le mot de passe ─────────────────────────────────────────
-        .info-card#pwdCard
-            .info-card__header
-                h3 Mot de passe
-                p.info-card__desc Modifiez votre mot de passe de connexion.
-            .pwd-fields
-                .field
-                    label.auth-label Mot de passe actuel
-                    input.input#pwdCurrent(type="password" placeholder="••••••••" autocomplete="current-password")
-                .field
-                    label.auth-label Nouveau mot de passe
-                    input.input#pwdNew(type="password" placeholder="••••••••" autocomplete="new-password")
-                .field
-                    label.auth-label Confirmer le nouveau
-                    input.input#pwdConfirm(type="password" placeholder="••••••••" autocomplete="new-password")
-            .info-card__actions
-                a.pwd-forgot-link(href="/forgot-password") Mot de passe actuel oublié ?
-                button.sm-btn.sm-btn--primary#pwdSaveBtn(type="button")
-                    span Enregistrer
-            .pwd-status#pwdStatus
-        style.
-            .pwd-fields { display:flex; flex-direction:column; gap:14px; }
-            .pwd-forgot-link { font-size:12.5px; color:var(--accent,#16a34a); text-decoration:none; margin-right:auto; }
-            .pwd-forgot-link:hover { text-decoration:underline; }
-            .pwd-status { font-size:12.5px; padding:0 0 4px; min-height:18px; }
-            .pwd-status.ok  { color:var(--accent,#16a34a); }
-            .pwd-status.err { color:#dc2626; }
-        script.
-            (function() {
-                var saveBtn   = document.getElementById('pwdSaveBtn');
-                var statusEl  = document.getElementById('pwdStatus');
-                if (!saveBtn) return;
-                saveBtn.addEventListener('click', async function() {
-                    var cur  = (document.getElementById('pwdCurrent').value||'').trim();
-                    var nw   = (document.getElementById('pwdNew').value||'').trim();
-                    var conf = (document.getElementById('pwdConfirm').value||'').trim();
-                    statusEl.className = 'pwd-status';
-                    if (!cur || !nw || !conf) { statusEl.textContent='Veuillez remplir tous les champs.'; statusEl.className='pwd-status err'; return; }
-                    if (nw.length < 8) { statusEl.textContent='Le nouveau mot de passe doit contenir au moins 8 caractères.'; statusEl.className='pwd-status err'; return; }
-                    if (nw !== conf)   { statusEl.textContent='Les mots de passe ne correspondent pas.'; statusEl.className='pwd-status err'; return; }
-                    saveBtn.disabled = true;
-                    var span = saveBtn.querySelector('span');
-                    var orig = span ? span.textContent : '';
-                    if (span) span.textContent = '…';
-                    var r = await fetch('/account/update-password', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' },
-                        body: JSON.stringify({ oldPassword: cur, newPassword: nw })
-                    });
-                    var d = await r.json();
-                    saveBtn.disabled = false;
-                    if (span) span.textContent = orig;
-                    if (d.success) {
-                        statusEl.textContent = '✓ Mot de passe mis à jour.';
-                        statusEl.className = 'pwd-status ok';
-                        document.getElementById('pwdCurrent').value = '';
-                        document.getElementById('pwdNew').value = '';
-                        document.getElementById('pwdConfirm').value = '';
-                    } else {
-                        statusEl.textContent = d.error || 'Mot de passe actuel incorrect.';
-                        statusEl.className = 'pwd-status err';
-                    }
-                });
-            })();
 
         //- ── Authentification à deux facteurs ────────────────────────────────
         .info-card
@@ -454,8 +449,8 @@ block content
                 });
             })();
 
-        //- ── Langue principale ───────────────────────────────────────────────
-        .info-card#prepaymentCard
+        //- ── Modes de paiement ───────────────────────────────────────────────
+        .info-card
             .info-card__header
                 h3 Modes de paiement
                 p.info-card__desc Choisissez les modes de paiement que vous proposez à vos clients.
@@ -722,14 +717,14 @@ block content
                 p.info-card__desc Choisissez la langue de votre interface d'administration.
 
             .lang-grid
-                - const langs = [{code:'fr',label:'Français',flag:'🇫🇷'},{code:'en',label:'English',flag:'🇬🇧'},{code:'nl',label:'Nederlands',flag:'🇳🇱'},{code:'de',label:'Deutsch',flag:'🇩🇪'},{code:'es',label:'Español',flag:'🇪🇸'},{code:'it',label:'Italiano',flag:'🇮🇹'}]
+                - const langs = [{code:'fr',label:'Français',flag:'/images/fr.webp'},{code:'en',label:'English',flag:'/images/en.jpg'},{code:'nl',label:'Nederlands',flag:'/images/nl.jpg'},{code:'de',label:'Deutsch',flag:'/images/de.png'},{code:'es',label:'Español',flag:'/images/es.jpg'},{code:'it',label:'Italiano',flag:'/images/it.png'}]
                 each l in langs
                     button.lang-btn(
                         type="button"
                         data-lang=l.code
                         class=(currentLang === l.code ? 'lang-btn--active' : '')
                     )
-                        span.lang-flag= l.flag
+                        img.lang-flag(src=l.flag alt=l.code)
                         span.lang-name= l.label
 
             .lang-feedback#langFeedback

@@ -87,6 +87,11 @@ const companySchema = schema(
     // ── Mise en avant (boost) ─────────────────────────────────────────────────
     // 0 = pas mis en avant, 1 = premier, 2 = deuxième, etc.
     boostPosition: { type: Number, default: 0 },
+
+    // ── Notification "limite mensuelle de RDV atteinte" ───────────────────────
+    // Stocke le mois ("YYYY-MM") où l'email d'alerte a déjà été envoyé à
+    // l'admin, pour éviter de le renvoyer à chaque nouvelle réservation bloquée.
+    limitReachedNotifiedMonth: { type: String, default: "" },
   },
   { timestamps: true },
 );

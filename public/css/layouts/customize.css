@@ -330,3 +330,138 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── « À propos » — mini éditeur WYSIWYG ──────────────────────────────────── */
+.about-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-card);
+}
+
+.about-editor__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  flex-wrap: wrap;
+}
+
+.about-editor__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+}
+
+.about-editor__btn:hover {
+  background: var(--surface-hover, var(--surface));
+  border-color: var(--border-light);
+}
+
+.about-editor__btn.is-active {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.about-editor__btn strong,
+.about-editor__btn em,
+.about-editor__btn u {
+  pointer-events: none;
+}
+
+.about-editor__sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border-light);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.about-editor__area {
+  min-height: 160px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.about-editor__area:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.about-editor__area b,
+.about-editor__area strong {
+  font-weight: 700;
+}
+
+.about-editor__area i,
+.about-editor__area em {
+  font-style: italic;
+}
+
+.about-editor__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+}
+
+.about-editor__hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.about-editor__status {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-left: 10px;
+  opacity: 0;
+  transition: opacity .3s;
+}
+
+.about-editor__status.is-visible {
+  opacity: 1;
+}
+
+@media (max-width: 599px) {
+  .about-editor__toolbar {
+    gap: 2px;
+  }
+
+  .about-editor__area {
+    min-height: 130px;
+    padding: 12px;
+  }
+}
+
+/* ── Feedback d'erreur sur boutons "Enregistrer" (flash temporaire) ───────── */
+.sm-btn.is-error {
+  background: #fef2f2 !important;
+  border-color: #fca5a5 !important;
+  color: #dc2626 !important;
+}

@@ -37,6 +37,15 @@ const userSchema = schema(
       maxlength: [230, "La description ne peut pas dépasser 230 caractères."],
     },
 
+    // ── « À propos » enrichi (mini éditeur : gras, italique, taille de texte) ──
+    // Stocke un fragment HTML "sûr" (nettoyé côté serveur — voir sanitizeAboutHtml)
+    // affiché tel quel dans la section "À propos" de la page publique.
+    aboutHtml: {
+      type: String,
+      default: "",
+      maxlength: [4000, "Le texte « À propos » ne peut pas dépasser 4000 caractères."],
+    },
+
     phone: {
       type: String,
     },
@@ -161,8 +170,14 @@ const userSchema = schema(
       showSectionAmenities:  { type: Boolean, default: false },
       showSectionFaq:        { type: Boolean, default: false },
       showSectionGallery:    { type: Boolean, default: false },
+      // Format d'affichage de la galerie sur la page publique — l'utilisateur
+      // peut choisir entre une grille classique ou un carrousel défilant
+      galleryLayout:         { type: String,  default: 'grid' }, // 'grid' | 'carousel'
       showSectionMap:        { type: Boolean, default: true  },
       showSectionHours:      { type: Boolean, default: true  },
+      // Ordre d'affichage des sections sur la page publique
+      // "booking" est toujours premier (implicite, non stocké)
+      sectionOrder: { type: [String], default: ['about', 'location', 'hours', 'gallery', 'reviews'] },
       gallery:     { type: [String], default: [] },
       equipment:   { type: [String], default: [] },
       categories:  { type: [{ name: String, icon: { type: String, default: '' }, _id: false }], default: [] },

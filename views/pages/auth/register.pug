@@ -8,6 +8,11 @@ block links
         .auth-ref-status { font-size:12px; font-weight:600; white-space:nowrap; flex-shrink:0; }
         .auth-ref-status.ok  { color:var(--accent,#16a34a); }
         .auth-ref-status.err { color:#dc2626; }
+        .pwd-rules { display:flex; flex-direction:column; gap:4px; margin-top:6px; padding:10px 12px; background:var(--surface,#f5f4f1); border-radius:8px; }
+        .pwd-rule { display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--text-muted,#6b7280); transition:color .15s; }
+        .pwd-rule__dot { font-size:10px; }
+        .pwd-rule.ok { color:var(--accent,#16a34a); font-weight:600; }
+        .pwd-rule.bad { color:#dc2626; }
 
 block content
     .auth-split
@@ -42,6 +47,12 @@ block content
                 h1= t.auth.register_title || 'Créez votre compte'
                 p.auth-sub= t.auth.register_desc || 'Vous utiliserez ce compte pour gérer votre activité et inviter votre équipe.'
 
+                if pendingPlan === 'pro' || pendingPlan === 'business'
+                    .auth-plan-badge
+                        svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                            polyline(points="20 6 9 17 4 12")
+                        = pendingPlan === 'business' ? 'Plan Business sélectionné · 1 mois gratuit inclus' : 'Plan Pro sélectionné · 1 mois gratuit inclus'
+
                 .auth-error#registerError(style="display:none")
 
                 //- Google SSO
@@ -51,7 +62,7 @@ block content
                         path(fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7A20 20 0 0 0 6.3 14.7z")
                         path(fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2A12 12 0 0 1 12.7 28L6.2 33A20 20 0 0 0 24 44z")
                         path(fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z")
-                    span Continue with Google
+                    span Continuer avec Google
 
                 .auth-divider-row
                     hr
@@ -97,25 +108,54 @@ block content
                             .auth-service-dropdown#serviceDropdown
 
                     //- Mot de passe + confirmation (côte à côte sur desktop)
+                    //- NB : la checklist de règles vit maintenant DANS le
+                    //- .auth-field du mot de passe (et plus en 3ᵉ enfant du
+                    //- grid 2 colonnes) — sinon elle se glissait dans la
+                    //- grille comme une cellule à part entière et décalait
+                    //- le champ "Confirmer" ("le truc est buggé"). Elle est
+                    //- aussi affichée en permanence (plus de display:none /
+                    //- show-on-focus) comme demandé ("affiche le direct").
                     .auth-register-row.auth-two-col
                         .auth-field
                             label.auth-label= t.auth.password || 'Mot de passe'
-                            input.auth-input(
-                                type="password"
-                                name="password"
-                                placeholder="••••••••"
-                                autocomplete="new-password"
-                                required
-                            )
+                            .auth-pwd-wrap
+                                input.auth-input(
+                                    type="password"
+                                    name="password"
+                                    id="pwdField"
+                                    placeholder="••••••••"
+                                    autocomplete="new-password"
+                                    required
+                                )
+                                button.auth-pwd-toggle(type="button" id="pwdToggle" tabindex="-1" aria-label="Afficher le mot de passe")
+                                    svg#pwdEyeIcon(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                        path(d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z")
+                                        circle(cx="12" cy="12" r="3")
+                            .pwd-rules#pwdRules
+                                .pwd-rule#ruleLen
+                                    span.pwd-rule__dot ○
+                                    span 8 caractères minimum
+                                .pwd-rule#ruleNum
+                                    span.pwd-rule__dot ○
+                                    span 1 chiffre
+                                .pwd-rule#ruleSym
+                                    span.pwd-rule__dot ○
+                                    span 1 caractère spécial (!, @, #…)
                         .auth-field
                             label.auth-label= t.auth.confirm_pwd2 || 'Confirmer'
-                            input.auth-input(
-                                type="password"
-                                name="conformPassword"
-                                placeholder="••••••••"
-                                autocomplete="new-password"
-                                required
-                            )
+                            .auth-pwd-wrap
+                                input.auth-input(
+                                    type="password"
+                                    name="conformPassword"
+                                    id="confirmPwdField"
+                                    placeholder="••••••••"
+                                    autocomplete="new-password"
+                                    required
+                                )
+                                button.auth-pwd-toggle(type="button" id="confirmPwdToggle" tabindex="-1" aria-label="Afficher le mot de passe")
+                                    svg(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                        path(d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z")
+                                        circle(cx="12" cy="12" r="3")
 
                     //- Code parrain (optionnel)
                     .auth-field
@@ -128,7 +168,7 @@ block content
                                 name="refCode"
                                 placeholder="Ex: SOPHIE-A3F2"
                                 autocomplete="off"
-                                style="text-transform:uppercase;letter-spacing:.04em;"
+                                style="text-transform:uppercase;letter-spacing:.02em;font-size:14px;"
                             )
                             span.auth-ref-status#refStatus
 
@@ -160,6 +200,12 @@ block scripts
         .auth-two-col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
         .auth-label-opt { color:var(--text-muted,#9ca3af); font-weight:400; font-size:12px; }
         @media (max-width:480px) { .auth-two-col { grid-template-columns:1fr; } }
+        .auth-pwd-wrap { position:relative; display:flex; align-items:center; }
+        .auth-pwd-wrap .auth-input { flex:1; padding-right:40px; }
+        .auth-pwd-toggle { position:absolute; right:10px; background:none; border:none; cursor:pointer; color:var(--text-muted,#9ca3af); padding:4px; display:flex; align-items:center; transition:color .15s; border-radius:4px; }
+        .auth-pwd-toggle:hover { color:var(--text-primary,#111); }
+        .auth-plan-badge { display:inline-flex; align-items:center; gap:7px; background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:10px; padding:9px 14px; font-size:13px; font-weight:700; color:#15803d; margin-bottom:14px; }
+        .auth-plan-badge svg { stroke:#15803d; flex-shrink:0; }
     script.
         const __services = !{JSON.stringify(services)};
         (function() {
@@ -215,6 +261,54 @@ block scripts
                 }, 160);
             });
 
+            /* ── Règles mot de passe ─────────────────────────────── */
+            var pwdField  = document.getElementById('pwdField');
+            var pwdRules  = document.getElementById('pwdRules');
+            var ruleLen   = document.getElementById('ruleLen');
+            var ruleNum   = document.getElementById('ruleNum');
+            var ruleSym   = document.getElementById('ruleSym');
+            if (pwdField && pwdRules) {
+                // La checklist est désormais affichée en permanence (plus de
+                // show-on-focus) — on calcule juste son état dès le chargement
+                // au cas où le champ est pré-rempli (autofill navigateur).
+                pwdField.addEventListener('input', function() {
+                    var v = this.value;
+                    var touched = v.length > 0;
+                    [[ruleLen, v.length >= 8], [ruleNum, /[0-9]/.test(v)], [ruleSym, /[^a-zA-Z0-9]/.test(v)]].forEach(function(pair) {
+                        var rule = pair[0], pass = pair[1];
+                        rule.className = 'pwd-rule' + (pass ? ' ok' : (touched ? ' bad' : ''));
+                        rule.querySelector('.pwd-rule__dot').textContent = pass ? '✓' : (touched ? '✕' : '○');
+                    });
+                });
+                pwdField.dispatchEvent(new Event('input'));
+            }
+
+            /* ── Confirmation du mot de passe : halo vert/rouge en direct ──
+               "met en vert si c bon et rouge si pas bon et si c vide laisse
+               normal" : tant que le champ "Confirmer" est vide on ne touche
+               à rien, sinon on compare en direct avec le mot de passe et on
+               colore le contour en vert (ça correspond) ou rouge (ça ne
+               correspond pas). ───────────────────────────────────────────── */
+            var confirmPwdField = document.getElementById('confirmPwdField');
+            function checkPwdMatch() {
+                if (!pwdField || !confirmPwdField) return;
+                confirmPwdField.classList.remove('auth-input--match', 'auth-input--mismatch');
+                var confirmVal = confirmPwdField.value;
+                if (!confirmVal) return; // vide → on laisse l'input normal
+                if (confirmVal === pwdField.value) {
+                    confirmPwdField.classList.add('auth-input--match');
+                } else {
+                    confirmPwdField.classList.add('auth-input--mismatch');
+                }
+            }
+            if (pwdField) pwdField.addEventListener('input', checkPwdMatch);
+            if (confirmPwdField) {
+                confirmPwdField.addEventListener('input', function() {
+                    confirmPwdField.classList.remove('auth-input--error');
+                    checkPwdMatch();
+                });
+            }
+
             /* ── Code parrain ─────────────────────────────────────── */
             var refInput  = document.getElementById('refCodeInput');
             var refStatus = document.getElementById('refStatus');
@@ -259,12 +353,65 @@ block scripts
             var errBox    = document.getElementById('registerError');
             var submitBtn = form ? form.querySelector('button[type="submit"]') : null;
 
+            var emailField = form ? form.querySelector('input[name="email"]') : null;
+            var nameField  = form ? form.querySelector('input[name="fullname"]') : null;
+            var allFieldsForReset = [emailField, nameField, pwdField, document.getElementById('confirmPwdField')];
+
+            function clearFieldErrors() {
+                allFieldsForReset.forEach(function(f) { if (f) f.classList.remove('auth-input--error'); });
+            }
+            // Dès que l'utilisateur corrige un champ marqué en rouge, on retire le halo
+            allFieldsForReset.forEach(function(f) {
+                if (!f) return;
+                f.addEventListener('input', function() { f.classList.remove('auth-input--error'); });
+            });
+
             function showError(msg) {
                 if (!errBox) return;
                 errBox.textContent = msg;
                 errBox.style.display = 'block';
                 errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                // Entoure le(s) champ(s) concerné(s) en rouge selon le message reçu
+                clearFieldErrors();
+                var low = (msg || '').toLowerCase();
+                var flagged = false;
+                if (/email|e-mail|adresse/.test(low)) {
+                    if (emailField) { emailField.classList.add('auth-input--error'); flagged = true; }
+                }
+                // NB : le message serveur dit "Les mots de passe ne
+                // correspondent pas" (PLURIEL "mots") — l'ancienne regex
+                // /mot de passe|.../ ne matchait pas "mots de passe" (le "s"
+                // cassait le pattern), donc l'input ne se retrouvait JAMAIS
+                // entouré en rouge ("si erreur entoure en rouge l'input").
+                // On élargit le pattern pour couvrir singulier ET pluriel,
+                // et toute mention de "confirmation"/"correspond(ent)".
+                if (/mots? de passe|password|confirm|correspond/.test(low)) {
+                    if (pwdField) { pwdField.classList.add('auth-input--error'); flagged = true; }
+                    var confirmF = document.getElementById('confirmPwdField');
+                    if (confirmF) { confirmF.classList.add('auth-input--error'); flagged = true; }
+                }
+                if (/nom/.test(low) && !/prénom/.test(low)) {
+                    if (nameField) { nameField.classList.add('auth-input--error'); flagged = true; }
+                }
             }
+
+            /* ── Show/hide mot de passe ──────────────────────────── */
+            [['pwdField','pwdToggle','pwdEyeIcon'],['confirmPwdField','confirmPwdToggle',null]].forEach(function(pair) {
+                var inp = document.getElementById(pair[0]);
+                var btn = document.getElementById(pair[1]);
+                if (!inp || !btn) return;
+                var eyeSvg = pair[2] ? document.getElementById(pair[2]) : btn.querySelector('svg');
+                btn.addEventListener('click', function() {
+                    var show = inp.type === 'password';
+                    inp.type = show ? 'text' : 'password';
+                    if (eyeSvg) {
+                        eyeSvg.innerHTML = show
+                            ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+                            : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+                    }
+                });
+            });
 
             if (form) {
                 if (submitBtn) submitBtn.dataset.label = submitBtn.textContent;
@@ -272,6 +419,7 @@ block scripts
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
                     if (errBox) errBox.style.display = 'none';
+                    clearFieldErrors();
 
                     if (!hidden.value || !__services.includes(hidden.value)) {
                         input.classList.add('service-input--invalid');

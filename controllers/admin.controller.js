@@ -1121,6 +1121,8 @@ exports.paymentVerification = async (req, res) => {
     }
 
     console.log(`✅ [paymentVerification] Plan "${planName}" activé pour user ${userId}`);
+    const { enforcePlanLimits } = require("./account.controller");
+    enforcePlanLimits(userId, planName).catch(() => {});
   } catch (dbErr) {
     console.error("[paymentVerification] Erreur DB:", dbErr.message);
   }
@@ -1178,9 +1180,30 @@ exports.formsIndex = async (req, res) => {
     const companyId = res.locals.currentCompany._id;
     const form = await Form.findOne({ company: companyId }).lean();
     const maxQuestions = getLimit("formQuestions", req.user);
+
+    // Plan Basic (maxQuestions === 0) : on affiche quand même un aperçu
+    // (verrouillé) de la fonctionnalité avec des questions de démonstration,
+    // au lieu de la cacher complètement derrière un message "Fonctionnalité
+    // Pro" — l'utilisateur voit concrètement ce que le plan Pro débloque,
+    // ce qui est un meilleur argument d'upsell ("laisser l'utilisateur voir
+    // la fonctionnalité, juste sans pouvoir l'utiliser tant qu'il ne paie pas").
+    const demoForm = {
+      active: false,
+      questions: [
+        { label: "Avez-vous déjà visité notre établissement ?", type: "yes_no", required: true },
+        { label: "Quel est le motif de votre visite ?", type: "text", required: false },
+        {
+          label: "Comment avez-vous entendu parler de nous ?",
+          type: "choice",
+          required: false,
+          options: ["Bouche-à-oreille", "Réseaux sociaux", "Recherche Google"],
+        },
+      ],
+    };
+
     return res.render("admin/forms", {
       pageName: res.locals.t.sidebar.a_9,
-      form: form || null,
+      form: maxQuestions === 0 ? demoForm : (form || null),
       title: res.locals.t.sidebar.a_9,
       maxQuestions,
     });
@@ -1235,6 +1258,8 @@ exports.customizeCalendarPage = async (req, res) => {
   const cs = req.user.calendarSettings || {};
   const canUseSocial    = getLimit("socialLinks", req.user);
   const canUseCustomUrl = require("../utils/planLimits").LIMITS.customUrl.hasFeature(req.user);
+  const defaultOrder    = ['about', 'location', 'hours', 'gallery', 'reviews'];
+  const sectionOrder    = cs.sectionOrder && cs.sectionOrder.length ? cs.sectionOrder : defaultOrder;
   return res.render("admin/customize", {
     pageName: "Customize",
     title: res.locals.t.customize.title,
@@ -1247,7 +1272,22 @@ exports.customizeCalendarPage = async (req, res) => {
     currentCompany: res.locals.currentCompany,
     canUseSocial,
     canUseCustomUrl,
+    sectionOrder,
   });
+};
+
+exports.saveSectionOrder = async (req, res) => {
+  try {
+    const allowed = ['about', 'location', 'hours', 'gallery', 'reviews'];
+    const order   = (req.body.order || []).filter(s => allowed.includes(s));
+    if (!order.length) return res.status(400).json({ error: "Ordre invalide." });
+    await User.findByIdAndUpdate(req.user._id, {
+      "calendarSettings.sectionOrder": order,
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 // ── Paramètres pré-paiement ───────────────────────────────────────────────────

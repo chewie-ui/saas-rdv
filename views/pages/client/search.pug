@@ -17,7 +17,7 @@ block content
         //- ── Barre de recherche ──────────────────────────────────────
         .srp__header
             .container
-                h1.srp__title Trouver un professionnel
+                h1.srp__title Prise de rendez-vous en ligne — BranShee
                 .srp__searchbar
                     .srp__sf
                         svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17")
@@ -29,6 +29,7 @@ block content
                             autocomplete="off"
                             value=searchName || ""
                         )
+                        .srp__dropdown#menuNames
                     .srp__sf-sep
                     .srp__sf
                         svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17")
@@ -40,6 +41,7 @@ block content
                             autocomplete="off"
                             value=searchLocation || ""
                         )
+                        .srp__dropdown#menuLocations
                     button#searchBtn.srp__btn
                         svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16")
                             circle(cx="11" cy="11" r="8")
@@ -169,6 +171,122 @@ block content
                                         span.srp-card__book Réserver →
 
 block scripts
+    script.
+        window.__services = !{JSON.stringify(services || [])};
+
+    //- ── Autocomplétion de la barre de recherche ─────────────────────
+    //- Repris du système qui existait sur l'ancienne home (.lp__searchbar
+    //- + landing-page.js) : suggestions de métiers (liste statique
+    //- "__services") quand on tape dans le champ "métier", et suggestions
+    //- de villes via l'API externe quand on tape dans le champ "lieu".
+    script.
+        (function() {
+            var inputName = document.getElementById('inputName');
+            var menuNames = document.getElementById('menuNames');
+            var inputLoc  = document.getElementById('inputLocation');
+            var menuLoc   = document.getElementById('menuLocations');
+
+            function normalizeStr(str) {
+                return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+            }
+
+            function renderDropdown(menu, items, onSelect) {
+                menu.innerHTML = '';
+                if (!items.length) { menu.classList.remove('active'); return; }
+                items.forEach(function(text) {
+                    var div = document.createElement('div');
+                    var dot = document.createElement('span');
+                    dot.className = 'srp__dd-icon';
+                    div.appendChild(dot);
+                    div.appendChild(document.createTextNode(text));
+                    div.addEventListener('mousedown', function(e) {
+                        e.preventDefault(); // empêche le blur de se déclencher avant le clic
+                        onSelect(text);
+                    });
+                    menu.appendChild(div);
+                });
+                menu.classList.add('active');
+            }
+
+            function closeAll() {
+                if (menuNames) menuNames.classList.remove('active');
+                if (menuLoc)   menuLoc.classList.remove('active');
+            }
+
+            // ── Suggestions de métiers (liste locale) ──────────────────
+            if (inputName && menuNames && window.__services) {
+                var suggestNames = function() {
+                    if (menuLoc) menuLoc.classList.remove('active');
+                    var q = normalizeStr(inputName.value.trim());
+                    var filtered = q
+                        ? window.__services.filter(function(s) { return normalizeStr(s).includes(q); }).slice(0, 10)
+                        : window.__services.slice(0, 10);
+                    renderDropdown(menuNames, filtered, function(val) {
+                        inputName.value = val;
+                        menuNames.classList.remove('active');
+                    });
+                };
+                inputName.addEventListener('focus', suggestNames);
+                inputName.addEventListener('input', suggestNames);
+                inputName.addEventListener('blur', function() {
+                    setTimeout(function() { menuNames.classList.remove('active'); }, 160);
+                });
+            }
+
+            // ── Suggestions de villes (API externe) ────────────────────
+            var locTimer;
+            if (inputLoc && menuLoc) {
+                inputLoc.addEventListener('focus', function() {
+                    if (menuNames) menuNames.classList.remove('active');
+                });
+
+                inputLoc.addEventListener('input', function() {
+                    if (menuNames) menuNames.classList.remove('active');
+                    clearTimeout(locTimer);
+                    var val = inputLoc.value.trim();
+
+                    if (val.length < 2) {
+                        menuLoc.classList.remove('active');
+                        menuLoc.innerHTML = '';
+                        return;
+                    }
+
+                    locTimer = setTimeout(function() {
+                        fetch('https://quentin-project.site/api/search?name=' + encodeURIComponent(val))
+                            .then(function(res) {
+                                if (!res.ok) throw new Error('API error');
+                                return res.json();
+                            })
+                            .then(function(data) {
+                                var items = (data && data.map) ? data.map(function(el) { return el.name; }).filter(Boolean) : [];
+                                if (!items.length) {
+                                    var div = document.createElement('div');
+                                    div.textContent = (window.__t && window.__t.no_result) || 'Aucun résultat';
+                                    menuLoc.innerHTML = '';
+                                    menuLoc.appendChild(div);
+                                    menuLoc.classList.add('active');
+                                    return;
+                                }
+                                renderDropdown(menuLoc, items.slice(0, 8), function(val) {
+                                    inputLoc.value = val;
+                                    menuLoc.classList.remove('active');
+                                });
+                            })
+                            .catch(function(err) { console.error('Location fetch error:', err); });
+                    }, 300);
+                });
+
+                inputLoc.addEventListener('blur', function() {
+                    setTimeout(function() { menuLoc.classList.remove('active'); }, 160);
+                });
+            }
+
+            // Fermer les dropdowns au clic en dehors de la barre de recherche
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.srp__searchbar')) closeAll();
+            });
+        })();
+
     script.
         (function() {
             var grid      = document.getElementById('srpGrid');

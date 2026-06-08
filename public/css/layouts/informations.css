@@ -240,7 +240,7 @@
 .biz-row {
   display: flex;
   gap: 24px;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 .biz-photo-col {
@@ -252,8 +252,15 @@
 }
 
 .biz-photo-preview {
-  width: 120px;
-  aspect-ratio: 4 / 3;
+  /* La preview était plus haute (180px) que large (140px), donc rectangulaire
+     au lieu de carrée ("la photo doit rester carrée donc étire en largeur
+     aussi"). On élargit pour matcher la hauteur — tant pis si les champs à
+     côté rétrécissent un peu, ils étaient surdimensionnés ("c'est pas grave
+     si les inputs deviennent un peu plus petits car elles sont énormes").
+     `aspect-ratio` garde le carré quel que soit le viewport (responsive). */
+  width: 180px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 2px dashed var(--border-medium);
@@ -866,6 +873,124 @@
   min-width: 0;
 }
 
+/* ── Gallery layout picker (grid vs carousel preview) ─────────────────────── */
+.gallery-layout-picker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--border-light);
+}
+
+.gallery-layout-picker__label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.gallery-layout-opts {
+  display: flex;
+  gap: 8px;
+}
+
+.gallery-layout-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+
+.gallery-layout-opt:hover {
+  border-color: var(--border-medium);
+  transform: translateY(-1px);
+}
+
+.gallery-layout-opt.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.gallery-layout-opt__name {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.gallery-layout-opt.is-active .gallery-layout-opt__name {
+  color: var(--accent);
+}
+
+/* Mini mockup previews */
+.gallery-layout-opt__preview {
+  width: 64px;
+  height: 38px;
+  display: flex;
+  gap: 3px;
+}
+
+.gallery-layout-opt__preview span {
+  display: block;
+  background: var(--border-medium);
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+
+.gallery-layout-opt.is-active .gallery-layout-opt__preview span {
+  background: var(--accent);
+  opacity: 0.55;
+}
+
+/* Grid preview = 2x2 squares */
+.gallery-layout-opt__preview--grid {
+  flex-wrap: wrap;
+}
+
+.gallery-layout-opt__preview--grid span {
+  width: calc(50% - 1.5px);
+  height: calc(50% - 1.5px);
+}
+
+/* Carousel preview = overlapping wide cards trailing off-edge */
+.gallery-layout-opt__preview--carousel span:nth-child(1) {
+  width: 30px;
+  height: 100%;
+}
+
+.gallery-layout-opt__preview--carousel span:nth-child(2) {
+  width: 22px;
+  height: 100%;
+  opacity: 0.6;
+}
+
+.gallery-layout-opt__preview--carousel span:nth-child(3) {
+  width: 12px;
+  height: 100%;
+  opacity: 0.35;
+}
+
+.gallery-layout-picker__status {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 70px;
+}
+
+@media (max-width: 480px) {
+  .gallery-layout-picker {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 /* ── Gallery grid (admin) ─────────────────────────────────────────────────── */
 .gallery-grid {
   display: grid;
@@ -1401,4 +1526,26 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+/* ── Info card "bientôt disponible" ─────────────────────────────────────── */
+.info-card--coming-soon {
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
+}
+
+.coming-soon-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 99px;
+  padding: 2px 8px;
+  margin-left: 8px;
+  vertical-align: middle;
+  white-space: nowrap;
 }

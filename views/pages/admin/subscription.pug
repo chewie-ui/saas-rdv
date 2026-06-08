@@ -49,6 +49,16 @@ block content
                     = t.subscription.yearly || 'Annuel'
                     span.sub-toggle__discount  −20%
 
+            //- Rappel essai gratuit + annulation libre — pour que la promesse
+            //- "1 mois gratuit inclus" (cf. badge sur /register et CTAs marketing)
+            //- soit explicite avant le paiement, et que le client sache qu'il ne
+            //- sera débité qu'au mois suivant et peut annuler quand il veut.
+            if !isPro
+                p.sub-trial-note
+                    svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
+                        path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm112-260 56-56-128-128v-176h-80v208l152 152ZM480-880q-83 0-156 31.5T197-763q-54 54-85.5 127T80-480q0 83 31.5 156T197-197q54 54 127 85.5T480-80q83 0 156-31.5T763-197q54-54 85.5-127T880-480q0-83-31.5-156T763-763q-54-54-127-85.5T480-880Z")
+                    span= t.sub_extra.trial_note || "🎁 1 mois offert sur les plans payants — 0 € aujourd'hui, vous ne serez débité qu'au mois suivant, et vous pouvez annuler à tout moment en un clic."
+
         //- ── Free tier usage bar ─────────────────────────────────────
         if !isPro && monthlyBookingCount !== null
             - var pct = Math.min(Math.round((monthlyBookingCount / 20) * 100), 100)

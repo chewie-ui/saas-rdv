@@ -1041,19 +1041,52 @@ function injectPanelSearch(panel) {
   var inp = document.createElement('input');
   inp.type = 'text';
   inp.className = 'panel-search-input';
-  inp.placeholder = 'Taper une heure (ex: 18)';
+  inp.placeholder = 'Heure… (ex : 18 ou 1800)';
   inp.autocomplete = 'off';
+  // Style propre — border-radius en haut seulement pour s'intégrer au panel
   inp.style.cssText = [
-    'width:100%', 'padding:7px 10px', 'border:none', 'border-bottom:1px solid var(--border-light)',
-    'font-size:13px', 'font-family:inherit', 'outline:none', 'background:var(--surface-card)',
-    'color:var(--ink)', 'box-sizing:border-box'
+    'display:block',
+    'width:100%',
+    'padding:9px 12px',
+    'border:none',
+    'border-bottom:1px solid var(--border-light,#e5e7eb)',
+    'border-radius:10px 10px 0 0',
+    'font-size:13px',
+    'font-weight:500',
+    'font-family:inherit',
+    'outline:none',
+    'background:var(--surface-card,#fff)',
+    'color:var(--ink,#111)',
+    'box-sizing:border-box',
+    'transition:background .12s',
   ].join(';');
+
+  // Envelopper les heures existantes dans un div scrollable
+  if (!panel.querySelector('.panel-hours-scroll')) {
+    var scroll = document.createElement('div');
+    scroll.className = 'panel-hours-scroll';
+    scroll.style.cssText = 'overflow-y:auto;max-height:180px;';
+    // Déplacer toutes les .hour dans le scroll wrapper
+    Array.from(panel.querySelectorAll('.hour')).forEach(function(h) {
+      scroll.appendChild(h);
+    });
+    panel.appendChild(scroll);
+  }
 
   panel.insertBefore(inp, panel.firstChild);
 
-  inp.addEventListener('input', function() {
-    var raw = this.value;
+  inp.addEventListener('input', function(e) {
+    var raw    = this.value;
     var digits = raw.replace(/[^0-9]/g, '');
+
+    // Auto-insérer ":" après le 2ème chiffre → "12:2" au lieu de "122"
+    if (digits.length >= 3 && raw.indexOf(':') === -1) {
+      var formatted = digits.slice(0, 2) + ':' + digits.slice(2, 4);
+      this.value = formatted;
+    } else if (digits.length === 2 && raw.slice(-1) !== ':') {
+      // Optionnel : ne pas forcer les 2 chiffres seuls
+    }
+
     var hours = panel.querySelectorAll('.hour');
 
     if (!digits) {

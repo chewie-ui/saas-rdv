@@ -107,6 +107,16 @@ exports.createUser = async (req, res) => {
       ],
     });
 
+    // ── Email de bienvenue ───────────────────────────────────────────────────
+    try {
+      const welcomeHtml = pug.renderFile(
+        path.join(__dirname, "../views/templates/emails/welcome-pro.pug"),
+        { fullName: user.fullName }
+      );
+      sendEmail(user.email, "🎉 Bienvenue sur BranShee — Configurez votre agenda", welcomeHtml)
+        .catch(() => {}); // Silencieux si échec mail
+    } catch (_) {}
+
     req.login(user, (err) => {
       if (err) return fail("Erreur lors de la connexion.");
       // Si l'utilisateur vient d'un lien d'invitation ou bouton "Essai / Plan"
@@ -123,8 +133,9 @@ exports.createUser = async (req, res) => {
         if (isAjax) return res.json({ success: true, redirect: dest });
         return res.redirect(dest);
       }
-      if (isAjax) return res.json({ success: true, redirect: "/appointment" });
-      return res.redirect("/appointment");
+      // Pas de plan en attente → onboarding de bienvenue
+      if (isAjax) return res.json({ success: true, redirect: "/welcome" });
+      return res.redirect("/welcome");
     });
   } catch (err) {
     console.error(err);

@@ -1,0 +1,283 @@
+extends ../../layouts/index
+
+block links
+    link(rel="stylesheet" href="/css/layouts/client/lp-pro.css")
+    //- Pas de noindex — cette page doit être indexée
+    meta(name="robots" content="index, follow")
+
+block content
+    main.lp-pro
+
+        //- ══════════════════════════════════════════════
+        //- HERO
+        //- ══════════════════════════════════════════════
+        section.lp-pro__hero
+            .lp-pro__hero-inner
+
+                .lp-pro__badge
+                    svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                        circle(cx="12" cy="12" r="10")
+                        polyline(points="12 6 12 12 16 14")
+                    | &nbsp;1 mois offert · Sans carte bancaire
+
+                h1.lp-pro__h1
+                    | Fini les appels pour
+                    br
+                    span.lp-pro__h1-accent vos rendez-vous.
+
+                p.lp-pro__sub
+                    | BranShee donne à vos clients une page pour réserver
+                    strong  24h/24 sans vous appeler.
+                    |  Vous arrivez le matin avec votre agenda déjà rempli.
+
+                .lp-pro__cta-group
+                    a.lp-pro__cta-primary(href="/register?plan=pro&billing=monthly&promo=BIENVENUE") Créer mon agenda gratuit →
+                    p.lp-pro__cta-note ⏱ Prêt en 5 minutes · Aucun engagement
+
+                .lp-pro__trust
+                    .lp-pro__trust-item
+                        svg(viewBox="0 -960 960 960" width="16" height="16" fill="currentColor")
+                            path(d="m382-240 226-226-57-57-169 169-85-85-57 57 142 142Zm97 160q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                        span Gratuit pour commencer
+                    .lp-pro__trust-item
+                        svg(viewBox="0 -960 960 960" width="16" height="16" fill="currentColor")
+                            path(d="m382-240 226-226-57-57-169 169-85-85-57 57 142 142Zm97 160q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                        span Sans carte bancaire
+                    .lp-pro__trust-item
+                        svg(viewBox="0 -960 960 960" width="16" height="16" fill="currentColor")
+                            path(d="m382-240 226-226-57-57-169 169-85-85-57 57 142 142Zm97 160q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                        span Annulez quand vous voulez
+
+        //- ══════════════════════════════════════════════
+        //- STATS SOCIALES
+        //- ══════════════════════════════════════════════
+        section.lp-pro__stats
+            .lp-pro__container
+                .lp-pro__stats-row
+                    .lp-pro__stat-item
+                        strong 500+
+                        span Professionnels actifs
+                    .lp-pro__stat-sep
+                    .lp-pro__stat-item
+                        strong 24h/24
+                        span Réservations auto
+                    .lp-pro__stat-sep
+                    .lp-pro__stat-item
+                        strong 0 appel
+                        span Après l'installation
+                    .lp-pro__stat-sep
+                    .lp-pro__stat-item
+                        strong ≤ 5 min
+                        span Pour être opérationnel
+
+        //- ══════════════════════════════════════════════
+        //- PROBLÈME → SOLUTION
+        //- ══════════════════════════════════════════════
+        section.lp-pro__ps
+            .lp-pro__container
+                .lp-pro__ps-split
+                    .lp-pro__ps-before
+                        .lp-pro__ps-label.lp-pro__ps-label--bad Avant BranShee
+                        ul.lp-pro__ps-list
+                            li
+                                span.lp-pro__icon-bad ✕
+                                | Téléphone qui sonne pendant les soins
+                            li
+                                span.lp-pro__icon-bad ✕
+                                | Clients qui appellent le soir et le week-end
+                            li
+                                span.lp-pro__icon-bad ✕
+                                | Agenda vide à cause des absences
+                            li
+                                span.lp-pro__icon-bad ✕
+                                | Aucune visibilité en dehors des heures d'ouverture
+                            li
+                                span.lp-pro__icon-bad ✕
+                                | Gestion manuelle des créneaux et rappels
+                    .lp-pro__ps-arrow ›
+                    .lp-pro__ps-after
+                        .lp-pro__ps-label.lp-pro__ps-label--good Avec BranShee
+                        ul.lp-pro__ps-list
+                            li
+                                span.lp-pro__icon-good ✓
+                                | Zéro appel — les clients réservent eux-mêmes
+                            li
+                                span.lp-pro__icon-good ✓
+                                | Réservations 24h/24, même pendant que vous dormez
+                            li
+                                span.lp-pro__icon-good ✓
+                                | Rappels automatiques = beaucoup moins d'absences
+                            li
+                                span.lp-pro__icon-good ✓
+                                | Page professionnelle partageable sur Instagram & Google
+                            li
+                                span.lp-pro__icon-good ✓
+                                | Planning géré automatiquement
+
+        //- ══════════════════════════════════════════════
+        //- POUR QUI
+        //- ══════════════════════════════════════════════
+        section.lp-pro__who
+            .lp-pro__container
+                h2.lp-pro__section-title Fait pour les professionnels indépendants
+                .lp-pro__who-grid
+                    each pro in [['✂️','Coiffeurs & barbiers'],['💆','Masseurs & spa'],['🏋️','Coaches sportifs'],['🌿','Thérapeutes & naturopathes'],['💅','Nail artists & esthéticiennes'],['🎨','Tatoueurs & pierceurs'],['🧘','Yoga & pilates'],['📸','Photographes'],['🩺','Paramédicaux'],['🐾','Toiletteurs animaliers'],['🎓','Tuteurs & formateurs'],['🔧','Artisans sur RDV']]
+                        .lp-pro__who-item
+                            span= pro[0]
+                            span= pro[1]
+
+        //- ══════════════════════════════════════════════
+        //- COMMENT ÇA MARCHE
+        //- ══════════════════════════════════════════════
+        section.lp-pro__how
+            .lp-pro__container
+                h2.lp-pro__section-title En place en 5 minutes chrono
+                .lp-pro__steps
+                    .lp-pro__step
+                        .lp-pro__step-num 1
+                        .lp-pro__step-body
+                            h3 Créez votre compte
+                            p Nom, métier, photo. Votre page est prête en quelques clics.
+                    .lp-pro__step-sep →
+                    .lp-pro__step
+                        .lp-pro__step-num 2
+                        .lp-pro__step-body
+                            h3 Ajoutez vos services
+                            p Durée, prix, description. Vos clients voient exactement ce que vous proposez.
+                    .lp-pro__step-sep →
+                    .lp-pro__step
+                        .lp-pro__step-num 3
+                        .lp-pro__step-body
+                            h3 Partagez votre lien
+                            p Instagram, WhatsApp, carte de visite. Vos clients réservent directement.
+
+        //- ══════════════════════════════════════════════
+        //- TÉMOIGNAGES
+        //- ══════════════════════════════════════════════
+        section.lp-pro__testi
+            .lp-pro__container
+                h2.lp-pro__section-title Ils ont adopté BranShee
+                .lp-pro__testi-grid
+                    .lp-pro__testi-card
+                        .lp-pro__testi-stars ★★★★★
+                        p.lp-pro__testi-text "Depuis BranShee, je ne réponds plus au téléphone pendant mes soins. Mes clients réservent seuls et j'arrive le matin avec un agenda déjà plein."
+                        .lp-pro__testi-author
+                            .lp-pro__testi-avatar S
+                            div
+                                strong Sophie M.
+                                span Coiffeuse · Lyon
+                    .lp-pro__testi-card
+                        .lp-pro__testi-stars ★★★★★
+                        p.lp-pro__testi-text "J'ai tout configuré en moins de 10 minutes. Je reçois des réservations même la nuit — exactement ce dont mon activité avait besoin."
+                        .lp-pro__testi-author
+                            .lp-pro__testi-avatar M
+                            div
+                                strong Marc D.
+                                span Masseur · Paris
+                    .lp-pro__testi-card
+                        .lp-pro__testi-stars ★★★★★
+                        p.lp-pro__testi-text "Le lien dans ma bio Instagram a tout changé. Plus de DM pour les horaires — mes clientes réservent directement, même le dimanche soir."
+                        .lp-pro__testi-author
+                            .lp-pro__testi-avatar A
+                            div
+                                strong Amina B.
+                                span Nail Artist · Bruxelles
+
+        //- ══════════════════════════════════════════════
+        //- TARIFS SIMPLES
+        //- ══════════════════════════════════════════════
+        section.lp-pro__pricing
+            .lp-pro__container
+                h2.lp-pro__section-title Prix simples. Pas de surprises.
+                .lp-pro__plans
+                    .lp-pro__plan
+                        .lp-pro__plan-name Starter
+                        .lp-pro__plan-price
+                            span.lp-pro__plan-amount 0€
+                            span.lp-pro__plan-period /mois
+                        p.lp-pro__plan-desc Pour commencer et tester
+                        ul.lp-pro__plan-features
+                            li ✓ 20 réservations/mois
+                            li ✓ 1 employé
+                            li ✓ Page de réservation
+                        a.lp-pro__plan-cta.lp-pro__plan-cta--ghost(href="/register") Commencer gratuit
+
+                    .lp-pro__plan.lp-pro__plan--featured
+                        .lp-pro__plan-badge ⭐ Le plus populaire
+                        .lp-pro__plan-name Pro
+                        .lp-pro__plan-price
+                            span.lp-pro__plan-amount 19€
+                            span.lp-pro__plan-period /mois
+                        p.lp-pro__plan-desc Pour les indépendants actifs
+                        p.lp-pro__plan-note 1#[sup er] mois gratuit · puis 19 €/mois
+                        ul.lp-pro__plan-features
+                            li ✓ Réservations illimitées
+                            li ✓ 2 employés
+                            li ✓ Rappels email automatiques
+                            li ✓ Google Calendar
+                            li ✓ Page personnalisable
+                        a.lp-pro__plan-cta(href="/register?plan=pro&billing=monthly&promo=BIENVENUE") 1 mois offert →
+
+                    .lp-pro__plan
+                        .lp-pro__plan-name Business
+                        .lp-pro__plan-price
+                            span.lp-pro__plan-amount 49€
+                            span.lp-pro__plan-period /mois
+                        p.lp-pro__plan-desc Pour les équipes et salons
+                        ul.lp-pro__plan-features
+                            li ✓ Tout ce que Pro offre
+                            li ✓ Jusqu'à 10 employés
+                            li ✓ 50 services
+                            li ✓ Sans branding BranShee
+                        a.lp-pro__plan-cta.lp-pro__plan-cta--ghost(href="/register?plan=business&billing=monthly") Essayer gratuit
+
+        //- ══════════════════════════════════════════════
+        //- FAQ
+        //- ══════════════════════════════════════════════
+        section.lp-pro__faq
+            .lp-pro__container
+                h2.lp-pro__section-title Questions fréquentes
+                .lp-pro__faq-list
+                    details.lp-pro__faq-item
+                        summary.lp-pro__faq-q
+                            span Est-ce vraiment gratuit pour commencer ?
+                            span.lp-pro__faq-chevron ›
+                        p.lp-pro__faq-a Oui. La formule Starter est gratuite sans limite de temps, avec 20 réservations par mois incluses. Aucune carte bancaire n'est requise pour s'inscrire.
+                    details.lp-pro__faq-item
+                        summary.lp-pro__faq-q
+                            span Que se passe-t-il après le 1#[sup er] mois offert ?
+                            span.lp-pro__faq-chevron ›
+                        p.lp-pro__faq-a Après votre 1#[sup er] mois gratuit sur le plan Pro, vous continuez à 19 €/mois — ou repassez en formule Starter gratuitement. Sans engagement, résiliable en 1 clic depuis votre compte.
+                    details.lp-pro__faq-item
+                        summary.lp-pro__faq-q
+                            span Mes clients doivent-ils créer un compte pour réserver ?
+                            span.lp-pro__faq-chevron ›
+                        p.lp-pro__faq-a Non. Vos clients réservent en donnant simplement leur nom et email. Aucune inscription nécessaire de leur côté — la réservation prend moins de 30 secondes.
+                    details.lp-pro__faq-item
+                        summary.lp-pro__faq-q
+                            span Combien de temps faut-il pour configurer BranShee ?
+                            span.lp-pro__faq-chevron ›
+                        p.lp-pro__faq-a La plupart des professionnels sont opérationnels en moins de 10 minutes. Vous ajoutez vos services, vos horaires et partagez votre lien — c'est tout.
+                    details.lp-pro__faq-item
+                        summary.lp-pro__faq-q
+                            span Comment fonctionne le paiement en ligne ?
+                            span.lp-pro__faq-chevron ›
+                        p.lp-pro__faq-a BranShee intègre Stripe pour les paiements en ligne (plans Pro et Business). Vos clients paient à la réservation et les fonds arrivent directement sur votre compte bancaire, sans intermédiaire.
+
+        //- ══════════════════════════════════════════════
+        //- CTA FINAL
+        //- ══════════════════════════════════════════════
+        section.lp-pro__final
+            .lp-pro__container
+                h2 Prêt à arrêter de décrocher ?
+                p Créez votre agenda en ligne maintenant. Vos premiers clients peuvent réserver dans 5 minutes.
+                a.lp-pro__cta-primary(href="/register?plan=pro&billing=monthly&promo=BIENVENUE") Créer mon agenda gratuit →
+                p.lp-pro__final-note Sans engagement · Sans carte bancaire · Annulable à tout moment
+
+    //- Sticky CTA mobile (visible uniquement sur petit écran)
+    .lp-pro__sticky
+        a.lp-pro__sticky-btn(href="/register?plan=pro&billing=monthly&promo=BIENVENUE") Créer mon agenda gratuit →
+        p.lp-pro__sticky-note Sans carte bancaire · 1 mois offert
+
+block scripts
+    script(src="/js/components/topbar.js")

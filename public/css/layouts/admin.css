@@ -20,10 +20,11 @@ svg {
 
 .main-wrapper {
   padding: 16px;
+  padding-bottom: 48px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  height: calc(97% - 52px);
+  /* Pas de height fixe — la page prend la taille de son contenu */
 }
 
 .main .admin-nav {
@@ -201,6 +202,80 @@ svg {
 
 [data-theme="dark"] .plan-limit-banner--upgrade .plan-limit-banner__text span {
   color: #fbbf24;
+}
+
+/* ── Bannière globale "limite mensuelle de RDV atteinte" (admin layout) ── */
+.global-limit-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-bottom: 1px solid #fbbf24;
+  flex-wrap: wrap;
+}
+
+.global-limit-banner__icon {
+  flex-shrink: 0;
+  color: #d97706;
+}
+
+.global-limit-banner__text {
+  flex: 1;
+  min-width: 220px;
+}
+
+.global-limit-banner__text strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 2px;
+}
+
+.global-limit-banner__text span {
+  font-size: 13px;
+  color: #b45309;
+  line-height: 1.45;
+}
+
+.global-limit-banner__cta {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .global-limit-banner {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.08) 0%, rgba(180, 83, 9, 0.12) 100%);
+  border-bottom-color: rgba(251, 191, 36, 0.35);
+}
+
+[data-theme="dark"] .global-limit-banner__icon {
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .global-limit-banner__text strong {
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .global-limit-banner__text span {
+  color: #fbbf24;
+}
+
+@media (max-width: 819px) {
+  .global-limit-banner {
+    padding: 12px 16px;
+    gap: 10px;
+  }
+
+  .global-limit-banner__text {
+    min-width: 100%;
+    order: 1;
+  }
+
+  .global-limit-banner__cta {
+    order: 2;
+    margin-left: 34px;
+  }
 }
 
 @media (max-width: 819px) {

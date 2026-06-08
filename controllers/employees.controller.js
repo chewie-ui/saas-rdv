@@ -3,14 +3,16 @@ const { getLimit } = require("../utils/planLimits");
 
 exports.employeesPage = async (req, res) => {
   const employees = await Employee.find({ company: res.locals.currentCompany._id })
-    .sort({ createdAt: -1 })
+    .sort({ active: -1, createdAt: 1 })  // actifs en premier, puis par date de création
     .lean();
   const maxEmployees = getLimit("employees", req.user);
+  const activeCount  = employees.filter(e => e.active).length;
   res.render("admin/employees", {
     pageName: "Employees",
     title: "Employés",
     employees,
     maxEmployees,
+    activeCount,
   });
 };
 

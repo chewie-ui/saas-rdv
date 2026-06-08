@@ -1,0 +1,65 @@
+-
+  var _year = new Date().getFullYear()
+  var _firstName = (fullName || '').split(' ')[0] || 'là'
+
+div(style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;")
+  table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f0f4f8;")
+    tr
+      td(align="center" style="padding:40px 16px;")
+        table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;margin:0 auto;")
+
+          //- Logo
+          tr
+            td(align="center" style="padding:0 0 24px;")
+              a(href="https://www.branshee.com" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;")
+                span(style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:#16a34a;border-radius:9px;font-size:16px;font-weight:800;color:#fff;") B
+                span(style="font-size:15px;font-weight:700;color:#1e2923;") BranShee
+
+          //- Card
+          tr
+            td(style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.06);border:1px solid #e5ede8;")
+
+              //- Header vert
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="background:linear-gradient(135deg,#0d3d24 0%,#16a34a 100%);padding:36px 40px;text-align:center;")
+                    p(style="margin:0 0 8px;font-size:28px;") 🎉
+                    p(style="margin:0;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.3px;") Bienvenue sur BranShee !
+                    p(style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,.8);") Votre agenda en ligne est prêt à être configuré
+
+              //- Corps
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="padding:32px 40px;")
+                    p(style="margin:0 0 20px;font-size:16px;color:#1e293b;line-height:1.6;")
+                      | Bonjour #{_firstName},
+                    p(style="margin:0 0 24px;font-size:14px;color:#475569;line-height:1.7;")
+                      | Votre compte BranShee est créé. En 3 étapes simples, votre page de réservation sera en ligne et vos clients pourront réserver 24h/24 sans vous appeler.
+
+                    //- 3 étapes
+                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:28px;")
+                      each step, i in [['📋','Ajoutez vos services','Nom, prix, durée. Vos clients verront exactement ce que vous proposez.','/services'],['🕐','Configurez vos horaires','Définissez quand vous êtes disponible.', '/availability'],['🔗','Partagez votre lien','Envoyez votre lien de réservation à vos clients.', '/appointment']]
+                        tr
+                          td(style="padding:0 0 12px;")
+                            table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f8fafc;border-radius:10px;padding:14px 16px;border:1px solid #e2e8f0;")
+                              tr
+                                td(width="40" style="vertical-align:top;padding-right:12px;font-size:22px;") #{step[0]}
+                                td(style="vertical-align:top;")
+                                  p(style="margin:0 0 3px;font-size:14px;font-weight:700;color:#1e293b;") #{i+1}. #{step[1]}
+                                  p(style="margin:0;font-size:12.5px;color:#64748b;") #{step[2]}
+
+                    //- CTA
+                    table(cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto;")
+                      tr
+                        td(style="border-radius:10px;background:#16a34a;")
+                          a(href="https://www.branshee.com/welcome" style="display:inline-block;padding:14px 36px;font-size:15px;font-weight:800;color:#fff;text-decoration:none;") Configurer mon compte →
+
+                    p(style="margin:20px 0 0;font-size:12px;color:#94a3b8;text-align:center;") Questions ? Répondez directement à cet email.
+
+              //- Footer
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="padding:20px 40px;background:#f8faf9;border-top:1px solid #e8efeb;text-align:center;")
+                    p(style="margin:0;font-size:12px;color:#94a3b8;") L'équipe BranShee · © #{_year}
+                    p(style="margin:6px 0 0;font-size:11px;")
+                      a(href="https://www.branshee.com" style="color:#b8ccbe;text-decoration:none;") www.branshee.com

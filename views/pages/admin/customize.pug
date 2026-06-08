@@ -60,6 +60,33 @@ block content
                 button.sm-btn.sm-btn--primary#saveBusinessInfo
                     span Enregistrer
 
+        //- ── À propos (texte enrichi) ────────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3 À propos
+                p.info-card__desc Présentez votre activité en détail — votre histoire, votre approche, ce qui vous distingue. Ce texte enrichi s'affiche dans la section « À propos » de votre page publique.
+            .about-editor
+                .about-editor__toolbar
+                    button.about-editor__btn#aboutBoldBtn(type="button" title="Gras (Ctrl+B)" data-cmd="bold")
+                        strong B
+                    button.about-editor__btn#aboutItalicBtn(type="button" title="Italique (Ctrl+I)" data-cmd="italic")
+                        em I
+                    button.about-editor__btn#aboutUnderlineBtn(type="button" title="Souligné (Ctrl+U)" data-cmd="underline")
+                        u U
+                    span.about-editor__sep
+                    button.about-editor__btn#aboutSizeDownBtn(type="button" title="Réduire la taille du texte sélectionné")
+                        span A−
+                    button.about-editor__btn#aboutSizeUpBtn(type="button" title="Agrandir la taille du texte sélectionné")
+                        span A+
+                .about-editor__area#aboutEditor(contenteditable="true" data-placeholder="Parlez de votre activité, de votre parcours, de ce qui rend votre établissement unique…")!= user.aboutHtml || ''
+                .about-editor__footer
+                    span.about-editor__hint 💡 Sélectionnez du texte, puis cliquez sur un bouton pour le mettre en forme.
+                    span.field-hint#aboutCount 0/4000
+            .info-card__actions
+                button.sm-btn.sm-btn--primary#saveAboutBtn
+                    span Enregistrer
+                span.about-editor__status#aboutStatus
+
         //- ── Localisation ───────────────────────────────────────────────────────
         .info-card
             .info-card__header.info-card__header--with-cb
@@ -149,6 +176,31 @@ block content
                 label.section-cb-label(for="toggleSectionGallery" title="Afficher la galerie sur la page publique")
                     input#toggleSectionGallery.toggle-cb(type="checkbox" checked=!!cs.showSectionGallery)
                     span.section-pill Galerie
+
+            //- ── Format d'affichage de la galerie sur la page publique ──────
+            //- Aperçus miniatures pour visualiser comment les photos
+            //- apparaîtront aux visiteurs (grille classique ou carrousel
+            //- défilant) avant même de publier — répond au besoin
+            //- "montrer 2-3 formats de présentation, comme un carrousel".
+            - var _galleryLayout = cs.galleryLayout || 'grid'
+            .gallery-layout-picker
+                span.gallery-layout-picker__label Format d'affichage côté visiteur
+                .gallery-layout-opts#galleryLayoutOpts
+                    button.gallery-layout-opt(type="button" data-layout="grid" class=(_galleryLayout === 'grid' ? 'is-active' : ''))
+                        .gallery-layout-opt__preview.gallery-layout-opt__preview--grid
+                            span
+                            span
+                            span
+                            span
+                        span.gallery-layout-opt__name Grille
+                    button.gallery-layout-opt(type="button" data-layout="carousel" class=(_galleryLayout === 'carousel' ? 'is-active' : ''))
+                        .gallery-layout-opt__preview.gallery-layout-opt__preview--carousel
+                            span
+                            span
+                            span
+                        span.gallery-layout-opt__name Carrousel
+                span.gallery-layout-picker__status#galleryLayoutStatus
+
             .gallery-grid#galleryGrid
                 each photo, idx in gallery
                     .gallery-item(data-index=idx)
@@ -164,7 +216,7 @@ block content
                         input#galleryFileInput(type="file" accept="image/*" multiple style="display:none")
 
         //- ── URL personnalisée ────────────────────────────────────────────────
-        .info-card
+        .info-card#partage-lien
             .info-card__header
                 h3= t.info.custom_url_title || 'URL personnalisée'
                 p.info-card__desc= t.info.custom_url_desc || 'Choisissez une URL unique pour votre page de réservation publique.'
@@ -209,6 +261,267 @@ block content
                 .info-card__actions
                     button.sm-btn.sm-btn--primary#saveSlugBtn
                         span= t.info.custom_url_save || 'Enregistrer l\'URL'
+
+        //- ── Ordre des sections ──────────────────────────────────────────────
+        .info-card
+            .info-card__header
+                h3 Ordre des sections
+                p.info-card__desc Glissez les sections pour définir l'ordre d'affichage sur votre page publique.
+            -
+                var _sectionMeta = {
+                    about:    { label: 'À propos',    icon: 'M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Z' },
+                    location: { label: 'Localisation', icon: 'M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 294q122-112 181-203.5T720-552q0-109-69.5-178.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186Z' },
+                    hours:    { label: 'Horaires',    icon: 'M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z' },
+                    gallery:  { label: 'Galerie',     icon: 'M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm40-80h480L570-480 450-320l-90-120-120 160Z' }
+                }
+                // Les avis sont toujours en dernier (pas draggable)
+                var _order = (sectionOrder || ['about','location','hours','gallery']).filter(function(k){ return k !== 'reviews'; })
+
+            //- Item "Prise de rendez-vous" verrouillé en premier
+            .section-order-list#sectionOrderList
+                .section-order-item.section-order-item--locked
+                    .section-order-item__grip
+                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor" style="opacity:.2")
+                            path(d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-440q-33 0-56.5-23.5T280-520q0-33 23.5-56.5T360-600q33 0 56.5 23.5T440-520q0 33-23.5 56.5T360-440Zm240 0q-33 0-56.5-23.5T520-520q0-33 23.5-56.5T600-600q33 0 56.5 23.5T680-520q0 33-23.5 56.5T600-440ZM360-720q-33 0-56.5-23.5T280-800q0-33 23.5-56.5T360-880q33 0 56.5 23.5T440-800q0 33-23.5 56.5T360-720Zm240 0q-33 0-56.5-23.5T520-800q0-33 23.5-56.5T600-880q33 0 56.5 23.5T680-800q0 33-23.5 56.5T600-720Z")
+                    svg.section-order-item__icon(viewBox="0 -960 960 960" height="17" width="17" fill="currentColor")
+                        path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
+                    span.section-order-item__label Prise de rendez-vous
+                    span.section-order-item__lock
+                        svg(viewBox="0 -960 960 960" height="13" width="13" fill="currentColor")
+                            path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
+                        | Toujours en 1er
+
+                each sKey in _order
+                    - var sm = _sectionMeta[sKey]
+                    if sm
+                        .section-order-item(data-key=sKey)
+                            .section-order-item__grip
+                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                    path(d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-440q-33 0-56.5-23.5T280-520q0-33 23.5-56.5T360-600q33 0 56.5 23.5T440-520q0 33-23.5 56.5T360-440Zm240 0q-33 0-56.5-23.5T520-520q0-33 23.5-56.5T600-600q33 0 56.5 23.5T680-520q0 33-23.5 56.5T600-440ZM360-720q-33 0-56.5-23.5T280-800q0-33 23.5-56.5T360-880q33 0 56.5 23.5T440-800q0 33-23.5 56.5T360-720Zm240 0q-33 0-56.5-23.5T520-800q0-33 23.5-56.5T600-880q33 0 56.5 23.5T680-800q0 33-23.5 56.5T600-720Z")
+                            svg.section-order-item__icon(viewBox="0 -960 960 960" height="17" width="17" fill="currentColor")
+                                path(d=sm.icon)
+                            span.section-order-item__label= sm.label
+
+                //- Item "Avis clients" verrouillé en dernier
+                .section-order-item.section-order-item--locked
+                    .section-order-item__grip
+                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor" style="opacity:.2")
+                            path(d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-440q-33 0-56.5-23.5T280-520q0-33 23.5-56.5T360-600q33 0 56.5 23.5T440-520q0 33-23.5 56.5T360-440Zm240 0q-33 0-56.5-23.5T520-520q0-33 23.5-56.5T600-600q33 0 56.5 23.5T680-520q0 33-23.5 56.5T600-440ZM360-720q-33 0-56.5-23.5T280-800q0-33 23.5-56.5T360-880q33 0 56.5 23.5T440-800q0 33-23.5 56.5T360-720Zm240 0q-33 0-56.5-23.5T520-800q0-33 23.5-56.5T600-880q33 0 56.5 23.5T680-800q0 33-23.5 56.5T600-720Z")
+                    svg.section-order-item__icon(viewBox="0 -960 960 960" height="17" width="17" fill="currentColor")
+                        path(d="m233-120 65-281L80-580l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z")
+                    span.section-order-item__label Avis clients
+                    span.section-order-item__lock
+                        svg(viewBox="0 -960 960 960" height="13" width="13" fill="currentColor")
+                            path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
+                        | Toujours en dernier
+
+            .section-order-status#sectionOrderStatus
+        style.
+            /* ── Liste ── */
+            .section-order-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+                margin-top: 8px;
+                position: relative;
+            }
+
+            /* ── Item draggable ── */
+            .section-order-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 16px;
+                background: var(--surface-card);
+                border: 1.5px solid var(--border-light);
+                border-radius: 12px;
+                margin-bottom: 6px;
+                cursor: grab;
+                user-select: none;
+                transition: box-shadow .18s, border-color .15s, background .12s, transform .12s, opacity .15s;
+                position: relative;
+            }
+
+            .section-order-item:hover:not(.section-order-item--locked) {
+                border-color: var(--border-medium);
+                box-shadow: 0 2px 10px rgba(0,0,0,.06);
+            }
+
+            /* Item en train d'être glissé */
+            .section-order-item.is-dragging {
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            /* Fantôme (clone visuel) */
+            .section-order-item.drag-ghost {
+                position: fixed;
+                z-index: 9999;
+                pointer-events: none;
+                box-shadow: 0 12px 32px rgba(0,0,0,.18);
+                border-color: var(--accent);
+                background: var(--surface-card);
+                border-radius: 12px;
+                opacity: .96;
+                transform: rotate(1.2deg) scale(1.02);
+                cursor: grabbing;
+                transition: none;
+            }
+
+            /* Ligne indicatrice de dépôt */
+            .section-order-item.drop-before::before,
+            .section-order-item.drop-after::after {
+                content: '';
+                display: block;
+                position: absolute;
+                left: 12px;
+                right: 12px;
+                height: 2.5px;
+                border-radius: 99px;
+                background: var(--accent);
+                box-shadow: 0 0 6px rgba(22,163,74,.4);
+                z-index: 10;
+            }
+            .section-order-item.drop-before::before { top: -4px; }
+            .section-order-item.drop-after::after   { bottom: -4px; }
+
+            /* Item verrouillé */
+            .section-order-item--locked {
+                cursor: default;
+                background: var(--surface);
+                border-style: dashed;
+                border-color: var(--border-light);
+            }
+            .section-order-item--locked:hover { box-shadow: none; border-color: var(--border-light); }
+
+            /* Éléments internes */
+            .section-order-item__grip {
+                color: var(--text-muted);
+                flex-shrink: 0;
+                display: flex;
+                opacity: .45;
+                transition: opacity .15s;
+            }
+            .section-order-item:hover .section-order-item__grip { opacity: .9; }
+            .section-order-item__grip svg  { fill: currentColor; }
+            .section-order-item__icon      { fill: var(--accent); flex-shrink: 0; }
+            .section-order-item__label     { font-size: 13.5px; font-weight: 600; color: var(--text-primary); flex: 1; }
+            .section-order-item__lock      { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:var(--text-muted); white-space:nowrap; background:var(--surface); border:1px solid var(--border-light); border-radius:99px; padding:2px 8px; }
+            .section-order-item__lock svg  { fill: var(--text-muted); }
+            .section-order-status          { font-size: 12.5px; min-height: 18px; margin-top: 2px; color: var(--accent); font-weight: 600; transition: opacity .3s; }
+        script.
+            (function() {
+                var list   = document.getElementById('sectionOrderList');
+                var status = document.getElementById('sectionOrderStatus');
+                if (!list) return;
+
+                var dragged    = null;
+                var ghost      = null;
+                var offsetX    = 0;
+                var offsetY    = 0;
+
+                function getMovable() {
+                    return Array.from(list.querySelectorAll('.section-order-item:not(.section-order-item--locked):not(.drag-ghost)'));
+                }
+
+                function clearDropIndicators() {
+                    list.querySelectorAll('.drop-before,.drop-after').forEach(function(i) {
+                        i.classList.remove('drop-before','drop-after');
+                    });
+                }
+
+                function createGhost(item, e) {
+                    var rect = item.getBoundingClientRect();
+                    offsetX  = e.clientX - rect.left;
+                    offsetY  = e.clientY - rect.top;
+                    ghost    = item.cloneNode(true);
+                    ghost.classList.add('drag-ghost');
+                    ghost.style.width  = rect.width  + 'px';
+                    ghost.style.height = rect.height + 'px';
+                    ghost.style.left   = (e.clientX - offsetX) + 'px';
+                    ghost.style.top    = (e.clientY - offsetY) + 'px';
+                    document.body.appendChild(ghost);
+                }
+
+                function moveGhost(e) {
+                    if (!ghost) return;
+                    ghost.style.left = (e.clientX - offsetX) + 'px';
+                    ghost.style.top  = (e.clientY - offsetY) + 'px';
+                }
+
+                function removeGhost() {
+                    if (ghost) { ghost.remove(); ghost = null; }
+                }
+
+                function findDropTarget(e) {
+                    // Retourne {item, position:'before'|'after'} ou null
+                    var items = getMovable();
+                    for (var i = 0; i < items.length; i++) {
+                        var item = items[i];
+                        if (item === dragged) continue;
+                        var rect  = item.getBoundingClientRect();
+                        var midY  = rect.top + rect.height / 2;
+                        if (e.clientY >= rect.top - 8 && e.clientY <= rect.bottom + 8) {
+                            return { item: item, pos: e.clientY < midY ? 'before' : 'after' };
+                        }
+                    }
+                    return null;
+                }
+
+                getMovable().forEach(function(item) {
+                    item.addEventListener('mousedown', function(e) {
+                        if (e.button !== 0) return;
+                        dragged = this;
+                        createGhost(this, e);
+                        setTimeout(function() { if (dragged) dragged.classList.add('is-dragging'); }, 0);
+                        e.preventDefault();
+                    });
+                });
+
+                document.addEventListener('mousemove', function(e) {
+                    if (!dragged) return;
+                    moveGhost(e);
+                    clearDropIndicators();
+                    var target = findDropTarget(e);
+                    if (target) {
+                        target.item.classList.add(target.pos === 'before' ? 'drop-before' : 'drop-after');
+                    }
+                });
+
+                document.addEventListener('mouseup', function(e) {
+                    if (!dragged) return;
+                    clearDropIndicators();
+                    var target = findDropTarget(e);
+                    if (target) {
+                        if (target.pos === 'before') {
+                            list.insertBefore(dragged, target.item);
+                        } else {
+                            list.insertBefore(dragged, target.item.nextSibling);
+                        }
+                    }
+                    dragged.classList.remove('is-dragging');
+                    removeGhost();
+                    dragged = null;
+                    saveOrder();
+                });
+
+                async function saveOrder() {
+                    var order = getMovable().map(function(i) { return i.dataset.key; }).filter(Boolean);
+                    try {
+                        var r = await fetch('/account/section-order', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ order: order })
+                        });
+                        var d = await r.json();
+                        if (d.success && status) {
+                            status.style.opacity = '1';
+                            status.textContent = '✓ Ordre enregistré';
+                            setTimeout(function() { status.style.opacity = '0'; setTimeout(function(){ status.textContent=''; status.style.opacity='1'; }, 300); }, 2000);
+                        }
+                    } catch(e) {}
+                }
+            })();
 
         //- ── Réseaux sociaux ─────────────────────────────────────────────────
         .info-card
@@ -264,6 +577,7 @@ block content
 
 block scripts
     script(src='/js/layouts/informations.js')
+    script(src='/js/layouts/customize.js')
     script.
         (function () {
             var __services = !{JSON.stringify(services)};
@@ -403,6 +717,41 @@ block scripts
                     } catch (_) {}
                 });
             });
+
+            // ── Format d'affichage de la galerie (grille / carrousel) ──────────
+            var galleryLayoutOpts   = document.getElementById('galleryLayoutOpts');
+            var galleryLayoutStatus = document.getElementById('galleryLayoutStatus');
+            if (galleryLayoutOpts) {
+                galleryLayoutOpts.addEventListener('click', async function (e) {
+                    var btn = e.target.closest('.gallery-layout-opt');
+                    if (!btn || btn.classList.contains('is-active')) return;
+                    var layout = btn.dataset.layout;
+
+                    galleryLayoutOpts.querySelectorAll('.gallery-layout-opt').forEach(function (b) {
+                        b.classList.toggle('is-active', b === btn);
+                    });
+
+                    if (galleryLayoutStatus) galleryLayoutStatus.textContent = 'Enregistrement…';
+                    try {
+                        var res  = await fetch('/account/gallery-layout', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ layout: layout })
+                        });
+                        var data = await res.json();
+                        if (galleryLayoutStatus) {
+                            galleryLayoutStatus.textContent = data.success ? '✓ Enregistré' : 'Erreur';
+                            galleryLayoutStatus.style.color = data.success ? '#22c55e' : '#ef4444';
+                            setTimeout(function () { galleryLayoutStatus.textContent = ''; }, 2200);
+                        }
+                    } catch (_) {
+                        if (galleryLayoutStatus) {
+                            galleryLayoutStatus.textContent = 'Erreur';
+                            galleryLayoutStatus.style.color = '#ef4444';
+                        }
+                    }
+                });
+            }
 
 
         })();

@@ -34,8 +34,8 @@ exports.postRegister = async (req, res) => {
   if (password !== confirmPassword)
     return fail("Les mots de passe ne correspondent pas.");
 
-  if (password.length < 8)
-    return fail("Le mot de passe doit contenir au moins 8 caractères.");
+  if (password.length < 8 || !/[0-9]/.test(password) || !/[^a-zA-Z0-9]/.test(password))
+    return fail("Mot de passe trop faible : 8 caractères minimum, avec au moins 1 chiffre et 1 caractère spécial (!, @, #…).");
 
   const existing = await Client.findOne({ email: email.toLowerCase().trim() });
   if (existing) return fail("Cette adresse email est déjà utilisée.");
@@ -125,7 +125,7 @@ exports.getDashboard = async (req, res) => {
   // Charger toutes les companies liées + leur owner (pour businessName, photo, adresse)
   const companyIds = [...new Set(allBookings.map(b => b.company?.toString()).filter(Boolean))];
   const companies  = await Company.find({ _id: { $in: companyIds } })
-    .populate("owner", "fullName businessName businessType businessPicture profilePicture description location")
+    .populate("owner", "fullName businessName businessType businessPicture profilePicture description location phone phonePro emailPro website")
     .select("_id owner slug cancellationPolicy")
     .lean();
 
@@ -146,6 +146,9 @@ exports.getDashboard = async (req, res) => {
       companyZip:         owner?.location?.zip || "",
       companyLat:         owner?.location?.lat || "",
       companyLon:         owner?.location?.lon || "",
+      companyPhone:       owner ? (owner.phonePro || owner.phone || "") : "",
+      companyEmail:       owner?.emailPro || "",
+      companyWebsite:     owner?.website || "",
       cancellationRule:   comp?.cancellationPolicy?.rule || "free",
     };
   });

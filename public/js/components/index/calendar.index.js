@@ -242,6 +242,9 @@ export default function () {
       if (maxSlots > 0 && existingBookingsCount >= maxSlots) {
         day.classList.add("over-booked");
         day.dataset.disabled = "true";
+      } else if (maxSlots > 0 && existingBookingsCount >= maxSlots / 2) {
+        // Environ la moitié des créneaux sont déjà pris → avertissement orange
+        day.classList.add("half-booked");
       }
 
       if (dayConfig && dayConfig.dayOff) {

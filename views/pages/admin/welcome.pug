@@ -1,0 +1,75 @@
+extends ../../layouts/admin
+
+block content
+    .welcome-page
+        .welcome-hero
+            .welcome-hero__emoji 🎉
+            h1.welcome-hero__title Bienvenue sur BranShee, #{user.fullName.split(' ')[0]} !
+            p.welcome-hero__sub Votre agenda en ligne est prêt. Suivez ces 3 étapes pour recevoir vos premiers rendez-vous.
+
+        .welcome-steps
+            a.welcome-step(href="/customize-calendar")
+                .welcome-step__num 1
+                .welcome-step__icon
+                    svg(viewBox="0 -960 960 960" height="22" width="22" fill="currentColor")
+                        path(d="M400-80q-33 0-56.5-23.5T320-160v-40H160q-33 0-56.5-23.5T80-280v-480q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v480q0 33-23.5 56.5T800-200H640v40q0 33-23.5 56.5T560-80H400Zm-240-280h640v-400H160v400Zm0 0v-400 400Z")
+                .welcome-step__body
+                    h3 Personnalisez votre page
+                    p Photo, description, couleurs… Donnez une belle image de votre activité.
+                .welcome-step__arrow →
+
+            a.welcome-step(href="/availability")
+                .welcome-step__num 2
+                .welcome-step__icon
+                    svg(viewBox="0 -960 960 960" height="22" width="22" fill="currentColor")
+                        path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400 127 127-57 57-110-110v-214h80v140Z")
+                .welcome-step__body
+                    h3 Définissez vos horaires
+                    p Indiquez quand vous êtes disponible. Vos clients ne verront que les créneaux libres.
+                .welcome-step__arrow →
+
+            a.welcome-step(href="/customize-calendar#partage-lien")
+                .welcome-step__num 3
+                .welcome-step__icon
+                    svg(viewBox="0 -960 960 960" height="22" width="22" fill="currentColor")
+                        path(d="M720-80q-50 0-85-35t-35-85q0-7 1-14.5t3-13.5L322-392q-15 13-35 21t-42 8q-50 0-85-35t-35-85q0-50 35-85t85-35q22 0 42 8t35 21l282-164q-2-6-3-13.5t-1-14.5q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35q-22 0-42-8T618-672L336-508q2 6 3 13.5t1 14.5q0 7-1 14.5T336-452l282 164q15-13 35-21t42-8q50 0 85 35t35 85q0 50-35 85t-85 35Z")
+                .welcome-step__body
+                    h3 Partagez votre lien
+                    p Envoyez votre page de réservation à vos clients via Instagram, WhatsApp ou vos cartes de visite.
+                .welcome-step__arrow →
+
+        .welcome-cta-group
+            a.sm-btn.sm-btn--primary.welcome-cta-main(href="/customize-calendar")
+                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                    path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                | Commencer — Personnaliser ma page
+            a.welcome-cta-skip(href="/appointment") Je configure plus tard →
+
+        .welcome-tip
+            svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+            span La plupart des professionnels sont opérationnels en&nbsp;
+            strong moins de 10 minutes.
+
+    style.
+        .welcome-page { max-width: 680px; margin: 0 auto; padding: 40px 20px 80px; display: flex; flex-direction: column; gap: 26px; }
+        .welcome-hero { text-align: center; }
+        .welcome-hero__emoji { font-size: 48px; margin-bottom: 10px; }
+        .welcome-hero__title { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; color: var(--ink); letter-spacing: -.02em; margin: 0 0 10px; }
+        .welcome-hero__sub { font-size: 15px; color: var(--text-muted); margin: 0; line-height: 1.6; }
+        .welcome-steps { display: flex; flex-direction: column; gap: 12px; }
+        .welcome-step { display: flex; align-items: center; gap: 16px; padding: 18px 20px; background: var(--surface-card); border: 1.5px solid var(--border-light); border-radius: 14px; text-decoration: none; transition: border-color .15s, box-shadow .15s, transform .1s; }
+        .welcome-step:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(22,163,74,.1); transform: translateY(-1px); }
+        .welcome-step__num { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .welcome-step__icon { width: 40px; height: 40px; border-radius: 10px; background: var(--accent-soft); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .welcome-step__icon svg { fill: var(--accent); }
+        .welcome-step__body { flex: 1; }
+        .welcome-step__body h3 { font-size: 15px; font-weight: 700; color: var(--ink); margin: 0 0 3px; }
+        .welcome-step__body p { font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.4; }
+        .welcome-step__arrow { font-size: 20px; color: var(--border-medium); flex-shrink: 0; }
+        .welcome-cta-group { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        .welcome-cta-main { font-size: 16px; padding: 14px 32px; gap: 10px; }
+        .welcome-cta-skip { font-size: 13px; color: var(--text-muted); text-decoration: none; }
+        .welcome-cta-skip:hover { color: var(--text-primary); text-decoration: underline; }
+        .welcome-tip { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 13px; color: var(--text-muted); background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 10px; padding: 10px 16px; }
+        .welcome-tip svg { fill: var(--accent); flex-shrink: 0; }

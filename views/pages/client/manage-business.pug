@@ -5,14 +5,41 @@ block jsonld
         {
           "@context": "https://schema.org",
           "@type": "WebPage",
-          "name": "Gérer votre activité avec BranShee",
-          "url": "https://www.branshee.com/manage-business",
+          "name": "BranShee — Gérez votre activité et recevez des réservations en ligne",
+          "url": "#{canonical || 'https://www.branshee.com/'}",
           "description": "Créez votre page professionnelle sur BranShee et recevez des réservations en ligne 24h/24. Gérez vos rendez-vous, employés et services facilement.",
           "isPartOf": {
             "@type": "WebSite",
             "name": "BranShee",
             "url": "https://www.branshee.com"
           }
+        }
+    script(type="application/ld+json").
+        {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Comment créer un agenda en ligne pour mon activité avec BranShee ?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Inscrivez-vous gratuitement sur BranShee, créez votre page professionnelle, configurez vos services, horaires et disponibilités. Partagez ensuite votre lien de réservation avec vos clients. Votre agenda en ligne est prêt en moins de 5 minutes." }
+            },
+            {
+              "@type": "Question",
+              "name": "BranShee est-il gratuit pour les professionnels ?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Oui, BranShee propose une formule gratuite pour commencer, sans carte bancaire. Des offres premium avec plus de fonctionnalités sont disponibles, avec un mois d'essai offert et possibilité d'annuler à tout moment." }
+            },
+            {
+              "@type": "Question",
+              "name": "Comment mes clients peuvent-ils prendre rendez-vous ?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Vos clients réservent directement en ligne 24h/24 via votre page de réservation personnalisée, sans avoir besoin de vous appeler ni de créer de compte." }
+            },
+            {
+              "@type": "Question",
+              "name": "BranShee est-il une bonne alternative à Calendly ou Planity ?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Oui. BranShee est une alternative française à Calendly, Planity ou SimplyBook spécialement conçue pour les indépendants et petites équipes. Il propose un calendrier de réservation en ligne, la gestion des employés, les paiements et les rappels automatiques." }
+            }
+          ]
         }
 
 block links
@@ -42,7 +69,15 @@ block content
                         p.pro-sub= t.hero.description
                         .pro-actions
                             a.sm-btn.sm-btn--primary(href="/register?plan=pro&billing=monthly")= t.hero.btn_1
+                            a.sm-btn.sm-btn--soft(href="/search")
+                                svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="16" height="16")
+                                    path(d="M480-120v-80h280v-447q0-117-81.5-198.5T480-927q-117 0-198.5 81.5T200-647v327h-40q-33 0-56.5-23.5T80-400v-80q0-21 10.5-39t28.5-29l3-53q8-68 39.5-126t79-101q47.5-43 109-67T480-1000q68 0 129.5 24t109 67q47.5 43 79 101t39.5 126l3 52q18 11 29 29.5t11 40.5v85q0 22-11 40t-29 29v68q0 33-23.5 56.5T760-120H480Zm-200-40h120v-200H180v160q0 17 11.5 28.5T220-160Zm520 0q17 0 28.5-11.5T780-200v-160H660v200h80Z")
+                                = pl.hero.cta_booking || 'Prendre rendez-vous'
                             a.sm-btn.sm-btn--ghost(href="#hiw")= pl.hero.cta_secondary
+                        .pro-pricing-note
+                            span Gratuit pour commencer ·&nbsp;
+                            strong Pro à 19€/mois&nbsp;
+                            span après essai · Sans engagement
                         .pro-micro
                             span
                                 svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
@@ -166,14 +201,14 @@ block content
                                     .pro-mock__pill.pro-mock__pill--green 90 €
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- TRUST STRIP
+        //- TRUST STRIP — supprimé
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        section.pro-trust
-            .container
-                p.pro-trust__label= pl.trust.label
-                .pro-trust__logos
-                    span SKYDEV
-                    span NOSOUCY
+        //- Ce bandeau ne contenait plus qu'une seule phrase isolée dans un
+        //- grand espace vide ("il manque un truc la non ? car y a juste une
+        //- phrase, retire-la je pense pour le moment"). La section
+        //- `.pro-stats` juste en dessous porte déjà le même message implicite
+        //- (chiffres-clés mis en avant), donc on retire purement et
+        //- simplement cette phrase orpheline plutôt que de la laisser flotter.
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //- STATS
@@ -235,8 +270,12 @@ block content
                 .pro-sec-hd
                     .pro-pill= pl.hiw.pill
                     h2.pro-h2
-                        = pl.hiw.title
-                        |
+                        //- " + ' '" garantit un espace entre les deux segments —
+                        //- un simple "|" vide ne produit pas d'espace en Pug, ce
+                        //- qui collait "En ligne en" et "moins de 10 min." (titre
+                        //- et <em> de tailles visuellement différentes mais aussi
+                        //- mal séparés : "En ligne enmoins de 10 min.").
+                        = pl.hiw.title + ' '
                         em= pl.hiw.title_em
                 .pro-hiw__steps
                     each step, idx in pl.hiw.steps

@@ -20,6 +20,13 @@ function buildUserRedirectUri() {
   return `${base}/auth/google/callback`;
 }
 
+// Code promo « bienvenue » (1 mois d'essai gratuit, voir scripts/create-welcome-promo.js).
+// La page d'inscription affiche « 1 mois gratuit inclus » dès qu'un plan payant est
+// présélectionné (cf. auth-plan-badge dans register.pug) — pour que cette promesse
+// soit toujours honorée au moment du paiement (et pas seulement quand le lien marketing
+// pense à ajouter `&promo=BIENVENUE`), on l'applique automatiquement par défaut.
+const WELCOME_TRIAL_PROMO = "BIENVENUE";
+
 router.get("/register", (req, res) => {
   const allowedPlans = ["pro", "business"];
   const plan    = req.query.plan    && allowedPlans.includes(req.query.plan) ? req.query.plan : null;
@@ -27,17 +34,21 @@ router.get("/register", (req, res) => {
   const promo   = req.query.promo ? req.query.promo.trim().toUpperCase() : null;
   const ref     = req.query.ref   ? req.query.ref.trim().toUpperCase()   : null;
 
+  // Si un plan payant est sélectionné sans code promo explicite, on applique le
+  // code de bienvenue (essai gratuit) par défaut — voir WELCOME_TRIAL_PROMO ci-dessus.
+  const effectivePromo = promo || (plan ? WELCOME_TRIAL_PROMO : null);
+
   // Stocker en session pour après inscription
-  if (plan)  { req.session.pendingPlan = plan; req.session.pendingBilling = billing; }
-  if (promo) req.session.pendingPromo = promo;
-  if (ref)   req.session.pendingRef   = ref;
+  if (plan)           { req.session.pendingPlan = plan; req.session.pendingBilling = billing; }
+  if (effectivePromo) req.session.pendingPromo  = effectivePromo;
+  if (ref)            req.session.pendingRef    = ref;
 
   // ── Déjà connecté → checkout direct ──────────────────────────────────────
   if (req.isAuthenticated && req.isAuthenticated() && req.user) {
-    if (plan || promo) {
+    if (plan || effectivePromo) {
       let dest = `/subscription?autoCheckout=1`;
-      if (plan)  dest += `&plan=${plan}&billing=${billing}`;
-      if (promo) dest += `&promo=${encodeURIComponent(promo)}`;
+      if (plan)           dest += `&plan=${plan}&billing=${billing}`;
+      if (effectivePromo) dest += `&promo=${encodeURIComponent(effectivePromo)}`;
       return res.redirect(dest);
     }
     return res.redirect("/appointment");
@@ -48,7 +59,7 @@ router.get("/register", (req, res) => {
     alwaysSticky: true,
     services: getServices(res.locals.lang),
     pendingPlan:  plan  || req.session.pendingPlan  || null,
-    pendingPromo: promo || req.session.pendingPromo || null,
+    pendingPromo: effectivePromo || req.session.pendingPromo || null,
   });
 });
 
@@ -57,11 +68,18 @@ router.get("/login", (req, res) => {
 
   // Conserver promo/plan si on vient d'un lien d'invitation
   const allowedPlans = ["pro", "business"];
-  if (req.query.plan && allowedPlans.includes(req.query.plan)) {
-    req.session.pendingPlan    = req.query.plan;
+  const loginPlan = (req.query.plan && allowedPlans.includes(req.query.plan)) ? req.query.plan : null;
+  if (loginPlan) {
+    req.session.pendingPlan    = loginPlan;
     req.session.pendingBilling = req.query.billing || "monthly";
   }
-  if (req.query.promo) req.session.pendingPromo = req.query.promo.trim().toUpperCase();
+  if (req.query.promo) {
+    req.session.pendingPromo = req.query.promo.trim().toUpperCase();
+  } else if (loginPlan && !req.session.pendingPromo) {
+    // Même logique qu'à l'inscription : honorer la promesse « 1 mois gratuit »
+    // par défaut quand un plan payant est sélectionné sans code promo explicite.
+    req.session.pendingPromo = WELCOME_TRIAL_PROMO;
+  }
 
   // Déjà connecté
   if (req.isAuthenticated && req.isAuthenticated() && req.user) {

@@ -77,6 +77,10 @@ exports.setPlan = async (req, res) => {
     };
 
     await User.findByIdAndUpdate(userId, update);
+    // Appliquer les limites du nouveau plan (désactive/supprime le contenu excédentaire)
+    const effectivePlan = isFree ? "basic" : plan;
+    const { enforcePlanLimits } = require("./account.controller");
+    enforcePlanLimits(userId, effectivePlan).catch(() => {});
     res.json({ success: true, plan });
   } catch (err) {
     console.error("setPlan error:", err);

@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Illustration : tableau de bord montrant la croissance de l'activité">
+  <defs>
+    <linearGradient id="gb-bg" x1="0" y1="0" x2="800" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#eef6f0"/>
+      <stop offset="1" stop-color="#f7f5f1"/>
+    </linearGradient>
+    <linearGradient id="gb-card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f4faf6"/>
+    </linearGradient>
+    <linearGradient id="gb-accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#28a06a"/>
+      <stop offset="1" stop-color="#1e7a4e"/>
+    </linearGradient>
+    <linearGradient id="gb-bar" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#1e7a4e"/>
+      <stop offset="1" stop-color="#5cc798"/>
+    </linearGradient>
+    <filter id="gb-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#0c0d0e" flood-opacity="0.14"/>
+    </filter>
+    <filter id="gb-shadow-sm" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#0c0d0e" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect width="800" height="600" rx="28" fill="url(#gb-bg)"/>
+
+  <circle cx="112" cy="112" r="5" fill="#bfe3cf"/>
+  <circle cx="700" cy="492" r="6" fill="#bfe3cf"/>
+  <circle cx="660" cy="132" r="4" fill="#9fd6bb"/>
+  <circle cx="132" cy="472" r="4" fill="#9fd6bb"/>
+
+  <!-- dashboard card -->
+  <g filter="url(#gb-shadow)">
+    <rect x="170" y="128" width="460" height="324" rx="22" fill="url(#gb-card)" stroke="#e2e0db"/>
+  </g>
+  <rect x="170" y="128" width="460" height="50" rx="22" fill="#ffffff"/>
+  <rect x="170" y="154" width="460" height="24" fill="#ffffff"/>
+  <rect x="198" y="146" width="120" height="12" rx="6" fill="#eef0ee"/>
+  <rect x="556" y="146" width="50" height="20" rx="10" fill="#e8f5ee"/>
+  <text x="581" y="160" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="700" fill="#1e7a4e">+24%</text>
+
+  <!-- bar chart trending up -->
+  <rect x="206" y="330" width="34" height="80" rx="8" fill="url(#gb-bar)" opacity="0.5"/>
+  <rect x="252" y="300" width="34" height="110" rx="8" fill="url(#gb-bar)" opacity="0.68"/>
+  <rect x="298" y="270" width="34" height="140" rx="8" fill="url(#gb-bar)" opacity="0.84"/>
+  <rect x="344" y="240" width="34" height="170" rx="8" fill="url(#gb-bar)"/>
+  <path d="M223 318 L269 288 L315 254 L361 224" stroke="#0c0d0e" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-dasharray="2 7"/>
+  <circle cx="361" cy="224" r="6" fill="#0c0d0e"/>
+
+  <!-- mini schedule with checks -->
+  <rect x="408" y="208" width="190" height="168" rx="16" fill="#ffffff" stroke="#eceae4"/>
+  <rect x="424" y="224" width="80" height="10" rx="5" fill="#1e7a4e" opacity="0.65"/>
+  <rect x="424" y="250" width="50" height="36" rx="10" fill="#f4faf6"/>
+  <path d="M436 268 L442 274 L452 260" stroke="#1e7a4e" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="484" y="250" width="98" height="14" rx="7" fill="#eceae4"/>
+  <rect x="484" y="270" width="70" height="10" rx="5" fill="#f1f0ec"/>
+
+  <rect x="424" y="298" width="50" height="36" rx="10" fill="#f4faf6"/>
+  <path d="M436 316 L442 322 L452 308" stroke="#1e7a4e" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="484" y="298" width="98" height="14" rx="7" fill="#eceae4"/>
+  <rect x="484" y="318" width="62" height="10" rx="5" fill="#f1f0ec"/>
+
+  <!-- floating coin badge -->
+  <g filter="url(#gb-shadow-sm)">
+    <circle cx="664" cy="244" r="44" fill="#ffffff"/>
+  </g>
+  <circle cx="664" cy="244" r="34" fill="url(#gb-accent)"/>
+  <text x="664" y="255" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="26" font-weight="800" fill="#ffffff">€</text>
+
+  <!-- floating growth badge -->
+  <g filter="url(#gb-shadow-sm)">
+    <rect x="118" y="332" width="124" height="64" rx="20" fill="#ffffff"/>
+  </g>
+  <circle cx="152" cy="364" r="18" fill="#e8f5ee"/>
+  <path d="M152 374 L152 354 M144 362 L152 354 L160 362" stroke="#1e7a4e" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="182" y="356" width="48" height="8" rx="4" fill="#dfe3df"/>
+  <rect x="182" y="370" width="34" height="6" rx="3" fill="#eceae4"/>
+
+  <!-- sparkles -->
+  <circle cx="606" cy="452" r="6" fill="#f6d188"/>
+  <circle cx="700" cy="206" r="5" fill="url(#gb-accent)"/>
+</svg>

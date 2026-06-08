@@ -41,6 +41,7 @@ router.patch("/location", accountController.updateLocation);
 router.patch("/description/edit", accountController.editDescription);
 router.patch("/business-type", accountController.updateBusinessType);
 router.patch("/business-info", accountController.editBusinessInfo);
+router.patch("/about", accountController.updateAbout);
 router.patch(
   "/business-picture",
   upload.single("businessPicture"),
@@ -59,6 +60,7 @@ router.patch(
 
 router.patch("/gallery", upload.array("galleryPhotos", 12), accountController.updateGallery);
 router.delete("/gallery/:index", accountController.deleteGalleryPhoto);
+router.patch("/gallery-layout", accountController.updateGalleryLayout);
 router.patch("/amenities", accountController.updateAmenities);
 router.patch("/equipment", accountController.updateEquipment);
 router.patch("/categories", accountController.updateCategories);

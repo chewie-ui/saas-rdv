@@ -10,6 +10,79 @@ const pug  = require("pug");
 const path = require("path");
 const speakeasy = require("speakeasy");
 const QRCode = require("qrcode");
+const { sanitizeRichText } = require("../utils/sanitizeRichText");
+
+// ── Limites par plan ─────────────────────────────────────────────────────────
+const PLAN_LIMITS = {
+  basic:    { employees: 0, services: 0, formQuestions: 0 },
+  free:     { employees: 0, services: 0, formQuestions: 0 },
+  pro:      { employees: 2, services: 10, formQuestions: 3 },
+  business: { employees: 10, services: 50, formQuestions: 10 },
+};
+
+/**
+ * Applique les limites du plan en désactivant/supprimant ce qui dépasse.
+ * Appelé automatiquement après chaque changement de plan.
+ */
+exports.enforcePlanLimits = async (userId, planName) => {
+  try {
+    const Employee = require("../db/models/company/employee.model");
+    const Service  = require("../db/models/company/service.model");
+    const Form     = require("../db/models/form.model");
+    const Company  = require("../db/models/company/company.model");
+
+    const limits = PLAN_LIMITS[planName] || PLAN_LIMITS.basic;
+    const user   = await User.findById(userId).select("company").lean();
+    if (!user?.company) return;
+
+    const companyId = user.company;
+
+    // ── Employés ─────────────────────────────────────────────────────────────
+    if (limits.employees === 0) {
+      // Free/Basic : désactiver tous les employés
+      await Employee.updateMany({ company: companyId }, { active: false });
+    } else {
+      // Garder les N premiers actifs (triés par date de création), désactiver le reste
+      const allActive = await Employee.find({ company: companyId, active: true })
+        .sort({ createdAt: 1 }).lean();
+      if (allActive.length > limits.employees) {
+        const toDisable = allActive.slice(limits.employees).map(e => e._id);
+        await Employee.updateMany({ _id: { $in: toDisable } }, { active: false });
+      }
+    }
+
+    // ── Services ──────────────────────────────────────────────────────────────
+    if (limits.services === 0) {
+      await Service.updateMany({ company: companyId }, { active: false });
+    } else {
+      const allActive = await Service.find({ company: companyId, active: true })
+        .sort({ order: 1, createdAt: 1 }).lean();
+      if (allActive.length > limits.services) {
+        const toDisable = allActive.slice(limits.services).map(s => s._id);
+        await Service.updateMany({ _id: { $in: toDisable } }, { active: false });
+      }
+    }
+
+    // ── Questions de formulaire ───────────────────────────────────────────────
+    const form = await Form.findOne({ company: companyId });
+    if (form && form.questions && form.questions.length > limits.formQuestions) {
+      if (limits.formQuestions === 0) {
+        form.questions = [];
+        form.active = false;
+      } else {
+        // Garder les N premières questions (triées par order)
+        form.questions = form.questions
+          .sort((a, b) => (a.order || 0) - (b.order || 0))
+          .slice(0, limits.formQuestions);
+      }
+      await form.save();
+    }
+
+    console.log(`✅ [enforcePlanLimits] Limites "${planName}" appliquées pour user ${userId}`);
+  } catch (err) {
+    console.error("[enforcePlanLimits] Erreur:", err.message);
+  }
+};
 
 exports.editProfilePicture = async (req, res) => {
   try {
@@ -248,10 +321,25 @@ exports.createCheckout = async (req, res) => {
           // Pour un trial, la carte est toujours requise (sera débitée après le trial)
           sessionParams.payment_method_collection = "always";
         } else {
-          // ── Réduction % ou € → coupon Stripe sur 1ère facture seulement ───────
+          // ── Réduction % ou € → coupon sur 1ère facture uniquement ────────────
+          // Pour les plans ANNUELS avec un % de réduction :
+          // on ne veut pas réduire toute l'année mais seulement l'équivalent d'1 mois.
+          // On convertit donc en montant fixe = prix_mensuel × (% / 100).
+          const MONTHLY_PRICES = {
+            pro:      env.stripePricePremiumMonthly  ? 19 : 19,
+            business: env.stripePriceBusinessMonthly ? 49 : 49,
+          };
+          const isYearly = billing === "yearly";
           const couponParams = { duration: "once" };
-          if (promo.discountType === "percent") {
-            couponParams.percent_off = Math.min(promo.discountValue, 99); // max 99%
+
+          if (promo.discountType === "percent" && isYearly) {
+            // Calculer la réduction en euros = 1 mois de réduction au % demandé
+            const monthlyPrice = MONTHLY_PRICES[planName] || 19;
+            const discountEuros = Math.round(monthlyPrice * promo.discountValue / 100 * 100) / 100;
+            couponParams.amount_off = Math.round(discountEuros * 100); // centimes
+            couponParams.currency   = "eur";
+          } else if (promo.discountType === "percent") {
+            couponParams.percent_off = Math.min(promo.discountValue, 99);
           } else {
             couponParams.amount_off = Math.round(promo.discountValue * 100);
             couponParams.currency = "eur";
@@ -266,6 +354,14 @@ exports.createCheckout = async (req, res) => {
           $addToSet: { usedByUsers: userId },
         });
       }
+    }
+
+    // Afficher le champ "Code promo" natif de Stripe — au cas où l'utilisateur
+    // n'aurait pas vu/utilisé celui du site. Stripe interdit de combiner
+    // `allow_promotion_codes` avec un `discounts` déjà appliqué côté serveur,
+    // donc on ne l'active que si aucun coupon n'a été injecté ci-dessus.
+    if (!sessionParams.discounts) {
+      sessionParams.allow_promotion_codes = true;
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);
@@ -361,6 +457,7 @@ exports.purchaseAddonCustomUrl = async (req, res) => {
       client_reference_id: req.user._id.toString(),
       metadata: { addon: "customUrl", userId: req.user._id.toString() },
       subscription_data: { metadata: { addon: "customUrl", userId: req.user._id.toString() } },
+      allow_promotion_codes: true,
       success_url: `${env.appBaseUrl || "https://www.branshee.com"}/appointment?addonSuccess=customUrl`,
       cancel_url:  `${env.appBaseUrl || "https://www.branshee.com"}/customize`,
     });
@@ -559,6 +656,21 @@ exports.editBusinessInfo = async (req, res) => {
       businessType: businessType || "",
     });
     return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false });
+  }
+};
+
+// ── « À propos » enrichi (mini éditeur WYSIWYG : gras, italique, taille) ─────
+// Le HTML envoyé par l'éditeur est nettoyé (allow-list) avant d'être stocké,
+// pour pouvoir être réinjecté tel quel (sans échappement) sur la page publique.
+exports.updateAbout = async (req, res) => {
+  try {
+    const raw = typeof req.body.aboutHtml === "string" ? req.body.aboutHtml : "";
+    const clean = sanitizeRichText(raw).slice(0, 4000);
+    await User.findByIdAndUpdate(req.user._id, { aboutHtml: clean });
+    return res.json({ success: true, aboutHtml: clean });
   } catch (err) {
     console.error(err);
     return res.json({ success: false });
@@ -809,6 +921,20 @@ exports.updateBookingCategoryStyle = async (req, res) => {
     if (!allowed.includes(style)) return res.json({ success: false });
     await User.findByIdAndUpdate(req.user._id, {
       $set: { "calendarSettings.bookingCategoryStyle": style },
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    return res.json({ success: false });
+  }
+};
+
+exports.updateGalleryLayout = async (req, res) => {
+  try {
+    const { layout } = req.body;
+    const allowed = ["grid", "carousel"];
+    if (!allowed.includes(layout)) return res.json({ success: false });
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: { "calendarSettings.galleryLayout": layout },
     });
     return res.json({ success: true });
   } catch (err) {

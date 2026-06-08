@@ -97,6 +97,13 @@ block content
         }
         var showMap   = cs.showSectionMap   !== false && _mapEmbedSrc !== ''
         var showHours = cs.showSectionHours !== false && company && company.schedule && company.schedule.length > 0
+        // NB : calculé ici (et non plus loin, près de la galerie) car la boucle
+        // `each _sec in _secOrder` ci-dessous teste `showGallery` — avec `var`,
+        // la déclaration est "hoistée" en tête de fonction mais l'affectation ne
+        // l'est pas, donc si on ne calculait `showGallery` qu'après la boucle,
+        // sa valeur valait `undefined` au moment du test et la section galerie
+        // ne s'affichait jamais sur la page publique.
+        var showGallery = cs.showSectionGallery === true && gallery && gallery.length > 0
 
     style.
         :root {
@@ -179,67 +186,102 @@ block content
             //- ── Step pane (JS-rendered) ────────────────────────────────────
             #bkPane
 
-            //- ── Localisation ───────────────────────────────────────────────
-            if showMap || (_displayAddress && _displayAddress.trim())
-                .bk-location-card
-                    h2.bk-location-card__title
-                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                            path(d="M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 294q122-112 181-203.5T720-552q0-109-69.5-178.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186Zm0 106Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 100-79.5 217.5T480-80Z")
-                        | Localisation
-                    if _displayAddress && _displayAddress.trim()
-                        .bk-location-card__addr
-                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                path(d="M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 294q122-112 181-203.5T720-552q0-109-69.5-178.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186Z")
-                            span= _displayAddress
-                            if _googleMapsUrl
-                                a.bk-location-card__gmaps(href=_googleMapsUrl target="_blank" rel="noopener")
-                                    | Ouvrir dans Maps
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="11px" viewBox="0 -960 960 960" width="11px" fill="currentColor")
-                                        path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z")
-                    if showMap
-                        .bk-map-wrap.bk-location-card__map
-                            iframe(src=_mapEmbedSrc style="border:0;width:100%;height:280px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade")
+            //- ── Sections dans l'ordre défini par l'admin ────────────────────
+            -
+                var _secOrder = (cs && cs.sectionOrder && cs.sectionOrder.length) ? cs.sectionOrder : ['about','location','hours','gallery','reviews']
+            each _sec in _secOrder
+                if _sec === 'location' && (showMap || (_displayAddress && _displayAddress.trim()))
+                    .bk-location-card
+                        h2.bk-location-card__title
+                            svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                path(d="M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 294q122-112 181-203.5T720-552q0-109-69.5-178.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186Zm0 106Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 100-79.5 217.5T480-80Z")
+                            | Localisation
+                        if _displayAddress && _displayAddress.trim()
+                            .bk-location-card__addr
+                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                    path(d="M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 294q122-112 181-203.5T720-552q0-109-69.5-178.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186Z")
+                                span= _displayAddress
+                                if _googleMapsUrl
+                                    a.bk-location-card__gmaps(href=_googleMapsUrl target="_blank" rel="noopener")
+                                        | Ouvrir dans Maps
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="11px" viewBox="0 -960 960 960" width="11px" fill="currentColor")
+                                            path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z")
+                        if showMap
+                            .bk-map-wrap.bk-location-card__map
+                                iframe(src=_mapEmbedSrc style="border:0;width:100%;height:280px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade")
 
-            //- ── Horaires ───────────────────────────────────────────────────
-            if showHours
-                .bk-hours-card
-                    h2.bk-hours-card__title
-                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                            path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400 127 127-57 57-110-110v-214h80v140Z")
-                        | Horaires d'ouverture
-                    .bk-hours-grid
-                        -
-                            var dayNames = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
-                            var sortedSched = [1,2,3,4,5,6,0].map(function(d){ return company.schedule.find(function(s){ return s.weekdayIndex === d; }); }).filter(Boolean)
-                        each entry in sortedSched
-                            .bk-hours-row(class=entry.dayOff ? 'bk-hours-row--off' : '')
-                                span.bk-hours-row__day= dayNames[entry.weekdayIndex]
-                                span.bk-hours-row__val
-                                    if entry.dayOff
-                                        | Fermé
-                                    else if entry.workingHours && entry.workingHours.length
-                                        = entry.workingHours.map(function(h){ return h.start + ' - ' + h.end; }).join(' · ')
-                                    else
-                                        | Fermé
+                else if _sec === 'hours' && showHours
+                    .bk-hours-card
+                        h2.bk-hours-card__title
+                            svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400 127 127-57 57-110-110v-214h80v140Z")
+                            | Horaires d'ouverture
+                        .bk-hours-grid
+                            -
+                                var dayNames = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
+                                var sortedSched = [1,2,3,4,5,6,0].map(function(d){ return company.schedule.find(function(s){ return s.weekdayIndex === d; }); }).filter(Boolean)
+                            each entry in sortedSched
+                                .bk-hours-row(class=entry.dayOff ? 'bk-hours-row--off' : '')
+                                    span.bk-hours-row__day= dayNames[entry.weekdayIndex]
+                                    span.bk-hours-row__val
+                                        if entry.dayOff
+                                            | Fermé
+                                        else if entry.workingHours && entry.workingHours.length
+                                            = entry.workingHours.map(function(h){ return h.start + ' - ' + h.end; }).join(' · ')
+                                        else
+                                            | Fermé
 
-            //- ── À propos ───────────────────────────────────────────────────
-            if coach && coach.description && cs.showSectionAbout !== false
-                .bk-about-card
-                    h2.bk-about-card__title
-                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                            path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
-                        | À propos
-                    p.bk-about-card__text#bkAboutText= coach.description
-                    if coach.description.length > 220
-                        button.bk-about-card__toggle#bkAboutToggle(type="button")
-                            span Voir plus
-                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                path(d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z")
+                else if _sec === 'about' && coach && (coach.aboutHtml || coach.description) && cs.showSectionAbout !== false
+                    -
+                        var _hasRichAbout = !!(coach.aboutHtml && coach.aboutHtml.trim())
+                        var _aboutPlainLen = _hasRichAbout
+                            ? coach.aboutHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().length
+                            : (coach.description || '').length
+                    .bk-about-card
+                        h2.bk-about-card__title
+                            svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                            | À propos
+                        if _hasRichAbout
+                            .bk-about-card__text.bk-about-card__text--rich#bkAboutText!= coach.aboutHtml
+                        else
+                            p.bk-about-card__text#bkAboutText= coach.description
+                        if _aboutPlainLen > 220
+                            button.bk-about-card__toggle#bkAboutToggle(type="button")
+                                span Voir plus
+                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                    path(d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z")
+
+                else if _sec === 'gallery' && showGallery
+                    .bk-info-section
+                        h2.bk-info-section__title
+                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm40-80h480L570-480 450-320l-90-120-120 160Zm-40 80v-560 560Z")
+                            | Galerie
+                        if cs.galleryLayout === 'carousel'
+                            .bk-gallery-carousel-wrap
+                                .bk-gallery-carousel#bkGalleryCarousel
+                                    each photo, gi in gallery
+                                        .bk-gallery-carousel__item
+                                            .bk-gallery-item(data-index=gi role="button" tabindex="0" title="Agrandir")
+                                                img(src=photo alt="Photo de l'établissement" loading="lazy")
+                                if gallery.length > 1
+                                    button.bk-gallery-carousel__nav.bk-gallery-carousel__nav--prev#bkGalCarPrev(type="button" aria-label="Photo précédente")
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                            path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                                    button.bk-gallery-carousel__nav.bk-gallery-carousel__nav--next#bkGalCarNext(type="button" aria-label="Photo suivante")
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                            path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                        else
+                            .bk-gallery-grid
+                                each photo, gi in gallery
+                                    .bk-gallery-item(data-index=gi role="button" tabindex="0" title="Agrandir")
+                                        img(src=photo alt="Photo de l'établissement" loading="lazy")
 
     //- ── Sticky cart (JS-rendered) ──────────────────────────────────────────
     #bkCart
 
-    //- ── Avis ───────────────────────────────────────────────────────────────
+    //- ── Avis (toujours en dernier — ancre #avis) ───────────────────────────
     section.bk-reviews#avis
         .bk-inner
             .bk-reviews__header
@@ -304,24 +346,25 @@ block content
             else
                 p.bk-reviews__empty Aucun avis pour le moment. Soyez le premier à donner votre opinion !
 
-    //- ── Galerie (section séparée) ──────────────────────────────────────────
-    -
-        var showGallery = cs.showSectionGallery === true && gallery && gallery.length > 0
-
+    //- ── Lightbox galerie (rendue une seule fois, pilotée par le script plus bas)
+    //- NB : ce bloc était auparavant enfermé dans un `if false` (mort), donc la
+    //- modale n'apparaissait jamais dans le DOM — on la rend ici, juste après les
+    //- sections, gating sur `showGallery` (calculé plus haut, avant la boucle).
     if showGallery
-        section.bk-info
-            .bk-inner
-
-                if showGallery
-                    .bk-info-section
-                        h2.bk-info-section__title
-                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm40-80h480L570-480 450-320l-90-120-120 160Zm-40 80v-560 560Z")
-                            | Galerie
-                        .bk-gallery-grid
-                            each photo in gallery
-                                .bk-gallery-item
-                                    img(src=photo alt="Photo de l'établissement" loading="lazy")
+        #bkLightbox.bk-lightbox(style="display:none" aria-modal="true" role="dialog")
+            .bk-lightbox__overlay#bkLbOverlay
+            .bk-lightbox__content
+                button.bk-lightbox__close#bkLbClose(type="button" aria-label="Fermer")
+                    svg(viewBox="0 -960 960 960" height="22" width="22" fill="currentColor")
+                        path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                button.bk-lightbox__prev#bkLbPrev(type="button" aria-label="Précédent")
+                    svg(viewBox="0 -960 960 960" height="28" width="28" fill="currentColor")
+                        path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                img.bk-lightbox__img#bkLbImg(src="" alt="")
+                button.bk-lightbox__next#bkLbNext(type="button" aria-label="Suivant")
+                    svg(viewBox="0 -960 960 960" height="28" width="28" fill="currentColor")
+                        path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                .bk-lightbox__counter#bkLbCounter
 
 
 block scripts
@@ -351,18 +394,35 @@ block scripts
             var toggle = document.getElementById('bkAboutToggle');
             var text   = document.getElementById('bkAboutText');
             if (!toggle || !text) return;
-            var full    = text.textContent;
-            var SHORT   = 220;
-            var open    = false;
-            text.textContent = full.slice(0, SHORT) + '…';
-            text.classList.add('bk-about-card__text--short');
-            toggle.addEventListener('click', function() {
-                open = !open;
-                text.textContent = open ? full : full.slice(0, SHORT) + '…';
-                text.classList.toggle('bk-about-card__text--short', !open);
+            var open = false;
+
+            function setLabel() {
                 toggle.querySelector('span').textContent = open ? 'Voir moins' : 'Voir plus';
                 toggle.querySelector('svg').style.transform = open ? 'rotate(180deg)' : '';
-            });
+            }
+
+            if (text.classList.contains('bk-about-card__text--rich')) {
+                // Texte enrichi (HTML) : on ne peut pas découper le balisage —
+                // on s'appuie sur un clamp CSS (line-clamp) que l'on bascule.
+                text.classList.add('bk-about-card__text--short');
+                toggle.addEventListener('click', function() {
+                    open = !open;
+                    text.classList.toggle('bk-about-card__text--short', !open);
+                    setLabel();
+                });
+            } else {
+                // Texte brut : on découpe simplement la chaîne
+                var full  = text.textContent;
+                var SHORT = 220;
+                text.textContent = full.slice(0, SHORT) + '…';
+                text.classList.add('bk-about-card__text--short');
+                toggle.addEventListener('click', function() {
+                    open = !open;
+                    text.textContent = open ? full : full.slice(0, SHORT) + '…';
+                    text.classList.toggle('bk-about-card__text--short', !open);
+                    setLabel();
+                });
+            }
         })();
     script.
         document.querySelectorAll('.bk-pill--copy').forEach(function(btn) {
@@ -461,3 +521,84 @@ block scripts
                 });
             });
         })();
+
+    //- ── Lightbox galerie ─────────────────────────────────────────────────────
+    if showGallery
+        script.
+            (function() {
+                var photos   = !{JSON.stringify(gallery || [])};
+                var lb       = document.getElementById('bkLightbox');
+                var lbImg    = document.getElementById('bkLbImg');
+                var lbCounter= document.getElementById('bkLbCounter');
+                var lbClose  = document.getElementById('bkLbClose');
+                var lbPrev   = document.getElementById('bkLbPrev');
+                var lbNext   = document.getElementById('bkLbNext');
+                var lbOverlay= document.getElementById('bkLbOverlay');
+                var current  = 0;
+
+                function open(idx) {
+                    current = ((idx % photos.length) + photos.length) % photos.length;
+                    lbImg.src = photos[current];
+                    lbImg.alt = 'Photo ' + (current + 1);
+                    lbCounter.textContent = (current + 1) + ' / ' + photos.length;
+                    lb.style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                }
+
+                function close() {
+                    lb.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
+
+                // Ouvrir au clic sur une image
+                document.querySelectorAll('.bk-gallery-item').forEach(function(item) {
+                    item.addEventListener('click', function() {
+                        open(parseInt(this.dataset.index) || 0);
+                    });
+                    item.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(parseInt(this.dataset.index) || 0); }
+                    });
+                });
+
+                if (lbClose)  lbClose.addEventListener('click', close);
+                if (lbOverlay)lbOverlay.addEventListener('click', close);
+                if (lbPrev)   lbPrev.addEventListener('click', function() { open(current - 1); });
+                if (lbNext)   lbNext.addEventListener('click', function() { open(current + 1); });
+
+                // Clavier
+                document.addEventListener('keydown', function(e) {
+                    if (lb.style.display === 'none') return;
+                    if (e.key === 'Escape')     close();
+                    if (e.key === 'ArrowLeft')  open(current - 1);
+                    if (e.key === 'ArrowRight') open(current + 1);
+                });
+
+                // Swipe tactile
+                var startX = 0;
+                if (lb) {
+                    lb.addEventListener('touchstart', function(e) { startX = e.touches[0].clientX; }, { passive: true });
+                    lb.addEventListener('touchend', function(e) {
+                        var dx = e.changedTouches[0].clientX - startX;
+                        if (Math.abs(dx) > 50) dx < 0 ? open(current + 1) : open(current - 1);
+                    });
+                }
+            })();
+
+    //- ── Navigation du carrousel galerie (si activé) ──────────────────────────
+    if showGallery && cs.galleryLayout === 'carousel'
+        script.
+            (function() {
+                var track = document.getElementById('bkGalleryCarousel');
+                var prev  = document.getElementById('bkGalCarPrev');
+                var next  = document.getElementById('bkGalCarNext');
+                if (!track) return;
+
+                function step() {
+                    var item = track.querySelector('.bk-gallery-carousel__item');
+                    var gap  = parseFloat(getComputedStyle(track).columnGap || getComputedStyle(track).gap || '10') || 10;
+                    return item ? (item.getBoundingClientRect().width + gap) : (track.clientWidth * 0.8);
+                }
+
+                if (prev) prev.addEventListener('click', function() { track.scrollBy({ left: -step(), behavior: 'smooth' }); });
+                if (next) next.addEventListener('click', function() { track.scrollBy({ left:  step(), behavior: 'smooth' }); });
+            })();

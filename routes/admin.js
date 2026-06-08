@@ -36,6 +36,14 @@ router.get("/appointement/:bookId", isAuth, injectCompany, renderAppointments, b
 
 const isVerified = [isAuth, injectCompany];
 
+// ── Onboarding de bienvenue ───────────────────────────────────────────────────
+router.get("/welcome", isAuth, injectCompany, (req, res) => {
+  res.render("admin/welcome", {
+    pageName: "Welcome",
+    title: "Bienvenue — BranShee",
+  });
+});
+
 router.get("/panel", isAuth, injectCompany, renderAppointments, panel);
 router.get("/appointment", isAuth, injectCompany, appointment);
 router.get("/availability", isAuth, injectCompany, availability);
@@ -90,6 +98,9 @@ router.get("/forms/data", isVerified, adminController.getFormData);
 router.post("/forms/save", isVerified, adminController.saveForm);
 
 router.get("/customize-calendar", isAuth, injectCompany, adminController.customizeCalendarPage);
+
+// ── Ordre des sections ────────────────────────────────────────────────────────
+router.patch("/account/section-order", isVerified, adminController.saveSectionOrder);
 
 // ── Notifications ─────────────────────────────────────────────────────────────
 router.patch("/settings/notifications", isVerified, adminController.saveNotificationSettings);

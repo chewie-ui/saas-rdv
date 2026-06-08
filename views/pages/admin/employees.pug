@@ -55,11 +55,19 @@ block content
                         a.btn-upgrade-pro(href="/subscription") Passer au Pro
 
         .employees-list#employeesList
-            each emp in employees
+            - var activeIdx = 0
+            each emp, empIdx in employees
                 -
                     var initials = ((emp.firstName || '?')[0] + (emp.lastName || '?')[0]).toUpperCase()
                     var isOwner = emp.role === 'owner' || emp.isOwner
-                .emp-card(data-id=String(emp._id) class=(!emp.active ? 'emp-card--inactive' : ''))
+                    // Un employé est "en surnombre" s'il est actif ET que son rang dépasse la limite
+                    if (emp.active) { activeIdx++; }
+                    var isOverLimit = maxEmployees > 0 && emp.active && activeIdx > maxEmployees
+                .emp-card(
+                    data-id=String(emp._id)
+                    class=[(!emp.active ? 'emp-card--inactive' : ''), (isOverLimit ? 'emp-card--over-limit' : '')]
+                    data-over-limit=isOverLimit ? 'true' : 'false'
+                )
 
                     //- ── Top: avatar + owner badge ─────────────────────
                     .emp-card__top
@@ -87,19 +95,29 @@ block content
 
                     //- ── Actions: toggle + edit + delete ───────────────
                     .emp-card__actions
-                        label.sa-toggle(title=(emp.active ? t.employees.deactivate : t.employees.activate))
-                            input.toggle-emp-active(type="checkbox" checked=emp.active data-id=String(emp._id))
-                            .sa-toggle__track
-                        button.sm-btn.sm-btn--ghost.edit-emp-btn(
-                            data-id=String(emp._id)
-                            title=t.employees.modal_edit
-                            data-firstname=emp.firstName
-                            data-lastname=emp.lastName
-                            data-age=(emp.age || '')
-                            data-desc=(emp.description || ''))
-                            svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                path(d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Z")
-                            span= t.employees.modal_edit || 'Modifier'
+                        if isOverLimit
+                            //- Employé en surnombre : badge + bouton swap + supprimer
+                            span.emp-over-badge Inactif — limite atteinte
+                            button.sm-btn.sm-btn--soft.emp-swap-btn(
+                                type="button"
+                                data-id=String(emp._id)
+                                data-name=`${emp.firstName} ${emp.lastName}`
+                                title="Activer en remplaçant un autre employé"
+                            ) Activer en remplaçant →
+                        else
+                            label.sa-toggle(title=(emp.active ? t.employees.deactivate : t.employees.activate))
+                                input.toggle-emp-active(type="checkbox" checked=emp.active data-id=String(emp._id))
+                                .sa-toggle__track
+                            button.sm-btn.sm-btn--ghost.edit-emp-btn(
+                                data-id=String(emp._id)
+                                title=t.employees.modal_edit
+                                data-firstname=emp.firstName
+                                data-lastname=emp.lastName
+                                data-age=(emp.age || '')
+                                data-desc=(emp.description || ''))
+                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                    path(d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Z")
+                                span= t.employees.modal_edit || 'Modifier'
                         button.delete-emp-btn(data-id=String(emp._id) title="Supprimer" data-confirm=t.employees.delete_confirm)
                             svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="#ef4444")
                                 path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-272h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
@@ -174,3 +192,75 @@ block content
 
 block scripts
     script(src="/js/layouts/employees.js")
+    script.
+        // ── Swap : activer un employé en surnombre en remplaçant un autre ────────
+        document.querySelectorAll('.emp-swap-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var swapId   = this.dataset.id;
+                var swapName = this.dataset.name;
+
+                // Collecter les employés actifs dans la limite (pas over-limit)
+                var activeCards = Array.from(document.querySelectorAll('.emp-card:not(.emp-card--over-limit):not(.emp-card--inactive):not(.emp-card--invite)'));
+                if (!activeCards.length) return;
+
+                // Construire le modal de sélection
+                var existing = document.getElementById('__swapModal');
+                if (existing) existing.remove();
+
+                var items = activeCards.map(function(card) {
+                    var id   = card.dataset.id;
+                    var name = card.querySelector('.emp-card__name') ? card.querySelector('.emp-card__name').textContent.trim() : id;
+                    return '<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:9px;border:1.5px solid var(--border-light);cursor:pointer;transition:border-color .12s,background .12s;">' +
+                        '<input type="radio" name="swapTarget" value="' + id + '" style="accent-color:var(--accent)">' +
+                        '<span style="font-size:14px;font-weight:600;">' + name + '</span>' +
+                        '</label>';
+                }).join('');
+
+                var overlay = document.createElement('div');
+                overlay.id = '__swapModal';
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+                overlay.innerHTML = '<div style="background:#fff;border-radius:20px;max-width:400px;width:100%;box-shadow:0 24px 48px rgba(0,0,0,.2);padding:28px 28px 24px;display:flex;flex-direction:column;gap:18px;">' +
+                    '<div><p style="font-size:16px;font-weight:700;color:var(--ink);margin:0 0 6px">Choisir un remplaçant</p>' +
+                    '<p style="font-size:13px;color:var(--text-muted);margin:0">Quel employé actif désactiver pour activer <strong>' + swapName + '</strong> ?</p></div>' +
+                    '<div style="display:flex;flex-direction:column;gap:8px;" id="__swapList">' + items + '</div>' +
+                    '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+                    '<button id="__swapCancel" style="height:38px;padding:0 18px;border-radius:8px;border:1.5px solid var(--border-medium);background:var(--surface);font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;">Annuler</button>' +
+                    '<button id="__swapConfirm" style="height:38px;padding:0 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;">Confirmer</button>' +
+                    '</div></div>';
+
+                document.body.appendChild(overlay);
+
+                overlay.querySelector('#__swapCancel').onclick = function() { overlay.remove(); };
+                overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+
+                overlay.querySelector('#__swapConfirm').onclick = async function() {
+                    var chosen = overlay.querySelector('input[name="swapTarget"]:checked');
+                    if (!chosen) { alert('Choisissez un employé à remplacer.'); return; }
+                    var deactivateId = chosen.value;
+
+                    this.disabled = true;
+                    this.textContent = '…';
+
+                    try {
+                        // Désactiver le choix
+                        await fetch('/employees/' + deactivateId + '/toggle', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ active: false })
+                        });
+                        // Activer le surnombre
+                        await fetch('/employees/' + swapId + '/toggle', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ active: true })
+                        });
+                        overlay.remove();
+                        window.location.reload();
+                    } catch(e) {
+                        alert('Erreur lors de l\'échange.');
+                        this.disabled = false;
+                        this.textContent = 'Confirmer';
+                    }
+                };
+            });
+        });

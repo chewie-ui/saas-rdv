@@ -438,6 +438,12 @@ html {
   font-style: normal;
   letter-spacing: 0;
   color: var(--accent);
+  /* Forcer la même taille que le reste du titre — l'<em> ne doit pas
+     paraître plus petit que "En ligne en" juste avant lui ("les textes
+     ici met les de la même taille"). */
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
 }
 .pro-desc {
   font-size: 15px;
@@ -840,7 +846,10 @@ html {
 .pro-pricing__sub {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.8);
-  margin: 0;
+  /* Un peu plus d'air entre le titre et le texte de description — ils
+     étaient trop collés malgré le "gap" de la carte ("met un peu plus
+     d'écart entre les textes ici"). */
+  margin: 8px 0 0;
   max-width: 440px;
 }
 .pro-pricing__actions {

@@ -101,12 +101,6 @@ router.get("/sitemap.xml", async (req, res) => {
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>${BASE}/manage-business</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>${BASE}/s-inscrire</loc>
     <lastmod>${today}</lastmod>
     <changefreq>monthly</changefreq>
@@ -156,49 +150,19 @@ router.get("/sitemap.xml", async (req, res) => {
 //   });
 // });
 
-router.get("/", async (req, res) => {
-  const [allCompanies, allCategories] = await Promise.all([
-    Companies.find({})
-      .select("_id owner boostPosition slug")
-      .populate("owner", "_id fullName businessName businessType businessPicture profilePicture description location verified subscription isPremium manualPremium")
-      .lean(),
-    getDynamicCategories(),
-  ]);
-
-  const coachs = allCompanies.filter(c => c.owner).slice(0, 100);
-
-  const companyIds = coachs.map(c => c._id);
-  const ratings = await Review.aggregate([
-    { $match: { company: { $in: companyIds } } },
-    { $group: { _id: "$company", avgRating: { $avg: "$rating" }, reviewCount: { $sum: 1 } } }
-  ]);
-  const ratingMap = {};
-  ratings.forEach(r => { ratingMap[r._id.toString()] = r; });
-
-  const { getPlan } = require("../utils/planLimits");
-  const enriched = coachs.map(c => {
-    const plan     = getPlan(c.owner);
-    const featured = plan === "pro" || plan === "business" || c.owner.isPremium;
-    return {
-      ...c,
-      avgRating:    ratingMap[c._id.toString()]?.avgRating   || 0,
-      reviewCount:  ratingMap[c._id.toString()]?.reviewCount || 0,
-      featured,
-      plan,
-      boostPosition: c.boostPosition || 0,
-    };
-  }).sort(sortEstablishments);
-
-  // Limiter à 6 sur la homepage
-  const coachsToShow = enriched.slice(0, 6);
-
-  res.render("client/landing-page", {
-    title: `BranShee — Prenez rendez-vous en ligne simplement`,
-    metaDescription: "Trouvez et réservez en ligne un coach sportif, un coiffeur, un thérapeute ou tout autre professionnel près de chez vous. Prise de rendez-vous gratuite et instantanée avec BranShee.",
+// ── Page d'accueil ──────────────────────────────────────────────────────────
+// NB : la home a été repensée pour optimiser la conversion des PROFESSIONNELS
+// (cible payante prioritaire) — elle reprend désormais le contenu de l'ex-page
+// "/manage-business". La découverte d'établissements pour les clients (recherche,
+// filtres, cartes) vit maintenant entièrement sur "/search", et un bouton
+// "Prendre rendez-vous" sur la home renvoie vers cette page de recherche pour
+// les visiteurs qui cherchent un professionnel plutôt qu'à en devenir un.
+router.get("/", (req, res) => {
+  res.render("client/manage-business", {
+    title: `BranShee — Agenda en ligne gratuit | Prise de rendez-vous pour professionnels`,
+    metaDescription: "BranShee : créez votre agenda en ligne gratuit en 5 minutes et recevez des réservations 24h/24 sans appel téléphonique. Logiciel de prise de rendez-vous pour coiffeurs, coaches, thérapeutes et indépendants. 1 mois offert, sans carte bancaire.",
     canonical: "https://www.branshee.com/",
-    coachs: coachsToShow,
-    allCategories,
-    services: getServices(res.locals.lang),
+    becomeCoach: true,
   });
 });
 
@@ -339,11 +303,20 @@ router.get("/conditions-utilisation", (req, res) => {
   });
 });
 
+// Le contenu "pro" vit désormais directement sur la home ("/") afin de
+// maximiser la conversion des visiteurs en professionnels payants — on
+// redirige donc en 301 (permanent) pour préserver le référencement et les
+// liens existants pointant vers /manage-business.
 router.get("/manage-business", (req, res) => {
-  res.render("client/manage-business", {
-    title: "Gérer votre activité avec BranShee — Agenda en ligne",
-    metaDescription: "Créez votre page professionnelle sur BranShee et recevez des réservations en ligne 24h/24. Gérez vos rendez-vous, employés et services facilement.",
-    canonical: "https://www.branshee.com/manage-business",
+  res.redirect(301, "/");
+});
+
+// ── Landing page dédiée Google Ads ──────────────────────────────────────────
+router.get("/pro", (req, res) => {
+  res.render("client/lp-pro", {
+    title: "Agenda en ligne gratuit pour professionnels — BranShee",
+    metaDescription: "Créez votre agenda en ligne en 5 minutes. Vos clients réservent 24h/24 sans vous appeler. 1 mois offert, sans carte bancaire.",
+    canonical: "https://www.branshee.com/pro",
     becomeCoach: true,
   });
 });

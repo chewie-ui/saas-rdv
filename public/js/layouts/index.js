@@ -989,20 +989,20 @@ async function renderDetailsPane() {
           <div class="bk-form-row">
             <div class="bk-field">
               <label class="bk-label">Prénom *</label>
-              <input class="bk-input" id="bkFirstName" type="text" placeholder="Jean" value="${escHtml(f.firstName)}" />
+              <input class="bk-input" id="bkFirstName" type="text" maxlength="50" placeholder="Jean" value="${escHtml(f.firstName)}" />
             </div>
             <div class="bk-field">
               <label class="bk-label">Nom *</label>
-              <input class="bk-input" id="bkLastName" type="text" placeholder="Dupont" value="${escHtml(f.lastName)}" />
+              <input class="bk-input" id="bkLastName" type="text" maxlength="50" placeholder="Dupont" value="${escHtml(f.lastName)}" />
             </div>
           </div>
           <div class="bk-field">
             <label class="bk-label">Email *</label>
-            <input class="bk-input" id="bkEmail" type="email" placeholder="jean@email.com" value="${escHtml(f.email)}" />
+            <input class="bk-input" id="bkEmail" type="email" maxlength="100" placeholder="jean@email.com" value="${escHtml(f.email)}" />
           </div>
           <div class="bk-field">
             <label class="bk-label">Téléphone</label>
-            <input class="bk-input" id="bkPhone" type="tel" placeholder="+32 …" value="${escHtml(f.phone)}" />
+            <input class="bk-input" id="bkPhone" type="tel" maxlength="30" placeholder="+32 …" value="${escHtml(f.phone)}" />
           </div>
         </div>`}
 
@@ -1010,7 +1010,7 @@ async function renderDetailsPane() {
 
       <div class="bk-field">
         <label class="bk-label">Message (optionnel)</label>
-        <textarea class="bk-textarea" id="bkMessage" rows="3" placeholder="Informations utiles…">${escHtml(f.message)}</textarea>
+        <textarea class="bk-textarea" id="bkMessage" rows="3" maxlength="500" placeholder="Informations utiles…">${escHtml(f.message)}</textarea>
       </div>
 
       <div class="bk-policy">
@@ -1779,8 +1779,8 @@ function renderConfirmPane() {
     if (signupBtn) {
       signupBtn.onclick = async () => {
         const pwd = document.getElementById("bkSignupPwd")?.value || "";
-        if (pwd.length < 8) {
-          signupErr.textContent = "Le mot de passe doit faire au moins 8 caractères.";
+        if (pwd.length < 8 || !/[0-9]/.test(pwd) || !/[^a-zA-Z0-9]/.test(pwd)) {
+          signupErr.textContent = "Mot de passe trop faible : 8 caractères minimum, avec au moins 1 chiffre et 1 caractère spécial (!, @, #…).";
           signupErr.style.display = "block";
           return;
         }

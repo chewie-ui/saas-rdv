@@ -9,9 +9,8 @@ block content
         //- ── Filter bar ──────────────────────────────────────────────
         .hist-filters
             .hist-search
-                svg.hist-search__icon(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                    circle(cx="11" cy="11" r="8")
-                    line(x1="21" y1="21" x2="16.65" y2="16.65")
+                svg.hist-search__icon(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor")
+                    path(d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z")
                 input#searchClient.hist-search__input(
                     type="text"
                     placeholder=t.hist_page.search
@@ -59,6 +58,14 @@ block content
                         th
 
                 tbody
+                    if !history || history.length === 0
+                        tr
+                            td(colspan="7" style="padding:56px 24px;text-align:center;")
+                                .hist-empty
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor" style="opacity:.15;margin-bottom:12px;display:block;margin:0 auto 12px")
+                                        path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
+                                    p(style="font-size:14px;font-weight:600;color:var(--text-secondary);margin:0 0 4px") Rien pour l'instant
+                                    p(style="font-size:13px;color:var(--text-muted);margin:0") Vos prochains rendez-vous apparaîtront ici une fois confirmés.
                     each h in history
                         - var initials = (h.name||'').charAt(0).toUpperCase() + (h.surname||'').charAt(0).toUpperCase()
                         - var colorIdx = (((h.name||'A').charCodeAt(0) + (h.surname||'A').charCodeAt(0)) % 8)
@@ -113,6 +120,10 @@ block content
                                 path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
 
         //- ── Mobile cards ────────────────────────────────────────────
+        if !history || history.length === 0
+            .hist-empty-mobile.mobile-only(style="text-align:center;padding:48px 24px;")
+                p(style="font-size:14px;font-weight:600;color:var(--text-secondary);margin:0 0 4px") Rien pour l'instant
+                p(style="font-size:13px;color:var(--text-muted);margin:0") Vos rendez-vous apparaîtront ici.
         .hist-cards.mobile-only
             each h in history
                 - var initials = (h.name||'').charAt(0).toUpperCase() + (h.surname||'').charAt(0).toUpperCase()

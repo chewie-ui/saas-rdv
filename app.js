@@ -113,6 +113,9 @@ app.post("/account/webhook", express.raw({ type: "application/json" }), async (r
             "subscription.stripeSubscriptionId": session.subscription,
           });
           console.log(`✅ Plan activé : ${planName} pour user ${userId}`);
+          // Appliquer les limites du plan (supprime/désactive le contenu excédentaire)
+          const { enforcePlanLimits } = require("./controllers/account.controller");
+          enforcePlanLimits(userId, planName).catch(() => {});
 
           // ── Activer les add-ons si présents dans les metadata ──────────────
           const addon = session.metadata?.addon;
@@ -185,6 +188,11 @@ app.use((req, res, next) => {
   res.locals.reqPath = req.path === "/" ? "" : req.path;
   next();
 });
+
+// Rend `clientUser`/`clientSession` disponibles sur TOUTES les pages (pas
+// uniquement celles qui pensaient à les calculer) → corrige le bouton
+// « Espace client » manquant dans la topbar sur certaines pages publiques.
+app.use(require("./middlewares/injectClientUser"));
 
 const fs = require("fs");
 

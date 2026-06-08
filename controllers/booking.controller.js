@@ -154,9 +154,18 @@ exports.chargeNoShow = async (req, res) => {
 
 exports.createBooking = async (req, res) => {
   try {
-    const { date, startTime, company, name, surname, email, phone, message, formAnswers,
+    const { date, startTime, company, name, surname, email: rawEmail, phone, message, formAnswers,
             serviceId, serviceName, serviceDuration,
             paymentMethod, stripePaymentIntentId, servicePrice } = req.body;
+
+    // Normaliser l'email (trim + minuscule) — c'est le format utilisé partout
+    // ailleurs pour faire correspondre les réservations à un compte client
+    // (ex: lien automatique des RDV "invité" lors de l'inscription dans
+    // postRegister, ou la recherche "Mes réservations" par email). Sans ça,
+    // une réservation faite avec "Jean.Dupont@Gmail.com" ne matchait jamais
+    // le compte créé juste après avec l'email normalisé "jean.dupont@gmail.com"
+    // → le RDV n'apparaissait pas dans "Mes rendez-vous" une fois connecté.
+    const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : rawEmail;
 
     // employeeId / employeeName may be auto-resolved below — use let
     let employeeId   = req.body.employeeId   || null;
@@ -264,6 +273,45 @@ exports.createBooking = async (req, res) => {
 
     // ── Fetch owner for location + Google Calendar ──────────────────────────
     const companyOwner = await User.findById(response.owner).lean();
+
+    // ── Alerte admin : limite mensuelle de RDV atteinte (plan Starter) ─────
+    // On envoie l'email une seule fois par mois, dès que la réservation qui
+    // vient d'être créée fait passer le compteur au-delà de la limite du plan.
+    try {
+      if (companyOwner) {
+        const monthlyLimitForAlert = getLimit("monthlyBookings", companyOwner);
+        if (monthlyLimitForAlert !== Infinity) {
+          const now = new Date();
+          const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+          if (response.limitReachedNotifiedMonth !== monthKey) {
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const monthlyCountAfter = await Booking.countDocuments({
+              company,
+              date:   { $gte: startOfMonth },
+              status: { $ne: "canceled" },
+            });
+            if (monthlyCountAfter >= monthlyLimitForAlert) {
+              const adminEmail = companyOwner.emailPro || companyOwner.email;
+              if (adminEmail) {
+                const limitHtml = pug.renderFile(
+                  path.join(__dirname, "../views/templates/emails/monthly-limit-reached.pug"),
+                  {
+                    ownerName:   companyOwner.fullName || "",
+                    companyName: companyOwner.businessName || companyOwner.fullName || "",
+                    monthlyLimit: monthlyLimitForAlert,
+                  },
+                );
+                await sendEmail(adminEmail, "⚠️ Limite mensuelle de rendez-vous atteinte — BranShee", limitHtml);
+              }
+              // On marque le mois comme notifié pour ne pas spammer l'admin
+              await Company.findByIdAndUpdate(company, { limitReachedNotifiedMonth: monthKey });
+            }
+          }
+        }
+      }
+    } catch (limitNotifErr) {
+      console.error("Monthly limit notification email error:", limitNotifErr.message);
+    }
 
     // Build location text
     let locationText = "";

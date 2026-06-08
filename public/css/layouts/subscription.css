@@ -165,6 +165,28 @@
   opacity: 0.85;
 }
 
+/* ── Rappel essai gratuit / annulation libre ───────────────────────────── */
+.sub-trial-note {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  max-width: 520px;
+  background: var(--accent-soft, #f0fdf4);
+  border: 1.5px solid var(--accent-border, #bbf7d0);
+  border-radius: var(--radius-md, 10px);
+  color: var(--accent-dark, #16a34a);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.sub-trial-note svg {
+  flex: none;
+  margin-top: 2px;
+}
+
 /* ── Plans grid ─────────────────────────────────────────────── */
 .sub-plans {
   display: grid;
@@ -537,8 +559,12 @@
 .sub-promo__status {
   font-size: 13px;
   font-weight: 600;
-  min-height: 18px;
   padding-left: 56px; /* aligner avec le texte */
+}
+
+/* Pas de message → pas de gap inutile sous le champ */
+.sub-promo__status:empty {
+  display: none;
 }
 
 .sub-promo__status.valid   { color: var(--accent); }

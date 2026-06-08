@@ -1,4 +1,6 @@
 const Company = require("../db/models/company/company.model");
+const Booking = require("../db/models/book.model");
+const { getLimit } = require("../utils/planLimits");
 
 module.exports = async (req, res, next) => {
   try {
@@ -25,6 +27,28 @@ module.exports = async (req, res, next) => {
     // Ces variables seront accessibles direct dans tes fichiers .pug
     res.locals.currentCompany = currentCompany;
     res.locals.user = req.user;
+
+    // 5. Limite mensuelle de RDV (plan Starter/basic) : on calcule si elle est
+    // atteinte pour pouvoir afficher une bannière persistante sur TOUTES les
+    // pages admin ("vos clients ne peuvent plus réserver !").
+    res.locals.monthlyLimitReached = false;
+    res.locals.monthlyBookingsCount = 0;
+    res.locals.monthlyBookingsLimit = Infinity;
+    if (currentCompany && req.user.role === "admin") {
+      const monthlyLimit = getLimit("monthlyBookings", req.user);
+      res.locals.monthlyBookingsLimit = monthlyLimit;
+      if (monthlyLimit !== Infinity) {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthlyCount = await Booking.countDocuments({
+          company: currentCompany._id,
+          date:    { $gte: startOfMonth },
+          status:  { $ne: "canceled" },
+        });
+        res.locals.monthlyBookingsCount = monthlyCount;
+        res.locals.monthlyLimitReached = monthlyCount >= monthlyLimit;
+      }
+    }
 
     next();
   } catch (err) {

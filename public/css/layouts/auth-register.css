@@ -103,6 +103,76 @@
   background: rgba(239, 68, 68, 0.04) !important;
 }
 
+/* Champ en erreur (suite à une réponse serveur invalide) — entouré en rouge */
+.auth-input.auth-input--error {
+  border-color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.04) !important;
+  animation: auth-shake .3s ease;
+}
+@keyframes auth-shake {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-4px); }
+  75%      { transform: translateX(4px); }
+}
+
+/* Confirmation du mot de passe : halo en direct — vert si ça correspond,
+   rouge si ça ne correspond pas, et on ne touche à rien si le champ est
+   vide ("met en vert si c bon et rouge si pas bon et si c vide laisse
+   normal"). */
+.auth-input.auth-input--match {
+  border-color: #16a34a !important;
+  background: rgba(22, 163, 74, 0.05) !important;
+}
+.auth-input.auth-input--mismatch {
+  border-color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.04) !important;
+}
+
+/* ── Checklist des règles du mot de passe ─────────────────────────────
+   Cette checklist n'avait AUCUN style associé : elle s'affichait comme du
+   texte brut empilé, en plus de casser la grille 2 colonnes en s'y
+   intercalant comme 3ᵉ cellule ("le truc pour les mots de passe est
+   buggé"). Elle vit maintenant dans le .auth-field du mot de passe, est
+   affichée en permanence ("affiche le direct"), et porte un vrai style. */
+.pwd-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--surface-soft, #f9fafb);
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 10px;
+}
+
+.pwd-rule {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted, #9ca3af);
+  transition: color .15s ease;
+}
+
+.pwd-rule__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.pwd-rule.ok {
+  color: #16a34a;
+}
+
+.pwd-rule.bad {
+  color: #ef4444;
+}
+
 /* ── Terms checkbox ──────────────────────────────────────────── */
 .auth-check-row {
   display: flex;
