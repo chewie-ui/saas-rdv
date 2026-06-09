@@ -141,11 +141,13 @@ exports.getDashboard = async (req, res) => {
       companyName:        owner ? (owner.businessName || owner.fullName || "Professionnel") : "Professionnel",
       companyType:        owner?.businessType || "",
       companyPhoto:       owner ? (owner.businessPicture || owner.profilePicture || "/images/no-user.webp") : "/images/no-user.webp",
-      companyCity:        owner?.location?.city || "",
-      companyAddr:        owner?.location?.address || "",
-      companyZip:         owner?.location?.zip || "",
-      companyLat:         owner?.location?.lat || "",
-      companyLon:         owner?.location?.lon || "",
+      // `location` peut être un objet {address,city,…} (format courant) ou
+      // un String hérité (vieilles données) — on gère les deux cas.
+      companyCity:        (typeof owner?.location === "object" ? owner.location?.city  : "") || "",
+      companyAddr:        (typeof owner?.location === "object" ? owner.location?.address : (typeof owner?.location === "string" ? owner.location : "")) || "",
+      companyZip:         (typeof owner?.location === "object" ? owner.location?.zip   : "") || "",
+      companyLat:         (typeof owner?.location === "object" ? owner.location?.lat   : "") || "",
+      companyLon:         (typeof owner?.location === "object" ? owner.location?.lon   : "") || "",
       companyPhone:       owner ? (owner.phonePro || owner.phone || "") : "",
       companyEmail:       owner?.emailPro || "",
       companyWebsite:     owner?.website || "",

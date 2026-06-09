@@ -235,6 +235,12 @@ const userSchema = schema(
       secret:     { type: String,  default: "" },
       tempSecret: { type: String,  default: "" },
     },
+
+    // Token secret pour le flux iCal d'abonnement agenda (webcal://)
+    calendarFeedToken: {
+      type: String,
+      default: null,
+    },
   },
 
   { timestamps: true },

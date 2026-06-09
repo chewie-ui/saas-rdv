@@ -36,6 +36,10 @@ html(lang="fr")
                                 svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                     path(d="M680-80q-50 0-85-35t-35-85q0-6 3-28L282-392q-16 15-37 23.5t-45 8.5q-50 0-85-35t-35-85q0-50 35-85t85-35q24 0 45 8.5t37 23.5l281-164q-2-7-2.5-13.5T560-760q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35q-24 0-45-8.5T598-672L317-508q2 7 2.5 13.5t.5 14.5q0 8-.5 14.5T317-452l281 164q16-15 37-23.5t45-8.5q50 0 85 35t35 85q0 50-35 85t-85 35Z")
                                 span= t.sidebar.share_calendar || 'Share'
+                            button.sm-btn.sm-btn--ghost#syncAgendaBtn(type="button" title="Synchroniser avec mon agenda")
+                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm80 240v-80h400v80H280Zm0 160v-80h280v80H280Z")
+                                span Sync agenda
                             a.sm-btn.sm-btn--primary(href=calendarUrl target="_blank")
                                 svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                     path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
@@ -56,6 +60,55 @@ html(lang="fr")
                 .main-wrapper
                     block content
         +dialog()
+
+        //- ── Popup Sync Agenda ──────────────────────────────────────────────
+        .sync-popup-overlay#syncPopupOverlay(style="display:none")
+            .sync-popup
+                .sync-popup__header
+                    .sync-popup__title
+                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                            path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm80 240v-80h400v80H280Zm0 160v-80h280v80H280Z")
+                        span Synchroniser mon agenda
+                    button.sync-popup__close#syncPopupClose(type="button" aria-label="Fermer")
+                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                            path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                .sync-popup__body
+                    p.sync-popup__desc Tous vos rendez-vous apparaîtront automatiquement dans votre agenda. La synchronisation se met à jour toutes les heures.
+                    .sync-popup__url-wrap
+                        input.sync-popup__url-input#syncFeedUrl(type="text" readonly placeholder="Chargement…")
+                        button.sync-popup__copy#syncCopyUrl(type="button" title="Copier le lien")
+                            svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z")
+                    .sync-popup__options
+                        a.sync-opt#syncGoogle(href="#" target="_blank" rel="noopener")
+                            .sync-opt__icon.sync-opt__icon--google
+                                svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="22" height="22")
+                                    path(fill="#EA4335" d="M24 9.5c3.1 0 5.8 1.1 8 2.9l6-6C34.5 3.1 29.6 1 24 1 14.8 1 7 6.7 3.7 14.7l7 5.4C12.4 14 17.7 9.5 24 9.5z")
+                                    path(fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.1-4.4 6.7l7 5.4c4.1-3.8 6.5-9.4 6.5-16.1z")
+                                    path(fill="#FBBC05" d="M10.7 28.6C10.3 27.4 10 26.2 10 25s.3-2.4.7-3.5l-7-5.4C2.6 18.6 2 21.7 2 25s.6 6.4 1.7 9.2l7-5.6z")
+                                    path(fill="#34A853" d="M24 47c5.6 0 10.3-1.8 13.7-5l-7-5.4c-1.9 1.3-4.3 2-6.7 2-6.3 0-11.6-4.3-13.3-10l-7 5.4C7 40.3 14.8 47 24 47z")
+                                    path(fill="none" d="M2 2h44v44H2z")
+                            .sync-opt__text
+                                strong Google Calendar
+                                span Ajout automatique dans Google Agenda
+                        a.sync-opt#syncApple(href="#")
+                            .sync-opt__icon.sync-opt__icon--apple
+                                svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="white")
+                                    path(d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z")
+                            .sync-opt__text
+                                strong Apple Calendar
+                                span iPhone · iPad · Mac
+                        a.sync-opt#syncOutlook(href="#" target="_blank" rel="noopener")
+                            .sync-opt__icon.sync-opt__icon--outlook
+                                svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="22" height="22")
+                                    path(fill="#1565C0" d="M29 8H44a1 1 0 011 1v30a1 1 0 01-1 1H29V8z")
+                                    path(fill="#1E88E5" d="M5 8H29V40H5z")
+                                    path(fill="#fff" d="M17 16c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 10c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z")
+                                    path(fill="#fff" d="M33 18h-2v4h-4v2h4v4h2v-4h4v-2h-4z")
+                            .sync-opt__text
+                                strong Outlook
+                                span Outlook.com · Microsoft 365
+
         script(src="/js/layouts/admin.js" type="module")
         script(src="/js/theme.js")
         
@@ -76,6 +129,78 @@ html(lang="fr")
                         setTimeout(function() { span.textContent = orig; }, 2000);
                     });
                 });
+            })();
+
+            // ── Sync Agenda popup ────────────────────────────────────────────
+            (function() {
+                var syncBtn     = document.getElementById('syncAgendaBtn');
+                var overlay     = document.getElementById('syncPopupOverlay');
+                var closeBtn    = document.getElementById('syncPopupClose');
+                var feedUrlInput= document.getElementById('syncFeedUrl');
+                var copyBtn     = document.getElementById('syncCopyUrl');
+                var syncGoogle  = document.getElementById('syncGoogle');
+                var syncApple   = document.getElementById('syncApple');
+                var syncOutlook = document.getElementById('syncOutlook');
+                var feedUrl     = null;
+
+                if (!syncBtn) return;
+
+                // Charger le token feed (une fois)
+                async function loadFeedUrl() {
+                    if (feedUrl) return feedUrl;
+                    try {
+                        var res  = await fetch('/api/calendar-feed-token');
+                        var data = await res.json();
+                        feedUrl  = data.feedUrl;
+                        return feedUrl;
+                    } catch(e) { return null; }
+                }
+
+                syncBtn.addEventListener('click', async function() {
+                    overlay.style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                    var url = await loadFeedUrl();
+                    if (!url) { feedUrlInput.placeholder = 'Erreur — rechargez la page'; return; }
+
+                    feedUrlInput.value = url;
+
+                    // Google Calendar — subscribe URL
+                    var webcalUrl = url.replace(/^https?:\/\//, 'webcal://');
+                    syncGoogle.href = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(webcalUrl);
+
+                    // Apple Calendar — webcal:// ouvre directement Calendrier sur macOS/iOS
+                    var ua = navigator.userAgent || '';
+                    var isApple = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && !/Windows/i.test(ua));
+                    if (isApple) {
+                        syncApple.href = webcalUrl;
+                        syncApple.removeAttribute('target');
+                    } else {
+                        // Sur Windows/Android : cacher Apple Calendar
+                        var appleEl = syncApple.closest('.sync-opt') || syncApple;
+                        appleEl.style.display = 'none';
+                    }
+
+                    // Outlook Web — abonnement via URL (Outlook.com prend webcal)
+                    syncOutlook.href = 'https://outlook.live.com/calendar/0/addfromweb?url=' + encodeURIComponent(webcalUrl) + '&name=BranShee+Agenda';
+                });
+
+                // Copier l'URL
+                if (copyBtn) {
+                    copyBtn.addEventListener('click', function() {
+                        if (!feedUrlInput.value) return;
+                        navigator.clipboard.writeText(feedUrlInput.value).then(function() {
+                            var origTitle = copyBtn.title;
+                            copyBtn.style.color = '#16a34a';
+                            copyBtn.title = 'Copié !';
+                            setTimeout(function() { copyBtn.style.color = ''; copyBtn.title = origTitle; }, 2000);
+                        });
+                    });
+                }
+
+                function closePopup() { overlay.style.display = 'none'; document.body.style.overflow = ''; }
+                if (closeBtn) closeBtn.addEventListener('click', closePopup);
+                if (overlay)  overlay.addEventListener('click', function(e) { if (e.target === overlay) closePopup(); });
+                document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && overlay.style.display !== 'none') closePopup(); });
             })();
 
 

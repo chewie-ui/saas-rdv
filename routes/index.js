@@ -10,6 +10,7 @@ const path = require("path");
 const { sendEmail } = require("../utils/mailer");
 const getServices = require("../utils/services");
 
+router.use(require("./ical"));
 router.use(require("./auth"));
 router.use(require("./client-auth"));
 router.use(require("./company"));

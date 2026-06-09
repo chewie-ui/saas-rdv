@@ -370,11 +370,15 @@ exports.createCheckout = async (req, res) => {
           sessionParams.discounts = [{ coupon: coupon.id }];
         }
 
-        // Enregistrer l'utilisation
-        await PromoCode.findByIdAndUpdate(promo._id, {
-          $inc: { usedCount: 1 },
-          $addToSet: { usedByUsers: userId },
-        });
+        // ⚠️ On n'incrémente PAS encore usedCount ici : l'utilisateur pourrait
+        // abandonner la page Stripe sans payer. L'incrément est fait dans
+        // paymentVerification (admin.controller.js) après confirmation du paiement.
+        // On stocke l'ID du code promo dans la session metadata pour pouvoir
+        // le retrouver au retour de Stripe.
+        sessionParams.metadata = {
+          ...sessionParams.metadata,
+          promoCodeId: String(promo._id),
+        };
       }
     }
 
@@ -622,7 +626,7 @@ exports.editEmail = async (req, res) => {
 
 exports.updateLocation = async (req, res) => {
   try {
-    const { street, zip, city, country, iframeUrl, lat, lon, serviceType, gmapUrl } = req.body;
+    const { street, zip, city, country, iframeUrl, iframeEmbedCode, lat, lon, serviceType, gmapUrl, onlineCountry, onlineLangs } = req.body;
 
     await User.findByIdAndUpdate(req.user._id, {
       location: {
@@ -631,10 +635,13 @@ exports.updateLocation = async (req, res) => {
         zip,
         country,
         iframeUrl,
+        iframeEmbedCode: iframeEmbedCode || "",
         lat,
         lon,
-        gmapUrl:     gmapUrl     || "",
-        serviceType: serviceType || "sur_place",
+        gmapUrl:       gmapUrl       || "",
+        serviceType:   serviceType   || "sur_place",
+        onlineCountry: onlineCountry || "",
+        onlineLangs:   Array.isArray(onlineLangs) ? onlineLangs : [],
       },
     });
 

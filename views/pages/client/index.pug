@@ -201,11 +201,20 @@ block content
                                 svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                                     path(d="M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 294q122-112 181-203.5T720-552q0-109-69.5-178.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186Z")
                                 span= _displayAddress
-                                if _googleMapsUrl
-                                    a.bk-location-card__gmaps(href=_googleMapsUrl target="_blank" rel="noopener")
-                                        | Ouvrir dans Maps
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="11px" viewBox="0 -960 960 960" width="11px" fill="currentColor")
-                                            path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z")
+                                .bk-location-card__actions
+                                    button.bk-copy-addr(
+                                        type="button"
+                                        title="Copier l'adresse"
+                                        data-addr=_displayAddress
+                                    )
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                            path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z")
+                                        span Copier
+                                    if _googleMapsUrl
+                                        a.bk-location-card__gmaps(href=_googleMapsUrl target="_blank" rel="noopener")
+                                            | Ouvrir dans Maps
+                                            svg(xmlns="http://www.w3.org/2000/svg" height="11px" viewBox="0 -960 960 960" width="11px" fill="currentColor")
+                                                path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z")
                         if showMap
                             .bk-map-wrap.bk-location-card__map
                                 iframe(src=_mapEmbedSrc style="border:0;width:100%;height:280px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade")
@@ -442,6 +451,28 @@ block scripts
                         btn.style.color = '';
                     }, 1500);
                 });
+            });
+        });
+    script.
+        // ── Copier l'adresse ──────────────────────────────────────────────────
+        document.querySelectorAll('.bk-copy-addr').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var addr = btn.dataset.addr || btn.closest('.bk-location-card__addr').querySelector('span').textContent;
+                if (!addr) return;
+                var doFeedback = function() {
+                    var origHtml = btn.innerHTML;
+                    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg><span>Copié !</span>';
+                    btn.classList.add('copied');
+                    setTimeout(function() { btn.innerHTML = origHtml; btn.classList.remove('copied'); }, 1800);
+                };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(addr).then(doFeedback).catch(doFeedback);
+                } else {
+                    var ta = document.createElement('textarea');
+                    ta.value = addr; ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+                    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+                    doFeedback();
+                }
             });
         });
     script.

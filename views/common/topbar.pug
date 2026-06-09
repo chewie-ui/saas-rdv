@@ -38,13 +38,15 @@
                         if clientUser
                             a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/espace-client")
                                 span= t.header.my_space
-                            a.sm-btn.sm-btn--primary(href="/")
-                                span= t.common.become_coach
+                            //- Visiteur déjà connecté en tant que client → proposer de créer un compte pro
+                            a.sm-btn.sm-btn--primary(href="/register?plan=pro&billing=monthly")
+                                span= t.header.register
                         else
                             a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/client/login")
                                 span= t.header.client_account
-                            a.sm-btn.sm-btn--primary(href="/")
-                                span= t.common.become_coach
+                            //- Visiteur anonyme → inscription directe avec 1 mois offert
+                            a.sm-btn.sm-btn--primary(href="/register?plan=pro&billing=monthly")
+                                span= t.header.register
 
             //- Séparateur desktop
             .header__sep
@@ -119,13 +121,13 @@
                     if clientUser
                         a.sm-btn.sm-btn--primary(href="/espace-client")
                             span= t.header.my_space
-                        a.sm-btn.sm-btn--ghost(href="/")
-                            span= t.common.become_coach
+                        a.sm-btn.sm-btn--ghost(href="/register?plan=pro&billing=monthly")
+                            span= t.header.register
                     else
                         a.sm-btn.sm-btn--primary(href="/client/login")
                             span= t.header.client_account
-                        a.sm-btn.sm-btn--ghost(href="/")
-                            span= t.common.become_coach
+                        a.sm-btn.sm-btn--ghost(href="/register?plan=pro&billing=monthly")
+                            span= t.header.register
 
         .header__panel-bottom
             //- Langue dans le panel

@@ -67,11 +67,16 @@ router.get("/subscription", isAuth, injectCompany, async (req, res) => {
   // débiter directement quand on clique sur "Acheter Business/Pro".
   const paymentMethods = await adminController.getUserPaymentMethods(req.user);
 
+  // Offres actives (isDefaultOffer=true) → affichées dynamiquement sur la page
+  const PromoCode = require("../db/models/promoCode.model");
+  const defaultOffers = await PromoCode.find({ isDefaultOffer: true, active: true }).lean();
+
   res.render("admin/subscription", {
     pageName: "Subscription",
     title: "Plans",
     monthlyBookingCount,
     paymentMethods,
+    defaultOffers,
   });
 });
 

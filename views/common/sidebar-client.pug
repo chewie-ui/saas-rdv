@@ -3,7 +3,9 @@ aside.sidebar#sidebar
 
         //- ── Header: logo + close ──────────────────────────────────
         .sb-header
-            a.sb-logo(href="/")
+            //- Depuis l'espace client, le logo renvoie vers /search
+            //- (page de recherche) et non vers / (landing page marketing).
+            a.sb-logo(href="/search")
                 img.sb-logo__mark(src="/images/icon.svg" alt="BranShee")
                 span.sb-logo__name BranShee
             button.sb-close#closeSidebar(type="button" aria-label="Fermer le menu")

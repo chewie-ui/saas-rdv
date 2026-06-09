@@ -349,21 +349,58 @@ const countryInputOnline = document.getElementById("countryInputOnline");
 const cityInputOnline = document.getElementById("cityInputOnline");
 
 // Service type radio toggle
-const radioSurPlace = document.getElementById("onlineService");
-const radioEnLigne = document.getElementById("homeService");
+const radioSurPlace   = document.getElementById("onlineService");
+const radioEnLigne    = document.getElementById("homeService");
+const radioIframe     = document.getElementById("iframeService");
 const addressSearchBlock = document.getElementById("addressSearchBlock");
-const fullAddressBlock = document.getElementById("fullAddressBlock");
+const fullAddressBlock   = document.getElementById("fullAddressBlock");
 const onlineAddressBlock = document.getElementById("onlineAddressBlock");
+const locOnSiteFields    = document.getElementById("locOnSiteFields");
+const locOnlineFields    = document.getElementById("locOnlineFields");
+const locIframeFields    = document.getElementById("locIframeFields");
 
 function applyServiceType() {
   const isSurPlace = radioSurPlace && radioSurPlace.checked;
+  const isEnLigne  = radioEnLigne  && radioEnLigne.checked;
+  const isIframe   = radioIframe   && radioIframe.checked;
   if (addressSearchBlock) addressSearchBlock.style.display = isSurPlace ? "" : "none";
-  if (fullAddressBlock) fullAddressBlock.style.display = isSurPlace ? "" : "none";
-  if (onlineAddressBlock) onlineAddressBlock.style.display = isSurPlace ? "none" : "";
+  if (fullAddressBlock)   fullAddressBlock.style.display   = isSurPlace ? "" : "none";
+  if (onlineAddressBlock) onlineAddressBlock.style.display  = "none"; // toujours masqué (remplacé)
+  // Blocs spécifiques à chaque mode
+  if (locOnSiteFields)  locOnSiteFields.style.display  = isSurPlace ? "" : "none";
+  if (locOnlineFields)  locOnlineFields.style.display  = isEnLigne  ? "" : "none";
+  if (locIframeFields)  locIframeFields.style.display  = isIframe   ? "" : "none";
 }
 
 if (radioSurPlace) radioSurPlace.addEventListener("change", applyServiceType);
-if (radioEnLigne) radioEnLigne.addEventListener("change", applyServiceType);
+if (radioEnLigne)  radioEnLigne.addEventListener("change", applyServiceType);
+if (radioIframe)   radioIframe.addEventListener("change", applyServiceType);
+
+// Prévisualisation live de l'iframe au fur et à mesure de la saisie
+const locIframeInput = document.getElementById("locIframeInput");
+if (locIframeInput) {
+  locIframeInput.addEventListener("input", function () {
+    const src = extractIframeSrc(locIframeInput.value.trim());
+    const mc = document.getElementById("mapContainer");
+    if (!mc) return;
+    if (src) {
+      mc.innerHTML = `<iframe src="${src}" style="border:0;width:100%;height:300px;display:block;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+    } else if (!locIframeInput.value.trim()) {
+      mc.innerHTML = "";
+    }
+  });
+}
+
+// Extraire le src depuis un code <iframe ...> ou retourner l'URL directement
+function extractIframeSrc(raw) {
+  if (!raw) return null;
+  // Si c'est directement une URL
+  if (raw.startsWith("http")) return raw;
+  // Sinon extraire src="..." dans le code iframe
+  var m = raw.match(/src=["']([^"']+)["']/i);
+  return m ? m[1] : null;
+}
+
 applyServiceType();
 
 let debounceTimer;
@@ -371,8 +408,83 @@ let debounceTimer;
 if (confirmLocation) {
   confirmLocation.addEventListener("click", async () => {
     const isSurPlace = radioSurPlace ? radioSurPlace.checked : true;
+    const isEnLigne  = radioEnLigne  ? radioEnLigne.checked  : false;
+    const isIframe   = radioIframe   ? radioIframe.checked   : false;
 
-    // ── Nouveau système simplifié : adresse + lien ────────────────────────────
+    const btn  = confirmLocation.querySelector('span') || confirmLocation;
+    const orig = btn.textContent;
+
+    // ── Mode Iframe ───────────────────────────────────────────────────────────
+    if (isIframe) {
+      const raw = locIframeInput ? (locIframeInput.value || '').trim() : '';
+      const iframeSrc = extractIframeSrc(raw);
+      if (!iframeSrc) {
+        alert('Veuillez coller le code iframe Google Maps.');
+        if (locIframeInput) locIframeInput.focus();
+        return;
+      }
+      btn.textContent = '…';
+      confirmLocation.disabled = true;
+      try {
+        await fetch('/account/location', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            street: '', city: '', zip: '', country: '',
+            iframeUrl: iframeSrc,
+            iframeEmbedCode: raw,
+            gmapUrl: '',
+            serviceType: 'iframe',
+          }),
+        });
+        const mc = document.getElementById('mapContainer');
+        if (mc) mc.innerHTML = `<iframe src="${iframeSrc}" style="border:0;width:100%;height:300px;display:block;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+        btn.textContent = '✓ Enregistré';
+        setTimeout(() => { btn.textContent = orig; confirmLocation.disabled = false; }, 2500);
+      } catch (e) {
+        btn.textContent = orig;
+        confirmLocation.disabled = false;
+        alert('Erreur lors de la sauvegarde.');
+      }
+      return;
+    }
+
+    // ── Mode en ligne (pays + langue) ────────────────────────────────────────
+    if (isEnLigne) {
+      const countryEl = document.getElementById('locCountryInput');
+      const langEl    = document.getElementById('locLangInput');
+      const country   = countryEl ? countryEl.value : '';
+      const langs     = langEl
+        ? Array.from(langEl.selectedOptions).map(function(o) { return o.value; })
+        : [];
+      btn.textContent = '…';
+      confirmLocation.disabled = true;
+      try {
+        await fetch('/account/location', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            street: '', city: '', zip: '', country: '',
+            iframeUrl: '', gmapUrl: '',
+            serviceType: 'en_ligne',
+            onlineCountry: country,
+            onlineLangs: langs,
+          }),
+        });
+        // Masquer la carte (pas pertinente pour un service en ligne)
+        const mc = document.getElementById('mapContainer');
+        if (mc) mc.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:300px;color:#9ca3af;font-size:14px;gap:8px;"><svg xmlns=\'http://www.w3.org/2000/svg\' height=\'24px\' viewBox=\'0 -960 960 960\' width=\'24px\' fill=\'currentColor\'><path d=\'M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-40-82v-78q-33 0-56.5-23.5T360-320v-40L168-552q-3 18-5.5 36t-2.5 36q0 121 79.5 212T440-162Zm276-102q20-22 35-47.5t24-52.5q-29 0-52 -17.5T700-430v-60q0-33-23.5-56.5T620-570h-80v-80q0-17-11.5-28.5T500-690h-80v-78q-19 4-38 9.5t-36 14.5l-26-26q12-14 26.5-26t30.5-21q-15 15-25 34t-10 42q0 33 23.5 56.5T400-660h40v40q0 17 11.5 28.5T480-580h60v40q0 17 11.5 28.5T580-500v40q0 17 11.5 28.5T620-420h100q0 17-11.5 28.5T680-380v40q0 10 2 19.5t7 17.5l27-1Zm0 0Z\'/></svg> Service en ligne — aucune carte à afficher</div>';
+        btn.textContent = '✓ Enregistré';
+        setTimeout(() => { btn.textContent = orig; confirmLocation.disabled = false; }, 2500);
+      } catch (e) {
+        btn.textContent = orig;
+        confirmLocation.disabled = false;
+        alert('Erreur lors de la sauvegarde.');
+      }
+      return;
+    }
+
+    // ── Mode adresse (sur place) ──────────────────────────────────────────────
     const locAddr = document.getElementById('locAddressInput');
     const locGmap = document.getElementById('locGmapInput');
 
@@ -386,8 +498,6 @@ if (confirmLocation) {
     }
 
     const iframeUrl = `https://maps.google.com/maps?q=${encodeURIComponent(fullAddress)}&output=embed&hl=fr&z=16`;
-    const btn  = confirmLocation.querySelector('span') || confirmLocation;
-    const orig = btn.textContent;
     btn.textContent = '…';
     confirmLocation.disabled = true;
 
@@ -398,7 +508,7 @@ if (confirmLocation) {
         body: JSON.stringify({
           street: fullAddress, city: '', zip: '', country: '',
           iframeUrl, gmapUrl,
-          serviceType: isSurPlace ? 'sur_place' : 'en_ligne',
+          serviceType: 'sur_place',
         }),
       });
       const mc = document.getElementById('mapContainer');

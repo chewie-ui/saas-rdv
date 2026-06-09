@@ -1161,6 +1161,22 @@ exports.paymentVerification = async (req, res) => {
     console.log(`✅ [paymentVerification] Plan "${planName}" activé pour user ${userId}`);
     const { enforcePlanLimits } = require("./account.controller");
     enforcePlanLimits(userId, planName).catch(() => {});
+
+    // ── Incrémenter l'utilisation du code promo maintenant que le paiement
+    //    est confirmé (évite de compter les abandons sur la page Stripe).
+    const promoCodeId = session.metadata?.promoCodeId;
+    if (promoCodeId) {
+      try {
+        const PromoCode = require("../db/models/promoCode.model");
+        await PromoCode.findByIdAndUpdate(promoCodeId, {
+          $inc: { usedCount: 1 },
+          $addToSet: { usedByUsers: userId },
+        });
+        console.log(`✅ [paymentVerification] PromoCode ${promoCodeId} usage enregistré`);
+      } catch (promoErr) {
+        console.error("[paymentVerification] Erreur MAJ promo:", promoErr.message);
+      }
+    }
   } catch (dbErr) {
     console.error("[paymentVerification] Erreur DB:", dbErr.message);
   }

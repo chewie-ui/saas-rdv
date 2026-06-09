@@ -107,6 +107,27 @@ block content
                     else
                         button.sub-btn.sub-btn--outline#getFreePlan= t.subscription.btn_downgrade
 
+            -
+                //- ── Helpers offres actives ──────────────────────────
+                //- Cherche une offre active qui s'applique à un plan donné.
+                function _offerFor(plan, offers) {
+                    if (!offers || !offers.length) return null;
+                    return offers.find(function(o) {
+                        var ap = o.applicablePlan || 'all';
+                        return ap === 'all' || ap === plan + '_monthly' || ap === plan + '_yearly'
+                            || ap === 'premium_monthly' && plan === 'pro'
+                            || ap === 'premium_yearly'  && plan === 'pro';
+                    }) || null;
+                }
+                function _offerLabel(o) {
+                    if (!o) return '';
+                    if (o.discountType === 'trial') return '🎁 ' + (o.trialDays || 30) + ' jours gratuits';
+                    if (o.discountType === 'percent') return '🎉 -' + o.discountValue + '%';
+                    return '🎉 -' + o.discountValue + '€';
+                }
+                var _proOffer  = _offerFor('pro', defaultOffers);
+                var _bizOffer  = _offerFor('business', defaultOffers);
+
             //- ─── Pro ───────────────────────────────────────────────
             .sub-plan.sub-plan--premium(class=(currentPlan === 'pro' && isPro) ? 'sub-plan--current' : '')
                 .sub-plan__popular= t.sub_extra.popular || 'Le plus populaire'
@@ -115,11 +136,20 @@ block content
                         h2.sub-plan__name= t.subscription.plan_2
                         p.sub-plan__desc= t.subscription.plan_2_desc || 'Pour les indépendants'
                     .sub-plan__pricing
-                        span.sub-plan__price(
-                            data-monthly=t.subscription.price_2_val || '19'
-                            data-yearly=t.subscription.price_2_yearly_val || '15'
-                        )= t.subscription.price_2
-                        span.sub-plan__per= t.subscription.price_2_sub
+                        if _proOffer
+                            .sub-plan__offer-badge= _offerLabel(_proOffer)
+                            small.sub-plan__then puis&nbsp;
+                                span.sub-plan__price(
+                                    data-monthly=t.subscription.price_2_val || '19'
+                                    data-yearly=t.subscription.price_2_yearly_val || '15'
+                                )= t.subscription.price_2
+                                | /mois
+                        else
+                            span.sub-plan__price(
+                                data-monthly=t.subscription.price_2_val || '19'
+                                data-yearly=t.subscription.price_2_yearly_val || '15'
+                            )= t.subscription.price_2
+                            span.sub-plan__per= t.subscription.price_2_sub
                 .sub-plan__divider
                 .sub-plan__features
                     each feature in t.subscription.plan_2_features
@@ -149,6 +179,15 @@ block content
                     else if currentPlan !== 'business'
                         button.sub-btn.sub-btn--upgrade#getProPlan
                             | #{t.subscription.btn_get_pro || 'Passer au Pro →'}
+                        if !isPro && _proOffer
+                            button.sub-btn.sub-btn--free-month.js-offer-btn(
+                                type="button"
+                                data-plan="pro"
+                                data-code=_proOffer.code
+                            )
+                                svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
+                                    path(d="M160-80v-440H80v-240h208q-5-9-6.5-19t-1.5-21q0-50 35-85t85-35q23 0 43 8.5t37 23.5q17-15 37-23.5t43-8.5q50 0 85 35t35 85q0 11-1.5 21T663-760h209v240h-80v440H160Zm320-640q17 0 28.5-11.5T520-760q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760q0 17 11.5 28.5T480-720Zm-160 0q17 0 28.5-11.5T360-760q0-17-11.5-28.5T320-800q-17 0-28.5 11.5T280-760q0 17 11.5 28.5T320-720ZM160-680v80h280v-80H160Zm280 520v-360H240v360h200Zm80 0h200v-360H520v360Zm280-440v-80H520v80h280Z")
+                                | &nbsp;#{_offerLabel(_proOffer)} (code #{_proOffer.code})
 
             //- ─── Business ──────────────────────────────────────────
             .sub-plan.sub-plan--studio(class=(currentPlan === 'business' && isPro) ? 'sub-plan--current' : '')
@@ -158,11 +197,20 @@ block content
                         h2.sub-plan__name= t.subscription.plan_3
                         p.sub-plan__desc= t.subscription.plan_3_desc || 'Pour les équipes'
                     .sub-plan__pricing
-                        span.sub-plan__price(
-                            data-monthly=t.subscription.price_3_val || '49'
-                            data-yearly=t.subscription.price_3_yearly_val || '39'
-                        )= t.subscription.price_3
-                        span.sub-plan__per= t.subscription.price_3_sub
+                        if _bizOffer
+                            .sub-plan__offer-badge= _offerLabel(_bizOffer)
+                            small.sub-plan__then puis&nbsp;
+                                span.sub-plan__price(
+                                    data-monthly=t.subscription.price_3_val || '49'
+                                    data-yearly=t.subscription.price_3_yearly_val || '39'
+                                )= t.subscription.price_3
+                                | /mois
+                        else
+                            span.sub-plan__price(
+                                data-monthly=t.subscription.price_3_val || '49'
+                                data-yearly=t.subscription.price_3_yearly_val || '39'
+                            )= t.subscription.price_3
+                            span.sub-plan__per= t.subscription.price_3_sub
                 .sub-plan__divider
                 .sub-plan__features
                     .sub-plan__feature.sub-plan__feature--includes
@@ -197,11 +245,15 @@ block content
                     else
                         button.sub-btn.sub-btn--upgrade.sub-btn--business#getBusinessPlan
                             | #{t.subscription.btn_get_business || 'Passer au Business →'}
-                        if !isPro
-                            button.sub-btn.sub-btn--free-month#getBusinessFreeMonth(type="button")
+                        if !isPro && _bizOffer
+                            button.sub-btn.sub-btn--free-month.js-offer-btn(
+                                type="button"
+                                data-plan="business"
+                                data-code=_bizOffer.code
+                            )
                                 svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
                                     path(d="M160-80v-440H80v-240h208q-5-9-6.5-19t-1.5-21q0-50 35-85t85-35q23 0 43 8.5t37 23.5q17-15 37-23.5t43-8.5q50 0 85 35t35 85q0 11-1.5 21T663-760h209v240h-80v440H160Zm320-640q17 0 28.5-11.5T520-760q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760q0 17 11.5 28.5T480-720Zm-160 0q17 0 28.5-11.5T360-760q0-17-11.5-28.5T320-800q-17 0-28.5 11.5T280-760q0 17 11.5 28.5T320-720ZM160-680v80h280v-80H160Zm280 520v-360H240v360h200Zm80 0h200v-360H520v360Zm280-440v-80H520v80h280Z")
-                                | &nbsp;1 mois gratuit (code BIENVENUE)
+                                | &nbsp;#{_offerLabel(_bizOffer)} (code #{_bizOffer.code})
 
         //- ── Comparison table ────────────────────────────────────────
         .sub-compare

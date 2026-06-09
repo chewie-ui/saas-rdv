@@ -3,16 +3,56 @@ extends ../../layouts/auth
 block links
     link(rel="stylesheet", href="/css/layouts/auth-register.css")
     style.
+        /* ── Wizard steps ─────────────────────────────────────────── */
+        .reg-step { display:none; }
+        .reg-step.active { display:block; }
+
+        /* ── Progress bar ─────────────────────────────────────────── */
+        .reg-progress { display:flex; align-items:center; gap:0; margin-bottom:28px; }
+        .reg-progress__step { display:flex; align-items:center; gap:8px; flex:1; }
+        .reg-progress__dot {
+            width:28px; height:28px; border-radius:50%;
+            border:2px solid #e5e7eb; background:#fff;
+            font-size:12px; font-weight:700; color:#9ca3af;
+            display:flex; align-items:center; justify-content:center;
+            flex-shrink:0; transition:all .2s;
+        }
+        .reg-progress__dot.done { background:#15803d; border-color:#15803d; color:#fff; }
+        .reg-progress__dot.current { background:#fff; border-color:#15803d; color:#15803d; }
+        .reg-progress__label { font-size:12px; font-weight:500; color:#9ca3af; transition:color .2s; white-space:nowrap; }
+        .reg-progress__label.current { color:#15803d; font-weight:600; }
+        .reg-progress__label.done { color:#374151; }
+        .reg-progress__line { flex:1; height:2px; background:#e5e7eb; margin:0 8px; transition:background .2s; }
+        .reg-progress__line.done { background:#15803d; }
+
+        /* ── Nav buttons ──────────────────────────────────────────── */
+        .reg-nav { display:flex; gap:10px; margin-top:4px; }
+        .reg-back { flex:0 0 auto; background:none; border:1.5px solid #e5e7eb; border-radius:9px; padding:0 16px; height:38px; font-size:14px; font-weight:600; color:#6b7280; cursor:pointer; transition:border-color .15s,color .15s; }
+        .reg-back:hover { border-color:#374151; color:#374151; }
+        .reg-next { flex:1; }
+
+        /* ── Misc ─────────────────────────────────────────────────── */
         .auth-ref-row { position:relative; display:flex; align-items:center; gap:8px; }
         .auth-ref-row .auth-input { flex:1; }
         .auth-ref-status { font-size:12px; font-weight:600; white-space:nowrap; flex-shrink:0; }
         .auth-ref-status.ok  { color:var(--accent,#16a34a); }
         .auth-ref-status.err { color:#dc2626; }
-        .pwd-rules { display:flex; flex-direction:column; gap:4px; margin-top:6px; padding:10px 12px; background:var(--surface,#f5f4f1); border-radius:8px; }
+        .pwd-rules { display:flex; flex-direction:column; gap:4px; margin-top:8px; padding:10px 12px; background:var(--surface,#f5f4f1); border-radius:8px; }
         .pwd-rule { display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--text-muted,#6b7280); transition:color .15s; }
         .pwd-rule__dot { font-size:10px; }
         .pwd-rule.ok { color:var(--accent,#16a34a); font-weight:600; }
         .pwd-rule.bad { color:#dc2626; }
+        .auth-pwd-wrap { position:relative; display:flex; align-items:center; }
+        .auth-pwd-wrap .auth-input { flex:1; padding-right:40px; }
+        .auth-pwd-toggle { position:absolute; right:10px; background:none; border:none; cursor:pointer; color:var(--text-muted,#9ca3af); padding:4px; display:flex; align-items:center; transition:color .15s; border-radius:4px; }
+        .auth-pwd-toggle:hover { color:var(--text-primary,#111); }
+        .auth-label-opt { color:var(--text-muted,#9ca3af); font-weight:400; font-size:12px; }
+        .auth-plan-badge { display:inline-flex; align-items:center; gap:7px; background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:10px; padding:9px 14px; font-size:13px; font-weight:700; color:#15803d; margin-bottom:8px; width:100%; box-sizing:border-box; }
+        .auth-plan-badge svg { stroke:#15803d; flex-shrink:0; }
+        .auth-promo-badge { display:inline-flex; align-items:center; gap:6px; background:#fffbeb; border:1.5px solid #fde68a; border-radius:10px; padding:7px 13px; font-size:12.5px; font-weight:600; color:#92400e; margin-bottom:14px; width:100%; box-sizing:border-box; }
+        .auth-promo-badge svg { stroke:#d97706; flex-shrink:0; }
+        .auth-promo-badge strong { color:#b45309; }
+        .reg-step-title { font-size:15px; font-weight:600; color:#374151; margin:0 0 18px; }
 
 block content
     .auth-split
@@ -47,76 +87,66 @@ block content
                 h1= t.auth.register_title || 'Créez votre compte'
                 p.auth-sub= t.auth.register_desc || 'Vous utiliserez ce compte pour gérer votre activité et inviter votre équipe.'
 
-                if pendingPlan === 'pro' || pendingPlan === 'business'
-                    .auth-plan-badge
-                        svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
-                            polyline(points="20 6 9 17 4 12")
-                        = pendingPlan === 'business' ? 'Plan Business sélectionné · 1 mois gratuit inclus' : 'Plan Pro sélectionné · 1 mois gratuit inclus'
+                //- Barre de progression
+                .reg-progress#regProgress
+                    .reg-progress__step
+                        .reg-progress__dot.current#dot1 1
+                        span.reg-progress__label.current#lbl1 Profil
+                    .reg-progress__line#line1
+                    .reg-progress__step
+                        .reg-progress__dot#dot2 2
+                        span.reg-progress__label#lbl2 Mot de passe
+                    .reg-progress__line#line2
+                    .reg-progress__step
+                        .reg-progress__dot#dot3 3
+                        span.reg-progress__label#lbl3 Finaliser
 
                 .auth-error#registerError(style="display:none")
 
-                //- Google SSO
-                a.auth-social-btn(href="/auth/google")
-                    svg(width="16" height="16" viewBox="0 0 48 48")
-                        path(fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8a12 12 0 1 1 0-24c3.1 0 5.8 1.2 7.9 3l5.7-5.7A20 20 0 1 0 24 44c11 0 20-9 20-20 0-1.3-.1-2.6-.4-3.9z")
-                        path(fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7A20 20 0 0 0 6.3 14.7z")
-                        path(fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2A12 12 0 0 1 12.7 28L6.2 33A20 20 0 0 0 24 44z")
-                        path(fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z")
-                    span Continuer avec Google
-
-                .auth-divider-row
-                    hr
-                    span OR
-                    hr
-
-                //- Formulaire
+                //- Formulaire (tout dans un seul form, soumis à l'étape 3)
                 form.auth-register-form#registerForm(action="/register" method="POST")
 
-                    //- Nom complet
-                    .auth-field
-                        label.auth-label= t.auth.full_name || 'Nom complet'
-                        input.auth-input(
-                            type="text"
-                            name="fullname"
-                            placeholder="Léa Bernard"
-                            autocomplete="name"
-                            required
-                        )
+                    //- ══ ÉTAPE 1 : Profil ══════════════════════════════════
+                    .reg-step.active#step1
 
-                    //- Email
-                    .auth-field
-                        label.auth-label= t.auth.work_email || 'Email professionnel'
-                        input.auth-input(
-                            type="email"
-                            name="email"
-                            placeholder="lea@studio.com"
-                            autocomplete="email"
-                            required
-                        )
+                        //- Google SSO uniquement à l'étape 1
+                        a.auth-social-btn(href="/auth/google")
+                            svg(width="16" height="16" viewBox="0 0 48 48")
+                                path(fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8a12 12 0 1 1 0-24c3.1 0 5.8 1.2 7.9 3l5.7-5.7A20 20 0 1 0 24 44c11 0 20-9 20-20 0-1.3-.1-2.6-.4-3.9z")
+                                path(fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7A20 20 0 0 0 6.3 14.7z")
+                                path(fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2A12 12 0 0 1 12.7 28L6.2 33A20 20 0 0 0 24 44z")
+                                path(fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z")
+                            span Continuer avec Google
 
-                    //- Métier
-                    .auth-field
-                        label.auth-label Votre métier / secteur
-                        .auth-service-wrap
-                            input.auth-input.service-input(
+                        .auth-divider-row
+                            hr
+                            span OR
+                            hr
+
+                        .auth-field
+                            label.auth-label= t.auth.full_name || 'Nom complet'
+                            input.auth-input#nameInput(
                                 type="text"
-                                id="serviceInput"
-                                placeholder="Ex: Coiffeur, Coach..."
-                                autocomplete="off"
+                                name="fullname"
+                                placeholder="Léa Bernard"
+                                autocomplete="name"
                             )
-                            input(type="hidden" name="businessType" id="businessTypeInput")
-                            .auth-service-dropdown#serviceDropdown
 
-                    //- Mot de passe + confirmation (côte à côte sur desktop)
-                    //- NB : la checklist de règles vivait DANS le .auth-field
-                    //- du mot de passe, coincée sur la largeur d'une seule
-                    //- colonne avec son texte qui retombait à la ligne — moche
-                    //- et déséquilibré ("change le design, c'est moche la").
-                    //- Elle redevient un bloc à part entière, sous les deux
-                    //- champs, en pleine largeur, et passe d'une liste
-                    //- empilée à des "puces" compactes en ligne (qui
-                    //- s'enroulent proprement sur mobile).
-                    .auth-register-row.auth-two-col
+                        .auth-field
+                            label.auth-label= t.auth.work_email || 'Email professionnel'
+                            input.auth-input#emailInput(
+                                type="email"
+                                name="email"
+                                placeholder="lea@studio.com"
+                                autocomplete="email"
+                            )
+
+                        .reg-nav
+                            button.sm-btn.sm-btn--primary.sm-btn--full.reg-next(type="button" id="next1") Continuer →
+
+                    //- ══ ÉTAPE 2 : Mot de passe ════════════════════════════
+                    .reg-step#step2
+
                         .auth-field
                             label.auth-label= t.auth.password || 'Mot de passe'
                             .auth-pwd-wrap
@@ -126,14 +156,14 @@ block content
                                     id="pwdField"
                                     placeholder="••••••••"
                                     autocomplete="new-password"
-                                    required
                                 )
                                 button.auth-pwd-toggle(type="button" id="pwdToggle" tabindex="-1" aria-label="Afficher le mot de passe")
                                     svg#pwdEyeIcon(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
                                         path(d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z")
                                         circle(cx="12" cy="12" r="3")
+
                         .auth-field
-                            label.auth-label= t.auth.confirm_pwd2 || 'Confirmer'
+                            label.auth-label= t.auth.confirm_pwd2 || 'Confirmer le mot de passe'
                             .auth-pwd-wrap
                                 input.auth-input(
                                     type="password"
@@ -141,50 +171,83 @@ block content
                                     id="confirmPwdField"
                                     placeholder="••••••••"
                                     autocomplete="new-password"
-                                    required
                                 )
                                 button.auth-pwd-toggle(type="button" id="confirmPwdToggle" tabindex="-1" aria-label="Afficher le mot de passe")
                                     svg(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
                                         path(d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z")
                                         circle(cx="12" cy="12" r="3")
 
-                    .pwd-rules#pwdRules
-                        .pwd-rule#ruleLen
-                            span.pwd-rule__dot
-                            span 8 caractères
-                        .pwd-rule#ruleNum
-                            span.pwd-rule__dot
-                            span 1 chiffre
-                        .pwd-rule#ruleSym
-                            span.pwd-rule__dot
-                            span 1 caractère spécial
+                        .pwd-rules#pwdRules
+                            .pwd-rule#ruleLen
+                                span.pwd-rule__dot
+                                span 8 caractères
+                            .pwd-rule#ruleNum
+                                span.pwd-rule__dot
+                                span 1 chiffre
+                            .pwd-rule#ruleSym
+                                span.pwd-rule__dot
+                                span 1 caractère spécial
 
-                    //- Code parrain (optionnel)
-                    .auth-field
-                        label.auth-label
-                            | Code parrain&nbsp;
-                            span.auth-label-opt (optionnel)
-                        .auth-ref-row
-                            input.auth-input#refCodeInput(
-                                type="text"
-                                name="refCode"
-                                placeholder="Ex: SOPHIE-A3F2"
-                                autocomplete="off"
-                                style="text-transform:uppercase;letter-spacing:.02em;font-size:14px;"
-                            )
-                            span.auth-ref-status#refStatus
+                        .reg-nav
+                            button.reg-back(type="button" id="back2") ←
+                            button.sm-btn.sm-btn--primary.sm-btn--full.reg-next(type="button" id="next2") Continuer →
 
-                    //- CGU
-                    label.auth-check-row
-                        input(type="checkbox" name="terms" required style="accent-color:var(--accent)")
-                        span.auth-check-text
-                            | J'accepte les&nbsp;
-                            a(href="/conditions-utilisation") CGU
-                            | &nbsp;et la&nbsp;
-                            a(href="/confidentialite") Politique de confidentialité
-                            | .
+                    //- ══ ÉTAPE 3 : Métier + finaliser ══════════════════════
+                    .reg-step#step3
 
-                    button.sm-btn.sm-btn--primary.sm-btn--full(type="submit")= t.auth.continue || 'Créer mon compte'
+                        //- Badges plan/promo uniquement à la dernière étape
+                        if pendingPlan === 'pro' || pendingPlan === 'business'
+                            .auth-plan-badge
+                                svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                                    polyline(points="20 6 9 17 4 12")
+                                = pendingPlan === 'business' ? 'Plan Business · 1 mois gratuit inclus' : 'Plan Pro · 1 mois gratuit inclus'
+                            if pendingPromo
+                                .auth-promo-badge
+                                    svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                                        path(d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z")
+                                        line(x1="7" y1="7" x2="7.01" y2="7")
+                                    | Code promo&nbsp;
+                                    strong= pendingPromo
+                                    | &nbsp;— 1er mois offert 🎁
+
+                        .auth-field
+                            label.auth-label Votre métier / secteur
+                            .auth-service-wrap
+                                input.auth-input.service-input(
+                                    type="text"
+                                    id="serviceInput"
+                                    placeholder="Ex: Coiffeur, Coach..."
+                                    autocomplete="off"
+                                )
+                                input(type="hidden" name="businessType" id="businessTypeInput")
+                                .auth-service-dropdown#serviceDropdown
+
+                        .auth-field
+                            label.auth-label
+                                | Code parrain&nbsp;
+                                span.auth-label-opt (optionnel)
+                            .auth-ref-row
+                                input.auth-input#refCodeInput(
+                                    type="text"
+                                    name="refCode"
+                                    placeholder="Ex: SOPHIE-A3F2"
+                                    autocomplete="off"
+                                    style="text-transform:uppercase;letter-spacing:.02em;font-size:14px;"
+                                )
+                                span.auth-ref-status#refStatus
+
+                        label.auth-check-row
+                            input(type="checkbox" name="terms" id="termsCheck" style="accent-color:var(--accent)")
+                            span.auth-check-text
+                                | J'accepte les&nbsp;
+                                a(href="/conditions-utilisation" target="_blank") CGU
+                                | &nbsp;et la&nbsp;
+                                a(href="/confidentialite" target="_blank") Politique de confidentialité
+                                | .
+
+                        .reg-nav
+                            button.reg-back(type="button" id="back3") ←
+                            button.sm-btn.sm-btn--primary.sm-btn--full.reg-next(type="submit" id="submitBtn") Créer mon compte →
 
                 -
                     var _loginHref = '/login'
@@ -198,208 +261,120 @@ block content
 
 block scripts
     script(src="/js/components/topbar.js")
-    style.
-        .auth-two-col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-        .auth-label-opt { color:var(--text-muted,#9ca3af); font-weight:400; font-size:12px; }
-        @media (max-width:480px) { .auth-two-col { grid-template-columns:1fr; } }
-        .auth-pwd-wrap { position:relative; display:flex; align-items:center; }
-        .auth-pwd-wrap .auth-input { flex:1; padding-right:40px; }
-        .auth-pwd-toggle { position:absolute; right:10px; background:none; border:none; cursor:pointer; color:var(--text-muted,#9ca3af); padding:4px; display:flex; align-items:center; transition:color .15s; border-radius:4px; }
-        .auth-pwd-toggle:hover { color:var(--text-primary,#111); }
-        .auth-plan-badge { display:inline-flex; align-items:center; gap:7px; background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:10px; padding:9px 14px; font-size:13px; font-weight:700; color:#15803d; margin-bottom:14px; }
-        .auth-plan-badge svg { stroke:#15803d; flex-shrink:0; }
     script.
         const __services = !{JSON.stringify(services)};
         (function() {
 
-            /* ── Dropdown métier ──────────────────────────────────── */
-            var input    = document.getElementById('serviceInput');
-            var hidden   = document.getElementById('businessTypeInput');
-            var dropdown = document.getElementById('serviceDropdown');
+            /* ── State ────────────────────────────────────────────── */
+            var currentStep = 1;
 
-            function normalize(str) {
-                return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+            var steps  = [null,
+                document.getElementById('step1'),
+                document.getElementById('step2'),
+                document.getElementById('step3')
+            ];
+            var dots   = [null,
+                document.getElementById('dot1'),
+                document.getElementById('dot2'),
+                document.getElementById('dot3')
+            ];
+            var lbls   = [null,
+                document.getElementById('lbl1'),
+                document.getElementById('lbl2'),
+                document.getElementById('lbl3')
+            ];
+            var lines  = [null,
+                document.getElementById('line1'),
+                document.getElementById('line2')
+            ];
+
+            function goTo(n) {
+                steps[currentStep].classList.remove('active');
+                currentStep = n;
+                steps[currentStep].classList.add('active');
+                updateProgress();
+                // Focus 1er input de l'étape
+                var first = steps[currentStep].querySelector('input:not([type=hidden]):not([type=checkbox])');
+                if (first) setTimeout(function(){ first.focus(); }, 60);
             }
 
-            function renderList(items) {
-                dropdown.innerHTML = '';
-                if (!items.length) { dropdown.style.display = 'none'; return; }
-                items.forEach(function(item) {
-                    var li = document.createElement('div');
-                    li.className = 'auth-service-item';
-                    li.textContent = item;
-                    li.addEventListener('mousedown', function(e) {
-                        e.preventDefault();
-                        input.value  = item;
-                        hidden.value = item;
-                        dropdown.style.display = 'none';
-                        input.classList.add('service-input--selected');
-                        input.classList.remove('service-input--invalid');
-                    });
-                    dropdown.appendChild(li);
-                });
-                dropdown.style.display = 'block';
+            function updateProgress() {
+                for (var i = 1; i <= 3; i++) {
+                    dots[i].className = 'reg-progress__dot';
+                    lbls[i].className = 'reg-progress__label';
+                    if (i < currentStep)       { dots[i].classList.add('done');    lbls[i].classList.add('done'); }
+                    else if (i === currentStep) { dots[i].classList.add('current'); lbls[i].classList.add('current'); }
+                }
+                // Lignes colorées si étape suivante atteinte
+                if (lines[1]) lines[1].className = 'reg-progress__line' + (currentStep > 1 ? ' done' : '');
+                if (lines[2]) lines[2].className = 'reg-progress__line' + (currentStep > 2 ? ' done' : '');
             }
 
-            input.addEventListener('input', function() {
-                hidden.value = '';
-                input.classList.remove('service-input--selected', 'service-input--invalid');
-                var q = normalize(input.value.trim());
-                if (!q) { dropdown.style.display = 'none'; return; }
-                renderList(__services.filter(function(s){ return normalize(s).includes(q); }).slice(0, 8));
-            });
+            /* ── Validation étape 1 ───────────────────────────────── */
+            var nameInput  = document.getElementById('nameInput');
+            var emailInput = document.getElementById('emailInput');
+            var errBox     = document.getElementById('registerError');
 
-            input.addEventListener('focus', function() {
-                var q = normalize(input.value.trim());
-                if (q) renderList(__services.filter(function(s){ return normalize(s).includes(q); }).slice(0, 8));
-            });
-
-            input.addEventListener('blur', function() {
-                setTimeout(function() {
-                    dropdown.style.display = 'none';
-                    if (input.value.trim() && !hidden.value) {
-                        input.classList.add('service-input--invalid');
-                    }
-                }, 160);
-            });
-
-            /* ── Règles mot de passe ─────────────────────────────── */
-            var pwdField  = document.getElementById('pwdField');
-            var pwdRules  = document.getElementById('pwdRules');
-            var ruleLen   = document.getElementById('ruleLen');
-            var ruleNum   = document.getElementById('ruleNum');
-            var ruleSym   = document.getElementById('ruleSym');
-            if (pwdField && pwdRules) {
-                // La checklist est désormais affichée en permanence (plus de
-                // show-on-focus) — on calcule juste son état dès le chargement
-                // au cas où le champ est pré-rempli (autofill navigateur).
-                pwdField.addEventListener('input', function() {
-                    var v = this.value;
-                    var touched = v.length > 0;
-                    [[ruleLen, v.length >= 8], [ruleNum, /[0-9]/.test(v)], [ruleSym, /[^a-zA-Z0-9]/.test(v)]].forEach(function(pair) {
-                        var rule = pair[0], pass = pair[1];
-                        // Le "dot" est purement décoratif (cercle CSS coloré
-                        // par la classe ok/bad/neutre) — on ne touche plus à
-                        // son contenu, ce qui évitait le rendu "✓ / ✕ / ○"
-                        // façon liste de courses qui faisait jugé "moche".
-                        rule.className = 'pwd-rule' + (pass ? ' ok' : (touched ? ' bad' : ''));
-                    });
-                });
-                pwdField.dispatchEvent(new Event('input'));
+            function showError(msg, el) {
+                if (errBox) { errBox.textContent = msg; errBox.style.display = 'block'; }
+                if (el) { el.classList.add('auth-input--error'); el.focus(); }
+            }
+            function clearErrors() {
+                if (errBox) errBox.style.display = 'none';
+                document.querySelectorAll('.auth-input--error').forEach(function(e){ e.classList.remove('auth-input--error'); });
             }
 
-            /* ── Confirmation du mot de passe : halo vert/rouge en direct ──
-               "met en vert si c bon et rouge si pas bon et si c vide laisse
-               normal" : tant que le champ "Confirmer" est vide on ne touche
-               à rien, sinon on compare en direct avec le mot de passe et on
-               colore le contour en vert (ça correspond) ou rouge (ça ne
-               correspond pas). ───────────────────────────────────────────── */
+            document.getElementById('next1').addEventListener('click', function() {
+                clearErrors();
+                var name  = nameInput  ? nameInput.value.trim()  : '';
+                var email = emailInput ? emailInput.value.trim() : '';
+                if (!name)  { showError('Veuillez entrer votre nom.', nameInput); return; }
+                if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    showError('Veuillez entrer une adresse email valide.', emailInput); return;
+                }
+                goTo(2);
+            });
+
+            /* ── Validation étape 2 ───────────────────────────────── */
+            var pwdField        = document.getElementById('pwdField');
             var confirmPwdField = document.getElementById('confirmPwdField');
+
+            // Règles mot de passe
+            var ruleLen = document.getElementById('ruleLen');
+            var ruleNum = document.getElementById('ruleNum');
+            var ruleSym = document.getElementById('ruleSym');
+
+            function checkPwdRules(v) {
+                var touched = v.length > 0;
+                [[ruleLen, v.length >= 8], [ruleNum, /[0-9]/.test(v)], [ruleSym, /[^a-zA-Z0-9]/.test(v)]].forEach(function(p){
+                    p[0].className = 'pwd-rule' + (p[1] ? ' ok' : (touched ? ' bad' : ''));
+                });
+            }
+            if (pwdField) {
+                pwdField.addEventListener('input', function(){ checkPwdRules(this.value); checkPwdMatch(); });
+                checkPwdRules('');
+            }
+
             function checkPwdMatch() {
-                if (!pwdField || !confirmPwdField) return;
-                confirmPwdField.classList.remove('auth-input--match', 'auth-input--mismatch');
-                var confirmVal = confirmPwdField.value;
-                if (!confirmVal) return; // vide → on laisse l'input normal
-                if (confirmVal === pwdField.value) {
-                    confirmPwdField.classList.add('auth-input--match');
-                } else {
-                    confirmPwdField.classList.add('auth-input--mismatch');
-                }
+                if (!confirmPwdField) return;
+                confirmPwdField.classList.remove('auth-input--match','auth-input--mismatch');
+                if (!confirmPwdField.value) return;
+                confirmPwdField.classList.add(confirmPwdField.value === pwdField.value ? 'auth-input--match' : 'auth-input--mismatch');
             }
-            if (pwdField) pwdField.addEventListener('input', checkPwdMatch);
-            if (confirmPwdField) {
-                confirmPwdField.addEventListener('input', function() {
-                    confirmPwdField.classList.remove('auth-input--error');
-                    checkPwdMatch();
-                });
-            }
+            if (confirmPwdField) confirmPwdField.addEventListener('input', function(){ confirmPwdField.classList.remove('auth-input--error'); checkPwdMatch(); });
 
-            /* ── Code parrain ─────────────────────────────────────── */
-            var refInput  = document.getElementById('refCodeInput');
-            var refStatus = document.getElementById('refStatus');
-            var refTimer  = null;
+            document.getElementById('back2').addEventListener('click', function(){ clearErrors(); goTo(1); });
 
-            // Pré-remplir depuis ?ref=CODE dans l'URL
-            var urlRef = new URLSearchParams(window.location.search).get('ref');
-            if (urlRef && refInput) {
-                refInput.value = urlRef.toUpperCase();
-                validateRef(urlRef);
-            }
-
-            function validateRef(code) {
-                if (!code) { refStatus.textContent = ''; refStatus.className = 'auth-ref-status'; return; }
-                refStatus.textContent = '…';
-                fetch('/api/check-ref?code=' + encodeURIComponent(code.toUpperCase()))
-                    .then(function(r) { return r.json(); })
-                    .then(function(d) {
-                        if (d.valid) {
-                            refStatus.textContent = '✓ ' + (d.name || 'Valide');
-                            refStatus.className = 'auth-ref-status ok';
-                        } else {
-                            refStatus.textContent = '✗ Invalide';
-                            refStatus.className = 'auth-ref-status err';
-                        }
-                    })
-                    .catch(function() { refStatus.textContent = ''; refStatus.className = 'auth-ref-status'; });
-            }
-
-            if (refInput) {
-                refInput.addEventListener('input', function() {
-                    var v = this.value.trim().toUpperCase();
-                    this.value = v;
-                    clearTimeout(refTimer);
-                    if (!v) { refStatus.textContent = ''; refStatus.className = 'auth-ref-status'; return; }
-                    refTimer = setTimeout(function() { validateRef(v); }, 500);
-                });
-            }
-
-            /* ── Soumission AJAX ──────────────────────────────────── */
-            var form      = document.getElementById('registerForm');
-            var errBox    = document.getElementById('registerError');
-            var submitBtn = form ? form.querySelector('button[type="submit"]') : null;
-
-            var emailField = form ? form.querySelector('input[name="email"]') : null;
-            var nameField  = form ? form.querySelector('input[name="fullname"]') : null;
-            var allFieldsForReset = [emailField, nameField, pwdField, document.getElementById('confirmPwdField')];
-
-            function clearFieldErrors() {
-                allFieldsForReset.forEach(function(f) { if (f) f.classList.remove('auth-input--error'); });
-            }
-            // Dès que l'utilisateur corrige un champ marqué en rouge, on retire le halo
-            allFieldsForReset.forEach(function(f) {
-                if (!f) return;
-                f.addEventListener('input', function() { f.classList.remove('auth-input--error'); });
+            document.getElementById('next2').addEventListener('click', function() {
+                clearErrors();
+                var pwd     = pwdField        ? pwdField.value        : '';
+                var confirm = confirmPwdField  ? confirmPwdField.value : '';
+                if (pwd.length < 8)                       { showError('8 caractères minimum.', pwdField); return; }
+                if (!/[0-9]/.test(pwd))                   { showError('Le mot de passe doit contenir au moins un chiffre.', pwdField); return; }
+                if (!/[^a-zA-Z0-9]/.test(pwd))            { showError('Le mot de passe doit contenir au moins un caractère spécial.', pwdField); return; }
+                if (pwd !== confirm)                       { showError('Les mots de passe ne correspondent pas.', confirmPwdField); return; }
+                goTo(3);
             });
-
-            function showError(msg) {
-                if (!errBox) return;
-                errBox.textContent = msg;
-                errBox.style.display = 'block';
-                errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-                // Entoure le(s) champ(s) concerné(s) en rouge selon le message reçu
-                clearFieldErrors();
-                var low = (msg || '').toLowerCase();
-                var flagged = false;
-                if (/email|e-mail|adresse/.test(low)) {
-                    if (emailField) { emailField.classList.add('auth-input--error'); flagged = true; }
-                }
-                // NB : le message serveur dit "Les mots de passe ne
-                // correspondent pas" (PLURIEL "mots") — l'ancienne regex
-                // /mot de passe|.../ ne matchait pas "mots de passe" (le "s"
-                // cassait le pattern), donc l'input ne se retrouvait JAMAIS
-                // entouré en rouge ("si erreur entoure en rouge l'input").
-                // On élargit le pattern pour couvrir singulier ET pluriel,
-                // et toute mention de "confirmation"/"correspond(ent)".
-                if (/mots? de passe|password|confirm|correspond/.test(low)) {
-                    if (pwdField) { pwdField.classList.add('auth-input--error'); flagged = true; }
-                    var confirmF = document.getElementById('confirmPwdField');
-                    if (confirmF) { confirmF.classList.add('auth-input--error'); flagged = true; }
-                }
-                if (/nom/.test(low) && !/prénom/.test(low)) {
-                    if (nameField) { nameField.classList.add('auth-input--error'); flagged = true; }
-                }
-            }
 
             /* ── Show/hide mot de passe ──────────────────────────── */
             [['pwdField','pwdToggle','pwdEyeIcon'],['confirmPwdField','confirmPwdToggle',null]].forEach(function(pair) {
@@ -418,43 +393,140 @@ block scripts
                 });
             });
 
-            if (form) {
-                if (submitBtn) submitBtn.dataset.label = submitBtn.textContent;
+            /* ── Dropdown métier (étape 3) ────────────────────────── */
+            var svcInput   = document.getElementById('serviceInput');
+            var svcHidden  = document.getElementById('businessTypeInput');
+            var svcDropdown = document.getElementById('serviceDropdown');
 
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    if (errBox) errBox.style.display = 'none';
-                    clearFieldErrors();
+            function normalize(str) { return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 
-                    if (!hidden.value || !__services.includes(hidden.value)) {
-                        input.classList.add('service-input--invalid');
-                        input.focus();
-                        showError('Veuillez choisir votre métier dans la liste proposée.');
-                        return;
-                    }
-
-                    var body = new URLSearchParams(new FormData(form)).toString();
-                    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '…'; }
-
-                    fetch('/register', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'fetch' },
-                        body: body
-                    })
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        if (data.success) {
-                            window.location.href = data.redirect || '/appointment';
-                        } else {
-                            showError(data.error || 'Une erreur est survenue.');
-                            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = submitBtn.dataset.label; }
-                        }
-                    })
-                    .catch(function() {
-                        showError('Erreur réseau. Veuillez réessayer.');
-                        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = submitBtn.dataset.label; }
+            function renderList(items) {
+                svcDropdown.innerHTML = '';
+                if (!items.length) { svcDropdown.style.display = 'none'; return; }
+                items.forEach(function(item) {
+                    var li = document.createElement('div');
+                    li.className = 'auth-service-item';
+                    li.textContent = item;
+                    li.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        svcInput.value  = item;
+                        svcHidden.value = item;
+                        svcDropdown.style.display = 'none';
+                        svcInput.classList.add('service-input--selected');
+                        svcInput.classList.remove('service-input--invalid');
                     });
+                    svcDropdown.appendChild(li);
+                });
+                svcDropdown.style.display = 'block';
+            }
+
+            if (svcInput) {
+                svcInput.addEventListener('input', function() {
+                    svcHidden.value = '';
+                    svcInput.classList.remove('service-input--selected','service-input--invalid');
+                    var q = normalize(svcInput.value.trim());
+                    if (!q) { svcDropdown.style.display = 'none'; return; }
+                    renderList(__services.filter(function(s){ return normalize(s).includes(q); }).slice(0,8));
+                });
+                svcInput.addEventListener('focus', function() {
+                    var q = normalize(svcInput.value.trim());
+                    if (q) renderList(__services.filter(function(s){ return normalize(s).includes(q); }).slice(0,8));
+                });
+                svcInput.addEventListener('blur', function() {
+                    setTimeout(function() {
+                        svcDropdown.style.display = 'none';
+                        if (svcInput.value.trim() && !svcHidden.value) svcInput.classList.add('service-input--invalid');
+                    }, 160);
                 });
             }
+
+            /* ── Code parrain ─────────────────────────────────────── */
+            var refInput  = document.getElementById('refCodeInput');
+            var refStatus = document.getElementById('refStatus');
+            var refTimer  = null;
+
+            var urlRef = new URLSearchParams(window.location.search).get('ref');
+            if (urlRef && refInput) { refInput.value = urlRef.toUpperCase(); validateRef(urlRef); }
+
+            function validateRef(code) {
+                if (!code) { refStatus.textContent = ''; refStatus.className = 'auth-ref-status'; return; }
+                refStatus.textContent = '…';
+                fetch('/api/check-ref?code=' + encodeURIComponent(code.toUpperCase()))
+                    .then(function(r){ return r.json(); })
+                    .then(function(d){
+                        refStatus.textContent = d.valid ? ('✓ ' + (d.name||'Valide')) : '✗ Invalide';
+                        refStatus.className = 'auth-ref-status ' + (d.valid ? 'ok' : 'err');
+                    })
+                    .catch(function(){ refStatus.textContent=''; refStatus.className='auth-ref-status'; });
+            }
+            if (refInput) {
+                refInput.addEventListener('input', function() {
+                    var v = this.value.trim().toUpperCase(); this.value = v;
+                    clearTimeout(refTimer);
+                    if (!v) { refStatus.textContent=''; refStatus.className='auth-ref-status'; return; }
+                    refTimer = setTimeout(function(){ validateRef(v); }, 500);
+                });
+            }
+
+            /* ── Navigation étape 3 ───────────────────────────────── */
+            document.getElementById('back3').addEventListener('click', function(){ clearErrors(); goTo(2); });
+
+            /* ── Soumission finale ────────────────────────────────── */
+            var form      = document.getElementById('registerForm');
+            var submitBtn = document.getElementById('submitBtn');
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                clearErrors();
+
+                // Valider métier
+                if (!svcHidden.value || !__services.includes(svcHidden.value)) {
+                    svcInput.classList.add('service-input--invalid');
+                    showError('Veuillez choisir votre métier dans la liste.');
+                    svcInput.focus();
+                    return;
+                }
+                // Valider CGU
+                var terms = document.getElementById('termsCheck');
+                if (terms && !terms.checked) {
+                    showError('Veuillez accepter les CGU pour continuer.');
+                    return;
+                }
+
+                var body = new URLSearchParams(new FormData(form)).toString();
+                submitBtn.disabled = true;
+                submitBtn.textContent = '…';
+
+                fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'fetch' },
+                    body: body
+                })
+                .then(function(r){ return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        window.location.href = data.redirect || '/appointment';
+                    } else {
+                        submitBtn.disabled = false; submitBtn.textContent = 'Créer mon compte →';
+                        // Afficher l'erreur et revenir à l'étape concernée
+                        var low = (data.error||'').toLowerCase();
+                        if (/email|e-mail|adresse/.test(low))              { goTo(1); showError(data.error, emailInput); }
+                        else if (/nom/.test(low))                           { goTo(1); showError(data.error, nameInput); }
+                        else if (/mots? de passe|password|correspond/.test(low)) { goTo(2); showError(data.error, pwdField); }
+                        else                                                { showError(data.error||'Une erreur est survenue.'); }
+                    }
+                })
+                .catch(function() {
+                    submitBtn.disabled = false; submitBtn.textContent = 'Créer mon compte →';
+                    showError('Erreur réseau. Veuillez réessayer.');
+                });
+            });
+
+            // Touche Entrée → passer à l'étape suivante
+            document.addEventListener('keydown', function(e) {
+                if (e.key !== 'Enter') return;
+                if (currentStep === 1) { e.preventDefault(); document.getElementById('next1').click(); }
+                else if (currentStep === 2) { e.preventDefault(); document.getElementById('next2').click(); }
+            });
 
         })();

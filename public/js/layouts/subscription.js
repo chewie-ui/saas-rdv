@@ -297,17 +297,31 @@ function getPlanPrice(plan) {
   const base = PRICES[plan] ? PRICES[plan][billing] : null;
   if (base == null) return null;
 
-  if (appliedPromoCode && appliedPromoCode.discountType !== "trial") {
+  if (appliedPromoCode) {
     const ap = appliedPromoCode.applicablePlan;
     const applies = ap === "all" ||
       ap === `${plan}_${billing}` ||
       ap === `${plan}_monthly` || ap === `${plan}_yearly`;
     if (applies) {
+      // Code de type "essai gratuit" : le 1er paiement est 0 € (Stripe
+      // décale la première facturation à la fin du trial). On retourne 0
+      // pour que la confirmation affiche "0 €" et non le plein tarif
+      // ("jai activé BIENVENUE qui donne 1 mois gratuit mais il met 49 €").
+      if (appliedPromoCode.discountType === "trial") return 0;
       const discounted = calcDiscounted(base, appliedPromoCode.discountType, appliedPromoCode.discountValue);
       if (discounted !== null) return discounted;
     }
   }
   return base;
+}
+
+// Retourne vrai si un code essai gratuit est actif et s'applique à ce plan.
+function isTrialActive(plan) {
+  if (!appliedPromoCode || appliedPromoCode.discountType !== "trial") return false;
+  const billing = isYearly ? "yearly" : "monthly";
+  const ap = appliedPromoCode.applicablePlan;
+  return ap === "all" || ap === `${plan}_${billing}` ||
+         ap === `${plan}_monthly` || ap === `${plan}_yearly`;
 }
 
 function confirmPurchase(plan) {
@@ -322,6 +336,12 @@ function confirmPurchase(plan) {
     const billingLabel = isYearly ? "facturation annuelle" : "facturation mensuelle";
     let   price        = getPlanPrice(plan);
     let   priceLabel   = fmtPrice(price);
+    // Détecter dès l'ouverture si un code essai gratuit est actif.
+    const trialActive  = isTrialActive(plan);
+    const trialDays    = trialActive ? (appliedPromoCode.trialDays || 30) : 0;
+    // Prix de base (sans promo) pour l'affichage "puis X €/mois" en mode trial.
+    const billing      = isYearly ? "yearly" : "monthly";
+    const basePrice    = PRICES[plan] ? PRICES[plan][billing] : null;
 
     const tmp       = templateDialog.content.cloneNode(true);
     const parentTmp = tmp.querySelector("#dialogWrp");
@@ -334,9 +354,17 @@ function confirmPurchase(plan) {
 
     const intro = document.createElement("p");
     intro.className = "dialog__p";
-    intro.innerHTML = "Vous êtes sur le point de souscrire au plan <strong>" + planLabel + "</strong>" +
-      (priceLabel ? " pour <strong>" + priceLabel + "</strong>" : "") +
-      " (" + billingLabel + ").";
+    if (trialActive) {
+      // Code essai : 1er mois / N jours offerts, puis plein tarif.
+      intro.innerHTML = "Plan <strong>" + planLabel + "</strong> — " +
+        "<strong>" + trialDays + " jours offerts</strong>, puis " +
+        (basePrice != null ? "<strong>" + fmtPrice(basePrice) + "</strong>/mois" : "plein tarif") +
+        " (" + billingLabel + ").";
+    } else {
+      intro.innerHTML = "Vous êtes sur le point de souscrire au plan <strong>" + planLabel + "</strong>" +
+        (priceLabel ? " pour <strong>" + priceLabel + "</strong>" : "") +
+        " (" + billingLabel + ").";
+    }
     descEl.appendChild(intro);
 
     // ── Carte : "payer instant avec carte X ou changer de carte" ─────────────
@@ -401,8 +429,16 @@ function confirmPurchase(plan) {
     function refreshPriceDisplays() {
       price = getPlanPrice(plan);
       priceLabel = fmtPrice(price);
-      priceStrongEls.forEach((el) => { el.textContent = priceLabel || ""; });
-      confirmBtnLabel.textContent = priceLabel ? ("Oui, payer " + priceLabel) : (subT.confirm || "Confirmer");
+      const isTrial = isTrialActive(plan);
+      if (isTrial) {
+        // En mode essai gratuit : le "fort" du texte "payer X" devient
+        // "votre essai gratuit" pour que la phrase reste cohérente.
+        priceStrongEls.forEach((el) => { el.textContent = "votre essai gratuit"; });
+        confirmBtnLabel.textContent = "Activer mon essai gratuit →";
+      } else {
+        priceStrongEls.forEach((el) => { el.textContent = priceLabel || ""; });
+        confirmBtnLabel.textContent = priceLabel ? ("Oui, payer " + priceLabel) : (subT.confirm || "Confirmer");
+      }
     }
 
     if (!appliedPromoCode) {
@@ -485,19 +521,62 @@ function confirmPurchase(plan) {
     ask.className = "dialog__p sub-confirm__ask";
     const askPriceEl = document.createElement("strong");
     askPriceEl.className = "sub-confirm__price";
-    askPriceEl.textContent = priceLabel || "";
+    if (trialActive) {
+      // Code essai : la phrase de confirmation reflète le mois gratuit, pas
+      // un paiement ("jai activé BIENVENUE qui donne 1 mois gratuit mais il
+      // met payer 49 €").
+      askPriceEl.textContent = "votre essai gratuit";
+      ask.appendChild(document.createTextNode("Êtes-vous sûr·e de vouloir activer "));
+      ask.appendChild(askPriceEl);
+      ask.appendChild(document.createTextNode(" ?"));
+    } else {
+      askPriceEl.textContent = priceLabel || "";
+      ask.appendChild(document.createTextNode("Êtes-vous sûr·e de vouloir payer "));
+      ask.appendChild(askPriceEl);
+      ask.appendChild(document.createTextNode(" ?"));
+    }
     priceStrongEls.push(askPriceEl);
-    ask.appendChild(document.createTextNode("Êtes-vous sûr·e de vouloir payer "));
-    ask.appendChild(askPriceEl);
-    ask.appendChild(document.createTextNode(" ?"));
     descEl.appendChild(ask);
 
     const confirmBtn = tmp.querySelector(".dialog__btn2");
     confirmBtn.innerHTML = "";
     const confirmBtnLabel = document.createElement("span");
-    confirmBtnLabel.textContent = priceLabel ? ("Oui, payer " + priceLabel) : (subT.confirm || "Confirmer");
+    // Label du bouton de confirmation selon le type de promo.
+    if (trialActive) {
+      confirmBtnLabel.textContent = "Activer mon essai gratuit →";
+    } else {
+      confirmBtnLabel.textContent = priceLabel ? ("Oui, payer " + priceLabel) : (subT.confirm || "Confirmer");
+    }
     confirmBtn.appendChild(confirmBtnLabel);
     confirmBtn.onclick = () => close(true);
+
+    // ── Lien "Passer directement au plan payant" (visible seulement en mode trial) ──
+    if (trialActive) {
+      const skipWrap = document.createElement("div");
+      skipWrap.style.cssText = "text-align:center;margin-top:10px;";
+      const skipLink = document.createElement("button");
+      skipLink.type = "button";
+      skipLink.style.cssText = "background:none;border:none;cursor:pointer;font-size:12px;color:#9ca3af;text-decoration:underline;padding:0;";
+      skipLink.textContent = "Passer directement au plan payant →";
+      skipLink.addEventListener("click", async () => {
+        parentTmp.remove();   // fermer ce dialog
+        resolve(false);       // annuler le flux trial
+        // Relancer un checkout sans promo trial
+        const savedPromo = appliedPromoCode;
+        appliedPromoCode = null;
+        if (promoCodeInput) promoCodeInput.value = "";
+        applyPromoToUI(null);
+        const confirmed2 = await confirmPurchase(plan);
+        if (confirmed2) startCheckout(plan);
+        else appliedPromoCode = savedPromo; // remettre si l'user annule
+      });
+      skipWrap.appendChild(skipLink);
+      descEl.parentNode.insertBefore(skipWrap, confirmBtn.parentNode
+        ? confirmBtn.closest(".dialog__actions") || confirmBtn.parentNode
+        : descEl.nextSibling);
+      // On insère après descEl car la structure dialog n'est pas connue
+      descEl.after(skipWrap);
+    }
 
     tmp.querySelector(".dialog__btn1").innerHTML = "<span>" + (subT.close || "Annuler") + "</span>";
     tmp.querySelector(".dialog__btn1").onclick   = () => close(false);
@@ -518,20 +597,42 @@ if (getProPlan)      getProPlan.onclick      = () => handlePlanPurchaseClick("pr
 if (getProPlanAlert) getProPlanAlert.onclick = () => handlePlanPurchaseClick("pro");
 if (getBusinessPlan) getBusinessPlan.onclick = () => handlePlanPurchaseClick("business");
 
-// ── "1 mois gratuit" shortcut : auto-apply BIENVENUE + checkout business ──────
-const getBusinessFreeMonth = document.getElementById("getBusinessFreeMonth");
-if (getBusinessFreeMonth) {
-  getBusinessFreeMonth.onclick = function () {
-    if (promoCodeInput) {
-      promoCodeInput.value = "BIENVENUE";
-      validatePromo().then(() => {
-        setTimeout(() => handlePlanPurchaseClick("business"), 400);
-      });
-    } else {
-      handlePlanPurchaseClick("business");
+// ── Boutons d'offre dynamiques (.js-offer-btn) ──────────────────────────────
+// data-plan  : "pro" | "business"
+// data-code  : code promo à copier dans le presse-papiers
+document.querySelectorAll(".js-offer-btn").forEach(function (btn) {
+  btn.addEventListener("click", async function () {
+    const code = (btn.dataset.code || "").toUpperCase();
+    if (!code) return;
+
+    // Copier dans le presse-papiers
+    try { await navigator.clipboard.writeText(code); } catch (_) {
+      // Fallback pour les navigateurs sans clipboard API
+      const ta = document.createElement("textarea");
+      ta.value = code;
+      ta.style.cssText = "position:fixed;opacity:0;pointer-events:none;";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
     }
-  };
-}
+
+    // Feedback visuel sur le bouton
+    const orig = btn.innerHTML;
+    btn.innerHTML = "✓ Code copié !";
+    btn.style.cssText += "color:#16a34a;border-color:#bbf7d0;background:#f0fdf4;";
+    setTimeout(function () {
+      btn.innerHTML = orig;
+      btn.style.cssText = btn.style.cssText
+        .replace("color:#16a34a;", "")
+        .replace("border-color:#bbf7d0;", "")
+        .replace("background:#f0fdf4;", "");
+    }, 2000);
+
+    // Mettre aussi le code dans le champ promo (sans déclencher validatePromo ni le scroll)
+    if (promoCodeInput) promoCodeInput.value = code;
+  });
+});
 
 // ── Auto-checkout après inscription (avec promo auto-appliqué si présent) ─────
 (function() {

@@ -25,6 +25,7 @@ router.patch("/superadmin/boost/:companyId", isSuperAdmin, ctrl.setBoost);
 router.get("/superadmin/promo-codes", isSuperAdmin, ctrl.promoCodesPage);
 router.post("/superadmin/promo-codes", isSuperAdmin, ctrl.createPromoCode);
 router.patch("/superadmin/promo-codes/:id/toggle", isSuperAdmin, ctrl.togglePromoCode);
+router.patch("/superadmin/promo-codes/:id/toggle-offer", isSuperAdmin, ctrl.togglePromoOffer);
 router.delete("/superadmin/promo-codes/:id", isSuperAdmin, ctrl.deletePromoCode);
 
 // Validation publique (pour le checkout)

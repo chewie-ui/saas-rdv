@@ -369,6 +369,33 @@ img { display: block; max-width: 100%; }
   flex-shrink: 0;
 }
 
+.bk-location-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.bk-copy-addr {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: transparent;
+  color: var(--bk-ink-2);
+  border: 1px solid var(--bk-border);
+  border-radius: var(--bk-r-pill);
+  font: 600 12px var(--bk-font);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.bk-copy-addr svg { fill: currentColor; flex-shrink: 0; }
+.bk-copy-addr:hover { background: var(--bk-surface-2, #f4f4f4); }
+.bk-copy-addr.copied { color: #16a34a; border-color: #bbf7d0; background: #f0fdf4; }
+
 .bk-location-card__gmaps {
   display: inline-flex;
   align-items: center;

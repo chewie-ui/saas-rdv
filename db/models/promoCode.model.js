@@ -48,9 +48,22 @@ const promoCodeSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // Quand true → ce code est l'offre "mise en avant" affichée automatiquement
+    // sur la page /subscription (badge prix + bouton dédié). Un seul code peut
+    // être l'offre par défaut par plan ; c'est géré en superadmin.
+    isDefaultOffer: {
+      type: Boolean,
+      default: false,
+    },
     applicablePlan: {
       type: String,
-      enum: ["all", "premium_monthly", "premium_yearly", "business_monthly", "business_yearly"],
+      enum: [
+        "all",
+        "pro_monthly",    "pro_yearly",
+        "business_monthly","business_yearly",
+        // anciens noms (backwards compat)
+        "premium_monthly", "premium_yearly",
+      ],
       default: "all",
     },
   },

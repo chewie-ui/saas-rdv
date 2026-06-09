@@ -114,7 +114,7 @@ block content
                     .field
                         .radio-group
                             .radio-item
-                                input#onlineService(type="radio" name="serviceType" checked=(!(user.location && user.location.serviceType === 'en_ligne')))
+                                input#onlineService(type="radio" name="serviceType" checked=(!(user.location && (user.location.serviceType === 'en_ligne' || user.location.serviceType === 'iframe'))))
                                 label(for="onlineService")
                                     span.custom-radio
                                     = t.info.on_site
@@ -123,29 +123,78 @@ block content
                                 label(for="homeService")
                                     span.custom-radio
                                     = t.info.online_svc
+                            .radio-item
+                                input#iframeService(type="radio" name="serviceType" checked=(user.location && user.location.serviceType === 'iframe'))
+                                label(for="iframeService")
+                                    span.custom-radio
+                                    | Ajouter iframe
 
-                    //- ── Champ 1 : Adresse ───────────────────────────────────
-                    .loc-simple-block
-                        label.loc-simple-label Adresse complète
-                        input.input.loc-simple-input#locAddressInput(
-                            type="text"
-                            placeholder="Ex : Rue des Vallées 7, 1315 Incourt, Belgique"
-                            value=(user.location && user.location.address && user.location.city ? (user.location.address + ', ' + (user.location.zip || '') + ' ' + user.location.city).trim() : '') || ""
-                            autocomplete="off"
-                        )
-                        p.loc-simple-hint Entrez l'adresse complète. Elle sera utilisée pour afficher votre position sur la carte.
+                    //- ── Champs adresse (mode sur-place) ─────────────────────
+                    #locOnSiteFields(style=(user.location && (user.location.serviceType === 'en_ligne' || user.location.serviceType === 'iframe')) ? 'display:none' : '')
+                        .loc-simple-block
+                            label.loc-simple-label Adresse complète
+                            input.input.loc-simple-input#locAddressInput(
+                                type="text"
+                                placeholder="Ex : Rue des Vallées 7, 1315 Incourt, Belgique"
+                                value=(user.location && user.location.address && user.location.city ? (user.location.address + ', ' + (user.location.zip || '') + ' ' + user.location.city).trim() : '') || ""
+                                autocomplete="off"
+                            )
+                            p.loc-simple-hint Entrez l'adresse complète. Elle sera utilisée pour afficher votre position sur la carte.
+                        .loc-simple-block
+                            label.loc-simple-label
+                                | Lien Google Maps&nbsp;
+                                span(style="font-weight:400;color:var(--text-muted);font-size:12px;") (optionnel — pour le bouton "Ouvrir dans Maps")
+                            input.input.loc-simple-input#locGmapInput(
+                                type="text"
+                                placeholder="Collez votre lien Google Maps (long ou court maps.app.goo.gl/...)"
+                                value=(user.location && user.location.gmapUrl) || ""
+                                autocomplete="off"
+                            )
 
-                    //- ── Champ 2 : Lien Google Maps (bouton uniquement) ───────
-                    .loc-simple-block
-                        label.loc-simple-label
-                            | Lien Google Maps&nbsp;
-                            span(style="font-weight:400;color:var(--text-muted);font-size:12px;") (optionnel — pour le bouton "Ouvrir dans Maps")
-                        input.input.loc-simple-input#locGmapInput(
-                            type="text"
-                            placeholder="Collez votre lien Google Maps (long ou court maps.app.goo.gl/...)"
-                            value=(user.location && user.location.gmapUrl) || ""
-                            autocomplete="off"
-                        )
+                    //- ── Champs service en ligne (pays + langue) ──────────────
+                    #locOnlineFields(style=(user.location && user.location.serviceType === 'en_ligne') ? '' : 'display:none')
+                        .loc-simple-block
+                            label.loc-simple-label Pays
+                            select.input.loc-simple-input#locCountryInput
+                                option(value="" disabled selected=(!(user.location && user.location.onlineCountry))) — Sélectionnez un pays —
+                                option(value="BE" selected=(user.location && user.location.onlineCountry === 'BE')) 🇧🇪 Belgique
+                                option(value="FR" selected=(user.location && user.location.onlineCountry === 'FR')) 🇫🇷 France
+                                option(value="CH" selected=(user.location && user.location.onlineCountry === 'CH')) 🇨🇭 Suisse
+                                option(value="LU" selected=(user.location && user.location.onlineCountry === 'LU')) 🇱🇺 Luxembourg
+                                option(value="CA" selected=(user.location && user.location.onlineCountry === 'CA')) 🇨🇦 Canada
+                                option(value="MA" selected=(user.location && user.location.onlineCountry === 'MA')) 🇲🇦 Maroc
+                                option(value="TN" selected=(user.location && user.location.onlineCountry === 'TN')) 🇹🇳 Tunisie
+                                option(value="SN" selected=(user.location && user.location.onlineCountry === 'SN')) 🇸🇳 Sénégal
+                                option(value="OTHER" selected=(user.location && user.location.onlineCountry === 'OTHER')) 🌍 Autre
+                        .loc-simple-block
+                            label.loc-simple-label Langue(s) de travail
+                            select.input.loc-simple-input#locLangInput(multiple style="height:auto;min-height:44px;padding:8px 12px;")
+                                - var _langs = (user.location && user.location.onlineLangs) || []
+                                option(value="fr" selected=_langs.includes('fr')) 🇫🇷 Français
+                                option(value="en" selected=_langs.includes('en')) 🇬🇧 Anglais
+                                option(value="nl" selected=_langs.includes('nl')) 🇳🇱 Néerlandais
+                                option(value="de" selected=_langs.includes('de')) 🇩🇪 Allemand
+                                option(value="es" selected=_langs.includes('es')) 🇪🇸 Espagnol
+                                option(value="ar" selected=_langs.includes('ar')) 🇸🇦 Arabe
+                                option(value="pt" selected=_langs.includes('pt')) 🇵🇹 Portugais
+                                option(value="it" selected=_langs.includes('it')) 🇮🇹 Italien
+                            p.loc-simple-hint Ctrl+clic (ou Cmd sur Mac) pour sélectionner plusieurs langues.
+
+                    //- ── Champ iframe (mode iframe) ─────────────────────────
+                    #locIframeFields(style=(user.location && user.location.serviceType === 'iframe') ? '' : 'display:none')
+                        .loc-simple-block
+                            label.loc-simple-label Code iframe Google Maps
+                            textarea.input.loc-simple-input#locIframeInput(
+                                rows="3"
+                                placeholder="Collez ici le code <iframe ...> copié depuis Google Maps → Partager → Intégrer une carte"
+                                style="resize:vertical;font-size:12px;font-family:monospace;"
+                            )= (user.location && user.location.iframeEmbedCode) || ''
+                            p.loc-simple-hint
+                                | Sur Google Maps : clic droit sur un lieu →&nbsp;
+                                strong Partager
+                                | &nbsp;→&nbsp;
+                                strong Intégrer une carte
+                                | &nbsp;→ copiez le code complet.
 
                     //- Champs cachés compatibilité
                     input(type="hidden" id="latInput" value=(user.location && user.location.lat) || "")

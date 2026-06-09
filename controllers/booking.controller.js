@@ -776,8 +776,7 @@ exports.cancelBooking = async (req, res) => {
     }
   }
 
-  res.render("client/index.pug", {
-    cancelBooking: true,
+  res.render("client/cancel-confirmation.pug", {
     chargeResult,
     company,
     coach,

@@ -161,6 +161,32 @@ exports.togglePromoCode = async (req, res) => {
   }
 };
 
+exports.togglePromoOffer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const code = await PromoCode.findById(id);
+    if (!code) return res.status(404).json({ error: "Code introuvable." });
+
+    const willBeOffer = !code.isDefaultOffer;
+
+    // Si on active cette offre, désactiver toutes les autres offres par défaut
+    // (un seul code actif à la fois en offre par défaut).
+    if (willBeOffer) {
+      await PromoCode.updateMany(
+        { _id: { $ne: id }, isDefaultOffer: true },
+        { $set: { isDefaultOffer: false } }
+      );
+    }
+
+    code.isDefaultOffer = willBeOffer;
+    await code.save();
+    res.json({ success: true, isDefaultOffer: code.isDefaultOffer, applicablePlan: code.applicablePlan });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
 exports.deletePromoCode = async (req, res) => {
   try {
     await PromoCode.findByIdAndDelete(req.params.id);

@@ -87,34 +87,44 @@ block content
                                         + '&details=' + encodeURIComponent(gcalDetails)
                                         + '&location=' + encodeURIComponent(addrFull || b.companyName)
                                 if addrFull
-                                    .dash-card__meta-row
+                                    .dash-card__meta-row.dash-card__meta-row--addr
                                         svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
                                             path(d="M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 294q122-112 181-203.5T720-560q0-117-75.5-188.5T480-820q-89 0-164.5 71.5T240-560q0 71 59 162.5T480-186Z")
-                                        span= addrFull
+                                        span.dash-card__addr= addrFull
                                 -
                                     var _validPhone = function(v) { return v && v !== 'on' && /[\d+]/.test(v) }
                                     var _validUrl   = function(v) { return v && /^https?:\/\//.test(v) }
-                            //- Coordonnées de l'établissement (téléphone / site / email)
-                            if _validPhone(b.companyPhone) || (b.companyEmail && b.companyEmail.indexOf('@') !== -1) || _validUrl(b.companyWebsite)
-                                .dash-card__contact
-                                    if _validPhone(b.companyPhone)
-                                        a.dash-card__contact-row(href=`tel:${b.companyPhone.replace(/[^\d+]/g, '')}`)
-                                            svg(viewBox="0 0 24 24" height="14" width="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                                path(d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z")
-                                            span= b.companyPhone
-                                    if b.companyEmail && b.companyEmail.indexOf('@') !== -1
-                                        a.dash-card__contact-row(href=`mailto:${b.companyEmail}`)
-                                            svg(viewBox="0 0 24 24" height="14" width="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                                path(d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z")
-                                                polyline(points="22,6 12,13 2,6")
-                                            span= b.companyEmail
-                                    if _validUrl(b.companyWebsite)
-                                        a.dash-card__contact-row(href=b.companyWebsite target="_blank" rel="noopener")
-                                            svg(viewBox="0 0 24 24" height="14" width="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                                circle(cx="12" cy="12" r="10")
-                                                line(x1="2" y1="12" x2="22" y2="12")
-                                                path(d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z")
-                                            span= b.companyWebsite.replace(/^https?:\/\//, '').replace(/\/$/, '')
+                                    var _hasContact = _validPhone(b.companyPhone) || (b.companyEmail && b.companyEmail.indexOf('@') !== -1) || _validUrl(b.companyWebsite)
+                            //- ── Coordonnées de l'établissement ──────────────────────────
+                            //- Toujours visible : affiche téléphone/email/site quand ils
+                            //- existent, ou un lien "Voir la fiche" quand rien n'est
+                            //- renseigné ("il faut que on voit les informations de
+                            //- l'établissement … il faut tout les infos quoi").
+                            .dash-card__contact
+                                if _validPhone(b.companyPhone)
+                                    a.dash-card__contact-row(href=`tel:${b.companyPhone.replace(/[^\d+]/g, '')}`)
+                                        svg(viewBox="0 0 24 24" height="14" width="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                            path(d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z")
+                                        span= b.companyPhone
+                                if b.companyEmail && b.companyEmail.indexOf('@') !== -1
+                                    a.dash-card__contact-row(href=`mailto:${b.companyEmail}`)
+                                        svg(viewBox="0 0 24 24" height="14" width="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                            path(d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z")
+                                            polyline(points="22,6 12,13 2,6")
+                                        span= b.companyEmail
+                                if _validUrl(b.companyWebsite)
+                                    a.dash-card__contact-row(href=b.companyWebsite target="_blank" rel="noopener")
+                                        svg(viewBox="0 0 24 24" height="14" width="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                            circle(cx="12" cy="12" r="10")
+                                            line(x1="2" y1="12" x2="22" y2="12")
+                                            path(d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z")
+                                        span= b.companyWebsite.replace(/^https?:\/\//, '').replace(/\/$/, '')
+                                //- Fallback quand aucune coordonnée n'est renseignée.
+                                if !_hasContact && !addrFull && b.companySlug
+                                    a.dash-card__no-contact(href=`/${b.companySlug}`)
+                                        svg(viewBox="0 -960 960 960" height="13" width="13" fill="currentColor")
+                                            path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                                        | Coordonnées non renseignées — voir la fiche
                         //- Actions
                         .dash-card__actions
                             if b.companySlug
@@ -122,18 +132,25 @@ block content
                                     svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
                                         path(d="M200-640h560v-80H200v80Zm0 0v-80 80Zm0 560q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T800-120H200Zm0-80h560v-400H200v400Z")
                                     span Réserver
+                            //- Bouton "Voir l'adresse" uniquement quand une adresse
+                            //- ou position GPS est disponible ("à droite ajoute un
+                            //- bouton si y a l'adresse genre Voir l'adresse").
                             if mapsUrl
-                                a.sm-btn.sm-btn--ghost(href=mapsUrl target="_blank" rel="noopener")
+                                a.sm-btn.sm-btn--ghost(href=mapsUrl target="_blank" rel="noopener" title="Ouvrir dans Google Maps")
                                     svg(viewBox="0 0 24 24" height="14" width="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
                                         path(d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z")
                                         circle(cx="12" cy="10" r="3")
-                                    span Maps
-                            if addrFull
-                                button.sm-btn.sm-btn--ghost.js-copy-address(type="button" data-address=addrFull title="Copier l'adresse")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z")
-                                    span Copier l'adresse
-                            a.sm-btn.sm-btn--ghost(href=gcalUrl target="_blank" rel="noopener" title="Ajouter à Google Agenda")
+                                    span 📍 Voir l'adresse
+                            button.sm-btn.sm-btn--ghost.js-add-cal(
+                                type="button"
+                                title="Ajouter à l'agenda"
+                                data-gcal=gcalUrl
+                                data-title=gcalTitle
+                                data-start=gcalStart.toISOString()
+                                data-end=gcalEnd.toISOString()
+                                data-location=(addrFull || b.companyName || '')
+                                data-details=gcalDetails
+                            )
                                 svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                                     path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm280 200h80v80h80v80h-80v80h-80v-80h-80v-80h80v-80Z")
                                 span Ajouter à l'agenda
@@ -232,6 +249,45 @@ block content
                 p Vous n'avez pas encore laissé d'avis.
                 p.dash-empty-reviews__sub Après votre prochain rendez-vous, partagez votre expérience !
 
+    //- ── Popup "Ajouter à l'agenda" ───────────────────────────────────────
+    .cal-popup-overlay#calPopupOverlay(style="display:none")
+        .cal-popup#calPopup
+            .cal-popup__header
+                span.cal-popup__title 📅 Ajouter à l'agenda
+                button.cal-popup__close#calPopupClose(type="button" aria-label="Fermer")
+                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                        path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+            .cal-popup__event#calPopupEvent
+            .cal-popup__options
+                a.cal-opt#calOptGoogle(href="#" target="_blank" rel="noopener")
+                    .cal-opt__icon.cal-opt__icon--google
+                        svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24")
+                            path(fill="#EA4335" d="M24 9.5c3.1 0 5.8 1.1 8 2.9l6-6C34.5 3.1 29.6 1 24 1 14.8 1 7 6.7 3.7 14.7l7 5.4C12.4 14 17.7 9.5 24 9.5z")
+                            path(fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.1-4.4 6.7l7 5.4c4.1-3.8 6.5-9.4 6.5-16.1z")
+                            path(fill="#FBBC05" d="M10.7 28.6C10.3 27.4 10 26.2 10 25s.3-2.4.7-3.5l-7-5.4C2.6 18.6 2 21.7 2 25s.6 6.4 1.7 9.2l7-5.6z")
+                            path(fill="#34A853" d="M24 47c5.6 0 10.3-1.8 13.7-5l-7-5.4c-1.9 1.3-4.3 2-6.7 2-6.3 0-11.6-4.3-13.3-10l-7 5.4C7 40.3 14.8 47 24 47z")
+                            path(fill="none" d="M2 2h44v44H2z")
+                    .cal-opt__text
+                        strong Google Calendar
+                        span Synchronisez avec Gmail
+                a.cal-opt#calOptApple(href="#" download="rdv-branshee.ics")
+                    .cal-opt__icon.cal-opt__icon--apple
+                        svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor")
+                            path(d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z")
+                    .cal-opt__text
+                        strong Apple Calendar
+                        span iPhone · Mac · iPad
+                a.cal-opt#calOptOutlook(href="#" target="_blank" rel="noopener")
+                    .cal-opt__icon.cal-opt__icon--outlook
+                        svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24")
+                            path(fill="#1565C0" d="M29 8H44a1 1 0 011 1v30a1 1 0 01-1 1H29V8z")
+                            path(fill="#1E88E5" d="M5 8H29V40H5z")
+                            path(fill="#fff" d="M17 16c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 10c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z")
+                            path(fill="#fff" d="M33 18h-2v4h-4v2h4v4h2v-4h4v-2h-4z")
+                    .cal-opt__text
+                        strong Outlook
+                        span Outlook.com · Microsoft 365
+
     //- ── Modal annulation ─────────────────────────────────────────────────
     .cancel-modal-overlay#cancelModalOverlay(style="display:none")
         .cancel-modal#cancelModal
@@ -324,6 +380,110 @@ block scripts
                 try { document.execCommand('copy'); } catch (_) {}
                 ta.remove();
             }
+
+            // ── Popup "Ajouter à l'agenda" ──────────────────────────────
+            (function() {
+                var calOverlay   = document.getElementById('calPopupOverlay');
+                var calClose     = document.getElementById('calPopupClose');
+                var calEventEl   = document.getElementById('calPopupEvent');
+                var calGoogle    = document.getElementById('calOptGoogle');
+                var calApple     = document.getElementById('calOptApple');
+                var calOutlook   = document.getElementById('calOptOutlook');
+
+                // Masquer Apple Calendar sur tout ce qui n'est pas macOS ou iOS
+                // (sur PC Windows/Linux/Android → téléchargement inutile)
+                var ua = navigator.userAgent || '';
+                var isAppleDevice = /iPhone|iPad|iPod/i.test(ua) || (
+                    /Macintosh/i.test(ua) && navigator.maxTouchPoints > 0
+                ) || /Mac OS X/i.test(ua) && !/Android/i.test(ua) && !/Windows/i.test(ua);
+                if (!isAppleDevice && calApple) calApple.style.display = 'none';
+
+                function pad(n) { return String(n).padStart(2,'0'); }
+                function toICSStamp(iso) {
+                    // ISO → YYYYMMDDTHHmmssZ  (Stripe/UTC)
+                    return iso.replace(/[-:]/g,'').replace(/\.\d{3}/,'').replace('T','T');
+                }
+                function generateICS(title, start, end, location, description) {
+                    var uid = 'branshee-' + Date.now() + '@branshee.com';
+                    var now = toICSStamp(new Date().toISOString());
+                    var s   = toICSStamp(start);
+                    var e   = toICSStamp(end);
+                    return [
+                        'BEGIN:VCALENDAR',
+                        'VERSION:2.0',
+                        'PRODID:-//BranShee//FR',
+                        'CALSCALE:GREGORIAN',
+                        'METHOD:PUBLISH',
+                        'BEGIN:VEVENT',
+                        'UID:' + uid,
+                        'DTSTAMP:' + now,
+                        'DTSTART:' + s,
+                        'DTEND:' + e,
+                        'SUMMARY:' + title.replace(/\n/g,' '),
+                        'DESCRIPTION:' + (description || '').replace(/\n/g,'\\n'),
+                        'LOCATION:' + (location || '').replace(/\n/g,' '),
+                        'BEGIN:VALARM',
+                        'ACTION:DISPLAY',
+                        'DESCRIPTION:Rappel',
+                        'TRIGGER:-PT1H',
+                        'END:VALARM',
+                        'END:VEVENT',
+                        'END:VCALENDAR'
+                    ].join('\r\n');
+                }
+                function openCalPopup(btn) {
+                    var gcal     = btn.dataset.gcal;
+                    var title    = btn.dataset.title    || 'Rendez-vous';
+                    var start    = btn.dataset.start;
+                    var end      = btn.dataset.end;
+                    var location = btn.dataset.location || '';
+                    var details  = btn.dataset.details  || '';
+                    // Formatage de la date/heure pour l'aperçu
+                    var sDate = new Date(start);
+                    var opts  = { weekday:'long', day:'numeric', month:'long' };
+                    var dateStr = sDate.toLocaleDateString('fr-FR', opts);
+                    var timeStr = pad(sDate.getUTCHours()) + 'h' + pad(sDate.getUTCMinutes());
+                    calEventEl.innerHTML = '<strong>' + title + '</strong>' + dateStr + ' à ' + timeStr + (location ? '<br>📍 ' + location : '');
+                    // Google Calendar — URL directe
+                    calGoogle.href = gcal;
+                    calGoogle.removeAttribute('download');
+
+                    // Apple Calendar — data URI sans download
+                    // Sur iOS/macOS → ouvre Calendrier directement (aucun téléchargement)
+                    // Sur Windows/Android → affiche le texte brut (acceptable)
+                    var ics = generateICS(title, start, end, location, details);
+                    calApple.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+                    calApple.removeAttribute('download');
+
+                    // Outlook Web — URL Outlook Live (comme Google Calendar, aucun fichier)
+                    var startFmt = start.replace(/\.\d{3}Z$/, '').replace('Z','');
+                    var endFmt   = end.replace(/\.\d{3}Z$/, '').replace('Z','');
+                    calOutlook.href = 'https://outlook.live.com/calendar/0/action/compose'
+                        + '?subject='   + encodeURIComponent(title)
+                        + '&startdt='   + encodeURIComponent(startFmt)
+                        + '&enddt='     + encodeURIComponent(endFmt)
+                        + '&body='      + encodeURIComponent(details)
+                        + '&location='  + encodeURIComponent(location)
+                        + '&allday=false&path=%2Fcalendar%2Faction%2Fcompose&rru=addevent';
+                    calOutlook.removeAttribute('download');
+                    calOverlay.style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                }
+                function closeCalPopup() {
+                    calOverlay.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
+                document.querySelectorAll('.js-add-cal').forEach(function(btn) {
+                    btn.addEventListener('click', function() { openCalPopup(btn); });
+                });
+                if (calClose)   calClose.addEventListener('click', closeCalPopup);
+                if (calOverlay) calOverlay.addEventListener('click', function(e) {
+                    if (e.target === calOverlay) closeCalPopup();
+                });
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && calOverlay && calOverlay.style.display !== 'none') closeCalPopup();
+                });
+            })();
 
             document.querySelectorAll('.js-copy-address').forEach(function(btn) {
                 btn.addEventListener('click', function() {
