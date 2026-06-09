@@ -238,12 +238,27 @@ exports.createCheckout = async (req, res) => {
           }
           await stripe.subscriptions.update(existingSub.stripeSubscriptionId, updateParams);
 
+          // Recalculer la date de fin à partir d'aujourd'hui selon le nouveau billing
+          const newStartDate = new Date();
+          const newEndDate = new Date();
+          if (billing === "yearly") {
+            newEndDate.setFullYear(newEndDate.getFullYear() + 1);
+          } else if (billing === "sixmonths") {
+            newEndDate.setMonth(newEndDate.getMonth() + 6);
+          } else {
+            newEndDate.setMonth(newEndDate.getMonth() + 1);
+          }
+
           await User.findByIdAndUpdate(req.user._id, {
             isPremium: true,
             "subscription.plan":   planName,
             "subscription.status": "active",
           });
-          await Subscription.findByIdAndUpdate(existingSub._id, { plan: planName });
+          await Subscription.findByIdAndUpdate(existingSub._id, {
+            plan:      planName,
+            startDate: newStartDate,
+            endDate:   newEndDate,
+          });
 
           if (req.user) {
             req.user.isPremium = true;
@@ -827,6 +842,24 @@ exports.deleteGalleryPhoto = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.json({ success: false });
+  }
+};
+
+exports.reorderGallery = async (req, res) => {
+  try {
+    const { order } = req.body; // array of image URLs in the new order
+    if (!Array.isArray(order)) return res.status(400).json({ success: false });
+    const user = await User.findById(req.user._id).select("calendarSettings.gallery");
+    const existing = (user.calendarSettings && user.calendarSettings.gallery) || [];
+    // Keep only URLs that actually belong to this user's gallery
+    const filtered = order.filter((url) => existing.includes(url));
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: { "calendarSettings.gallery": filtered },
+    });
+    return res.json({ success: true, gallery: filtered });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false });
   }
 };
 

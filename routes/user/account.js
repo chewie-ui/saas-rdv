@@ -59,6 +59,7 @@ router.patch(
 );
 
 router.patch("/gallery", upload.array("galleryPhotos", 12), accountController.updateGallery);
+router.patch("/gallery/reorder", accountController.reorderGallery);
 router.delete("/gallery/:index", accountController.deleteGalleryPhoto);
 router.patch("/gallery-layout", accountController.updateGalleryLayout);
 router.patch("/amenities", accountController.updateAmenities);

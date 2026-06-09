@@ -97,6 +97,17 @@ router.get("/login", (req, res) => {
   res.render("auth/login", { becomeCoach: true, alwaysSticky: true, error });
 });
 
+// ── Mémorise le plan/promo en session avant register ou login via popup ─────
+router.post("/set-pending", (req, res) => {
+  const allowed = ["pro", "business"];
+  const billingOk = ["monthly", "yearly", "sixmonths"];
+  const { plan, billing, promo } = req.body;
+  if (plan && allowed.includes(plan))           req.session.pendingPlan    = plan;
+  if (billing && billingOk.includes(billing))   req.session.pendingBilling = billing;
+  if (promo && typeof promo === "string")        req.session.pendingPromo   = promo.trim().toUpperCase();
+  res.json({ ok: true });
+});
+
 router.post("/register", createUser);
 
 router.post("/login", (req, res, next) => {

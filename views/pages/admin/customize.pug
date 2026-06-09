@@ -203,7 +203,7 @@ block content
 
             .gallery-grid#galleryGrid
                 each photo, idx in gallery
-                    .gallery-item(data-index=idx)
+                    .gallery-item(data-index=idx draggable="true")
                         img(src=photo alt="Photo " + (idx+1))
                         button.gallery-item__del(type="button" data-index=idx title="Supprimer")
                             svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
@@ -657,6 +657,96 @@ block scripts
             // ── Gallery ───────────────────────────────────────────────────────
             var galleryGrid  = document.getElementById('galleryGrid');
             var galleryInput = document.getElementById('galleryFileInput');
+
+            function makeGalleryItemDraggable(item) {
+                item.setAttribute('draggable', 'true');
+            }
+
+            function reindexGallery() {
+                galleryGrid.querySelectorAll('.gallery-item').forEach(function (el, i) {
+                    el.dataset.index = i;
+                    var delBtn = el.querySelector('.gallery-item__del');
+                    if (delBtn) delBtn.dataset.index = i;
+                });
+            }
+
+            // ── Drag-to-reorder ───────────────────────────────────────────────
+            if (galleryGrid) {
+                var dragSrc = null;
+
+                galleryGrid.addEventListener('dragstart', function (e) {
+                    var item = e.target.closest('.gallery-item');
+                    if (!item) return;
+                    dragSrc = item;
+                    item.classList.add('gallery-item--dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', item.dataset.index);
+                });
+
+                galleryGrid.addEventListener('dragend', function (e) {
+                    var item = e.target.closest('.gallery-item');
+                    if (item) item.classList.remove('gallery-item--dragging');
+                    galleryGrid.querySelectorAll('.gallery-item').forEach(function (el) {
+                        el.classList.remove('gallery-item--over');
+                    });
+                    dragSrc = null;
+                });
+
+                galleryGrid.addEventListener('dragover', function (e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    var target = e.target.closest('.gallery-item');
+                    if (!target || target === dragSrc) return;
+                    galleryGrid.querySelectorAll('.gallery-item').forEach(function (el) {
+                        el.classList.remove('gallery-item--over');
+                    });
+                    target.classList.add('gallery-item--over');
+                });
+
+                galleryGrid.addEventListener('dragleave', function (e) {
+                    var target = e.target.closest('.gallery-item');
+                    if (target) target.classList.remove('gallery-item--over');
+                });
+
+                galleryGrid.addEventListener('drop', async function (e) {
+                    e.preventDefault();
+                    var target = e.target.closest('.gallery-item');
+                    if (!target || !dragSrc || target === dragSrc) return;
+                    target.classList.remove('gallery-item--over');
+
+                    // Réorganiser dans le DOM
+                    var addBtn = galleryGrid.querySelector('.gallery-add-btn');
+                    var items  = Array.from(galleryGrid.querySelectorAll('.gallery-item'));
+                    var srcIdx = items.indexOf(dragSrc);
+                    var tgtIdx = items.indexOf(target);
+                    if (srcIdx < tgtIdx) {
+                        galleryGrid.insertBefore(dragSrc, target.nextSibling || addBtn);
+                    } else {
+                        galleryGrid.insertBefore(dragSrc, target);
+                    }
+
+                    reindexGallery();
+
+                    // Sauvegarder le nouvel ordre
+                    var newOrder = Array.from(galleryGrid.querySelectorAll('.gallery-item')).map(function (el) {
+                        return parseInt(el.dataset.index, 10);
+                    });
+                    // Reconstruire l'ordre basé sur les src des images
+                    var srcs = Array.from(galleryGrid.querySelectorAll('.gallery-item img')).map(function (img) {
+                        return img.getAttribute('src');
+                    });
+                    try {
+                        await fetch('/account/gallery/reorder', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ order: srcs })
+                        });
+                    } catch (_) {}
+
+                    reindexGallery();
+                });
+            }
+
             if (galleryInput && galleryGrid) {
                 galleryInput.addEventListener('change', async function () {
                     if (!galleryInput.files.length) return;
@@ -670,6 +760,7 @@ block scripts
                             var item = document.createElement('div');
                             item.className = 'gallery-item';
                             item.dataset.index = idx;
+                            item.setAttribute('draggable', 'true');
                             item.innerHTML = '<img src="' + path + '" alt="Photo"><button class="gallery-item__del" type="button" data-index="' + idx + '" title="Supprimer"><svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z"/></svg></button>';
                             var addBtn = galleryGrid.querySelector('.gallery-add-btn');
                             if (addBtn) galleryGrid.insertBefore(item, addBtn);
@@ -686,11 +777,7 @@ block scripts
                     var data = await res.json();
                     if (data.success) {
                         btn.closest('.gallery-item').remove();
-                        galleryGrid.querySelectorAll('.gallery-item').forEach(function (el, i) {
-                            el.dataset.index = i;
-                            var delBtn = el.querySelector('.gallery-item__del');
-                            if (delBtn) delBtn.dataset.index = i;
-                        });
+                        reindexGallery();
                     }
                 });
             }

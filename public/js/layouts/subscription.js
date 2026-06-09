@@ -518,6 +518,21 @@ if (getProPlan)      getProPlan.onclick      = () => handlePlanPurchaseClick("pr
 if (getProPlanAlert) getProPlanAlert.onclick = () => handlePlanPurchaseClick("pro");
 if (getBusinessPlan) getBusinessPlan.onclick = () => handlePlanPurchaseClick("business");
 
+// ── "1 mois gratuit" shortcut : auto-apply BIENVENUE + checkout business ──────
+const getBusinessFreeMonth = document.getElementById("getBusinessFreeMonth");
+if (getBusinessFreeMonth) {
+  getBusinessFreeMonth.onclick = function () {
+    if (promoCodeInput) {
+      promoCodeInput.value = "BIENVENUE";
+      validatePromo().then(() => {
+        setTimeout(() => handlePlanPurchaseClick("business"), 400);
+      });
+    } else {
+      handlePlanPurchaseClick("business");
+    }
+  };
+}
+
 // ── Auto-checkout après inscription (avec promo auto-appliqué si présent) ─────
 (function() {
   const params       = new URLSearchParams(window.location.search);

@@ -318,6 +318,7 @@ router.get("/pro", (req, res) => {
     metaDescription: "Créez votre agenda en ligne en 5 minutes. Vos clients réservent 24h/24 sans vous appeler. 1 mois offert, sans carte bancaire.",
     canonical: "https://www.branshee.com/pro",
     becomeCoach: true,
+    services: getServices(res.locals.lang),
   });
 });
 

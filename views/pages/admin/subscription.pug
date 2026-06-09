@@ -197,6 +197,11 @@ block content
                     else
                         button.sub-btn.sub-btn--upgrade.sub-btn--business#getBusinessPlan
                             | #{t.subscription.btn_get_business || 'Passer au Business →'}
+                        if !isPro
+                            button.sub-btn.sub-btn--free-month#getBusinessFreeMonth(type="button")
+                                svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
+                                    path(d="M160-80v-440H80v-240h208q-5-9-6.5-19t-1.5-21q0-50 35-85t85-35q23 0 43 8.5t37 23.5q17-15 37-23.5t43-8.5q50 0 85 35t35 85q0 11-1.5 21T663-760h209v240h-80v440H160Zm320-640q17 0 28.5-11.5T520-760q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760q0 17 11.5 28.5T480-720Zm-160 0q17 0 28.5-11.5T360-760q0-17-11.5-28.5T320-800q-17 0-28.5 11.5T280-760q0 17 11.5 28.5T320-720ZM160-680v80h280v-80H160Zm280 520v-360H240v360h200Zm80 0h200v-360H520v360Zm280-440v-80H520v80h280Z")
+                                | &nbsp;1 mois gratuit (code BIENVENUE)
 
         //- ── Comparison table ────────────────────────────────────────
         .sub-compare

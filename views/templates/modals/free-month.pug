@@ -1,0 +1,82 @@
+mixin freeMonthModal()
+    //- Overlay + modal "1 mois Business offert"
+    .fm-overlay#freeMonthOverlay
+        .fm-modal(role="dialog" aria-modal="true" aria-labelledby="fmTitle")
+            //- ── Header ──────────────────────────────────────────────────
+            .fm-header
+                button.fm-header__close#fmClose(type="button" aria-label="Fermer")
+                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                        path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                .fm-header__gift
+                    svg(xmlns="http://www.w3.org/2000/svg" height="26px" viewBox="0 -960 960 960" width="26px" fill="#fff")
+                        path(d="M160-80v-440H80v-240h208q-5-9-6.5-19t-1.5-21q0-50 35-85t85-35q23 0 43 8.5t37 23.5q17-15 37-23.5t43-8.5q50 0 85 35t35 85q0 11-1.5 21T663-760h209v240h-80v440H160Zm320-640q17 0 28.5-11.5T520-760q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760q0 17 11.5 28.5T480-720Zm-160 0q17 0 28.5-11.5T360-760q0-17-11.5-28.5T320-800q-17 0-28.5 11.5T280-760q0 17 11.5 28.5T320-720ZM160-680v80h280v-80H160Zm280 520v-360H240v360h200Zm80 0h200v-360H520v360Zm280-440v-80H520v80h280Z")
+                .fm-header__badge
+                    svg(xmlns="http://www.w3.org/2000/svg" height="11px" viewBox="0 -960 960 960" width="11px" fill="currentColor")
+                        path(d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z")
+                    | Offre limitée
+                h2.fm-header__title#fmTitle 1 mois Business offert
+                p.fm-header__sub Accédez à toutes les fonctionnalités&nbsp;—&nbsp;0&nbsp;€ le premier mois
+
+            //- ── Body ────────────────────────────────────────────────────
+            .fm-body
+
+                //- Tabs
+                .fm-tabs
+                    button.fm-tab.is-active#fmTabRegister(type="button") Créer un compte
+                    button.fm-tab#fmTabLogin(type="button") J'ai déjà un compte
+
+                //- Promo reminder
+                .fm-promo-tag
+                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                        path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                    | Code&nbsp;<strong>BIENVENUE</strong>&nbsp;appliqué automatiquement — 1 mois gratuit
+
+                //- Error
+                .fm-error#fmError
+
+                //- ── Register form ───────────────────────────────────────
+                form.fm-form.is-active#fmRegisterForm(novalidate)
+                    .fm-field
+                        label(for="fmName") Prénom & nom
+                        input#fmName(type="text" name="fullname" placeholder="Marie Dupont" autocomplete="name" required)
+                    .fm-field
+                        label(for="fmEmail") Email professionnel
+                        input#fmEmail(type="email" name="email" placeholder="marie@salon.fr" autocomplete="email" required)
+                    .fm-field
+                        label(for="fmPwd") Mot de passe
+                        input#fmPwd(type="password" name="password" placeholder="8 car. min · 1 chiffre · 1 symbole" required)
+                    .fm-field
+                        label(for="fmPwd2") Confirmer le mot de passe
+                        input#fmPwd2(type="password" name="conformPassword" placeholder="Répétez le mot de passe" required)
+                    .fm-field
+                        label(for="fmBusiness") Votre métier
+                        .fm-autocomplete
+                            input#fmBusiness(type="text" name="businessType" placeholder="Ex : Coiffeur, Coach sportif…" autocomplete="off" required)
+                            .fm-autocomplete__list#fmBusinessList
+                    button.fm-submit(type="submit")
+                        span.fm-submit__text Obtenir mon mois gratuit →
+                        .fm-submit__spinner
+
+                //- ── Login form ──────────────────────────────────────────
+                form.fm-form#fmLoginForm(novalidate)
+                    .fm-field
+                        label(for="fmLoginEmail") Email
+                        input#fmLoginEmail(type="email" name="email" placeholder="marie@salon.fr" autocomplete="email" required)
+                    .fm-field
+                        label(for="fmLoginPwd") Mot de passe
+                        input#fmLoginPwd(type="password" name="password" placeholder="Votre mot de passe" required)
+                    button.fm-submit(type="submit")
+                        span.fm-submit__text Se connecter et activer →
+                        .fm-submit__spinner
+
+                //- Success
+                .fm-success#fmSuccess
+                    .fm-success__icon
+                        svg(xmlns="http://www.w3.org/2000/svg" height="28px" viewBox="0 -960 960 960" width="28px" fill="currentColor")
+                            path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                    p.fm-success__title Compte activé !
+                    p.fm-success__sub Redirection vers votre espace…
+
+            //- ── Footer ──────────────────────────────────────────────────
+            .fm-footer
+                p Sans engagement · Annulable à tout moment · Carte bancaire requise après le 1er mois

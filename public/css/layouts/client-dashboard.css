@@ -121,25 +121,26 @@
   position: relative;
   width: 100px;
   min-width: 100px;
+  height: 100px;
   flex-shrink: 0;
-  align-self: stretch;
+  align-self: center;
+  margin: 10px;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .dash-card__cover img {
-  width: 100%;
-  height: 100%;
+  width: 100px;
+  height: 100px;
   object-fit: cover;
   display: block;
+  border-radius: 10px;
 }
 
 .dash-card__status-dot {
   position: absolute;
-  /* Repositionné en haut à droite de la photo (au lieu de bas-gauche, où il
-     se confondait avec le sujet de la photo de l'établissement). */
-  top: 8px;
-  right: 8px;
-  bottom: auto;
-  left: auto;
+  top: 6px;
+  right: 6px;
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -276,8 +277,14 @@
   .dash-card__cover {
     width: 80px;
     min-width: 80px;
-    /* Full height alongside body */
-    align-self: stretch;
+    height: 80px;
+    margin: 10px;
+    align-self: center;
+  }
+
+  .dash-card__cover img {
+    width: 80px;
+    height: 80px;
   }
 
   .dash-card__body {

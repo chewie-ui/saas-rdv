@@ -1,7 +1,10 @@
 extends ../../layouts/index
 
+include ../../templates/modals/free-month.pug
+
 block links
     link(rel="stylesheet" href="/css/layouts/client/lp-pro.css")
+    link(rel="stylesheet" href="/css/templates/free-month.css")
     //- Pas de noindex — cette page doit être indexée
     meta(name="robots" content="index, follow")
 
@@ -31,7 +34,7 @@ block content
                     |  Vous arrivez le matin avec votre agenda déjà rempli.
 
                 .lp-pro__cta-group
-                    a.lp-pro__cta-primary(href="/register?plan=pro&billing=monthly&promo=BIENVENUE") Créer mon agenda gratuit →
+                    button.lp-pro__cta-primary(type="button" onclick="openFreeMonthModal()") Créer mon agenda gratuit →
                     p.lp-pro__cta-note ⏱ Prêt en 5 minutes · Aucun engagement
 
                 .lp-pro__trust
@@ -216,7 +219,7 @@ block content
                             li ✓ Rappels email automatiques
                             li ✓ Google Calendar
                             li ✓ Page personnalisable
-                        a.lp-pro__plan-cta(href="/register?plan=pro&billing=monthly&promo=BIENVENUE") 1 mois offert →
+                        button.lp-pro__plan-cta(type="button" onclick="openFreeMonthModal()") 1 mois offert →
 
                     .lp-pro__plan
                         .lp-pro__plan-name Business
@@ -229,7 +232,7 @@ block content
                             li ✓ Jusqu'à 10 employés
                             li ✓ 50 services
                             li ✓ Sans branding BranShee
-                        a.lp-pro__plan-cta.lp-pro__plan-cta--ghost(href="/register?plan=business&billing=monthly") Essayer gratuit
+                        button.lp-pro__plan-cta.lp-pro__plan-cta--ghost(type="button" onclick="openFreeMonthModal()") 1 mois offert →
 
         //- ══════════════════════════════════════════════
         //- FAQ
@@ -271,13 +274,18 @@ block content
             .lp-pro__container
                 h2 Prêt à arrêter de décrocher ?
                 p Créez votre agenda en ligne maintenant. Vos premiers clients peuvent réserver dans 5 minutes.
-                a.lp-pro__cta-primary(href="/register?plan=pro&billing=monthly&promo=BIENVENUE") Créer mon agenda gratuit →
+                button.lp-pro__cta-primary(type="button" onclick="openFreeMonthModal()") Créer mon agenda gratuit →
                 p.lp-pro__final-note Sans engagement · Sans carte bancaire · Annulable à tout moment
 
     //- Sticky CTA mobile (visible uniquement sur petit écran)
     .lp-pro__sticky
-        a.lp-pro__sticky-btn(href="/register?plan=pro&billing=monthly&promo=BIENVENUE") Créer mon agenda gratuit →
+        button.lp-pro__sticky-btn(type="button" onclick="openFreeMonthModal()") Créer mon agenda gratuit →
         p.lp-pro__sticky-note Sans carte bancaire · 1 mois offert
 
+    +freeMonthModal()
+
 block scripts
+    script.
+        window.__fmServices = !{JSON.stringify(services || [])};
     script(src="/js/components/topbar.js")
+    script(src="/js/templates/free-month.js")
