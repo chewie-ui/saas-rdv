@@ -65,10 +65,13 @@ router.patch("/gallery-layout", accountController.updateGalleryLayout);
 router.patch("/amenities", accountController.updateAmenities);
 router.patch("/equipment", accountController.updateEquipment);
 router.patch("/categories", accountController.updateCategories);
+router.patch("/categories/rename", accountController.renameCategory);
+router.delete("/categories/:name", accountController.deleteCategory);
 router.patch("/booking-category-style", accountController.updateBookingCategoryStyle);
 router.patch("/faq", accountController.updateFaq);
 router.patch("/badges", accountController.updateBadges);
 router.patch("/toggle-section", accountController.toggleSection);
+router.patch("/reminder-settings", accountController.updateReminderSettings);
 
 router.patch("/slug", isAuth, accountController.updateSlug);
 router.get("/check-slug", isAuth, accountController.checkSlug);

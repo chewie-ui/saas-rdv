@@ -251,10 +251,18 @@ function renderSvcCard(s) {
   const sel   = STATE.service && STATE.service.id === s._id ? "is-selected" : "";
   const price = (s.price !== null && s.price !== undefined)
     ? `<div class="bk-svc__price">${s.price}<small>€</small></div>` : "";
+  const infoBtn = s.description
+    ? `<button class="bk-svc__info-btn" type="button" data-desc="${escHtml(s.description)}" aria-label="Description du service" tabindex="-1">
+        <svg width="15" height="15" viewBox="0 -960 960 960" fill="currentColor"><path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
+        <div class="bk-svc__tooltip">${escHtml(s.description)}</div>
+      </button>`
+    : "";
   return `<div class="bk-svc ${sel}" data-svc="${s._id}">
-    <div>
-      <div class="bk-svc__name">${escHtml(s.name)}</div>
-      ${s.description ? `<div class="bk-svc__desc">${escHtml(s.description)}</div>` : ""}
+    <div class="bk-svc__left">
+      <div class="bk-svc__name-row">
+        <div class="bk-svc__name">${escHtml(s.name)}</div>
+        ${infoBtn}
+      </div>
       <span class="bk-svc__dur">${s.duration} min</span>
     </div>
     <div class="bk-svc__right">
@@ -1769,11 +1777,116 @@ function renderConfirmPane() {
         <button class="bk-signup-nudge__skip" id="bkSignupSkip" type="button">Non merci, continuer sans compte</button>
       </div>` : ""}
 
+      <!-- 📅 Ajouter à l'agenda -->
+      <div class="bk-cal-add" id="bkCalAdd">
+        <button class="bk-cal-add__btn" id="bkCalToggle" type="button">
+          <svg width="16" height="16" viewBox="0 -960 960 960" fill="currentColor"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-840h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm280 240q-17 0-28.5-11.5T440-440q0-17 11.5-28.5T480-480q17 0 28.5 11.5T520-440q0 17-11.5 28.5T480-320Zm-160 0q-17 0-28.5-11.5T280-440q0-17 11.5-28.5T320-480q17 0 28.5 11.5T360-440q0 17-11.5 28.5T320-320Zm320 0q-17 0-28.5-11.5T600-440q0-17 11.5-28.5T640-480q17 0 28.5 11.5T680-440q0 17-11.5 28.5T640-320ZM480-160q-17 0-28.5-11.5T440-200q0-17 11.5-28.5T480-240q17 0 28.5 11.5T520-200q0 17-11.5 28.5T480-160Zm-160 0q-17 0-28.5-11.5T280-200q0-17 11.5-28.5T320-240q17 0 28.5 11.5T360-200q0 17-11.5 28.5T320-160Zm320 0q-17 0-28.5-11.5T600-200q0-17 11.5-28.5T640-240q17 0 28.5 11.5T680-200q0 17-11.5 28.5T640-160Z"/></svg>
+          Ajouter à l'agenda
+          <svg class="bk-cal-add__chevron" width="12" height="12" viewBox="0 -960 960 960" fill="currentColor"><path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/></svg>
+        </button>
+        <div class="bk-cal-add__dropdown" id="bkCalDropdown" style="display:none">
+          <a class="bk-cal-add__opt" id="bkCalGoogle" href="#" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.36 19.27 5 16.25 5 12c0-4.1 3.2-7.27 7.2-7.27 3.09 0 4.9 1.97 4.9 1.97L19 4.72S16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12c0 5.05 4.13 10 10.22 10 5.33 0 9.25-3.65 9.25-9.09 0-1.15-.15-1.81-.15-1.81Z" fill="#4285F4"/></svg>
+            Google Agenda
+          </a>
+          <a class="bk-cal-add__opt" id="bkCalIcs" href="#" download="rendez-vous.ics">
+            <svg width="16" height="16" viewBox="0 -960 960 960" fill="currentColor"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></svg>
+            Apple / Outlook (.ics)
+          </a>
+        </div>
+      </div>
+
       <div class="bk-conf__actions">
         <button class="bk-btn bk-btn--ghost bk-btn--sm" onclick="window.location.reload()">Nouvelle réservation</button>
       </div>
     </div>
   </div>`;
+
+  // ── Ajouter à l'agenda ─────────────────────────────────────────────────
+  (function () {
+    const toggle   = document.getElementById("bkCalToggle");
+    const dropdown = document.getElementById("bkCalDropdown");
+    const gLink    = document.getElementById("bkCalGoogle");
+    const icsLink  = document.getElementById("bkCalIcs");
+    if (!toggle || !STATE.date || !STATE.time) return;
+
+    // Parse date + time → JS Date objects
+    const [h, m]    = STATE.time.split(":").map(Number);
+    const startDt   = new Date(`${STATE.date}T${STATE.time}:00`);
+    const dur        = (STATE.service && STATE.service.duration) ? parseInt(STATE.service.duration, 10) : 60;
+    const endDt     = new Date(startDt.getTime() + dur * 60000);
+
+    function toGCalFmt(dt) {
+      // YYYYMMDDTHHmmss (local, no Z)
+      const pad = n => String(n).padStart(2, "0");
+      return `${dt.getFullYear()}${pad(dt.getMonth()+1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`;
+    }
+    function toIcsFmt(dt) {
+      // Same format for ICS local time
+      return toGCalFmt(dt);
+    }
+
+    const title    = (STATE.service ? STATE.service.name : "Rendez-vous") + (info.businessName ? ` — ${info.businessName}` : "");
+    const location = [info.address, info.city].filter(Boolean).join(", ");
+    const details  = `Réservé via Branshee${info.businessName ? " · " + info.businessName : ""}`;
+
+    // Google Calendar link
+    const gcUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE` +
+      `&text=${encodeURIComponent(title)}` +
+      `&dates=${toGCalFmt(startDt)}/${toGCalFmt(endDt)}` +
+      `&details=${encodeURIComponent(details)}` +
+      (location ? `&location=${encodeURIComponent(location)}` : "");
+    if (gLink) gLink.href = gcUrl;
+
+    // ICS blob
+    function buildIcs() {
+      const uid  = `branshee-${Date.now()}@branshee.com`;
+      const now  = toIcsFmt(new Date()).replace(/\D/g,"").slice(0,15) + "Z";
+      return [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Branshee//FR",
+        "METHOD:PUBLISH",
+        "BEGIN:VEVENT",
+        `UID:${uid}`,
+        `DTSTAMP:${now}`,
+        `DTSTART:${toIcsFmt(startDt)}`,
+        `DTEND:${toIcsFmt(endDt)}`,
+        `SUMMARY:${title}`,
+        location ? `LOCATION:${location}` : "",
+        `DESCRIPTION:${details}`,
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].filter(Boolean).join("\r\n");
+    }
+
+    if (icsLink) {
+      icsLink.addEventListener("click", function (e) {
+        e.preventDefault();
+        const blob = new Blob([buildIcs()], { type: "text/calendar;charset=utf-8" });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement("a");
+        a.href     = url;
+        a.download = "rendez-vous.ics";
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        dropdown.style.display = "none";
+      });
+    }
+
+    // Toggle dropdown
+    toggle.addEventListener("click", function (e) {
+      e.stopPropagation();
+      const open = dropdown.style.display !== "none";
+      dropdown.style.display = open ? "none" : "block";
+      toggle.classList.toggle("is-open", !open);
+    });
+    document.addEventListener("click", function () {
+      dropdown.style.display = "none";
+      toggle.classList.remove("is-open");
+    });
+    dropdown.addEventListener("click", function (e) { e.stopPropagation(); });
+  })();
 
   // ── Signup nudge logic ──────────────────────────────────────────────────
   if (showSignup) {

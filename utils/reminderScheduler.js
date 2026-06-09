@@ -29,12 +29,10 @@ function getAppointmentDateTime(booking) {
  */
 async function sendDueReminders() {
   const now = new Date();
-  const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-  // Pré-filtre MongoDB (on élargit d'1 jour pour être safe avec les
-  // fuseaux horaires et la comparaison basée sur date + startTime).
-  const windowStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const windowEnd = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+  // Fenêtre large pour couvrir tous les délais possibles (6h → 72h)
+  const windowStart = new Date(now.getTime() - 6  * 60 * 60 * 1000);
+  const windowEnd   = new Date(now.getTime() + 80 * 60 * 60 * 1000);
 
   let candidates;
   try {
@@ -59,7 +57,9 @@ async function sendDueReminders() {
   try {
     const companies = await Company.find({ _id: { $in: companyIds } }).select("_id owner").lean();
     const ownerIds = [...new Set(companies.map((c) => String(c.owner)).filter(Boolean))];
-    const owners = await User.find({ _id: { $in: ownerIds } }).select("_id isPremium manualPremium subscription").lean();
+    const owners = await User.find({ _id: { $in: ownerIds } })
+      .select("_id isPremium manualPremium subscription calendarSettings")
+      .lean();
     const ownerById = Object.fromEntries(owners.map((o) => [String(o._id), o]));
     companies.forEach((c) => { companyOwnerMap[String(c._id)] = ownerById[String(c.owner)] || null; });
   } catch (err) {
@@ -68,18 +68,32 @@ async function sendDueReminders() {
 
   for (const booking of candidates) {
     const appointmentAt = getAppointmentDateTime(booking);
-
-    // On envoie uniquement si le rdv est dans le futur ET dans les 24h.
-    if (appointmentAt <= now || appointmentAt > in24h) continue;
     if (!booking.email) continue;
 
     // ── Plan gate: reminders only for Pro / Business ──────────────────────
     const owner = companyOwnerMap[String(booking.company)];
-    if (!atLeast(owner, "pro")) {
-      // Free plan owners don't get automated reminders
-      continue;
-    }
+    if (!atLeast(owner, "pro")) continue;
+
+    // ── Délai personnalisé (défaut 24h) ───────────────────────────────────
+    const delayHours = owner?.calendarSettings?.reminderDelayHours || 24;
+    const sendFrom   = new Date(appointmentAt.getTime() - delayHours * 60 * 60 * 1000);
+    const sendUntil  = new Date(sendFrom.getTime() + 15 * 60 * 1000); // fenêtre de 15 min
+
+    // N'envoyer que si l'heure actuelle est dans la fenêtre d'envoi
+    if (now < sendFrom || now > sendUntil) continue;
+    if (appointmentAt <= now) continue;
     // ─────────────────────────────────────────────────────────────────────
+
+    // ── Message personnalisé du professionnel ─────────────────────────────
+    const ownerMessage = (owner?.calendarSettings?.reminderMessage || "").trim();
+
+    // ── Sujet dynamique selon le délai ────────────────────────────────────
+    const delayLabel = delayHours <= 6  ? "dans 6 heures"
+                     : delayHours <= 12 ? "dans 12 heures"
+                     : delayHours <= 24 ? "demain"
+                     : delayHours <= 48 ? "dans 2 jours"
+                     : "dans 3 jours";
+    const subject = `Rappel : votre rendez-vous ${delayLabel}`;
 
     try {
       const html = pug.renderFile(templatePath, {
@@ -91,22 +105,20 @@ async function sendDueReminders() {
         slotTime: booking.slotTime,
         serviceName: booking.serviceName || "",
         message: booking.message || "",
+        ownerMessage,
+        delayLabel,
         bookingId: booking._id,
         cancelToken: booking.cancelToken,
         baseUrl: (process.env.BASE_URL || "https://www.branshee.com").replace(/\/$/, ""),
       });
 
-      const ok = await sendEmail(
-        booking.email,
-        "Rappel : votre rendez-vous est demain",
-        html,
-      );
+      const ok = await sendEmail(booking.email, subject, html);
 
       if (ok) {
         booking.reminderSent = true;
         await booking.save();
         console.log(
-          `[reminderScheduler] Rappel envoyé à ${booking.email} pour le ${booking.date} ${booking.startTime}`,
+          `[reminderScheduler] Rappel (${delayHours}h avant) envoyé à ${booking.email} — ${booking.date} ${booking.startTime}`,
         );
       }
     } catch (err) {

@@ -13,9 +13,13 @@
   --bk-accent-border: rgba(34,197,94,0.35);
   --bk-accent-ink:    #22c55e;
 
-  /* Surfaces */
+  /* Surfaces — overridden by pug :root injection */
   --bk-bg:        #f7f8f7;
   --bk-surface:   #ffffff;
+  --bk-day-bg:    #ffffff;
+  --bk-day-text:  #111111;
+  --bk-btn-bg:    #111111;
+  --bk-btn-text:  #ffffff;
   --bk-subtle:    #f1f4f2;
   --bk-subtle-2:  #e8ede9;
 
@@ -533,7 +537,7 @@ img { display: block; max-width: 100%; }
   cursor: pointer;
   transition: all 0.15s;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: var(--bk-shadow-xs);
 }
 
@@ -555,11 +559,88 @@ img { display: block; max-width: 100%; }
   margin-bottom: 4px;
 }
 
-.bk-svc__desc {
-  font-size: 12.5px;
+/* ── Info icon + tooltip (remplace la desc inline) ── */
+.bk-svc__left {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.bk-svc__name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.bk-svc__info-btn {
+  flex-shrink: 0;
+  position: relative;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
   color: var(--bk-muted);
-  margin-bottom: 10px;
-  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+  z-index: 1;
+}
+
+.bk-svc__info-btn:hover {
+  color: var(--bk-accent);
+}
+
+/* Tooltip */
+.bk-svc__tooltip {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  background: #1a2030;
+  color: #f0f0f0;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 9px 12px;
+  border-radius: 9px;
+  width: 230px;
+  white-space: normal;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Petite flèche en bas du tooltip */
+.bk-svc__tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1a2030;
+}
+
+.bk-svc__info-btn:hover .bk-svc__tooltip,
+.bk-svc__info-btn:focus .bk-svc__tooltip {
+  display: block;
+}
+
+/* Sur mobile : tooltip vers le bas si pas de place en haut */
+@media (max-width: 480px) {
+  .bk-svc__tooltip {
+    width: 200px;
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+  .bk-svc__tooltip::after {
+    left: auto;
+    right: 10px;
+    transform: none;
+  }
 }
 
 .bk-svc__dur {
@@ -749,7 +830,8 @@ img { display: block; max-width: 100%; }
   font: 600 12.5px var(--bk-mono);
   cursor: pointer;
   transition: all 0.1s;
-  color: var(--bk-ink);
+  color: var(--bk-day-text, var(--bk-ink));
+  background: var(--bk-day-bg, transparent);
   position: relative;
 }
 
@@ -791,7 +873,11 @@ img { display: block; max-width: 100%; }
 
 .bk-cal-cell:not(.is-disabled):not(.is-empty):not(.is-full):not(.is-busy):hover {
   background: var(--bk-accent-soft);
-  color: var(--bk-accent-ink);
+  /* On garde la couleur de texte d'origine pour rester lisible quelle que soit
+     la combinaison accent / day-bg choisie par l'admin */
+  color: var(--bk-day-text, var(--bk-ink));
+  outline: 1.5px solid var(--bk-accent-border);
+  outline-offset: -1px;
 }
 
 /* Un jour "à moitié plein" reste cliquable — on garde son repère orange
@@ -899,7 +985,7 @@ img { display: block; max-width: 100%; }
 .bk-slot:hover {
   border-color: var(--bk-accent);
   background: var(--bk-accent-soft);
-  color: var(--bk-accent-ink);
+  color: var(--bk-ink); /* garde le texte lisible peu importe la couleur accent */
 }
 
 .bk-slot.is-selected {
@@ -1180,6 +1266,79 @@ img { display: block; max-width: 100%; }
   margin-top: 20px;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+/* ── Ajouter à l'agenda ──────────────────────────────────────────────────── */
+.bk-cal-add {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin: 18px 0 4px;
+}
+
+.bk-cal-add__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 20px;
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 100px;
+  color: #15803d;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+.bk-cal-add__btn:hover {
+  background: #dcfce7;
+  border-color: #4ade80;
+  box-shadow: 0 2px 8px rgba(34,197,94,0.15);
+}
+.bk-cal-add__chevron {
+  transition: transform 0.2s;
+}
+.bk-cal-add__btn.is-open .bk-cal-add__chevron {
+  transform: rotate(180deg);
+}
+
+.bk-cal-add__dropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 200px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 100;
+  animation: calDropIn 0.15s ease;
+}
+
+@keyframes calDropIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.bk-cal-add__opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #111;
+  text-decoration: none;
+  transition: background 0.12s;
+  cursor: pointer;
+}
+.bk-cal-add__opt:hover {
+  background: #f3f4f6;
+  color: #111;
 }
 
 /* ── Buttons (used in panes) ────────────────────────────────────────────── */

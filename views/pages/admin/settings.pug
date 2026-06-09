@@ -500,9 +500,13 @@ block content
                             checked=prepayOn
                         )
                         .pm-method-info
-                            span.pm-method-icon 💻
+                            .pm-method-icon-wrap
+                                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                                    path(d="M880-720v480q0 33-23.5 56.5T800-160H160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720Zm-720 80h640v-80H160v80Zm0 160v240h640v-240H160Zm0 240v-480 480Z")
                             div
-                                span.pm-method-label Paiement en ligne à l'avance
+                                .pm-method-label-row
+                                    span.pm-method-label Paiement en ligne
+                                    span.pm-method-badge Stripe
                                 span.pm-method-sub Le client paie par carte lors de la réservation
 
                     //- Sous-section Stripe (visible si coché)
@@ -679,42 +683,79 @@ block content
         .info-card
             .info-card__header
                 h3 Politique d'annulation
-                p.info-card__desc Définissez les frais appliqués si un client annule tardivement.
+                p.info-card__desc Définissez les conditions d'annulation pour vos clients. Ces règles s'appliquent aux RDV prépayés.
 
             -
                 var cancelRule = (currentCompany && currentCompany.cancellationPolicy && currentCompany.cancellationPolicy.rule) || 'free'
 
-            .cancel-policy-options
-                label.cancel-policy-opt(class=(cancelRule === 'free' ? 'is-selected' : ''))
+            .cp-grid
+                //- ── Option 1 : Gratuit ─────────────────────────────────
+                label.cp-card(class=(cancelRule === 'free' ? 'is-selected' : ''))
                     input(type="radio" name="cancelRule" value="free" checked=(cancelRule === 'free'))
-                    .cancel-policy-opt__icon
-                        svg(width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                            polyline(points="20 6 9 17 4 12")
-                    .cancel-policy-opt__body
-                        strong Annulation gratuite
-                        span Aucun frais, quelle que soit l'heure d'annulation.
+                    .cp-card__top
+                        .cp-card__icon.cp-card__icon--green
+                            svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .cp-card__check
+                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                    .cp-card__badge.cp-card__badge--green Gratuit
+                    h4.cp-card__title Annulation libre
+                    p.cp-card__desc Votre client peut annuler à tout moment, sans frais.
+                    .cp-card__rules
+                        .cp-rule
+                            .cp-rule__dot.cp-rule__dot--green
+                            span À tout moment → 0 €
 
-                label.cancel-policy-opt(class=(cancelRule === 'half_24h' ? 'is-selected' : ''))
+                //- ── Option 2 : 50 % si &lt; 24h ─────────────────────────
+                label.cp-card(class=(cancelRule === 'half_24h' ? 'is-selected' : ''))
                     input(type="radio" name="cancelRule" value="half_24h" checked=(cancelRule === 'half_24h'))
-                    .cancel-policy-opt__icon
-                        svg(width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                            circle(cx="12" cy="12" r="10")
-                            polyline(points="12 6 12 12 16 14")
-                    .cancel-policy-opt__body
-                        strong 50 % si annulation &lt; 24h
-                        span Le client paie la moitié s'il annule moins de 24h avant le RDV.
+                    .cp-card__top
+                        .cp-card__icon.cp-card__icon--orange
+                            svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
+                                path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm112-260 56-56-128-128v-176h-80v208l152 152Z")
+                        .cp-card__check
+                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                    .cp-card__badge.cp-card__badge--orange 50 %
+                    h4.cp-card__title Moitié des frais
+                    p.cp-card__desc 50 % retenus si le client annule moins de 24h avant le RDV.
+                    .cp-card__rules
+                        .cp-rule
+                            .cp-rule__dot.cp-rule__dot--green
+                            span Plus de 24h avant → remboursement complet
+                        .cp-rule
+                            .cp-rule__dot.cp-rule__dot--orange
+                            span Moins de 24h avant → 50 % retenus
 
-                label.cancel-policy-opt(class=(cancelRule === 'full_12h' ? 'is-selected' : ''))
+                //- ── Option 3 : 100 % si &lt; 12h ────────────────────────
+                label.cp-card(class=(cancelRule === 'full_12h' ? 'is-selected' : ''))
                     input(type="radio" name="cancelRule" value="full_12h" checked=(cancelRule === 'full_12h'))
-                    .cancel-policy-opt__icon
-                        svg(width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                            path(d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z")
-                            line(x1="12" y1="9" x2="12" y2="13")
-                            line(x1="12" y1="17" x2="12.01" y2="17")
-                    .cancel-policy-opt__body
-                        strong 100 % si &lt; 12h · 50 % si &lt; 24h
-                        span Frais progressifs selon le délai d'annulation.
+                    .cp-card__top
+                        .cp-card__icon.cp-card__icon--red
+                            svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
+                                path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
+                        .cp-card__check
+                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                    .cp-card__badge.cp-card__badge--red Strict
+                    h4.cp-card__title Frais complets
+                    p.cp-card__desc Frais progressifs selon le délai — protection maximale.
+                    .cp-card__rules
+                        .cp-rule
+                            .cp-rule__dot.cp-rule__dot--green
+                            span Plus de 24h avant → remboursement complet
+                        .cp-rule
+                            .cp-rule__dot.cp-rule__dot--orange
+                            span Entre 12h et 24h → 50 % retenus
+                        .cp-rule
+                            .cp-rule__dot.cp-rule__dot--red
+                            span Moins de 12h → 100 % retenus
 
+            .cp-footer
+                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                    path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                span Ces règles s'appliquent uniquement aux rendez-vous prépayés via Stripe. Le client est informé lors de la réservation.
             p#cancelPolicyFeedback(style="display:none;font-size:13px;color:var(--accent);margin-top:12px") ✓ Politique sauvegardée
 
         .info-card

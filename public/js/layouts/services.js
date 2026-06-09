@@ -333,6 +333,125 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // ── Modifier / Supprimer une catégorie ────────────────────────────────────
+  const editCatModal        = document.getElementById("editCatModal");
+  const editCatModalOverlay = document.getElementById("editCatModalOverlay");
+  const closeEditCatModal   = document.getElementById("closeEditCatModal");
+  const cancelEditCatModal  = document.getElementById("cancelEditCatModal");
+  const saveEditCatBtn      = document.getElementById("saveEditCatBtn");
+  const editCatOldName      = document.getElementById("editCatOldName");
+  const editCatName         = document.getElementById("editCatName");
+  const editCatIconInput    = document.getElementById("editCatIconInput");
+  const editCatIconPicker   = document.getElementById("editCatIconPicker");
+
+  // Build icon picker for edit modal
+  if (editCatIconPicker) {
+    editCatIconPicker.innerHTML = CAT_ICONS.map(ic =>
+      `<button type="button" class="cat-icon-btn" data-icon="${ic.id}" title="${ic.label}">${ic.id}</button>`
+    ).join("");
+    editCatIconPicker.addEventListener("click", (e) => {
+      const btn = e.target.closest(".cat-icon-btn");
+      if (!btn) return;
+      editCatIconPicker.querySelectorAll(".cat-icon-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      if (editCatIconInput) editCatIconInput.value = btn.dataset.icon;
+    });
+  }
+
+  function openEditCatModal(name, icon) {
+    if (!editCatModal) return;
+    editCatOldName.value = name;
+    editCatName.value    = name;
+    editCatIconInput.value = icon || "";
+    // Highlight current icon
+    if (editCatIconPicker) {
+      editCatIconPicker.querySelectorAll(".cat-icon-btn").forEach(b => {
+        b.classList.toggle("selected", b.dataset.icon === icon);
+      });
+    }
+    editCatModalOverlay.classList.add("show");
+    editCatModal.classList.add("show");
+    editCatName.focus();
+  }
+
+  function closeEditCatModalFn() {
+    editCatModalOverlay.classList.remove("show");
+    editCatModal.classList.remove("show");
+  }
+
+  [closeEditCatModal, cancelEditCatModal, editCatModalOverlay].forEach(el => {
+    el?.addEventListener("click", (e) => {
+      if (e.target !== el) return;
+      closeEditCatModalFn();
+    });
+  });
+
+  if (saveEditCatBtn) {
+    saveEditCatBtn.addEventListener("click", async () => {
+      const oldName = editCatOldName.value;
+      const newName = editCatName.value.trim();
+      const icon    = editCatIconInput.value || "";
+      if (!newName) { editCatName.focus(); return; }
+
+      try {
+        const res  = await fetch("/account/categories/rename", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ oldName, newName, icon }),
+        });
+        const data = await res.json();
+        if (!data.success) { alert(data.error || "Erreur."); return; }
+
+        // Update local state
+        window.__categories = data.categories;
+
+        // Update DOM: the li item
+        const catOrderList = document.getElementById("catOrderList");
+        const li = catOrderList?.querySelector(`.cat-order-item[data-name="${CSS.escape(oldName)}"]`);
+        if (li) {
+          li.dataset.name = newName;
+          const iconEl = li.querySelector(".cat-order-item__icon");
+          const nameEl = li.querySelector(".cat-order-item__name");
+          if (nameEl) nameEl.textContent = newName;
+          if (icon) {
+            if (iconEl) iconEl.textContent = icon;
+            else {
+              const grip = li.querySelector(".cat-order-item__grip");
+              const span = document.createElement("span");
+              span.className = "cat-order-item__icon";
+              span.textContent = icon;
+              grip.after(span);
+            }
+          } else if (iconEl) {
+            iconEl.remove();
+          }
+        }
+
+        // Update service cards that used this category
+        document.querySelectorAll(`.service-card[data-category="${CSS.escape(oldName)}"]`).forEach(card => {
+          card.dataset.category = newName;
+          const badge = card.querySelector(".badge--category");
+          if (badge) {
+            const catObj = data.categories.find(c => c.name === newName);
+            badge.innerHTML = (catObj?.icon ? `<span class="badge-cat-icon">${catObj.icon} </span>` : "") + newName;
+          }
+        });
+
+        closeEditCatModalFn();
+
+        // Flash status
+        const catSaveStatus = document.getElementById("catSaveStatus");
+        if (catSaveStatus) {
+          catSaveStatus.textContent = "✓ Catégorie modifiée";
+          catSaveStatus.style.color = "#22c55e";
+          setTimeout(() => { catSaveStatus.textContent = ""; }, 2500);
+        }
+      } catch (err) {
+        alert("Erreur réseau.");
+      }
+    });
+  }
+
   // ── Panneau : Gestion catégories (ordre + style) ─────────────────────────
   const catOrderList      = document.getElementById("catOrderList");
   const saveCatSettingsBtn = document.getElementById("saveCatSettingsBtn");
@@ -354,13 +473,67 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Up/Down reorder buttons
+  // Up/Down reorder + Edit + Delete buttons
   if (catOrderList) {
-    catOrderList.addEventListener("click", (e) => {
+    catOrderList.addEventListener("click", async (e) => {
       const btn = e.target.closest(".cat-order-btn");
       if (!btn) return;
       const item = btn.closest(".cat-order-item");
       if (!item) return;
+      const name = item.dataset.name;
+
+      // Edit
+      if (btn.classList.contains("cat-edit-btn")) {
+        const cats = window.__categories || [];
+        const catObj = cats.find(c => c.name === name) || { name, icon: "" };
+        openEditCatModal(catObj.name, catObj.icon || "");
+        return;
+      }
+
+      // Delete
+      if (btn.classList.contains("cat-delete-btn")) {
+        const count = document.querySelectorAll(`.service-card[data-category="${CSS.escape(name)}"]`).length;
+        const msg = count > 0
+          ? `Supprimer la catégorie "${name}" ?\n${count} service(s) l'utilisant seront sans catégorie.`
+          : `Supprimer la catégorie "${name}" ?`;
+        if (!confirm(msg)) return;
+        try {
+          const res  = await fetch(`/account/categories/${encodeURIComponent(name)}`, { method: "DELETE" });
+          const data = await res.json();
+          if (!data.success) { alert("Erreur lors de la suppression."); return; }
+
+          // Update local state
+          window.__categories = data.categories;
+
+          // Remove from DOM
+          item.remove();
+
+          // Hide panel if no categories left
+          const catManagePanel = document.getElementById("catManagePanel");
+          if (catManagePanel && !catOrderList.querySelector(".cat-order-item")) {
+            catManagePanel.style.display = "none";
+          }
+
+          // Clear category from service cards
+          document.querySelectorAll(`.service-card[data-category="${CSS.escape(name)}"]`).forEach(card => {
+            card.dataset.category = "";
+            const badge = card.querySelector(".badge--category");
+            if (badge) badge.remove();
+          });
+
+          const catSaveStatus = document.getElementById("catSaveStatus");
+          if (catSaveStatus) {
+            catSaveStatus.textContent = "✓ Catégorie supprimée";
+            catSaveStatus.style.color = "#22c55e";
+            setTimeout(() => { catSaveStatus.textContent = ""; }, 2500);
+          }
+        } catch (err) {
+          alert("Erreur réseau.");
+        }
+        return;
+      }
+
+      // Reorder
       const dir = btn.dataset.dir;
       if (dir === "up") {
         const prev = item.previousElementSibling;

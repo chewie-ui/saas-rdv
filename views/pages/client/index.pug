@@ -105,13 +105,63 @@ block content
         // ne s'affichait jamais sur la page publique.
         var showGallery = cs.showSectionGallery === true && gallery && gallery.length > 0
 
+    -
+        var _fontMap = {
+            'Inter':            "'Inter', system-ui, -apple-system, sans-serif",
+            'Poppins':          "'Poppins', system-ui, sans-serif",
+            'Lato':             "'Lato', system-ui, sans-serif",
+            'Montserrat':       "'Montserrat', system-ui, sans-serif",
+            'Playfair Display': "'Playfair Display', Georgia, serif",
+            'Nunito':           "'Nunito', system-ui, sans-serif"
+        };
+        var _fontVal = _fontMap[cs.font] || _fontMap['Inter'];
+        var _radMap = {
+            'none': { xs:'0px',  sm:'0px',  md:'0px',  lg:'0px',  xl:'0px',  pill:'0px'   },
+            'sm':   { xs:'4px',  sm:'6px',  md:'8px',  lg:'10px', xl:'14px', pill:'999px' },
+            'md':   { xs:'6px',  sm:'8px',  md:'12px', lg:'16px', xl:'24px', pill:'999px' },
+            'lg':   { xs:'8px',  sm:'12px', md:'18px', lg:'24px', xl:'36px', pill:'999px' }
+        };
+        var _R = _radMap[cs.borderRadius] || _radMap['md'];
+        var _bdMap = {
+            'none':   { color:'transparent', strong:'transparent' },
+            'subtle': { color:'#e3e8e4',     strong:'#c8d4ca'     },
+            'medium': { color:'#c4cfc6',     strong:'#9aab9d'     },
+            'strong': { color:'#8a9e8d',     strong:'#4d6651'     }
+        };
+        var _BD = _bdMap[cs.borderStyle] || _bdMap['subtle'];
+        var _shMap = {
+            'none':   { xs:'none', sm:'none', md:'none', lg:'none' },
+            'subtle': { xs:'0 1px 2px rgba(15,23,25,0.04)', sm:'0 1px 3px rgba(15,23,25,0.06),0 1px 2px rgba(15,23,25,0.04)', md:'0 4px 12px rgba(15,23,25,0.08),0 2px 4px rgba(15,23,25,0.04)', lg:'0 12px 32px rgba(15,23,25,0.12),0 4px 8px rgba(15,23,25,0.05)' },
+            'medium': { xs:'0 1px 4px rgba(0,0,0,0.10)',    sm:'0 2px 6px rgba(0,0,0,0.12)',    md:'0 6px 18px rgba(0,0,0,0.14)',    lg:'0 16px 40px rgba(0,0,0,0.16)' },
+            'strong': { xs:'0 2px 6px rgba(0,0,0,0.18)',    sm:'0 4px 12px rgba(0,0,0,0.22)',   md:'0 10px 28px rgba(0,0,0,0.26)',   lg:'0 24px 56px rgba(0,0,0,0.30)' }
+        };
+        var _SH = _shMap[cs.shadowStyle] || _shMap['subtle'];
     style.
         :root {
-            --bk-accent:      #{accentColor};
-            --bk-accent-text: #{accentText};
-            --bk-accent-soft: rgba(#{accentRgb}, 0.10);
+            --bk-accent:        #{accentColor};
+            --bk-accent-text:   #{accentText};
+            --bk-accent-soft:   rgba(#{accentRgb}, 0.10);
             --bk-accent-border: rgba(#{accentRgb}, 0.35);
-            --bk-accent-ink:  #{accentColor};
+            --bk-accent-ink:    #{accentColor};
+            --bk-bg:      #{cs.pageBg   || '#f7f8f7'};
+            --bk-surface: #{cs.calBg    || '#ffffff'};
+            --bk-day-bg:  #{cs.dayBg    || '#ffffff'};
+            --bk-day-text:#{cs.dayText  || '#111111'};
+            --bk-btn-bg:  #{cs.btnBg    || '#111111'};
+            --bk-btn-text:#{cs.btnText  || '#ffffff'};
+            --bk-font:    !{_fontVal};
+            --bk-r-xs:    #{_R.xs};
+            --bk-r-sm:    #{_R.sm};
+            --bk-r-md:    #{_R.md};
+            --bk-r-lg:    #{_R.lg};
+            --bk-r-xl:    #{_R.xl};
+            --bk-r-pill:  #{_R.pill};
+            --bk-border:        !{_BD.color};
+            --bk-border-strong: !{_BD.strong};
+            --bk-shadow-xs: !{_SH.xs};
+            --bk-shadow-sm: !{_SH.sm};
+            --bk-shadow-md: !{_SH.md};
+            --bk-shadow-lg: !{_SH.lg};
         }
 
     //- ── Top bar ────────────────────────────────────────────────────────────

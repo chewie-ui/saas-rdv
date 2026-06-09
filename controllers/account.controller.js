@@ -781,7 +781,7 @@ exports.updateCalendarSettings = async (req, res) => {
   try {
     const {
       pageBg, calBg, accentColor, accentText, dayBg, dayText, btnBg, btnText,
-      lang, font, showInfo, showSocials, layoutStyle, pageBgType, pageBgImage,
+      lang, font, borderRadius, borderStyle, shadowStyle, showInfo, showSocials, layoutStyle, pageBgType, pageBgImage,
       showSectionAbout, showSectionServices, showSectionTeam,
       showSectionReviews, showSectionAmenities, showSectionFaq,
     } = req.body;
@@ -797,6 +797,9 @@ exports.updateCalendarSettings = async (req, res) => {
         "calendarSettings.btnText":              btnText,
         "calendarSettings.lang":                 lang,
         "calendarSettings.font":                 font,
+        "calendarSettings.borderRadius":         borderRadius  || 'md',
+        "calendarSettings.borderStyle":          borderStyle   || 'subtle',
+        "calendarSettings.shadowStyle":          shadowStyle   || 'subtle',
         "calendarSettings.showInfo":             showInfo,
         "calendarSettings.showSocials":          showSocials,
         "calendarSettings.layoutStyle":          layoutStyle,
@@ -961,6 +964,68 @@ exports.updateCategories = async (req, res) => {
   }
 };
 
+exports.renameCategory = async (req, res) => {
+  try {
+    const { oldName, newName, icon } = req.body;
+    if (!oldName || !newName || typeof oldName !== "string" || typeof newName !== "string") {
+      return res.json({ success: false, error: "Nom invalide" });
+    }
+    const Service = require("../db/models/company/service.model");
+    const user = await User.findById(req.user._id).select("calendarSettings company");
+    if (!user) return res.json({ success: false });
+
+    const cats = user.calendarSettings.categories || [];
+    const idx  = cats.findIndex(c => c.name === oldName);
+    if (idx === -1) return res.json({ success: false, error: "Catégorie introuvable" });
+
+    cats[idx].name = newName.trim();
+    if (icon !== undefined) cats[idx].icon = (icon || "").slice(0, 10);
+
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: { "calendarSettings.categories": cats },
+    });
+
+    // Update all services using the old name
+    if (user.company) {
+      await Service.updateMany(
+        { company: user.company, category: oldName },
+        { $set: { category: newName.trim() } }
+      );
+    }
+
+    return res.json({ success: true, categories: cats });
+  } catch (err) {
+    return res.json({ success: false });
+  }
+};
+
+exports.deleteCategory = async (req, res) => {
+  try {
+    const name = decodeURIComponent(req.params.name || "");
+    if (!name) return res.json({ success: false });
+    const Service = require("../db/models/company/service.model");
+    const user = await User.findById(req.user._id).select("calendarSettings company");
+    if (!user) return res.json({ success: false });
+
+    const cats = (user.calendarSettings.categories || []).filter(c => c.name !== name);
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: { "calendarSettings.categories": cats },
+    });
+
+    // Clear the category from all services that used it
+    if (user.company) {
+      await Service.updateMany(
+        { company: user.company, category: name },
+        { $set: { category: "" } }
+      );
+    }
+
+    return res.json({ success: true, categories: cats });
+  } catch (err) {
+    return res.json({ success: false });
+  }
+};
+
 exports.updateBookingCategoryStyle = async (req, res) => {
   try {
     const { style } = req.body;
@@ -986,6 +1051,25 @@ exports.updateGalleryLayout = async (req, res) => {
     return res.json({ success: true });
   } catch (err) {
     return res.json({ success: false });
+  }
+};
+
+exports.updateReminderSettings = async (req, res) => {
+  try {
+    const allowed = [6, 12, 24, 48, 72];
+    const delayHours = parseInt(req.body.reminderDelayHours, 10);
+    const message    = (req.body.reminderMessage || "").trim().slice(0, 300);
+    if (!allowed.includes(delayHours)) return res.status(400).json({ success: false, error: "Délai invalide." });
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: {
+        "calendarSettings.reminderDelayHours": delayHours,
+        "calendarSettings.reminderMessage":    message,
+      },
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false });
   }
 };
 

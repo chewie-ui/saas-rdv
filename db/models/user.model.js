@@ -151,7 +151,10 @@ const userSchema = schema(
       btnBg:       { type: String,  default: '#111111' },
       btnText:     { type: String,  default: '#ffffff' },
       lang:        { type: String,  default: 'fr' },
-      font:        { type: String,  default: 'Inter' },
+      font:         { type: String,  default: 'Inter' },
+      borderRadius: { type: String,  default: 'md'     }, // none | sm | md | lg
+      borderStyle:  { type: String,  default: 'subtle' }, // none | subtle | medium | strong
+      shadowStyle:  { type: String,  default: 'subtle' }, // none | subtle | medium | strong
       showInfo:       { type: Boolean, default: true },
       showSocials:    { type: Boolean, default: true },
       showEmailPro:   { type: Boolean, default: true },
@@ -178,6 +181,9 @@ const userSchema = schema(
       // Ordre d'affichage des sections sur la page publique
       // "booking" est toujours premier (implicite, non stocké)
       sectionOrder: { type: [String], default: ['about', 'location', 'hours', 'gallery', 'reviews'] },
+      // ── Rappels email ────────────────────────────────────────────────────
+      reminderDelayHours: { type: Number, default: 24 }, // 6 | 12 | 24 | 48 | 72
+      reminderMessage:    { type: String, default: '' }, // message perso affiché dans le rappel
       gallery:     { type: [String], default: [] },
       equipment:   { type: [String], default: [] },
       categories:  { type: [{ name: String, icon: { type: String, default: '' }, _id: false }], default: [] },
