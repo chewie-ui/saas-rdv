@@ -152,6 +152,8 @@ const userSchema = schema(
       btnText:     { type: String,  default: '#ffffff' },
       lang:        { type: String,  default: 'fr' },
       font:         { type: String,  default: 'Inter' },
+      customFontUrl:    { type: String, default: '' }, // URL d'une police perso (Google Fonts ou @font-face CSS) pour le calendrier
+      customFontFamily: { type: String, default: '' }, // nom de la famille de police perso à appliquer au calendrier
       borderRadius: { type: String,  default: 'md'     }, // none | sm | md | lg
       borderStyle:  { type: String,  default: 'subtle' }, // none | subtle | medium | strong
       shadowStyle:  { type: String,  default: 'subtle' }, // none | subtle | medium | strong
@@ -195,6 +197,11 @@ const userSchema = schema(
       },
       faq:    { type: [mongoose.Schema.Types.Mixed], default: [] },
       badges: { type: [String], default: [] },
+
+      // ── Intégration iframe ───────────────────────────────────────────────
+      embedTitle:      { type: String, default: '' }, // titre affiché au-dessus du calendrier en mode embed
+      embedFontUrl:    { type: String, default: '' }, // URL d'une police perso (Google Fonts ou @font-face CSS)
+      embedFontFamily: { type: String, default: '' }, // nom de la famille de police à appliquer
     },
 
     // ── Parrainage ────────────────────────────────────────────────────────────
@@ -246,6 +253,12 @@ const userSchema = schema(
     calendarFeedToken: {
       type: String,
       default: null,
+    },
+
+    // Compte désactivé par le superadmin (masqué de /search + URL bloquée)
+    isDisabled: {
+      type: Boolean,
+      default: false,
     },
   },
 

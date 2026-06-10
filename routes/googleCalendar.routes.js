@@ -25,6 +25,7 @@ function buildRedirectUri(req) {
 router.get("/auth/google/calendar", isAuthenticated, async (req, res) => {
   try {
     const redirectUri  = buildRedirectUri(req);
+    console.log("[GCal] redirect_uri utilisé :", redirectUri);
     const oauth2Client = createOAuthClient(redirectUri);
 
     const url = oauth2Client.generateAuthUrl({

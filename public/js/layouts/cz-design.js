@@ -45,6 +45,8 @@
     current[f.key] = CS[f.key] || f.def;
   });
   current.font         = CS.font         || 'Inter';
+  current.customFontUrl    = CS.customFontUrl    || '';
+  current.customFontFamily = CS.customFontFamily || '';
   current.borderRadius = CS.borderRadius || 'md';
   current.borderStyle  = CS.borderStyle  || 'subtle';
   current.shadowStyle  = CS.shadowStyle  || 'subtle';
@@ -222,6 +224,22 @@
     var R       = RADIUS_MAP[current.borderRadius] || RADIUS_MAP['md'];
     var BD      = BORDER_MAP[current.borderStyle]  || BORDER_MAP['subtle'];
     var SH      = SHADOW_MAP[current.shadowStyle]  || SHADOW_MAP['subtle'];
+
+    // Police personnalisée importée par l'utilisateur (prioritaire)
+    if (current.customFontFamily) {
+      fontVal = "'" + current.customFontFamily + "', " + fontVal;
+    }
+    if (current.customFontUrl) {
+      var linkId = '__cz_custom_font';
+      var fontLink = doc.getElementById(linkId);
+      if (!fontLink) {
+        fontLink = doc.createElement('link');
+        fontLink.id = linkId;
+        fontLink.rel = 'stylesheet';
+        (doc.head || doc.documentElement).appendChild(fontLink);
+      }
+      if (fontLink.href !== current.customFontUrl) fontLink.href = current.customFontUrl;
+    }
 
     // Applique chaque variable directement sur <html> (inline style → priorité absolue)
     var vars = {
@@ -577,6 +595,24 @@
     });
   });
 
+  /* ── Police personnalisée (importée par l'utilisateur) ────────── */
+  var customFontUrlInput    = $('czCustomFontUrl');
+  var customFontFamilyInput = $('czCustomFontFamily');
+  if (customFontUrlInput) {
+    customFontUrlInput.addEventListener('input', function () {
+      current.customFontUrl = customFontUrlInput.value.trim();
+      snapshotState();
+      scheduleInject();
+    });
+  }
+  if (customFontFamilyInput) {
+    customFontFamilyInput.addEventListener('input', function () {
+      current.customFontFamily = customFontFamilyInput.value.trim();
+      snapshotState();
+      scheduleInject();
+    });
+  }
+
   /* ═══════════════════════════════════════════════════════════════
      RADIUS PICKER
      ═══════════════════════════════════════════════════════════════ */
@@ -642,6 +678,8 @@
             btnBg:        current.btnBg,
             btnText:      current.btnText,
             font:         current.font,
+            customFontUrl:    current.customFontUrl,
+            customFontFamily: current.customFontFamily,
             borderRadius: current.borderRadius,
             borderStyle:  current.borderStyle,
             shadowStyle:  current.shadowStyle,
@@ -774,9 +812,9 @@
   /* ── Mapping section → sélecteurs CSS dans la page booking ─── */
   var SECTION_SELECTORS = {
     'profile':  '.bk-head',
-    'services': '#bkCart',
     'reviews':  'section.bk-reviews, .bk-reviews',
     'about':    '.bk-about-card, .bk-info-section, .bk-location-card',
+    'hours':    '.bk-hours-card',
   };
 
   /* ── Injecter le masquage des sections dans l'iframe embed ─── */
@@ -813,7 +851,7 @@
 
   /* ── Sections cochées → paramètre URL (pour le code à copier) ── */
   function getSelectedSections() {
-    var all = ['booking','profile','services','reviews','about'];
+    var all = ['booking','profile','reviews','about','hours'];
     var checked = [];
     all.forEach(function (key) {
       var id = 'embedSec' + key.charAt(0).toUpperCase() + key.slice(1);
@@ -827,7 +865,7 @@
   function buildEmbedUrl() {
     if (!FULL_URL) return '';
     var secs = getSelectedSections();
-    var all = ['booking','profile','services','reviews','about'];
+    var all = ['booking','profile','reviews','about','hours'];
     // Si tout est coché → URL simple
     if (secs.length >= all.length) return FULL_URL;
     return FULL_URL + '?sections=' + secs.join(',');
@@ -838,7 +876,7 @@
     var url = buildEmbedUrl();
     if (!url) return '<!-- Configurez votre URL d\'abord -->';
     var w   = (widthInput  ? widthInput.value.trim()  : '100%') || '100%';
-    var h   = (heightInput ? heightInput.value.trim() : '780')  || '780';
+    var h   = (heightInput ? heightInput.value.trim() : '800')  || '800';
     var hPx = /^\d+$/.test(h) ? h + 'px' : h;
     var wPx = /^\d+$/.test(w) ? w + 'px' : w;
     return '<iframe\n' +
@@ -853,20 +891,47 @@
       '></iframe>';
   }
 
+  /* ── Ajuster automatiquement la hauteur du textarea (pas de scroll) ── */
+  function autosizeCodeArea() {
+    if (!codeArea) return;
+    codeArea.style.height = 'auto';
+    codeArea.style.height = (codeArea.scrollHeight + 2) + 'px';
+  }
+
   /* ── Mettre à jour le preview instantanément ─────────────────── */
   function updatePreview() {
     // 1. Mettre à jour le code à copier
-    if (codeArea) codeArea.value = buildIframeCode();
+    if (codeArea) {
+      codeArea.value = buildIframeCode();
+      autosizeCodeArea();
+    }
 
     // 2. Hauteur de l'iframe preview (transition CSS)
     if (embedFrame) {
-      var h = parseInt(heightInput ? heightInput.value : '780', 10) || 780;
-      h = Math.max(400, Math.min(900, h));
+      var h = parseInt(heightInput ? heightInput.value : '800', 10) || 800;
+      h = Math.max(400, Math.min(2000, h));
       embedFrame.style.height = h + 'px';
     }
 
-    // 3. Masquer/afficher les sections dans l'iframe (sans rechargement)
+    // 3. Largeur de l'iframe preview
+    if (embedFrameWrap && widthInput) {
+      var w = widthInput.value.trim() || '100%';
+      var wCss = /^\d+$/.test(w) ? w + 'px' : w;
+      embedFrameWrap.style.maxWidth = (wCss === '100%') ? '100%' : wCss;
+    }
+
+    // 4. Masquer/afficher les sections dans l'iframe (sans rechargement)
     injectEmbedSections();
+  }
+
+  /* ── Construit l'URL de l'aperçu : exactement la même que l'iframe générée
+     (mêmes sections, donc même comportement embed : header retiré, badge
+     "Propulsé par BranShee", contenu centré...) + anti-cache. ───────────── */
+  function buildPreviewUrl() {
+    var url = buildEmbedUrl();
+    if (!url) return '';
+    var sep = url.indexOf('?') === -1 ? '?' : '&';
+    return url + sep + '_t=' + Date.now();
   }
 
   // Charger l'iframe embed (src vide dans le HTML, on la charge ici)
@@ -875,8 +940,18 @@
       // Après chargement : appliquer immédiatement les sections cochées
       setTimeout(injectEmbedSections, 60);
     });
-    embedFrame.src = BOOKING_PATH;
+    embedFrame.src = buildPreviewUrl();
   }
+
+  // À chaque affichage de l'onglet "Intégration" : recharger l'aperçu (pour
+  // refléter les changements de design enregistrés entre-temps) + corriger
+  // la hauteur du textarea du code (caché donc mal mesuré au chargement).
+  document.addEventListener('czIntegrationVisible', function () {
+    if (embedFrame && BOOKING_PATH) {
+      embedFrame.src = buildPreviewUrl();
+    }
+    setTimeout(autosizeCodeArea, 0);
+  });
 
   // Écouter les changements de taille
   if (widthInput)  widthInput.addEventListener('input', updatePreview);
@@ -886,18 +961,74 @@
   document.querySelectorAll('input[name="embedSection"]').forEach(function (cb) {
     cb.addEventListener('change', function () {
       // Met à jour le code à copier
-      if (codeArea) codeArea.value = buildIframeCode();
+      if (codeArea) {
+        codeArea.value = buildIframeCode();
+        autosizeCodeArea();
+      }
       // Masque/affiche la section dans l'iframe immédiatement
       injectEmbedSections();
     });
   });
 
   // Init code + hauteur
-  if (codeArea) codeArea.value = buildIframeCode();
-  if (embedFrame) embedFrame.style.height = '780px';
+  if (codeArea) {
+    codeArea.value = buildIframeCode();
+    autosizeCodeArea();
+  }
+  if (embedFrame) embedFrame.style.height = '800px';
 
   if (iframeCopyBtn) {
     iframeCopyBtn.addEventListener('click', function () { copyText(buildIframeCode(), iframeCopyBtn); });
+  }
+
+  /* ── Personnalisation embed : titre + police ─────────────────── */
+  var embedTitleInput      = document.getElementById('czEmbedTitle');
+  var embedFontUrlInput    = document.getElementById('czEmbedFontUrl');
+  var embedFontFamilyInput = document.getElementById('czEmbedFontFamily');
+  var embedCustomSaveBtn   = document.getElementById('czEmbedCustomSave');
+  var embedCustomStatus    = document.getElementById('czEmbedCustomStatus');
+
+  if (embedCustomSaveBtn) {
+    embedCustomSaveBtn.addEventListener('click', function () {
+      var payload = {
+        embedTitle:      embedTitleInput      ? embedTitleInput.value.trim()      : '',
+        embedFontUrl:    embedFontUrlInput    ? embedFontUrlInput.value.trim()    : '',
+        embedFontFamily: embedFontFamilyInput ? embedFontFamilyInput.value.trim() : '',
+      };
+      embedCustomSaveBtn.disabled = true;
+      fetch('/account/embed-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          embedCustomSaveBtn.disabled = false;
+          if (data && data.success) {
+            if (embedCustomStatus) {
+              embedCustomStatus.textContent = 'Enregistré ✓';
+              embedCustomStatus.classList.add('is-visible');
+              setTimeout(function () { embedCustomStatus.classList.remove('is-visible'); }, 2000);
+            }
+            // Recharger l'aperçu pour refléter le nouveau titre/police
+            if (embedFrame && BOOKING_PATH) {
+              embedFrame.src = buildPreviewUrl();
+            }
+          } else if (embedCustomStatus) {
+            embedCustomStatus.textContent = 'Erreur lors de l\'enregistrement';
+            embedCustomStatus.style.color = '#ef4444';
+            embedCustomStatus.classList.add('is-visible');
+          }
+        })
+        .catch(function () {
+          embedCustomSaveBtn.disabled = false;
+          if (embedCustomStatus) {
+            embedCustomStatus.textContent = 'Erreur réseau';
+            embedCustomStatus.style.color = '#ef4444';
+            embedCustomStatus.classList.add('is-visible');
+          }
+        });
+    });
   }
 
   /* ── QR code ─────────────────────────────────────────────────── */

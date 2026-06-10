@@ -2,7 +2,7 @@ const Booking  = require("../db/models/book.model");
 const User     = require("../db/models/user.model");
 const Company  = require("../db/models/company/company.model");
 const Employee = require("../db/models/company/employee.model");
-const { addEventToCalendar, deleteEventFromCalendar } = require("../utils/googleCalendarSync");
+const { addEventToCalendar, deleteEventFromCalendar, getBusyIntervals } = require("../utils/googleCalendarSync");
 const DaysOff  = require("../db/models/company/daysOff.model");
 const { getAppointments } = require("../queries/booking.queries");
 const pug  = require("pug");
@@ -425,7 +425,7 @@ exports.getBooking = async (req, res) => {
 
   // Get company slotTime so we can compute slot granularity.
   const [companyDoc, activeEmployeeCount] = await Promise.all([
-    Company.findById(companyId).select("slotTime").lean(),
+    Company.findById(companyId).select("slotTime owner").lean(),
     // Only count employees when no specific one is filtered
     specificEmployee ? Promise.resolve(0) : Employee.countDocuments({ company: companyId, active: true }),
   ]);
@@ -447,6 +447,35 @@ exports.getBooking = async (req, res) => {
     }
   }
 
+  // ── Agenda Google personnel : si le pro a connecté son agenda perso, on
+  // bloque aussi les créneaux occupés par ses RDV persos (visio, médical, etc.) ──
+  let googleBusySlots = [];
+  if (companyDoc?.owner) {
+    try {
+      const ownerUser = await User.findById(companyDoc.owner).select("googleCalendar").lean();
+      const gcal = ownerUser?.googleCalendar;
+      if (gcal?.connected && gcal?.refreshToken) {
+        const dateStr = new Date(date).toISOString().split("T")[0];
+        const busyIntervals = await getBusyIntervals(gcal.refreshToken, dateStr);
+        busyIntervals.forEach((interval) => {
+          const startMin = interval.start.getHours() * 60 + interval.start.getMinutes();
+          let endMin = interval.end.getHours() * 60 + interval.end.getMinutes();
+          if (endMin <= startMin) endMin = 24 * 60; // événement traversant minuit / journée entière
+          for (let t = startMin; t < endMin; t += granularity) {
+            googleBusySlots.push(`${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
+          }
+        });
+      }
+    } catch (err) {
+      console.error("[GCal] Erreur lors de la vérification de l'agenda perso:", err.message);
+    }
+  }
+
+  // Helper: ajoute les créneaux occupés de l'agenda perso au set de blocage
+  function blockGoogleBusySlots(blockedSet) {
+    googleBusySlots.forEach((slot) => blockedSet.add(slot));
+  }
+
   // ── Case 1: specific employee selected → block only their slots ──────────
   if (specificEmployee) {
     const bookings = await Booking.find({ ...baseQuery, employee: employeeId }).select("startTime slotTime");
@@ -459,6 +488,7 @@ exports.getBooking = async (req, res) => {
         addBlocked(blockedSet, `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
       }
     });
+    blockGoogleBusySlots(blockedSet);
     blockPastSlots(blockedSet, granularity);
     return res.json({ bookedTimes: Array.from(blockedSet) });
   }
@@ -475,6 +505,7 @@ exports.getBooking = async (req, res) => {
         addBlocked(blockedSet, `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
       }
     });
+    blockGoogleBusySlots(blockedSet);
     blockPastSlots(blockedSet, granularity);
     return res.json({ bookedTimes: Array.from(blockedSet) });
   }
@@ -508,6 +539,7 @@ exports.getBooking = async (req, res) => {
   });
 
   // Also block past slots for today
+  blockGoogleBusySlots(blockedSet);
   blockPastSlots(blockedSet, granularity);
 
   res.json({ bookedTimes: Array.from(blockedSet) });

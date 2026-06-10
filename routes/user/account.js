@@ -52,6 +52,7 @@ router.post("/send-delete-code", isAuth, accountController.sendDeleteCode);
 router.delete("/delete-account", isAuth, accountController.deleteAccount);
 
 router.patch("/calendar-settings", accountController.updateCalendarSettings);
+router.patch("/embed-settings", isAuth, accountController.updateEmbedSettings);
 router.patch(
   "/calendar-bg-image",
   upload.single("calendarBgImage"),

@@ -341,7 +341,7 @@ exports.appointment = async (req, res) => {
 
 const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
-const { addEventToCalendar, deleteEventFromCalendar } = require("../utils/googleCalendarSync");
+const { addEventToCalendar, deleteEventFromCalendar, updateEventInCalendar } = require("../utils/googleCalendarSync");
 
 exports.client = (req, res) => {
   res.render("admin/client", {
@@ -984,9 +984,34 @@ exports.historyEditRowPatch = async (req, res) => {
       await Booking.deleteMany(conflictQuery);
     }
 
-    const response = await Booking.findByIdAndUpdate(id, updateFields);
+    const response = await Booking.findByIdAndUpdate(id, updateFields, { new: true }).lean();
 
+    // ── Sync Google Calendar ──────────────────────────────────────────────────
     if (response) {
+      try {
+        const companyDoc = await Company.findById(response.company);
+        const owner = await User.findById(companyDoc?.owner);
+        if (owner?.googleCalendar?.connected && owner.googleCalendar.refreshToken) {
+          const refreshToken = owner.googleCalendar.refreshToken;
+
+          if (response.status === "canceled") {
+            // Annulé/supprimé via l'admin → retirer de Google Calendar
+            if (response.googleEventId) {
+              await deleteEventFromCalendar(refreshToken, response.googleEventId);
+              await Booking.findByIdAndUpdate(id, { googleEventId: "" });
+            }
+          } else {
+            // Confirmé : mettre à jour (ou créer si l'événement n'existait pas, ex. réactivé)
+            const eventId = await updateEventInCalendar(refreshToken, response.googleEventId, response);
+            if (eventId && eventId !== response.googleEventId) {
+              await Booking.findByIdAndUpdate(id, { googleEventId: eventId });
+            }
+          }
+        }
+      } catch (gcalErr) {
+        console.error("Google Calendar sync error (edit):", gcalErr.message);
+      }
+
       return res.json({ success: true });
     }
     return res.json({ success: false });

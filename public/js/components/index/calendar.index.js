@@ -490,9 +490,10 @@ export default function () {
       metaHtml += `<span class="svc-card__dur">${svc.duration} min</span>`;
 
       const infoBtn = svc.description
-        ? `<button class="bk-svc__info-btn" type="button" aria-label="Description" tabindex="-1">
-            <svg width="15" height="15" viewBox="0 -960 960 960" fill="currentColor"><path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
-            <div class="bk-svc__tooltip">${svc.description.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>
+        ? `<button class="bk-svc__info-btn" type="button" aria-label="Description du service"
+              data-svc-name="${svc.name.replace(/"/g,'&quot;')}"
+              data-svc-desc="${svc.description.replace(/"/g,'&quot;').replace(/\n/g,'&#10;')}">
+            <svg width="16" height="16" viewBox="0 -960 960 960" fill="currentColor"><path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
           </button>`
         : "";
       card.innerHTML = `
@@ -504,8 +505,55 @@ export default function () {
         </div>
         <div class="svc-card__meta">${metaHtml}</div>`;
 
-      card.addEventListener("click", () => onServiceSelected(svc));
+      card.addEventListener("click", (e) => {
+        // Ne pas sélectionner le service si on clique sur le bouton info
+        if (e.target.closest(".bk-svc__info-btn")) return;
+        onServiceSelected(svc);
+      });
+
+      // Bouton info → ouvre le bottom sheet (sans sélectionner le service)
+      const btn = card.querySelector(".bk-svc__info-btn");
+      if (btn) {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openSvcDescModal(btn.dataset.svcName, btn.dataset.svcDesc);
+        });
+      }
+
       list.appendChild(card);
+    });
+  }
+
+  // ── Modale description service ──────────────────────────────────────────────
+  function openSvcDescModal(name, desc) {
+    // Supprimer une modale existante
+    const old = document.getElementById("svcDescOverlay");
+    if (old) old.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "svc-desc-overlay";
+    overlay.id = "svcDescOverlay";
+    overlay.innerHTML = `
+      <div class="svc-desc-sheet" role="dialog" aria-modal="true" aria-label="${name}">
+        <div class="svc-desc-sheet__handle"></div>
+        <div class="svc-desc-sheet__header">
+          <span class="svc-desc-sheet__name">${name}</span>
+          <button class="svc-desc-sheet__close" aria-label="Fermer">
+            <svg viewBox="0 -960 960 960" width="16" height="16" fill="currentColor">
+              <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="svc-desc-sheet__body">${desc.replace(/&#10;/g, '\n')}</div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+
+    function close() { overlay.remove(); }
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+    overlay.querySelector(".svc-desc-sheet__close").addEventListener("click", close);
+    document.addEventListener("keydown", function onKey(e) {
+      if (e.key === "Escape") { close(); document.removeEventListener("keydown", onKey); }
     });
   }
 

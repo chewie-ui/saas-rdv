@@ -781,12 +781,14 @@ exports.updateCalendarSettings = async (req, res) => {
   try {
     const {
       pageBg, calBg, accentColor, accentText, dayBg, dayText, btnBg, btnText,
-      lang, font, borderRadius, borderStyle, shadowStyle, showInfo, showSocials, layoutStyle, pageBgType, pageBgImage,
+      lang, font, customFontUrl, customFontFamily, borderRadius, borderStyle, shadowStyle, showInfo, showSocials, layoutStyle, pageBgType, pageBgImage,
       showSectionAbout, showSectionServices, showSectionTeam,
       showSectionReviews, showSectionAmenities, showSectionFaq,
     } = req.body;
     await User.findByIdAndUpdate(req.user._id, {
       $set: {
+        "calendarSettings.customFontUrl":        (customFontUrl || "").toString().trim(),
+        "calendarSettings.customFontFamily":     (customFontFamily || "").toString().trim(),
         "calendarSettings.pageBg":               pageBg,
         "calendarSettings.calBg":                calBg,
         "calendarSettings.accentColor":          accentColor,
@@ -811,6 +813,23 @@ exports.updateCalendarSettings = async (req, res) => {
         "calendarSettings.showSectionReviews":   !!showSectionReviews,
         "calendarSettings.showSectionAmenities": !!showSectionAmenities,
         "calendarSettings.showSectionFaq":       !!showSectionFaq,
+      },
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false });
+  }
+};
+
+exports.updateEmbedSettings = async (req, res) => {
+  try {
+    const { embedTitle, embedFontUrl, embedFontFamily } = req.body;
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: {
+        "calendarSettings.embedTitle":      (embedTitle || "").toString().slice(0, 80),
+        "calendarSettings.embedFontUrl":    (embedFontUrl || "").toString().trim(),
+        "calendarSettings.embedFontFamily": (embedFontFamily || "").toString().trim(),
       },
     });
     return res.json({ success: true });

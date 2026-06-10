@@ -73,14 +73,28 @@ html(lang="fr")
                         svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
                             path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
                 .sync-popup__body
-                    p.sync-popup__desc Tous vos rendez-vous apparaîtront automatiquement dans votre agenda. La synchronisation se met à jour toutes les heures.
-                    .sync-popup__url-wrap
-                        input.sync-popup__url-input#syncFeedUrl(type="text" readonly placeholder="Chargement…")
-                        button.sync-popup__copy#syncCopyUrl(type="button" title="Copier le lien")
-                            svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z")
-                    .sync-popup__options
-                        a.sync-opt#syncGoogle(href="#" target="_blank" rel="noopener")
+                    -
+                        var _gcal = (user && user.googleCalendar) || {}
+                    if _gcal.connected
+                        .sync-gcal-status.sync-gcal-status--on
+                            svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20" height="20")
+                                path(fill="#EA4335" d="M24 9.5c3.1 0 5.8 1.1 8 2.9l6-6C34.5 3.1 29.6 1 24 1 14.8 1 7 6.7 3.7 14.7l7 5.4C12.4 14 17.7 9.5 24 9.5z")
+                                path(fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.1-4.4 6.7l7 5.4c4.1-3.8 6.5-9.4 6.5-16.1z")
+                                path(fill="#FBBC05" d="M10.7 28.6C10.3 27.4 10 26.2 10 25s.3-2.4.7-3.5l-7-5.4C2.6 18.6 2 21.7 2 25s.6 6.4 1.7 9.2l7-5.6z")
+                                path(fill="#34A853" d="M24 47c5.6 0 10.3-1.8 13.7-5l-7-5.4c-1.9 1.3-4.3 2-6.7 2-6.3 0-11.6-4.3-13.3-10l-7 5.4C7 40.3 14.8 47 24 47z")
+                                path(fill="none" d="M2 2h44v44H2z")
+                            .sync-gcal-status__text
+                                strong Google Calendar connecté
+                                if _gcal.email
+                                    span= _gcal.email
+                            svg.sync-gcal-status__check(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="#16a34a")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        p.sync-popup__desc Tous vos rendez-vous (créations, modifications, annulations) sont synchronisés automatiquement et en temps réel avec votre Google Agenda.
+                        form#gcalDisconnectForm(method="POST" action="/auth/google/calendar/disconnect")
+                            button.sm-btn.sm-btn--ghost.sync-gcal-disconnect(type="submit") Déconnecter Google Calendar
+                    else
+                        p.sync-popup__desc Connectez votre Google Agenda pour que tous vos rendez-vous (création, modification, annulation) s'y synchronisent automatiquement et en temps réel.
+                        a.sync-opt.sync-opt--gcal-connect(href="/auth/google/calendar")
                             .sync-opt__icon.sync-opt__icon--google
                                 svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="22" height="22")
                                     path(fill="#EA4335" d="M24 9.5c3.1 0 5.8 1.1 8 2.9l6-6C34.5 3.1 29.6 1 24 1 14.8 1 7 6.7 3.7 14.7l7 5.4C12.4 14 17.7 9.5 24 9.5z")
@@ -89,8 +103,20 @@ html(lang="fr")
                                     path(fill="#34A853" d="M24 47c5.6 0 10.3-1.8 13.7-5l-7-5.4c-1.9 1.3-4.3 2-6.7 2-6.3 0-11.6-4.3-13.3-10l-7 5.4C7 40.3 14.8 47 24 47z")
                                     path(fill="none" d="M2 2h44v44H2z")
                             .sync-opt__text
-                                strong Google Calendar
-                                span Ajout automatique dans Google Agenda
+                                strong Connecter Google Calendar
+                                span Synchronisation automatique en temps réel
+                            svg.sync-opt__arrow(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+
+                    //- ── Autres agendas (lecture seule via webcal) ──
+                    .sync-popup__divider
+                        span Ou abonnement lecture seule (Apple / Outlook)
+                    .sync-popup__url-wrap
+                        input.sync-popup__url-input#syncFeedUrl(type="text" readonly placeholder="Chargement…")
+                        button.sync-popup__copy#syncCopyUrl(type="button" title="Copier le lien")
+                            svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z")
+                    .sync-popup__options
                         a.sync-opt#syncApple(href="#")
                             .sync-opt__icon.sync-opt__icon--apple
                                 svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="white")
@@ -138,7 +164,6 @@ html(lang="fr")
                 var closeBtn    = document.getElementById('syncPopupClose');
                 var feedUrlInput= document.getElementById('syncFeedUrl');
                 var copyBtn     = document.getElementById('syncCopyUrl');
-                var syncGoogle  = document.getElementById('syncGoogle');
                 var syncApple   = document.getElementById('syncApple');
                 var syncOutlook = document.getElementById('syncOutlook');
                 var feedUrl     = null;
@@ -164,9 +189,7 @@ html(lang="fr")
 
                     feedUrlInput.value = url;
 
-                    // Google Calendar — subscribe URL
                     var webcalUrl = url.replace(/^https?:\/\//, 'webcal://');
-                    syncGoogle.href = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(webcalUrl);
 
                     // Apple Calendar — webcal:// ouvre directement Calendrier sur macOS/iOS
                     var ua = navigator.userAgent || '';

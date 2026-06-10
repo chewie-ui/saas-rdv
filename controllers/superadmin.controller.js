@@ -34,7 +34,7 @@ exports.usersPage = async (req, res) => {
     query = { $or: [{ fullName: regex }, { email: regex }] };
   }
   const users = await User.find(query)
-    .select("fullName email isPremium manualPremium manualPremiumExpiry subscription createdAt")
+    .select("fullName email isPremium manualPremium manualPremiumExpiry subscription createdAt isDisabled")
     .sort("-createdAt")
     .lean();
   res.render("superadmin/users", { users, search: search || "" });
@@ -409,5 +409,20 @@ exports.redeemAccessLink = async (req, res) => {
   } catch (err) {
     console.error("redeemAccessLink error:", err);
     res.status(500).send("Erreur serveur.");
+  }
+};
+
+// ── Toggle account status (actif / désactivé) ─────────────────────────────────
+exports.toggleAccountStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select("isDisabled fullName");
+    if (!user) return res.status(404).json({ error: "Utilisateur introuvable." });
+    user.isDisabled = !user.isDisabled;
+    await user.save();
+    res.json({ success: true, isDisabled: user.isDisabled });
+  } catch (err) {
+    console.error("toggleAccountStatus error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
   }
 };

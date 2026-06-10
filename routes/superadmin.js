@@ -37,6 +37,9 @@ router.post("/superadmin/access-links", isSuperAdmin, ctrl.createAccessLink);
 router.patch("/superadmin/access-links/:id/toggle", isSuperAdmin, ctrl.toggleAccessLink);
 router.delete("/superadmin/access-links/:id", isSuperAdmin, ctrl.deleteAccessLink);
 
+// Toggle account status (actif / désactivé)
+router.patch("/superadmin/toggle-account/:userId", isSuperAdmin, ctrl.toggleAccountStatus);
+
 // Public redemption (no auth required — handler checks itself)
 router.get("/access/:code", ctrl.redeemAccessLink);
 

@@ -105,6 +105,9 @@ block content
         // ne s'affichait jamais sur la page publique.
         var showGallery = cs.showSectionGallery === true && gallery && gallery.length > 0
 
+    if cs.customFontUrl
+        link(rel="stylesheet" href=cs.customFontUrl)
+
     -
         var _fontMap = {
             'Inter':            "'Inter', system-ui, -apple-system, sans-serif",
@@ -115,6 +118,9 @@ block content
             'Nunito':           "'Nunito', system-ui, sans-serif"
         };
         var _fontVal = _fontMap[cs.font] || _fontMap['Inter'];
+        if (cs.customFontFamily) {
+            _fontVal = "'" + cs.customFontFamily + "', " + _fontVal;
+        }
         var _radMap = {
             'none': { xs:'0px',  sm:'0px',  md:'0px',  lg:'0px',  xl:'0px',  pill:'0px'   },
             'sm':   { xs:'4px',  sm:'6px',  md:'8px',  lg:'10px', xl:'14px', pill:'999px' },
@@ -481,6 +487,72 @@ block scripts
                     text.classList.toggle('bk-about-card__text--short', !open);
                     setLabel();
                 });
+            }
+        })();
+    script.
+        // ── Embed iframe : masquer les sections via ?sections=booking,profile,... ──
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            if (!params.has('sections')) return;
+            var selected = params.get('sections').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+            var SECTION_SELECTORS = {
+                profile:  '.bk-head',
+                reviews:  'section.bk-reviews, .bk-reviews',
+                about:    '.bk-about-card, .bk-info-section, .bk-location-card',
+                hours:    '.bk-hours-card'
+            };
+            var hiddenCss = '';
+            Object.keys(SECTION_SELECTORS).forEach(function(key) {
+                if (selected.indexOf(key) === -1) {
+                    hiddenCss += SECTION_SELECTORS[key] + ' { display:none !important; }\n';
+                }
+            });
+            if (hiddenCss) {
+                var style = document.createElement('style');
+                style.textContent = hiddenCss;
+                document.head.appendChild(style);
+            }
+
+            // ── Mode embed : on retire le header (bouton "Se connecter")          ──
+            // ── et on remplace par un petit badge "Propulsé par BranShee"         ──
+            // ── + on supprime les hauteurs/marges forcées pour éviter le scroll   ──
+            document.documentElement.classList.add('bk-embed');
+            document.body.classList.add('bk-embed');
+
+            var top = document.querySelector('.bk-top');
+            if (top) top.remove();
+
+            var badge = document.createElement('a');
+            badge.className = 'bk-embed-badge';
+            badge.href = 'https://www.branshee.com/?utm_source=embed&utm_medium=iframe';
+            badge.target = '_blank';
+            badge.rel = 'noopener';
+            badge.innerHTML = '<span class="bk-embed-badge__mark">B</span><span>Propulsé par <strong>BranShee</strong></span>';
+            document.body.appendChild(badge);
+
+            // ── Titre personnalisé au-dessus du calendrier ──
+            var embedTitle = !{JSON.stringify((cs && cs.embedTitle) || '')};
+            if (embedTitle) {
+                var titleEl = document.createElement('h1');
+                titleEl.className = 'bk-embed-title';
+                titleEl.textContent = embedTitle;
+                var main = document.querySelector('.bk-main');
+                if (main) main.insertBefore(titleEl, main.firstChild);
+            }
+
+            // ── Police personnalisée ──
+            var embedFontUrl    = !{JSON.stringify((cs && cs.embedFontUrl) || '')};
+            var embedFontFamily = !{JSON.stringify((cs && cs.embedFontFamily) || '')};
+            if (embedFontUrl) {
+                var fontLink = document.createElement('link');
+                fontLink.rel = 'stylesheet';
+                fontLink.href = embedFontUrl;
+                document.head.appendChild(fontLink);
+            }
+            if (embedFontFamily) {
+                var fontStyle = document.createElement('style');
+                fontStyle.textContent = 'body.bk-embed, body.bk-embed * { font-family: ' + embedFontFamily + ', var(--bk-font) !important; }';
+                document.head.appendChild(fontStyle);
             }
         })();
     script.

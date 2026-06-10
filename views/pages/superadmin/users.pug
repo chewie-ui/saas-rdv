@@ -230,6 +230,55 @@ html(lang="fr")
             }
             .trial-expiry.expiring { color: #f59e0b; }
             .trial-expiry.expired  { color: #f87171; }
+
+            /* ── Toggle actif/désactivé ── */
+            .acc-toggle {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                cursor: pointer;
+                user-select: none;
+            }
+            .acc-toggle input { display: none; }
+            .acc-toggle__track {
+                width: 36px;
+                height: 20px;
+                border-radius: 10px;
+                background: #2a2a2a;
+                border: 1.5px solid #333;
+                transition: background 0.2s, border-color 0.2s;
+                flex-shrink: 0;
+                position: relative;
+            }
+            .acc-toggle__track::after {
+                content: '';
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                width: 14px;
+                height: 14px;
+                border-radius: 50%;
+                background: #444;
+                transition: transform 0.2s, background 0.2s;
+            }
+            .acc-toggle input:checked + .acc-toggle__track {
+                background: rgba(34,197,94,0.15);
+                border-color: rgba(34,197,94,0.4);
+            }
+            .acc-toggle input:checked + .acc-toggle__track::after {
+                transform: translateX(16px);
+                background: #22c55e;
+            }
+            .acc-toggle__label {
+                font-size: 12px;
+                font-weight: 600;
+                color: #555;
+                min-width: 60px;
+            }
+            .acc-toggle input:checked ~ .acc-toggle__label { color: #22c55e; }
+            .acc-toggle--disabled-state .acc-toggle__label { color: #f87171 !important; }
+
             .empty-state {
                 text-align: center;
                 padding: 60px 24px;
@@ -289,6 +338,7 @@ html(lang="fr")
                         th Durée bêta
                         th Source
                         th Inscrit le
+                        th Statut
                 tbody
                     each u in users
                         - var currentPlan = (u.subscription && u.subscription.plan === 'business' && (u.subscription.status === 'active' || u.manualPremium)) ? 'business' : (u.isPremium || u.manualPremium) ? 'pro' : 'free'
@@ -334,6 +384,16 @@ html(lang="fr")
                                 else
                                     span.badge —
                             td.date-col= new Date(u.createdAt).toLocaleDateString('fr-FR')
+                            td
+                                label.acc-toggle(class=u.isDisabled ? 'acc-toggle--disabled-state' : '')
+                                    input(
+                                        type="checkbox"
+                                        class="acc-status-toggle"
+                                        data-user-id=String(u._id)
+                                        checked=(!u.isDisabled)
+                                    )
+                                    span.acc-toggle__track
+                                    span.acc-toggle__label= u.isDisabled ? 'Désactivé' : 'Actif'
 
         script.
             // ── Plan select ──────────────────────────────────────────
@@ -370,6 +430,38 @@ html(lang="fr")
                         this.value = prevPlan;
                         this.dataset.plan = prevPlan;
                         alert('Erreur lors de la mise à jour.');
+                    }
+                });
+            });
+
+            // ── Account status toggle (actif / désactivé) ────────────
+            document.querySelectorAll('.acc-status-toggle').forEach(function(checkbox) {
+                checkbox.addEventListener('change', async function() {
+                    const userId = this.dataset.userId;
+                    const label = this.closest('.acc-toggle').querySelector('.acc-toggle__label');
+                    const wrapper = this.closest('.acc-toggle');
+                    const willBeActive = this.checked; // checked = actif, unchecked = désactivé
+
+                    try {
+                        const res = await fetch('/superadmin/toggle-account/' + userId, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const data = await res.json();
+                        if (!data.success) throw new Error('Failed');
+
+                        // data.isDisabled = true → compte désactivé
+                        if (data.isDisabled) {
+                            label.textContent = 'Désactivé';
+                            wrapper.classList.add('acc-toggle--disabled-state');
+                        } else {
+                            label.textContent = 'Actif';
+                            wrapper.classList.remove('acc-toggle--disabled-state');
+                        }
+                    } catch(e) {
+                        // Revenir à l'état précédent
+                        this.checked = !this.checked;
+                        alert('Erreur lors de la mise à jour du statut.');
                     }
                 });
             });

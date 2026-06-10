@@ -195,12 +195,14 @@ router.get("/search", async (req, res) => {
     }
 
     // PAS de filtre isPremium — tous les établissements, gratuits ET premium
+    // Mais on exclut les comptes désactivés par le superadmin
+    const disabledFilter = { $or: [{ isDisabled: false }, { isDisabled: { $exists: false } }] };
     if (conditions.length === 0) {
-      userQuery = {};
+      userQuery = disabledFilter;
     } else if (conditions.length === 1) {
-      userQuery = conditions[0];
+      userQuery = { $and: [conditions[0], disabledFilter] };
     } else {
-      userQuery = { $and: conditions };
+      userQuery = { $and: [...conditions, disabledFilter] };
     }
 
     const matchingUsers = await User.find(userQuery).select("_id isPremium manualPremium subscription").lean();
@@ -375,6 +377,11 @@ router.get("/:company", async (req, res) => {
 
   const ID = company.owner;
   const coach = await User.findById(ID);
+
+  // Compte désactivé par le superadmin → page de blocage
+  if (coach && coach.isDisabled) {
+    return res.status(403).render("client/account-disabled");
+  }
 
   const Service = require("../db/models/company/service.model");
   const Employee = require("../db/models/company/employee.model");

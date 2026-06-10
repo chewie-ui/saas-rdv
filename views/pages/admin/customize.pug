@@ -869,6 +869,17 @@ block content
                                         span.cz-font-btn__sample(style="font-family:'" + f + "',sans-serif") Aa
                                         span.cz-font-btn__name= f
 
+                            //- Police personnalisée (importée par l'utilisateur)
+                            .cz-custom-font
+                                p.cz-custom-font__label Ou importez votre propre police
+                                .cz-custom-font__row
+                                    .cz-embed-ctrl
+                                        label(for="czCustomFontUrl") URL de la police (Google Fonts ou @font-face)
+                                        input#czCustomFontUrl(type="text" placeholder="https://fonts.googleapis.com/css2?family=..." value=(cs.customFontUrl || ''))
+                                    .cz-embed-ctrl
+                                        label(for="czCustomFontFamily") Nom de la police (font-family)
+                                        input#czCustomFontFamily(type="text" placeholder="Ex : Roboto Slab" value=(cs.customFontFamily || ''))
+
                     //- Arrondi des coins
                     .cz-ds-card
                         .cz-ds-card__head
@@ -972,7 +983,7 @@ block content
                                 title="Aperçu de votre page"
                             )
                         else
-                            .cz-preview-iframe(style="display:flex;align-items:center;justify-content:center;height:580px;background:#f9fafb;color:#9ca3af;font-size:13px;flex-direction:column;gap:10px;")
+                            .cz-preview-iframe(style="display:flex;align-items:center;justify-content:center;height:900px;background:#f9fafb;color:#9ca3af;font-size:13px;flex-direction:column;gap:10px;")
                                 svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
                                     path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Z")
                                 span Configurez votre URL personnalisée pour voir l'aperçu
@@ -1023,6 +1034,21 @@ block content
                             p Copiez le code iframe et collez-le dans votre site web.
                     .cz-int-card__body
 
+                        //- Personnalisation de l'embed (titre + police)
+                        .cz-embed-custom
+                            .cz-embed-ctrl
+                                label(for="czEmbedTitle") Titre affiché au-dessus du calendrier
+                                input#czEmbedTitle(type="text" maxlength="80" placeholder="Ex : Prendre rendez-vous" value=(cs.embedTitle || ''))
+                            .cz-embed-ctrl
+                                label(for="czEmbedFontUrl") URL de police personnalisée (Google Fonts ou @font-face)
+                                input#czEmbedFontUrl(type="text" placeholder="https://fonts.googleapis.com/css2?family=..." value=(cs.embedFontUrl || ''))
+                            .cz-embed-ctrl
+                                label(for="czEmbedFontFamily") Nom de la police (font-family)
+                                input#czEmbedFontFamily(type="text" placeholder="Ex : Poppins" value=(cs.embedFontFamily || ''))
+                            button.sm-btn.sm-btn--primary#czEmbedCustomSave(type="button")
+                                span Enregistrer
+                            span.cz-embed-custom__status#czEmbedCustomStatus
+
                         //- Sections à inclure
                         .cz-embed-sections
                             p.cz-embed-sections__label Sections à intégrer
@@ -1035,17 +1061,11 @@ block content
                                     span.cz-embed-section-opt__label Calendrier
                                     span.cz-embed-section-opt__badge Inclus
                                 label.cz-embed-section-opt
-                                    input(type="checkbox" id="embedSecProfile" name="embedSection" value="profile" checked)
+                                    input(type="checkbox" id="embedSecProfile" name="embedSection" value="profile")
                                     span.cz-embed-section-opt__box
                                         svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                                             path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 129-46.5T480-440q68 0 135 15.5T744-378q29 15 46.5 43.5T808-272v112H160Z")
                                     span.cz-embed-section-opt__label Profil
-                                label.cz-embed-section-opt
-                                    input(type="checkbox" id="embedSecServices" name="embedSection" value="services" checked)
-                                    span.cz-embed-section-opt__box
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                            path(d="M160-120v-80h480v80H160Zm0-160v-80h320v80H160Zm0-160v-80h480v80H160Zm0-160v-80h320v80H160Zm0-160v-80h480v80H160Z")
-                                    span.cz-embed-section-opt__label Services
                                 label.cz-embed-section-opt
                                     input(type="checkbox" id="embedSecReviews" name="embedSection" value="reviews")
                                     span.cz-embed-section-opt__box
@@ -1058,6 +1078,12 @@ block content
                                         svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                                             path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
                                     span.cz-embed-section-opt__label À propos
+                                label.cz-embed-section-opt
+                                    input(type="checkbox" id="embedSecHours" name="embedSection" value="hours")
+                                    span.cz-embed-section-opt__box
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                            path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                                    span.cz-embed-section-opt__label Horaires
 
                         //- Contrôles de taille
                         .cz-embed-controls
@@ -1066,18 +1092,18 @@ block content
                                 input#czIframeWidth(type="text" value="100%" placeholder="100% ou 800px")
                             .cz-embed-ctrl
                                 label(for="czIframeHeight") Hauteur (px)
-                                input#czIframeHeight(type="number" value="780" min="400" max="2000" step="10")
+                                input#czIframeHeight(type="number" value="800" min="400" max="2000" step="10")
 
                         //- Code généré
                         .cz-copy-field(style="margin-top:0")
-                            textarea.cz-copy-field__input#czIframeCode(
+                            textarea.cz-copy-field__input.cz-copy-field__input--code#czIframeCode(
                                 readonly
                                 rows="5"
-                                style="font-size:11.5px;resize:none;padding:10px 14px"
+                                style="font-size:11.5px;padding:10px 14px"
                             )
                             button.cz-copy-field__btn#czIframeCodeCopy(
                                 type="button"
-                                style="align-self:stretch;flex-direction:column;gap:4px;padding:0 16px"
+                                style="align-self:stretch;flex-direction:column;justify-content:center;gap:4px;padding:0 16px"
                             )
                                 svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                                     path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Z")
@@ -1363,6 +1389,11 @@ block scripts
                 if (name === 'design' && !designVisible) {
                     designVisible = true;
                     document.dispatchEvent(new Event('czDesignVisible'));
+                }
+                // Rafraîchir l'aperçu d'intégration à chaque affichage de l'onglet
+                // (pour refléter les changements de design enregistrés entre-temps)
+                if (name === 'integration') {
+                    document.dispatchEvent(new Event('czIntegrationVisible'));
                 }
             }
 
