@@ -40,6 +40,10 @@ router.delete("/superadmin/access-links/:id", isSuperAdmin, ctrl.deleteAccessLin
 // Toggle account status (actif / désactivé)
 router.patch("/superadmin/toggle-account/:userId", isSuperAdmin, ctrl.toggleAccountStatus);
 
+// Pages / fonctionnalités (maintenance, erreur, désactivation)
+router.get("/superadmin/features", isSuperAdmin, ctrl.featuresPage);
+router.patch("/superadmin/features/:key", isSuperAdmin, ctrl.setFeatureStatus);
+
 // Public redemption (no auth required — handler checks itself)
 router.get("/access/:code", ctrl.redeemAccessLink);
 

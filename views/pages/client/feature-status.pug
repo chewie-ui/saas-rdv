@@ -1,0 +1,97 @@
+extends ../../layouts/index
+
+block content
+    style.
+        .fstatus-wrap {
+            min-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+        .fstatus-card {
+            background: var(--color-white);
+            border: 1px solid var(--border-light);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            padding: 48px 40px;
+            max-width: 460px;
+            width: 100%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+        .fstatus-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .fstatus-icon--maintenance { background: #fef9c3; }
+        .fstatus-icon--maintenance svg { fill: #ca8a04; }
+        .fstatus-icon--error { background: #fef2f2; }
+        .fstatus-icon--error svg { fill: #ef4444; }
+        .fstatus-icon--disabled { background: var(--bg-secondary); }
+        .fstatus-icon--disabled svg { fill: #9ca3af; }
+        .fstatus-card h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+            letter-spacing: -0.01em;
+        }
+        .fstatus-card p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            margin: 0;
+            white-space: pre-line;
+        }
+        .fstatus-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            padding: 10px 22px;
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+        .fstatus-back:hover { background: var(--border-light); }
+
+    -
+        var statusInfo = {
+            maintenance: { icon: "maintenance", title: "En cours de construction", text: "Cette page est en cours de mise à jour. Elle sera de nouveau disponible très bientôt." },
+            error:       { icon: "error", title: "Erreur temporaire", text: "Une erreur temporaire empêche l'affichage de cette page. Merci de réessayer dans quelques instants." },
+            disabled:    { icon: "disabled", title: "Page indisponible", text: "Cette page est temporairement indisponible." },
+        }
+        var info = statusInfo[status] || statusInfo.disabled
+
+    .fstatus-wrap
+        .fstatus-card
+            .fstatus-icon(class=`fstatus-icon--${info.icon}`)
+                if info.icon === "maintenance"
+                    svg(viewBox="0 -960 960 960" height="32" width="32")
+                        path(d="m765-105-50-50q-26 17-55.5 26t-59.5 9q-75 0-127.5-52.5T420-300q0-75 52.5-127.5T600-480q75 0 127.5 52.5T780-300q0 30-9 59.5T745-185l50 50-30 30ZM600-380q33 0 56.5-23.5T680-460q0-33-23.5-56.5T600-540q-33 0-56.5 23.5T520-460q0 33 23.5 56.5T600-380Zm-460 220v-80h280q4 21 10 41t16 39H140Zm0-160v-80h360q-13 18-23 38t-17 42H140Zm0-160v-80h520v80H140Zm0-160v-80h520v80H140Z")
+                else if info.icon === "error"
+                    svg(viewBox="0 -960 960 960" height="32" width="32")
+                        path(d="M40-120v-80h880v80H40Zm120-160q-33 0-56.5-23.5T80-360v-400q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v400q0 33-23.5 56.5T800-280H160Zm0-80h640v-400H160v400Zm240-40h160v-80H400v80Zm-80-160h320l-67-160H387l-67 160ZM160-360v-400 400Z")
+                else
+                    svg(viewBox="0 -960 960 960" height="32" width="32")
+                        path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q54 0 104-17.5t92-50.5L228-676q-33 42-50.5 92T160-480q0 134 93 227t227 93Zm252-124q33-42 50.5-92T800-480q0-134-93-227t-227-93q-54 0-104 17.5T284-732l448 448Z")
+            h1= info.title
+            p= message || info.text
+            a.fstatus-back(href="/")
+                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                    path(d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z")
+                | Retour à l'accueil

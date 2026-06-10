@@ -3,6 +3,8 @@ const User       = require("../db/models/user.model");
 const Company    = require("../db/models/company/company.model");
 const PromoCode  = require("../db/models/promoCode.model");
 const AccessLink = require("../db/models/accessLink.model");
+const FeatureFlag = require("../db/models/featureFlag.model");
+const { FEATURES, invalidateFeatureFlagCache } = require("../middlewares/featureFlag");
 
 exports.loginPage = (req, res) => {
   if (req.session.isSuperAdmin) return res.redirect("/superadmin");
@@ -423,6 +425,48 @@ exports.toggleAccountStatus = async (req, res) => {
     res.json({ success: true, isDisabled: user.isDisabled });
   } catch (err) {
     console.error("toggleAccountStatus error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Pages / fonctionnalités (maintenance, erreur, désactivation) ─────────────
+exports.featuresPage = async (req, res) => {
+  const docs = await FeatureFlag.find({}).lean();
+  const byKey = {};
+  docs.forEach((d) => { byKey[d.key] = d; });
+
+  const features = FEATURES.map((f) => ({
+    key: f.key,
+    label: f.label,
+    status: byKey[f.key]?.status || "active",
+    message: byKey[f.key]?.message || "",
+  }));
+
+  res.render("superadmin/features", { features });
+};
+
+exports.setFeatureStatus = async (req, res) => {
+  try {
+    const { key } = req.params;
+    const { status, message } = req.body;
+
+    if (!FEATURES.some((f) => f.key === key)) {
+      return res.status(404).json({ error: "Fonctionnalité inconnue." });
+    }
+    if (!["active", "maintenance", "error", "disabled"].includes(status)) {
+      return res.status(400).json({ error: "Statut invalide." });
+    }
+
+    await FeatureFlag.findOneAndUpdate(
+      { key },
+      { key, status, message: (message || "").toString().trim() },
+      { upsert: true }
+    );
+
+    invalidateFeatureFlagCache();
+    res.json({ success: true });
+  } catch (err) {
+    console.error("setFeatureStatus error:", err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 };

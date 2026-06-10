@@ -655,6 +655,8 @@ body.bk-embed #bkCart .bk-cart {
   font: 700 14.5px var(--bk-font);
   color: var(--bk-ink);
   margin-bottom: 4px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* ── Info icon (remplace l'ancien tooltip) ── */
@@ -730,7 +732,7 @@ body.bk-embed #bkCart .bk-cart {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 0 20px 14px;
+  padding: 20px 20px 14px;
   border-bottom: 1px solid var(--border-light, #f0f0f0);
 }
 
@@ -739,6 +741,9 @@ body.bk-embed #bkCart .bk-cart {
   font-weight: 700;
   color: var(--text-primary, #111);
   line-height: 1.3;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
 }
 
 .svc-desc-sheet__close {
@@ -763,6 +768,8 @@ body.bk-embed #bkCart .bk-cart {
   line-height: 1.65;
   color: var(--text-secondary, #374151);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* Desktop → petite card centrée au lieu du bottom sheet */
@@ -1772,6 +1779,9 @@ body.bk-embed #bkCart .bk-cart {
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
   white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bk-cat-pill:hover {

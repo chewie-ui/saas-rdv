@@ -9,6 +9,7 @@ const pug = require("pug");
 const path = require("path");
 const { sendEmail } = require("../utils/mailer");
 const getServices = require("../utils/services");
+const { requireFeatureActive } = require("../middlewares/featureFlag");
 
 router.use(require("./ical"));
 router.use(require("./auth"));
@@ -158,7 +159,7 @@ router.get("/sitemap.xml", async (req, res) => {
 // filtres, cartes) vit maintenant entièrement sur "/search", et un bouton
 // "Prendre rendez-vous" sur la home renvoie vers cette page de recherche pour
 // les visiteurs qui cherchent un professionnel plutôt qu'à en devenir un.
-router.get("/", (req, res) => {
+router.get("/", requireFeatureActive("home"), (req, res) => {
   res.render("client/manage-business", {
     title: `BranShee — Agenda en ligne gratuit | Prise de rendez-vous pour professionnels`,
     metaDescription: "BranShee : créez votre agenda en ligne gratuit en 5 minutes et recevez des réservations 24h/24 sans appel téléphonique. Logiciel de prise de rendez-vous pour coiffeurs, coaches, thérapeutes et indépendants. 1 mois offert, sans carte bancaire.",
@@ -167,7 +168,7 @@ router.get("/", (req, res) => {
   });
 });
 
-router.get("/search", async (req, res) => {
+router.get("/search", requireFeatureActive("search"), async (req, res) => {
   try {
     const { name, location, category } = req.query;
     let userQuery = {};
@@ -368,7 +369,7 @@ const BADGE_OPTIONS = [
   'Carte acceptée',
 ];
 
-router.get("/:company", async (req, res) => {
+router.get("/:company", requireFeatureActive("booking_page"), async (req, res) => {
   const company = await getCompanyIfExist(req.params.company);
 
   if (!company) {

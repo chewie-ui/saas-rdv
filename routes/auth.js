@@ -14,6 +14,7 @@ const User = require("../db/models/user.model");
 const Company = require("../db/models/company/company.model");
 const mongoose = require("mongoose");
 const crypto = require("crypto");
+const { requireFeatureActive } = require("../middlewares/featureFlag");
 
 function buildUserRedirectUri() {
   const base = (process.env.BASE_URL || "http://localhost:3000").replace(/\/$/, "");
@@ -27,7 +28,7 @@ function buildUserRedirectUri() {
 // pense à ajouter `&promo=BIENVENUE`), on l'applique automatiquement par défaut.
 const WELCOME_TRIAL_PROMO = "BIENVENUE";
 
-router.get("/register", (req, res) => {
+router.get("/register", requireFeatureActive("register"), (req, res) => {
   const allowedPlans = ["pro", "business"];
   const plan    = req.query.plan    && allowedPlans.includes(req.query.plan) ? req.query.plan : null;
   const billing = req.query.billing || "monthly";
@@ -63,7 +64,7 @@ router.get("/register", (req, res) => {
   });
 });
 
-router.get("/login", (req, res) => {
+router.get("/login", requireFeatureActive("login"), (req, res) => {
   const error = req.query.error === "google" ? "La connexion avec Google a échoué. Veuillez réessayer." : null;
 
   // Conserver promo/plan si on vient d'un lien d'invitation

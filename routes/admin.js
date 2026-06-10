@@ -31,6 +31,7 @@ const adminController = require("../controllers/admin.controller");
 
 const isAuth = require("../middlewares/isAuth");
 const injectCompany = require("../middlewares/injectCompany");
+const { requireFeatureActive } = require("../middlewares/featureFlag");
 
 router.get("/appointement/:bookId", isAuth, injectCompany, renderAppointments, book);
 
@@ -44,12 +45,12 @@ router.get("/welcome", isAuth, injectCompany, (req, res) => {
   });
 });
 
-router.get("/panel", isAuth, injectCompany, renderAppointments, panel);
-router.get("/appointment", isAuth, injectCompany, appointment);
+router.get("/panel", isAuth, injectCompany, requireFeatureActive("admin_panel"), renderAppointments, panel);
+router.get("/appointment", isAuth, injectCompany, requireFeatureActive("admin_panel"), appointment);
 router.get("/availability", isAuth, injectCompany, availability);
 router.get("/client", isAuth, injectCompany, client);
 router.get("/informations", (req, res) => res.redirect(301, "/settings"));
-router.get("/subscription", isAuth, injectCompany, async (req, res) => {
+router.get("/subscription", isAuth, injectCompany, requireFeatureActive("subscription"), async (req, res) => {
   let monthlyBookingCount = null;
   if (!res.locals.isPro && res.locals.currentCompany) {
     const Booking = require("../db/models/book.model");
