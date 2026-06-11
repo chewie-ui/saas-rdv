@@ -7,6 +7,7 @@ const stripe = new Stripe(env.stripeSecretKey);
 
 const { getAppointments, GetAllAppointments } = require("../queries/booking.queries");
 const { sendEmail } = require("../utils/mailer");
+const { isFeatureEnabled } = require("../middlewares/featureFlag");
 
 exports.panel = async (req, res) => {
   res.render("admin/panel", {
@@ -528,6 +529,19 @@ exports.createAdminBooking = async (req, res) => {
     );
 
     await sendEmail(email, "Confirmation de votre rendez-vous — BranShee", htmlTemplate);
+
+    // ── SMS de confirmation au client (fonctionnalité cachée, désactivée par défaut) ──
+    try {
+      if (phone && (await isFeatureEnabled("sms_notifications"))) {
+        const { sendSms } = require("../utils/sms");
+        await sendSms(
+          phone,
+          `BranShee : votre rendez-vous est confirmé pour le ${formattedDate} à ${startTime}.`,
+        );
+      }
+    } catch (smsErr) {
+      console.error("SMS confirmation error:", smsErr.message);
+    }
 
     try {
       if (companyOwner?.googleCalendar?.connected && companyOwner.googleCalendar.refreshToken) {

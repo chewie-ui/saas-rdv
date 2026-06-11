@@ -9,6 +9,7 @@ const pug  = require("pug");
 const path = require("path");
 const { getLimit, atLeast } = require("../utils/planLimits");
 const { sendEmail } = require("../utils/mailer");
+const { isFeatureEnabled } = require("../middlewares/featureFlag");
 const { log } = require("console");
 
 const Stripe = require("stripe");
@@ -353,6 +354,19 @@ exports.createBooking = async (req, res) => {
     );
 
     await sendEmail(email, "Confirmation de votre rendez-vous — BranShee", htmlTemplate);
+
+    // ── SMS de confirmation au client (fonctionnalité cachée, désactivée par défaut) ──
+    try {
+      if (phone && (await isFeatureEnabled("sms_notifications"))) {
+        const { sendSms } = require("../utils/sms");
+        await sendSms(
+          phone,
+          `BranShee : votre rendez-vous est confirmé pour le ${formattedDate} à ${startTime}.`,
+        );
+      }
+    } catch (smsErr) {
+      console.error("SMS confirmation error:", smsErr.message);
+    }
 
     // ── Email de notification à l'admin (si activé) ────────────────────────
     try {

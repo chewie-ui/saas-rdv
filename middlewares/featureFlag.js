@@ -58,4 +58,15 @@ function requireFeatureActive(key) {
   };
 }
 
-module.exports = { FEATURES, getFlagsMap, invalidateFeatureFlagCache, requireFeatureActive };
+// Toggle on/off générique (pour des fonctionnalités cachées, ex: SMS),
+// désactivé par défaut tant qu'aucun document n'existe en base.
+async function isFeatureEnabled(key) {
+  try {
+    const map = await getFlagsMap();
+    return map[key]?.status === "active";
+  } catch (_) {
+    return false;
+  }
+}
+
+module.exports = { FEATURES, getFlagsMap, invalidateFeatureFlagCache, requireFeatureActive, isFeatureEnabled };

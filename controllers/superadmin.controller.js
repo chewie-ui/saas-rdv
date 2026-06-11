@@ -442,7 +442,33 @@ exports.featuresPage = async (req, res) => {
     message: byKey[f.key]?.message || "",
   }));
 
-  res.render("superadmin/features", { features });
+  const smsNotificationsEnabled = byKey["sms_notifications"]?.status === "active";
+
+  res.render("superadmin/features", { features, smsNotificationsEnabled });
+};
+
+// Toggle générique on/off pour des fonctionnalités cachées (ex: SMS).
+exports.toggleHiddenFeature = async (req, res) => {
+  try {
+    const { key } = req.params;
+    const ALLOWED_KEYS = ["sms_notifications"];
+    if (!ALLOWED_KEYS.includes(key)) {
+      return res.status(404).json({ error: "Fonctionnalité inconnue." });
+    }
+
+    const { enabled } = req.body;
+    await FeatureFlag.findOneAndUpdate(
+      { key },
+      { key, status: enabled ? "active" : "disabled" },
+      { upsert: true }
+    );
+
+    invalidateFeatureFlagCache();
+    res.json({ success: true, enabled: !!enabled });
+  } catch (err) {
+    console.error("toggleHiddenFeature error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
 };
 
 exports.setFeatureStatus = async (req, res) => {

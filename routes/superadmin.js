@@ -43,6 +43,7 @@ router.patch("/superadmin/toggle-account/:userId", isSuperAdmin, ctrl.toggleAcco
 // Pages / fonctionnalités (maintenance, erreur, désactivation)
 router.get("/superadmin/features", isSuperAdmin, ctrl.featuresPage);
 router.patch("/superadmin/features/:key", isSuperAdmin, ctrl.setFeatureStatus);
+router.patch("/superadmin/hidden-features/:key", isSuperAdmin, ctrl.toggleHiddenFeature);
 
 // Public redemption (no auth required — handler checks itself)
 router.get("/access/:code", ctrl.redeemAccessLink);

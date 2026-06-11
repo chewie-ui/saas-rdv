@@ -43,6 +43,16 @@ html(lang="fr")
             .btn-save:disabled { opacity: .4; cursor: default; }
             .save-msg { font-size: 12px; color: #22c55e; margin-left: 4px; opacity: 0; transition: opacity .2s; }
             .save-msg.visible { opacity: 1; }
+
+            .hidden-feature-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px; padding: 20px 22px; margin-bottom: 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+            .hidden-feature-card__label { font-size: 14px; font-weight: 600; color: #fff; }
+            .hidden-feature-card__desc { font-size: 12px; color: #555; margin-top: 4px; max-width: 480px; }
+            .toggle-switch { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
+            .toggle-switch input { opacity: 0; width: 0; height: 0; }
+            .toggle-switch__slider { position: absolute; cursor: pointer; inset: 0; background: #2a2a2a; border: 1px solid #333; border-radius: 999px; transition: background .15s; }
+            .toggle-switch__slider::before { content: ""; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #888; border-radius: 50%; transition: transform .15s, background .15s; }
+            .toggle-switch input:checked + .toggle-switch__slider { background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.4); }
+            .toggle-switch input:checked + .toggle-switch__slider::before { transform: translateX(20px); background: #22c55e; }
     body
         .sa-nav
             .sa-nav__links
@@ -57,6 +67,14 @@ html(lang="fr")
         .page-header
             h1 🚧 Pages & fonctionnalités
             p Mets une page en maintenance, en erreur temporaire, ou désactive-la complètement, avec un message personnalisé.
+
+        .hidden-feature-card
+            div
+                .hidden-feature-card__label 📱 Notifications SMS aux clients
+                .hidden-feature-card__desc Envoie un SMS de confirmation au client après une réservation (en plus de l'email). Fonctionnalité préparée mais désactivée par défaut.
+            label.toggle-switch
+                input#smsNotifToggle(type="checkbox" checked=smsNotificationsEnabled)
+                span.toggle-switch__slider
 
         .feature-list
             each f in features
@@ -82,6 +100,24 @@ html(lang="fr")
                         span.save-msg ✓ Enregistré
 
         script.
+            var smsToggle = document.getElementById('smsNotifToggle');
+            if (smsToggle) {
+                smsToggle.addEventListener('change', async function () {
+                    var enabled = smsToggle.checked;
+                    smsToggle.disabled = true;
+                    try {
+                        var res = await fetch('/superadmin/hidden-features/sms_notifications', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ enabled: enabled }),
+                        });
+                        var data = await res.json();
+                        if (!data.success) smsToggle.checked = !enabled;
+                    } catch (e) { smsToggle.checked = !enabled; }
+                    smsToggle.disabled = false;
+                });
+            }
+
             document.querySelectorAll('.feature-card').forEach(function (card) {
                 var key = card.dataset.key;
                 var btn = card.querySelector('.btn-save');
