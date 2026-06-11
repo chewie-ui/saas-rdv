@@ -568,6 +568,25 @@
   color: #9ca3af !important;
 }
 
+/* Événement externe (Google Calendar) — créneau bloqué, non cliquable */
+.appt-pill--external {
+  background-color: #f3f4f6;
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.05) 0px,
+    rgba(0, 0, 0, 0.05) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  color: #6b7280;
+  border: 1.5px dashed #d1d5db;
+  cursor: default;
+}
+.appt-pill--external:hover {
+  filter: none;
+  transform: none;
+}
+
 /* Status variants */
 .appt-pill[data-status="pending"] {
   background-color: var(--accent-soft);
@@ -1426,4 +1445,103 @@ body:has(.cal-month) .cal-month {
 /* Fallback sans :has() */
 @supports not selector(:has(*)) {
   .cal-month { height: calc(100vh - 180px); }
+}
+
+/* ── Nouveau rendez-vous (panel admin) ───────────────────────────────────── */
+.new-appt-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 99999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.new-appt-overlay.show {
+  display: flex;
+}
+
+.new-appt-modal {
+  background: #fff;
+  border-radius: 20px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 48px -8px rgba(0, 0, 0, 0.22);
+  animation: __newApptIn 0.18s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@keyframes __newApptIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.new-appt-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.new-appt-modal__head h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111;
+  margin: 0;
+}
+
+.new-appt-modal__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.new-appt-modal__close:hover {
+  background: #f3f4f6;
+  color: #111;
+}
+
+.new-appt-modal__body {
+  padding: 18px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.new-appt-modal__error {
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.new-appt-modal__actions {
+  padding: 16px 24px 20px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  border-top: 1px solid #f0f0f0;
+}
+
+@media (max-width: 600px) {
+  .new-appt-modal .edit-fields-row.two-col {
+    flex-direction: column;
+  }
 }

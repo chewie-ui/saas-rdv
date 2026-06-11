@@ -114,11 +114,13 @@ exports.appointment = async (req, res) => {
   const employeeFilter = req.query.employee || "all";
 
   const Employee = require("../db/models/company/employee.model");
-  const [apps, rowTime, employees, daysOffDoc] = await Promise.all([
+  const Service = require("../db/models/company/service.model");
+  const [apps, rowTime, employees, daysOffDoc, services] = await Promise.all([
     GetAllAppointments(currentCompany, employeeFilter),
     Company.findById(currentCompany).select("slotTime schedule").lean(),
     Employee.find({ company: currentCompany, active: true }).lean(),
     DaysOff.findOne({ company: currentCompany }).lean(),
+    Service.find({ company: currentCompany, active: true }).select("_id name duration price employees").lean(),
   ]);
 
   const slotTime = rowTime.slotTime || 60;
@@ -184,6 +186,66 @@ exports.appointment = async (req, res) => {
     ...d,
     isFocused: d.iso.split("T")[0] === focusedIso,
   }));
+  // ── Événements externes (Google Calendar) : bloquer les créneaux occupés sur l'agenda perso ──
+  const companyForOwner = await Company.findById(currentCompany).select("owner").lean();
+  if (companyForOwner?.owner) {
+    const ownerUser = await User.findById(companyForOwner.owner).select("googleCalendar").lean();
+    const gcal = ownerUser?.googleCalendar;
+    if (gcal?.connected && gcal.refreshToken) {
+      const toBrusselsMinutes = (date) => {
+        const parts = new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Europe/Brussels", hour: "2-digit", minute: "2-digit", hour12: false,
+        }).formatToParts(date);
+        const h = Number(parts.find((p) => p.type === "hour").value);
+        const m = Number(parts.find((p) => p.type === "minute").value);
+        return h * 60 + m;
+      };
+
+      const busyByDay = await Promise.all(
+        weekDays.map((d) => getBusyIntervals(gcal.refreshToken, d.isoDate))
+      );
+
+      weekDays.forEach((d, i) => {
+        busyByDay[i].forEach((interval) => {
+          const startMin = toBrusselsMinutes(interval.start);
+          const endMin = toBrusselsMinutes(interval.end);
+          if (endMin <= startMin) return;
+
+          const slotStart = Math.floor(startMin / 30) * 30;
+          const slotEnd = Math.max(Math.ceil(endMin / 30) * 30, slotStart + 30);
+
+          // Ignore les créneaux déjà occupés par un RDV Branshee (déjà synchronisé vers Google)
+          const overlapsExisting = formatted.some((a) => {
+            if (a.isoDate !== d.isoDate) return false;
+            const [ah, am] = a.startHour.split(":").map(Number);
+            const aStart = ah * 60 + am;
+            const aEnd = aStart + (a.slotTime || slotTime);
+            return aStart < endMin && aEnd > startMin;
+          });
+          if (overlapsExisting) return;
+
+          formatted.push({
+            _id: `gcal-${d.isoDate}-${slotStart}`,
+            name: "Autre événement",
+            surname: "",
+            isExternal: true,
+            weekday: d.weekdayIndex,
+            status: "external",
+            slotTime: slotEnd - slotStart,
+            serviceName: "",
+            employeeId: "",
+            employeeName: "",
+            employeePhoto: "/images/no-user.webp",
+            isoDate: d.isoDate,
+            date: d.date,
+            startHour: `${String(Math.floor(slotStart / 60)).padStart(2, "0")}:${String(slotStart % 60).padStart(2, "0")}`,
+            endHour: `${String(Math.floor(slotEnd / 60)).padStart(2, "0")}:${String(slotEnd % 60).padStart(2, "0")}`,
+          });
+        });
+      });
+    }
+  }
+
   const firstDay = weekDays[0];
   const lastDay = weekDays[6];
   const weekLabel = `${firstDay.label} ${firstDay.date} - ${lastDay.label} ${lastDay.date}`;
@@ -336,12 +398,158 @@ exports.appointment = async (req, res) => {
     monthLabel,
     prevMonthIso,
     nextMonthIso,
+    services,
   });
+};
+
+// ── Création manuelle d'un rendez-vous depuis le panel admin ─────────────────
+exports.createAdminBooking = async (req, res) => {
+  try {
+    const currentCompany = res.locals.currentCompany;
+    if (!currentCompany) return res.status(401).json({ success: false, error: "unauthorized" });
+
+    const {
+      date, startTime, name, surname, phone, message,
+      serviceId, employeeId,
+    } = req.body;
+    const rawEmail = req.body.email;
+    const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : rawEmail;
+
+    if (!date || !startTime || !name || !email) {
+      return res.json({ success: false, error: "missing_fields", message: "Veuillez remplir tous les champs obligatoires." });
+    }
+
+    const Service = require("../db/models/company/service.model");
+    const Employee = require("../db/models/company/employee.model");
+    const Booking = require("../db/models/book.model");
+    const pug = require("pug");
+    const path = require("path");
+    const { sendEmail } = require("../utils/mailer");
+
+    const company = await Company.findById(currentCompany);
+    if (!company) return res.json({ success: false, error: "company_not_found" });
+
+    let serviceName = "";
+    let actualDuration = company.slotTime || 60;
+    if (serviceId) {
+      const service = await Service.find({ _id: serviceId, company: currentCompany }).select("name duration").lean();
+      const svc = service[0];
+      if (svc) {
+        serviceName = svc.name || "";
+        actualDuration = svc.duration || actualDuration;
+      }
+    }
+
+    let employeeName = "";
+    if (employeeId) {
+      const emp = await Employee.findOne({ _id: employeeId, company: currentCompany }).select("firstName lastName").lean();
+      if (emp) employeeName = `${emp.firstName} ${emp.lastName}`.trim();
+    }
+
+    const [hours, minutes] = startTime.split(":").map(Number);
+    const startTimeInMinutes = hours * 60 + minutes;
+    const endTimeInMinutes = startTimeInMinutes + actualDuration;
+    const endTime = `${String(Math.floor(endTimeInMinutes / 60)).padStart(2, "0")}:${String(endTimeInMinutes % 60).padStart(2, "0")}`;
+
+    // ── Conflit : un même employé ne peut pas avoir deux RDV qui se chevauchent ──
+    if (employeeId) {
+      const overlapping = await Booking.find({
+        company: currentCompany,
+        date: new Date(date),
+        status: { $ne: "canceled" },
+        employee: employeeId,
+      }).select("startTime slotTime").lean();
+
+      const conflict = overlapping.some((b) => {
+        const [bh, bm] = b.startTime.split(":").map(Number);
+        const bStart = bh * 60 + bm;
+        const bEnd = bStart + (b.slotTime || actualDuration);
+        return startTimeInMinutes < bEnd && endTimeInMinutes > bStart;
+      });
+      if (conflict) {
+        return res.json({ success: false, error: "conflict", message: "Cet employé a déjà un rendez-vous sur ce créneau." });
+      }
+    }
+
+    const newBooking = await Booking.create({
+      date: new Date(date),
+      startTime,
+      endTime,
+      company: currentCompany,
+      name,
+      surname: surname || "",
+      email,
+      phone: phone || "",
+      message: message || "",
+      slotTime: actualDuration,
+      status: "confirmed",
+      service: serviceId || null,
+      serviceName,
+      employee: employeeId || null,
+      employeeName,
+      payment: { method: "none", status: "none", amount: 0, currency: "eur" },
+    });
+
+    const companyOwner = company.owner ? await User.findById(company.owner).lean() : null;
+
+    let locationText = "";
+    const loc = companyOwner?.location;
+    if (loc?.serviceType === "en_ligne") {
+      locationText = "En ligne";
+    } else if (loc?.address || loc?.city) {
+      locationText = [loc.address, loc.city].filter(Boolean).join(", ");
+    }
+
+    const baseUrl = process.env.BASE_URL || "https://www.branshee.com";
+    const cancelUrl = `${baseUrl}/cancel-booking/${newBooking._id}?token=${newBooking.cancelToken}`;
+    const formattedDate = new Date(date).toLocaleDateString("fr-FR", {
+      weekday: "long", day: "2-digit", month: "long", year: "numeric",
+    });
+
+    const htmlTemplate = pug.renderFile(
+      path.join(__dirname, "../views/templates/emails/booking-confirmed.pug"),
+      {
+        name,
+        surname,
+        date,
+        formattedDate,
+        startHour: startTime,
+        endHour: endTime,
+        slotTime: actualDuration,
+        message,
+        serviceName,
+        employeeName,
+        formAnswers: [],
+        locationText,
+        cancelUrl,
+        bookingId: newBooking._id,
+        cancelToken: newBooking.cancelToken,
+      },
+    );
+
+    await sendEmail(email, "Confirmation de votre rendez-vous — BranShee", htmlTemplate);
+
+    try {
+      if (companyOwner?.googleCalendar?.connected && companyOwner.googleCalendar.refreshToken) {
+        const eventId = await addEventToCalendar(companyOwner.googleCalendar.refreshToken, newBooking);
+        if (eventId) {
+          await Booking.findByIdAndUpdate(newBooking._id, { googleEventId: eventId });
+        }
+      }
+    } catch (gcalErr) {
+      console.error("Google Calendar sync error (admin create):", gcalErr.message);
+    }
+
+    res.json({ success: true, bookingId: newBooking._id });
+  } catch (err) {
+    console.error("createAdminBooking error:", err);
+    res.status(500).json({ success: false, error: "server_error", message: "Une erreur est survenue." });
+  }
 };
 
 const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
-const { addEventToCalendar, deleteEventFromCalendar, updateEventInCalendar } = require("../utils/googleCalendarSync");
+const { addEventToCalendar, deleteEventFromCalendar, updateEventInCalendar, getBusyIntervals } = require("../utils/googleCalendarSync");
 
 exports.client = (req, res) => {
   res.render("admin/client", {

@@ -199,3 +199,108 @@ setInterval(updateTimeline, 60000);
 
   renderCalendar();
 })();
+
+// ── Nouveau rendez-vous (panel admin) ─────────────────────────────────────
+(function () {
+  const openBtn  = document.getElementById("newApptBtn");
+  const overlay  = document.getElementById("newApptOverlay");
+  const closeBtn = document.getElementById("newApptClose");
+  const cancelBtn = document.getElementById("newApptCancel");
+  const submitBtn = document.getElementById("newApptSubmit");
+  const errorEl  = document.getElementById("newApptError");
+
+  if (!openBtn || !overlay) return;
+
+  const dateInput    = document.getElementById("newApptDate");
+  const timeInput    = document.getElementById("newApptTime");
+  const serviceSel   = document.getElementById("newApptService");
+  const employeeSel  = document.getElementById("newApptEmployee");
+  const nameInput    = document.getElementById("newApptName");
+  const surnameInput = document.getElementById("newApptSurname");
+  const emailInput   = document.getElementById("newApptEmail");
+  const phoneInput   = document.getElementById("newApptPhone");
+  const messageInput = document.getElementById("newApptMessage");
+
+  function showError(msg) {
+    errorEl.textContent = msg;
+    errorEl.style.display = "block";
+  }
+
+  function resetForm() {
+    dateInput.value = "";
+    timeInput.value = "";
+    if (serviceSel) serviceSel.value = "";
+    if (employeeSel) employeeSel.value = "";
+    nameInput.value = "";
+    surnameInput.value = "";
+    emailInput.value = "";
+    phoneInput.value = "";
+    messageInput.value = "";
+    errorEl.style.display = "none";
+    errorEl.textContent = "";
+  }
+
+  function open() {
+    resetForm();
+    const today = new Date();
+    dateInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    overlay.classList.add("show");
+  }
+
+  function close() {
+    overlay.classList.remove("show");
+  }
+
+  openBtn.addEventListener("click", open);
+  closeBtn.addEventListener("click", close);
+  cancelBtn.addEventListener("click", close);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && overlay.classList.contains("show")) close();
+  });
+
+  submitBtn.addEventListener("click", async () => {
+    errorEl.style.display = "none";
+
+    const date  = dateInput.value;
+    const time  = timeInput.value;
+    const name  = nameInput.value.trim();
+    const email = emailInput.value.trim();
+
+    if (!date || !time || !name || !email) {
+      showError("Veuillez remplir les champs obligatoires (date, heure, prénom, email).");
+      return;
+    }
+
+    const payload = {
+      date,
+      startTime: time,
+      name,
+      surname: surnameInput.value.trim(),
+      email,
+      phone: phoneInput.value.trim(),
+      message: messageInput.value.trim(),
+      serviceId: serviceSel ? serviceSel.value : "",
+      employeeId: employeeSel ? employeeSel.value : "",
+    };
+
+    submitBtn.disabled = true;
+    try {
+      const res = await fetch("/appointment/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location.reload();
+      } else {
+        showError(data.message || "Erreur lors de la création du rendez-vous.");
+        submitBtn.disabled = false;
+      }
+    } catch (e) {
+      showError("Erreur réseau.");
+      submitBtn.disabled = false;
+    }
+  });
+})();

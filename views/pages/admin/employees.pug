@@ -165,17 +165,17 @@ block content
             .field-row
                 .field
                     label= t.employees.firstname
-                    input.input#empModalFirstName(placeholder="Jean")
+                    input.input#empModalFirstName(placeholder="Jean" maxlength="40")
                 .field
                     label= t.employees.lastname
-                    input.input#empModalLastName(placeholder="Dupont")
+                    input.input#empModalLastName(placeholder="Dupont" maxlength="40")
             .field-row
                 .field
                     label= t.employees.age
-                    input.input#empModalAge(type="number" min="16" max="100" placeholder="Ex: 28")
+                    input.input#empModalAge(type="number" min="16" max="100" maxlength="3" placeholder="Ex: 28")
             .field
                 label= t.employees.desc
-                textarea.textarea#empModalDesc(placeholder="Spécialités, expérience..." rows=3)
+                textarea.textarea#empModalDesc(placeholder="Spécialités, expérience..." rows=3 maxlength="300")
         .service-modal__footer
             button.sm-btn.sm-btn--ghost#cancelEmpModal
                 span= t.employees.cancel
@@ -191,6 +191,7 @@ block content
         window.__empCount = !{employees.length || 0};
 
 block scripts
+    script(src="/js/utils/confirm-modal.js")
     script(src="/js/layouts/employees.js")
     script.
         // ── Swap : activer un employé en surnombre en remplaçant un autre ────────

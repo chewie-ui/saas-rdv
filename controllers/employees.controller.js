@@ -1,6 +1,21 @@
 const Employee = require("../db/models/company/employee.model");
 const { getLimit } = require("../utils/planLimits");
 
+const MAX_EMPLOYEE_AGE = 100;
+const MIN_EMPLOYEE_AGE = 16;
+const MAX_EMPLOYEE_DESC_LENGTH = 300;
+
+function parseAge(age) {
+  if (age === undefined || age === "") return null;
+  const n = Number(age);
+  if (isNaN(n)) return null;
+  return Math.min(Math.max(Math.round(n), MIN_EMPLOYEE_AGE), MAX_EMPLOYEE_AGE);
+}
+
+function parseDescription(description) {
+  return (description || "").trim().slice(0, MAX_EMPLOYEE_DESC_LENGTH);
+}
+
 exports.employeesPage = async (req, res) => {
   const employees = await Employee.find({ company: res.locals.currentCompany._id })
     .sort({ active: -1, createdAt: 1 })  // actifs en premier, puis par date de création
@@ -42,8 +57,8 @@ exports.createEmployee = async (req, res) => {
       company: companyId,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      age: age !== undefined && age !== "" ? Number(age) : null,
-      description: (description || "").trim(),
+      age: parseAge(age),
+      description: parseDescription(description),
       profilePicture,
     });
     res.json({ success: true, employee });
@@ -60,8 +75,8 @@ exports.updateEmployee = async (req, res) => {
     const update = {};
     if (firstName !== undefined) update.firstName = firstName.trim();
     if (lastName  !== undefined) update.lastName  = lastName.trim();
-    if (age !== undefined) update.age = age !== "" ? Number(age) : null;
-    if (description !== undefined) update.description = description.trim();
+    if (age !== undefined) update.age = parseAge(age);
+    if (description !== undefined) update.description = parseDescription(description);
     if (req.file) update.profilePicture = `/uploads/profiles/${req.file.filename}`;
 
     const employee = await Employee.findOneAndUpdate(

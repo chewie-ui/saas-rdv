@@ -653,10 +653,39 @@ block scripts
                 });
             }
 
+            // ── Petite modale de confirmation (remplace window.confirm) ──────
+            function bkConfirm(message) {
+                return new Promise(function(resolve) {
+                    var overlay = document.createElement('div');
+                    overlay.className = 'bk-confirm-overlay';
+                    overlay.innerHTML =
+                        '<div class="bk-confirm-card" role="alertdialog" aria-modal="true">' +
+                            '<div class="bk-confirm-icon">' +
+                                '<svg width="22" height="22" viewBox="0 -960 960 960" fill="currentColor"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>' +
+                            '</div>' +
+                            '<p class="bk-confirm-msg"></p>' +
+                            '<div class="bk-confirm-actions">' +
+                                '<button type="button" class="bk-confirm-btn bk-confirm-btn--ghost" data-act="cancel">Annuler</button>' +
+                                '<button type="button" class="bk-confirm-btn bk-confirm-btn--danger" data-act="ok">Supprimer</button>' +
+                            '</div>' +
+                        '</div>';
+                    overlay.querySelector('.bk-confirm-msg').textContent = message;
+                    document.body.appendChild(overlay);
+
+                    function close(result) { overlay.remove(); resolve(result); }
+                    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(false); });
+                    overlay.querySelector('[data-act="cancel"]').addEventListener('click', function() { close(false); });
+                    overlay.querySelector('[data-act="ok"]').addEventListener('click', function() { close(true); });
+                    document.addEventListener('keydown', function onKey(e) {
+                        if (e.key === 'Escape') { close(false); document.removeEventListener('keydown', onKey); }
+                    });
+                });
+            }
+
             // ── Supprimer son avis ───────────────────────────────────────────
             document.querySelectorAll('.bk-review-delete').forEach(function(btn) {
                 btn.addEventListener('click', async function() {
-                    if (!confirm('Supprimer votre avis ?')) return;
+                    if (!(await bkConfirm('Voulez-vous vraiment supprimer votre avis ?'))) return;
                     var id = btn.dataset.id;
                     btn.disabled = true;
                     try {

@@ -121,7 +121,7 @@ block content
                                             each svc in services
                                                 - var svcId = String(svc._id)
                                                 - var currentSvcId = results.service ? String(results.service) : ''
-                                                option(value=svcId data-name=svc.name data-duration=svc.duration data-price=(svc.price || '') selected=(currentSvcId === svcId))= svc.name
+                                                option(value=svcId data-name=svc.name data-duration=svc.duration data-price=(svc.price || '') selected=(currentSvcId === svcId))= svc.name.length > 40 ? svc.name.slice(0, 40) + '…' : svc.name
                                     .svc-info-chips#svcInfoChips(style="display:none")
                                         .svc-chip#svcDurationChip
                                             svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
@@ -142,7 +142,8 @@ block content
                                         each emp in employees
                                             - var empId = String(emp._id)
                                             - var currentEmpId = results.employee ? String(results.employee._id || results.employee) : ''
-                                            option(value=empId selected=(currentEmpId === empId))= emp.firstName + ' ' + emp.lastName
+                                            - var empLabel = emp.firstName + ' ' + emp.lastName
+                                            option(value=empId selected=(currentEmpId === empId))= empLabel.length > 40 ? empLabel.slice(0, 40) + '…' : empLabel
 
                 //- Section: Client
                 .edit-section

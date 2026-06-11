@@ -387,7 +387,7 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
   const Service = require("../db/models/company/service.model");
   const Employee = require("../db/models/company/employee.model");
 
-  const services = await Service.find({ company: company._id, active: true }).populate("employees", "firstName lastName profilePicture").sort("order").lean();
+  const services = await Service.find({ company: company._id, active: true }).populate("employees", "firstName lastName profilePicture age description").sort("order").lean();
 
   const activeEmployees = await Employee.find({ company: company._id, active: true }).lean();
 
@@ -407,6 +407,8 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
             firstName: e.firstName || "",
             lastName: e.lastName || "",
             profilePicture: e.profilePicture || "/images/no-user.webp",
+            age: e.age || null,
+            description: e.description || "",
           };
         }),
       };
@@ -420,6 +422,8 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
         firstName: e.firstName || "",
         lastName: e.lastName || "",
         profilePicture: e.profilePicture || "/images/no-user.webp",
+        age: e.age || null,
+        description: e.description || "",
       };
     }),
   );

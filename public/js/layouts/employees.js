@@ -58,6 +58,17 @@ document.addEventListener("DOMContentLoaded", () => {
     pendingPhotoFile = null;
   }
 
+  // Clamp age live while typing (type="number" ignores maxlength)
+  empModalAge.addEventListener("input", () => {
+    if (empModalAge.value.length > 3) {
+      empModalAge.value = empModalAge.value.slice(0, 3);
+    }
+    const n = Number(empModalAge.value);
+    if (empModalAge.value !== "" && !isNaN(n) && n > 100) {
+      empModalAge.value = "100";
+    }
+  });
+
   // Photo preview in modal
   empModalPhotoBtn.addEventListener("click", () => empModalPhotoInput.click());
   empModalPhotoInput.addEventListener("change", () => {
@@ -89,7 +100,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const formData = new FormData();
     formData.append("firstName",   firstName);
     formData.append("lastName",    lastName);
-    formData.append("age",         empModalAge.value);
+    let age = empModalAge.value;
+    if (age !== "") age = Math.min(Math.max(Math.round(Number(age)), 16), 100);
+    formData.append("age",         age);
     formData.append("description", empModalDesc.value.trim());
     if (pendingPhotoFile) formData.append("profilePicture", pendingPhotoFile);
 
@@ -133,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (delBtn) {
-      if (!confirm(msgDel)) return;
+      if (!(await window.confirmModal("Supprimer cet employé ?", msgDel))) return;
       try {
         const res  = await fetch(`/api/employees/${delBtn.dataset.id}`, { method: "DELETE" });
         const data = await res.json();

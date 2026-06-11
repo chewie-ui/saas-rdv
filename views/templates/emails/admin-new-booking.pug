@@ -6,9 +6,17 @@
   var _hasPhone = !!(phone)
   var _hasMessage = !!(message)
   var _hasLocation = !!(locationText)
-  var _hasPayment = !!(paymentAmount && paymentAmount > 0)
 
 div(style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;")
+  style.
+    @media (max-width: 600px) {
+      .email-card-header { padding: 24px 20px !important; }
+      .email-card-body { padding: 24px 20px 0 !important; }
+      .email-row td { display: block !important; width: 100% !important; }
+      .email-label { padding-bottom: 2px !important; }
+      .email-datetime td { display: block !important; width: 100% !important; text-align: left !important; }
+      .email-datetime td:last-child { margin-top: 12px; text-align: left !important; }
+    }
   table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0;padding:0;background-color:#f0f4f8;")
     tr
       td(align="center" style="padding:40px 16px;")
@@ -32,7 +40,7 @@ div(style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system
               //- Header vert
               table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
                 tr
-                  td(style="background:linear-gradient(135deg,#1a7a4a 0%,#15803d 100%);padding:32px 40px;text-align:center;")
+                  td.email-card-header(style="background:linear-gradient(135deg,#1a7a4a 0%,#15803d 100%);padding:32px 40px;text-align:center;")
                     //- Icône cloche
                     table(cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto 16px;")
                       tr
@@ -44,13 +52,13 @@ div(style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system
               //- Corps
               table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
                 tr
-                  td(style="padding:32px 40px 0;")
+                  td.email-card-body(style="padding:32px 40px 0;")
 
                     //- ── Bloc date/heure (mis en avant) ──────────────────────
                     table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f0fdf4;border-radius:12px;border:1px solid #bbf7d0;margin-bottom:24px;")
                       tr
                         td(style="padding:20px 24px;")
-                          table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                          table.email-datetime(width="100%" cellpadding="0" cellspacing="0" role="presentation")
                             tr
                               td(width="50%" style="vertical-align:top;")
                                 p(style="margin:0 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#16a34a;") Date
@@ -66,54 +74,46 @@ div(style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system
                       //- Nom
                       tr
                         td(style="padding:13px 18px;border-bottom:1px solid #f1f5f9;")
-                          table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                          table.email-row(width="100%" cellpadding="0" cellspacing="0" role="presentation")
                             tr
-                              td(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Nom
+                              td.email-label(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Nom
                               td(style="font-size:14px;font-weight:600;color:#1e293b;") #{_clientName}
                       //- Email
                       tr
                         td(style="padding:13px 18px;" + (_hasPhone || _hasMessage || _hasService ? "border-bottom:1px solid #f1f5f9;" : ""))
-                          table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                          table.email-row(width="100%" cellpadding="0" cellspacing="0" role="presentation")
                             tr
-                              td(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Email
+                              td.email-label(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Email
                               td
                                 a(href="mailto:#{email}" style="font-size:14px;font-weight:600;color:#1a7a4a;text-decoration:none;") #{email}
                       if _hasPhone
                         tr
                           td(style="padding:13px 18px;" + (_hasMessage || _hasService ? "border-bottom:1px solid #f1f5f9;" : ""))
-                            table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                            table.email-row(width="100%" cellpadding="0" cellspacing="0" role="presentation")
                               tr
-                                td(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Téléphone
+                                td.email-label(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Téléphone
                                 td
                                   a(href="tel:#{phone}" style="font-size:14px;font-weight:600;color:#1e293b;text-decoration:none;") #{phone}
                       if _hasService
                         tr
-                          td(style="padding:13px 18px;" + (_hasEmployee || _hasMessage || _hasPayment ? "border-bottom:1px solid #f1f5f9;" : ""))
-                            table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                          td(style="padding:13px 18px;" + (_hasEmployee || _hasMessage ? "border-bottom:1px solid #f1f5f9;" : ""))
+                            table.email-row(width="100%" cellpadding="0" cellspacing="0" role="presentation")
                               tr
-                                td(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Service
+                                td.email-label(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Service
                                 td(style="font-size:14px;font-weight:600;color:#1e293b;") #{serviceName}
                       if _hasEmployee
                         tr
-                          td(style="padding:13px 18px;" + (_hasMessage || _hasPayment ? "border-bottom:1px solid #f1f5f9;" : ""))
-                            table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
-                              tr
-                                td(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Employé
-                                td(style="font-size:14px;font-weight:600;color:#1e293b;") #{employeeName}
-                      if _hasPayment
-                        tr
                           td(style="padding:13px 18px;" + (_hasMessage ? "border-bottom:1px solid #f1f5f9;" : ""))
-                            table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                            table.email-row(width="100%" cellpadding="0" cellspacing="0" role="presentation")
                               tr
-                                td(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Paiement
-                                td
-                                  span(style="display:inline-flex;align-items:center;gap:5px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:3px 10px;font-size:13px;font-weight:700;color:#16a34a;") ✓ #{paymentAmount} € payé
+                                td.email-label(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Employé
+                                td(style="font-size:14px;font-weight:600;color:#1e293b;") #{employeeName}
                       if _hasMessage
                         tr
                           td(style="padding:13px 18px;")
-                            table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                            table.email-row(width="100%" cellpadding="0" cellspacing="0" role="presentation")
                               tr
-                                td(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;vertical-align:top;padding-top:2px;") Message
+                                td.email-label(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;vertical-align:top;padding-top:2px;") Message
                                 td(style="font-size:13.5px;color:#475569;line-height:1.5;font-style:italic;") "#{message}"
 
                     //- ── CTA bouton ──────────────────────────────────────────

@@ -47,6 +47,7 @@ router.get("/welcome", isAuth, injectCompany, (req, res) => {
 
 router.get("/panel", isAuth, injectCompany, requireFeatureActive("admin_panel"), renderAppointments, panel);
 router.get("/appointment", isAuth, injectCompany, requireFeatureActive("admin_panel"), appointment);
+router.post("/appointment/create", isAuth, injectCompany, requireFeatureActive("admin_panel"), adminController.createAdminBooking);
 router.get("/availability", isAuth, injectCompany, availability);
 router.get("/client", isAuth, injectCompany, client);
 router.get("/informations", (req, res) => res.redirect(301, "/settings"));

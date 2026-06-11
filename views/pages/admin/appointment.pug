@@ -2,6 +2,7 @@ extends ../../layouts/admin
 
 block links
     link(rel="stylesheet", href="/css/components/admin/appointment.admin.css")
+    link(rel="stylesheet", href="/css/layouts/history-edit.css")
 
 block content
     .calendar
@@ -89,8 +90,8 @@ block content
                             select.emp-filter-select#empFilterSelect
                                 option(value="all" selected=(employeeFilter === 'all')) Tous les employés
                                 each emp in employees
-                                    option(value=String(emp._id) selected=(employeeFilter === String(emp._id)))
-                                        | #{emp.firstName} #{emp.lastName}
+                                    - var empFilterLabel = emp.firstName + ' ' + emp.lastName
+                                    option(value=String(emp._id) selected=(employeeFilter === String(emp._id)))= empFilterLabel.length > 40 ? empFilterLabel.slice(0, 40) + '…' : empFilterLabel
 
         .calendar__week-strip(class=(view === 'month' ? 'u-hidden-month' : ''))
             each weekday in weekDays
@@ -162,43 +163,53 @@ block content
                             else
                                 .appt-multi-wrap(style=`height:${wrapH}px`)
                                     each appointment in cellAppts
-                                        div.appt-pill(
-                                            role="button" tabindex="0"
-                                            class={ 'appt-pill--canceled': appointment.status === 'canceled' }
-                                            data-id=String(appointment._id)
-                                            data-name=appointment.name
-                                            data-surname=(appointment.surname || '')
-                                            data-start=appointment.startHour
-                                            data-end=appointment.endHour
-                                            data-employee=(appointment.employeeName || '')
-                                            data-photo=(appointment.employeePhoto || '')
-                                            data-service=(appointment.serviceName || '')
-                                            data-status=(appointment.status || '')
-                                            data-date=appointment.isoDate
-                                        )
-                                            span.appt-pill__name= appointment.name
-                                            span.appt-pill__time= appointment.startHour
+                                        if appointment.isExternal
+                                            .appt-pill.appt-pill--external(title="Indisponible — autre événement")
+                                                span.appt-pill__name Autre événement
+                                                span.appt-pill__time= appointment.startHour
+                                        else
+                                            div.appt-pill(
+                                                role="button" tabindex="0"
+                                                class={ 'appt-pill--canceled': appointment.status === 'canceled' }
+                                                data-id=String(appointment._id)
+                                                data-name=appointment.name
+                                                data-surname=(appointment.surname || '')
+                                                data-start=appointment.startHour
+                                                data-end=appointment.endHour
+                                                data-employee=(appointment.employeeName || '')
+                                                data-photo=(appointment.employeePhoto || '')
+                                                data-service=(appointment.serviceName || '')
+                                                data-status=(appointment.status || '')
+                                                data-date=appointment.isoDate
+                                            )
+                                                span.appt-pill__name= appointment.name
+                                                span.appt-pill__time= appointment.startHour
                         else if cellAppts.length === 1
                             - var appointment = cellAppts[0]
                             - var apptH = Math.max(Math.round((appointment.slotTime || 30) / 30 * 52) - 4, 20)
-                            div.appt-pill(
-                                role="button" tabindex="0"
-                                class={ 'appt-pill--canceled': appointment.status === 'canceled' }
-                                style=`height:${apptH}px`
-                                data-id=String(appointment._id)
-                                data-name=appointment.name
-                                data-surname=(appointment.surname || '')
-                                data-start=appointment.startHour
-                                data-end=appointment.endHour
-                                data-employee=(appointment.employeeName || '')
-                                data-photo=(appointment.employeePhoto || '')
-                                data-service=(appointment.serviceName || '')
-                                data-status=(appointment.status || '')
-                                data-date=appointment.isoDate
-                            )
-                                img.appt-pill__photo(src=appointment.employeePhoto alt="" title=appointment.employeeName)
-                                span.appt-pill__name= appointment.name + ' ' + (appointment.surname || '')
-                                span.appt-pill__time= appointment.startHour
+                            if appointment.isExternal
+                                .appt-pill.appt-pill--external(style=`height:${apptH}px` title="Indisponible — autre événement")
+                                    span.appt-pill__name Autre événement
+                                    span.appt-pill__time= appointment.startHour + '–' + appointment.endHour
+                            else
+                                div.appt-pill(
+                                    role="button" tabindex="0"
+                                    class={ 'appt-pill--canceled': appointment.status === 'canceled' }
+                                    style=`height:${apptH}px`
+                                    data-id=String(appointment._id)
+                                    data-name=appointment.name
+                                    data-surname=(appointment.surname || '')
+                                    data-start=appointment.startHour
+                                    data-end=appointment.endHour
+                                    data-employee=(appointment.employeeName || '')
+                                    data-photo=(appointment.employeePhoto || '')
+                                    data-service=(appointment.serviceName || '')
+                                    data-status=(appointment.status || '')
+                                    data-date=appointment.isoDate
+                                )
+                                    img.appt-pill__photo(src=appointment.employeePhoto alt="" title=appointment.employeeName)
+                                    span.appt-pill__name= appointment.name + ' ' + (appointment.surname || '')
+                                    span.appt-pill__time= appointment.startHour
 
     //- ── Appointment popup (Google Calendar style) ──
     #apptPopup.appt-popup
@@ -232,6 +243,67 @@ block content
                 svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                     path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
                 | Voir le détail
+
+    //- ── Nouveau rendez-vous (panel admin) ──────────────────────────────────
+    .new-appt-overlay#newApptOverlay
+        .new-appt-modal#newApptModal
+            .new-appt-modal__head
+                h3 Nouveau rendez-vous
+                button.new-appt-modal__close#newApptClose(type="button" aria-label="Fermer")
+                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                        path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+            .new-appt-modal__body
+                .edit-fields-row.two-col
+                    .field-container.flex.col
+                        label Date *
+                        input.input(type="date" id="newApptDate")
+                    .field-container.flex.col
+                        label Heure *
+                        input.input(type="time" id="newApptTime")
+
+                if services && services.length > 0
+                    .edit-fields-row
+                        .field-container.flex.col
+                            label Service
+                            select.input#newApptService
+                                option(value="") — Aucun service —
+                                each svc in services
+                                    option(value=String(svc._id) data-duration=svc.duration)= svc.name.length > 40 ? svc.name.slice(0, 40) + '…' : svc.name
+
+                if employees && employees.length > 0
+                    .edit-fields-row
+                        .field-container.flex.col
+                            label Employé
+                            select.input#newApptEmployee
+                                option(value="") — Aucun employé —
+                                each emp in employees
+                                    - var empLabel = emp.firstName + ' ' + emp.lastName
+                                    option(value=String(emp._id))= empLabel.length > 40 ? empLabel.slice(0, 40) + '…' : empLabel
+
+                .edit-fields-row.two-col
+                    .field-container.flex.col
+                        label Prénom *
+                        input.input(type="text" id="newApptName" placeholder="Prénom")
+                    .field-container.flex.col
+                        label Nom
+                        input.input(type="text" id="newApptSurname" placeholder="Nom")
+                .edit-fields-row.two-col
+                    .field-container.flex.col
+                        label Email *
+                        input.input(type="email" id="newApptEmail" placeholder="email@example.com")
+                    .field-container.flex.col
+                        label Téléphone
+                        input.input(type="tel" id="newApptPhone" placeholder="+32 456 00 00 00")
+                .edit-fields-row
+                    .field-container.flex.col
+                        label Message
+                        textarea.input.textarea#newApptMessage(rows="3" placeholder="...")
+
+                p.new-appt-modal__error#newApptError(style="display:none")
+            .new-appt-modal__actions
+                button.sm-btn.sm-btn--ghost#newApptCancel(type="button") Annuler
+                button.sm-btn.sm-btn--primary#newApptSubmit(type="button")
+                    span Créer le rendez-vous
 
 block scripts
     script(src="/js/layouts/appointment.js" type="module")

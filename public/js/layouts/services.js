@@ -240,7 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (delBtn) {
-      if (!confirm("Supprimer ce service ? Cette action est irréversible.")) return;
+      if (!(await window.confirmModal("Supprimer ce service ?", "Cette action est irréversible."))) return;
       const id = delBtn.dataset.id;
       try {
         const res = await fetch(`/api/services/${id}`, { method: "DELETE" });

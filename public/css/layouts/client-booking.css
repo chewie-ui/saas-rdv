@@ -786,6 +786,82 @@ body.bk-embed #bkCart .bk-cart {
   .svc-desc-sheet__handle { display: none; }
 }
 
+/* ── Modale de confirmation (suppression avis, etc.) ── */
+.bk-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.40);
+  backdrop-filter: blur(3px);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: svcOverlayIn .18s ease;
+}
+
+.bk-confirm-card {
+  background: var(--color-white, #fff);
+  border-radius: 18px;
+  box-shadow: 0 -12px 48px rgba(0,0,0,.14);
+  padding: 28px 24px 20px;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  animation: svcSheetUp .22s cubic-bezier(.34,1.56,.64,1);
+}
+
+.bk-confirm-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fef2f2;
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+.bk-confirm-msg {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-primary, #111);
+  margin: 0;
+}
+
+.bk-confirm-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.bk-confirm-btn {
+  flex: 1;
+  padding: 11px 16px;
+  border-radius: 12px;
+  border: none;
+  font: 700 14px var(--bk-font, inherit);
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.bk-confirm-btn--ghost {
+  background: var(--bg-secondary, #f5f5f5);
+  color: var(--text-primary, #111);
+}
+.bk-confirm-btn--ghost:hover { background: var(--border-light, #e5e5e5); }
+
+.bk-confirm-btn--danger {
+  background: #ef4444;
+  color: #fff;
+}
+.bk-confirm-btn--danger:hover { background: #dc2626; }
+
 .bk-svc__dur {
   display: inline-flex;
   align-items: center;
@@ -886,11 +962,33 @@ body.bk-embed #bkCart .bk-cart {
   font: 700 13.5px var(--bk-font);
   color: var(--bk-ink);
   margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bk-emp__role {
   font-size: 12px;
   color: var(--bk-muted);
+}
+
+.bk-emp__info-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: var(--bk-r-pill);
+  background: var(--bk-subtle);
+  color: var(--bk-muted);
+  font: 600 11px var(--bk-font);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.bk-emp__info-btn:hover {
+  color: var(--bk-accent);
+  background: rgba(34,197,94,0.09);
 }
 
 .bk-emp--skip .bk-emp__av {

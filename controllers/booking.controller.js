@@ -373,7 +373,6 @@ exports.createBooking = async (req, res) => {
               employeeName:  employeeName || "",
               locationText,
               message:       message      || "",
-              paymentAmount: newBooking.payment?.amount || 0,
             },
           );
           const clientDisplay = [name, surname].filter(Boolean).join(" ") || email;
