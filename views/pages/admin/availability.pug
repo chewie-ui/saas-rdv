@@ -199,13 +199,22 @@ block content
                     .avail-card
                         .avail-card__hd
                             span.avail-card__title= t.avail.buffer_title || 'Temps tampon entre les réservations'
-                        p.avail-card__sub Bloque automatiquement ce temps avant et après chaque RDV pour vous laisser le temps de vous préparer.
-                        .avail-buffer
-                            input.avail-buffer__range#bufferRange(type="range" min="0" max="120" step="5" value=(bufferTime || 0))
-                            .avail-buffer__row
-                                span 0
-                                span.avail-buffer__val#bufferVal #{bufferTime || 0} min
-                                span 120
+                        p.avail-card__sub Bloque automatiquement ce temps avant et/ou après chaque RDV pour vous laisser le temps de vous organiser. Réglez chaque sens indépendamment.
+                        .avail-buffer-group
+                            .avail-buffer
+                                .avail-buffer__label Avant le rendez-vous
+                                input.avail-buffer__range#bufferBeforeRange(type="range" min="0" max="120" step="5" value=(bufferBefore || 0))
+                                .avail-buffer__row
+                                    span 0
+                                    span.avail-buffer__val#bufferBeforeVal #{bufferBefore || 0} min
+                                    span 120
+                            .avail-buffer
+                                .avail-buffer__label Après le rendez-vous
+                                input.avail-buffer__range#bufferAfterRange(type="range" min="0" max="120" step="5" value=(bufferAfter || 0))
+                                .avail-buffer__row
+                                    span 0
+                                    span.avail-buffer__val#bufferAfterVal #{bufferAfter || 0} min
+                                    span 120
 
                 //- Mode de génération des créneaux
                 .avail-card

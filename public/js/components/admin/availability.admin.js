@@ -997,24 +997,35 @@ document.querySelectorAll(".slot-pill").forEach((btn) => {
   });
 });
 
-/* ── Buffer between bookings slider ─────────────────────────── */
-const bufferRange = document.getElementById("bufferRange");
-const bufferVal   = document.getElementById("bufferVal");
+/* ── Buffer before/after bookings sliders ───────────────────── */
+const bufferBeforeRange = document.getElementById("bufferBeforeRange");
+const bufferBeforeVal   = document.getElementById("bufferBeforeVal");
+const bufferAfterRange  = document.getElementById("bufferAfterRange");
+const bufferAfterVal    = document.getElementById("bufferAfterVal");
 
-if (bufferRange) {
-  // Live update display
-  bufferRange.addEventListener("input", () => {
-    if (bufferVal) bufferVal.textContent = `${bufferRange.value} min`;
-  });
+async function saveBufferTimes() {
+  await fetch("/company/buffer", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      bufferBefore: Number(bufferBeforeRange ? bufferBeforeRange.value : 0),
+      bufferAfter: Number(bufferAfterRange ? bufferAfterRange.value : 0),
+    }),
+  }).catch(() => {});
+}
 
-  // Save on release
-  bufferRange.addEventListener("change", async () => {
-    await fetch("/company/buffer", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bufferTime: Number(bufferRange.value) }),
-    }).catch(() => {});
+if (bufferBeforeRange) {
+  bufferBeforeRange.addEventListener("input", () => {
+    if (bufferBeforeVal) bufferBeforeVal.textContent = `${bufferBeforeRange.value} min`;
   });
+  bufferBeforeRange.addEventListener("change", saveBufferTimes);
+}
+
+if (bufferAfterRange) {
+  bufferAfterRange.addEventListener("input", () => {
+    if (bufferAfterVal) bufferAfterVal.textContent = `${bufferAfterRange.value} min`;
+  });
+  bufferAfterRange.addEventListener("change", saveBufferTimes);
 }
 
 /* ── Slot generation mode (fixed vs. interval) ─────────────── */

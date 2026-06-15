@@ -23,9 +23,22 @@ const companySchema = schema(
     },
 
     // Temps tampon (en minutes) à respecter avant ET après chaque RDV.
+    // Conservé pour compatibilité — remplacé par bufferBefore/bufferAfter.
     bufferTime: {
       type: Number,
       default: 0,
+    },
+
+    // Temps tampon (en minutes) à respecter avant chaque RDV.
+    bufferBefore: {
+      type: Number,
+      default: null,
+    },
+
+    // Temps tampon (en minutes) à respecter après chaque RDV.
+    bufferAfter: {
+      type: Number,
+      default: null,
     },
 
     // "fixed"    = créneaux générés sur la durée du service/slot (ex: 9h00, 9h30, 10h00...)

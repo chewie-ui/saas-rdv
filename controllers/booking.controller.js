@@ -727,7 +727,7 @@ exports.getBooking = async (req, res) => {
 
   // Get company config so we can compute slot granularity / buffer / mode.
   const [companyDoc, activeEmployeeCount] = await Promise.all([
-    Company.findById(companyId).select("slotTime bufferTime slotMode slotInterval owner").lean(),
+    Company.findById(companyId).select("slotTime bufferTime bufferBefore bufferAfter slotMode slotInterval owner").lean(),
     // Only count employees when no specific one is filtered
     specificEmployee ? Promise.resolve(0) : Employee.countDocuments({ company: companyId, active: true }),
   ]);
@@ -742,17 +742,19 @@ exports.getBooking = async (req, res) => {
     ? (companyDoc?.slotInterval || 30)
     : newDuration;
 
-  // Temps tampon (en minutes) à respecter avant ET après chaque RDV existant.
-  const buffer = companyDoc?.bufferTime || 0;
+  // Temps tampon (en minutes) à respecter avant et après chaque RDV existant
+  // (modulables indépendamment, ex: 0 min avant / 30 min après).
+  const bufferBefore = companyDoc?.bufferBefore ?? companyDoc?.bufferTime ?? 0;
+  const bufferAfter  = companyDoc?.bufferAfter  ?? companyDoc?.bufferTime ?? 0;
 
   // Construit, pour une liste de réservations, la liste des plages occupées
-  // [début - buffer, fin + buffer) en minutes depuis minuit.
+  // [début - bufferBefore, fin + bufferAfter) en minutes depuis minuit.
   function buildOccupiedRanges(bookings) {
     return bookings.map((b) => {
       const [h, m] = b.startTime.split(":").map(Number);
       const startMin = h * 60 + m;
       const endMin   = startMin + (b.slotTime || newDuration);
-      return [Math.max(0, startMin - buffer), Math.min(24 * 60, endMin + buffer)];
+      return [Math.max(0, startMin - bufferBefore), Math.min(24 * 60, endMin + bufferAfter)];
     });
   }
 
@@ -789,7 +791,7 @@ exports.getBooking = async (req, res) => {
           const startMin = interval.start.getHours() * 60 + interval.start.getMinutes();
           let endMin = interval.end.getHours() * 60 + interval.end.getMinutes();
           if (endMin <= startMin) endMin = 24 * 60; // événement traversant minuit / journée entière
-          googleRanges.push([Math.max(0, startMin - buffer), Math.min(24 * 60, endMin + buffer)]);
+          googleRanges.push([Math.max(0, startMin - bufferBefore), Math.min(24 * 60, endMin + bufferAfter)]);
         });
       }
     } catch (err) {

@@ -192,10 +192,11 @@ exports.setScheduleDayOff = async (req, res) => {
 
 exports.updateBuffer = async (req, res) => {
   try {
-    const { bufferTime } = req.body;
-    const value = Math.max(0, Math.min(120, Number(bufferTime) || 0));
-    await Company.findByIdAndUpdate(res.locals.currentCompany._id, { bufferTime: value });
-    return res.json({ success: true, bufferTime: value });
+    const { bufferBefore, bufferAfter } = req.body;
+    const before = Math.max(0, Math.min(120, Number(bufferBefore) || 0));
+    const after  = Math.max(0, Math.min(120, Number(bufferAfter) || 0));
+    await Company.findByIdAndUpdate(res.locals.currentCompany._id, { bufferBefore: before, bufferAfter: after });
+    return res.json({ success: true, bufferBefore: before, bufferAfter: after });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ success: false, error: "Server error" });

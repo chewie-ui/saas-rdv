@@ -589,11 +589,12 @@ async function getSlotTime(companyId) {
 
 async function getSlotConfig(companyId) {
   const res = await Company.findById(companyId)
-    .select("bufferTime slotMode slotInterval")
+    .select("bufferTime bufferBefore bufferAfter slotMode slotInterval")
     .lean();
 
   return {
-    bufferTime:   res?.bufferTime || 0,
+    bufferBefore: res?.bufferBefore ?? res?.bufferTime ?? 0,
+    bufferAfter:  res?.bufferAfter  ?? res?.bufferTime ?? 0,
     slotMode:     res?.slotMode || "fixed",
     slotInterval: res?.slotInterval || 30,
   };
@@ -638,7 +639,8 @@ exports.availability = async (req, res) => {
     timeSlot: [10, 15, 20, 25, 30, 45, 60, 90, 120, 180],
     hours: generateHours(10),
     currentSlotTime,
-    bufferTime: slotConfig.bufferTime,
+    bufferBefore: slotConfig.bufferBefore,
+    bufferAfter: slotConfig.bufferAfter,
     slotMode: slotConfig.slotMode,
     slotInterval: slotConfig.slotInterval,
     hasServices: serviceCount > 0,
