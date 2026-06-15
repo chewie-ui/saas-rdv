@@ -186,7 +186,6 @@ body.bk-embed #bkCart {
   animation: none;
 }
 body.bk-embed #bkCart .bk-cart {
-  width: 100%;
   max-width: 480px;
 }
 
@@ -1256,6 +1255,26 @@ body.bk-embed #bkCart .bk-cart {
   border-color: var(--bk-border);
   opacity: 0.38;
   pointer-events: none;
+}
+
+/* ── Rendez-vous collectifs : nombre de places restantes par créneau ──────── */
+.bk-slot-list--group .bk-slot {
+  height: auto;
+  min-height: 44px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 4px;
+}
+
+.bk-slot__spots {
+  font: 600 9.5px var(--bk-font);
+  color: var(--bk-muted);
+  letter-spacing: 0.02em;
+}
+
+.bk-slot.is-selected .bk-slot__spots {
+  color: var(--bk-accent-text);
+  opacity: 0.85;
 }
 
 /* ── Details form pane ──────────────────────────────────────────────────── */

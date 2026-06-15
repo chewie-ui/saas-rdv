@@ -11,6 +11,7 @@ const {
   companyInfos,
   updateDayOffEmployees,
   updateBuffer,
+  updateSlotMode,
 } = require("../controllers/company.controller");
 const injectCompany = require("../middlewares/injectCompany");
 
@@ -28,5 +29,6 @@ router.delete("/company/time-slot", injectCompany, deleteTimeSlot);
 router.patch("/company/schedule-day-off", injectCompany, scheduleDayOff);
 router.patch("/company/set-schedule-day-off", injectCompany, setScheduleDayOff);
 router.patch("/company/buffer", injectCompany, updateBuffer);
+router.patch("/company/slot-mode", injectCompany, updateSlotMode);
 
 module.exports = router;

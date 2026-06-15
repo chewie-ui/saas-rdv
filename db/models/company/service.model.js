@@ -37,6 +37,19 @@ const serviceSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    // "individual" = un client par créneau (comportement par défaut)
+    // "group"      = plusieurs clients peuvent réserver le même créneau,
+    //                jusqu'à `capacity` places.
+    type: {
+      type: String,
+      enum: ["individual", "group"],
+      default: "individual",
+    },
+    // Nombre de places disponibles par créneau (uniquement pour type === "group")
+    capacity: {
+      type: Number,
+      default: null,
+    },
     employees: [
       {
         type: mongoose.Schema.Types.ObjectId,

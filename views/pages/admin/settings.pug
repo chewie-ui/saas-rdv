@@ -392,9 +392,11 @@ block content
         -
             var _bookingUrl = currentCompany ? ('https://www.branshee.com/' + (currentCompany.slug || String(currentCompany._id))) : 'https://www.branshee.com'
             var _proName    = user.businessName || user.fullName || 'moi'
-        .info-card.promo-card
+        .info-card.promo-card.promo-card--disabled
             .info-card__header
-                h3 📣 Promouvoir ma page
+                h3
+                    | 📣 Promouvoir ma page
+                    span.promo-soon-badge En construction
                 p.info-card__desc Partagez votre lien de réservation sur les réseaux sociaux en un clic. Un post prêt-à-l'emploi avec votre lien sera généré automatiquement.
 
             .promo-link-preview
@@ -475,6 +477,8 @@ block content
 
         style.
             /* ── Promouvoir ── */
+            .promo-card--disabled { position:relative; opacity:.55; filter:grayscale(.6); pointer-events:none; user-select:none; }
+            .promo-soon-badge { display:inline-block; margin-left:10px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#9a6b00; background:#fff3cd; border:1px solid #ffe69c; border-radius:999px; padding:3px 9px; vertical-align:middle; }
             .promo-link-preview { display:flex; flex-direction:column; gap:6px; margin-bottom:18px; }
             .promo-link-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted,#9ca3af); }
             .promo-link-row { display:flex; align-items:center; gap:8px; background:var(--color-surface-2,#f8fafc); border:1px solid var(--border-light,#e5e7eb); border-radius:10px; padding:10px 14px; }
@@ -908,6 +912,14 @@ block content
                             .cp-rule__dot.cp-rule__dot--red
                             span Moins de 12h → 100 % retenus
 
+            if cancelRule !== 'free' && !scIsActive
+                .cp-warning
+                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                        path(d="M40-120l440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Z")
+                    span
+                        strong Stripe doit être configuré pour appliquer ces frais d'annulation.
+                        | Sans connexion Stripe active, la carte du client ne sera pas enregistrée et aucun frais ne pourra être prélevé en cas d'annulation tardive ou d'absence.
+
             .cp-footer
                 svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                     path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
@@ -1318,7 +1330,7 @@ block scripts
                 radios.forEach(function (r) {
                     r.addEventListener('change', async function () {
                         // Update visual selection
-                        document.querySelectorAll('.cancel-policy-opt').forEach(function(opt) {
+                        document.querySelectorAll('.cp-card').forEach(function(opt) {
                             opt.classList.toggle('is-selected', opt.querySelector('input').checked);
                         });
                         try {

@@ -1,16 +1,36 @@
 -
-  var _year    = new Date().getFullYear()
-  var _dateStr = date ? new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : ''
+  var _year = new Date().getFullYear()
+  var _clientName = name + (surname ? ' ' + surname : '')
+  var _hasService  = !!(serviceName && serviceName.length > 0)
+  var _hasCategory = !!(serviceCategory && serviceCategory.length > 0)
+  var _hasEmployee = !!(employeeName && employeeName.length > 0)
+  var _hasPrice    = (servicePrice !== null && servicePrice !== undefined)
+  var _hasLocation = !!(locationText && locationText.length > 0)
+  var _hasAnswers  = !!(formAnswers && formAnswers.length > 0)
+  var _hasMessage  = !!(message && message.length > 0)
+  var _payLabels   = { carte: 'Carte bancaire', especes: 'Espèces', qr_code: 'QR code', virement: 'Virement' }
+  var _hasPayment  = !!((paymentMethods && paymentMethods.length > 0) || (paymentNote && paymentNote.length > 0))
 
-div(style="margin:0;padding:0;background-color:#f4f7f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;")
-  table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0;padding:0;background-color:#f4f7f5;")
+div(style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;")
+  style.
+    @media (max-width: 600px) {
+      .email-card-header { padding: 28px 20px !important; }
+      .email-card-body { padding: 24px 20px 0 !important; }
+      .email-row td { display: block !important; width: 100% !important; }
+      .email-label { padding-bottom: 2px !important; }
+      .email-datetime td { display: block !important; width: 100% !important; text-align: left !important; }
+      .email-datetime td:last-child { margin-top: 12px; text-align: left !important; }
+      .email-recap-row td { display: block !important; width: 100% !important; }
+      .email-recap-row td:last-child { text-align: left !important; padding-top: 2px !important; }
+    }
+  table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0;padding:0;background-color:#f0f4f8;")
     tr
       td(align="center" style="padding:40px 16px;")
         table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;margin:0 auto;")
 
-          //- ── Logo bar ───────────────────────────────────────────────────────
+          //- ── Logo ─────────────────────────────────────────────────────────
           tr
-            td(align="center" style="padding:0 0 20px;")
+            td(align="center" style="padding:0 0 24px;")
               a(href="https://www.branshee.com" style="display:inline-block;text-decoration:none;")
                 table(cellpadding="0" cellspacing="0" role="presentation" style="display:inline-table;")
                   tr
@@ -19,95 +39,140 @@ div(style="margin:0;padding:0;background-color:#f4f7f5;font-family:-apple-system
                     td(valign="middle")
                       span(style="font-size:15px;font-weight:700;color:#1e2923;letter-spacing:-0.2px;") BranShee
 
-          //- ── Card ───────────────────────────────────────────────────────────
+          //- ── Carte principale ─────────────────────────────────────────────
           tr
-            td(style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);border:1px solid #e5ede8;")
+            td(style="background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);border:1px solid #e2e8f0;")
 
-              //- Header
+              //- Header vert
               table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
                 tr
-                  td(style="background:linear-gradient(135deg,#1a7a4a 0%,#15623c 100%);padding:36px 40px;text-align:center;")
+                  td.email-card-header(style="background:linear-gradient(135deg,#1a7a4a 0%,#15803d 100%);padding:36px 40px;text-align:center;")
                     table(cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto 16px;")
                       tr
-                        td(style="width:52px;height:52px;background:rgba(255,255,255,0.15);border-radius:50%;text-align:center;vertical-align:middle;")
-                          span(style="font-size:24px;line-height:52px;") ⏰
-                    p(style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;") Rappel de rendez-vous
-                    p(style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.75);") Votre rendez-vous a lieu #{delayLabel || 'demain'}.
+                        td(style="width:56px;height:56px;background:rgba(255,255,255,0.15);border-radius:50%;text-align:center;vertical-align:middle;")
+                          span(style="font-size:24px;line-height:56px;") ⏰
+                    p(style="margin:0 0 6px;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;") Rappel de rendez-vous
+                    p(style="margin:0;font-size:14px;color:rgba(255,255,255,0.8);") Votre rendez-vous a lieu #{delayLabel || 'demain'}
 
-              //- Greeting
+              //- Corps
               table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
                 tr
-                  td(style="padding:28px 40px 0;")
-                    p(style="margin:0;font-size:15px;color:#374151;line-height:1.6;")
+                  td.email-card-body(style="padding:32px 40px 0;")
+
+                    //- Salutation
+                    p(style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;")
                       | Bonjour&nbsp;
-                      strong(style="color:#1e2923;")= name
-                      | , voici votre récapitulatif&nbsp;:
+                      strong(style="color:#1e2923;")= _clientName
+                      | , petit rappel pour votre prochain rendez-vous&nbsp;:
 
-              //- Detail card
-              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
-                tr
-                  td(style="padding:20px 40px 32px;")
-                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f8faf9;border:1px solid #e0ebe5;border-radius:12px;")
+                    //- ── Bloc date/heure (mis en avant) ──────────────────────
+                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f0fdf4;border-radius:12px;border:1px solid #bbf7d0;margin-bottom:24px;")
                       tr
-                        td(style="padding:24px 28px;")
-
-                          //- Date / time
-                          table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:18px;")
+                        td(style="padding:20px 24px;")
+                          table.email-datetime(width="100%" cellpadding="0" cellspacing="0" role="presentation")
                             tr
-                              td(width="36" valign="top" style="padding-top:1px;")
-                                span(style="font-size:20px;") 📅
-                              td(style="padding-left:12px;")
-                                p(style="margin:0;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;") Date & heure
-                                p(style="margin:4px 0 0;font-size:14px;color:#1e2923;font-weight:500;text-transform:capitalize;")= _dateStr
-                                p(style="margin:3px 0 0;font-size:13px;color:#9ca3af;") #{startHour} — #{endHour}
+                              td(width="50%" style="vertical-align:top;")
+                                p(style="margin:0 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#16a34a;") Date
+                                p(style="margin:0;font-size:16px;font-weight:700;color:#14532d;text-transform:capitalize;") #{formattedDate}
+                              td(width="50%" style="vertical-align:top;text-align:right;")
+                                p(style="margin:0 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#16a34a;") Heure
+                                p(style="margin:0;font-size:16px;font-weight:700;color:#14532d;")
+                                  | #{startHour} — #{endHour}
+                                  span(style="display:block;margin-top:2px;font-size:12px;font-weight:600;color:#16a34a;") (#{slotTime} min)
 
-                          //- Service / durée
-                          table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:18px;")
-                            tr
-                              td(width="36" valign="top" style="padding-top:1px;")
-                                span(style="font-size:20px;") 📋
-                              td(style="padding-left:12px;")
-                                p(style="margin:0;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;") Prestation
-                                if serviceName
-                                  p(style="margin:4px 0 0;font-size:14px;color:#1e2923;font-weight:500;")= serviceName
-                                p(style="margin:3px 0 0;font-size:13px;color:#9ca3af;") Durée : #{slotTime} min
+                    //- ── Détails de la réservation ───────────────────────────
+                    if _hasService || _hasEmployee || _hasPrice || _hasLocation
+                      p(style="margin:0 0 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;") Détails de la réservation
 
-                          //- Message
-                          if message && message.length > 0
-                            table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
-                              tr
-                                td(width="36" valign="top" style="padding-top:1px;")
-                                  span(style="font-size:20px;") 💬
-                                td(style="padding-left:12px;")
-                                  p(style="margin:0;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;") Message
-                                  p(style="margin:4px 0 0;font-size:14px;color:#1e2923;font-style:italic;") "#{message}"
+                      table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:24px;")
+                        if _hasService
+                          tr
+                            td(style="padding:13px 18px;" + (_hasEmployee || _hasPrice || _hasLocation ? "border-bottom:1px solid #f1f5f9;" : ""))
+                              table.email-recap-row(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                                tr
+                                  td.email-label(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Prestation
+                                  td(style="font-size:14px;font-weight:600;color:#1e293b;text-align:right;")
+                                    = serviceName
+                                    if _hasCategory
+                                      span(style="display:inline-block;margin-left:8px;padding:2px 9px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:999px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;vertical-align:middle;") #{serviceCategory}
+                        if _hasEmployee
+                          tr
+                            td(style="padding:13px 18px;" + (_hasPrice || _hasLocation ? "border-bottom:1px solid #f1f5f9;" : ""))
+                              table.email-recap-row(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                                tr
+                                  td.email-label(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Avec
+                                  td(style="font-size:14px;font-weight:600;color:#1e293b;text-align:right;") #{employeeName}
+                        if _hasLocation
+                          tr
+                            td(style="padding:13px 18px;" + (_hasPrice ? "border-bottom:1px solid #f1f5f9;" : ""))
+                              table.email-recap-row(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                                tr
+                                  td.email-label(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Lieu
+                                  td(style="font-size:14px;font-weight:600;color:#1e293b;text-align:right;") #{locationText}
+                        if _hasPrice
+                          tr
+                            td(style="padding:13px 18px;background:#f8faf9;")
+                              table.email-recap-row(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                                tr
+                                  td.email-label(width="30%" style="font-size:12px;font-weight:700;color:#1e2923;") Total
+                                  td(style="font-size:16px;font-weight:800;color:#1a7a4a;text-align:right;") #{servicePrice}€
 
-              //- Message personnalisé du professionnel
-              if ownerMessage && ownerMessage.length > 0
-                table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
-                  tr
-                    td(style="padding:0 40px 8px;")
-                      table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;")
+                    //- ── Réponses au formulaire ──────────────────────────────
+                    if _hasAnswers
+                      p(style="margin:0 0 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;") Vos informations
+
+                      table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:24px;")
+                        each item, idx in formAnswers
+                          tr
+                            td(style="padding:13px 18px;" + (idx < formAnswers.length - 1 ? "border-bottom:1px solid #f1f5f9;" : ""))
+                              p(style="margin:0 0 4px;font-size:12px;font-weight:600;color:#94a3b8;")= item.question || item.label || 'Réponse'
+                              p(style="margin:0;font-size:14px;color:#1e293b;font-weight:500;")= String(item.answer != null && item.answer !== '' ? item.answer : '—')
+
+                    //- ── Message du client ───────────────────────────────────
+                    if _hasMessage
+                      table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:24px;")
                         tr
-                          td(style="padding:16px 20px;")
-                            p(style="margin:0 0 6px;font-size:12px;font-weight:600;color:#15803d;text-transform:uppercase;letter-spacing:0.4px;") Message de votre prestataire
-                            p(style="margin:0;font-size:14px;color:#1e2923;line-height:1.6;font-style:italic;")= ownerMessage
+                          td(style="padding:14px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;")
+                            p(style="margin:0 0 4px;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;") Votre message
+                            p(style="margin:0;font-size:14px;color:#475569;line-height:1.5;font-style:italic;") "#{message}"
 
-              //- Cancel button
-              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
-                tr
-                  td(style="padding:0 40px 36px;text-align:center;")
-                    p(style="margin:0 0 16px;font-size:13px;color:#9ca3af;") Vous ne pouvez plus venir ? Annulez dès maintenant.
-                    a(
-                      href=`${baseUrl}/cancel-booking/${bookingId}?token=${cancelToken}`
-                      style="display:inline-block;background:#f3f4f6;color:#374151;padding:11px 26px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;border:1px solid #d1d5db;"
-                    ) Annuler le rendez-vous
+                    //- ── Modalités de paiement ───────────────────────────────
+                    if _hasPayment
+                      table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:24px;")
+                        tr
+                          td(style="padding:16px 20px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;")
+                            p(style="margin:0 0 8px;font-size:12px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:0.05em;") Modalités de paiement
+                            if paymentMethods && paymentMethods.length > 0
+                              table(cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 6px;")
+                                tr
+                                  each pm in paymentMethods
+                                    td(style="padding:0 8px 0 0;")
+                                      span(style="display:inline-block;padding:4px 11px;background:#ffffff;color:#16a34a;border:1px solid #bbf7d0;border-radius:999px;font-size:12px;font-weight:600;") #{_payLabels[pm] || pm}
+                            if paymentNote && paymentNote.length > 0
+                              p(style="margin:0;font-size:13px;color:#1e2923;line-height:1.5;")= paymentNote
 
-              //- Footer
-              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
-                tr
-                  td(style="padding:20px 40px;background:#f8faf9;border-top:1px solid #e8efeb;text-align:center;")
-                    p(style="margin:0;font-size:13px;color:#9ca3af;") Nous avons hâte de vous retrouver !
-                    p(style="margin:8px 0 0;font-size:11px;color:#d1d5db;") © #{_year} BranShee. Tous droits réservés.
-                    p(style="margin:6px 0 0;font-size:11px;")
-                      a(href="https://www.branshee.com" style="color:#b8ccbe;text-decoration:none;") www.branshee.com
+                    //- ── Message personnalisé du professionnel ───────────────
+                    if ownerMessage && ownerMessage.length > 0
+                      table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:24px;")
+                        tr
+                          td(style="padding:14px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;")
+                            p(style="margin:0 0 4px;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;") Message de votre prestataire
+                            p(style="margin:0;font-size:14px;color:#475569;line-height:1.5;")= ownerMessage
+
+                    //- ── CTA annulation ──────────────────────────────────────
+                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:32px;")
+                      tr
+                        td(align="center" style="padding-top:4px;")
+                          p(style="margin:0 0 14px;font-size:13px;color:#9ca3af;") Vous ne pouvez plus venir ?
+                          a(
+                            href=`${baseUrl}/cancel-booking/${bookingId}?token=${cancelToken}`
+                            style="display:inline-block;background:#f3f4f6;color:#374151;padding:12px 28px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;border:1px solid #d1d5db;"
+                          ) Annuler le rendez-vous
+
+          //- ── Footer ───────────────────────────────────────────────────────
+          tr
+            td(style="padding:24px 0 0;text-align:center;")
+              p(style="margin:0 0 6px;font-size:12px;color:#94a3b8;") À très vite — L'équipe BranShee
+              p(style="margin:0;font-size:12px;color:#94a3b8;")
+                a(href="https://www.branshee.com" style="color:#94a3b8;text-decoration:underline;") branshee.com
+              p(style="margin:8px 0 0;font-size:11px;color:#cbd5e1;") © #{_year} BranShee. Tous droits réservés.

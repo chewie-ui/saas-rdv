@@ -157,7 +157,8 @@
 
 .badge--category,
 .badge--price,
-.badge--duration {
+.badge--duration,
+.badge--group {
   display: inline-flex;
   align-items: center;
   font-size: 11px;
@@ -186,6 +187,53 @@
   background: #eff6ff;
   color: #2563eb;
   border: 1px solid #bfdbfe;
+}
+
+.badge--group {
+  background: #fdf4ff;
+  color: #a21caf;
+  border: 1px solid #f5d0fe;
+}
+
+/* ── Type de service (individuel / collectif) ──────────────────────────── */
+.svc-type-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.svc-type-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--surface);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.svc-type-option:hover {
+  border-color: var(--accent);
+}
+
+.svc-type-option.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.svc-type-option__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary, #111);
+}
+
+.svc-type-option__desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
 }
 
 /* ── Actions (toggle + edit + delete) en haut à droite ──────────────────── */

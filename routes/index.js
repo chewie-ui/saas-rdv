@@ -523,6 +523,7 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
     // PayPal
     paypal:       !!(company.acceptedPayments?.paypal?.enabled),
     paypalMe:     company.acceptedPayments?.paypal?.paypalMe || "",
+    cancellationRule: company.cancellationPolicy?.rule || "free",
   };
 
   // Detect whether the visitor is an authenticated admin user

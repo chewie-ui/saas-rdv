@@ -22,9 +22,24 @@ const companySchema = schema(
       default: 30,
     },
 
+    // Temps tampon (en minutes) à respecter avant ET après chaque RDV.
     bufferTime: {
       type: Number,
       default: 0,
+    },
+
+    // "fixed"    = créneaux générés sur la durée du service/slot (ex: 9h00, 9h30, 10h00...)
+    // "interval" = créneaux proposés toutes les `slotInterval` minutes,
+    //              indépendamment de la durée de la prestation (ex: 9h00, 9h10, 9h20...)
+    slotMode: {
+      type: String,
+      enum: ["fixed", "interval"],
+      default: "fixed",
+    },
+
+    slotInterval: {
+      type: Number,
+      default: 30,
     },
 
     schedule: [

@@ -33,13 +33,59 @@ block content
                         button.sm-btn.sm-btn--ghost.appointment-action(data-link=`/appointment/${client._id}/restore` data-method="PATCH" disabled=(grade === 'staff' || isPast))#restoreAppointment= t.book_detail.restore
 
                     -
-                        var hasCard = client.payment && client.payment.method === 'online' && client.payment.status === 'card_saved' && client.payment.stripePaymentMethodId
-                    if hasCard && isPast
-                        button.sm-btn.sm-btn--danger#chargeNoShowBtn(type="button" data-id=String(client._id) data-amount=(client.payment.amount || 0))
+                        var hasOnlinePayment = client.payment && client.payment.method === 'online'
+                        var canChargeNoShow = hasOnlinePayment && (client.payment.status === 'authorized' || client.payment.status === 'paid') && (client.payment.stripePaymentMethodId || client.payment.status === 'paid')
+                    if isPast && client.status === 'confirmed' && !client.noShow
+                        .noshow-wrap
+                            button.sm-btn.sm-btn--danger#noShowBtn(type="button")
+                                svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                    circle(cx="12" cy="12" r="10")
+                                    line(x1="12" y1="8" x2="12" y2="12")
+                                    line(x1="12" y1="16" x2="12.01" y2="16")
+                                span Client absent
+                            .noshow-choices#noShowChoices(style="display:none")
+                                p.noshow-choices__title Quelle est la raison de l'absence ?
+                                button.sm-btn.sm-btn--soft#noShowValid(type="button" data-reason="valid")
+                                    span Raison valable (gratuit)
+                                if canChargeNoShow
+                                    button.sm-btn.sm-btn--danger#noShowInvalid(type="button" data-reason="invalid" data-amount=(client.payment.amount || 0))
+                                        span Raison non valable (encaisser #{client.payment.amount}€)
+                                else
+                                    button.sm-btn.sm-btn--danger#noShowInvalid(type="button" data-reason="invalid")
+                                        span Raison non valable
+                                button.sm-btn.sm-btn--ghost#noShowCancel(type="button") Annuler
+                    if client.noShow
+                        .noshow-badge(class=client.noShowReason === 'invalid' ? 'noshow-badge--charged' : 'noshow-badge--free')
                             svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                rect(x="1" y="4" width="22" height="16" rx="2")
-                                line(x1="1" y1="10" x2="23" y2="10")
-                            span Encaisser absence (#{client.payment.amount}€)
+                                circle(cx="12" cy="12" r="10")
+                                line(x1="12" y1="8" x2="12" y2="12")
+                                line(x1="12" y1="16" x2="12.01" y2="16")
+                            span= client.noShowReason === 'invalid' ? 'Client absent — frais prélevés' : 'Client absent — sans frais'
+
+                    //- ── Revue des frais d'annulation prélevés automatiquement (< 24h/12h) ──
+                    if client.status === 'canceled' && client.payment && client.payment.status === 'penalty' && !client.payment.cancellationReviewDecision
+                        - var penaltyAmt = client.payment.penaltyAmount || client.payment.amount
+                        .noshow-wrap
+                            button.sm-btn.sm-btn--danger#cancelReviewBtn(type="button")
+                                svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                    circle(cx="12" cy="12" r="10")
+                                    line(x1="12" y1="8" x2="12" y2="12")
+                                    line(x1="12" y1="16" x2="12.01" y2="16")
+                                span Frais d'annulation prélevés (#{penaltyAmt}€)
+                            .noshow-choices#cancelReviewChoices(style="display:none")
+                                p.noshow-choices__title Le client a annulé tardivement, #{penaltyAmt}€ ont été prélevés automatiquement. Raison valable ?
+                                button.sm-btn.sm-btn--soft#cancelReviewRefund(type="button")
+                                    span Raison valable (rembourser le client)
+                                button.sm-btn.sm-btn--danger#cancelReviewKeep(type="button")
+                                    span Raison non valable (garder les frais)
+                                button.sm-btn.sm-btn--ghost#cancelReviewCancel(type="button") Annuler
+                    if client.payment && client.payment.cancellationReviewDecision
+                        .noshow-badge(class=client.payment.cancellationReviewDecision === 'refunded' ? 'noshow-badge--free' : 'noshow-badge--charged')
+                            svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                circle(cx="12" cy="12" r="10")
+                                line(x1="12" y1="8" x2="12" y2="12")
+                                line(x1="12" y1="16" x2="12.01" y2="16")
+                            span= client.payment.cancellationReviewDecision === 'refunded' ? 'Annulation tardive — frais remboursés' : 'Annulation tardive — frais conservés'
 
             .appointment-header__bottom.flex.col
                 .appointment-header__bottom-col.flex.col
@@ -200,31 +246,111 @@ block scripts
                 });
             }
 
-            // ── Charge no-show ────────────────────────────────────────────────
-            const noShowBtn = document.getElementById('chargeNoShowBtn');
-            if (noShowBtn) {
-                noShowBtn.addEventListener('click', async () => {
-                    const amount = noShowBtn.dataset.amount;
-                    if (!confirm(`Encaisser ${amount}€ pour absence non annulée ?`)) return;
-                    noShowBtn.disabled = true;
-                    noShowBtn.querySelector('span').textContent = 'Traitement…';
-                    try {
-                        const res  = await fetch(`/appointment/${bookId}/charge-noshow`, { method: 'PATCH' });
-                        const data = await res.json();
-                        if (data.success) {
-                            noShowBtn.querySelector('span').textContent = `✓ ${data.chargedAmount}€ encaissés`;
-                            noShowBtn.style.background = 'rgba(34,197,94,.12)';
-                            noShowBtn.style.color = '#16a34a';
-                            noShowBtn.style.borderColor = 'rgba(34,197,94,.3)';
-                        } else {
-                            alert(data.error || 'Erreur lors du prélèvement.');
-                            noShowBtn.disabled = false;
-                            noShowBtn.querySelector('span').textContent = `Encaisser absence (${amount}€)`;
-                        }
-                    } catch(e) {
-                        alert('Erreur réseau.');
-                        noShowBtn.disabled = false;
-                    }
+            // ── Marquer une absence (no-show) ───────────────────────────────────
+            const noShowBtn     = document.getElementById('noShowBtn');
+            const noShowChoices = document.getElementById('noShowChoices');
+            const noShowCancel  = document.getElementById('noShowCancel');
+            const noShowValid   = document.getElementById('noShowValid');
+            const noShowInvalid = document.getElementById('noShowInvalid');
+
+            if (noShowBtn && noShowChoices) {
+                noShowBtn.addEventListener('click', () => {
+                    noShowBtn.style.display = 'none';
+                    noShowChoices.style.display = 'flex';
                 });
             }
+            if (noShowCancel) {
+                noShowCancel.addEventListener('click', () => {
+                    noShowChoices.style.display = 'none';
+                    noShowBtn.style.display = '';
+                });
+            }
+
+            async function submitNoShow(reason, btn) {
+                const amount = btn.dataset.amount;
+                if (reason === 'invalid' && amount) {
+                    if (!confirm(`Encaisser ${amount}€ pour absence sans raison valable ?`)) return;
+                } else if (reason === 'invalid') {
+                    if (!confirm('Marquer cette absence comme non valable ?')) return;
+                }
+
+                noShowChoices.querySelectorAll('button').forEach(b => b.disabled = true);
+                btn.querySelector('span').textContent = 'Traitement…';
+
+                try {
+                    const res  = await fetch(`/appointment/${bookId}/no-show`, {
+                        method:  'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body:    JSON.stringify({ reason })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.error || 'Erreur lors du traitement.');
+                        noShowChoices.querySelectorAll('button').forEach(b => b.disabled = false);
+                        btn.querySelector('span').textContent = reason === 'invalid'
+                            ? (amount ? `Raison non valable (encaisser ${amount}€)` : 'Raison non valable')
+                            : 'Raison valable (gratuit)';
+                    }
+                } catch (e) {
+                    alert('Erreur réseau.');
+                    noShowChoices.querySelectorAll('button').forEach(b => b.disabled = false);
+                }
+            }
+
+            if (noShowValid)   noShowValid.addEventListener('click',   () => submitNoShow('valid',   noShowValid));
+            if (noShowInvalid) noShowInvalid.addEventListener('click', () => submitNoShow('invalid', noShowInvalid));
+
+            // ── Revue des frais d'annulation prélevés automatiquement ───────────
+            const cancelReviewBtn     = document.getElementById('cancelReviewBtn');
+            const cancelReviewChoices = document.getElementById('cancelReviewChoices');
+            const cancelReviewCancel  = document.getElementById('cancelReviewCancel');
+            const cancelReviewRefund  = document.getElementById('cancelReviewRefund');
+            const cancelReviewKeep    = document.getElementById('cancelReviewKeep');
+
+            if (cancelReviewBtn && cancelReviewChoices) {
+                cancelReviewBtn.addEventListener('click', () => {
+                    cancelReviewBtn.style.display = 'none';
+                    cancelReviewChoices.style.display = 'flex';
+                });
+            }
+            if (cancelReviewCancel) {
+                cancelReviewCancel.addEventListener('click', () => {
+                    cancelReviewChoices.style.display = 'none';
+                    cancelReviewBtn.style.display = '';
+                });
+            }
+
+            async function submitCancelReview(decision, btn) {
+                if (decision === 'refunded' && !confirm('Rembourser les frais d\'annulation au client ?')) return;
+                if (decision === 'kept' && !confirm('Confirmer que l\'établissement conserve les frais d\'annulation ?')) return;
+
+                cancelReviewChoices.querySelectorAll('button').forEach(b => b.disabled = true);
+                btn.querySelector('span').textContent = 'Traitement…';
+
+                try {
+                    const res  = await fetch(`/appointment/${bookId}/review-cancellation`, {
+                        method:  'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body:    JSON.stringify({ decision })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.error || 'Erreur lors du traitement.');
+                        cancelReviewChoices.querySelectorAll('button').forEach(b => b.disabled = false);
+                        btn.querySelector('span').textContent = decision === 'refunded'
+                            ? 'Raison valable (rembourser le client)'
+                            : 'Raison non valable (garder les frais)';
+                    }
+                } catch (e) {
+                    alert('Erreur réseau.');
+                    cancelReviewChoices.querySelectorAll('button').forEach(b => b.disabled = false);
+                }
+            }
+
+            if (cancelReviewRefund) cancelReviewRefund.addEventListener('click', () => submitCancelReview('refunded', cancelReviewRefund));
+            if (cancelReviewKeep)   cancelReviewKeep.addEventListener('click',   () => submitCancelReview('kept',     cancelReviewKeep));
         })();

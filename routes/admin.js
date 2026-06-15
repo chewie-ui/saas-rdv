@@ -8,7 +8,6 @@ const {
   toggleDay,
   editAvailabilty,
   editSlotTime,
-  book,
   deleteBooking,
   cancelBooking,
   getWeekData,
@@ -28,12 +27,13 @@ const {
 } = require("../controllers/admin.controller");
 
 const adminController = require("../controllers/admin.controller");
+const { listGroupSessions, getSessionParticipants } = require("../controllers/groupSession.controller");
 
 const isAuth = require("../middlewares/isAuth");
 const injectCompany = require("../middlewares/injectCompany");
-const { requireFeatureActive } = require("../middlewares/featureFlag");
+const { requireFeatureActive, requireAdminFeature } = require("../middlewares/featureFlag");
 
-router.get("/appointement/:bookId", isAuth, injectCompany, renderAppointments, book);
+router.get("/appointement/:bookId", isAuth, (req, res) => res.redirect(`/history/edit/${req.params.bookId}`));
 
 const isVerified = [isAuth, injectCompany];
 
@@ -49,6 +49,8 @@ router.get("/panel", isAuth, injectCompany, requireFeatureActive("admin_panel"),
 router.get("/appointment", isAuth, injectCompany, requireFeatureActive("admin_panel"), appointment);
 router.post("/appointment/create", isAuth, injectCompany, requireFeatureActive("admin_panel"), adminController.createAdminBooking);
 router.get("/availability", isAuth, injectCompany, availability);
+router.get("/group-sessions", isAuth, injectCompany, requireAdminFeature("group_sessions"), listGroupSessions);
+router.get("/group-sessions/participants", isAuth, injectCompany, requireAdminFeature("group_sessions"), getSessionParticipants);
 router.get("/client", isAuth, injectCompany, client);
 router.get("/informations", (req, res) => res.redirect(301, "/settings"));
 router.get("/subscription", isAuth, injectCompany, requireFeatureActive("subscription"), async (req, res) => {

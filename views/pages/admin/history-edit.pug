@@ -3,9 +3,11 @@ extends ../../layouts/admin
 block links
     link(rel="stylesheet", href="/css/layouts/history.css")
     link(rel="stylesheet", href="/css/layouts/history-edit.css")
+    link(rel="stylesheet", href="/css/components/admin/book.admin.css")
 
 block content
     - var initials = ((results.name || '').charAt(0) + (results.surname || '').charAt(0)).toUpperCase()
+    - const isPast = new Date(results.date) < new Date(new Date().setHours(0,0,0,0))
 
     .page.page--history-edit
         //- Back button + Delete button
@@ -145,6 +147,122 @@ block content
                                             - var empLabel = emp.firstName + ' ' + emp.lastName
                                             option(value=empId selected=(currentEmpId === empId))= empLabel.length > 40 ? empLabel.slice(0, 40) + '…' : empLabel
 
+                //- Section: Paiement
+                -
+                    var payMethodLabels = {
+                        online: "En ligne (carte bancaire)",
+                        on_site: "Sur place",
+                        bank_transfer: "Virement bancaire",
+                        paypal: "PayPal",
+                        none: "Aucun paiement en ligne",
+                    }
+                    var payStatusLabels = {
+                        none: "—",
+                        authorized: "Carte enregistrée (0 € prélevé)",
+                        paid: "Payé intégralement",
+                        refunded: "Remboursé",
+                        partial: "Remboursement partiel",
+                        penalty: "Frais d'annulation/absence prélevés",
+                        failed: "Échec du prélèvement",
+                    }
+                    var payStatusClass = {
+                        none: "neutral",
+                        authorized: "info",
+                        paid: "success",
+                        refunded: "neutral",
+                        partial: "warning",
+                        penalty: "warning",
+                        failed: "danger",
+                    }
+                    var pay = results.payment || {}
+                    var payMethod = pay.method || "none"
+                    var payStatus = pay.status || "none"
+
+                .edit-section
+                    .edit-section__header
+                        .edit-section__icon
+                            svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
+                                path(d="M880-720v480q0 33-23.5 56.5T800-160H160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720ZM160-640h640v-80H160v80Zm0 160v240h640v-240H160Z")
+                        h3 Paiement
+                    .edit-section__body
+                        .pay-info-grid
+                            .pay-info-item
+                                span.pay-info-label Mode de paiement
+                                span.pay-info-value= payMethodLabels[payMethod] || payMethod
+                            if payMethod !== "none"
+                                .pay-info-item
+                                    span.pay-info-label Statut
+                                    span.pay-info-value
+                                        span.pay-status-badge(class="pay-status-badge--" + (payStatusClass[payStatus] || "neutral"))= payStatusLabels[payStatus] || payStatus
+                            if pay.amount
+                                .pay-info-item
+                                    span.pay-info-label Montant de la prestation
+                                    span.pay-info-value= pay.amount.toFixed(2).replace(".", ",") + " €"
+                            if pay.paidAt
+                                .pay-info-item
+                                    span.pay-info-label Date du prélèvement
+                                    span.pay-info-value= new Date(pay.paidAt).toLocaleString("fr-FR")
+
+                        if results.noShow
+                            .pay-noshow-row(class=results.noShowReason === "invalid" ? "pay-noshow-row--charged" : "pay-noshow-row--free")
+                                svg(width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                    circle(cx="12" cy="12" r="10")
+                                    line(x1="12" y1="8" x2="12" y2="12")
+                                    line(x1="12" y1="16" x2="12.01" y2="16")
+                                if results.noShowReason === "invalid"
+                                    span Client absent — raison non valable, frais prélevés
+                                else
+                                    span Client absent — raison valable, aucun frais
+
+                        //- ── Marquer une absence (no-show) ───────────────────────────
+                        -
+                            var hasOnlinePayment = pay && pay.method === 'online'
+                            var canChargeNoShow = hasOnlinePayment && (pay.status === 'authorized' || pay.status === 'paid') && (pay.stripePaymentMethodId || pay.status === 'paid')
+                        if isPast && results.status === 'confirmed' && !results.noShow
+                            .noshow-wrap
+                                button.sm-btn.sm-btn--danger#noShowBtn(type="button")
+                                    svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                        circle(cx="12" cy="12" r="10")
+                                        line(x1="12" y1="8" x2="12" y2="12")
+                                        line(x1="12" y1="16" x2="12.01" y2="16")
+                                    span Client absent
+                                .noshow-choices#noShowChoices(style="display:none")
+                                    p.noshow-choices__title Quelle est la raison de l'absence ?
+                                    button.sm-btn.sm-btn--soft#noShowValid(type="button" data-reason="valid")
+                                        span Raison valable (gratuit)
+                                    if canChargeNoShow
+                                        button.sm-btn.sm-btn--danger#noShowInvalid(type="button" data-reason="invalid" data-amount=(pay.amount || 0))
+                                            span Raison non valable (encaisser #{pay.amount}€)
+                                    else
+                                        button.sm-btn.sm-btn--danger#noShowInvalid(type="button" data-reason="invalid")
+                                            span Raison non valable
+                                    button.sm-btn.sm-btn--ghost#noShowCancel(type="button") Annuler
+
+                        //- ── Revue des frais d'annulation prélevés automatiquement ────
+                        if results.status === 'canceled' && pay && pay.status === 'penalty' && !pay.cancellationReviewDecision
+                            - var penaltyAmt = pay.penaltyAmount || pay.amount
+                            .noshow-wrap
+                                button.sm-btn.sm-btn--danger#cancelReviewBtn(type="button")
+                                    svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                        circle(cx="12" cy="12" r="10")
+                                        line(x1="12" y1="8" x2="12" y2="12")
+                                        line(x1="12" y1="16" x2="12.01" y2="16")
+                                    span Frais d'annulation prélevés (#{penaltyAmt}€)
+                                .noshow-choices#cancelReviewChoices(style="display:none")
+                                    p.noshow-choices__title Le client a annulé tardivement, #{penaltyAmt}€ ont été prélevés automatiquement. Raison valable ?
+                                    button.sm-btn.sm-btn--soft#cancelReviewRefund(type="button")
+                                        span Raison valable (rembourser le client)
+                                    button.sm-btn.sm-btn--danger#cancelReviewKeep(type="button")
+                                        span Raison non valable (garder les frais)
+                                    button.sm-btn.sm-btn--ghost#cancelReviewCancel(type="button") Annuler
+                        if pay && pay.cancellationReviewDecision
+                            .noshow-badge(class=pay.cancellationReviewDecision === 'refunded' ? 'noshow-badge--free' : 'noshow-badge--charged')
+                                svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                    circle(cx="12" cy="12" r="10")
+                                    line(x1="12" y1="8" x2="12" y2="12")
+                                    line(x1="12" y1="16" x2="12.01" y2="16")
+                                span= pay.cancellationReviewDecision === 'refunded' ? 'Annulation tardive — frais remboursés' : 'Annulation tardive — frais conservés'
+
                 //- Section: Client
                 .edit-section
                     .edit-section__header
@@ -234,6 +352,97 @@ block content
 block scripts
     script(src="/js/layouts/history.js" type="module")
     script.
+        // ── Popups génériques (confirm / alert) ────────────────────────────────
+        (function() {
+            function buildModal(opts) {
+                var existing = document.getElementById('__customModal');
+                if (existing) existing.remove();
+
+                var overlay = document.createElement('div');
+                overlay.id = '__customModal';
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+                var iconBg   = opts.danger ? '#fef2f2' : '#eff6ff';
+                var iconBorder = opts.danger ? '#fecaca' : '#bfdbfe';
+                var iconColor  = opts.danger ? '#dc2626' : '#2563eb';
+                var confirmBg  = opts.danger ? '#dc2626' : '#2563eb';
+                var confirmBgHover = opts.danger ? '#b91c1c' : '#1d4ed8';
+                var confirmShadow  = opts.danger ? 'rgba(220,38,38,.3)' : 'rgba(37,99,235,.3)';
+
+                var iconSvg = opts.alertOnly
+                    ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="' + iconColor + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+                    : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="' + iconColor + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+
+                overlay.innerHTML = '<style>' +
+                    '@keyframes __cmslidein{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}' +
+                    '#__customModal .cm{background:#fff;border-radius:20px;max-width:420px;width:100%;box-shadow:0 24px 48px -8px rgba(0,0,0,.22);display:flex;flex-direction:column;gap:0;overflow:hidden;animation:__cmslidein .18s cubic-bezier(.34,1.4,.64,1)}' +
+                    '#__customModal .cm__head{padding:24px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}' +
+                    '#__customModal .cm__icon-wrap{width:44px;height:44px;border-radius:50%;background:' + iconBg + ';border:1px solid ' + iconBorder + ';display:flex;align-items:center;justify-content:center;flex-shrink:0}' +
+                    '#__customModal .cm__close{background:none;border:none;cursor:pointer;color:#9ca3af;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;flex-shrink:0;padding:0}' +
+                    '#__customModal .cm__close:hover{background:#f3f4f6;color:#111}' +
+                    '#__customModal .cm__body{padding:16px 24px 0;display:flex;flex-direction:column;gap:6px}' +
+                    '#__customModal .cm__title{font-size:17px;font-weight:700;color:#111;margin:0}' +
+                    '#__customModal .cm__desc{font-size:13.5px;color:#6b7280;line-height:1.55;margin:0}' +
+                    '#__customModal .cm__actions{padding:20px 24px 24px;display:flex;gap:8px;justify-content:flex-end}' +
+                    '#__customModal .cm__cancel{display:inline-flex;align-items:center;justify-content:center;padding:9px 18px;border-radius:10px;font-size:13.5px;font-weight:600;background:#f3f4f6;border:1px solid #e5e7eb;color:#4b5563;cursor:pointer;font-family:inherit;transition:background .15s}' +
+                    '#__customModal .cm__cancel:hover{background:#e9eaec}' +
+                    '#__customModal .cm__confirm{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 20px;border-radius:10px;font-size:13.5px;font-weight:700;background:' + confirmBg + ';border:none;color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 1px 3px ' + confirmShadow + ';transition:background .15s}' +
+                    '#__customModal .cm__confirm:hover{background:' + confirmBgHover + '}' +
+                    '</style>' +
+                    '<div class="cm">' +
+                    '<div class="cm__head"><div class="cm__icon-wrap">' + iconSvg + '</div>' +
+                    '<button class="cm__close" aria-label="Fermer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>' +
+                    '<div class="cm__body"><p class="cm__title">' + opts.title + '</p><p class="cm__desc">' + opts.desc + '</p></div>' +
+                    '<div class="cm__actions">' +
+                    (opts.alertOnly ? '' : '<button class="cm__cancel">' + (opts.cancelLabel || 'Annuler') + '</button>') +
+                    '<button class="cm__confirm">' + opts.confirmLabel + '</button>' +
+                    '</div></div>';
+
+                return overlay;
+            }
+
+            window.__alertModal = function(desc, title) {
+                return new Promise(function(resolve) {
+                    var overlay = buildModal({
+                        title: title || 'Information',
+                        desc: desc,
+                        confirmLabel: 'OK',
+                        alertOnly: true,
+                    });
+                    function close() { overlay.remove(); resolve(); }
+                    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+                    overlay.querySelector('.cm__close').addEventListener('click', close);
+                    overlay.querySelector('.cm__confirm').addEventListener('click', close);
+                    document.body.appendChild(overlay);
+                    document.addEventListener('keydown', function onKey(e) {
+                        if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey); }
+                    });
+                });
+            };
+
+            window.__confirmModal = function(desc, opts) {
+                opts = opts || {};
+                return new Promise(function(resolve) {
+                    var overlay = buildModal({
+                        title: opts.title || 'Confirmer',
+                        desc: desc,
+                        confirmLabel: opts.confirmLabel || 'Confirmer',
+                        cancelLabel: opts.cancelLabel || 'Annuler',
+                        danger: opts.danger || false,
+                    });
+                    function close(result) { overlay.remove(); resolve(result); }
+                    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(false); });
+                    overlay.querySelector('.cm__close').addEventListener('click', function() { close(false); });
+                    overlay.querySelector('.cm__cancel').addEventListener('click', function() { close(false); });
+                    overlay.querySelector('.cm__confirm').addEventListener('click', function() { close(true); });
+                    document.body.appendChild(overlay);
+                    document.addEventListener('keydown', function onKey(e) {
+                        if (e.key === 'Escape') { close(false); document.removeEventListener('keydown', onKey); }
+                    });
+                });
+            };
+        })();
+    script.
         // ── Supprimer le rendez-vous ──────────────────────────────────────────
         (function() {
             var btn = document.getElementById('deleteHistoryBtn');
@@ -286,8 +495,8 @@ block scripts
                         var data = await res.json();
                         close();
                         if (data.success) { window.location.href = '/history'; }
-                        else alert(data.message || 'Erreur lors de la suppression.');
-                    } catch(e) { close(); alert('Erreur réseau.'); }
+                        else window.__alertModal(data.message || 'Erreur lors de la suppression.');
+                    } catch(e) { close(); window.__alertModal('Erreur réseau.'); }
                 });
 
                 document.body.appendChild(overlay);
@@ -299,3 +508,115 @@ block scripts
     script.
         window.__servicesData = !{JSON.stringify(services || [])};
         window.__bookingId    = '!{results._id}';
+    script.
+        (function() {
+            const bookId = '!{results._id}';
+
+            // ── Marquer une absence (no-show) ───────────────────────────────────
+            const noShowBtn     = document.getElementById('noShowBtn');
+            const noShowChoices = document.getElementById('noShowChoices');
+            const noShowCancel  = document.getElementById('noShowCancel');
+            const noShowValid   = document.getElementById('noShowValid');
+            const noShowInvalid = document.getElementById('noShowInvalid');
+
+            if (noShowBtn && noShowChoices) {
+                noShowBtn.addEventListener('click', () => {
+                    noShowBtn.style.display = 'none';
+                    noShowChoices.style.display = 'flex';
+                });
+            }
+            if (noShowCancel) {
+                noShowCancel.addEventListener('click', () => {
+                    noShowChoices.style.display = 'none';
+                    noShowBtn.style.display = '';
+                });
+            }
+
+            async function submitNoShow(reason, btn) {
+                const amount = btn.dataset.amount;
+                if (reason === 'invalid' && amount) {
+                    if (!(await window.__confirmModal(`Encaisser ${amount}€ pour absence sans raison valable ?`, { title: 'Confirmer le prélèvement', confirmLabel: 'Encaisser', danger: true }))) return;
+                } else if (reason === 'invalid') {
+                    if (!(await window.__confirmModal('Marquer cette absence comme non valable ?', { title: 'Confirmer', confirmLabel: 'Confirmer', danger: true }))) return;
+                }
+
+                noShowChoices.querySelectorAll('button').forEach(b => b.disabled = true);
+                btn.querySelector('span').textContent = 'Traitement…';
+
+                try {
+                    const res  = await fetch(`/appointment/${bookId}/no-show`, {
+                        method:  'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body:    JSON.stringify({ reason })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        await window.__alertModal(data.error || 'Erreur lors du traitement.', 'Erreur');
+                        noShowChoices.querySelectorAll('button').forEach(b => b.disabled = false);
+                        btn.querySelector('span').textContent = reason === 'invalid'
+                            ? (amount ? `Raison non valable (encaisser ${amount}€)` : 'Raison non valable')
+                            : 'Raison valable (gratuit)';
+                    }
+                } catch (e) {
+                    await window.__alertModal('Erreur réseau.', 'Erreur');
+                    noShowChoices.querySelectorAll('button').forEach(b => b.disabled = false);
+                }
+            }
+
+            if (noShowValid)   noShowValid.addEventListener('click',   () => submitNoShow('valid',   noShowValid));
+            if (noShowInvalid) noShowInvalid.addEventListener('click', () => submitNoShow('invalid', noShowInvalid));
+
+            // ── Revue des frais d'annulation prélevés automatiquement ───────────
+            const cancelReviewBtn     = document.getElementById('cancelReviewBtn');
+            const cancelReviewChoices = document.getElementById('cancelReviewChoices');
+            const cancelReviewCancel  = document.getElementById('cancelReviewCancel');
+            const cancelReviewRefund  = document.getElementById('cancelReviewRefund');
+            const cancelReviewKeep    = document.getElementById('cancelReviewKeep');
+
+            if (cancelReviewBtn && cancelReviewChoices) {
+                cancelReviewBtn.addEventListener('click', () => {
+                    cancelReviewBtn.style.display = 'none';
+                    cancelReviewChoices.style.display = 'flex';
+                });
+            }
+            if (cancelReviewCancel) {
+                cancelReviewCancel.addEventListener('click', () => {
+                    cancelReviewChoices.style.display = 'none';
+                    cancelReviewBtn.style.display = '';
+                });
+            }
+
+            async function submitCancelReview(decision, btn) {
+                if (decision === 'refunded' && !(await window.__confirmModal('Rembourser les frais d\'annulation au client ?', { title: 'Confirmer le remboursement', confirmLabel: 'Rembourser' }))) return;
+                if (decision === 'kept' && !(await window.__confirmModal('Confirmer que l\'établissement conserve les frais d\'annulation ?', { title: 'Confirmer', confirmLabel: 'Confirmer', danger: true }))) return;
+
+                cancelReviewChoices.querySelectorAll('button').forEach(b => b.disabled = true);
+                btn.querySelector('span').textContent = 'Traitement…';
+
+                try {
+                    const res  = await fetch(`/appointment/${bookId}/review-cancellation`, {
+                        method:  'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body:    JSON.stringify({ decision })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        await window.__alertModal(data.error || 'Erreur lors du traitement.', 'Erreur');
+                        cancelReviewChoices.querySelectorAll('button').forEach(b => b.disabled = false);
+                        btn.querySelector('span').textContent = decision === 'refunded'
+                            ? 'Raison valable (rembourser le client)'
+                            : 'Raison non valable (garder les frais)';
+                    }
+                } catch (e) {
+                    await window.__alertModal('Erreur réseau.', 'Erreur');
+                    cancelReviewChoices.querySelectorAll('button').forEach(b => b.disabled = false);
+                }
+            }
+
+            if (cancelReviewRefund) cancelReviewRefund.addEventListener('click', () => submitCancelReview('refunded', cancelReviewRefund));
+            if (cancelReviewKeep)   cancelReviewKeep.addEventListener('click',   () => submitCancelReview('kept',     cancelReviewKeep));
+        })();

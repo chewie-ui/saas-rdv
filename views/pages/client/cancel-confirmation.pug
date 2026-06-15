@@ -56,6 +56,31 @@ html(lang="fr")
                         else
                             span Remboursement de #{chargeResult.amount} € initié (#{chargeResult.pct}% remboursé).
 
+                if chargeResult && chargeResult.charged
+                    .cancel-refund(style="background:#fef2f2; border-color:#fecaca; color:#b91c1c;")
+                        svg(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke:#b91c1c;")
+                            circle(cx="12" cy="12" r="10")
+                            line(x1="12" y1="8" x2="12" y2="12")
+                            line(x1="12" y1="16" x2="12.01" y2="16")
+                        if chargeResult.pct === 100
+                            span Des frais d'annulation de #{chargeResult.amount} € (100%) ont été prélevés sur votre carte.
+                        else
+                            span Des frais d'annulation de #{chargeResult.amount} € (#{chargeResult.pct}%) ont été prélevés sur votre carte.
+
+                if chargeResult && chargeResult.charged === false && chargeResult.error
+                    .cancel-refund(style="background:#fef2f2; border-color:#fecaca; color:#b91c1c;")
+                        svg(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke:#b91c1c;")
+                            circle(cx="12" cy="12" r="10")
+                            line(x1="12" y1="8" x2="12" y2="12")
+                            line(x1="12" y1="16" x2="12.01" y2="16")
+                        span Le prélèvement des frais d'annulation a échoué. L'établissement pourra vous contacter.
+
+                if chargeResult && chargeResult.charged === false && !chargeResult.error
+                    .cancel-refund
+                        svg(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                            polyline(points="20 6 9 17 4 12")
+                        span Aucun frais ne vous sera prélevé.
+
                 if _bizSlug
                     a.cancel-back(href=`/${_bizSlug}`) ← Reprendre un rendez-vous
                 else

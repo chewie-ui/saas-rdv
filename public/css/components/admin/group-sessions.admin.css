@@ -1,0 +1,161 @@
+/* ============================================================
+   Cours collectifs (group sessions)
+   ============================================================ */
+
+.gs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 48px;
+}
+
+.gs-page__header h2 {
+  margin: 0;
+}
+
+.gs-page__subtitle {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+/* ── Empty state ───────────────────────────────────────────── */
+.gs-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--text-muted);
+  background: var(--color-white);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+}
+
+.gs-empty svg {
+  opacity: 0.4;
+  margin-bottom: 4px;
+}
+
+.gs-empty p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #111);
+}
+
+.gs-empty__hint {
+  font-weight: 400 !important;
+  font-size: 12.5px !important;
+  color: var(--text-muted) !important;
+}
+
+/* ── Table ─────────────────────────────────────────────────── */
+.gs-table {
+  background: var(--color-white);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.gs-table__head,
+.gs-row {
+  display: grid;
+  grid-template-columns: 2fr 1.3fr 0.9fr 1.1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+}
+
+.gs-table__head {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-light);
+  background: var(--surface-subtle, #fafafa);
+}
+
+.gs-row {
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13.5px;
+}
+
+.gs-row:last-child {
+  border-bottom: none;
+}
+
+.gs-row__service {
+  font-weight: 700;
+  color: var(--text-primary, #111);
+}
+
+.gs-row__date {
+  text-transform: capitalize;
+  color: var(--text-muted);
+}
+
+.gs-row__time {
+  font-weight: 600;
+}
+
+.gs-row__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  width: fit-content;
+}
+
+.gs-row__count--full {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.gs-row__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: var(--surface, #f3f4f6);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary, #374151);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, background 0.12s;
+  white-space: nowrap;
+}
+
+.gs-row__btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+@media (max-width: 720px) {
+  .gs-table__head {
+    display: none;
+  }
+
+  .gs-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 14px 16px;
+  }
+
+  .gs-row__btn {
+    margin-top: 8px;
+    width: 100%;
+  }
+}

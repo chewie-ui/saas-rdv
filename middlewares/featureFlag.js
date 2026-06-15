@@ -69,4 +69,50 @@ async function isFeatureEnabled(key) {
   }
 }
 
-module.exports = { FEATURES, getFlagsMap, invalidateFeatureFlagCache, requireFeatureActive, isFeatureEnabled };
+// Fonctionnalités de l'espace admin que le superadmin peut activer/désactiver
+// pour tester (cachées du sidebar et de leurs pages quand désactivées).
+// Activées par défaut tant qu'aucun document "disabled" n'existe en base.
+const ADMIN_FEATURES = [
+  { key: "group_sessions", label: "Cours collectifs (rendez-vous de groupe)" },
+  { key: "buffer_time",    label: "Temps tampon entre les réservations" },
+];
+
+async function isAdminFeatureEnabled(key) {
+  try {
+    const map = await getFlagsMap();
+    return map[key]?.status !== "disabled";
+  } catch (_) {
+    return true;
+  }
+}
+
+async function getAdminFeaturesFlags() {
+  const map = await getFlagsMap();
+  const flags = {};
+  ADMIN_FEATURES.forEach((f) => {
+    flags[f.key] = map[f.key]?.status !== "disabled";
+  });
+  return flags;
+}
+
+// Middleware : redirige vers /panel si la fonctionnalité admin "key" a été
+// désactivée par le superadmin (ex: Cours collectifs).
+function requireAdminFeature(key) {
+  return async (req, res, next) => {
+    const enabled = await isAdminFeatureEnabled(key);
+    if (!enabled) return res.redirect("/panel");
+    next();
+  };
+}
+
+module.exports = {
+  FEATURES,
+  ADMIN_FEATURES,
+  getFlagsMap,
+  invalidateFeatureFlagCache,
+  requireFeatureActive,
+  isFeatureEnabled,
+  isAdminFeatureEnabled,
+  getAdminFeaturesFlags,
+  requireAdminFeature,
+};

@@ -8,7 +8,9 @@ const {
   getBookingC,
   cancelBooking,
   createBookingPaymentIntent,
-  chargeNoShow,
+  createBookingSetupIntent,
+  markNoShow,
+  reviewCancellationPenalty,
 } = require("../controllers/booking.controller");
 const Form = require("../db/models/form.model");
 
@@ -23,7 +25,9 @@ router.get("/cancel-booking/:userId", cancelBooking);
 
 // ── Paiement réservation ──────────────────────────────────────────────────────
 router.post("/api/booking/payment-intent", createBookingPaymentIntent);
-router.patch("/appointment/:id/charge-noshow", chargeNoShow);
+router.post("/api/booking/setup-intent", createBookingSetupIntent);
+router.patch("/appointment/:id/no-show", markNoShow);
+router.patch("/appointment/:id/review-cancellation", reviewCancellationPenalty);
 
 router.get("/get-form/:companyId", async (req, res) => {
   try {

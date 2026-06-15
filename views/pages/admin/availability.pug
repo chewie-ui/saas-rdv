@@ -194,21 +194,35 @@ block content
                             span Fonctionnalité Pro
                             a.btn-upgrade-pro(href="/subscription") Passer au Pro
 
-                //- Buffer between bookings — coming soon
-                .avail-card.avail-card--coming-soon
+                //- Buffer between bookings
+                if !adminFeatures || adminFeatures.buffer_time !== false
+                    .avail-card
+                        .avail-card__hd
+                            span.avail-card__title= t.avail.buffer_title || 'Temps tampon entre les réservations'
+                        p.avail-card__sub Bloque automatiquement ce temps avant et après chaque RDV pour vous laisser le temps de vous préparer.
+                        .avail-buffer
+                            input.avail-buffer__range#bufferRange(type="range" min="0" max="120" step="5" value=(bufferTime || 0))
+                            .avail-buffer__row
+                                span 0
+                                span.avail-buffer__val#bufferVal #{bufferTime || 0} min
+                                span 120
+
+                //- Mode de génération des créneaux
+                .avail-card
                     .avail-card__hd
-                        span.avail-card__title= t.avail.buffer_title || 'Temps tampon entre les réservations'
-                        span.avail-coming-badge
-                            svg(viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
-                                circle(cx="12" cy="12" r="10")
-                                polyline(points="12 6 12 12 16 14")
-                            | &nbsp;Bientôt disponible
-                    .avail-buffer.avail-buffer--disabled
-                        input.avail-buffer__range(type="range" min="0" max="60" step="5" value="0" disabled)
-                        .avail-buffer__row
-                            span 0
-                            span.avail-buffer__val 0 min
-                            span 60
+                        span.avail-card__title Mode des créneaux proposés
+                    p.avail-card__sub Choisissez comment les horaires disponibles sont proposés aux clients.
+                    .slot-mode-options#slotModeOptions
+                        button.slot-mode-option(type="button" data-mode="fixed" class=(slotMode !== 'interval' ? 'active' : ''))
+                            span.slot-mode-option__title Selon la durée du service
+                            span.slot-mode-option__desc Ex : 9h00, 9h30, 10h00… (selon la durée de chaque prestation)
+                        button.slot-mode-option(type="button" data-mode="interval" class=(slotMode === 'interval' ? 'active' : ''))
+                            span.slot-mode-option__title Toutes les X minutes
+                            span.slot-mode-option__desc Ex : 9h00, 9h10, 9h20… quelle que soit la durée de la prestation
+                    .slot-interval-row#slotIntervalRow(style=(slotMode === 'interval' ? '' : 'display:none'))
+                        label.slot-interval-label(for="slotIntervalInput") Proposer un créneau toutes les
+                        input.input.slot-interval-input#slotIntervalInput(type="number" min="5" max="120" step="5" value=(slotInterval || 30))
+                        span minutes
 
                 //- Preview this week
                 .avail-card

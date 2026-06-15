@@ -379,12 +379,22 @@ exports.appointment = async (req, res) => {
   const prevMonthIso = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth()+1).padStart(2,"0")}-01`;
   const nextMonthIso = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth()+1).padStart(2,"0")}-01`;
 
-  // Always use 30-min steps so appointments at :30 are never missed
+  // Grille horaire : 30 min par défaut, mais on resserre le pas si des RDV
+  // démarrent sur des minutes non multiples de 30 (ex: services de 15 min
+  // qui débutent à :15 ou :45) afin qu'ils ne disparaissent jamais de la vue.
+  const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
+  let gridStep = 30;
+  formatted.forEach((a) => {
+    const m = parseInt(a.startHour.split(":")[1], 10);
+    if (!isNaN(m) && m !== 0) gridStep = gcd(gridStep, m);
+  });
+  if (gridStep === 0) gridStep = 30;
+
   res.render("admin/appointment", {
     pageName: "Appointment",
     title: res.locals.t.titles.calendar,
     slotTime,
-    hours: generateTimeSlots(minHour, maxHour, 30),
+    hours: generateTimeSlots(minHour, maxHour, gridStep),
     weekDays: weekDaysWithFill,
     appointments: formatted,
     weekLabel,
@@ -577,6 +587,18 @@ async function getSlotTime(companyId) {
   return res?.slotTime;
 }
 
+async function getSlotConfig(companyId) {
+  const res = await Company.findById(companyId)
+    .select("bufferTime slotMode slotInterval")
+    .lean();
+
+  return {
+    bufferTime:   res?.bufferTime || 0,
+    slotMode:     res?.slotMode || "fixed",
+    slotInterval: res?.slotInterval || 30,
+  };
+}
+
 async function getDaysOff(companyId) {
   const doc = await DaysOff.findOne({ company: companyId })
     .populate("dates.employees", "firstName lastName")
@@ -600,9 +622,10 @@ exports.availability = async (req, res) => {
   }
   const Service  = require("../db/models/company/service.model");
   const Employee = require("../db/models/company/employee.model");
-  const [daysOff, currentSlotTime, serviceCount, activeEmployees] = await Promise.all([
+  const [daysOff, currentSlotTime, slotConfig, serviceCount, activeEmployees] = await Promise.all([
     getDaysOff(currentCompany),
     getSlotTime(currentCompany),
+    getSlotConfig(currentCompany),
     Service.countDocuments({ company: currentCompany, active: true }),
     Employee.find({ company: currentCompany._id, active: true }).select("firstName lastName").lean(),
   ]);
@@ -615,6 +638,9 @@ exports.availability = async (req, res) => {
     timeSlot: [10, 15, 20, 25, 30, 45, 60, 90, 120, 180],
     hours: generateHours(10),
     currentSlotTime,
+    bufferTime: slotConfig.bufferTime,
+    slotMode: slotConfig.slotMode,
+    slotInterval: slotConfig.slotInterval,
     hasServices: serviceCount > 0,
     availFeatures,
   });

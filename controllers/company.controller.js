@@ -193,9 +193,29 @@ exports.setScheduleDayOff = async (req, res) => {
 exports.updateBuffer = async (req, res) => {
   try {
     const { bufferTime } = req.body;
-    const value = Math.max(0, Math.min(60, Number(bufferTime) || 0));
+    const value = Math.max(0, Math.min(120, Number(bufferTime) || 0));
     await Company.findByIdAndUpdate(res.locals.currentCompany._id, { bufferTime: value });
     return res.json({ success: true, bufferTime: value });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: "Server error" });
+  }
+};
+
+exports.updateSlotMode = async (req, res) => {
+  try {
+    const { slotMode, slotInterval } = req.body;
+    const update = {};
+
+    if (slotMode === "fixed" || slotMode === "interval") {
+      update.slotMode = slotMode;
+    }
+    if (slotInterval !== undefined) {
+      update.slotInterval = Math.max(5, Math.min(120, Number(slotInterval) || 30));
+    }
+
+    await Company.findByIdAndUpdate(res.locals.currentCompany._id, update);
+    return res.json({ success: true, ...update });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ success: false, error: "Server error" });

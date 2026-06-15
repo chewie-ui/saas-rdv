@@ -279,6 +279,21 @@ html(lang="fr")
             .acc-toggle input:checked ~ .acc-toggle__label { color: #22c55e; }
             .acc-toggle--disabled-state .acc-toggle__label { color: #f87171 !important; }
 
+            .delete-user-btn {
+                background: rgba(248,113,113,0.1);
+                border: 1px solid rgba(248,113,113,0.3);
+                color: #f87171;
+                font-size: 12px;
+                font-weight: 600;
+                padding: 6px 12px;
+                border-radius: 8px;
+                cursor: pointer;
+                white-space: nowrap;
+                transition: background 0.15s, border-color 0.15s;
+            }
+            .delete-user-btn:hover { background: rgba(248,113,113,0.2); border-color: #f87171; }
+            .delete-user-btn:disabled { opacity: 0.6; cursor: default; }
+
             .empty-state {
                 text-align: center;
                 padding: 60px 24px;
@@ -340,6 +355,7 @@ html(lang="fr")
                         th Source
                         th Inscrit le
                         th Statut
+                        th Action
                 tbody
                     each u in users
                         - var currentPlan = (u.subscription && u.subscription.plan === 'business' && (u.subscription.status === 'active' || u.manualPremium)) ? 'business' : (u.isPremium || u.manualPremium) ? 'pro' : 'free'
@@ -395,6 +411,13 @@ html(lang="fr")
                                     )
                                     span.acc-toggle__track
                                     span.acc-toggle__label= u.isDisabled ? 'Désactivé' : 'Actif'
+                            td
+                                button.delete-user-btn(
+                                    type="button"
+                                    data-user-id=String(u._id)
+                                    data-user-name=(u.fullName || u.email)
+                                    title="Supprimer définitivement ce compte"
+                                ) 🗑️ Supprimer
 
         script.
             // ── Plan select ──────────────────────────────────────────
@@ -463,6 +486,36 @@ html(lang="fr")
                         // Revenir à l'état précédent
                         this.checked = !this.checked;
                         alert('Erreur lors de la mise à jour du statut.');
+                    }
+                });
+            });
+
+            // ── Suppression définitive d'un compte ────────────────────
+            document.querySelectorAll('.delete-user-btn').forEach(function(btn) {
+                btn.addEventListener('click', async function() {
+                    const userId = this.dataset.userId;
+                    const userName = this.dataset.userName;
+                    if (!confirm('Supprimer définitivement le compte "' + userName + '" et toutes ses données (réservations, services, employés...) ?\n\nCette action est irréversible.')) {
+                        return;
+                    }
+
+                    this.disabled = true;
+                    this.textContent = '⏳ Suppression…';
+
+                    try {
+                        const res = await fetch('/superadmin/users/' + userId, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const data = await res.json();
+                        if (!data.success) throw new Error('Failed');
+
+                        const row = this.closest('tr');
+                        row.remove();
+                    } catch(e) {
+                        this.disabled = false;
+                        this.textContent = '🗑️ Supprimer';
+                        alert('Erreur lors de la suppression du compte.');
                     }
                 });
             });

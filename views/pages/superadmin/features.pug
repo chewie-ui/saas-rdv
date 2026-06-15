@@ -76,6 +76,20 @@ html(lang="fr")
                 input#smsNotifToggle(type="checkbox" checked=smsNotificationsEnabled)
                 span.toggle-switch__slider
 
+        .page-header
+            h1 🧩 Fonctionnalités admin (sidebar)
+            p Active/désactive ces fonctionnalités pour tous les comptes — pratique pour tester un nouveau module avant de le déployer largement.
+
+        .feature-list(style="margin-bottom: 28px;")
+            each f in adminFeatures
+                .hidden-feature-card(data-admin-feature-key=f.key)
+                    div
+                        .hidden-feature-card__label= f.label
+                        .hidden-feature-card__desc= f.key
+                    label.toggle-switch
+                        input.adminFeatureToggle(type="checkbox" checked=f.enabled)
+                        span.toggle-switch__slider
+
         .feature-list
             each f in features
                 .feature-card(data-key=f.key)
@@ -117,6 +131,25 @@ html(lang="fr")
                     smsToggle.disabled = false;
                 });
             }
+
+            document.querySelectorAll('.adminFeatureToggle').forEach(function (toggle) {
+                var card = toggle.closest('.hidden-feature-card');
+                var key = card.dataset.adminFeatureKey;
+                toggle.addEventListener('change', async function () {
+                    var enabled = toggle.checked;
+                    toggle.disabled = true;
+                    try {
+                        var res = await fetch('/superadmin/hidden-features/' + key, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ enabled: enabled }),
+                        });
+                        var data = await res.json();
+                        if (!data.success) toggle.checked = !enabled;
+                    } catch (e) { toggle.checked = !enabled; }
+                    toggle.disabled = false;
+                });
+            });
 
             document.querySelectorAll('.feature-card').forEach(function (card) {
                 var key = card.dataset.key;

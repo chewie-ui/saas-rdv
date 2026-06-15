@@ -1017,6 +1017,44 @@ if (bufferRange) {
   });
 }
 
+/* ── Slot generation mode (fixed vs. interval) ─────────────── */
+const slotModeOptions = document.getElementById("slotModeOptions");
+const slotIntervalRow = document.getElementById("slotIntervalRow");
+const slotIntervalInput = document.getElementById("slotIntervalInput");
+
+if (slotModeOptions) {
+  slotModeOptions.querySelectorAll(".slot-mode-option").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const mode = btn.dataset.mode;
+      slotModeOptions.querySelectorAll(".slot-mode-option").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      if (slotIntervalRow) {
+        slotIntervalRow.style.display = mode === "interval" ? "" : "none";
+      }
+
+      await fetch("/company/slot-mode", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slotMode: mode }),
+      }).catch(() => {});
+    });
+  });
+}
+
+if (slotIntervalInput) {
+  slotIntervalInput.addEventListener("change", async () => {
+    let value = Math.max(5, Math.min(120, Number(slotIntervalInput.value) || 30));
+    slotIntervalInput.value = value;
+
+    await fetch("/company/slot-mode", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slotInterval: value }),
+    }).catch(() => {});
+  });
+}
+
 // ── Saisie intelligente des heures ────────────────────────────────────────────
 // Quand un panel d'heures s'ouvre, injecte un input de recherche en haut
 // L'utilisateur peut taper "18" → filtre sur "18:XX", "1800" → "18:00"

@@ -61,7 +61,7 @@ block content
                 -
                     var _catObj = svc.category ? categories.find(function(c){ return c.name === svc.category; }) : null
                     var _catIcon = _catObj && _catObj.icon ? _catObj.icon : ''
-                .service-card(data-id=String(svc._id) data-category=svc.category || '' class=(!svc.active ? 'service-card--inactive' : ''))
+                .service-card(data-id=String(svc._id) data-category=svc.category || '' data-type=(svc.type || 'individual') data-capacity=(svc.capacity || '') class=(!svc.active ? 'service-card--inactive' : ''))
                     .service-card__header
                         .service-card__name-row
                             h3.service-card__name= svc.name
@@ -74,6 +74,8 @@ block content
                                 if svc.price !== null && svc.price !== undefined
                                     span.badge.badge--price #{svc.price}€
                                 span.badge.badge--duration #{svc.duration} min
+                                if svc.type === 'group'
+                                    span.badge.badge--group #{svc.capacity} places
                         .service-card__actions
                             label.sa-toggle(title=(svc.active ? t.services.deactivate : t.services.activate))
                                 input.toggle-active(type="checkbox" checked=svc.active data-id=String(svc._id))
@@ -238,6 +240,19 @@ block content
                 .field
                     label= t.services.service_duration
                     input.input#serviceModalDuration(type="number" min="5" step="5" placeholder="30")
+            if !adminFeatures || adminFeatures.group_sessions !== false
+                .field
+                    label Type de rendez-vous
+                    .svc-type-options#svcTypeOptions
+                        button.svc-type-option.is-active(type="button" data-type="individual")
+                            span.svc-type-option__title Individuel
+                            span.svc-type-option__desc Un seul client par créneau
+                        button.svc-type-option(type="button" data-type="group")
+                            span.svc-type-option__title Collectif (places limitées)
+                            span.svc-type-option__desc Plusieurs clients peuvent réserver le même créneau
+                .field#svcCapacityField(style="display:none")
+                    label Nombre de places
+                    input.input#serviceModalCapacity(type="number" min="1" max="500" step="1" placeholder="Ex: 10")
         .service-modal__footer
             button.sm-btn.sm-btn--ghost#cancelServiceModal
                 span= t.services.cancel

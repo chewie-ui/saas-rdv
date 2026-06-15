@@ -2,6 +2,7 @@ const Booking  = require("../db/models/book.model");
 const User     = require("../db/models/user.model");
 const Company  = require("../db/models/company/company.model");
 const Employee = require("../db/models/company/employee.model");
+const Service  = require("../db/models/company/service.model");
 const { addEventToCalendar, deleteEventFromCalendar, getBusyIntervals } = require("../utils/googleCalendarSync");
 const DaysOff  = require("../db/models/company/daysOff.model");
 const { getAppointments } = require("../queries/booking.queries");
@@ -134,20 +135,200 @@ exports.createBookingPaymentIntent = async (req, res) => {
   }
 };
 
-// ── Stripe: no-show — payment already captured, nothing to do ─────────────────
-// This endpoint is kept for admin UI but no-show = money was already taken.
-exports.chargeNoShow = async (req, res) => {
+// ── Stripe: créer un SetupIntent (enregistre la carte, 0€ prélevé) ────────────
+// Le client autorise l'enregistrement de sa carte. Aucun montant n'est débité
+// à la réservation : en cas d'annulation tardive, des frais sont prélevés sur
+// cette carte selon la politique d'annulation du professionnel.
+exports.createBookingSetupIntent = async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id).lean();
+    if (!stripe) return res.status(500).json({ error: "Stripe non configuré." });
+    const { email, name, companyId } = req.body;
+    if (!email) return res.status(400).json({ error: "Email requis." });
+
+    let connectedAccountId = null;
+    if (companyId) {
+      try {
+        const comp = await Company.findById(companyId).select("stripeConnect").lean();
+        if (comp?.stripeConnect?.status === "active" && comp.stripeConnect.accountId) {
+          connectedAccountId = comp.stripeConnect.accountId;
+        }
+      } catch (_) {}
+    }
+
+    if (!connectedAccountId && process.env.NODE_ENV === "production") {
+      return res.status(400).json({
+        error: "stripe_not_connected",
+        message: "Cet établissement n'a pas encore connecté Stripe. Choisissez un autre mode de paiement.",
+      });
+    }
+
+    const customer = await stripe.customers.create({
+      email: email.trim().toLowerCase(),
+      name:  name || undefined,
+    });
+
+    const setupIntent = await stripe.setupIntents.create({
+      customer:             customer.id,
+      payment_method_types: ["card"],
+      usage:                "off_session",
+      metadata: {
+        companyId:          String(companyId || ""),
+        connectedAccountId: connectedAccountId || "none",
+        clientEmail:        email.trim().toLowerCase(),
+        clientName:         name || "",
+      },
+    });
+
+    res.json({
+      clientSecret:  setupIntent.client_secret,
+      setupIntentId: setupIntent.id,
+    });
+  } catch (err) {
+    console.error("createBookingSetupIntent error:", err.message, err.raw?.message || "");
+    res.status(500).json({ error: err.raw?.message || err.message || "Erreur Stripe." });
+  }
+};
+
+// ── Marquer une absence (no-show) ────────────────────────────────────────────
+// L'admin choisit la raison :
+//  - "valid"   → raison valable (urgence, hôpital...) : aucun frais, la
+//                pré-autorisation est libérée / le paiement est remboursé.
+//  - "invalid" → oubli / sans raison : on prélève 100% de la prestation sur
+//                la carte enregistrée (ou on garde le paiement déjà capturé).
+exports.markNoShow = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ error: "Réservation introuvable." });
+
+    const reason = req.body.reason === "valid" ? "valid" : "invalid";
+    booking.noShow = true;
+    booking.noShowReason = reason;
+
     if (booking.payment?.method !== "online") {
-      return res.status(400).json({ error: "Pas de paiement en ligne sur ce RDV." });
+      await booking.save();
+      return res.json({ success: true, charged: false });
     }
-    if (booking.payment?.status === "paid") {
-      // Already paid — just confirm it as "no-show acknowledged"
-      return res.json({ success: true, info: "Paiement déjà encaissé.", amount: booking.payment.amount });
+
+    // ── Raison valable : aucun frais ────────────────────────────────────────
+    if (reason === "valid") {
+      if (booking.payment.status === "authorized") {
+        booking.payment.status = "none";
+      } else if (booking.payment.status === "paid" && stripe && booking.payment.stripePaymentIntentId) {
+        try {
+          await stripe.refunds.create({
+            payment_intent:   booking.payment.stripePaymentIntentId,
+            reason:           "requested_by_customer",
+            reverse_transfer: true,
+          });
+          booking.payment.status = "refunded";
+        } catch (stripeErr) {
+          console.error("No-show refund error:", stripeErr.message);
+        }
+      }
+      await booking.save();
+      return res.json({ success: true, charged: false });
     }
+
+    // ── Raison non valable : encaisser 100% ─────────────────────────────────
+    if (booking.payment.status === "paid") {
+      await booking.save();
+      return res.json({ success: true, charged: true, amount: booking.payment.amount, info: "Paiement déjà encaissé." });
+    }
+
+    if (booking.payment.status === "authorized" &&
+        booking.payment.stripeCustomerId &&
+        booking.payment.stripePaymentMethodId) {
+      if (!stripe) return res.status(500).json({ error: "Stripe non configuré." });
+
+      const amount = booking.payment.amount || 0;
+      const amountCents = toCents(amount);
+      if (amountCents < 50) {
+        await booking.save();
+        return res.json({ success: false, error: "Montant trop faible pour être prélevé." });
+      }
+
+      let connectedAccountId = null;
+      try {
+        const comp = await Company.findById(booking.company).select("stripeConnect").lean();
+        if (comp?.stripeConnect?.status === "active" && comp.stripeConnect.accountId) {
+          connectedAccountId = comp.stripeConnect.accountId;
+        }
+      } catch (_) {}
+      const isDevFallback = process.env.NODE_ENV !== "production";
+
+      try {
+        const pi = await stripe.paymentIntents.create({
+          amount:         amountCents,
+          currency:       booking.payment.currency || "eur",
+          customer:       booking.payment.stripeCustomerId,
+          payment_method: booking.payment.stripePaymentMethodId,
+          off_session:    true,
+          confirm:        true,
+          description:    `Absence non excusée — ${booking.serviceName || "Réservation"}`,
+          ...(connectedAccountId && !isDevFallback && { transfer_data: { destination: connectedAccountId } }),
+        });
+
+        booking.payment.status = "penalty";
+        booking.payment.stripePaymentIntentId = pi.id;
+        booking.payment.penaltyAmount = amount;
+        booking.payment.paidAt = new Date();
+        await booking.save();
+
+        return res.json({ success: true, charged: true, amount });
+      } catch (stripeErr) {
+        console.error("markNoShow off-session error:", stripeErr.message);
+        booking.payment.status = "failed";
+        await booking.save();
+        return res.json({ success: false, error: stripeErr.raw?.message || stripeErr.message || "Échec du prélèvement." });
+      }
+    }
+
+    await booking.save();
     res.json({ success: false, error: "Aucun paiement à encaisser." });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ── Revoir des frais d'annulation prélevés automatiquement ───────────────────
+// Quand un client annule < 24h/12h, le système prélève automatiquement la
+// pénalité sur la carte enregistrée (payment.status = "penalty"). L'admin peut
+// ensuite revoir ce prélèvement :
+//  - "refunded" → raison valable (urgence, hôpital...) : on rembourse le client
+//  - "kept"     → raison non valable : l'établissement garde les frais
+exports.reviewCancellationPenalty = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ error: "Réservation introuvable." });
+
+    const decision = req.body.decision === "refunded" ? "refunded" : "kept";
+
+    if (booking.payment?.status !== "penalty") {
+      return res.status(400).json({ error: "Aucun frais d'annulation à revoir pour cette réservation." });
+    }
+
+    if (decision === "refunded") {
+      if (!stripe || !booking.payment.stripePaymentIntentId) {
+        return res.status(500).json({ error: "Stripe non configuré ou prélèvement introuvable." });
+      }
+      try {
+        await stripe.refunds.create({
+          payment_intent:   booking.payment.stripePaymentIntentId,
+          reason:           "requested_by_customer",
+          reverse_transfer: true,
+        });
+        booking.payment.status = "refunded";
+      } catch (stripeErr) {
+        console.error("reviewCancellationPenalty refund error:", stripeErr.message);
+        return res.status(500).json({ error: stripeErr.raw?.message || stripeErr.message || "Échec du remboursement." });
+      }
+    }
+
+    booking.payment.cancellationReviewDecision = decision;
+    booking.payment.cancellationReviewedAt = new Date();
+    await booking.save();
+
+    res.json({ success: true, decision, status: booking.payment.status });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -156,8 +337,8 @@ exports.chargeNoShow = async (req, res) => {
 exports.createBooking = async (req, res) => {
   try {
     const { date, startTime, company, name, surname, email: rawEmail, phone, message, formAnswers,
-            serviceId, serviceName, serviceDuration,
-            paymentMethod, stripePaymentIntentId, servicePrice } = req.body;
+            serviceId, serviceName, serviceDuration, serviceCategory,
+            paymentMethod, stripePaymentIntentId, stripeSetupIntentId, servicePrice } = req.body;
 
     // Normaliser l'email (trim + minuscule) — c'est le format utilisé partout
     // ailleurs pour faire correspondre les réservations à un compte client
@@ -210,8 +391,37 @@ exports.createBooking = async (req, res) => {
     const endMinutes = endTimeInMinutes % 60;
     const endTime = `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
 
+    // ── Service "collectif" : plusieurs clients peuvent réserver le même
+    // créneau, jusqu'à la capacité définie sur le service. Pas d'assignation
+    // d'employé ni de vérification de chevauchement individuelle. ──────────
+    let serviceDoc = null;
+    if (serviceId) {
+      serviceDoc = await Service.findById(serviceId).select("type capacity").lean();
+    }
+    const isGroup = !!(serviceDoc && serviceDoc.type === "group");
+
+    if (isGroup) {
+      const capacity = serviceDoc.capacity || 1;
+      const participantCount = await Booking.countDocuments({
+        company,
+        service: serviceId,
+        date: new Date(date),
+        startTime,
+        status: "confirmed",
+      });
+      if (participantCount >= capacity) {
+        return res.json({
+          success: false,
+          error: "session_full",
+          message: "Cette session est complète, merci de choisir un autre horaire.",
+        });
+      }
+      employeeId   = null;
+      employeeName = "";
+    }
+
     // ── Auto-assign an available employee when none was explicitly chosen ──
-    if (!employeeId) {
+    if (!isGroup && !employeeId) {
       const activeEmployees = await Employee.find({ company, active: true }).lean();
 
       if (activeEmployees.length > 0) {
@@ -243,6 +453,26 @@ exports.createBooking = async (req, res) => {
       }
     }
 
+    // ── Carte enregistrée via SetupIntent (nouveau flux : 0€ prélevé) ───────
+    // Valable aussi pour "on_site" : la carte est enregistrée en garantie pour
+    // permettre le prélèvement de frais d'annulation/no-show selon la politique.
+    let paymentExtra = {};
+    if ((paymentMethod === "online" || paymentMethod === "on_site") && stripeSetupIntentId && stripe) {
+      try {
+        const si = await stripe.setupIntents.retrieve(stripeSetupIntentId);
+        if (si.status === "succeeded") {
+          paymentExtra = {
+            status:                "authorized",
+            stripeSetupIntentId:   si.id,
+            stripeCustomerId:      si.customer || "",
+            stripePaymentMethodId: si.payment_method || "",
+          };
+        }
+      } catch (siErr) {
+        console.error("SetupIntent retrieve error:", siErr.message);
+      }
+    }
+
     const newBooking = await Booking.create({
       date: new Date(date),
       startTime,
@@ -261,6 +491,7 @@ exports.createBooking = async (req, res) => {
       serviceName:  serviceName || "",
       employee:     employeeId  || null,
       employeeName: employeeName || "",
+      isGroup,
       // ── Payment ────────────────────────────────────────────────────────────
       payment: {
         method: ["online", "on_site", "bank_transfer", "paypal"].includes(paymentMethod) ? paymentMethod : "none",
@@ -269,6 +500,7 @@ exports.createBooking = async (req, res) => {
         amount:   servicePrice ? Number(servicePrice) : 0,
         currency: "eur",
         paidAt:   paymentMethod === "online" && stripePaymentIntentId ? new Date() : null,
+        ...paymentExtra,
       },
     });
 
@@ -343,9 +575,13 @@ exports.createBooking = async (req, res) => {
         endHour: endTime,
         slotTime: actualDuration,
         message,
-        serviceName:  serviceName  || "",
-        employeeName: employeeName || "",
-        formAnswers:  Array.isArray(formAnswers) ? formAnswers : [],
+        serviceName:     serviceName     || "",
+        serviceCategory: serviceCategory || "",
+        servicePrice:    (servicePrice !== null && servicePrice !== undefined && servicePrice !== "") ? Number(servicePrice) : null,
+        employeeName:    employeeName    || "",
+        formAnswers:     (Array.isArray(formAnswers) ? formAnswers : []).filter(
+                           (a) => a.required || (a.answer !== undefined && a.answer !== null && String(a.answer).trim() !== "")
+                         ),
         locationText,
         cancelUrl,
         bookingId:   newBooking._id,
@@ -416,8 +652,18 @@ exports.createBooking = async (req, res) => {
   }
 };
 
+// Convertit des minutes-depuis-minuit en chaîne "HH:MM"
+function minutesToTimeStr(min) {
+  return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+}
+
+// Deux plages [aStart, aEnd) et [bStart, bEnd) se chevauchent-elles ?
+function rangesOverlap(aStart, aEnd, bStart, bEnd) {
+  return aStart < bEnd && aEnd > bStart;
+}
+
 exports.getBooking = async (req, res) => {
-  const { date, companyId, employeeId, serviceDuration } = req.query;
+  const { date, companyId, employeeId, serviceDuration, serviceId } = req.query;
 
   const specificEmployee = employeeId && employeeId !== "null" && employeeId !== "";
 
@@ -425,6 +671,7 @@ exports.getBooking = async (req, res) => {
     company: companyId,
     date: new Date(date),
     status: { $ne: "canceled" },
+    isGroup: { $ne: true },
   };
 
   // ── Block past time slots when the requested date is today ───────────────
@@ -436,33 +683,101 @@ exports.getBooking = async (req, res) => {
     requestedDate.getDate()     === now.getDate();
   const nowMinutes = isToday ? now.getHours() * 60 + now.getMinutes() : -1;
 
-  // Get company slotTime so we can compute slot granularity.
+  // ── Service "collectif" : la disponibilité dépend du nombre de places
+  // restantes par créneau, indépendamment des plannings employés/buffer. ───
+  if (serviceId && serviceId !== "null" && serviceId !== "") {
+    const service = await Service.findById(serviceId).select("type capacity").lean();
+    if (service && service.type === "group") {
+      const capacity = service.capacity || 1;
+
+      const groupBookings = await Booking.find({
+        company: companyId,
+        service: serviceId,
+        date: new Date(date),
+        status: "confirmed",
+        isGroup: true,
+      }).select("startTime").lean();
+
+      const counts = {};
+      groupBookings.forEach((b) => {
+        counts[b.startTime] = (counts[b.startTime] || 0) + 1;
+      });
+
+      const isTodayG = isToday;
+      const nowMinutesG = isTodayG ? now.getHours() * 60 + now.getMinutes() : -1;
+      const blockedSet = new Set();
+      const groupAvailability = {};
+
+      Object.keys(counts).forEach((startTime) => {
+        groupAvailability[startTime] = { booked: counts[startTime], capacity };
+        if (counts[startTime] >= capacity) blockedSet.add(startTime);
+      });
+
+      // Block past slots for today (every minute mark — the client only
+      // checks the exact slot strings returned by /get-schedule).
+      if (nowMinutesG >= 0) {
+        for (let t = 0; t < nowMinutesG; t += 5) {
+          blockedSet.add(minutesToTimeStr(t));
+        }
+      }
+
+      return res.json({ bookedTimes: Array.from(blockedSet), groupAvailability, capacity });
+    }
+  }
+
+  // Get company config so we can compute slot granularity / buffer / mode.
   const [companyDoc, activeEmployeeCount] = await Promise.all([
-    Company.findById(companyId).select("slotTime owner").lean(),
+    Company.findById(companyId).select("slotTime bufferTime slotMode slotInterval owner").lean(),
     // Only count employees when no specific one is filtered
     specificEmployee ? Promise.resolve(0) : Employee.countDocuments({ company: companyId, active: true }),
   ]);
 
-  const granularity = (serviceDuration && Number(serviceDuration) > 0)
+  // Durée de la prestation demandée (utilisée pour vérifier les chevauchements).
+  const newDuration = (serviceDuration && Number(serviceDuration) > 0)
     ? Number(serviceDuration)
     : (companyDoc?.slotTime || 30);
 
-  // Helper: add a slot to the blocked set (also blocks past slots for today)
-  function addBlocked(blockedSet, slotStr) {
-    blockedSet.add(slotStr);
+  // Pas d'itération entre deux créneaux candidats (doit correspondre à getSchedule).
+  const step = (companyDoc?.slotMode === "interval")
+    ? (companyDoc?.slotInterval || 30)
+    : newDuration;
+
+  // Temps tampon (en minutes) à respecter avant ET après chaque RDV existant.
+  const buffer = companyDoc?.bufferTime || 0;
+
+  // Construit, pour une liste de réservations, la liste des plages occupées
+  // [début - buffer, fin + buffer) en minutes depuis minuit.
+  function buildOccupiedRanges(bookings) {
+    return bookings.map((b) => {
+      const [h, m] = b.startTime.split(":").map(Number);
+      const startMin = h * 60 + m;
+      const endMin   = startMin + (b.slotTime || newDuration);
+      return [Math.max(0, startMin - buffer), Math.min(24 * 60, endMin + buffer)];
+    });
+  }
+
+  // Pour chaque créneau candidat [t, t + newDuration), bloque t s'il
+  // chevauche au moins une des plages occupées fournies.
+  function blockedFromRanges(blockedSet, ranges) {
+    if (ranges.length === 0) return;
+    for (let t = 0; t < 24 * 60; t += step) {
+      if (ranges.some(([rs, re]) => rangesOverlap(t, t + newDuration, rs, re))) {
+        blockedSet.add(minutesToTimeStr(t));
+      }
+    }
   }
 
   // Helper: mark all past slots for today as blocked
-  function blockPastSlots(blockedSet, gran) {
+  function blockPastSlots(blockedSet) {
     if (nowMinutes < 0) return;
-    for (let t = 0; t < nowMinutes; t += gran) {
-      blockedSet.add(`${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
+    for (let t = 0; t < nowMinutes; t += step) {
+      blockedSet.add(minutesToTimeStr(t));
     }
   }
 
   // ── Agenda Google personnel : si le pro a connecté son agenda perso, on
   // bloque aussi les créneaux occupés par ses RDV persos (visio, médical, etc.) ──
-  let googleBusySlots = [];
+  let googleRanges = [];
   if (companyDoc?.owner) {
     try {
       const ownerUser = await User.findById(companyDoc.owner).select("googleCalendar").lean();
@@ -474,9 +789,7 @@ exports.getBooking = async (req, res) => {
           const startMin = interval.start.getHours() * 60 + interval.start.getMinutes();
           let endMin = interval.end.getHours() * 60 + interval.end.getMinutes();
           if (endMin <= startMin) endMin = 24 * 60; // événement traversant minuit / journée entière
-          for (let t = startMin; t < endMin; t += granularity) {
-            googleBusySlots.push(`${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
-          }
+          googleRanges.push([Math.max(0, startMin - buffer), Math.min(24 * 60, endMin + buffer)]);
         });
       }
     } catch (err) {
@@ -484,25 +797,13 @@ exports.getBooking = async (req, res) => {
     }
   }
 
-  // Helper: ajoute les créneaux occupés de l'agenda perso au set de blocage
-  function blockGoogleBusySlots(blockedSet) {
-    googleBusySlots.forEach((slot) => blockedSet.add(slot));
-  }
-
   // ── Case 1: specific employee selected → block only their slots ──────────
   if (specificEmployee) {
     const bookings = await Booking.find({ ...baseQuery, employee: employeeId }).select("startTime slotTime");
     const blockedSet = new Set();
-    bookings.forEach((b) => {
-      const [h, m] = b.startTime.split(":").map(Number);
-      const startMin = h * 60 + m;
-      const endMin   = startMin + (b.slotTime || granularity);
-      for (let t = startMin; t < endMin; t += granularity) {
-        addBlocked(blockedSet, `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
-      }
-    });
-    blockGoogleBusySlots(blockedSet);
-    blockPastSlots(blockedSet, granularity);
+    blockedFromRanges(blockedSet, buildOccupiedRanges(bookings));
+    blockedFromRanges(blockedSet, googleRanges);
+    blockPastSlots(blockedSet);
     return res.json({ bookedTimes: Array.from(blockedSet) });
   }
 
@@ -510,16 +811,9 @@ exports.getBooking = async (req, res) => {
   if (activeEmployeeCount === 0) {
     const bookings = await Booking.find(baseQuery).select("startTime slotTime");
     const blockedSet = new Set();
-    bookings.forEach((b) => {
-      const [h, m] = b.startTime.split(":").map(Number);
-      const startMin = h * 60 + m;
-      const endMin   = startMin + (b.slotTime || granularity);
-      for (let t = startMin; t < endMin; t += granularity) {
-        addBlocked(blockedSet, `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
-      }
-    });
-    blockGoogleBusySlots(blockedSet);
-    blockPastSlots(blockedSet, granularity);
+    blockedFromRanges(blockedSet, buildOccupiedRanges(bookings));
+    blockedFromRanges(blockedSet, googleRanges);
+    blockPastSlots(blockedSet);
     return res.json({ bookedTimes: Array.from(blockedSet) });
   }
 
@@ -531,29 +825,31 @@ exports.getBooking = async (req, res) => {
     employee: { $in: activeEmployees.map((e) => e._id) },
   }).select("startTime slotTime employee").lean();
 
-  // For each granularity slot, track which employee IDs are booked
-  const slotEmployeeMap = {}; // "HH:MM" → Set of employee id strings
-
+  // Group bookings per employee, then build their occupied ranges.
+  const rangesByEmployee = new Map(); // employeeId string → ranges[]
+  activeEmployees.forEach((e) => rangesByEmployee.set(String(e._id), []));
   bookings.forEach((b) => {
-    const [h, m] = b.startTime.split(":").map(Number);
-    const startMin = h * 60 + m;
-    const endMin   = startMin + (b.slotTime || granularity);
-    for (let t = startMin; t < endMin; t += granularity) {
-      const key = `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
-      if (!slotEmployeeMap[key]) slotEmployeeMap[key] = new Set();
-      slotEmployeeMap[key].add(String(b.employee));
+    const empId = String(b.employee);
+    const ranges = buildOccupiedRanges([b]);
+    if (rangesByEmployee.has(empId)) {
+      rangesByEmployee.get(empId).push(...ranges);
     }
   });
 
-  // Block slot only when every active employee is booked at that time
+  // Block a candidate slot only when EVERY active employee has an overlapping
+  // occupied range at that time.
   const blockedSet = new Set();
-  Object.entries(slotEmployeeMap).forEach(([slot, empSet]) => {
-    if (empSet.size >= activeEmployeeCount) blockedSet.add(slot);
-  });
+  for (let t = 0; t < 24 * 60; t += step) {
+    const allBusy = activeEmployees.every((e) => {
+      const ranges = rangesByEmployee.get(String(e._id)) || [];
+      return ranges.some(([rs, re]) => rangesOverlap(t, t + newDuration, rs, re));
+    });
+    if (allBusy) blockedSet.add(minutesToTimeStr(t));
+  }
 
-  // Also block past slots for today
-  blockGoogleBusySlots(blockedSet);
-  blockPastSlots(blockedSet, granularity);
+  // L'agenda Google perso bloque le pro entièrement, peu importe les employés.
+  blockedFromRanges(blockedSet, googleRanges);
+  blockPastSlots(blockedSet);
 
   res.json({ bookedTimes: Array.from(blockedSet) });
 };
@@ -629,7 +925,7 @@ exports.getSchedule = async (req, res) => {
   const jsWeekdayIndex = parseInt(index);
   // 1. Récupérer la config de base (pour le slotTime et les horaires par défaut)
   const company = await Company.findById(COMPANY_ID)
-    .select("schedule slotTime")
+    .select("schedule slotTime slotMode slotInterval")
     .lean();
 
   // 2. CHERCHER UNE EXCEPTION (DaysOff) — filtrée par employé si précisé
@@ -675,11 +971,19 @@ exports.getSchedule = async (req, res) => {
     return res.json({ slots: [] });
   }
 
-  // Use the selected service duration as the step (granularity) if provided,
-  // otherwise fall back to the company's global slot time.
-  const step = (serviceDuration && Number(serviceDuration) > 0)
+  // Durée réelle de la prestation demandée (utilisée pour vérifier qu'un
+  // créneau a la place de se terminer avant la fin de la plage horaire).
+  const duration = (serviceDuration && Number(serviceDuration) > 0)
     ? Number(serviceDuration)
     : company.slotTime;
+
+  // Pas d'itération entre deux créneaux proposés :
+  //  - "fixed"    : un créneau par tranche de `duration` (ex: 9h00, 9h30, 10h00…)
+  //  - "interval" : un créneau toutes les `slotInterval` minutes, peu importe
+  //                  la durée de la prestation (ex: 9h00, 9h10, 9h20…)
+  const step = (company.slotMode === "interval")
+    ? (company.slotInterval || 30)
+    : duration;
 
   let allSlots = [];
   target.workingHours.forEach((period) => {
@@ -689,7 +993,8 @@ exports.getSchedule = async (req, res) => {
     let current = startH * 60 + startM;
     const endTotal = endH * 60 + endM;
 
-    while (current + step <= endTotal) {
+    // La prestation doit pouvoir se terminer avant la fin de la plage horaire.
+    while (current + duration <= endTotal) {
       const h = Math.floor(current / 60);
       const m = current % 60;
       allSlots.push(
@@ -762,51 +1067,92 @@ exports.cancelBooking = async (req, res) => {
 
   const company = await Company.findById(canceledBooking.company);
   const coach   = await User.findById(company.owner);
+  const policyRule = company?.cancellationPolicy?.rule || "free";
 
-  // ── Politique d'annulation + remboursement ────────────────────────────────
+  // ── % des frais retenus / prélevés selon la politique d'annulation ────────
+  function penaltyPct(rule, hrs) {
+    if (hrs < 0) return 0; // RDV déjà passé : rien à prélever ici (cf. no-show)
+    if (rule === "half_24h") return hrs < 24 ? 0.5 : 0;
+    if (rule === "full_12h") return hrs < 12 ? 1 : (hrs < 24 ? 0.5 : 0);
+    return 0; // "free"
+  }
+
   let chargeResult = null;
-  if (stripe &&
-      canceledBooking.payment?.method  === "online" &&
-      canceledBooking.payment?.status  === "paid"   &&
-      canceledBooking.payment?.stripePaymentIntentId) {
 
+  if (stripe && canceledBooking.payment?.method === "online") {
     const hrs    = hoursUntil(canceledBooking.date, canceledBooking.startTime);
     const amount = canceledBooking.payment.amount || 0;
-    const piId   = canceledBooking.payment.stripePaymentIntentId;
 
-    try {
-      // reverse_transfer: true → le montant est aussi repris du compte connecté
-      if (hrs >= 24) {
-        // > 24 h → remboursement total
-        await stripe.refunds.create({
-          payment_intent:   piId,
-          reason:           "requested_by_customer",
-          reverse_transfer: true,
-        });
-        await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "refunded" });
-        chargeResult = { refunded: true, pct: 100, amount };
-      } else if (hrs >= 0 && amount > 0) {
-        // < 24 h → remboursement 50 % (on garde 50 % pour l'établissement)
-        const refundCents = toCents(amount * 0.5);
-        if (refundCents >= 50) {
-          await stripe.refunds.create({
-            payment_intent:   piId,
-            amount:           refundCents,
-            reason:           "requested_by_customer",
-            reverse_transfer: true,
+    // ── Nouveau flux : carte enregistrée, 0€ prélevé à la réservation ───────
+    if (canceledBooking.payment?.status === "authorized" &&
+        canceledBooking.payment?.stripeCustomerId &&
+        canceledBooking.payment?.stripePaymentMethodId) {
+
+      const pct = penaltyPct(policyRule, hrs);
+      const chargeCents = toCents(amount * pct);
+
+      if (pct > 0 && amount > 0 && chargeCents >= 50) {
+        let connectedAccountId = null;
+        if (company?.stripeConnect?.status === "active" && company.stripeConnect.accountId) {
+          connectedAccountId = company.stripeConnect.accountId;
+        }
+        const isDevFallback = process.env.NODE_ENV !== "production";
+
+        try {
+          const pi = await stripe.paymentIntents.create({
+            amount:         chargeCents,
+            currency:       canceledBooking.payment.currency || "eur",
+            customer:       canceledBooking.payment.stripeCustomerId,
+            payment_method: canceledBooking.payment.stripePaymentMethodId,
+            off_session:    true,
+            confirm:        true,
+            description:    `Frais d'annulation — ${canceledBooking.serviceName || "Réservation"}`,
+            ...(connectedAccountId && !isDevFallback && { transfer_data: { destination: connectedAccountId } }),
           });
-          await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "partial" });
-          chargeResult = { refunded: true, pct: 50, amount: amount * 0.5, kept: amount * 0.5 };
-        } else {
-          // Montant trop petit → remboursement total
-          await stripe.refunds.create({ payment_intent: piId, reverse_transfer: true });
+          await Booking.findByIdAndUpdate(canceledBooking._id, {
+            "payment.status": "penalty",
+            "payment.stripePaymentIntentId": pi.id,
+            "payment.penaltyAmount": amount * pct,
+            "payment.paidAt": new Date(),
+          });
+          chargeResult = { charged: true, pct: pct * 100, amount: amount * pct };
+        } catch (stripeErr) {
+          console.error("Penalty charge error:", stripeErr.message);
+          await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "failed" });
+          chargeResult = { charged: false, error: true };
+        }
+      } else {
+        // Aucun frais à prélever → la pré-autorisation est simplement abandonnée
+        await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "none" });
+        chargeResult = { charged: false, pct: 0 };
+      }
+
+    // ── Ancien flux : montant total déjà capturé → remboursement ────────────
+    } else if (canceledBooking.payment?.status === "paid" && canceledBooking.payment?.stripePaymentIntentId) {
+      const piId = canceledBooking.payment.stripePaymentIntentId;
+      const pct  = penaltyPct(policyRule, hrs); // % retenu par l'établissement
+      const refundPct = 1 - pct;
+
+      try {
+        if (refundPct >= 1) {
+          await stripe.refunds.create({ payment_intent: piId, reason: "requested_by_customer", reverse_transfer: true });
           await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "refunded" });
           chargeResult = { refunded: true, pct: 100, amount };
+        } else if (refundPct > 0 && amount > 0) {
+          const refundCents = toCents(amount * refundPct);
+          if (refundCents >= 50) {
+            await stripe.refunds.create({ payment_intent: piId, amount: refundCents, reason: "requested_by_customer", reverse_transfer: true });
+            await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "partial" });
+            chargeResult = { refunded: true, pct: Math.round(refundPct * 100), amount: amount * refundPct, kept: amount * pct };
+          } else {
+            await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "refunded" });
+            chargeResult = { refunded: true, pct: 100, amount };
+          }
         }
+        // refundPct === 0 (pénalité 100%) : rien à rembourser, l'établissement garde tout
+      } catch (stripeErr) {
+        console.error("Refund error:", stripeErr.message);
       }
-      // RDV déjà passé : pas de remboursement — l'argent reste chez l'établissement
-    } catch (stripeErr) {
-      console.error("Refund error:", stripeErr.message);
     }
   }
 

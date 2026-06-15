@@ -1079,10 +1079,18 @@ exports.updateReminderSettings = async (req, res) => {
     const delayHours = parseInt(req.body.reminderDelayHours, 10);
     const message    = (req.body.reminderMessage || "").trim().slice(0, 300);
     if (!allowed.includes(delayHours)) return res.status(400).json({ success: false, error: "Délai invalide." });
+
+    const allowedPaymentMethods = ["carte", "especes", "qr_code", "virement"];
+    const paymentMethods = (Array.isArray(req.body.reminderPaymentMethods) ? req.body.reminderPaymentMethods : [])
+      .filter((m) => allowedPaymentMethods.includes(m));
+    const paymentNote = (req.body.reminderPaymentNote || "").trim().slice(0, 200);
+
     await User.findByIdAndUpdate(req.user._id, {
       $set: {
-        "calendarSettings.reminderDelayHours": delayHours,
-        "calendarSettings.reminderMessage":    message,
+        "calendarSettings.reminderDelayHours":     delayHours,
+        "calendarSettings.reminderMessage":        message,
+        "calendarSettings.reminderPaymentMethods": paymentMethods,
+        "calendarSettings.reminderPaymentNote":    paymentNote,
       },
     });
     return res.json({ success: true });

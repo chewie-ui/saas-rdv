@@ -41,13 +41,9 @@ block content
 
         //- ── Profil de l'établissement ──────────────────────────────────────────
         .info-card
-            .info-card__header.info-card__header--with-cb
-                .info-card__header__left
-                    h3 Profil de l'établissement
-                    p.info-card__desc Ces informations sont affichées en haut de votre page de réservation.
-                label.section-cb-label(for="toggleSectionAbout" title="Afficher la description « À propos » sur la page publique")
-                    input#toggleSectionAbout.toggle-cb(type="checkbox" checked=cs.showSectionAbout !== false)
-                    span.section-pill À propos
+            .info-card__header
+                h3 Profil de l'établissement
+                p.info-card__desc Ces informations sont affichées en haut de votre page de réservation.
             .biz-row
                 .biz-photo-col
                     .biz-photo-preview
@@ -87,10 +83,18 @@ block content
                     span Enregistrer
 
         //- ── À propos (texte enrichi) ────────────────────────────────────────────
-        .info-card
-            .info-card__header
-                h3 À propos
-                p.info-card__desc Présentez votre activité en détail — votre histoire, votre approche, ce qui vous distingue. Ce texte enrichi s'affiche dans la section « À propos » de votre page publique.
+        .info-card.section-card(class=(cs.showSectionAbout === false ? 'section-card--off' : ''))
+            .info-card__header.info-card__header--with-cb
+                .info-card__header__left
+                    h3 À propos
+                    p.info-card__desc Présentez votre activité en détail — votre histoire, votre approche, ce qui vous distingue. Ce texte enrichi s'affiche dans la section « À propos » de votre page publique.
+                label.section-cb-label(for="toggleSectionAbout" title="Afficher la section « À propos » sur la page publique")
+                    input#toggleSectionAbout.toggle-cb(type="checkbox" checked=cs.showSectionAbout !== false)
+                    span.section-pill À propos
+            .section-off-banner
+                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                    path(d="m644-428-58-58q9-47-27-88t-93-32l-58-58q17-8 34.5-12t37.5-4q75 0 127.5 52.5T660-500q0 20-4 37.5T644-428Zm128 126-58-56q38-29 67.5-63.5T832-500q-50-101-143.5-160.5T480-720q-29 0-57 4t-55 12l-62-62q41-17 84-25.5t90-8.5q151 0 269 83.5T920-500q-23 56-60.5 105T772-302Zm20 246L624-220q-35 11-70.5 16.5T480-198q-151 0-269-83.5T40-500q24-56 64-104.5t90-85.5L78-806l56-56 736 736-56 56ZM222-624q-29 26-53 57t-41 67q50 101 143.5 160.5T480-280q20 0 39-2.5t39-5.5l-36-38q-11 3-21 4.5t-21 1.5q-75 0-127.5-52.5T280-500q0-11 1.5-21t4.5-21l-64-82Zm319 93Zm-151 75Z")
+                span Cette section est masquée sur votre page publique — les visiteurs ne la verront pas.
             .about-editor
                 .about-editor__toolbar
                     button.about-editor__btn#aboutBoldBtn(type="button" title="Gras (Ctrl+B)" data-cmd="bold")
@@ -243,7 +247,7 @@ block content
                             span Confirmer
 
         //- ── Galerie photos ──────────────────────────────────────────────────────
-        .info-card
+        .info-card.section-card(class=(!cs.showSectionGallery ? 'section-card--off' : ''))
             .info-card__header.info-card__header--with-cb
                 .info-card__header__left
                     h3 Galerie photos
@@ -251,6 +255,10 @@ block content
                 label.section-cb-label(for="toggleSectionGallery" title="Afficher la galerie sur la page publique")
                     input#toggleSectionGallery.toggle-cb(type="checkbox" checked=!!cs.showSectionGallery)
                     span.section-pill Galerie
+            .section-off-banner
+                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                    path(d="m644-428-58-58q9-47-27-88t-93-32l-58-58q17-8 34.5-12t37.5-4q75 0 127.5 52.5T660-500q0 20-4 37.5T644-428Zm128 126-58-56q38-29 67.5-63.5T832-500q-50-101-143.5-160.5T480-720q-29 0-57 4t-55 12l-62-62q41-17 84-25.5t90-8.5q151 0 269 83.5T920-500q-23 56-60.5 105T772-302Zm20 246L624-220q-35 11-70.5 16.5T480-198q-151 0-269-83.5T40-500q24-56 64-104.5t90-85.5L78-806l56-56 736 736-56 56ZM222-624q-29 26-53 57t-41 67q50 101 143.5 160.5T480-280q20 0 39-2.5t39-5.5l-36-38q-11 3-21 4.5t-21 1.5q-75 0-127.5-52.5T280-500q0-11 1.5-21t4.5-21l-64-82Zm319 93Zm-151 75Z")
+                span Cette section est masquée sur votre page publique — les visiteurs ne la verront pas.
 
             //- ── Format d'affichage de la galerie sur la page publique ──────
             //- Aperçus miniatures pour visualiser comment les photos
@@ -700,6 +708,31 @@ block content
                             .cz-reminder-msg-count
                                 span#czReminderMsgCount= (cs.reminderMessage || '').length
                                 | /300
+
+                    //- ── Modes de paiement ─────────────────────────────────────
+                    .cz-reminder-section
+                        .cz-reminder-label
+                            svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
+                                path(d="M80-200v-560h800v560H80Zm80-360h640v-120H160v120Zm0 120v160h640v-160H160Z")
+                            span Modes de paiement acceptés
+                        p.cz-reminder-hint Indiqués dans l'email de rappel pour informer votre client comment régler le rendez-vous.
+                        - var _payMethods = cs.reminderPaymentMethods || []
+                        .cz-paymethod-options#czPayMethodOptions
+                            each opt in [{v:'carte',l:'Carte bancaire'},{v:'especes',l:'Espèces'},{v:'qr_code',l:'QR code'},{v:'virement',l:'Virement'}]
+                                button.cz-delay-btn.cz-paymethod-btn(
+                                    type="button"
+                                    data-method=opt.v
+                                    class=(_payMethods.includes(opt.v) ? 'is-active' : '')
+                                ) #{opt.l}
+                        .cz-reminder-msg-wrap(style="margin-top:10px;")
+                            textarea.cz-reminder-msg#czPaymentNote(
+                                placeholder="Ex : Paiement par QR code disponible sur place, lien envoyé par SMS."
+                                maxlength="200"
+                                rows="2"
+                            )= cs.reminderPaymentNote || ''
+                            .cz-reminder-msg-count
+                                span#czPaymentNoteCount= (cs.reminderPaymentNote || '').length
+                                | /200
 
                     //- ── Preview ────────────────────────────────────────────────
                     .cz-reminder-section.cz-reminder-preview-section
@@ -1253,6 +1286,11 @@ block scripts
             cursor: pointer;
             transition: all 0.15s;
         }
+        .cz-paymethod-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
         .cz-delay-btn:hover { border-color: #22c55e; color: #22c55e; }
         .cz-delay-btn.is-active {
             background: #22c55e;
@@ -1620,9 +1658,11 @@ block scripts
             Object.keys(sectionToggleMap).forEach(function (id) {
                 var cb = document.getElementById(id);
                 if (!cb) return;
+                var card = cb.closest('.section-card');
                 cb.addEventListener('change', async function () {
                     var fieldName = sectionToggleMap[id];
                     var enabled   = cb.checked;
+                    if (card) card.classList.toggle('section-card--off', !enabled);
                     try {
                         await fetch('/account/toggle-section', {
                             method: 'PATCH',
@@ -1711,9 +1751,12 @@ block scripts
     //- ── JS Onglet Rappels ───────────────────────────────────────────────────
     script.
         (function() {
-            var delayBtns    = document.querySelectorAll('.cz-delay-btn');
+            var delayBtns    = document.querySelectorAll('.cz-delay-btn:not(.cz-paymethod-btn)');
+            var payBtns      = document.querySelectorAll('.cz-paymethod-btn');
             var msgArea      = document.getElementById('czReminderMsg');
             var msgCount     = document.getElementById('czReminderMsgCount');
+            var payNoteArea  = document.getElementById('czPaymentNote');
+            var payNoteCount = document.getElementById('czPaymentNoteCount');
             var saveBtn      = document.getElementById('czSaveReminder');
             var saveTxt      = document.getElementById('czSaveReminderText');
             var saveStatus   = document.getElementById('czReminderStatus');
@@ -1722,6 +1765,7 @@ block scripts
             var previewMsg   = document.getElementById('czPreviewMsgText');
 
             var selectedDelay = !{JSON.stringify((calendarSettings && calendarSettings.reminderDelayHours) || 24)};
+            var selectedPaymentMethods = !{JSON.stringify((calendarSettings && calendarSettings.reminderPaymentMethods) || [])};
 
             var delayLabels = { 6:'dans 6 heures', 12:'dans 12 heures', 24:'demain', 48:'dans 2 jours', 72:'dans 3 jours' };
 
@@ -1752,6 +1796,28 @@ block scripts
                 });
             }
 
+            // Boutons modes de paiement
+            payBtns.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var method = btn.dataset.method;
+                    var idx = selectedPaymentMethods.indexOf(method);
+                    if (idx === -1) {
+                        selectedPaymentMethods.push(method);
+                        btn.classList.add('is-active');
+                    } else {
+                        selectedPaymentMethods.splice(idx, 1);
+                        btn.classList.remove('is-active');
+                    }
+                });
+            });
+
+            // Compteur note paiement
+            if (payNoteArea) {
+                payNoteArea.addEventListener('input', function() {
+                    if (payNoteCount) payNoteCount.textContent = payNoteArea.value.length;
+                });
+            }
+
             // Save
             if (saveBtn) {
                 saveBtn.addEventListener('click', async function() {
@@ -1763,7 +1829,9 @@ block scripts
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 reminderDelayHours: selectedDelay,
-                                reminderMessage: msgArea ? msgArea.value.trim() : ''
+                                reminderMessage: msgArea ? msgArea.value.trim() : '',
+                                reminderPaymentMethods: selectedPaymentMethods,
+                                reminderPaymentNote: payNoteArea ? payNoteArea.value.trim() : ''
                             })
                         });
                         var data = await res.json();

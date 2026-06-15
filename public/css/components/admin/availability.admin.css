@@ -534,6 +534,62 @@
   color: var(--accent);
 }
 
+/* ── Slot mode options ─────────────────────────────────────── */
+.slot-mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slot-mode-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.slot-mode-option:hover {
+  border-color: var(--accent);
+}
+
+.slot-mode-option.active {
+  border-color: var(--accent);
+  background: var(--accent-glow, rgba(0,0,0,0.03));
+}
+
+.slot-mode-option__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main, #111);
+}
+
+.slot-mode-option__desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.slot-interval-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.slot-interval-input {
+  flex: none;
+  width: 70px;
+  text-align: center;
+}
+
 /* ── Preview bar chart ──────────────────────────────────────── */
 .avail-preview {
   display: flex;

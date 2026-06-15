@@ -14,6 +14,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const serviceModalPrice  = document.getElementById("serviceModalPrice");
   const serviceModalDuration = document.getElementById("serviceModalDuration");
   const serviceModalCategory = document.getElementById("serviceModalCategory");
+  const serviceModalCapacity = document.getElementById("serviceModalCapacity");
+  const svcCapacityField   = document.getElementById("svcCapacityField");
+  const svcTypeOptions     = document.getElementById("svcTypeOptions");
   const newCategorySection = document.getElementById("newCategorySection");
   const newCategoryName    = document.getElementById("newCategoryName");
   const newCategoryIcon    = document.getElementById("newCategoryIconInput");
@@ -87,6 +90,29 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // ── Type de service (individuel / collectif) ─────────────────────────────
+  function setServiceType(type) {
+    if (!svcTypeOptions) return;
+    svcTypeOptions.querySelectorAll(".svc-type-option").forEach((b) => {
+      b.classList.toggle("is-active", b.dataset.type === type);
+    });
+    if (svcCapacityField) svcCapacityField.style.display = type === "group" ? "" : "none";
+  }
+
+  function getServiceType() {
+    if (!svcTypeOptions) return "individual";
+    const active = svcTypeOptions.querySelector(".svc-type-option.is-active");
+    return active ? active.dataset.type : "individual";
+  }
+
+  if (svcTypeOptions) {
+    svcTypeOptions.addEventListener("click", (e) => {
+      const btn = e.target.closest(".svc-type-option");
+      if (!btn) return;
+      setServiceType(btn.dataset.type);
+    });
+  }
+
   const empModal           = document.getElementById("empModal");
   const empModalOverlay    = document.getElementById("empModalOverlay");
   const closeEmpModal      = document.getElementById("closeEmpModal");
@@ -133,6 +159,8 @@ document.addEventListener("DOMContentLoaded", () => {
     serviceModalDesc.value = "";
     serviceModalPrice.value = "";
     serviceModalDuration.value = "30";
+    if (serviceModalCapacity) serviceModalCapacity.value = "";
+    setServiceType("individual");
     buildCategorySelect("");
     showNewCategorySection(false);
     serviceModalTitle.textContent = "Nouveau service";
@@ -188,12 +216,15 @@ document.addEventListener("DOMContentLoaded", () => {
       categoryValue = newName;
     }
 
+    const svcType = getServiceType();
     const body = {
       name,
       description: serviceModalDesc.value.trim(),
       price: serviceModalPrice.value,
       duration: serviceModalDuration.value || 30,
       category: categoryValue,
+      type: svcType,
+      capacity: svcType === "group" ? (serviceModalCapacity ? serviceModalCapacity.value : 1) : null,
     };
 
     const url    = id ? `/api/services/${id}` : "/api/services";
@@ -232,6 +263,9 @@ document.addEventListener("DOMContentLoaded", () => {
       serviceModalPrice.value = priceBadge ? priceBadge.textContent.replace("€", "").trim() : "";
       const durBadge = card.querySelector(".badge--duration");
       serviceModalDuration.value = durBadge ? parseInt(durBadge.textContent) : 30;
+      const svcType = card.dataset.type === "group" ? "group" : "individual";
+      setServiceType(svcType);
+      if (serviceModalCapacity) serviceModalCapacity.value = card.dataset.capacity || "";
       buildCategorySelect(card.dataset.category || "");
       showNewCategorySection(false);
       serviceModalTitle.textContent = "Modifier le service";

@@ -1,0 +1,156 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet" href="/css/components/admin/group-sessions.admin.css")
+
+block content
+    .gs-page
+        .gs-page__header
+            h2 Cours collectifs
+            p.gs-page__subtitle Retrouvez ici toutes vos sessions de groupe à venir et gérez leurs participants.
+
+        if sessions.length === 0
+            .gs-empty
+                svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor")
+                    path(d="M40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm720 0v-120q0-44-24.5-84.5T666-434q51 6 96 20.5t84 35.5q36 20 55 44.5t19 53.5v120H760ZM360-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Z")
+                p Aucune session collective à venir.
+                p.gs-empty__hint Créez un service de type "Collectif" dans la section Services pour commencer.
+        else
+            .gs-table
+                .gs-table__head
+                    span Service
+                    span Date
+                    span Horaire
+                    span Places
+                    span
+                each session in sessions
+                    .gs-row(
+                        data-service-id=String(session.serviceId)
+                        data-date=session.date.toISOString()
+                        data-start-time=session.startTime
+                        data-capacity=session.capacity
+                    )
+                        span.gs-row__service= session.serviceName
+                        span.gs-row__date= new Date(session.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
+                        span.gs-row__time= session.startTime
+                        span.gs-row__count(class=(session.count >= session.capacity ? 'gs-row__count--full' : ''))
+                            | #{session.count} / #{session.capacity} places
+                        button.gs-row__btn(type="button") Voir les participants
+
+block scripts
+    script.
+        (function() {
+            function buildModal(opts) {
+                var existing = document.getElementById('__customModal');
+                if (existing) existing.remove();
+
+                var overlay = document.createElement('div');
+                overlay.id = '__customModal';
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+                overlay.innerHTML = '<style>' +
+                    '@keyframes __cmslidein{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}' +
+                    '#__customModal .cm{background:#fff;border-radius:20px;max-width:520px;width:100%;max-height:80vh;box-shadow:0 24px 48px -8px rgba(0,0,0,.22);display:flex;flex-direction:column;gap:0;overflow:hidden;animation:__cmslidein .18s cubic-bezier(.34,1.4,.64,1)}' +
+                    '#__customModal .cm__head{padding:20px 24px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid #eee}' +
+                    '#__customModal .cm__close{background:none;border:none;cursor:pointer;color:#9ca3af;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;flex-shrink:0;padding:0}' +
+                    '#__customModal .cm__close:hover{background:#f3f4f6;color:#111}' +
+                    '#__customModal .cm__title{font-size:17px;font-weight:700;color:#111;margin:0}' +
+                    '#__customModal .cm__desc{font-size:13px;color:#6b7280;margin:4px 0 0}' +
+                    '#__customModal .cm__body{padding:8px 24px 24px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}' +
+                    '#__customModal .gs-part{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid #eee;border-radius:12px}' +
+                    '#__customModal .gs-part__info{display:flex;flex-direction:column;gap:2px}' +
+                    '#__customModal .gs-part__name{font-size:13.5px;font-weight:700;color:#111}' +
+                    '#__customModal .gs-part__contact{font-size:12px;color:#6b7280}' +
+                    '#__customModal .gs-part__actions{display:flex;gap:6px;flex-shrink:0}' +
+                    '#__customModal .gs-part__btn{display:inline-flex;align-items:center;justify-content:center;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;border:1px solid #e5e7eb;background:#f3f4f6;color:#374151;transition:background .15s}' +
+                    '#__customModal .gs-part__btn:hover{background:#e9eaec}' +
+                    '#__customModal .gs-part__btn--danger{background:#fef2f2;color:#dc2626;border-color:#fecaca}' +
+                    '#__customModal .gs-part__btn--danger:hover{background:#fee2e2}' +
+                    '#__customModal .gs-empty-list{font-size:13px;color:#6b7280;text-align:center;padding:24px 0}' +
+                    '</style>' +
+                    '<div class="cm">' +
+                    '<div class="cm__head"><div><p class="cm__title">' + opts.title + '</p><p class="cm__desc">' + (opts.desc || '') + '</p></div>' +
+                    '<button class="cm__close" aria-label="Fermer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>' +
+                    '<div class="cm__body">' + (opts.bodyHtml || '') + '</div>' +
+                    '</div>';
+
+                overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+                overlay.querySelector('.cm__close').addEventListener('click', function() { overlay.remove(); });
+                document.addEventListener('keydown', function onKey(e) {
+                    if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onKey); }
+                });
+
+                return overlay;
+            }
+
+            function escapeHtml(str) {
+                var div = document.createElement('div');
+                div.textContent = str || '';
+                return div.innerHTML;
+            }
+
+            async function openParticipants(row) {
+                var serviceId = row.dataset.serviceId;
+                var date = row.dataset.date;
+                var startTime = row.dataset.startTime;
+                var serviceName = row.querySelector('.gs-row__service').textContent.trim();
+                var dateLabel = row.querySelector('.gs-row__date').textContent.trim();
+
+                var overlay = buildModal({
+                    title: serviceName,
+                    desc: dateLabel + ' à ' + startTime,
+                    bodyHtml: '<div class="gs-empty-list">Chargement…</div>',
+                });
+                document.body.appendChild(overlay);
+
+                try {
+                    var res = await fetch('/group-sessions/participants?serviceId=' + encodeURIComponent(serviceId) + '&date=' + encodeURIComponent(date) + '&startTime=' + encodeURIComponent(startTime));
+                    var data = await res.json();
+                    var body = overlay.querySelector('.cm__body');
+
+                    if (!data.success || !data.participants || data.participants.length === 0) {
+                        body.innerHTML = '<div class="gs-empty-list">Aucun participant pour cette session.</div>';
+                        return;
+                    }
+
+                    body.innerHTML = data.participants.map(function(p) {
+                        var name = escapeHtml((p.name || '') + ' ' + (p.surname || '')).trim();
+                        var contact = [p.email, p.phone].filter(Boolean).map(escapeHtml).join(' · ');
+                        return '<div class="gs-part" data-id="' + p._id + '">' +
+                            '<div class="gs-part__info"><span class="gs-part__name">' + (name || 'Client') + '</span>' +
+                            (contact ? '<span class="gs-part__contact">' + contact + '</span>' : '') + '</div>' +
+                            '<div class="gs-part__actions">' +
+                            '<a class="gs-part__btn" href="/history/edit/' + p._id + '">Modifier</a>' +
+                            '<button class="gs-part__btn gs-part__btn--danger" data-cancel="' + p._id + '">Retirer</button>' +
+                            '</div></div>';
+                    }).join('');
+                } catch (e) {
+                    overlay.querySelector('.cm__body').innerHTML = '<div class="gs-empty-list">Erreur lors du chargement.</div>';
+                }
+            }
+
+            document.querySelectorAll('.gs-row__btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    openParticipants(btn.closest('.gs-row'));
+                });
+            });
+
+            document.addEventListener('click', async function(e) {
+                var cancelBtn = e.target.closest('[data-cancel]');
+                if (!cancelBtn) return;
+                var id = cancelBtn.dataset.cancel;
+                if (!confirm('Retirer ce participant de la session ?')) return;
+                try {
+                    var res = await fetch('/appointment/' + id + '/cancel', { method: 'PATCH' });
+                    if (res.ok) {
+                        cancelBtn.closest('.gs-part').remove();
+                        // Refresh page to update participant counts in the table.
+                        setTimeout(function() { window.location.reload(); }, 300);
+                    } else {
+                        alert('Erreur lors de la suppression.');
+                    }
+                } catch (e) {
+                    alert('Erreur réseau.');
+                }
+            });
+        })();

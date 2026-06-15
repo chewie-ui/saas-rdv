@@ -1,6 +1,7 @@
 const Company = require("../db/models/company/company.model");
 const Booking = require("../db/models/book.model");
 const { getLimit } = require("../utils/planLimits");
+const { getAdminFeaturesFlags } = require("./featureFlag");
 
 module.exports = async (req, res, next) => {
   try {
@@ -27,6 +28,11 @@ module.exports = async (req, res, next) => {
     // Ces variables seront accessibles direct dans tes fichiers .pug
     res.locals.currentCompany = currentCompany;
     res.locals.user = req.user;
+
+    // 4b. Fonctionnalités admin activables/désactivables depuis le superadmin
+    // (ex: Cours collectifs, Temps tampon) — utilisées pour cacher des
+    // sections du sidebar/pages quand désactivées (test/rollout progressif).
+    res.locals.adminFeatures = await getAdminFeaturesFlags();
 
     // 5. Limite mensuelle de RDV (plan Starter/basic) : on calcule si elle est
     // atteinte pour pouvoir afficher une bannière persistante sur TOUTES les

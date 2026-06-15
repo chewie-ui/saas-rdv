@@ -186,6 +186,8 @@ const userSchema = schema(
       // ── Rappels email ────────────────────────────────────────────────────
       reminderDelayHours: { type: Number, default: 24 }, // 6 | 12 | 24 | 48 | 72
       reminderMessage:    { type: String, default: '' }, // message perso affiché dans le rappel
+      reminderPaymentMethods: { type: [String], default: [] }, // 'carte' | 'especes' | 'qr_code' | 'virement'
+      reminderPaymentNote:    { type: String, default: '' }, // précisions libres sur le paiement (ex: lien QR code)
       gallery:     { type: [String], default: [] },
       equipment:   { type: [String], default: [] },
       categories:  { type: [{ name: String, icon: { type: String, default: '' }, _id: false }], default: [] },

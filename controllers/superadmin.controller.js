@@ -4,7 +4,13 @@ const Company    = require("../db/models/company/company.model");
 const PromoCode  = require("../db/models/promoCode.model");
 const AccessLink = require("../db/models/accessLink.model");
 const FeatureFlag = require("../db/models/featureFlag.model");
-const { FEATURES, invalidateFeatureFlagCache } = require("../middlewares/featureFlag");
+const Booking   = require("../db/models/book.model");
+const Service   = require("../db/models/company/service.model");
+const Employee  = require("../db/models/company/employee.model");
+const DaysOff   = require("../db/models/company/daysOff.model");
+const Form      = require("../db/models/form.model");
+const Review    = require("../db/models/review.model");
+const { FEATURES, ADMIN_FEATURES, invalidateFeatureFlagCache } = require("../middlewares/featureFlag");
 
 exports.loginPage = (req, res) => {
   if (req.session.isSuperAdmin) return res.redirect("/superadmin");
@@ -429,6 +435,36 @@ exports.toggleAccountStatus = async (req, res) => {
   }
 };
 
+// ── Suppression définitive d'un compte (+ toutes ses données) ────────────────
+exports.deleteUserAccount = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select("_id");
+    if (!user) return res.status(404).json({ error: "Utilisateur introuvable." });
+
+    const company = await Company.findOne({ owner: userId }).select("_id").lean();
+    if (company) {
+      const companyId = company._id;
+      await Promise.all([
+        Service.deleteMany({ company: companyId }),
+        Employee.deleteMany({ company: companyId }),
+        DaysOff.deleteMany({ company: companyId }),
+        Form.deleteMany({ company: companyId }),
+        Review.deleteMany({ company: companyId }),
+      ]);
+      await Company.deleteOne({ _id: companyId });
+    }
+
+    await Booking.deleteMany({ company: userId });
+    await User.deleteOne({ _id: userId });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("deleteUserAccount error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
 // ── Pages / fonctionnalités (maintenance, erreur, désactivation) ─────────────
 exports.featuresPage = async (req, res) => {
   const docs = await FeatureFlag.find({}).lean();
@@ -444,14 +480,23 @@ exports.featuresPage = async (req, res) => {
 
   const smsNotificationsEnabled = byKey["sms_notifications"]?.status === "active";
 
-  res.render("superadmin/features", { features, smsNotificationsEnabled });
+  // Fonctionnalités admin (sidebar/sections) activées par défaut, désactivables
+  // par le superadmin pour faciliter les tests.
+  const adminFeatures = ADMIN_FEATURES.map((f) => ({
+    key: f.key,
+    label: f.label,
+    enabled: byKey[f.key]?.status !== "disabled",
+  }));
+
+  res.render("superadmin/features", { features, smsNotificationsEnabled, adminFeatures });
 };
 
-// Toggle générique on/off pour des fonctionnalités cachées (ex: SMS).
+// Toggle générique on/off pour des fonctionnalités cachées (ex: SMS) ou des
+// fonctionnalités admin activées par défaut (ex: Cours collectifs, Tampon).
 exports.toggleHiddenFeature = async (req, res) => {
   try {
     const { key } = req.params;
-    const ALLOWED_KEYS = ["sms_notifications"];
+    const ALLOWED_KEYS = ["sms_notifications", ...ADMIN_FEATURES.map((f) => f.key)];
     if (!ALLOWED_KEYS.includes(key)) {
       return res.status(404).json({ error: "Fonctionnalité inconnue." });
     }

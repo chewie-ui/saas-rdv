@@ -5,6 +5,7 @@ const pug = require("pug");
 const Booking = require("../db/models/book.model");
 const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
+const Service = require("../db/models/company/service.model");
 const { atLeast } = require("./planLimits");
 const { sendEmail } = require("./mailer");
 
@@ -58,7 +59,7 @@ async function sendDueReminders() {
     const companies = await Company.find({ _id: { $in: companyIds } }).select("_id owner").lean();
     const ownerIds = [...new Set(companies.map((c) => String(c.owner)).filter(Boolean))];
     const owners = await User.find({ _id: { $in: ownerIds } })
-      .select("_id isPremium manualPremium subscription calendarSettings")
+      .select("_id isPremium manualPremium subscription calendarSettings location")
       .lean();
     const ownerById = Object.fromEntries(owners.map((o) => [String(o._id), o]));
     companies.forEach((c) => { companyOwnerMap[String(c._id)] = ownerById[String(c.owner)] || null; });
@@ -87,6 +88,33 @@ async function sendDueReminders() {
     // ── Message personnalisé du professionnel ─────────────────────────────
     const ownerMessage = (owner?.calendarSettings?.reminderMessage || "").trim();
 
+    // ── Modes de paiement acceptés (configurés dans Personnaliser) ─────────
+    const paymentMethods = Array.isArray(owner?.calendarSettings?.reminderPaymentMethods)
+      ? owner.calendarSettings.reminderPaymentMethods
+      : [];
+    const paymentNote = (owner?.calendarSettings?.reminderPaymentNote || "").trim();
+
+    // ── Catégorie du service (lookup, non snapshotté sur la réservation) ───
+    let serviceCategory = "";
+    if (booking.service) {
+      try {
+        const svc = await Service.findById(booking.service).select("category").lean();
+        serviceCategory = svc?.category || "";
+      } catch (_) {}
+    }
+
+    // ── Prix (snapshotté dans payment.amount à la création) ────────────────
+    const servicePrice = (booking.payment && booking.payment.amount) ? Number(booking.payment.amount) : null;
+
+    // ── Lieu du rendez-vous ──────────────────────────────────────────────
+    let locationText = "";
+    const loc = owner?.location;
+    if (loc?.serviceType === "en_ligne") {
+      locationText = "En ligne";
+    } else if (loc?.address || loc?.city) {
+      locationText = [loc.address, loc.city].filter(Boolean).join(", ");
+    }
+
     // ── Sujet dynamique selon le délai ────────────────────────────────────
     const delayLabel = delayHours <= 6  ? "dans 6 heures"
                      : delayHours <= 12 ? "dans 12 heures"
@@ -95,17 +123,31 @@ async function sendDueReminders() {
                      : "dans 3 jours";
     const subject = `Rappel : votre rendez-vous ${delayLabel}`;
 
+    const formattedDate = new Date(booking.date).toLocaleDateString("fr-FR", {
+      weekday: "long", day: "2-digit", month: "long", year: "numeric",
+    });
+
     try {
       const html = pug.renderFile(templatePath, {
         name: booking.name || "",
         surname: booking.surname || "",
         date: booking.date,
+        formattedDate,
         startHour: booking.startTime,
         endHour: booking.endTime,
         slotTime: booking.slotTime,
         serviceName: booking.serviceName || "",
+        serviceCategory,
+        servicePrice,
+        employeeName: booking.employeeName || "",
+        locationText,
+        formAnswers: (Array.isArray(booking.formAnswers) ? booking.formAnswers : []).filter(
+          (a) => a.required || (a.answer !== undefined && a.answer !== null && String(a.answer).trim() !== "")
+        ),
         message: booking.message || "",
         ownerMessage,
+        paymentMethods,
+        paymentNote,
         delayLabel,
         bookingId: booking._id,
         cancelToken: booking.cancelToken,

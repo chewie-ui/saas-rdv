@@ -1562,3 +1562,35 @@
   vertical-align: middle;
   white-space: nowrap;
 }
+
+/* ── Section masquée de la page publique ──────────────────────────────────
+   Bandeau d'avertissement + assombrissement du contenu pour que l'admin
+   voie immédiatement qu'une section ("À propos", "Galerie", ...) n'est pas
+   visible par les visiteurs, sans avoir à repérer la petite pastille grise. */
+.section-off-banner {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #c2410c;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.section-off-banner svg {
+  flex-shrink: 0;
+}
+
+.section-card--off .section-off-banner {
+  display: flex;
+}
+
+.section-card--off > *:not(.info-card__header):not(.section-off-banner) {
+  opacity: 0.45;
+  filter: grayscale(0.4);
+  pointer-events: none;
+  user-select: none;
+}

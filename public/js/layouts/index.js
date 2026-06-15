@@ -43,6 +43,7 @@ const STATE = {
   // ── Payment state ────────────────────────────────────────────────────────
   paymentMethod:        null,   // "online" | "on_site"
   stripePaymentIntentId: null,  // set after confirmCardPayment succeeds
+  stripeSetupIntentId:   null,  // set after confirmCardSetup succeeds (carte enregistrée, 0€)
   paymentError:         null,
 };
 
@@ -52,11 +53,20 @@ const pane    = document.getElementById("bkPane");
 const cart    = document.getElementById("bkCart");
 
 /* ── Steps ──────────────────────────────────────────────────────────────── */
+// La carte doit être enregistrée (0€ prélevé) dès que l'établissement a une
+// politique d'annulation non gratuite — même si le prépaiement n'est pas
+// activé — afin de pouvoir prélever les frais en cas d'annulation tardive
+// ou d'absence.
+function cardRequiredByPolicy() {
+  return !!(PREPAYMENT.stripeActive && STRIPE_KEY && (PREPAYMENT.cancellationRule || "free") !== "free");
+}
+
 function needsPaymentStep() {
-  if (!PREPAYMENT.enabled) return false;
   // Only show payment step if the selected service has a price > 0
   const price = STATE.service?.price;
-  return price !== null && price !== undefined && Number(price) > 0;
+  if (price === null || price === undefined || Number(price) <= 0) return false;
+  if (PREPAYMENT.enabled) return true;
+  return cardRequiredByPolicy();
 }
 
 function buildSteps() {
@@ -89,7 +99,8 @@ function recomputeSteps() {
 
   // Show "Avec" if: the service has assigned employees OR the company has any
   // employees at all (fallback: show all company employees when service has none).
-  const showEmployeeStep = svcEmployees.length > 0 || globalEmps;
+  // Les sessions collectives ne dépendent pas d'un employé en particulier.
+  const showEmployeeStep = STATE.service?.type !== "group" && (svcEmployees.length > 0 || globalEmps);
 
   const steps = [];
   if (SERVICES.length > 0) steps.push({ id: "service",  label: "Service" });
@@ -281,14 +292,15 @@ function bindSvcCards(container) {
       if (e.target.closest(".bk-svc__info-btn")) return;
       const svc = SERVICES.find(s => s._id === el.dataset.svc);
       if (!svc) return;
-      STATE.service  = { id: svc._id, name: svc.name, price: svc.price, duration: svc.duration };
+      STATE.service  = { id: svc._id, name: svc.name, price: svc.price, duration: svc.duration, category: svc.category || "", type: svc.type || "individual", capacity: svc.capacity || null };
       STATE.employee = undefined;
       STATE.date     = null;
       STATE.time     = null;
       recomputeSteps();
       const svcHasEmps    = (svc.employees || []).length > 0;
       const globalHasEmps = EMPLOYEES.length > 0;
-      if (svcHasEmps || globalHasEmps) goToStep("employee");
+      // Les sessions collectives ne sont pas liées à un employé en particulier.
+      if (svc.type !== "group" && (svcHasEmps || globalHasEmps)) goToStep("employee");
       else goToStep("time");
     };
   });
@@ -745,11 +757,15 @@ function buildSlotsPanel(slots) {
     <div class="bk-dayparts">
       ${dayparts.map(([id,lbl]) => `<button class="bk-daypart ${STATE.daypart===id?"is-active":""}" data-dp="${id}">${lbl}</button>`).join("")}
     </div>
-    <div class="bk-slot-list">
+    <div class="bk-slot-list ${STATE.service && STATE.service.type === "group" ? "bk-slot-list--group" : ""}">
       ${visible.length === 0
         ? `<div style="grid-column:1/-1; text-align:center; color:var(--bk-muted); font-size:12.5px; padding:20px 0;">Aucun créneau</div>`
-        : visible.map(s => `<button class="bk-slot ${s.taken?"is-disabled":""} ${s.isPast?"is-past":""} ${STATE.time===s.time?"is-selected":""}"
-            data-time="${s.time}" ${s.taken?"disabled":""}>${s.time}</button>`).join("")
+        : visible.map(s => {
+            const remainingHtml = (s.remaining !== undefined && !s.taken && !s.isPast)
+              ? `<span class="bk-slot__spots">${s.remaining} place${s.remaining > 1 ? "s" : ""}</span>` : "";
+            return `<button class="bk-slot ${s.taken?"is-disabled":""} ${s.isPast?"is-past":""} ${STATE.time===s.time?"is-selected":""}"
+              data-time="${s.time}" ${s.taken?"disabled":""}>${s.time}${remainingHtml}</button>`;
+          }).join("")
       }
     </div>
   </div>`;
@@ -874,6 +890,8 @@ async function fetchSlots() {
   const dayOfWeek = new Date(STATE.date + "T00:00:00").getDay();
   const empId     = STATE.employee ? STATE.employee.id : "";
   const serviceDur = STATE.service ? STATE.service.duration : null;
+  const serviceId  = STATE.service ? STATE.service.id : "";
+  const isGroupService = STATE.service && STATE.service.type === "group";
 
   const [slotsRes, bookedRes] = await Promise.all([
     fetch("/get-schedule", {
@@ -881,12 +899,14 @@ async function fetchSlots() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ index: dayOfWeek, COMPANY_ID, date: STATE.date, serviceDuration: serviceDur, employeeId: empId }),
     }),
-    fetch(`/get-booking?date=${STATE.date}&companyId=${COMPANY_ID}&employeeId=${empId}${serviceDur ? `&serviceDuration=${serviceDur}` : ""}`),
+    fetch(`/get-booking?date=${STATE.date}&companyId=${COMPANY_ID}&employeeId=${empId}${serviceDur ? `&serviceDuration=${serviceDur}` : ""}${serviceId ? `&serviceId=${serviceId}` : ""}`),
   ]);
 
   const slotsData  = await slotsRes.json();
   const bookedData = await bookedRes.json();
   const booked     = new Set(bookedData.bookedTimes || []);
+  const groupAvailability = bookedData.groupAvailability || {};
+  const groupCapacity     = bookedData.capacity || (STATE.service ? STATE.service.capacity : null);
 
   // Calculer l'heure actuelle locale (pour masquer les créneaux passés si c'est aujourd'hui)
   const nowLocal    = new Date();
@@ -901,7 +921,13 @@ async function fetchSlots() {
     const slotMin   = h * 60 + m;
     // Créneau passé si c'est aujourd'hui ET que l'heure est déjà dépassée
     const isPast    = isToday && slotMin <= nowMinutes;
-    return { time: t, taken: booked.has(t) || isPast, isPast };
+    const slot = { time: t, taken: booked.has(t) || isPast, isPast };
+    if (isGroupService && groupCapacity) {
+      const booked2 = groupAvailability[t] ? groupAvailability[t].booked : 0;
+      slot.remaining = Math.max(0, groupCapacity - booked2);
+      slot.capacity  = groupCapacity;
+    }
+    return slot;
   });
 
   // Re-render just the slots panel
@@ -1312,7 +1338,7 @@ function collectFormAnswers() {
       const sel = q.querySelector(".bk-choice-btn.selected");
       answer = sel ? sel.dataset.val : "";
     }
-    answers.push({ question: formQ.label, answer });
+    answers.push({ question: formQ.label, answer, required: !!formQ.required });
   });
   return answers;
 }
@@ -1367,7 +1393,11 @@ function renderPaymentPane() {
   const pane = document.getElementById("bkPane");
   const price      = STATE.service?.price;
   const priceLabel = price !== null && price !== undefined ? `${Number(price).toFixed(2)} €` : "";
-  const isRequired = PREPAYMENT.required;
+  // La carte est obligatoire soit parce que le prépaiement est activé,
+  // soit parce que la politique d'annulation de l'établissement exige
+  // une carte enregistrée en garantie (sans prélèvement immédiat).
+  const policyRequiresCard = cardRequiredByPolicy();
+  const isRequired = PREPAYMENT.required || policyRequiresCard;
 
   // Build the list of available payment methods from admin config
   const methods = [];
@@ -1384,13 +1414,23 @@ function renderPaymentPane() {
     methods.push("on_site");
   }
 
-  // If required and only Stripe available → force online
-  if (isRequired && methods.includes("online") && STATE.paymentMethod !== "online") {
-    STATE.paymentMethod = "online";
+  // Si la carte n'est requise que pour la garantie d'annulation (prépaiement
+  // non activé), on ne propose que la carte — pas de choix entre plusieurs
+  // moyens de paiement, puisqu'aucun montant n'est prélevé ici.
+  if (policyRequiresCard && !PREPAYMENT.enabled) {
+    methods.length = 0;
+    methods.push("online");
   }
-  // Auto-select if only one method available and nothing selected yet
-  if (!STATE.paymentMethod && methods.length === 1) {
-    STATE.paymentMethod = methods[0];
+
+  // Sélection initiale uniquement : si rien n'est encore choisi, on pré-sélectionne
+  // "online" si le paiement est obligatoire (ou s'il s'agit du seul moyen dispo).
+  // Une fois que l'utilisateur a fait un choix (selectPayMethod), on ne le force plus.
+  if (!STATE.paymentMethod) {
+    if (isRequired && methods.includes("online")) {
+      STATE.paymentMethod = "online";
+    } else if (methods.length === 1) {
+      STATE.paymentMethod = methods[0];
+    }
   }
 
   // Reset Stripe card element when re-rendering
@@ -1468,8 +1508,13 @@ function renderPaymentPane() {
       </div>
     </div>` : "";
 
+  // La carte est aussi requise en garantie si l'utilisateur choisit de payer
+  // sur place mais que la politique d'annulation de l'établissement exige
+  // une carte enregistrée (frais en cas d'annulation tardive / absence).
+  const cardForGuarantee = STATE.paymentMethod === "on_site" && policyRequiresCard;
+
   // ── Stripe card block ───────────────────────────────────────────────────────
-  const stripeBlock = STATE.paymentMethod === "online" ? `
+  const stripeBlock = (STATE.paymentMethod === "online" || cardForGuarantee) ? `
     <div id="bkCardWrap">
       <div class="bk-card-label">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
@@ -1483,19 +1528,44 @@ function renderPaymentPane() {
   const requiredBadge = isRequired && methods.length <= 1 ? `
     <div class="bk-pay-required-badge">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      Paiement obligatoire pour cette réservation
+      ${policyRequiresCard && !PREPAYMENT.enabled
+        ? "Carte bancaire obligatoire pour garantir cette réservation (aucun débit immédiat)"
+        : "Paiement obligatoire pour cette réservation"}
     </div>` : "";
 
   // ── Cancel policy (Stripe only) ─────────────────────────────────────────────
-  const cancelPolicy = STATE.paymentMethod === "online" ? `
+  // Paiement immédiat (prépaiement activé + "Payer maintenant par carte") :
+  // l'argent est déjà débité, donc en cas d'annulation tardive on parle de
+  // remboursement (partiel ou nul), pas de nouveau prélèvement.
+  const immediateCharge = STATE.paymentMethod === "online" && PREPAYMENT.enabled;
+
+  let cancelPolicyItems = "";
+  const cancelRule = PREPAYMENT.cancellationRule || "free";
+  if (cancelRule === "half_24h") {
+    cancelPolicyItems = immediateCharge ? `
+      <li>Annulation <strong>&gt; 24h</strong> : remboursement intégral</li>
+      <li>Annulation <strong>&lt; 24h</strong> : 50 % remboursés, 50 % conservés</li>` : `
+      <li>Annulation <strong>&gt; 24h</strong> : aucun frais</li>
+      <li>Annulation <strong>&lt; 24h</strong> : 50 % du montant prélevés</li>`;
+  } else if (cancelRule === "full_12h") {
+    cancelPolicyItems = immediateCharge ? `
+      <li>Annulation <strong>&gt; 24h</strong> : remboursement intégral</li>
+      <li>Annulation entre <strong>12h et 24h</strong> : 50 % remboursés, 50 % conservés</li>
+      <li>Annulation <strong>&lt; 12h</strong> : aucun remboursement</li>` : `
+      <li>Annulation <strong>&gt; 24h</strong> : aucun frais</li>
+      <li>Annulation entre <strong>12h et 24h</strong> : 50 % du montant prélevés</li>
+      <li>Annulation <strong>&lt; 12h</strong> : 100 % du montant prélevés</li>`;
+  } else {
+    cancelPolicyItems = `<li>Annulation gratuite à tout moment</li>`;
+  }
+
+  const cancelPolicy = (STATE.paymentMethod === "online" || cardForGuarantee) ? `
     <div class="bk-cancel-policy">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       <div>
-        <strong>Politique d'annulation</strong>
+        <strong>${immediateCharge ? `Paiement immédiat — ${priceLabel} débités maintenant` : (cardForGuarantee ? "Carte enregistrée en garantie — 0 € débité maintenant" : "Carte enregistrée — 0 € débité maintenant")}</strong>
         <ul>
-          <li>Annulation <strong>&gt; 24h</strong> : remboursement complet</li>
-          <li>Annulation <strong>&lt; 24h</strong> : 50 % prélevés</li>
-          <li>Absence sans annulation : 100 % prélevés</li>
+          ${cancelPolicyItems}
         </ul>
       </div>
     </div>` : "";
@@ -1524,7 +1594,7 @@ function renderPaymentPane() {
   `;
 
   // Mount Stripe card if needed
-  if (STATE.paymentMethod === "online") {
+  if (STATE.paymentMethod === "online" || cardForGuarantee) {
     mountStripeCard();
   }
 
@@ -1536,9 +1606,16 @@ function renderPaymentPane() {
 }
 
 function selectPayMethod(method) {
-  if (method !== "online") {
+  // La carte reste nécessaire si on passe en "sur place" mais que la politique
+  // d'annulation exige une carte en garantie (cardRequiredByPolicy).
+  const keepCard = method === "online" || (method === "on_site" && cardRequiredByPolicy());
+  if (!keepCard) {
     STATE.stripePaymentIntentId = null;
-    if (_cardElement) { _cardElement.unmount(); _cardElement = null; }
+    STATE.stripeSetupIntentId   = null;
+    if (_cardElement) {
+      try { _cardElement.unmount(); } catch (_) { /* élément déjà cassé/démonté */ }
+      _cardElement = null;
+    }
   }
   STATE.paymentMethod = method;
   STATE.paymentError  = null;
@@ -1552,7 +1629,10 @@ function mountStripeCard() {
   const container = document.getElementById("bkStripeCard");
   if (!container) return;
 
-  if (_cardElement) { _cardElement.unmount(); _cardElement = null; }
+  if (_cardElement) {
+    try { _cardElement.unmount(); } catch (_) { /* élément déjà cassé/démonté */ }
+    _cardElement = null;
+  }
 
   const elements  = s.elements({ locale: "fr" });
   _cardElement    = elements.create("card", {
@@ -1580,18 +1660,27 @@ function mountStripeCard() {
     if (STATE.stripePaymentIntentId) {
       STATE.stripePaymentIntentId = null;
     }
+    if (STATE.stripeSetupIntentId) {
+      STATE.stripeSetupIntentId = null;
+    }
   });
 }
 
 /* ── Payment submit (called when "Confirmer et payer" is clicked) ─────────── */
 async function submitBookingWithPayment() {
-  // On-site, bank transfer or paypal → just confirm booking, no card charge needed
-  if (STATE.paymentMethod === "on_site" || STATE.paymentMethod === "bank_transfer" || STATE.paymentMethod === "paypal") {
+  // Bank transfer or paypal → just confirm booking, no card needed
+  if (STATE.paymentMethod === "bank_transfer" || STATE.paymentMethod === "paypal") {
     submitBooking();
     return;
   }
 
-  // method === "online"
+  // "Payer sur place" sans politique d'annulation exigeant une carte → rien à faire
+  if (STATE.paymentMethod === "on_site" && !cardRequiredByPolicy()) {
+    submitBooking();
+    return;
+  }
+
+  // method === "online", ou "on_site" avec carte exigée en garantie
   const nextBtn = document.getElementById("cartNext");
   const resetBtn = () => {
     if (nextBtn) { nextBtn.disabled = false; nextBtn.textContent = "Confirmer et payer"; }
@@ -1614,50 +1703,95 @@ async function submitBookingWithPayment() {
     return;
   }
 
+  // "Payer maintenant par carte" avec prépaiement activé → on débite le montant
+  // immédiatement (PaymentIntent). Sinon (carte requise uniquement en garantie
+  // par la politique d'annulation, prépaiement non activé) → SetupIntent 0€.
+  const chargeNow = STATE.paymentMethod === "online" && PREPAYMENT.enabled;
+
   try {
     const email = CLIENT?.email || STATE.form.email;
     const name  = CLIENT
       ? `${CLIENT.firstName} ${CLIENT.lastName}`.trim()
       : `${STATE.form.firstName} ${STATE.form.lastName}`.trim();
 
-    // 1. Create PaymentIntent on server (amount = service price)
-    if (nextBtn) nextBtn.textContent = "Connexion sécurisée…";
-    const amountEur   = STATE.service?.price || 0;
-    const serviceName = STATE.service?.name  || "";
-    const intentRes = await fetch("/api/booking/payment-intent", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ email, name, amountEur, currency: "eur", companyId: COMPANY_ID, serviceName }),
-    });
-    const intentData = await intentRes.json().catch(() => ({}));
-    if (!intentRes.ok) throw new Error(intentData.message || intentData.error || `Erreur serveur (${intentRes.status}).`);
-    if (!intentData.clientSecret) throw new Error(intentData.error || "Erreur Stripe.");
+    if (chargeNow) {
+      // 1. Create PaymentIntent on server (débite le montant maintenant)
+      if (nextBtn) nextBtn.textContent = "Connexion sécurisée…";
+      const intentRes = await fetch("/api/booking/payment-intent", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          email, name, companyId: COMPANY_ID,
+          amountEur:   STATE.service?.price,
+          currency:    "eur",
+          serviceName: STATE.service?.name,
+        }),
+      });
+      const intentData = await intentRes.json().catch(() => ({}));
+      if (!intentRes.ok) throw new Error(intentData.message || intentData.error || `Erreur serveur (${intentRes.status}).`);
+      if (!intentData.clientSecret) throw new Error(intentData.error || "Erreur Stripe.");
 
-    // 2. Confirm card payment with Stripe.js (charges the card immediately)
-    if (nextBtn) nextBtn.textContent = "Validation du paiement…";
-    const { paymentIntent, error } = await s.confirmCardPayment(intentData.clientSecret, {
-      payment_method: {
-        card: _cardElement,
-        billing_details: { name, email },
-      },
-    });
+      // 2. Confirm payment with Stripe.js (débite la carte)
+      if (nextBtn) nextBtn.textContent = "Paiement en cours…";
+      const { paymentIntent, error } = await s.confirmCardPayment(intentData.clientSecret, {
+        payment_method: {
+          card: _cardElement,
+          billing_details: { name, email },
+        },
+      });
 
-    if (error) {
-      const errEl = document.getElementById("bkCardError");
-      if (errEl) { errEl.textContent = error.message; errEl.style.display = "block"; }
-      resetBtn();
-      return;
+      if (error) {
+        const errEl = document.getElementById("bkCardError");
+        if (errEl) { errEl.textContent = error.message; errEl.style.display = "block"; }
+        resetBtn();
+        return;
+      }
+
+      if (paymentIntent.status !== "succeeded") {
+        const errEl = document.getElementById("bkCardError");
+        if (errEl) { errEl.textContent = "Paiement non confirmé. Veuillez réessayer."; errEl.style.display = "block"; }
+        resetBtn();
+        return;
+      }
+
+      STATE.stripePaymentIntentId = paymentIntent.id;
+    } else {
+      // 1. Create SetupIntent on server (enregistre la carte, 0€ prélevé)
+      if (nextBtn) nextBtn.textContent = "Connexion sécurisée…";
+      const intentRes = await fetch("/api/booking/setup-intent", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ email, name, companyId: COMPANY_ID }),
+      });
+      const intentData = await intentRes.json().catch(() => ({}));
+      if (!intentRes.ok) throw new Error(intentData.message || intentData.error || `Erreur serveur (${intentRes.status}).`);
+      if (!intentData.clientSecret) throw new Error(intentData.error || "Erreur Stripe.");
+
+      // 2. Confirm card setup with Stripe.js (enregistre la carte, aucun débit)
+      if (nextBtn) nextBtn.textContent = "Validation de la carte…";
+      const { setupIntent, error } = await s.confirmCardSetup(intentData.clientSecret, {
+        payment_method: {
+          card: _cardElement,
+          billing_details: { name, email },
+        },
+      });
+
+      if (error) {
+        const errEl = document.getElementById("bkCardError");
+        if (errEl) { errEl.textContent = error.message; errEl.style.display = "block"; }
+        resetBtn();
+        return;
+      }
+
+      if (setupIntent.status !== "succeeded") {
+        const errEl = document.getElementById("bkCardError");
+        if (errEl) { errEl.textContent = "Carte non confirmée. Veuillez réessayer."; errEl.style.display = "block"; }
+        resetBtn();
+        return;
+      }
+
+      STATE.stripeSetupIntentId = setupIntent.id;
     }
-
-    if (paymentIntent.status !== "succeeded") {
-      const errEl = document.getElementById("bkCardError");
-      if (errEl) { errEl.textContent = "Paiement non confirmé. Veuillez réessayer."; errEl.style.display = "block"; }
-      resetBtn();
-      return;
-    }
-
-    // Payment succeeded → store intentId in state
-    STATE.stripePaymentIntentId = paymentIntent.id;
 
     // 3. Submit the booking
     await submitBooking();
@@ -1712,11 +1846,13 @@ async function submitBooking() {
         serviceName:     STATE.service  ? STATE.service.name     : null,
         serviceDuration: STATE.service  ? STATE.service.duration : null,
         servicePrice:    STATE.service  ? STATE.service.price    : null,
+        serviceCategory: STATE.service  ? STATE.service.category : null,
         employeeId:      STATE.employee ? STATE.employee.id      : null,
         employeeName:    STATE.employee ? STATE.employee.name    : null,
         // ── Payment ──────────────────────────────────────────────────────────
         paymentMethod:          STATE.paymentMethod          || "none",
         stripePaymentIntentId:  STATE.stripePaymentIntentId  || null,
+        stripeSetupIntentId:    STATE.stripeSetupIntentId    || null,
       }),
     });
 
@@ -1726,6 +1862,12 @@ async function submitBooking() {
       if (nextBtn) { nextBtn.disabled = false; nextBtn.textContent = "Confirmer la réservation"; }
       if (data.error === "no_employee_available") {
         alert("Ce créneau n'est plus disponible. Veuillez en choisir un autre.");
+        goToStep("time");
+        _currentSlots = [];
+        STATE.date = null;
+        STATE.time = null;
+      } else if (data.error === "session_full") {
+        alert(data.message || "Cette session est complète, merci de choisir un autre horaire.");
         goToStep("time");
         _currentSlots = [];
         STATE.date = null;

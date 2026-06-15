@@ -55,10 +55,14 @@ exports.createService = async (req, res) => {
       return res.status(403).json({ error: "plan_limit", message: `Limite de ${maxServices} services atteinte.` });
     }
 
-    const { name, description, price, duration, category } = req.body;
+    const { name, description, price, duration, category, type, capacity } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ error: "Le nom du service est requis." });
     }
+
+    const isGroup = type === "group";
+    const cap = isGroup ? Math.max(1, Math.min(500, Number(capacity) || 1)) : null;
+
     const service = await Service.create({
       company: companyId,
       name: name.trim(),
@@ -67,6 +71,8 @@ exports.createService = async (req, res) => {
       duration: duration ? Number(duration) : 30,
       category: (category || "").trim(),
       order: count,
+      type: isGroup ? "group" : "individual",
+      capacity: cap,
     });
     res.json({ success: true, service });
   } catch (err) {
@@ -79,13 +85,20 @@ exports.createService = async (req, res) => {
 exports.updateService = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, duration, category } = req.body;
+    const { name, description, price, duration, category, type, capacity } = req.body;
     const update = {};
     if (name !== undefined) update.name = name.trim();
     if (description !== undefined) update.description = description.trim();
     if (price !== undefined) update.price = price !== "" ? Number(price) : null;
     if (duration !== undefined) update.duration = Number(duration);
     if (category !== undefined) update.category = category.trim();
+    if (type !== undefined) {
+      const isGroup = type === "group";
+      update.type = isGroup ? "group" : "individual";
+      update.capacity = isGroup ? Math.max(1, Math.min(500, Number(capacity) || 1)) : null;
+    } else if (capacity !== undefined) {
+      update.capacity = Math.max(1, Math.min(500, Number(capacity) || 1));
+    }
 
     const service = await Service.findOneAndUpdate(
       { _id: id, company: res.locals.currentCompany._id },
