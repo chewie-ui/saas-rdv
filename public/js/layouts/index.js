@@ -2182,6 +2182,30 @@ function restoreStateFromOAuth() {
   } catch (_) { return false; }
 }
 
+/* ── Auto-resize iframe parent ──────────────────────────────────────────── */
+(function () {
+  if (window.self === window.top) return; // pas dans un iframe
+  function sendHeight() {
+    var h = Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight
+    );
+    window.parent.postMessage({ type: 'branshee-resize', height: h }, '*');
+  }
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  if (window.ResizeObserver) {
+    new ResizeObserver(sendHeight).observe(document.body);
+  } else {
+    // fallback : MutationObserver sur le body
+    new MutationObserver(sendHeight).observe(document.body, {
+      childList: true, subtree: true, attributes: true
+    });
+  }
+  // Envoi initial après paint
+  requestAnimationFrame(sendHeight);
+})();
+
 /* ── Init ───────────────────────────────────────────────────────────────── */
 const _hadSavedState = restoreStateFromOAuth();
 if (_hadSavedState) {

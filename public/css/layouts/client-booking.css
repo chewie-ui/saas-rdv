@@ -1788,8 +1788,34 @@ body.bk-embed #bkCart .bk-cart {
   .bk-form-row { grid-template-columns: 1fr; }
 
   .bk-stepper { padding: 4px; gap: 4px; }
+
+  /* Étapes inactives : juste le numéro, taille fixe */
+  .bk-step {
+    flex: 0 0 34px;
+    min-width: 34px;
+    gap: 0;
+  }
   .bk-step__lbl { display: none; }
-  .bk-step.is-active .bk-step__lbl { display: inline; }
+
+  /* Étape active : prend l'espace restant et affiche le label */
+  .bk-step.is-active {
+    flex: 1 1 auto;
+    gap: 7px;
+    padding: 0 10px;
+    justify-content: center;
+  }
+  .bk-step.is-active .bk-step__lbl {
+    display: inline;
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  /* Étapes terminées : même taille fixe que inactives */
+  .bk-step.is-done {
+    flex: 0 0 34px;
+    min-width: 34px;
+  }
 
   .bk-cart__recap { display: none; }
   .bk-cart__sep   { display: none; }

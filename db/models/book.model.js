@@ -163,7 +163,7 @@ bookingSchema.index(
   { company: 1, date: 1, startTime: 1, employee: 1 },
   {
     unique: true,
-    partialFilterExpression: { status: "confirmed", isGroup: { $ne: true } },
+    partialFilterExpression: { status: "confirmed", isGroup: false },
   },
 );
 

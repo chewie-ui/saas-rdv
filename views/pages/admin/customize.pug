@@ -1378,6 +1378,41 @@ block scripts
             margin-left: 10px;
         }
 
+        /* ── Responsive tabs ── */
+        @media (max-width: 700px) {
+            .cz-tabs {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                flex-wrap: nowrap;
+            }
+            .cz-tabs::-webkit-scrollbar { display: none; }
+            .cz-tab {
+                padding: 10px 13px;
+                font-size: 13px;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+        }
+        @media (max-width: 480px) {
+            .cz-tab {
+                padding: 9px 10px;
+                font-size: 12px;
+                gap: 4px;
+            }
+            .cz-tab svg {
+                width: 14px;
+                height: 14px;
+                flex-shrink: 0;
+            }
+            .cz-header__title {
+                font-size: 18px;
+            }
+            .cz-tabs {
+                margin-bottom: 18px;
+            }
+        }
+
     script(src='/js/layouts/informations.js')
     script(src='/js/layouts/customize.js')
     script.

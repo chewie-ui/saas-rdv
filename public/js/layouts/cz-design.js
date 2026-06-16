@@ -876,19 +876,33 @@
     var url = buildEmbedUrl();
     if (!url) return '<!-- Configurez votre URL d\'abord -->';
     var w   = (widthInput  ? widthInput.value.trim()  : '100%') || '100%';
-    var h   = (heightInput ? heightInput.value.trim() : '800')  || '800';
-    var hPx = /^\d+$/.test(h) ? h + 'px' : h;
     var wPx = /^\d+$/.test(w) ? w + 'px' : w;
+    // L'iframe se redimensionne automatiquement via postMessage — hauteur initiale
+    // généreuse pour éviter le flash, puis ajustée par le script ci-dessous.
     return '<iframe\n' +
+      '  id="branshee-iframe"\n' +
       '  src="' + url + '"\n' +
       '  width="' + wPx + '"\n' +
-      '  height="' + hPx + '"\n' +
+      '  height="800px"\n' +
       '  frameborder="0"\n' +
-      '  style="border-radius:12px;border:none;"\n' +
+      '  scrolling="no"\n' +
+      '  style="border-radius:12px;border:none;display:block;"\n' +
       '  title="Réservation en ligne"\n' +
       '  loading="lazy"\n' +
       '  allow="payment"\n' +
-      '></iframe>';
+      '></iframe>\n' +
+      '<script>\n' +
+      'window.addEventListener(\'message\',function(e){\n' +
+      '  if(!e.data||e.data.type!==\'branshee-resize\')return;\n' +
+      '  var iframes=document.getElementsByTagName(\'iframe\');\n' +
+      '  for(var i=0;i<iframes.length;i++){\n' +
+      '    if(iframes[i].contentWindow===e.source){\n' +
+      '      iframes[i].style.height=(e.data.height+20)+\'px\';\n' +
+      '      break;\n' +
+      '    }\n' +
+      '  }\n' +
+      '});\n' +
+      '<\/script>';
   }
 
   /* ── Ajuster automatiquement la hauteur du textarea (pas de scroll) ── */
@@ -906,12 +920,7 @@
       autosizeCodeArea();
     }
 
-    // 2. Hauteur de l'iframe preview (transition CSS)
-    if (embedFrame) {
-      var h = parseInt(heightInput ? heightInput.value : '800', 10) || 800;
-      h = Math.max(400, Math.min(2000, h));
-      embedFrame.style.height = h + 'px';
-    }
+    // 2. Hauteur gérée automatiquement par postMessage — pas de reset manuel
 
     // 3. Largeur de l'iframe preview
     if (embedFrameWrap && widthInput) {
@@ -933,6 +942,13 @@
     var sep = url.indexOf('?') === -1 ? '?' : '&';
     return url + sep + '_t=' + Date.now();
   }
+
+  // Auto-resize du preview iframe via postMessage (même mécanisme que l'embed réel)
+  window.addEventListener('message', function (e) {
+    if (!e.data || e.data.type !== 'branshee-resize') return;
+    if (!embedFrame || embedFrame.contentWindow !== e.source) return;
+    embedFrame.style.height = (e.data.height + 20) + 'px';
+  });
 
   // Charger l'iframe embed (src vide dans le HTML, on la charge ici)
   if (embedFrame && BOOKING_PATH) {
