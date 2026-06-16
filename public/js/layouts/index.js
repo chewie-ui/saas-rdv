@@ -228,10 +228,25 @@ function goToStep(id) {
   if (idx >= 0) { stepIdx = idx; render(); }
 }
 
+/* ── Guide contextuel ──────────────────────────────────────────────────── */
+const GUIDE_MSGS = {
+  service:  "Choisissez un service pour commencer votre réservation.",
+  employee: "Sélectionnez le prestataire de votre choix (ou laissez-nous choisir).",
+  time:     "Choisissez une date sur le calendrier puis un créneau horaire.",
+  details:  "Renseignez vos coordonnées pour finaliser la réservation.",
+  payment:  "Procédez au paiement pour confirmer votre rendez-vous.",
+  confirm:  "Votre rendez-vous est confirmé ! Vous allez recevoir un email.",
+};
+function updateGuide(sid) {
+  const el = document.querySelector(".bk-booking-guide span");
+  if (el && GUIDE_MSGS[sid]) el.textContent = GUIDE_MSGS[sid];
+}
+
 /* ── Master render ──────────────────────────────────────────────────────── */
 function render() {
   renderStepper();
   const sid = stepId();
+  updateGuide(sid);
   if (sid === "service")       renderServicePane();
   else if (sid === "employee") renderEmployeePane();
   else if (sid === "time")     renderTimePane();
