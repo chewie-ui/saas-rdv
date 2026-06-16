@@ -883,25 +883,31 @@
       '  id="branshee-iframe"\n' +
       '  src="' + url + '"\n' +
       '  width="' + wPx + '"\n' +
-      '  height="800px"\n' +
+      '  height="700px"\n' +
       '  frameborder="0"\n' +
       '  scrolling="no"\n' +
-      '  style="border-radius:12px;border:none;display:block;"\n' +
+      '  style="border-radius:12px;border:none;display:block;overflow:hidden;"\n' +
       '  title="Réservation en ligne"\n' +
       '  loading="lazy"\n' +
       '  allow="payment"\n' +
       '></iframe>\n' +
       '<script>\n' +
-      'window.addEventListener(\'message\',function(e){\n' +
-      '  if(!e.data||e.data.type!==\'branshee-resize\')return;\n' +
-      '  var iframes=document.getElementsByTagName(\'iframe\');\n' +
-      '  for(var i=0;i<iframes.length;i++){\n' +
-      '    if(iframes[i].contentWindow===e.source){\n' +
-      '      iframes[i].style.height=(e.data.height+20)+\'px\';\n' +
-      '      break;\n' +
+      '(function(){\n' +
+      '  var _lh=0;\n' +
+      '  window.addEventListener(\'message\',function(e){\n' +
+      '    if(!e.data||e.data.type!==\'branshee-resize\')return;\n' +
+      '    var h=Math.min(e.data.height+24,6000);\n' +
+      '    if(Math.abs(h-_lh)<4)return;\n' +
+      '    _lh=h;\n' +
+      '    var fr=document.getElementsByTagName(\'iframe\');\n' +
+      '    for(var i=0;i<fr.length;i++){\n' +
+      '      if(fr[i].contentWindow===e.source){\n' +
+      '        fr[i].style.height=h+\'px\';\n' +
+      '        break;\n' +
+      '      }\n' +
       '    }\n' +
-      '  }\n' +
-      '});\n' +
+      '  });\n' +
+      '})();\n' +
       '<\/script>';
   }
 

@@ -2200,24 +2200,23 @@ function restoreStateFromOAuth() {
 /* ── Auto-resize iframe parent ──────────────────────────────────────────── */
 (function () {
   if (window.self === window.top) return; // pas dans un iframe
+  var _lastH = 0;
+  var _timer = null;
   function sendHeight() {
-    var h = Math.max(
-      document.body.scrollHeight,
-      document.documentElement.scrollHeight
-    );
-    window.parent.postMessage({ type: 'branshee-resize', height: h }, '*');
+    clearTimeout(_timer);
+    _timer = setTimeout(function () {
+      // Mesurer la hauteur réelle du contenu (pas du viewport)
+      var h = document.documentElement.offsetHeight || document.body.offsetHeight;
+      if (h === _lastH) return; // pas de changement → pas d'envoi
+      _lastH = h;
+      window.parent.postMessage({ type: 'branshee-resize', height: h }, '*');
+    }, 60);
   }
   window.addEventListener('load', sendHeight);
-  window.addEventListener('resize', sendHeight);
-  if (window.ResizeObserver) {
-    new ResizeObserver(sendHeight).observe(document.body);
-  } else {
-    // fallback : MutationObserver sur le body
-    new MutationObserver(sendHeight).observe(document.body, {
-      childList: true, subtree: true, attributes: true
-    });
-  }
-  // Envoi initial après paint
+  // MutationObserver sur les changements DOM réels — pas sur le layout
+  new MutationObserver(sendHeight).observe(document.body, {
+    childList: true, subtree: true
+  });
   requestAnimationFrame(sendHeight);
 })();
 
