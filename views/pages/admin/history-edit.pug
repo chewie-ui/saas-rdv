@@ -4,6 +4,11 @@ block links
     link(rel="stylesheet", href="/css/layouts/history.css")
     link(rel="stylesheet", href="/css/layouts/history-edit.css")
     link(rel="stylesheet", href="/css/components/admin/book.admin.css")
+    style.
+        .edit-sidebar__reminder { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 0; }
+        .reminder-status-badge { display: flex; align-items: center; gap: 7px; padding: 7px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; }
+        .reminder-status-badge--manual { background: #f0fdf4; color: #15803d; }
+        .reminder-status-badge--auto   { background: #eff6ff; color: #1d4ed8; }
 
 block content
     - var initials = ((results.name || '').charAt(0) + (results.surname || '').charAt(0)).toUpperCase()
@@ -64,6 +69,26 @@ block content
                             span= t.hist_edit.status_canceled
 
                     input(type="hidden" id="editStatus" value=results.status)
+
+                    .edit-sidebar__divider
+
+                    //- ── Rappel ──────────────────────────────────────────
+                    .edit-sidebar__reminder
+                        if results.manualReminderSent
+                            .reminder-status-badge.reminder-status-badge--manual
+                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                span Rappel de RDV envoyé
+                        else if results.reminderSent
+                            .reminder-status-badge.reminder-status-badge--auto
+                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                span Rappel automatique envoyé
+                        if results.status === 'confirmed' && results.email && !isPast
+                            button.sm-btn.sm-btn--ghost#sendReminderBtn(type="button" style="width:100%;justify-content:center;margin-top:8px")
+                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                    path(d="M160-200v-80l80-80v-280q0-83 50-147.5T420-880v-20q0-25 17.5-42.5T480-960q25 0 42.5 17.5T540-900v20q80 20 130 84.5T720-640v280l80 80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-360h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z")
+                                span Envoyer un rappel
 
             //- ── Right form content ──
             .edit-content
@@ -619,4 +644,39 @@ block scripts
 
             if (cancelReviewRefund) cancelReviewRefund.addEventListener('click', () => submitCancelReview('refunded', cancelReviewRefund));
             if (cancelReviewKeep)   cancelReviewKeep.addEventListener('click',   () => submitCancelReview('kept',     cancelReviewKeep));
+
+            // ── Envoyer un rappel manuellement ──────────────────────────────────
+            const sendReminderBtn = document.getElementById('sendReminderBtn');
+            if (sendReminderBtn) {
+                sendReminderBtn.addEventListener('click', async () => {
+                    const confirmed = await window.__confirmModal(
+                        'Un email de rappel de rendez-vous va être envoyé au client.',
+                        { title: 'Envoyer le rappel ?', confirmLabel: 'Envoyer' }
+                    );
+                    if (!confirmed) return;
+
+                    const origHtml = sendReminderBtn.innerHTML;
+                    sendReminderBtn.disabled = true;
+                    sendReminderBtn.querySelector('span').textContent = 'Envoi…';
+
+                    try {
+                        const res = await fetch(`/appointment/${bookId}/send-reminder`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            await window.__alertModal(data.message || data.error || 'Erreur lors de l\'envoi.', 'Erreur');
+                            sendReminderBtn.disabled = false;
+                            sendReminderBtn.innerHTML = origHtml;
+                        }
+                    } catch (e) {
+                        await window.__alertModal('Erreur réseau.', 'Erreur');
+                        sendReminderBtn.disabled = false;
+                        sendReminderBtn.innerHTML = origHtml;
+                    }
+                });
+            }
         })();

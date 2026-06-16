@@ -100,6 +100,7 @@ router.patch("/edit-interval", injectCompany, editSlotTime);
 router.delete("/appointment/:bookId/delete", deleteBooking);
 router.patch("/appointment/:bookId/restore", restoreBooking);
 router.patch("/appointment/:id/cancel", cancelBooking);
+router.patch("/appointment/:id/send-reminder", isAuth, adminController.sendManualReminder);
 router.get("/appointment/week-data", getWeekData);
 
 router.patch("/appointement/:bookId/admin-notes", saveAdminNotes);

@@ -527,12 +527,13 @@ block scripts
             var top = document.querySelector('.bk-top');
             if (top) top.remove();
 
+            var _embedBizUrl = !{JSON.stringify(_bizUrl || 'https://www.branshee.com')};
             var badge = document.createElement('a');
             badge.className = 'bk-embed-badge';
-            badge.href = 'https://www.branshee.com/?utm_source=embed&utm_medium=iframe';
+            badge.href = _embedBizUrl + '?utm_source=embed&utm_medium=iframe';
             badge.target = '_blank';
             badge.rel = 'noopener';
-            badge.innerHTML = '<span class="bk-embed-badge__mark">B</span><span>Propulsé par <strong>BranShee</strong></span>';
+            badge.innerHTML = '<span class="bk-embed-badge__mark">B</span><span>Ouvrir dans un nouvel onglet ↗</span>';
             document.body.appendChild(badge);
 
             // ── Titre personnalisé au-dessus du calendrier ──

@@ -822,6 +822,95 @@ exports.cancelBooking = async (req, res) => {
   res.json({ success: true });
 };
 
+exports.sendManualReminder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const Service = require("../db/models/company/service.model");
+
+    const booking = await Booking.findById(id).lean();
+    if (!booking) return res.status(404).json({ error: "Rendez-vous introuvable." });
+    if (!booking.email) return res.status(400).json({ error: "Ce rendez-vous n'a pas d'adresse email." });
+    if (booking.status !== "confirmed") return res.status(400).json({ error: "Le rendez-vous doit être confirmé." });
+
+    // Verify ownership
+    const companyDoc = await Company.findById(booking.company).lean();
+    if (!companyDoc || String(companyDoc.owner) !== String(req.user._id)) {
+      return res.status(403).json({ error: "Accès refusé." });
+    }
+
+    const owner = await User.findById(companyDoc.owner)
+      .select("calendarSettings location isPremium manualPremium subscription")
+      .lean();
+
+    if (!atLeast(owner, "pro")) {
+      return res.status(403).json({ error: "plan_limit", message: "Nécessite un abonnement Pro ou Business." });
+    }
+
+    // Service category lookup
+    let serviceCategory = "";
+    if (booking.service) {
+      try {
+        const svc = await Service.findById(booking.service).select("category").lean();
+        serviceCategory = svc?.category || "";
+      } catch (_) {}
+    }
+
+    const servicePrice = booking.payment?.amount ? Number(booking.payment.amount) : null;
+    const ownerMessage = (owner?.calendarSettings?.reminderMessage || "").trim();
+    const paymentMethods = Array.isArray(owner?.calendarSettings?.reminderPaymentMethods)
+      ? owner.calendarSettings.reminderPaymentMethods : [];
+    const paymentNote = (owner?.calendarSettings?.reminderPaymentNote || "").trim();
+
+    const loc = owner?.location;
+    let locationText = "";
+    if (loc?.serviceType === "en_ligne") {
+      locationText = "En ligne";
+    } else if (loc?.address || loc?.city) {
+      locationText = [loc.address, loc.city].filter(Boolean).join(", ");
+    }
+
+    const formattedDate = new Date(booking.date).toLocaleDateString("fr-FR", {
+      weekday: "long", day: "2-digit", month: "long", year: "numeric",
+    });
+
+    const templatePath = path.join(__dirname, "../views/templates/emails/booking-reminder.pug");
+    const html = pug.renderFile(templatePath, {
+      name: booking.name || "",
+      surname: booking.surname || "",
+      date: booking.date,
+      formattedDate,
+      startHour: booking.startTime,
+      endHour: booking.endTime,
+      slotTime: booking.slotTime,
+      serviceName: booking.serviceName || "",
+      serviceCategory,
+      servicePrice,
+      employeeName: booking.employeeName || "",
+      locationText,
+      formAnswers: (Array.isArray(booking.formAnswers) ? booking.formAnswers : []).filter(
+        (a) => a.required || (a.answer !== undefined && a.answer !== null && String(a.answer).trim() !== "")
+      ),
+      message: booking.message || "",
+      ownerMessage,
+      paymentMethods,
+      paymentNote,
+      delayLabel: "bientôt",
+      bookingId: booking._id,
+      cancelToken: booking.cancelToken,
+      baseUrl: (process.env.BASE_URL || "https://www.branshee.com").replace(/\/$/, ""),
+    });
+
+    const ok = await sendEmail(booking.email, "Rappel : votre rendez-vous — BranShee", html);
+    if (!ok) return res.status(500).json({ error: "Échec de l'envoi de l'email." });
+
+    await Booking.findByIdAndUpdate(id, { manualReminderSent: true, reminderSent: true });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("sendManualReminder error:", err);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
 exports.updateBookingEmployee = async (req, res) => {
   try {
     const { bookId } = req.params;

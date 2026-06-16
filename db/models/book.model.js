@@ -58,6 +58,11 @@ const bookingSchema = new schema(
       default: false,
     },
 
+    manualReminderSent: {
+      type: Boolean,
+      default: false,
+    },
+
     adminNotes: {
       type: String,
       default: "",
