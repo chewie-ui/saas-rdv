@@ -14,8 +14,8 @@ const { sanitizeRichText } = require("../utils/sanitizeRichText");
 
 // ── Limites par plan ─────────────────────────────────────────────────────────
 const PLAN_LIMITS = {
-  basic:    { employees: 0, services: 0, formQuestions: 0 },
-  free:     { employees: 0, services: 0, formQuestions: 0 },
+  basic:    { employees: 0, services: 3, formQuestions: 0 },
+  free:     { employees: 0, services: 3, formQuestions: 0 },
   pro:      { employees: 2, services: 10, formQuestions: 3 },
   business: { employees: 10, services: 50, formQuestions: 10 },
 };

@@ -173,14 +173,58 @@ async function sendDueReminders() {
 }
 
 /**
+ * Supprime les réservations de plus de 7 jours pour les utilisateurs gratuits (basic).
+ * S'exécute une fois par jour à 03h00.
+ */
+async function purgeFreePlanHistory() {
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  try {
+    const allCompanies = await Company.find({}).select("_id owner").lean();
+    const ownerIds = [...new Set(allCompanies.map((c) => String(c.owner)).filter(Boolean))];
+
+    const freeOwners = await User.find({
+      _id: { $in: ownerIds },
+      isPremium: { $ne: true },
+      manualPremium: { $ne: true },
+      "subscription.status": { $ne: "active" },
+    }).select("_id").lean();
+
+    const freeOwnerSet = new Set(freeOwners.map((u) => String(u._id)));
+    const freeCompanyIds = allCompanies
+      .filter((c) => freeOwnerSet.has(String(c.owner)))
+      .map((c) => c._id);
+
+    if (freeCompanyIds.length === 0) return;
+
+    const result = await Booking.deleteMany({
+      company: { $in: freeCompanyIds },
+      date: { $lt: cutoff },
+    });
+
+    if (result.deletedCount > 0) {
+      console.log(`[purgeFreePlanHistory] Supprimé ${result.deletedCount} réservation(s) > 7j (comptes gratuits)`);
+    }
+  } catch (err) {
+    console.error("[purgeFreePlanHistory] Erreur ❌", err);
+  }
+}
+
+/**
  * Démarre le cron : on tourne toutes les 15 minutes. Le flag
  * `reminderSent` empêche tout doublon si le serveur redémarre.
  */
 function start() {
-  // Toutes les 15 minutes
+  // Toutes les 15 minutes : rappels
   cron.schedule("*/15 * * * *", () => {
     sendDueReminders().catch((err) =>
       console.error("[reminderScheduler] Erreur tâche ❌", err),
+    );
+  });
+
+  // Chaque nuit à 03h00 : nettoyage historique comptes gratuits
+  cron.schedule("0 3 * * *", () => {
+    purgeFreePlanHistory().catch((err) =>
+      console.error("[purgeFreePlanHistory] Erreur tâche ❌", err),
     );
   });
 
@@ -189,7 +233,7 @@ function start() {
     console.error("[reminderScheduler] Erreur run initial ❌", err),
   );
 
-  console.log("[reminderScheduler] Démarré (check toutes les 15 min)");
+  console.log("[reminderScheduler] Démarré (rappels toutes les 15 min, purge gratuits à 03h00)");
 }
 
-module.exports = { start, sendDueReminders };
+module.exports = { start, sendDueReminders, purgeFreePlanHistory };

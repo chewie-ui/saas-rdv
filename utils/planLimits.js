@@ -43,8 +43,8 @@ const LIMITS = {
   // Max pre-booking form questions (0 = feature locked)
   formQuestions: { basic: 0, pro: 3, business: 10 },
 
-  // Max services (0 = feature locked)
-  services: { basic: 0, pro: 10, business: 50 },
+  // Max services (3 = free trial)
+  services: { basic: 3, pro: 10, business: 50 },
 
   // Max employees (0 = feature locked)
   employees: { basic: 0, pro: 2, business: 10 },
