@@ -6,19 +6,11 @@ html(lang="fr")
         title Superadmin — Liens d'accès
         link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
         link(rel="stylesheet" href="/css/import.css")
+        link(rel="stylesheet" href="/css/layouts/superadmin.css")
         style.
-            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-            body { min-height: 100vh; background: #0f0f0f; color: #e0e0e0; font-family: 'Inter', sans-serif; padding: 32px 24px 80px; }
-            /* ── Nav ── */
-            .sa-nav { display: flex; gap: 8px; margin-bottom: 32px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
-            .sa-nav__links { display: flex; gap: 8px; }
-            a.sa-link { font-size: 13px; padding: 7px 16px; border-radius: 8px; text-decoration: none; border: 1px solid #2a2a2a; color: #888; transition: color .15s, border-color .15s; }
-            a.sa-link.active, a.sa-link:hover { color: #fff; border-color: #444; }
-            a.logout-btn { font-size: 12px; color: #555; text-decoration: none; padding: 6px 12px; border: 1px solid #2a2a2a; border-radius: 8px; transition: color .15s, border-color .15s; }
-            a.logout-btn:hover { color: #f87171; border-color: rgba(248,113,113,.3); }
-            /* ── Header ── */
-            .page-header { margin-bottom: 28px; }
-            .page-header h1 { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: -.02em; }
+            body { padding: 0 24px 80px; }
+            .page-header { margin-top: 32px; margin-bottom: 28px; }
+            .page-header h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -.02em; }
             .page-header p { font-size: 13px; color: #555; margin-top: 4px; }
             /* ── Create form ── */
             .create-form { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px; padding: 24px; margin-bottom: 28px; display: flex; flex-direction: column; gap: 16px; }
@@ -77,13 +69,8 @@ html(lang="fr")
             /* ── Actions cell ── */
             .actions-cell { display: flex; align-items: center; gap: 6px; }
     body
-        .sa-nav
-            .sa-nav__links
-                a.sa-link(href="/superadmin") 👥 Utilisateurs
-                a.sa-link(href="/superadmin/promo-codes") 🎟️ Codes promo
-                a.sa-link.active(href="/superadmin/access-links") 🔗 Liens d'accès
-                a.sa-link(href="/superadmin/features") 🚧 Pages
-            a.logout-btn(href="/superadmin/logout") Déconnexion
+        - var saPage = 'links'
+        include ../../includes/sa-nav
 
         .page-header
             h1 🔗 Liens d'accès

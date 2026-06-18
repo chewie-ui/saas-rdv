@@ -284,6 +284,58 @@ exports.referralsPage = async (req, res) => {
   res.render("superadmin/referrals", { users: referrersWithFilleuls });
 };
 
+// ── Logs (activité globale) ───────────────────────────────────────────────────
+
+exports.logsPage = async (req, res) => {
+  const limit = 200;
+
+  const [recentUsers, recentBookings] = await Promise.all([
+    User.find({})
+      .select("fullName email isPremium subscription createdAt referredBy")
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean(),
+    Booking.find({})
+      .select("name surname email date startTime status company service isGroup createdAt")
+      .populate("company", "slug owner")
+      .populate("service", "name")
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean(),
+  ]);
+
+  // Merge and sort by createdAt desc
+  const events = [];
+
+  recentUsers.forEach((u) => {
+    events.push({
+      type: "register",
+      date: u.createdAt,
+      label: `${u.fullName || u.email} s'est inscrit${u.isPremium ? ' (payant)' : ''}`,
+      detail: u.email,
+      plan: u.subscription?.plan || (u.isPremium ? 'pro' : 'basic'),
+      icon: "👤",
+    });
+  });
+
+  recentBookings.forEach((b) => {
+    const serviceName = b.service?.name || "Service";
+    const slug = b.company?.slug || "?";
+    events.push({
+      type: "booking",
+      date: b.createdAt,
+      label: `${b.name || ''} ${b.surname || ''} → ${serviceName} chez ${slug}`,
+      detail: b.email || "",
+      status: b.status,
+      icon: b.isGroup ? "👥" : "📅",
+    });
+  });
+
+  events.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  res.render("superadmin/logs", { events: events.slice(0, 300) });
+};
+
 // ── Boost (mise en avant homepage) ───────────────────────────────────────────
 
 exports.boostPage = async (req, res) => {
@@ -538,6 +590,183 @@ exports.setFeatureStatus = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error("setFeatureStatus error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Support content editor ────────────────────────────────────────────────────
+const SupportContent = require("../db/models/supportContent.model");
+
+async function getOrCreateSupportContent() {
+  let doc = await SupportContent.findOne();
+  if (!doc) doc = await SupportContent.create({ sections: [] });
+  return doc;
+}
+
+exports.supportEditorPage = async (req, res) => {
+  try {
+    const doc = await getOrCreateSupportContent();
+    const sections = doc.sections.slice().sort((a, b) => a.order - b.order);
+    res.render("superadmin/support-editor", { saPage: "support", sections });
+  } catch (err) {
+    console.error("supportEditorPage error:", err);
+    res.status(500).send("Erreur serveur.");
+  }
+};
+
+exports.addSection = async (req, res) => {
+  try {
+    const { title } = req.body;
+    if (!title) return res.status(400).json({ error: "Titre requis." });
+    const doc = await getOrCreateSupportContent();
+    const order = doc.sections.length;
+    doc.sections.push({ title, order, videos: [], faqs: [] });
+    await doc.save();
+    const section = doc.sections[doc.sections.length - 1];
+    res.json({ success: true, section });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.updateSection = async (req, res) => {
+  try {
+    const { sectionId } = req.params;
+    const { title, order } = req.body;
+    const doc = await getOrCreateSupportContent();
+    const section = doc.sections.id(sectionId);
+    if (!section) return res.status(404).json({ error: "Section introuvable." });
+    if (title !== undefined) section.title = title;
+    if (order !== undefined) section.order = Number(order);
+    await doc.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.deleteSection = async (req, res) => {
+  try {
+    const { sectionId } = req.params;
+    const doc = await getOrCreateSupportContent();
+    doc.sections.pull({ _id: sectionId });
+    await doc.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.reorderSections = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids)) return res.status(400).json({ error: "IDs requis." });
+    const doc = await getOrCreateSupportContent();
+    ids.forEach((id, index) => {
+      const section = doc.sections.id(id);
+      if (section) section.order = index;
+    });
+    await doc.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.addVideo = async (req, res) => {
+  try {
+    const { sectionId } = req.params;
+    const { title, url, duration } = req.body;
+    const doc = await getOrCreateSupportContent();
+    const section = doc.sections.id(sectionId);
+    if (!section) return res.status(404).json({ error: "Section introuvable." });
+    section.videos.push({ title: title || "Nouvelle vidéo", url: url || "", duration: duration || "" });
+    await doc.save();
+    const video = section.videos[section.videos.length - 1];
+    res.json({ success: true, video });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.updateVideo = async (req, res) => {
+  try {
+    const { sectionId, videoId } = req.params;
+    const { title, url, duration } = req.body;
+    const doc = await getOrCreateSupportContent();
+    const section = doc.sections.id(sectionId);
+    if (!section) return res.status(404).json({ error: "Section introuvable." });
+    const video = section.videos.id(videoId);
+    if (!video) return res.status(404).json({ error: "Vidéo introuvable." });
+    if (title !== undefined) video.title = title;
+    if (url !== undefined) video.url = url;
+    if (duration !== undefined) video.duration = duration;
+    await doc.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.deleteVideo = async (req, res) => {
+  try {
+    const { sectionId, videoId } = req.params;
+    const doc = await getOrCreateSupportContent();
+    const section = doc.sections.id(sectionId);
+    if (!section) return res.status(404).json({ error: "Section introuvable." });
+    section.videos.pull({ _id: videoId });
+    await doc.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.addFaq = async (req, res) => {
+  try {
+    const { sectionId } = req.params;
+    const { question, answer } = req.body;
+    if (!question || !answer) return res.status(400).json({ error: "Question et réponse requises." });
+    const doc = await getOrCreateSupportContent();
+    const section = doc.sections.id(sectionId);
+    if (!section) return res.status(404).json({ error: "Section introuvable." });
+    section.faqs.push({ question, answer });
+    await doc.save();
+    const faq = section.faqs[section.faqs.length - 1];
+    res.json({ success: true, faq });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.updateFaq = async (req, res) => {
+  try {
+    const { sectionId, faqId } = req.params;
+    const { question, answer } = req.body;
+    const doc = await getOrCreateSupportContent();
+    const section = doc.sections.id(sectionId);
+    if (!section) return res.status(404).json({ error: "Section introuvable." });
+    const faq = section.faqs.id(faqId);
+    if (!faq) return res.status(404).json({ error: "FAQ introuvable." });
+    if (question !== undefined) faq.question = question;
+    if (answer !== undefined) faq.answer = answer;
+    await doc.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.deleteFaq = async (req, res) => {
+  try {
+    const { sectionId, faqId } = req.params;
+    const doc = await getOrCreateSupportContent();
+    const section = doc.sections.id(sectionId);
+    if (!section) return res.status(404).json({ error: "Section introuvable." });
+    section.faqs.pull({ _id: faqId });
+    await doc.save();
+    res.json({ success: true });
+  } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
   }
 };

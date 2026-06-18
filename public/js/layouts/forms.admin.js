@@ -424,7 +424,20 @@ function confirmModal() {
 }
 
 // ─── Modal events ─────────────────────────────────────────────────────────────
-addQuestionBtn.addEventListener("click", () => openModal(-1));
+addQuestionBtn.addEventListener("click", () => {
+  if (addQuestionBtn.dataset.atLimit === "1") {
+    // At limit: flash the upgrade banner instead of opening the modal
+    const banner = document.getElementById("questionLimitBanner");
+    if (banner) {
+      banner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      banner.style.transition = "box-shadow 0.15s";
+      banner.style.boxShadow = "0 0 0 3px rgba(234,88,12,.35)";
+      setTimeout(() => { banner.style.boxShadow = ""; }, 800);
+    }
+    return;
+  }
+  openModal(-1);
+});
 closeModalBtn.addEventListener("click", closeModal);
 cancelModalBtn.addEventListener("click", closeModal);
 confirmModalBtn.addEventListener("click", confirmModal);
@@ -523,16 +536,15 @@ function applyPlanGate() {
   counter.textContent = `${formData.questions.length} / ${MAX_QUESTIONS} questions`;
   document.querySelector(".forms-builder-card__head").appendChild(counter);
 
-  // Disable "add question" when limit reached
+  // Update add button and limit banner when question count changes
   function updateAddBtn() {
     const count = formData.questions.length;
     const counter = document.getElementById("questionsCounter");
     if (counter) counter.textContent = `${count} / ${MAX_QUESTIONS} questions`;
     const atLimit = count >= MAX_QUESTIONS;
-    addQuestionBtn.disabled = atLimit;
-    addQuestionBtn.title = atLimit
-      ? `Limite de ${MAX_QUESTIONS} questions atteinte (plan actuel)`
-      : "";
+    // Keep button clickable; clicking at limit flashes the upgrade banner instead
+    addQuestionBtn.disabled = false;
+    addQuestionBtn.dataset.atLimit = atLimit ? "1" : "0";
     const banner = document.getElementById("questionLimitBanner");
     if (banner) banner.style.display = atLimit ? "" : "none";
   }

@@ -24,14 +24,8 @@ block content
                         span= t.forms.save
 
         //- ── Aperçu verrouillé (plan Basic) ──────────────────────────
-        //- On préfère montrer la fonctionnalité avec des questions de
-        //- démonstration (générées côté serveur, voir
-        //- admin.controller#formsIndex) plutôt que de la cacher derrière
-        //- un simple message : l'utilisateur voit concrètement ce que le
-        //- plan Pro débloque, ce qui donne une vraie raison de passer à
-        //- l'offre supérieure ("laisser l'utilisateur voir la
-        //- fonctionnalité, juste sans pouvoir l'utiliser tant qu'il ne
-        //- paie pas").
+        //- Plan basic : 1 question gratuite visible + upsell banner au-dessus.
+        //- Plan sans formulaire (maxQuestions === 0) : aperçu flouté complet.
         if formsLocked
             .forms-lock-banner
                 svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
@@ -40,12 +34,28 @@ block content
                     strong Fonctionnalité Pro
                     span Les formulaires de pré-réservation sont disponibles à partir du plan Pro — voici un aperçu de ce que vous pourrez configurer une fois abonné·e.
                 a.btn-upgrade-pro(href="/subscription") Passer au Pro
+        else if currentPlan === 'basic'
+            .forms-lock-banner.forms-lock-banner--soft
+                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                    path(d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z")
+                .forms-lock-banner__text
+                    strong Version gratuite — 1 question incluse
+                    span Passez au plan Pro pour créer jusqu'à 3 questions et utiliser le formulaire en production.
+                a.btn-upgrade-pro(href="/subscription") Passer au Pro
 
         //- ── Plan limit banner ─────────────────────────────────────
         if maxQuestions > 0
             - var qCount = (form && form.questions) ? form.questions.length : 0
             - var qAtLimit = qCount >= maxQuestions
-            if currentPlan === 'pro'
+            if currentPlan === 'basic'
+                .plan-limit-banner.plan-limit-banner--upgrade#questionLimitBanner(style=!qAtLimit ? 'display:none' : '')
+                    svg.plan-limit-banner__icon(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                        path(d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z")
+                    .plan-limit-banner__text
+                        strong Limite gratuit atteinte — #{maxQuestions}/#{maxQuestions} question
+                        span Passez au plan Pro pour créer jusqu'à 3 questions et personnaliser votre formulaire.
+                    a.btn-upgrade-pro(href="/subscription") Passer au Pro →
+            else if currentPlan === 'pro'
                 .plan-limit-banner.plan-limit-banner--upgrade#questionLimitBanner(style=!qAtLimit ? 'display:none' : '')
                     svg.plan-limit-banner__icon(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
                         path(d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z")

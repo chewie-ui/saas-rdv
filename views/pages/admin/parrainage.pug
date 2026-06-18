@@ -1,0 +1,134 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet" href="/css/layouts/parrainage.css")
+
+block content
+    .parrainage-page
+
+        .parrainage-page__header
+            h2 Parrainage
+            p Invitez vos amis et gagnez des mois offerts dès qu'ils passent au Pro.
+
+        .parrainage-section
+            p.parrainage-section__title Comment ça marche ?
+            .parrainage-how
+                .parrainage-how__step
+                    .parrainage-how__step__num 1
+                    .parrainage-how__step__text Partagez votre lien unique à vos contacts indépendants.
+                .parrainage-how__step
+                    .parrainage-how__step__num 2
+                    .parrainage-how__step__text Ils s'inscrivent et prennent un abonnement Pro ou Business.
+                .parrainage-how__step
+                    .parrainage-how__step__num 3
+                    .parrainage-how__step__text Dès 2 filleuls payants : 1 mois offert sur votre abonnement.
+
+        .parrainage-section
+            p.parrainage-section__title Votre lien de parrainage
+            .parrainage-card
+                .parrainage-link-box
+                    span.parrainage-link-box__url#referralUrl= referralLink
+                    button.parrainage-link-box__copy#copyBtn(type="button") Copier
+
+        .parrainage-section
+            p.parrainage-section__title Vos statistiques
+            .parrainage-stats
+                .parrainage-stat
+                    .parrainage-stat__value= referral.totalInvited || 0
+                    .parrainage-stat__label Invités
+                .parrainage-stat
+                    .parrainage-stat__value= referral.totalPaying || 0
+                    .parrainage-stat__label Filleuls payants
+                .parrainage-stat
+                    .parrainage-stat__value= referral.creditMonths || 0
+                    .parrainage-stat__label Mois utilisés
+
+        if filleuls && filleuls.length
+            .parrainage-section
+                p.parrainage-section__title Vos filleuls
+                .parrainage-card
+                    table.parrainage-table
+                        thead
+                            tr
+                                th Nom
+                                th Email
+                                th Inscrit le
+                                th Statut
+                        tbody
+                            each f in filleuls
+                                - var dt = new Date(f.createdAt)
+                                - var dateStr = dt.toLocaleDateString('fr-FR', {day:'2-digit', month:'short', year:'numeric'})
+                                tr
+                                    td= f.fullName || '—'
+                                    td= f.email || '—'
+                                    td= dateStr
+                                    td
+                                        if f.isPremium
+                                            span.parrainage-badge.parrainage-badge--paying Pro ✓
+                                        else
+                                            span.parrainage-badge.parrainage-badge--free Gratuit
+        else
+            .parrainage-section
+                p.parrainage-section__title Vos filleuls
+                .parrainage-card
+                    .parrainage-empty Aucun filleul pour l'instant. Partagez votre lien pour commencer !
+
+        -
+            var totalPaying = (referral && referral.totalPaying) || 0;
+            var creditMonths = (referral && referral.creditMonths) || 0;
+            var claimable = Math.max(0, Math.floor(totalPaying / 2) - creditMonths);
+
+        .parrainage-section
+            p.parrainage-section__title Réclamer ma récompense
+            .parrainage-card
+                .parrainage-claim
+                    .parrainage-claim__info
+                        if claimable > 0
+                            p Vous pouvez réclamer <strong>#{claimable} mois offert#{claimable > 1 ? 's' : ''}</strong> grâce à vos filleuls payants.
+                        else
+                            p Vous n'avez pas encore de crédit à réclamer. Il vous faut 2 filleuls payants pour obtenir 1 mois offert.
+                    button.parrainage-claim__btn#claimBtn(type="button" disabled=claimable <= 0) Réclamer #{claimable > 0 ? claimable + ' mois' : ''}
+
+    script.
+        // Copy link
+        var copyBtn = document.getElementById('copyBtn');
+        var urlEl = document.getElementById('referralUrl');
+        if (copyBtn && urlEl) {
+            copyBtn.addEventListener('click', function() {
+                navigator.clipboard.writeText(urlEl.textContent.trim()).then(function() {
+                    copyBtn.textContent = '✓ Copié';
+                    copyBtn.classList.add('copied');
+                    setTimeout(function() {
+                        copyBtn.textContent = 'Copier';
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
+                });
+            });
+        }
+
+        // Claim reward
+        var claimBtn = document.getElementById('claimBtn');
+        if (claimBtn && !claimBtn.disabled) {
+            claimBtn.addEventListener('click', async function() {
+                this.disabled = true;
+                this.textContent = '...';
+                try {
+                    var res = await fetch('/parrainage/claim', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rewardType: 'months' })
+                    });
+                    var data = await res.json();
+                    if (data.success) {
+                        this.textContent = '✓ Demande envoyée !';
+                        this.style.background = 'var(--success)';
+                    } else {
+                        this.textContent = data.error || 'Erreur';
+                        this.disabled = false;
+                    }
+                } catch(e) {
+                    this.textContent = 'Erreur réseau';
+                    this.disabled = false;
+                }
+            });
+        }

@@ -1,0 +1,313 @@
+doctype html
+html(lang="fr")
+    head
+        meta(name="viewport" content="width=device-width, initial-scale=1.0")
+        meta(charset="UTF-8")
+        title Superadmin — Éditeur Support
+        link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
+        link(rel="stylesheet" href="/css/import.css")
+        link(rel="stylesheet" href="/css/layouts/superadmin.css")
+        style.
+            body { padding: 0 24px 80px; }
+            .page-header { margin-top: 32px; margin-bottom: 28px; }
+            .page-header h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -.02em; }
+            .page-header p { font-size: 13px; color: #555; margin-top: 4px; }
+
+            .se-sections { display: flex; flex-direction: column; gap: 20px; }
+
+            .se-section { background: #111; border: 1px solid #222; border-radius: 14px; overflow: hidden; }
+            .se-section__head { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid #1e1e1e; }
+            .se-section__title-input { flex: 1; background: transparent; border: none; color: #fff; font-size: 15px; font-weight: 600; outline: none; }
+            .se-section__title-input::placeholder { color: #444; }
+            .se-section__actions { display: flex; gap: 8px; }
+            .btn-icon { background: #1a1a1a; border: 1px solid #2a2a2a; color: #888; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 13px; transition: all .15s; }
+            .btn-icon:hover { background: #222; color: #fff; }
+            .btn-icon--danger:hover { background: #2a0a0a; border-color: #5a1a1a; color: #f87171; }
+            .btn-icon--save:hover { background: #0a1a0a; border-color: #1a5a1a; color: #4ade80; }
+
+            .se-section__body { padding: 16px 20px; display: flex; flex-direction: column; gap: 20px; }
+
+            .se-subsection__label { font-size: 11px; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+            .se-videos { display: flex; flex-direction: column; gap: 8px; }
+            .se-video { display: grid; grid-template-columns: 1fr 1fr 100px auto; gap: 8px; align-items: center; }
+            .se-video input { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px; outline: none; width: 100%; }
+            .se-video input:focus { border-color: #444; }
+            .se-video input::placeholder { color: #444; }
+
+            .se-faqs { display: flex; flex-direction: column; gap: 10px; }
+            .se-faq { display: flex; flex-direction: column; gap: 6px; background: #1a1a1a; border: 1px solid #222; border-radius: 10px; padding: 12px; }
+            .se-faq__row { display: flex; gap: 8px; align-items: flex-start; }
+            .se-faq input, .se-faq textarea { background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px; outline: none; width: 100%; resize: none; font-family: inherit; }
+            .se-faq input:focus, .se-faq textarea:focus { border-color: #444; }
+            .se-faq input::placeholder, .se-faq textarea::placeholder { color: #444; }
+            .se-faq textarea { min-height: 60px; }
+
+            .se-add-btn { background: #1a1a1a; border: 1px dashed #333; color: #555; border-radius: 10px; padding: 10px; font-size: 13px; cursor: pointer; text-align: center; width: 100%; transition: all .15s; }
+            .se-add-btn:hover { border-color: #555; color: #888; background: #1e1e1e; }
+
+            .se-new-section { background: #0a0a0a; border: 2px dashed #222; border-radius: 14px; padding: 20px; display: flex; gap: 10px; align-items: center; }
+            .se-new-section input { flex: 1; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 14px; outline: none; }
+            .se-new-section input::placeholder { color: #444; }
+            .btn-primary { background: #2563eb; border: none; color: #fff; border-radius: 8px; padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; }
+            .btn-primary:hover { background: #1d4ed8; }
+
+            .se-order-btns { display: flex; flex-direction: column; gap: 2px; }
+            .se-order-btn { background: #1a1a1a; border: 1px solid #2a2a2a; color: #555; border-radius: 6px; width: 28px; height: 22px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+            .se-order-btn:hover { background: #222; color: #aaa; }
+
+            .toast { position: fixed; bottom: 24px; right: 24px; background: #1e1e1e; border: 1px solid #333; color: #fff; border-radius: 10px; padding: 12px 18px; font-size: 13px; opacity: 0; transform: translateY(8px); transition: all .2s; pointer-events: none; z-index: 9999; }
+            .toast.show { opacity: 1; transform: none; }
+            .toast--ok { border-color: #1a5a1a; color: #4ade80; }
+            .toast--err { border-color: #5a1a1a; color: #f87171; }
+
+    body
+        include ../../includes/sa-nav
+        .page-header
+            h1 📝 Éditeur — Aide & Support
+            p Gérez les sections, vidéos et FAQ de la page d'aide des utilisateurs.
+
+        .se-sections#seSections
+            if sections && sections.length
+                each section in sections
+                    .se-section(data-id=section._id.toString())
+                        .se-section__head
+                            .se-order-btns
+                                button.se-order-btn(onclick="moveSection(this, -1)" title="Monter") ▲
+                                button.se-order-btn(onclick="moveSection(this, 1)" title="Descendre") ▼
+                            input.se-section__title-input(type="text" value=section.title placeholder="Titre de section" onblur="saveSection(this)")
+                            .se-section__actions
+                                button.btn-icon.btn-icon--danger(onclick="deleteSection(this)") Supprimer
+                        .se-section__body
+                            div
+                                p.se-subsection__label 🎬 Vidéos (max 5)
+                                .se-videos
+                                    if section.videos && section.videos.length
+                                        each video in section.videos
+                                            .se-video(data-vid=video._id.toString())
+                                                input(type="text" placeholder="Titre" value=video.title onblur="saveVideo(this,'title')")
+                                                input(type="url" placeholder="URL YouTube / Vimeo" value=video.url onblur="saveVideo(this,'url')")
+                                                input(type="text" placeholder="Durée (ex: 3 min)" value=video.duration onblur="saveVideo(this,'duration')")
+                                                button.btn-icon.btn-icon--danger(onclick="deleteVideo(this)" title="Supprimer") ✕
+                                if !section.videos || section.videos.length < 5
+                                    button.se-add-btn(onclick="addVideo(this)") + Ajouter une vidéo
+                            div
+                                p.se-subsection__label ❓ Questions fréquentes
+                                .se-faqs
+                                    if section.faqs && section.faqs.length
+                                        each faq in section.faqs
+                                            .se-faq(data-fid=faq._id.toString())
+                                                .se-faq__row
+                                                    input(type="text" placeholder="Question" value=faq.question onblur="saveFaq(this,'question')")
+                                                    button.btn-icon.btn-icon--danger(style="flex-shrink:0" onclick="deleteFaq(this)" title="Supprimer") ✕
+                                                textarea(placeholder="Réponse" onblur="saveFaq(this,'answer')")= faq.answer
+                                button.se-add-btn(onclick="addFaq(this)") + Ajouter une FAQ
+            else
+                p(style="color:#444;font-size:13px;padding:8px 0") Aucune section. Créez-en une ci-dessous.
+
+        br
+        .se-new-section
+            input#newSectionTitle(type="text" placeholder="Nom de la nouvelle section (ex: Disponibilités)")
+            button.btn-primary(onclick="addSection()") + Créer la section
+
+        .toast#toast
+
+    script.
+        const BASE = '/superadmin/support-editor';
+
+        function toast(msg, ok = true) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.className = 'toast show ' + (ok ? 'toast--ok' : 'toast--err');
+            clearTimeout(el._t);
+            el._t = setTimeout(() => el.classList.remove('show'), 2500);
+        }
+
+        function sectionId(el) {
+            return el.closest('.se-section').dataset.id;
+        }
+        function videoId(el) {
+            return el.closest('.se-video').dataset.vid;
+        }
+        function faqId(el) {
+            return el.closest('.se-faq').dataset.fid;
+        }
+
+        async function api(method, url, body) {
+            const r = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: body ? JSON.stringify(body) : undefined,
+            });
+            return r.json();
+        }
+
+        async function saveSection(input) {
+            const id = sectionId(input);
+            const title = input.value.trim();
+            if (!title) return;
+            const d = await api('PATCH', `${BASE}/sections/${id}`, { title });
+            if (d.success) toast('Section sauvegardée');
+            else toast(d.error || 'Erreur', false);
+        }
+
+        async function deleteSection(btn) {
+            if (!confirm('Supprimer cette section et tout son contenu ?')) return;
+            const id = sectionId(btn);
+            const d = await api('DELETE', `${BASE}/sections/${id}`);
+            if (d.success) { btn.closest('.se-section').remove(); toast('Section supprimée'); }
+            else toast(d.error || 'Erreur', false);
+        }
+
+        async function addSection() {
+            const input = document.getElementById('newSectionTitle');
+            const title = input.value.trim();
+            if (!title) return;
+            const d = await api('POST', `${BASE}/sections`, { title });
+            if (d.success && d.section) {
+                input.value = '';
+                appendSection(d.section);
+                toast('Section créée');
+            } else toast(d.error || 'Erreur', false);
+        }
+
+        function appendSection(s) {
+            const container = document.getElementById('seSections');
+            const el = document.createElement('div');
+            el.className = 'se-section';
+            el.dataset.id = s._id;
+            el.innerHTML = `
+                <div class="se-section__head">
+                    <div class="se-order-btns">
+                        <button class="se-order-btn" onclick="moveSection(this,-1)" title="Monter">▲</button>
+                        <button class="se-order-btn" onclick="moveSection(this,1)" title="Descendre">▼</button>
+                    </div>
+                    <input class="se-section__title-input" type="text" value="${escHtml(s.title)}" placeholder="Titre de section" onblur="saveSection(this)">
+                    <div class="se-section__actions">
+                        <button class="btn-icon btn-icon--danger" onclick="deleteSection(this)">Supprimer</button>
+                    </div>
+                </div>
+                <div class="se-section__body">
+                    <div>
+                        <p class="se-subsection__label">🎬 Vidéos (max 5)</p>
+                        <div class="se-videos"></div>
+                        <button class="se-add-btn" onclick="addVideo(this)">+ Ajouter une vidéo</button>
+                    </div>
+                    <div>
+                        <p class="se-subsection__label">❓ Questions fréquentes</p>
+                        <div class="se-faqs"></div>
+                        <button class="se-add-btn" onclick="addFaq(this)">+ Ajouter une FAQ</button>
+                    </div>
+                </div>
+            `;
+            // Remove placeholder text if present
+            const placeholder = container.querySelector('p[style]');
+            if (placeholder) placeholder.remove();
+            container.appendChild(el);
+        }
+
+        async function addVideo(btn) {
+            const id = sectionId(btn);
+            const d = await api('POST', `${BASE}/sections/${id}/videos`, {});
+            if (d.success && d.video) {
+                const container = btn.previousElementSibling;
+                appendVideoRow(container, d.video);
+                // hide add button if max reached
+                if (container.children.length >= 5) btn.style.display = 'none';
+                toast('Vidéo ajoutée');
+            } else toast(d.error || 'Erreur', false);
+        }
+
+        function appendVideoRow(container, v) {
+            const row = document.createElement('div');
+            row.className = 'se-video';
+            row.dataset.vid = v._id;
+            row.innerHTML = `
+                <input type="text" placeholder="Titre" value="${escHtml(v.title || '')}" onblur="saveVideo(this,'title')">
+                <input type="url" placeholder="URL YouTube / Vimeo" value="${escHtml(v.url || '')}" onblur="saveVideo(this,'url')">
+                <input type="text" placeholder="Durée (ex: 3 min)" value="${escHtml(v.duration || '')}" onblur="saveVideo(this,'duration')">
+                <button class="btn-icon btn-icon--danger" onclick="deleteVideo(this)" title="Supprimer">✕</button>
+            `;
+            container.appendChild(row);
+        }
+
+        async function saveVideo(input, field) {
+            const sid = sectionId(input);
+            const vid = videoId(input);
+            const val = input.value.trim();
+            const d = await api('PATCH', `${BASE}/sections/${sid}/videos/${vid}`, { [field]: val });
+            if (!d.success) toast(d.error || 'Erreur', false);
+        }
+
+        async function deleteVideo(btn) {
+            const sid = sectionId(btn);
+            const vid = videoId(btn);
+            const d = await api('DELETE', `${BASE}/sections/${sid}/videos/${vid}`);
+            if (d.success) {
+                const row = btn.closest('.se-video');
+                const addBtn = row.closest('.se-section__body').querySelector('.se-add-btn');
+                row.remove();
+                if (addBtn) addBtn.style.display = '';
+                toast('Vidéo supprimée');
+            } else toast(d.error || 'Erreur', false);
+        }
+
+        async function addFaq(btn) {
+            const id = sectionId(btn);
+            const q = prompt('Question :');
+            if (!q) return;
+            const a = prompt('Réponse :');
+            if (!a) return;
+            const d = await api('POST', `${BASE}/sections/${id}/faqs`, { question: q, answer: a });
+            if (d.success && d.faq) {
+                const container = btn.previousElementSibling;
+                appendFaqRow(container, d.faq);
+                toast('FAQ ajoutée');
+            } else toast(d.error || 'Erreur', false);
+        }
+
+        function appendFaqRow(container, f) {
+            const row = document.createElement('div');
+            row.className = 'se-faq';
+            row.dataset.fid = f._id;
+            row.innerHTML = `
+                <div class="se-faq__row">
+                    <input type="text" placeholder="Question" value="${escHtml(f.question || '')}" onblur="saveFaq(this,'question')">
+                    <button class="btn-icon btn-icon--danger" style="flex-shrink:0" onclick="deleteFaq(this)" title="Supprimer">✕</button>
+                </div>
+                <textarea placeholder="Réponse" onblur="saveFaq(this,'answer')">${escHtml(f.answer || '')}</textarea>
+            `;
+            container.appendChild(row);
+        }
+
+        async function saveFaq(input, field) {
+            const sid = sectionId(input);
+            const fid = faqId(input);
+            const val = input.value.trim();
+            const d = await api('PATCH', `${BASE}/sections/${sid}/faqs/${fid}`, { [field]: val });
+            if (!d.success) toast(d.error || 'Erreur', false);
+        }
+
+        async function deleteFaq(btn) {
+            const sid = sectionId(btn);
+            const fid = faqId(btn);
+            const d = await api('DELETE', `${BASE}/sections/${sid}/faqs/${fid}`);
+            if (d.success) { btn.closest('.se-faq').remove(); toast('FAQ supprimée'); }
+            else toast(d.error || 'Erreur', false);
+        }
+
+        async function moveSection(btn, dir) {
+            const section = btn.closest('.se-section');
+            const sibling = dir === -1 ? section.previousElementSibling : section.nextElementSibling;
+            if (!sibling || !sibling.classList.contains('se-section')) return;
+            const parent = section.parentElement;
+            if (dir === -1) parent.insertBefore(section, sibling);
+            else parent.insertBefore(sibling, section);
+            const ids = [...parent.querySelectorAll('.se-section')].map(s => s.dataset.id);
+            const d = await api('PATCH', `${BASE}/sections/reorder`, { ids });
+            if (!d.success) toast(d.error || 'Erreur', false);
+            else toast('Ordre mis à jour');
+        }
+
+        function escHtml(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }

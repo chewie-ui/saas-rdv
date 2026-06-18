@@ -6,15 +6,9 @@ html(lang="fr")
         title Superadmin — Utilisateurs
         link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
         link(rel="stylesheet" href="/css/import.css")
+        link(rel="stylesheet" href="/css/layouts/superadmin.css")
         style.
-            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-            body {
-                min-height: 100vh;
-                background: #0f0f0f;
-                color: #e0e0e0;
-                font-family: 'Inter', sans-serif;
-                padding: 32px 24px 80px;
-            }
+            body { padding: 0 24px 80px; }
             .sa-header {
                 display: flex;
                 align-items: center;
@@ -305,19 +299,15 @@ html(lang="fr")
                 .users-table tbody td:nth-child(3) { display: none; }
             }
     body
-        .sa-header
+        - var saPage = 'users'
+        include ../../includes/sa-nav
+
+        .sa-header(style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:32px 0 24px")
             .sa-header__left
-                .sa-nav-links(style="display:flex;gap:8px;margin-bottom:12px")
-                    a.sa-nav-link(href="/superadmin" style="font-size:13px;padding:7px 16px;border-radius:8px;text-decoration:none;border:1px solid #444;color:#fff") 👥 Utilisateurs
-                    a.sa-nav-link(href="/superadmin/promo-codes" style="font-size:13px;padding:7px 16px;border-radius:8px;text-decoration:none;border:1px solid #2a2a2a;color:#888") 🎟️ Codes promo
-                    a.sa-nav-link(href="/superadmin/access-links" style="font-size:13px;padding:7px 16px;border-radius:8px;text-decoration:none;border:1px solid #2a2a2a;color:#888") 🔗 Liens d'accès
-                    a.sa-nav-link(href="/superadmin/boost" style="font-size:13px;padding:7px 16px;border-radius:8px;text-decoration:none;border:1px solid #2a2a2a;color:#888") ⭐ Mise en avant
-                    a.sa-nav-link(href="/superadmin/features" style="font-size:13px;padding:7px 16px;border-radius:8px;text-decoration:none;border:1px solid #2a2a2a;color:#888") 🚧 Pages
-                h1 👥 Utilisateurs beta
-                p Gérez les accès premium manuels pour les bêta testeurs.
+                h1(style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-.02em") 👥 Utilisateurs
+                p(style="font-size:13px;color:#555;margin-top:4px") Gérez les accès premium manuels pour les bêta testeurs.
             .sa-header__right
                 span.badge= users.length + ' utilisateurs'
-                a.logout-btn(href="/superadmin/logout") Déconnexion
 
         - var totalFree = users.filter(function(u){ return !u.isPremium && !u.manualPremium; }).length
         - var totalBusiness = users.filter(function(u){ return u.subscription && u.subscription.plan === 'business'; }).length

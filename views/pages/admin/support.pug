@@ -1,0 +1,169 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet" href="/css/layouts/support.css")
+
+block content
+    .support-page
+
+        .support-page__header
+            h2 Centre d'aide
+            p Retrouvez les guides, tutoriels et contacts pour utiliser BranShee au maximum.
+
+        .support-search
+            svg.support-search__icon(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                path(d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z")
+            input#supportSearch.support-search__input(type="text" placeholder="Rechercher dans l'aide… ex: retirer ma carte, changer d'horaire")
+            .support-search__results#searchResults
+
+        if sections && sections.length
+            each section in sections
+                .support-section
+                    p.support-section__title= section.title
+
+                    if section.videos && section.videos.length
+                        .support-video-grid
+                            each video in section.videos
+                                a.support-video-card(href=video.url || '#' target="_blank")
+                                    .support-video-card__thumb 🎬
+                                    .support-video-card__info
+                                        .support-video-card__title= video.title
+                                        .support-video-card__duration= video.duration || 'Voir la vidéo'
+
+                    if section.faqs && section.faqs.length
+                        .support-card
+                            each faq in section.faqs
+                                .support-faq-item
+                                    .support-faq-item__q
+                                        span= faq.question
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                            path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
+                                    .support-faq-item__a !{faq.answer}
+        else
+            .support-section
+                p.support-section__title Comment ça marche ?
+                .support-video-grid
+                    .support-video-card
+                        .support-video-card__thumb 🎬
+                        .support-video-card__info
+                            .support-video-card__title Créer votre premier service
+                            .support-video-card__duration Bientôt disponible
+                    .support-video-card
+                        .support-video-card__thumb 🎬
+                        .support-video-card__info
+                            .support-video-card__title Configurer vos disponibilités
+                            .support-video-card__duration Bientôt disponible
+
+            .support-section
+                p.support-section__title Questions fréquentes
+                .support-card
+                    .support-faq-item
+                        .support-faq-item__q
+                            span Comment partager ma page de réservation ?
+                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
+                        .support-faq-item__a Rendez-vous dans <strong>Réglages</strong> → votre lien public apparaît en bas de page.
+                    .support-faq-item
+                        .support-faq-item__q
+                            span Comment ajouter un employé ?
+                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
+                        .support-faq-item__a Allez dans <strong>Collaborateurs</strong> et cliquez sur le bouton vert pour créer un profil.
+                    .support-faq-item
+                        .support-faq-item__q
+                            span Comment passer au plan Pro ?
+                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
+                        .support-faq-item__a Allez dans <strong>Abonnement</strong> → choisissez votre plan.
+                    .support-faq-item
+                        .support-faq-item__q
+                            span Mes clients reçoivent-ils une confirmation ?
+                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
+                        .support-faq-item__a Oui ! Un email de confirmation est envoyé automatiquement à chaque réservation.
+
+        .support-section
+            p.support-section__title Nous contacter
+            .support-contact-grid
+                a.support-contact-card(href="mailto:quentin.rennies@gmail.com")
+                    .support-contact-card__icon ✉️
+                    .support-contact-card__label Email
+                    .support-contact-card__sub quentin.rennies@gmail.com
+                a.support-contact-card(href="https://wa.me/32477443988" target="_blank")
+                    .support-contact-card__icon 💬
+                    .support-contact-card__label WhatsApp / Chat
+                    .support-contact-card__sub Réponse sous 24h
+                a.support-contact-card(href="tel:+33600000000")
+                    .support-contact-card__icon 📞
+                    .support-contact-card__label Téléphone
+                    .support-contact-card__sub Lun–Ven, 9h–18h
+
+    script.
+        // FAQ accordion
+        document.querySelectorAll('.support-faq-item').forEach(function(item) {
+            item.addEventListener('click', function() {
+                var isOpen = item.classList.contains('open');
+                document.querySelectorAll('.support-faq-item.open').forEach(function(o) { o.classList.remove('open'); });
+                if (!isOpen) item.classList.add('open');
+            });
+        });
+
+        // Build search index from DOM
+        var searchIndex = [];
+        document.querySelectorAll('.support-section').forEach(function(sec) {
+            var sectionTitle = (sec.querySelector('.support-section__title') || {}).textContent || '';
+            // Videos
+            sec.querySelectorAll('.support-video-card').forEach(function(card) {
+                var title = (card.querySelector('.support-video-card__title') || {}).textContent || '';
+                var dur = (card.querySelector('.support-video-card__duration') || {}).textContent || '';
+                if (title) searchIndex.push({ type: 'video', section: sectionTitle, label: title, sub: dur, el: card, faq: null });
+            });
+            // FAQs
+            sec.querySelectorAll('.support-faq-item').forEach(function(item) {
+                var q = (item.querySelector('.support-faq-item__q span') || {}).textContent || '';
+                if (q) searchIndex.push({ type: 'faq', section: sectionTitle, label: q, sub: '', el: item, faq: item });
+            });
+        });
+
+        var searchInput = document.getElementById('supportSearch');
+        var resultsBox = document.getElementById('searchResults');
+
+        function normalize(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+        searchInput.addEventListener('input', function() {
+            var q = normalize(searchInput.value.trim());
+            resultsBox.innerHTML = '';
+            if (!q) { resultsBox.classList.remove('open'); return; }
+            var hits = searchIndex.filter(function(r) { return normalize(r.label).includes(q) || normalize(r.section).includes(q); }).slice(0, 6);
+            if (!hits.length) {
+                resultsBox.innerHTML = '<div class="support-search__no-result">Aucun résultat pour "' + searchInput.value + '"</div>';
+                resultsBox.classList.add('open');
+                return;
+            }
+            hits.forEach(function(hit) {
+                var div = document.createElement('div');
+                div.className = 'support-search__result-item';
+                div.innerHTML = '<div class="support-search__result-item__section">' + hit.section + '</div>' +
+                    '<div class="support-search__result-item__label">' + hit.label + '</div>' +
+                    '<div class="support-search__result-item__type">' + (hit.type === 'faq' ? '❓ Question fréquente' : '🎬 Vidéo' + (hit.sub ? ' · ' + hit.sub : '')) + '</div>';
+                div.addEventListener('click', function() {
+                    searchInput.value = '';
+                    resultsBox.classList.remove('open');
+                    hit.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (hit.faq) {
+                        document.querySelectorAll('.support-faq-item.open').forEach(function(o) { o.classList.remove('open'); });
+                        hit.faq.classList.add('open');
+                        hit.faq.classList.add('highlight');
+                        setTimeout(function() { hit.faq.classList.remove('highlight'); }, 2000);
+                    }
+                });
+                resultsBox.appendChild(div);
+            });
+            resultsBox.classList.add('open');
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!document.querySelector('.support-search').contains(e.target)) {
+                resultsBox.classList.remove('open');
+            }
+        });

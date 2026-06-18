@@ -1,0 +1,173 @@
+/* ============================================================
+   Superadmin — Shared styles (nav + common)
+   ============================================================ */
+
+/* ── Reset ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #e0e0e0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  padding-bottom: 80px;
+}
+
+/* ── Top navigation bar ─────────────────────────────────────── */
+.sa-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 20px;
+  height: 54px;
+  background: #111;
+  border-bottom: 1px solid #1e1e1e;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.sa-topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 28px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.sa-topbar__mark {
+  width: 30px;
+  height: 30px;
+  background: #fff;
+  color: #000;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -0.03em;
+  flex-shrink: 0;
+}
+
+.sa-topbar__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.sa-topbar__links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sa-topbar__links::-webkit-scrollbar { display: none; }
+
+.sa-topbar__link {
+  font-size: 13px;
+  font-weight: 450;
+  padding: 6px 11px;
+  border-radius: 7px;
+  text-decoration: none;
+  color: #777;
+  white-space: nowrap;
+  transition: color .13s, background .13s;
+  border: none;
+  line-height: 1;
+}
+
+.sa-topbar__link:hover {
+  color: #ccc;
+  background: #1a1a1a;
+}
+
+.sa-topbar__link.active {
+  color: #fff;
+  background: #1e1e1e;
+  font-weight: 500;
+}
+
+.sa-topbar__logout {
+  font-size: 12px;
+  color: #555;
+  text-decoration: none;
+  padding: 6px 10px;
+  border: 1px solid #1e1e1e;
+  border-radius: 7px;
+  margin-left: 12px;
+  transition: color .13s, border-color .13s;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.sa-topbar__logout:hover {
+  color: #f87171;
+  border-color: rgba(248,113,113,.3);
+}
+
+/* ── Page wrapper ───────────────────────────────────────────── */
+.sa-page {
+  padding: 32px 24px;
+  max-width: 1400px;
+}
+
+/* ── Page header ────────────────────────────────────────────── */
+.sa-page-header {
+  margin-bottom: 24px;
+}
+
+.sa-page-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.sa-page-header p {
+  font-size: 13px;
+  color: #555;
+  margin-top: 4px;
+}
+
+/* ── Common stat cards ──────────────────────────────────────── */
+.sa-stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.sa-stat {
+  background: #141414;
+  border: 1px solid #1e1e1e;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.sa-stat__val {
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.sa-stat__val--green { color: #22c55e; }
+.sa-stat__val--amber { color: #f59e0b; }
+.sa-stat__val--red   { color: #f87171; }
+
+.sa-stat__lbl {
+  font-size: 11px;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}

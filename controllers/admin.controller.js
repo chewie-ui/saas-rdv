@@ -839,7 +839,7 @@ exports.sendManualReminder = async (req, res) => {
     }
 
     const owner = await User.findById(companyDoc.owner)
-      .select("calendarSettings location isPremium manualPremium subscription")
+      .select("calendarSettings location isPremium manualPremium subscription businessName phonePro")
       .lean();
 
     if (!atLeast(owner, "pro")) {
@@ -869,6 +869,9 @@ exports.sendManualReminder = async (req, res) => {
       locationText = [loc.address, loc.city].filter(Boolean).join(", ");
     }
 
+    const businessName = (owner?.businessName || "").trim();
+    const businessPhone = (owner?.phonePro || "").trim();
+
     const formattedDate = new Date(booking.date).toLocaleDateString("fr-FR", {
       weekday: "long", day: "2-digit", month: "long", year: "numeric",
     });
@@ -894,6 +897,8 @@ exports.sendManualReminder = async (req, res) => {
       ownerMessage,
       paymentMethods,
       paymentNote,
+      businessName,
+      businessPhone,
       delayLabel: "bientôt",
       bookingId: booking._id,
       cancelToken: booking.cancelToken,
@@ -1252,6 +1257,7 @@ exports.settingsInit = async (req, res) => {
     stripeConnectClientId: env.stripeConnectClientId || "",
     stripeConnectSuccess:  req.query.stripeConnectSuccess === "1",
     stripeConnectError:    req.query.stripeConnectError   || null,
+    stripeConnectMsg:      req.query.stripeMsg            || null,
   });
 };
 
@@ -1813,8 +1819,10 @@ exports.initiateStripeConnect = async (req, res) => {
 
     return res.redirect(accountLink.url);
   } catch (err) {
-    console.error("initiateStripeConnect (Express) error:", err);
-    return res.redirect("/settings?stripeConnectError=init");
+    const code = err?.type || err?.code || "init";
+    const msg  = err?.message || "";
+    console.error("initiateStripeConnect (Express) error:", code, msg, err);
+    return res.redirect(`/settings?stripeConnectError=${encodeURIComponent(code)}&stripeMsg=${encodeURIComponent(msg.substring(0, 120))}`);
   }
 };
 
@@ -1913,6 +1921,62 @@ exports.saveStripeAccountManual = async (req, res) => {
     return res.json({ success: true, accountEmail });
   } catch (err) {
     console.error("saveStripeAccountManual error:", err);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.supportPage = async (req, res) => {
+  const SupportContent = require("../db/models/supportContent.model");
+  let doc = await SupportContent.findOne().lean();
+  const sections = doc ? doc.sections.sort((a, b) => a.order - b.order) : [];
+  return res.render("admin/support", {
+    pageName: "Support",
+    title: "Support — BranShee",
+    sections,
+  });
+};
+
+exports.parrainage = async (req, res) => {
+  const filleuls = await User.find({ referredBy: req.user._id })
+    .select("fullName email isPremium subscription createdAt")
+    .lean();
+  const referralCode = req.user.referralCode || "";
+  const referral = req.user.referral || { totalInvited: 0, totalPaying: 0, creditMonths: 0 };
+  return res.render("admin/parrainage", {
+    pageName: "Parrainage",
+    title: "Parrainage — BranShee",
+    referralCode,
+    referral,
+    filleuls,
+    referralLink: `https://branshee.com/register?ref=${referralCode}`,
+  });
+};
+
+exports.parrainageClaim = async (req, res) => {
+  try {
+    const { rewardType } = req.body;
+    const user = req.user;
+    const referral = user.referral || {};
+    const totalPaying = referral.totalPaying || 0;
+    const creditMonths = referral.creditMonths || 0;
+    const claimable = Math.floor(totalPaying / 2) - creditMonths;
+    if (claimable <= 0) {
+      return res.status(400).json({ error: "Aucun crédit à réclamer pour le moment." });
+    }
+    const nodemailer = require("nodemailer");
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    });
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: "quentin.rennies@gmail.com",
+      subject: `[Parrainage] Demande de récompense — ${user.fullName}`,
+      text: `Utilisateur : ${user.fullName} (${user.email})\nID : ${user._id}\nFilleuls payants : ${totalPaying}\nCrédits déjà utilisés : ${creditMonths}\nMois à accorder : ${claimable}\nType souhaité : ${rewardType || "mois offerts"}\n`,
+    });
+    return res.json({ success: true, claimable });
+  } catch (err) {
+    console.error("parrainageClaim error:", err);
     return res.status(500).json({ error: "Erreur serveur." });
   }
 };

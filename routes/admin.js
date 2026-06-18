@@ -116,6 +116,10 @@ router.post("/forms/save", isVerified, adminController.saveForm);
 
 router.get("/customize-calendar", isAuth, injectCompany, adminController.customizeCalendarPage);
 
+router.get("/support", isVerified, adminController.supportPage);
+router.get("/parrainage", isVerified, adminController.parrainage);
+router.post("/parrainage/claim", isVerified, adminController.parrainageClaim);
+
 // ── Ordre des sections ────────────────────────────────────────────────────────
 router.patch("/account/section-order", isVerified, adminController.saveSectionOrder);
 

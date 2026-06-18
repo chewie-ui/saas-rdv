@@ -6,17 +6,11 @@ html(lang="fr")
         title Superadmin — Pages & fonctionnalités
         link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
         link(rel="stylesheet" href="/css/import.css")
+        link(rel="stylesheet" href="/css/layouts/superadmin.css")
         style.
-            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-            body { min-height: 100vh; background: #0f0f0f; color: #e0e0e0; font-family: 'Inter', sans-serif; padding: 32px 24px 80px; }
-            .sa-nav { display: flex; gap: 8px; margin-bottom: 32px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
-            .sa-nav__links { display: flex; gap: 8px; flex-wrap: wrap; }
-            a.sa-link { font-size: 13px; padding: 7px 16px; border-radius: 8px; text-decoration: none; border: 1px solid #2a2a2a; color: #888; transition: color .15s, border-color .15s; }
-            a.sa-link.active, a.sa-link:hover { color: #fff; border-color: #444; }
-            a.logout-btn { font-size: 12px; color: #555; text-decoration: none; padding: 6px 12px; border: 1px solid #2a2a2a; border-radius: 8px; transition: color .15s, border-color .15s; }
-            a.logout-btn:hover { color: #f87171; border-color: rgba(248,113,113,.3); }
-            .page-header { margin-bottom: 28px; }
-            .page-header h1 { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: -.02em; }
+            body { padding: 0 24px 80px; }
+            .page-header { margin-top: 32px; margin-bottom: 28px; }
+            .page-header h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -.02em; }
             .page-header p { font-size: 13px; color: #555; margin-top: 4px; }
 
             .feature-list { display: flex; flex-direction: column; gap: 14px; }
@@ -54,15 +48,8 @@ html(lang="fr")
             .toggle-switch input:checked + .toggle-switch__slider { background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.4); }
             .toggle-switch input:checked + .toggle-switch__slider::before { transform: translateX(20px); background: #22c55e; }
     body
-        .sa-nav
-            .sa-nav__links
-                a.sa-link(href="/superadmin") 👥 Utilisateurs
-                a.sa-link(href="/superadmin/promo-codes") 🎟️ Codes promo
-                a.sa-link(href="/superadmin/access-links") 🔗 Liens d'accès
-                a.sa-link(href="/superadmin/boost") ⭐ Mise en avant
-                a.sa-link(href="/superadmin/referrals") 🎁 Parrainage
-                a.sa-link.active(href="/superadmin/features") 🚧 Pages
-            a.logout-btn(href="/superadmin/logout") Déconnexion
+        - var saPage = 'features'
+        include ../../includes/sa-nav
 
         .page-header
             h1 🚧 Pages & fonctionnalités

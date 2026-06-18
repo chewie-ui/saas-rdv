@@ -37,7 +37,7 @@ block content
                     | &nbsp;Intégration
 
         //- ── PANNEAU GÉNÉRAL ────────────────────────────────────────────────────
-        .cz-panel#czPanelGeneral
+        .cz-panel#czPanelGeneral(style="display:none")
 
         //- ── Profil de l'établissement ──────────────────────────────────────────
         .info-card
@@ -95,27 +95,28 @@ block content
                 svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                     path(d="m644-428-58-58q9-47-27-88t-93-32l-58-58q17-8 34.5-12t37.5-4q75 0 127.5 52.5T660-500q0 20-4 37.5T644-428Zm128 126-58-56q38-29 67.5-63.5T832-500q-50-101-143.5-160.5T480-720q-29 0-57 4t-55 12l-62-62q41-17 84-25.5t90-8.5q151 0 269 83.5T920-500q-23 56-60.5 105T772-302Zm20 246L624-220q-35 11-70.5 16.5T480-198q-151 0-269-83.5T40-500q24-56 64-104.5t90-85.5L78-806l56-56 736 736-56 56ZM222-624q-29 26-53 57t-41 67q50 101 143.5 160.5T480-280q20 0 39-2.5t39-5.5l-36-38q-11 3-21 4.5t-21 1.5q-75 0-127.5-52.5T280-500q0-11 1.5-21t4.5-21l-64-82Zm319 93Zm-151 75Z")
                 span Cette section est masquée sur votre page publique — les visiteurs ne la verront pas.
-            .about-editor
-                .about-editor__toolbar
-                    button.about-editor__btn#aboutBoldBtn(type="button" title="Gras (Ctrl+B)" data-cmd="bold")
-                        strong B
-                    button.about-editor__btn#aboutItalicBtn(type="button" title="Italique (Ctrl+I)" data-cmd="italic")
-                        em I
-                    button.about-editor__btn#aboutUnderlineBtn(type="button" title="Souligné (Ctrl+U)" data-cmd="underline")
-                        u U
-                    span.about-editor__sep
-                    button.about-editor__btn#aboutSizeDownBtn(type="button" title="Réduire la taille du texte sélectionné")
-                        span A−
-                    button.about-editor__btn#aboutSizeUpBtn(type="button" title="Agrandir la taille du texte sélectionné")
-                        span A+
-                .about-editor__area#aboutEditor(contenteditable="true" data-placeholder="Parlez de votre activité, de votre parcours, de ce qui rend votre établissement unique…")!= user.aboutHtml || ''
-                .about-editor__footer
-                    span.about-editor__hint 💡 Sélectionnez du texte, puis cliquez sur un bouton pour le mettre en forme.
-                    span.field-hint#aboutCount 0/4000
-            .info-card__actions
-                button.sm-btn.sm-btn--primary#saveAboutBtn
-                    span Enregistrer
-                span.about-editor__status#aboutStatus
+            .section-body(style=(cs.showSectionAbout === false ? 'display:none' : ''))
+                .about-editor
+                    .about-editor__toolbar
+                        button.about-editor__btn#aboutBoldBtn(type="button" title="Gras (Ctrl+B)" data-cmd="bold")
+                            strong B
+                        button.about-editor__btn#aboutItalicBtn(type="button" title="Italique (Ctrl+I)" data-cmd="italic")
+                            em I
+                        button.about-editor__btn#aboutUnderlineBtn(type="button" title="Souligné (Ctrl+U)" data-cmd="underline")
+                            u U
+                        span.about-editor__sep
+                        button.about-editor__btn#aboutSizeDownBtn(type="button" title="Réduire la taille du texte sélectionné")
+                            span A−
+                        button.about-editor__btn#aboutSizeUpBtn(type="button" title="Agrandir la taille du texte sélectionné")
+                            span A+
+                    .about-editor__area#aboutEditor(contenteditable="true" data-placeholder="Parlez de votre activité, de votre parcours, de ce qui rend votre établissement unique…")!= user.aboutHtml || ''
+                    .about-editor__footer
+                        span.about-editor__hint 💡 Sélectionnez du texte, puis cliquez sur un bouton pour le mettre en forme.
+                        span.field-hint#aboutCount 0/4000
+                .info-card__actions
+                    button.sm-btn.sm-btn--primary#saveAboutBtn
+                        span Enregistrer
+                    span.about-editor__status#aboutStatus
 
         //- ── Localisation ───────────────────────────────────────────────────────
         .info-card
@@ -251,7 +252,7 @@ block content
             .info-card__header.info-card__header--with-cb
                 .info-card__header__left
                     h3 Galerie photos
-                    p.info-card__desc Ajoutez jusqu'à 12 photos de votre établissement.
+                    p.info-card__desc Ajoutez jusqu'à 12 photos pour illustrer votre espace.
                 label.section-cb-label(for="toggleSectionGallery" title="Afficher la galerie sur la page publique")
                     input#toggleSectionGallery.toggle-cb(type="checkbox" checked=!!cs.showSectionGallery)
                     span.section-pill Galerie
@@ -260,43 +261,59 @@ block content
                     path(d="m644-428-58-58q9-47-27-88t-93-32l-58-58q17-8 34.5-12t37.5-4q75 0 127.5 52.5T660-500q0 20-4 37.5T644-428Zm128 126-58-56q38-29 67.5-63.5T832-500q-50-101-143.5-160.5T480-720q-29 0-57 4t-55 12l-62-62q41-17 84-25.5t90-8.5q151 0 269 83.5T920-500q-23 56-60.5 105T772-302Zm20 246L624-220q-35 11-70.5 16.5T480-198q-151 0-269-83.5T40-500q24-56 64-104.5t90-85.5L78-806l56-56 736 736-56 56ZM222-624q-29 26-53 57t-41 67q50 101 143.5 160.5T480-280q20 0 39-2.5t39-5.5l-36-38q-11 3-21 4.5t-21 1.5q-75 0-127.5-52.5T280-500q0-11 1.5-21t4.5-21l-64-82Zm319 93Zm-151 75Z")
                 span Cette section est masquée sur votre page publique — les visiteurs ne la verront pas.
 
-            //- ── Format d'affichage de la galerie sur la page publique ──────
-            //- Aperçus miniatures pour visualiser comment les photos
-            //- apparaîtront aux visiteurs (grille classique ou carrousel
-            //- défilant) avant même de publier — répond au besoin
-            //- "montrer 2-3 formats de présentation, comme un carrousel".
-            - var _galleryLayout = cs.galleryLayout || 'grid'
-            .gallery-layout-picker
-                span.gallery-layout-picker__label Format d'affichage côté visiteur
-                .gallery-layout-opts#galleryLayoutOpts
-                    button.gallery-layout-opt(type="button" data-layout="grid" class=(_galleryLayout === 'grid' ? 'is-active' : ''))
-                        .gallery-layout-opt__preview.gallery-layout-opt__preview--grid
-                            span
-                            span
-                            span
-                            span
-                        span.gallery-layout-opt__name Grille
-                    button.gallery-layout-opt(type="button" data-layout="carousel" class=(_galleryLayout === 'carousel' ? 'is-active' : ''))
-                        .gallery-layout-opt__preview.gallery-layout-opt__preview--carousel
-                            span
-                            span
-                            span
-                        span.gallery-layout-opt__name Carrousel
-                span.gallery-layout-picker__status#galleryLayoutStatus
+            .gl-body
+                - var _galleryLayout = cs.galleryLayout || 'grid'
 
-            .gallery-grid#galleryGrid
-                each photo, idx in gallery
-                    .gallery-item(data-index=idx draggable="true")
-                        img(src=photo alt="Photo " + (idx+1))
-                        button.gallery-item__del(type="button" data-index=idx title="Supprimer")
-                            svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
-                if gallery.length < 12
-                    label.gallery-add-btn(for="galleryFileInput")
-                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                            path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
-                        span Ajouter
-                        input#galleryFileInput(type="file" accept="image/*" multiple style="display:none")
+                //- ── Toolbar : format + compteur ─────────────────────────────
+                .gl-toolbar
+                    span.gl-toolbar__label Format
+                    .gl-layout-btns#glLayoutBtns
+                        button.gl-layout-btn(type="button" data-layout="grid" class=(_galleryLayout === 'grid' ? 'is-active' : '') title="Grille uniforme")
+                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                path(d="M120-520v-320h320v320H120Zm0 400v-320h320v320H120Zm400-400v-320h320v320H520Zm0 400v-320h320v320H520ZM200-600h160v-160H200v160Zm400 0h160v-160H600v160Zm0 400h160v-160H600v160Zm-400 0h160v-160H200v160Z")
+                            span Grille
+                        button.gl-layout-btn(type="button" data-layout="masonry" class=(_galleryLayout === 'masonry' ? 'is-active' : '') title="Mosaïque")
+                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                path(d="M80-120v-720h200v720H80Zm260 0v-480h200v480H340Zm260 0v-280h200v280H600Z")
+                            span Mosaïque
+                        button.gl-layout-btn(type="button" data-layout="carousel" class=(_galleryLayout === 'carousel' ? 'is-active' : '') title="Carrousel défilant")
+                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm0-80h640v-480H160v480Zm200-80 240-160-240-160v320Z")
+                            span Carrousel
+                    .gl-right
+                        span.gl-count
+                            span#glCount #{gallery.length}
+                            |  / 12
+                        span.gl-saved#glLayoutSaved ✓
+
+                //- ── Photos (flex-wrap, pas de CSS Grid) ────────────────────
+                if gallery.length > 0
+                    .gl-photos#glGrid
+                        each photo, idx in gallery
+                            .gl-item(data-index=idx draggable="true")
+                                img.gl-item__img(src=photo alt="" loading="lazy")
+                                .gl-item__overlay
+                                    button.gl-item__del(type="button" data-index=idx title="Supprimer")
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                            path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+                                    .gl-item__drag
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                            path(d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-400q-33 0-56.5-23.5T280-480q0-33 23.5-56.5T360-560q33 0 56.5 23.5T440-480q0 33-23.5 56.5T360-400Zm240 0q-33 0-56.5-23.5T520-480q0-33 23.5-56.5T600-560q33 0 56.5 23.5T680-480q0 33-23.5 56.5T600-400ZM360-640q-33 0-56.5-23.5T280-720q0-33 23.5-56.5T360-800q33 0 56.5 23.5T440-720q0 33-23.5 56.5T360-640Zm240 0q-33 0-56.5-23.5T520-720q0-33 23.5-56.5T600-800q33 0 56.5 23.5T680-720q0 33-23.5 56.5T600-640Z")
+
+                //- ── État vide (sibling, pas dans la grille) ─────────────────
+                if gallery.length === 0
+                    .gl-empty#glEmpty
+                        svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
+                            path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm40-80h480L570-480 450-320l-90-120-120 160Zm-40 80v-560 560Z")
+                        p Aucune photo pour le moment
+                        p.gl-empty__sub Cliquez sur le bouton ci-dessous pour ajouter vos premières photos.
+
+                //- ── Bouton ajout — toujours visible ────────────────────────
+                label.gl-upload(for="glFileInput" style=(gallery.length >= 12 ? 'display:none' : ''))
+                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                        path(d="M440-320v-326L336-542l-56-58 200-200 200 200-56 58-104-104v326h-80ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z")
+                    span Ajouter des photos
+                    input#glFileInput(type="file" accept="image/*" multiple style="display:none")
 
         //- ── URL personnalisée ────────────────────────────────────────────────
         .info-card#partage-lien
@@ -399,212 +416,6 @@ block content
                         | Toujours en dernier
 
             .section-order-status#sectionOrderStatus
-        style.
-            /* ── Liste ── */
-            .section-order-list {
-                display: flex;
-                flex-direction: column;
-                gap: 0;
-                margin-top: 8px;
-                position: relative;
-            }
-
-            /* ── Item draggable ── */
-            .section-order-item {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 12px 16px;
-                background: var(--surface-card);
-                border: 1.5px solid var(--border-light);
-                border-radius: 12px;
-                margin-bottom: 6px;
-                cursor: grab;
-                user-select: none;
-                transition: box-shadow .18s, border-color .15s, background .12s, transform .12s, opacity .15s;
-                position: relative;
-            }
-
-            .section-order-item:hover:not(.section-order-item--locked) {
-                border-color: var(--border-medium);
-                box-shadow: 0 2px 10px rgba(0,0,0,.06);
-            }
-
-            /* Item en train d'être glissé */
-            .section-order-item.is-dragging {
-                opacity: 0;
-                pointer-events: none;
-            }
-
-            /* Fantôme (clone visuel) */
-            .section-order-item.drag-ghost {
-                position: fixed;
-                z-index: 9999;
-                pointer-events: none;
-                box-shadow: 0 12px 32px rgba(0,0,0,.18);
-                border-color: var(--accent);
-                background: var(--surface-card);
-                border-radius: 12px;
-                opacity: .96;
-                transform: rotate(1.2deg) scale(1.02);
-                cursor: grabbing;
-                transition: none;
-            }
-
-            /* Ligne indicatrice de dépôt */
-            .section-order-item.drop-before::before,
-            .section-order-item.drop-after::after {
-                content: '';
-                display: block;
-                position: absolute;
-                left: 12px;
-                right: 12px;
-                height: 2.5px;
-                border-radius: 99px;
-                background: var(--accent);
-                box-shadow: 0 0 6px rgba(22,163,74,.4);
-                z-index: 10;
-            }
-            .section-order-item.drop-before::before { top: -4px; }
-            .section-order-item.drop-after::after   { bottom: -4px; }
-
-            /* Item verrouillé */
-            .section-order-item--locked {
-                cursor: default;
-                background: var(--surface);
-                border-style: dashed;
-                border-color: var(--border-light);
-            }
-            .section-order-item--locked:hover { box-shadow: none; border-color: var(--border-light); }
-
-            /* Éléments internes */
-            .section-order-item__grip {
-                color: var(--text-muted);
-                flex-shrink: 0;
-                display: flex;
-                opacity: .45;
-                transition: opacity .15s;
-            }
-            .section-order-item:hover .section-order-item__grip { opacity: .9; }
-            .section-order-item__grip svg  { fill: currentColor; }
-            .section-order-item__icon      { fill: var(--accent); flex-shrink: 0; }
-            .section-order-item__label     { font-size: 13.5px; font-weight: 600; color: var(--text-primary); flex: 1; }
-            .section-order-item__lock      { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:var(--text-muted); white-space:nowrap; background:var(--surface); border:1px solid var(--border-light); border-radius:99px; padding:2px 8px; }
-            .section-order-item__lock svg  { fill: var(--text-muted); }
-            .section-order-status          { font-size: 12.5px; min-height: 18px; margin-top: 2px; color: var(--accent); font-weight: 600; transition: opacity .3s; }
-        script.
-            (function() {
-                var list   = document.getElementById('sectionOrderList');
-                var status = document.getElementById('sectionOrderStatus');
-                if (!list) return;
-
-                var dragged    = null;
-                var ghost      = null;
-                var offsetX    = 0;
-                var offsetY    = 0;
-
-                function getMovable() {
-                    return Array.from(list.querySelectorAll('.section-order-item:not(.section-order-item--locked):not(.drag-ghost)'));
-                }
-
-                function clearDropIndicators() {
-                    list.querySelectorAll('.drop-before,.drop-after').forEach(function(i) {
-                        i.classList.remove('drop-before','drop-after');
-                    });
-                }
-
-                function createGhost(item, e) {
-                    var rect = item.getBoundingClientRect();
-                    offsetX  = e.clientX - rect.left;
-                    offsetY  = e.clientY - rect.top;
-                    ghost    = item.cloneNode(true);
-                    ghost.classList.add('drag-ghost');
-                    ghost.style.width  = rect.width  + 'px';
-                    ghost.style.height = rect.height + 'px';
-                    ghost.style.left   = (e.clientX - offsetX) + 'px';
-                    ghost.style.top    = (e.clientY - offsetY) + 'px';
-                    document.body.appendChild(ghost);
-                }
-
-                function moveGhost(e) {
-                    if (!ghost) return;
-                    ghost.style.left = (e.clientX - offsetX) + 'px';
-                    ghost.style.top  = (e.clientY - offsetY) + 'px';
-                }
-
-                function removeGhost() {
-                    if (ghost) { ghost.remove(); ghost = null; }
-                }
-
-                function findDropTarget(e) {
-                    // Retourne {item, position:'before'|'after'} ou null
-                    var items = getMovable();
-                    for (var i = 0; i < items.length; i++) {
-                        var item = items[i];
-                        if (item === dragged) continue;
-                        var rect  = item.getBoundingClientRect();
-                        var midY  = rect.top + rect.height / 2;
-                        if (e.clientY >= rect.top - 8 && e.clientY <= rect.bottom + 8) {
-                            return { item: item, pos: e.clientY < midY ? 'before' : 'after' };
-                        }
-                    }
-                    return null;
-                }
-
-                getMovable().forEach(function(item) {
-                    item.addEventListener('mousedown', function(e) {
-                        if (e.button !== 0) return;
-                        dragged = this;
-                        createGhost(this, e);
-                        setTimeout(function() { if (dragged) dragged.classList.add('is-dragging'); }, 0);
-                        e.preventDefault();
-                    });
-                });
-
-                document.addEventListener('mousemove', function(e) {
-                    if (!dragged) return;
-                    moveGhost(e);
-                    clearDropIndicators();
-                    var target = findDropTarget(e);
-                    if (target) {
-                        target.item.classList.add(target.pos === 'before' ? 'drop-before' : 'drop-after');
-                    }
-                });
-
-                document.addEventListener('mouseup', function(e) {
-                    if (!dragged) return;
-                    clearDropIndicators();
-                    var target = findDropTarget(e);
-                    if (target) {
-                        if (target.pos === 'before') {
-                            list.insertBefore(dragged, target.item);
-                        } else {
-                            list.insertBefore(dragged, target.item.nextSibling);
-                        }
-                    }
-                    dragged.classList.remove('is-dragging');
-                    removeGhost();
-                    dragged = null;
-                    saveOrder();
-                });
-
-                async function saveOrder() {
-                    var order = getMovable().map(function(i) { return i.dataset.key; }).filter(Boolean);
-                    try {
-                        var r = await fetch('/account/section-order', {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ order: order })
-                        });
-                        var d = await r.json();
-                        if (d.success && status) {
-                            status.style.opacity = '1';
-                            status.textContent = '✓ Ordre enregistré';
-                            setTimeout(function() { status.style.opacity = '0'; setTimeout(function(){ status.textContent=''; status.style.opacity='1'; }, 300); }, 2000);
-                        }
-                    } catch(e) {}
-                }
-            })();
 
         //- ── Réseaux sociaux ─────────────────────────────────────────────────
         .info-card
@@ -1434,7 +1245,9 @@ block scripts
             // Tous les enfants directs de .info-page qui sont des "general cards"
             function getGeneralEls() {
                 return Array.from(infoPage.children).filter(function(el) {
-                    return !el.classList.contains('cz-header') &&
+                    return el.tagName !== 'STYLE' &&
+                           el.tagName !== 'SCRIPT' &&
+                           !el.classList.contains('cz-header') &&
                            el.id !== 'czPanelGeneral' &&
                            el.id !== 'czPanelRappels' &&
                            el.id !== 'czPanelDesign' &&
@@ -1556,130 +1369,175 @@ block scripts
             }
 
             // ── Gallery ───────────────────────────────────────────────────────
-            var galleryGrid  = document.getElementById('galleryGrid');
-            var galleryInput = document.getElementById('galleryFileInput');
+            var glInput   = document.getElementById('glFileInput');
+            var glUpload  = document.querySelector('.gl-upload');
+            var glCountEl = document.getElementById('glCount');
+            var glSaved   = document.getElementById('glLayoutSaved');
+            var glBody    = document.querySelector('.gl-body');
 
-            function makeGalleryItemDraggable(item) {
-                item.setAttribute('draggable', 'true');
+            function glGetGrid() { return document.getElementById('glGrid'); }
+            function glGetEmpty() { return document.getElementById('glEmpty'); }
+
+            function glUpdateCount() {
+                var grid = glGetGrid();
+                var n = grid ? grid.querySelectorAll('.gl-item').length : 0;
+                if (glCountEl) glCountEl.textContent = n;
+                if (glUpload) glUpload.style.display = n >= 12 ? 'none' : '';
+                var empty = glGetEmpty();
+                if (n === 0) {
+                    if (!empty && glBody) {
+                        var emptyEl = document.createElement('div');
+                        emptyEl.className = 'gl-empty';
+                        emptyEl.id = 'glEmpty';
+                        emptyEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm40-80h480L570-480 450-320l-90-120-120 160Zm-40 80v-560 560Z"/></svg><p>Aucune photo pour le moment</p><p class="gl-empty__sub">Cliquez sur le bouton ci-dessous pour ajouter vos premières photos.</p>';
+                        if (glUpload) glBody.insertBefore(emptyEl, glUpload);
+                        else glBody.appendChild(emptyEl);
+                    }
+                    if (grid) { grid.remove(); }
+                } else {
+                    if (empty) empty.remove();
+                    if (!grid && glBody) {
+                        var gridEl = document.createElement('div');
+                        gridEl.className = 'gl-photos';
+                        gridEl.id = 'glGrid';
+                        if (glUpload) glBody.insertBefore(gridEl, glUpload);
+                        else glBody.appendChild(gridEl);
+                    }
+                }
             }
 
-            function reindexGallery() {
-                galleryGrid.querySelectorAll('.gallery-item').forEach(function (el, i) {
+            function glReindex() {
+                var grid = glGetGrid();
+                if (!grid) return;
+                grid.querySelectorAll('.gl-item').forEach(function (el, i) {
                     el.dataset.index = i;
-                    var delBtn = el.querySelector('.gallery-item__del');
-                    if (delBtn) delBtn.dataset.index = i;
+                    var btn = el.querySelector('.gl-item__del');
+                    if (btn) btn.dataset.index = i;
                 });
             }
 
-            // ── Drag-to-reorder ───────────────────────────────────────────────
-            if (galleryGrid) {
-                var dragSrc = null;
+            function glMakeItemHTML(path, idx) {
+                return '<img class="gl-item__img" src="' + path + '" alt="" loading="lazy">'
+                    + '<div class="gl-item__overlay">'
+                    + '<button class="gl-item__del" type="button" data-index="' + idx + '" title="Supprimer">'
+                    + '<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>'
+                    + '</button>'
+                    + '<div class="gl-item__drag">'
+                    + '<svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-400q-33 0-56.5-23.5T280-480q0-33 23.5-56.5T360-560q33 0 56.5 23.5T440-480q0 33-23.5 56.5T360-400Zm240 0q-33 0-56.5-23.5T520-480q0-33 23.5-56.5T600-560q33 0 56.5 23.5T680-480q0 33-23.5 56.5T600-400ZM360-640q-33 0-56.5-23.5T280-720q0-33 23.5-56.5T360-800q33 0 56.5 23.5T440-720q0 33-23.5 56.5T360-640Zm240 0q-33 0-56.5-23.5T520-720q0-33 23.5-56.5T600-800q33 0 56.5 23.5T680-720q0 33-23.5 56.5T600-640Z"/></svg>'
+                    + '</div>'
+                    + '</div>';
+            }
 
-                galleryGrid.addEventListener('dragstart', function (e) {
-                    var item = e.target.closest('.gallery-item');
+            async function glUploadFiles(files) {
+                if (!files || !files.length) return;
+                var formData = new FormData();
+                Array.from(files).forEach(function (f) { formData.append('galleryPhotos', f); });
+                var res  = await fetch('/account/gallery', { method: 'PATCH', body: formData });
+                var data = await res.json();
+                if (data.success && data.paths) {
+                    data.paths.forEach(function (path) {
+                        var grid = glGetGrid();
+                        if (!grid) {
+                            grid = document.createElement('div');
+                            grid.className = 'gl-photos';
+                            grid.id = 'glGrid';
+                            if (glUpload) glBody.insertBefore(grid, glUpload);
+                            else glBody.appendChild(grid);
+                        }
+                        var idx  = grid.querySelectorAll('.gl-item').length;
+                        var item = document.createElement('div');
+                        item.className = 'gl-item';
+                        item.dataset.index = idx;
+                        item.setAttribute('draggable', 'true');
+                        item.innerHTML = glMakeItemHTML(path, idx);
+                        grid.appendChild(item);
+                    });
+                    glUpdateCount();
+                }
+                if (glInput) glInput.value = '';
+            }
+
+            // ── Drag-to-reorder (délégué sur .gl-body) ───────────────────────
+            if (glBody) {
+                var glDragSrc = null;
+
+                glBody.addEventListener('dragstart', function (e) {
+                    var item = e.target.closest('.gl-item');
                     if (!item) return;
-                    dragSrc = item;
-                    item.classList.add('gallery-item--dragging');
+                    glDragSrc = item;
+                    item.classList.add('gl-item--dragging');
                     e.dataTransfer.effectAllowed = 'move';
                     e.dataTransfer.setData('text/plain', item.dataset.index);
                 });
 
-                galleryGrid.addEventListener('dragend', function (e) {
-                    var item = e.target.closest('.gallery-item');
-                    if (item) item.classList.remove('gallery-item--dragging');
-                    galleryGrid.querySelectorAll('.gallery-item').forEach(function (el) {
-                        el.classList.remove('gallery-item--over');
-                    });
-                    dragSrc = null;
+                glBody.addEventListener('dragend', function (e) {
+                    var item = e.target.closest('.gl-item');
+                    if (item) item.classList.remove('gl-item--dragging');
+                    document.querySelectorAll('.gl-item--over').forEach(function (el) { el.classList.remove('gl-item--over'); });
+                    glDragSrc = null;
                 });
 
-                galleryGrid.addEventListener('dragover', function (e) {
+                glBody.addEventListener('dragover', function (e) {
                     e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    var target = e.target.closest('.gallery-item');
-                    if (!target || target === dragSrc) return;
-                    galleryGrid.querySelectorAll('.gallery-item').forEach(function (el) {
-                        el.classList.remove('gallery-item--over');
-                    });
-                    target.classList.add('gallery-item--over');
+                    var target = e.target.closest('.gl-item');
+                    if (!target || target === glDragSrc) return;
+                    document.querySelectorAll('.gl-item--over').forEach(function (el) { el.classList.remove('gl-item--over'); });
+                    target.classList.add('gl-item--over');
                 });
 
-                galleryGrid.addEventListener('dragleave', function (e) {
-                    var target = e.target.closest('.gallery-item');
-                    if (target) target.classList.remove('gallery-item--over');
+                glBody.addEventListener('dragleave', function (e) {
+                    var target = e.target.closest('.gl-item');
+                    if (target) target.classList.remove('gl-item--over');
                 });
 
-                galleryGrid.addEventListener('drop', async function (e) {
+                glBody.addEventListener('drop', async function (e) {
+                    var target = e.target.closest('.gl-item');
+                    if (!target || !glDragSrc || target === glDragSrc) return;
                     e.preventDefault();
-                    var target = e.target.closest('.gallery-item');
-                    if (!target || !dragSrc || target === dragSrc) return;
-                    target.classList.remove('gallery-item--over');
-
-                    // Réorganiser dans le DOM
-                    var addBtn = galleryGrid.querySelector('.gallery-add-btn');
-                    var items  = Array.from(galleryGrid.querySelectorAll('.gallery-item'));
-                    var srcIdx = items.indexOf(dragSrc);
+                    target.classList.remove('gl-item--over');
+                    var grid = glGetGrid();
+                    if (!grid) return;
+                    var items  = Array.from(grid.querySelectorAll('.gl-item'));
+                    var srcIdx = items.indexOf(glDragSrc);
                     var tgtIdx = items.indexOf(target);
-                    if (srcIdx < tgtIdx) {
-                        galleryGrid.insertBefore(dragSrc, target.nextSibling || addBtn);
-                    } else {
-                        galleryGrid.insertBefore(dragSrc, target);
-                    }
-
-                    reindexGallery();
-
-                    // Sauvegarder le nouvel ordre
-                    var newOrder = Array.from(galleryGrid.querySelectorAll('.gallery-item')).map(function (el) {
-                        return parseInt(el.dataset.index, 10);
-                    });
-                    // Reconstruire l'ordre basé sur les src des images
-                    var srcs = Array.from(galleryGrid.querySelectorAll('.gallery-item img')).map(function (img) {
-                        return img.getAttribute('src');
-                    });
+                    if (srcIdx < tgtIdx) grid.insertBefore(glDragSrc, target.nextSibling);
+                    else grid.insertBefore(glDragSrc, target);
+                    glReindex();
+                    var srcs = Array.from(grid.querySelectorAll('.gl-item img')).map(function (img) { return img.getAttribute('src'); });
                     try {
-                        await fetch('/account/gallery/reorder', {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ order: srcs })
-                        });
+                        await fetch('/account/gallery/reorder', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: srcs }) });
                     } catch (_) {}
-
-                    reindexGallery();
+                    glReindex();
                 });
-            }
 
-            if (galleryInput && galleryGrid) {
-                galleryInput.addEventListener('change', async function () {
-                    if (!galleryInput.files.length) return;
-                    var formData = new FormData();
-                    Array.from(galleryInput.files).forEach(function (f) { formData.append('galleryPhotos', f); });
-                    var res  = await fetch('/account/gallery', { method: 'PATCH', body: formData });
-                    var data = await res.json();
-                    if (data.success && data.paths) {
-                        data.paths.forEach(function (path) {
-                            var idx  = galleryGrid.querySelectorAll('.gallery-item').length;
-                            var item = document.createElement('div');
-                            item.className = 'gallery-item';
-                            item.dataset.index = idx;
-                            item.setAttribute('draggable', 'true');
-                            item.innerHTML = '<img src="' + path + '" alt="Photo"><button class="gallery-item__del" type="button" data-index="' + idx + '" title="Supprimer"><svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z"/></svg></button>';
-                            var addBtn = galleryGrid.querySelector('.gallery-add-btn');
-                            if (addBtn) galleryGrid.insertBefore(item, addBtn);
-                            else galleryGrid.appendChild(item);
-                        });
-                        galleryInput.value = '';
-                    }
-                });
-                galleryGrid.addEventListener('click', async function (e) {
-                    var btn = e.target.closest('.gallery-item__del');
+                // ── Supprimer ─────────────────────────────────────────────────
+                glBody.addEventListener('click', async function (e) {
+                    var btn = e.target.closest('.gl-item__del');
                     if (!btn) return;
                     var idx  = parseInt(btn.dataset.index, 10);
                     var res  = await fetch('/account/gallery/' + idx, { method: 'DELETE' });
                     var data = await res.json();
                     if (data.success) {
-                        btn.closest('.gallery-item').remove();
-                        reindexGallery();
+                        btn.closest('.gl-item').remove();
+                        glReindex();
+                        glUpdateCount();
                     }
+                });
+            }
+
+            // ── Upload via input ──────────────────────────────────────────────
+            if (glInput) {
+                glInput.addEventListener('change', function () { glUploadFiles(glInput.files); });
+            }
+
+            // ── Upload via drag-and-drop sur le bouton ────────────────────────
+            if (glUpload) {
+                glUpload.addEventListener('dragover', function (e) { e.preventDefault(); glUpload.classList.add('drag-over'); });
+                glUpload.addEventListener('dragleave', function () { glUpload.classList.remove('drag-over'); });
+                glUpload.addEventListener('drop', async function (e) {
+                    e.preventDefault();
+                    glUpload.classList.remove('drag-over');
+                    glUploadFiles(e.dataTransfer.files);
                 });
             }
 
@@ -1694,10 +1552,29 @@ block scripts
                 var cb = document.getElementById(id);
                 if (!cb) return;
                 var card = cb.closest('.section-card');
+                var sectionBody = card ? card.querySelector('.section-body') : null;
+
                 cb.addEventListener('change', async function () {
                     var fieldName = sectionToggleMap[id];
                     var enabled   = cb.checked;
+                    var mainEl    = document.querySelector('.main');
+
+                    // Snapshot avant modification DOM
+                    var scrollTopBefore    = mainEl ? mainEl.scrollTop    : 0;
+                    var scrollHeightBefore = mainEl ? mainEl.scrollHeight : 0;
+                    // Position du header de la card dans le viewport (négatif = au-dessus)
+                    var cardTopBefore = card ? card.getBoundingClientRect().top : 1;
+
+                    // Appliquer le changement
+                    if (sectionBody) sectionBody.style.display = enabled ? '' : 'none';
                     if (card) card.classList.toggle('section-card--off', !enabled);
+
+                    // Si la card était au-dessus du viewport, le contenu ajouté/retiré
+                    // est hors de vue : compenser en ajustant scrollTop du delta de hauteur.
+                    if (mainEl && cardTopBefore < 0) {
+                        mainEl.scrollTop = scrollTopBefore + (mainEl.scrollHeight - scrollHeightBefore);
+                    }
+
                     try {
                         await fetch('/account/toggle-section', {
                             method: 'PATCH',
@@ -1708,38 +1585,28 @@ block scripts
                 });
             });
 
-            // ── Format d'affichage de la galerie (grille / carrousel) ──────────
-            var galleryLayoutOpts   = document.getElementById('galleryLayoutOpts');
-            var galleryLayoutStatus = document.getElementById('galleryLayoutStatus');
-            if (galleryLayoutOpts) {
-                galleryLayoutOpts.addEventListener('click', async function (e) {
-                    var btn = e.target.closest('.gallery-layout-opt');
+            // ── Layout picker ─────────────────────────────────────────────────
+            var glLayoutBtns = document.getElementById('glLayoutBtns');
+            if (glLayoutBtns) {
+                glLayoutBtns.addEventListener('click', async function (e) {
+                    var btn = e.target.closest('.gl-layout-btn');
                     if (!btn || btn.classList.contains('is-active')) return;
                     var layout = btn.dataset.layout;
-
-                    galleryLayoutOpts.querySelectorAll('.gallery-layout-opt').forEach(function (b) {
+                    glLayoutBtns.querySelectorAll('.gl-layout-btn').forEach(function (b) {
                         b.classList.toggle('is-active', b === btn);
                     });
-
-                    if (galleryLayoutStatus) galleryLayoutStatus.textContent = 'Enregistrement…';
+                    if (glSaved) {
+                        glSaved.classList.add('visible');
+                        clearTimeout(glSaved._t);
+                        glSaved._t = setTimeout(function () { glSaved.classList.remove('visible'); }, 2000);
+                    }
                     try {
-                        var res  = await fetch('/account/gallery-layout', {
+                        await fetch('/account/gallery-layout', {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ layout: layout })
                         });
-                        var data = await res.json();
-                        if (galleryLayoutStatus) {
-                            galleryLayoutStatus.textContent = data.success ? '✓ Enregistré' : 'Erreur';
-                            galleryLayoutStatus.style.color = data.success ? '#22c55e' : '#ef4444';
-                            setTimeout(function () { galleryLayoutStatus.textContent = ''; }, 2200);
-                        }
-                    } catch (_) {
-                        if (galleryLayoutStatus) {
-                            galleryLayoutStatus.textContent = 'Erreur';
-                            galleryLayoutStatus.style.color = '#ef4444';
-                        }
-                    }
+                    } catch (_) {}
                 });
             }
 
@@ -1890,5 +1757,212 @@ block scripts
             }
 
             updatePreview();
+        })();
+
+    style.
+        /* ── Section order list ── */
+        .section-order-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            margin-top: 8px;
+            position: relative;
+        }
+
+        /* ── Item draggable ── */
+        .section-order-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--surface-card);
+            border: 1.5px solid var(--border-light);
+            border-radius: 12px;
+            margin-bottom: 6px;
+            cursor: grab;
+            user-select: none;
+            transition: box-shadow .18s, border-color .15s, background .12s, transform .12s, opacity .15s;
+            position: relative;
+        }
+
+        .section-order-item:hover:not(.section-order-item--locked) {
+            border-color: var(--border-medium);
+            box-shadow: 0 2px 10px rgba(0,0,0,.06);
+        }
+
+        /* Item en train d'être glissé */
+        .section-order-item.is-dragging {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Fantôme (clone visuel) */
+        .section-order-item.drag-ghost {
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            box-shadow: 0 12px 32px rgba(0,0,0,.18);
+            border-color: var(--accent);
+            background: var(--surface-card);
+            border-radius: 12px;
+            opacity: .96;
+            transform: rotate(1.2deg) scale(1.02);
+            cursor: grabbing;
+            transition: none;
+        }
+
+        /* Ligne indicatrice de dépôt */
+        .section-order-item.drop-before::before,
+        .section-order-item.drop-after::after {
+            content: '';
+            display: block;
+            position: absolute;
+            left: 12px;
+            right: 12px;
+            height: 2.5px;
+            border-radius: 99px;
+            background: var(--accent);
+            box-shadow: 0 0 6px rgba(22,163,74,.4);
+            z-index: 10;
+        }
+        .section-order-item.drop-before::before { top: -4px; }
+        .section-order-item.drop-after::after   { bottom: -4px; }
+
+        /* Item verrouillé */
+        .section-order-item--locked {
+            cursor: default;
+            background: var(--surface);
+            border-style: dashed;
+            border-color: var(--border-light);
+        }
+        .section-order-item--locked:hover { box-shadow: none; border-color: var(--border-light); }
+
+        /* Éléments internes */
+        .section-order-item__grip {
+            color: var(--text-muted);
+            flex-shrink: 0;
+            display: flex;
+            opacity: .45;
+            transition: opacity .15s;
+        }
+        .section-order-item:hover .section-order-item__grip { opacity: .9; }
+        .section-order-item__grip svg  { fill: currentColor; }
+        .section-order-item__icon      { fill: var(--accent); flex-shrink: 0; }
+        .section-order-item__label     { font-size: 13.5px; font-weight: 600; color: var(--text-primary); flex: 1; }
+        .section-order-item__lock      { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:var(--text-muted); white-space:nowrap; background:var(--surface); border:1px solid var(--border-light); border-radius:99px; padding:2px 8px; }
+        .section-order-item__lock svg  { fill: var(--text-muted); }
+        .section-order-status          { font-size: 12.5px; min-height: 18px; margin-top: 2px; color: var(--accent); font-weight: 600; transition: opacity .3s; }
+
+    script.
+        (function() {
+            var list   = document.getElementById('sectionOrderList');
+            var status = document.getElementById('sectionOrderStatus');
+            if (!list) return;
+
+            var dragged    = null;
+            var ghost      = null;
+            var offsetX    = 0;
+            var offsetY    = 0;
+
+            function getMovable() {
+                return Array.from(list.querySelectorAll('.section-order-item:not(.section-order-item--locked):not(.drag-ghost)'));
+            }
+
+            function clearDropIndicators() {
+                list.querySelectorAll('.drop-before,.drop-after').forEach(function(i) {
+                    i.classList.remove('drop-before','drop-after');
+                });
+            }
+
+            function createGhost(item, e) {
+                var rect = item.getBoundingClientRect();
+                offsetX  = e.clientX - rect.left;
+                offsetY  = e.clientY - rect.top;
+                ghost    = item.cloneNode(true);
+                ghost.classList.add('drag-ghost');
+                ghost.style.width  = rect.width  + 'px';
+                ghost.style.height = rect.height + 'px';
+                ghost.style.left   = (e.clientX - offsetX) + 'px';
+                ghost.style.top    = (e.clientY - offsetY) + 'px';
+                document.body.appendChild(ghost);
+            }
+
+            function moveGhost(e) {
+                if (!ghost) return;
+                ghost.style.left = (e.clientX - offsetX) + 'px';
+                ghost.style.top  = (e.clientY - offsetY) + 'px';
+            }
+
+            function removeGhost() {
+                if (ghost) { ghost.remove(); ghost = null; }
+            }
+
+            function findDropTarget(e) {
+                var items = getMovable();
+                for (var i = 0; i < items.length; i++) {
+                    var item = items[i];
+                    if (item === dragged) continue;
+                    var rect  = item.getBoundingClientRect();
+                    var midY  = rect.top + rect.height / 2;
+                    if (e.clientY >= rect.top - 8 && e.clientY <= rect.bottom + 8) {
+                        return { item: item, pos: e.clientY < midY ? 'before' : 'after' };
+                    }
+                }
+                return null;
+            }
+
+            getMovable().forEach(function(item) {
+                item.addEventListener('mousedown', function(e) {
+                    if (e.button !== 0) return;
+                    dragged = this;
+                    createGhost(this, e);
+                    setTimeout(function() { if (dragged) dragged.classList.add('is-dragging'); }, 0);
+                    e.preventDefault();
+                });
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (!dragged) return;
+                moveGhost(e);
+                clearDropIndicators();
+                var target = findDropTarget(e);
+                if (target) {
+                    target.item.classList.add(target.pos === 'before' ? 'drop-before' : 'drop-after');
+                }
+            });
+
+            document.addEventListener('mouseup', function(e) {
+                if (!dragged) return;
+                clearDropIndicators();
+                var target = findDropTarget(e);
+                if (target) {
+                    if (target.pos === 'before') {
+                        list.insertBefore(dragged, target.item);
+                    } else {
+                        list.insertBefore(dragged, target.item.nextSibling);
+                    }
+                }
+                dragged.classList.remove('is-dragging');
+                removeGhost();
+                dragged = null;
+                saveOrder();
+            });
+
+            async function saveOrder() {
+                var order = getMovable().map(function(i) { return i.dataset.key; }).filter(Boolean);
+                try {
+                    var r = await fetch('/account/section-order', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order: order })
+                    });
+                    var d = await r.json();
+                    if (d.success && status) {
+                        status.style.opacity = '1';
+                        status.textContent = '✓ Ordre enregistré';
+                        setTimeout(function() { status.style.opacity = '0'; setTimeout(function(){ status.textContent=''; status.style.opacity='1'; }, 300); }, 2000);
+                    }
+                } catch(e) {}
+            }
         })();
 

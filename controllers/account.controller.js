@@ -14,8 +14,8 @@ const { sanitizeRichText } = require("../utils/sanitizeRichText");
 
 // ── Limites par plan ─────────────────────────────────────────────────────────
 const PLAN_LIMITS = {
-  basic:    { employees: 0, services: 3, formQuestions: 0 },
-  free:     { employees: 0, services: 3, formQuestions: 0 },
+  basic:    { employees: 0, services: 3, formQuestions: 1 },
+  free:     { employees: 0, services: 3, formQuestions: 1 },
   pro:      { employees: 2, services: 10, formQuestions: 3 },
   business: { employees: 10, services: 50, formQuestions: 10 },
 };
@@ -380,6 +380,16 @@ exports.createCheckout = async (req, res) => {
           promoCodeId: String(promo._id),
         };
       }
+    }
+
+    // Garantir le "1 mois offert" promis sur la page d'abonnement :
+    // si aucun code promo n'a déjà défini un trial, on l'applique par défaut.
+    if (!sessionParams.subscription_data.trial_period_days) {
+      sessionParams.subscription_data = {
+        ...sessionParams.subscription_data,
+        trial_period_days: 30,
+      };
+      sessionParams.payment_method_collection = "always";
     }
 
     // Afficher le champ "Code promo" natif de Stripe — au cas où l'utilisateur

@@ -1,0 +1,177 @@
+.parrainage-page { max-width: 780px; }
+
+.parrainage-page__header { margin-bottom: 32px; }
+.parrainage-page__header h2 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+.parrainage-page__header p { font-size: 14px; color: var(--muted); margin-top: 6px; }
+
+.parrainage-section { margin-bottom: 28px; }
+.parrainage-section__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.parrainage-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 20px 22px;
+}
+
+/* Referral link copy box */
+.parrainage-link-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--subtle);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.parrainage-link-box__url {
+  flex: 1;
+  font-size: 13px;
+  color: var(--ink-2);
+  word-break: break-all;
+  min-width: 0;
+  font-family: var(--mono);
+}
+.parrainage-link-box__copy {
+  flex-shrink: 0;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.parrainage-link-box__copy:hover { opacity: .85; }
+.parrainage-link-box__copy.copied { background: var(--success); }
+
+/* Stats row */
+.parrainage-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 0;
+}
+.parrainage-stat {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 16px 18px;
+  text-align: center;
+}
+.parrainage-stat__value { font-size: 26px; font-weight: 800; color: var(--ink); letter-spacing: -.03em; }
+.parrainage-stat__label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* Filleuls table */
+.parrainage-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.parrainage-table thead th {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--muted);
+  padding: 0 0 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.parrainage-table tbody td {
+  font-size: 13px;
+  color: var(--ink-2);
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.parrainage-table tbody tr:last-child td { border-bottom: none; }
+
+.parrainage-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+.parrainage-badge--paying {
+  color: var(--success);
+  background: oklch(0.62 0.13 155 / .1);
+  border: 1px solid oklch(0.62 0.13 155 / .2);
+}
+.parrainage-badge--free {
+  color: var(--muted);
+  background: var(--subtle);
+  border: 1px solid var(--border);
+}
+
+/* Claim reward */
+.parrainage-claim {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.parrainage-claim__info {
+  flex: 1;
+  min-width: 200px;
+}
+.parrainage-claim__info p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.parrainage-claim__info strong { color: var(--ink); }
+
+.parrainage-claim__btn {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: opacity .15s;
+  white-space: nowrap;
+}
+.parrainage-claim__btn:hover { opacity: .85; }
+.parrainage-claim__btn:disabled { opacity: .4; cursor: default; }
+
+.parrainage-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.parrainage-how {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.parrainage-how__step {
+  background: var(--subtle);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.parrainage-how__step__num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.parrainage-how__step__text { font-size: 13px; color: var(--ink-2); line-height: 1.5; }

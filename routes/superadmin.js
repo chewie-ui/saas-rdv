@@ -14,6 +14,9 @@ router.patch("/superadmin/toggle-premium/:userId", isSuperAdmin, ctrl.toggleManu
 router.patch("/superadmin/set-plan/:userId", isSuperAdmin, ctrl.setPlan);
 router.patch("/superadmin/set-trial/:userId", isSuperAdmin, ctrl.setTrialDuration);
 
+// Logs
+router.get("/superadmin/logs", isSuperAdmin, ctrl.logsPage);
+
 // Parrainage
 router.get("/superadmin/referrals", isSuperAdmin, ctrl.referralsPage);
 
@@ -47,6 +50,19 @@ router.delete("/superadmin/users/:userId", isSuperAdmin, ctrl.deleteUserAccount)
 router.get("/superadmin/features", isSuperAdmin, ctrl.featuresPage);
 router.patch("/superadmin/features/:key", isSuperAdmin, ctrl.setFeatureStatus);
 router.patch("/superadmin/hidden-features/:key", isSuperAdmin, ctrl.toggleHiddenFeature);
+
+// Support content editor
+router.get("/superadmin/support-editor", isSuperAdmin, ctrl.supportEditorPage);
+router.post("/superadmin/support-editor/sections", isSuperAdmin, ctrl.addSection);
+router.patch("/superadmin/support-editor/sections/reorder", isSuperAdmin, ctrl.reorderSections);
+router.patch("/superadmin/support-editor/sections/:sectionId", isSuperAdmin, ctrl.updateSection);
+router.delete("/superadmin/support-editor/sections/:sectionId", isSuperAdmin, ctrl.deleteSection);
+router.post("/superadmin/support-editor/sections/:sectionId/videos", isSuperAdmin, ctrl.addVideo);
+router.patch("/superadmin/support-editor/sections/:sectionId/videos/:videoId", isSuperAdmin, ctrl.updateVideo);
+router.delete("/superadmin/support-editor/sections/:sectionId/videos/:videoId", isSuperAdmin, ctrl.deleteVideo);
+router.post("/superadmin/support-editor/sections/:sectionId/faqs", isSuperAdmin, ctrl.addFaq);
+router.patch("/superadmin/support-editor/sections/:sectionId/faqs/:faqId", isSuperAdmin, ctrl.updateFaq);
+router.delete("/superadmin/support-editor/sections/:sectionId/faqs/:faqId", isSuperAdmin, ctrl.deleteFaq);
 
 // Public redemption (no auth required — handler checks itself)
 router.get("/access/:code", ctrl.redeemAccessLink);

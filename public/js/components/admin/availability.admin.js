@@ -274,6 +274,20 @@ document.addEventListener("click", async (event) => {
   }
 
   if (addDaysOffBtn) {
+    const isBasic = !window.__availFeatures || !window.__availFeatures.ranges;
+    const currentCount = document.querySelectorAll('#holidaysBody .avail-doff-card').length;
+    if (isBasic && currentCount >= 1) {
+      if (typeof window.__alertModal === 'function') {
+        window.__alertModal('Passez au Pro pour définir plusieurs congés.', 'upgrade');
+      } else {
+        const banner = document.createElement('div');
+        banner.className = 'avail-upsell-toast';
+        banner.innerHTML = `<span>1 congé inclus en gratuit — <a href="/subscription">Passer au Pro</a> pour en ajouter plusieurs.</span>`;
+        document.body.appendChild(banner);
+        setTimeout(() => banner.remove(), 4000);
+      }
+      return;
+    }
     const renderCalendar = document.querySelector("#renderCalendar");
     renderCalendar.classList.add("show");
     getDaysOff();
@@ -282,13 +296,15 @@ document.addEventListener("click", async (event) => {
 
   if (dayOffBtnDelete) {
     const row = dayOffBtnDelete.closest(".days-off__row");
-    let id;
+    let id, dateKey;
     try {
-      id = row.dataset.date ? JSON.parse(row.dataset.date)._id : null;
-    } catch { id = null; }
+      const entry = row.dataset.date ? JSON.parse(row.dataset.date) : null;
+      id = entry ? entry._id : null;
+      dateKey = entry ? new Date(entry.date).toISOString().split("T")[0] : null;
+    } catch { id = null; dateKey = null; }
 
     if (!id) {
-      // Fallback: supprimer via dateKey si data-date absent (ne devrait pas arriver)
+      if (dateKey) removeDay(dateKey);
       row.remove();
       return;
     }
@@ -300,6 +316,7 @@ document.addEventListener("click", async (event) => {
 
     const data = await result.json();
     if (data) {
+      if (dateKey) removeDay(dateKey);
       row.remove();
     }
 
@@ -371,16 +388,33 @@ inputsWeekday.forEach((input) => {
           </div>
         </div>`;
 
-      // Restore the Range button in the actions area
+      // Observe new panels so the compact time picker works on freshly activated days
+      timesContainer.querySelectorAll('.panel-availability').forEach(function(p) {
+        _panelObserver.observe(p, { attributes: true });
+        injectPanelSearch(p);
+      });
+
+      // Restore the Range button — respect plan limits
       const actionsContainer = row.querySelector(".avail-day-actions");
       if (actionsContainer && !actionsContainer.querySelector(".avail-range-btn")) {
-        actionsContainer.insertAdjacentHTML("afterbegin", `
-          <button class="avail-range-btn option-add-plage" type="button">
-            <svg viewBox="0 -960 960 960" height="14" width="14" fill="currentColor">
-              <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/>
-            </svg>
-            Range
-          </button>`);
+        const hasRanges = window.__availFeatures && window.__availFeatures.ranges;
+        if (hasRanges) {
+          actionsContainer.insertAdjacentHTML("afterbegin", `
+            <button class="avail-range-btn option-add-plage" type="button">
+              <svg viewBox="0 -960 960 960" height="14" width="14" fill="currentColor">
+                <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/>
+              </svg>
+              Range
+            </button>`);
+        } else {
+          actionsContainer.insertAdjacentHTML("afterbegin", `
+            <a class="avail-range-btn avail-range-btn--locked" href="/subscription" title="Fonctionnalité Pro">
+              <svg viewBox="0 -960 960 960" height="13" width="13" fill="currentColor">
+                <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z"/>
+              </svg>
+              Range
+            </a>`);
+        }
       }
     }
   });
@@ -435,6 +469,15 @@ if (rowOptions) {
       cloneEndHour.textContent = `${String(nextHour).padStart(2, "0")}:00`;
 
       plagesWrapper.appendChild(clone);
+
+      // Observe panels in the newly added range so the compact time picker works
+      const newSlot = plagesWrapper.lastElementChild;
+      if (newSlot) {
+        newSlot.querySelectorAll('.panel-availability').forEach(function(p) {
+          _panelObserver.observe(p, { attributes: true });
+          injectPanelSearch(p);
+        });
+      }
 
       // Save updated working hours to backend
       const switcherInput = row.querySelector(".input-weekday");
@@ -572,9 +615,11 @@ async function getDaysOff() {
   const data = await res.json();
 
   if (data?.dates) {
-    daysOffArray = data.dates.map(
+    const mapped = data.dates.map(
       (d) => new Date(d.date).toISOString().split("T")[0],
     );
+    daysOffArray = mapped;
+    setDays(mapped);
   }
 }
 
@@ -653,7 +698,7 @@ function showSlotReenableConfirm() {
   }
 }
 
-import { getDays, addDay, removeDay } from "/js/components/calendarState.js";
+import { getDays, setDays, addDay, removeDay } from "/js/components/calendarState.js";
 
 /* ── Employee picker ─────────────────────────────────────────────────────── */
 const EMPLOYEES = window.__employees || [];

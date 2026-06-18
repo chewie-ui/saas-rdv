@@ -59,7 +59,7 @@ async function sendDueReminders() {
     const companies = await Company.find({ _id: { $in: companyIds } }).select("_id owner").lean();
     const ownerIds = [...new Set(companies.map((c) => String(c.owner)).filter(Boolean))];
     const owners = await User.find({ _id: { $in: ownerIds } })
-      .select("_id isPremium manualPremium subscription calendarSettings location")
+      .select("_id isPremium manualPremium subscription calendarSettings location businessName phonePro")
       .lean();
     const ownerById = Object.fromEntries(owners.map((o) => [String(o._id), o]));
     companies.forEach((c) => { companyOwnerMap[String(c._id)] = ownerById[String(c.owner)] || null; });
@@ -106,6 +106,10 @@ async function sendDueReminders() {
     // ── Prix (snapshotté dans payment.amount à la création) ────────────────
     const servicePrice = (booking.payment && booking.payment.amount) ? Number(booking.payment.amount) : null;
 
+    // ── Infos établissement ──────────────────────────────────────────────
+    const businessName = (owner?.businessName || "").trim();
+    const businessPhone = (owner?.phonePro || "").trim();
+
     // ── Lieu du rendez-vous ──────────────────────────────────────────────
     let locationText = "";
     const loc = owner?.location;
@@ -149,6 +153,8 @@ async function sendDueReminders() {
         paymentMethods,
         paymentNote,
         delayLabel,
+        businessName,
+        businessPhone,
         bookingId: booking._id,
         cancelToken: booking.cancelToken,
         baseUrl: (process.env.BASE_URL || "https://www.branshee.com").replace(/\/$/, ""),

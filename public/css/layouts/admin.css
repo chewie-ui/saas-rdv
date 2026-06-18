@@ -5,7 +5,11 @@
   display: flex;
   height: 100vh;
   position: relative;
-  overflow-y: hidden;
+  /* `clip` (vs hidden) : .layout ne doit JAMAIS scroller. Avec hidden, un
+     focus d'input ou un scrollIntoView pouvait scroller .layout et décaler
+     .main vers le haut (haut de page caché + faux "blanc"). clip empêche
+     toute mise en scroll programmatique. Seul .main scrolle. */
+  overflow: clip;
 }
 
 svg {
@@ -16,6 +20,8 @@ svg {
   flex: 1;
   overflow-y: auto;
   min-width: 0;
+  background: var(--bg-app);
+  overflow-anchor: none;
 }
 
 .main-wrapper {
@@ -24,7 +30,8 @@ svg {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  /* Pas de height fixe — la page prend la taille de son contenu */
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 .main .admin-nav {

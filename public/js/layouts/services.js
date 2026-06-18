@@ -130,11 +130,29 @@ document.addEventListener("DOMContentLoaded", () => {
     svcCounter.classList.toggle("services-counter--full", currentCount >= MAX_SERVICES);
   }
 
+  function flashBanner() {
+    const banner = document.getElementById("serviceLimitBanner");
+    if (!banner) return;
+    banner.style.display = "";
+    banner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const counter = document.getElementById("svcCounter");
+    if (counter) {
+      counter.classList.add("services-counter--full");
+      counter.style.transition = "box-shadow 0.15s";
+      counter.style.boxShadow = "0 0 0 3px rgba(239,68,68,.35)";
+      setTimeout(() => { counter.style.boxShadow = ""; }, 800);
+    }
+    banner.style.transition = "box-shadow 0.15s";
+    banner.style.boxShadow = "0 0 0 3px rgba(239,68,68,.25)";
+    setTimeout(() => { banner.style.boxShadow = ""; }, 800);
+  }
+
   function updateAddBtn() {
     if (!addServiceBtn) return;
     const atLimit = MAX_SERVICES > 0 && currentCount >= MAX_SERVICES;
-    addServiceBtn.disabled = atLimit;
-    addServiceBtn.title = atLimit ? `Limite de ${MAX_SERVICES} services atteinte` : "";
+    // Keep button clickable; clicking at limit flashes the upgrade banner
+    addServiceBtn.disabled = (MAX_SERVICES === 0);
+    addServiceBtn.dataset.atLimit = (atLimit && MAX_SERVICES > 0) ? "1" : "0";
     const banner = document.getElementById("serviceLimitBanner");
     if (banner) banner.style.display = atLimit ? "" : "none";
   }
@@ -174,9 +192,19 @@ document.addEventListener("DOMContentLoaded", () => {
     serviceModalName.focus();
   }
 
-  addServiceBtn.addEventListener("click", openNewServiceModal);
-  if (addServiceCardBtn && !addServiceCardBtn.classList.contains("svc-card--locked-invite")) {
-    addServiceCardBtn.addEventListener("click", openNewServiceModal);
+  addServiceBtn.addEventListener("click", () => {
+    if (addServiceBtn.dataset.atLimit === "1") { flashBanner(); return; }
+    openNewServiceModal();
+  });
+  if (addServiceCardBtn) {
+    addServiceCardBtn.addEventListener("click", () => {
+      if (addServiceCardBtn.classList.contains("svc-card--locked-invite")) {
+        // At limit or plan=0: redirect to subscription page
+        window.location.href = "/subscription";
+        return;
+      }
+      openNewServiceModal();
+    });
   }
 
   [closeServiceModal, cancelServiceModal, serviceModalOverlay].forEach((el) => {
