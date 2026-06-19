@@ -75,10 +75,12 @@ block content
                 -
                     var _catObj = svc.category ? categories.find(function(c){ return c.name === svc.category; }) : null
                     var _catIcon = _catObj && _catObj.icon ? _catObj.icon : ''
-                .service-card(data-id=String(svc._id) data-category=svc.category || '' data-type=(svc.type || 'individual') data-capacity=(svc.capacity || '') class=(!svc.active ? 'service-card--inactive' : ''))
+                .service-card(data-id=String(svc._id) data-category=svc.category || '' data-type=(svc.type || 'individual') data-capacity=(svc.capacity || '') data-color=(svc.color || '') class=(!svc.active ? 'service-card--inactive' : ''))
                     .service-card__header
                         .service-card__name-row
-                            h3.service-card__name= svc.name
+                            h3.service-card__name
+                                span.service-card__color-dot(style=`background:${svc.color || '#1e7a4e'}`)
+                                = svc.name
                             .service-card__badges
                                 if svc.category
                                     span.badge.badge--category
@@ -254,6 +256,10 @@ block content
                 .field
                     label= t.services.service_duration
                     input.input#serviceModalDuration(type="number" min="5" step="5" placeholder="30")
+            .field
+                label Couleur (calendrier)
+                input(type="hidden" id="serviceModalColor")
+                .svc-color-picker#svcColorPicker
             if !adminFeatures || adminFeatures.group_sessions !== false
                 .field
                     label Type de rendez-vous
@@ -297,6 +303,7 @@ block scripts
     script.
         window.__maxServices    = !{maxServices || 0};
         window.__svcCount       = !{services.length || 0};
+        window.__serviceColors  = !{JSON.stringify(services.map(function(s){ return { id: String(s._id), color: s.color || '' }; }))};
         window.__categories     = !{JSON.stringify(categories || [])};
         window.__t_no_category      = !{JSON.stringify(t.services.no_category     || 'Aucune catégorie')};
         window.__t_create_category  = !{JSON.stringify(t.services.create_category || '+ Créer une catégorie')};

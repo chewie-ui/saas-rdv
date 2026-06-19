@@ -93,7 +93,15 @@ block content
                                     - var empFilterLabel = emp.firstName + ' ' + emp.lastName
                                     option(value=String(emp._id) selected=(employeeFilter === String(emp._id)))= empFilterLabel.length > 40 ? empFilterLabel.slice(0, 40) + '…' : empFilterLabel
 
-        .calendar__week-strip(class=(view === 'month' ? 'u-hidden-month' : ''))
+        if services && services.length > 0 && services.some(s => s.color)
+        .calendar__legend#calendarLegend
+            each svc in services
+                if svc.color
+                    span.calendar__legend-item
+                        span.calendar__legend-dot(style=`background:${svc.color}`)
+                        = svc.name
+
+    .calendar__week-strip(class=(view === 'month' ? 'u-hidden-month' : ''))
             each weekday in weekDays
                 a.calendar__week-day(href=`/appointment?date=${weekday.isoDate}&employee=${employeeFilter}` class=[weekday.isToday && "today", weekday.isFocused && "focused", weekday.isDayOff && "off-day"])
                     span.calendar__week-day-label= weekday.initial
@@ -121,8 +129,10 @@ block content
                         class=[(d.isToday ? 'is-today' : ''), (!d.current ? 'is-other-month' : ''), (d.iso === focusedIso ? 'is-focused' : '')]
                     )
                         span.cal-month__day= d.day
-                        if d.count > 0
-                            span.cal-month__count= d.count
+                        if d.colorCounts && d.colorCounts.length > 0
+                            .cal-month__counts
+                                each cc in d.colorCounts
+                                    span.cal-month__count(style=(cc.color ? `background:${cc.color}` : ''))= cc.count
 
     //- ── Vue Semaine (masquée en mode mois) ─────────────────────────────────
     .calendar-section(class=(view === 'month' ? 'u-hidden-month' : ''))
@@ -168,9 +178,11 @@ block content
                                                 span.appt-pill__name Autre événement
                                                 span.appt-pill__time= appointment.startHour
                                         else
+                                            - var canColor = appointment.serviceColor && appointment.status !== 'canceled' && appointment.status !== 'pending' && appointment.status !== 'no-show'
                                             div.appt-pill(
                                                 role="button" tabindex="0"
                                                 class={ 'appt-pill--canceled': appointment.status === 'canceled' }
+                                                style=(canColor ? `background:${appointment.serviceColor}` : '')
                                                 data-id=String(appointment._id)
                                                 data-name=appointment.name
                                                 data-surname=(appointment.surname || '')
@@ -179,6 +191,7 @@ block content
                                                 data-employee=(appointment.employeeName || '')
                                                 data-photo=(appointment.employeePhoto || '')
                                                 data-service=(appointment.serviceName || '')
+                                                data-color=(appointment.serviceColor || '')
                                                 data-status=(appointment.status || '')
                                                 data-date=appointment.isoDate
                                             )
@@ -192,10 +205,11 @@ block content
                                     span.appt-pill__name Autre événement
                                     span.appt-pill__time= appointment.startHour + '–' + appointment.endHour
                             else
+                                - var canColor = appointment.serviceColor && appointment.status !== 'canceled' && appointment.status !== 'pending' && appointment.status !== 'no-show'
                                 div.appt-pill(
                                     role="button" tabindex="0"
                                     class={ 'appt-pill--canceled': appointment.status === 'canceled' }
-                                    style=`height:${apptH}px`
+                                    style=`height:${apptH}px;` + (canColor ? `background:${appointment.serviceColor}` : '')
                                     data-id=String(appointment._id)
                                     data-name=appointment.name
                                     data-surname=(appointment.surname || '')
@@ -204,6 +218,7 @@ block content
                                     data-employee=(appointment.employeeName || '')
                                     data-photo=(appointment.employeePhoto || '')
                                     data-service=(appointment.serviceName || '')
+                                    data-color=(appointment.serviceColor || '')
                                     data-status=(appointment.status || '')
                                     data-date=appointment.isoDate
                                 )

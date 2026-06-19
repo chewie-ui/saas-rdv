@@ -599,6 +599,12 @@ if (holidaysBody) {
       const endHour   = "18:00";
       const schedule  = { start: startHour, end: endHour };
 
+      // Observe new panels so the compact time picker (search/type-in) works here too
+      container.querySelectorAll('.panel-availability').forEach(function(p) {
+        _panelObserver.observe(p, { attributes: true });
+        injectPanelSearch(p);
+      });
+
       await fetch(`/company/schedule-day-off`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -1224,17 +1230,79 @@ function injectPanelSearch(panel) {
   setTimeout(function() { inp.focus(); }, 50);
 }
 
+// ── Portail (congés uniquement) ─────────────────────────────────────────────
+// `.avail-doff-card` garde `overflow:hidden` (coins arrondis + barre verte,
+// INCHANGÉS) — uniquement le panel ouvert est déplacé dans <body> en position
+// fixed pour échapper au clip. Les autres panels (horaires par défaut, plages)
+// ne sont jamais touchés par ce code.
+function positionDoffPortalPanel(panel, anchor) {
+  var rect = anchor.getBoundingClientRect();
+  var panelWidth  = panel.offsetWidth  || 140;
+  var panelHeight = panel.offsetHeight || 220;
+  var vw = window.innerWidth, vh = window.innerHeight;
+
+  var left = rect.left + rect.width / 2 - panelWidth / 2;
+  if (left < 4) left = 4;
+  if (left + panelWidth > vw - 4) left = Math.max(4, vw - panelWidth - 4);
+
+  var top = rect.bottom + 6;
+  if (top + panelHeight > vh - 4) {
+    var above = rect.top - panelHeight - 6;
+    top = above > 4 ? above : Math.max(4, vh - panelHeight - 4);
+  }
+
+  panel.style.left = left + 'px';
+  panel.style.top  = top + 'px';
+}
+
+function openDoffPanelPortal(panel) {
+  if (panel.dataset.portaled === '1') return;
+  var anchor = panel.parentElement;
+  if (!anchor) return;
+  panel._portalAnchor = anchor;
+  panel._portalNextSibling = panel.nextSibling;
+  panel.dataset.portaled = '1';
+  panel.style.position = 'fixed';
+  panel.style.transform = 'none';
+  document.body.appendChild(panel);
+  positionDoffPortalPanel(panel, anchor);
+}
+
+function closeDoffPanelPortal(panel) {
+  if (panel.dataset.portaled !== '1') return;
+  var anchor = panel._portalAnchor;
+  if (anchor && anchor.isConnected) {
+    if (panel._portalNextSibling && panel._portalNextSibling.isConnected) {
+      anchor.insertBefore(panel, panel._portalNextSibling);
+    } else {
+      anchor.appendChild(panel);
+    }
+  }
+  panel.style.position = '';
+  panel.style.left = '';
+  panel.style.top = '';
+  panel.style.transform = '';
+  delete panel.dataset.portaled;
+}
+
 // Observer l'ouverture des panels
 var _panelObserver = new MutationObserver(function(mutations) {
   mutations.forEach(function(m) {
     if (m.type === 'attributes' && m.attributeName === 'class') {
       var panel = m.target;
       if (panel.classList.contains('open')) {
+        // Reconstruire le contenu (search input + scroll wrapper) AVANT toute
+        // mesure/portail, sinon la hauteur mesurée est celle de la liste brute
+        // (25 heures non wrappées) au lieu du panel final scrollable.
         injectPanelSearch(panel);
         var inp = panel.querySelector('.panel-search-input');
         if (inp) { inp.value = ''; setTimeout(function(){ inp.focus(); }, 50); }
         // Ré-afficher toutes les heures
         panel.querySelectorAll('.hour').forEach(function(h) { h.style.display = ''; });
+
+        if (panel.closest('.avail-doff-card')) openDoffPanelPortal(panel);
+      } else if (panel.dataset.portaled === '1') {
+        closeDoffPanelPortal(panel);
       }
     }
   });

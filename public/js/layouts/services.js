@@ -15,6 +15,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const serviceModalDuration = document.getElementById("serviceModalDuration");
   const serviceModalCategory = document.getElementById("serviceModalCategory");
   const serviceModalCapacity = document.getElementById("serviceModalCapacity");
+  const serviceModalColor  = document.getElementById("serviceModalColor");
+  const svcColorPicker     = document.getElementById("svcColorPicker");
   const svcCapacityField   = document.getElementById("svcCapacityField");
   const svcTypeOptions     = document.getElementById("svcTypeOptions");
   const newCategorySection = document.getElementById("newCategorySection");
@@ -38,6 +40,86 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: "☀️",  label: "Solaire"   }, { id: "💆",  label: "Massage"   },
     { id: "🧴",  label: "Corps"     }, { id: "⭐",  label: "Premium"   },
   ];
+
+  // ── Couleur du service ────────────────────────────────────────────────────
+  // Palette de base + génération à l'infini (angle d'or en HSL) si plus de
+  // services que de couleurs de base — DOIT rester cohérent avec
+  // utils/serviceColors.js côté serveur (même algorithme).
+  const SERVICE_COLOR_PALETTE = [
+    "#1e7a4e", "#2563eb", "#7c3aed", "#db2777", "#ea580c",
+    "#0891b2", "#ca8a04", "#dc2626", "#4f46e5", "#0d9488",
+  ];
+
+  function hslToHex(h, s, l) {
+    s /= 100; l /= 100;
+    const k = (n) => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    const toHex = (n) => Math.round(255 * f(n)).toString(16).padStart(2, "0");
+    return `#${toHex(0)}${toHex(8)}${toHex(4)}`;
+  }
+
+  function colorAt(index) {
+    if (index < SERVICE_COLOR_PALETTE.length) return SERVICE_COLOR_PALETTE[index];
+    const hue = ((index - SERVICE_COLOR_PALETTE.length) * 137.508) % 360;
+    return hslToHex(hue, 65, 42);
+  }
+
+  // id du service en cours d'édition (null en création) — ses propres couleurs
+  // ne comptent pas comme "déjà prises" pour lui-même.
+  let _editingServiceId = null;
+
+  function getTakenColors() {
+    const all = window.__serviceColors || [];
+    return all
+      .filter((s) => s.color && s.id !== _editingServiceId)
+      .map((s) => s.color.toLowerCase());
+  }
+
+  function nextAvailableColor() {
+    const taken = new Set(getTakenColors());
+    for (let i = 0; i < 1000; i++) {
+      const c = colorAt(i);
+      if (!taken.has(c.toLowerCase())) return c;
+    }
+    return colorAt(Math.floor(Math.random() * 100000));
+  }
+
+  function buildColorPicker(selected) {
+    if (!svcColorPicker) return;
+    const taken = new Set(getTakenColors());
+    const total = window.__svcCount || 0;
+    // Toujours au moins la palette de base, + assez de couleurs générées pour
+    // que chaque service (même au-delà de 10) ait une option unique visible.
+    const swatchCount = Math.max(SERVICE_COLOR_PALETTE.length, total + 4);
+    const swatches = [];
+    for (let i = 0; i < swatchCount; i++) swatches.push(colorAt(i));
+
+    svcColorPicker.innerHTML = swatches.map((c) => {
+      const isTaken = taken.has(c.toLowerCase()) && c.toLowerCase() !== (selected || "").toLowerCase();
+      const cls = "svc-color-swatch" + (isTaken ? " is-taken" : "");
+      return `<button type="button" class="${cls}" data-color="${c}" style="background:${c}" title="${isTaken ? "Déjà utilisée par un autre service" : ""}" ${isTaken ? "disabled" : ""}></button>`;
+    }).join("");
+
+    svcColorPicker.addEventListener("click", (e) => {
+      const btn = e.target.closest(".svc-color-swatch");
+      if (!btn || btn.disabled) return;
+      setServiceColor(btn.dataset.color);
+    });
+  }
+
+  function setServiceColor(color) {
+    if (serviceModalColor) serviceModalColor.value = color;
+    if (svcColorPicker) {
+      svcColorPicker.querySelectorAll(".svc-color-swatch").forEach((b) => {
+        b.classList.toggle("is-active", b.dataset.color === color);
+      });
+    }
+  }
+
+  function getServiceColor() {
+    return (serviceModalColor && serviceModalColor.value) || SERVICE_COLOR_PALETTE[0];
+  }
 
   function buildIconPicker() {
     if (!catIconPicker) return;
@@ -179,6 +261,10 @@ document.addEventListener("DOMContentLoaded", () => {
     serviceModalDuration.value = "30";
     if (serviceModalCapacity) serviceModalCapacity.value = "";
     setServiceType("individual");
+    _editingServiceId = null;
+    const defaultColor = nextAvailableColor();
+    setServiceColor(defaultColor);
+    buildColorPicker(defaultColor);
     buildCategorySelect("");
     showNewCategorySection(false);
     serviceModalTitle.textContent = "Nouveau service";
@@ -253,6 +339,7 @@ document.addEventListener("DOMContentLoaded", () => {
       category: categoryValue,
       type: svcType,
       capacity: svcType === "group" ? (serviceModalCapacity ? serviceModalCapacity.value : 1) : null,
+      color: getServiceColor(),
     };
 
     const url    = id ? `/api/services/${id}` : "/api/services";
@@ -265,8 +352,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!id) { currentCount++; }
         location.reload();
       } else {
-        const msg = data.error === "plan_limit" ? data.message : (data.error || "Erreur lors de l'enregistrement.");
-        alert(msg);
+        alert(data.message || data.error || "Erreur lors de l'enregistrement.");
       }
     } catch (e) {
       alert("Erreur réseau.");
@@ -294,6 +380,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const svcType = card.dataset.type === "group" ? "group" : "individual";
       setServiceType(svcType);
       if (serviceModalCapacity) serviceModalCapacity.value = card.dataset.capacity || "";
+      _editingServiceId = id;
+      const ownColor = card.dataset.color || nextAvailableColor();
+      setServiceColor(ownColor);
+      buildColorPicker(ownColor);
       buildCategorySelect(card.dataset.category || "");
       showNewCategorySection(false);
       serviceModalTitle.textContent = "Modifier le service";
@@ -310,6 +400,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (data.success) {
           delBtn.closest(".service-card").remove();
           currentCount = Math.max(0, currentCount - 1);
+          window.__svcCount = currentCount;
+          window.__serviceColors = (window.__serviceColors || []).filter((s) => s.id !== id);
           updateCounter();
           updateAddBtn();
         }

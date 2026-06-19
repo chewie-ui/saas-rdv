@@ -180,7 +180,7 @@ export const initAppointmentPopup = function () {
       dotEl.style.background   = "#9ca3af";
     } else {
       canceledEl.style.display = "none";
-      dotEl.style.background   = "";
+      dotEl.style.background   = d.color || "";
     }
 
     // Edit / detail links

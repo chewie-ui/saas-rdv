@@ -121,10 +121,14 @@ exports.appointment = async (req, res) => {
     Company.findById(currentCompany).select("slotTime schedule").lean(),
     Employee.find({ company: currentCompany, active: true }).lean(),
     DaysOff.findOne({ company: currentCompany }).lean(),
-    Service.find({ company: currentCompany, active: true }).select("_id name duration price employees").lean(),
+    Service.find({ company: currentCompany, active: true }).select("_id name duration price employees color").lean(),
   ]);
 
   const slotTime = rowTime.slotTime || 60;
+
+  // Map serviceId → color pour colorer les RDV selon le service réservé
+  const serviceColorById = {};
+  services.forEach((s) => { if (s.color) serviceColorById[String(s._id)] = s.color; });
 
   const formatted = apps.map((appointment) => {
     const [h, m] = appointment.startTime.split(":").map(Number);
@@ -151,6 +155,7 @@ exports.appointment = async (req, res) => {
       status: appointment.status,
       slotTime: duration,
       serviceName: appointment.serviceName || "",
+      serviceColor: appointment.service ? (serviceColorById[String(appointment.service)] || "") : "",
       employeeId:   emp ? String(emp._id) : "",
       employeeName: empName,
       employeePhoto: empPhoto,
@@ -367,10 +372,25 @@ exports.appointment = async (req, res) => {
     const nd = new Date(prev.iso + "T12:00:00"); nd.setDate(nd.getDate() + 1);
     monthDays.push({ day: nd.getDate(), iso: `${nd.getFullYear()}-${String(nd.getMonth()+1).padStart(2,"0")}-${String(nd.getDate()).padStart(2,"0")}`, current: false });
   }
-  // Compter les RDV par jour pour le mois
+  // Compter les RDV par jour pour le mois — groupés par couleur de service
+  // (pour afficher un badge par service plutôt qu'un seul total vert)
   const apptByDay = {};
-  formatted.forEach(a => { apptByDay[a.isoDate] = (apptByDay[a.isoDate] || 0) + 1; });
-  monthDays.forEach(d => { d.count = apptByDay[d.iso] || 0; });
+  const colorsByDay = {};
+  formatted.forEach(a => {
+    if (a.isExternal) return;
+    apptByDay[a.isoDate] = (apptByDay[a.isoDate] || 0) + 1;
+    const key = a.serviceColor || "__default__";
+    if (!colorsByDay[a.isoDate]) colorsByDay[a.isoDate] = {};
+    colorsByDay[a.isoDate][key] = (colorsByDay[a.isoDate][key] || 0) + 1;
+  });
+  monthDays.forEach(d => {
+    d.count = apptByDay[d.iso] || 0;
+    const map = colorsByDay[d.iso] || {};
+    d.colorCounts = Object.keys(map).map((k) => ({
+      color: k === "__default__" ? null : k,
+      count: map[k],
+    }));
+  });
   const monthLabel = mFirst.toLocaleDateString(locale, { month: "long", year: "numeric" });
 
   // Mois prev/next (1er du mois)

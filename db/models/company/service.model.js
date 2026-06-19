@@ -50,6 +50,11 @@ const serviceSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
+    // Couleur du service (hex) — utilisée pour distinguer les RDV dans le calendrier admin
+    color: {
+      type: String,
+      default: null,
+    },
     employees: [
       {
         type: mongoose.Schema.Types.ObjectId,

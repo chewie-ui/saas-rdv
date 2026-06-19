@@ -1,6 +1,7 @@
 const Service = require("../db/models/company/service.model");
 const User = require("../db/models/user.model");
 const { getLimit } = require("../utils/planLimits");
+const { nextAvailableColor } = require("../utils/serviceColors");
 
 // ── Page admin ────────────────────────────────────────────────────────────────
 exports.servicesPage = async (req, res) => {
@@ -55,13 +56,26 @@ exports.createService = async (req, res) => {
       return res.status(403).json({ error: "plan_limit", message: `Limite de ${maxServices} services atteinte.` });
     }
 
-    const { name, description, price, duration, category, type, capacity } = req.body;
+    const { name, description, price, duration, category, type, capacity, color } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ error: "Le nom du service est requis." });
     }
 
     const isGroup = type === "group";
     const cap = isGroup ? Math.max(1, Math.min(500, Number(capacity) || 1)) : null;
+
+    const existingColors = (await Service.find({ company: companyId }).select("color").lean())
+      .map((s) => s.color).filter(Boolean);
+
+    let resolvedColor;
+    if (color) {
+      if (existingColors.some((c) => c.toLowerCase() === color.toLowerCase())) {
+        return res.status(400).json({ error: "color_taken", message: "Cette couleur est déjà utilisée par un autre service." });
+      }
+      resolvedColor = color;
+    } else {
+      resolvedColor = nextAvailableColor(existingColors);
+    }
 
     const service = await Service.create({
       company: companyId,
@@ -73,6 +87,7 @@ exports.createService = async (req, res) => {
       order: count,
       type: isGroup ? "group" : "individual",
       capacity: cap,
+      color: resolvedColor,
     });
     res.json({ success: true, service });
   } catch (err) {
@@ -85,13 +100,23 @@ exports.createService = async (req, res) => {
 exports.updateService = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, duration, category, type, capacity } = req.body;
+    const { name, description, price, duration, category, type, capacity, color } = req.body;
     const update = {};
     if (name !== undefined) update.name = name.trim();
     if (description !== undefined) update.description = description.trim();
     if (price !== undefined) update.price = price !== "" ? Number(price) : null;
     if (duration !== undefined) update.duration = Number(duration);
     if (category !== undefined) update.category = category.trim();
+    if (color !== undefined) {
+      if (color) {
+        const existingColors = (await Service.find({ company: res.locals.currentCompany._id, _id: { $ne: id } }).select("color").lean())
+          .map((s) => s.color).filter(Boolean);
+        if (existingColors.some((c) => c.toLowerCase() === color.toLowerCase())) {
+          return res.status(400).json({ error: "color_taken", message: "Cette couleur est déjà utilisée par un autre service." });
+        }
+      }
+      update.color = color || null;
+    }
     if (type !== undefined) {
       const isGroup = type === "group";
       update.type = isGroup ? "group" : "individual";
