@@ -42,6 +42,12 @@ module.exports = async function navVisibility(req, res, next) {
               const key = hrefToKey(hrefMatch[1]);
               return disabledHrefs.has(key) ? "" : tag;
             });
+
+            // Une section (titre + liens) dont tous les liens ont été retirés
+            // ci-dessus ne doit plus afficher son titre tout seul.
+            html = html.replace(/<div class="sb-section">[\s\S]*?<\/div>/g, (block) => {
+              return /\bsb-link\b/.test(block) ? block : "";
+            });
           }
         }
       } catch (e) {
