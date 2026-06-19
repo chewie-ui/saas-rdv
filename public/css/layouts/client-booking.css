@@ -1296,6 +1296,57 @@ body.bk-embed #bkCart .bk-cart {
   opacity: 0.85;
 }
 
+/* ── Regroupement des rendez-vous ("smart grouping") ──────────────────────── */
+.bk-slot.is-recommended:not(.is-selected) {
+  box-shadow: inset 0 0 0 1.5px var(--bk-accent);
+}
+
+.bk-slots__grouping-hint {
+  font: 600 11px var(--bk-font);
+  color: var(--bk-accent);
+  background: var(--bk-accent-soft);
+  border-radius: var(--bk-r-sm);
+  padding: 7px 10px;
+  margin: -2px 0 10px;
+  line-height: 1.4;
+}
+
+.bk-slots__more {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: var(--bk-r-sm);
+  border: 1px dashed var(--bk-border);
+  background: transparent;
+  font: 600 11.5px var(--bk-font);
+  color: var(--bk-muted);
+  cursor: pointer;
+  transition: border-color .12s, color .12s, background .12s;
+}
+
+.bk-slots__more:hover {
+  border-color: var(--bk-accent);
+  color: var(--bk-accent);
+  background: var(--bk-accent-soft);
+}
+
+.bk-slots__more svg {
+  transition: transform .18s;
+  flex-shrink: 0;
+}
+
+.bk-slots__more.is-open svg {
+  transform: rotate(180deg);
+}
+
+.bk-slot-list--extra {
+  margin-top: 6px;
+}
+
 /* ── Details form pane ──────────────────────────────────────────────────── */
 .bk-form-wrap {
   background: var(--bk-surface);

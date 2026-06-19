@@ -120,6 +120,17 @@ const companySchema = schema(
     // Stocke le mois ("YYYY-MM") où l'email d'alerte a déjà été envoyé à
     // l'admin, pour éviter de le renvoyer à chaque nouvelle réservation bloquée.
     limitReachedNotifiedMonth: { type: String, default: "" },
+
+    // ── Regroupement des rendez-vous ──────────────────────────────────────────
+    // Pour les indépendants qui démarrent avec peu de clients : évite qu'une
+    // journée se retrouve "bloquée" par deux RDV isolés (ex: 9h et 18h) en
+    // mettant en avant les créneaux proches d'un RDV déjà confirmé ce jour-là.
+    // N'empêche jamais une réservation — uniquement une mise en avant côté
+    // widget client (voir booking.controller.js#getBooking).
+    smartGrouping: {
+      enabled:     { type: Boolean, default: false },
+      windowHours: { type: Number, default: 3 }, // fenêtre de regroupement autour d'un RDV existant
+    },
   },
   { timestamps: true },
 );

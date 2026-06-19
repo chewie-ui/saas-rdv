@@ -1117,6 +1117,42 @@ if (slotIntervalInput) {
   });
 }
 
+/* ── Regroupement des rendez-vous ("smart grouping") ───────────────────── */
+const sgEnabled    = document.getElementById("sgEnabled");
+const sgWindowRow   = document.getElementById("sgWindowRow");
+const sgWindowPills = document.getElementById("sgWindowPills");
+const sgExample     = document.querySelector(".sg-example");
+
+if (sgEnabled) {
+  sgEnabled.addEventListener("change", async () => {
+    const enabled = sgEnabled.checked;
+    if (sgWindowRow) sgWindowRow.style.display = enabled ? "" : "none";
+    if (sgExample) sgExample.classList.toggle("sg-example--off", !enabled);
+
+    await fetch("/company/smart-grouping", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    }).catch(() => {});
+  });
+}
+
+if (sgWindowPills) {
+  sgWindowPills.querySelectorAll(".sg-window-pill").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const hours = Number(btn.dataset.hours);
+      sgWindowPills.querySelectorAll(".sg-window-pill").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      await fetch("/company/smart-grouping", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ windowHours: hours }),
+      }).catch(() => {});
+    });
+  });
+}
+
 // ── Saisie intelligente des heures ────────────────────────────────────────────
 // Quand un panel d'heures s'ouvre, injecte un input de recherche en haut
 // L'utilisateur peut taper "18" → filtre sur "18:XX", "1800" → "18:00"

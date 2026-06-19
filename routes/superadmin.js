@@ -50,6 +50,7 @@ router.delete("/superadmin/users/:userId", isSuperAdmin, ctrl.deleteUserAccount)
 router.get("/superadmin/features", isSuperAdmin, ctrl.featuresPage);
 router.patch("/superadmin/features/:key", isSuperAdmin, ctrl.setFeatureStatus);
 router.patch("/superadmin/hidden-features/:key", isSuperAdmin, ctrl.toggleHiddenFeature);
+router.patch("/superadmin/nav/:key/toggle", isSuperAdmin, ctrl.toggleNavLink);
 
 // Support content editor
 router.get("/superadmin/support-editor", isSuperAdmin, ctrl.supportEditorPage);

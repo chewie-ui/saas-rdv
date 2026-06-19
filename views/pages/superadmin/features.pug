@@ -47,6 +47,11 @@ html(lang="fr")
             .toggle-switch__slider::before { content: ""; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #888; border-radius: 50%; transition: transform .15s, background .15s; }
             .toggle-switch input:checked + .toggle-switch__slider { background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.4); }
             .toggle-switch input:checked + .toggle-switch__slider::before { transform: translateX(20px); background: #22c55e; }
+
+            .nav-section-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+            .nav-section-group__title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #666; }
+            .nav-section-group .hidden-feature-card { margin-bottom: 0; padding: 14px 18px; }
+            .nav-section-group .hidden-feature-card__desc { font-family: monospace; }
     body
         - var saPage = 'features'
         include ../../includes/sa-nav
@@ -62,6 +67,23 @@ html(lang="fr")
             label.toggle-switch
                 input#smsNotifToggle(type="checkbox" checked=smsNotificationsEnabled)
                 span.toggle-switch__slider
+
+        .page-header
+            h1 🧭 Navigation (sidebar admin)
+            p Détecté automatiquement depuis le menu — coche/décoche pour afficher ou cacher un lien à tous les comptes pendant que tu développes une page.
+
+        .feature-list(style="margin-bottom: 28px;")
+            each section in navSections
+                .nav-section-group
+                    .nav-section-group__title= section.label
+                    each l in section.links
+                        .hidden-feature-card(data-nav-key=l.key)
+                            div
+                                .hidden-feature-card__label= l.label
+                                .hidden-feature-card__desc= l.href
+                            label.toggle-switch
+                                input.navLinkToggle(type="checkbox" checked=l.enabled)
+                                span.toggle-switch__slider
 
         .page-header
             h1 🧩 Fonctionnalités admin (sidebar)
@@ -118,6 +140,25 @@ html(lang="fr")
                     smsToggle.disabled = false;
                 });
             }
+
+            document.querySelectorAll('.navLinkToggle').forEach(function (toggle) {
+                var card = toggle.closest('.hidden-feature-card');
+                var key = card.dataset.navKey;
+                toggle.addEventListener('change', async function () {
+                    var enabled = toggle.checked;
+                    toggle.disabled = true;
+                    try {
+                        var res = await fetch('/superadmin/nav/' + key + '/toggle', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ enabled: enabled }),
+                        });
+                        var data = await res.json();
+                        if (!data.success) toggle.checked = !enabled;
+                    } catch (e) { toggle.checked = !enabled; }
+                    toggle.disabled = false;
+                });
+            });
 
             document.querySelectorAll('.adminFeatureToggle').forEach(function (toggle) {
                 var card = toggle.closest('.hidden-feature-card');

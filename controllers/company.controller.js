@@ -222,3 +222,22 @@ exports.updateSlotMode = async (req, res) => {
     return res.status(500).json({ success: false, error: "Server error" });
   }
 };
+
+// ── Regroupement des rendez-vous ("smart grouping") ────────────────────────
+exports.updateSmartGrouping = async (req, res) => {
+  try {
+    const { enabled, windowHours } = req.body;
+    const update = {};
+
+    if (enabled !== undefined) update["smartGrouping.enabled"] = !!enabled;
+    if (windowHours !== undefined) {
+      update["smartGrouping.windowHours"] = Math.max(1, Math.min(12, Number(windowHours) || 3));
+    }
+
+    await Company.findByIdAndUpdate(res.locals.currentCompany._id, { $set: update });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: "Server error" });
+  }
+};

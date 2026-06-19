@@ -1511,6 +1511,143 @@
   text-decoration: underline;
 }
 
+/* ════════════════════════════════════════════════════════════
+   Regroupement des rendez-vous ("smart grouping")
+   ════════════════════════════════════════════════════════════ */
+.sa-toggle {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.sa-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.sa-toggle__track {
+  position: absolute;
+  inset: 0;
+  background: var(--border-light, #e0e0e0);
+  border-radius: 99px;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.sa-toggle__track::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 16px;
+  height: 16px;
+  background: #aaa;
+  border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.sa-toggle input:checked + .sa-toggle__track {
+  background: var(--accent-soft);
+}
+
+.sa-toggle input:checked + .sa-toggle__track::after {
+  transform: translateX(18px);
+  background: var(--accent);
+}
+
+.sg-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sg-card__icon {
+  fill: var(--accent);
+  flex-shrink: 0;
+}
+
+.sg-window-row,
+#sgWindowRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sg-window-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.sg-window-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sg-window-pill {
+  padding: 7px 16px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-light);
+  background: var(--color-white);
+  font-size: 0.84rem;
+  font-weight: 600;
+  font-family: var(--font-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color .12s, background .12s, color .12s;
+}
+
+.sg-window-pill:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.sg-window-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* Mini légende illustrative */
+.sg-example {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg-soft, #f9f8f6);
+  border: 1px solid var(--border-light);
+  transition: opacity .15s;
+}
+
+.sg-example--off {
+  opacity: 0.45;
+}
+
+.sg-example__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.sg-example__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sg-example__dot--booked { background: var(--accent); }
+.sg-example__dot--reco   { background: #2563eb; }
+.sg-example__dot--extra  { background: var(--border-medium, #d1d5db); }
+
 @keyframes toastIn {
   from { opacity: 0; transform: translateX(-50%) translateY(10px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }

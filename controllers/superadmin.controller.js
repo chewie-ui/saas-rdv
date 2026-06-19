@@ -11,6 +11,7 @@ const DaysOff   = require("../db/models/company/daysOff.model");
 const Form      = require("../db/models/form.model");
 const Review    = require("../db/models/review.model");
 const { FEATURES, ADMIN_FEATURES, invalidateFeatureFlagCache } = require("../middlewares/featureFlag");
+const { extractNavLinks } = require("../utils/navLinks");
 
 exports.loginPage = (req, res) => {
   if (req.session.isSuperAdmin) return res.redirect("/superadmin");
@@ -540,7 +541,48 @@ exports.featuresPage = async (req, res) => {
     enabled: byKey[f.key]?.status !== "disabled",
   }));
 
-  res.render("superadmin/features", { features, smsNotificationsEnabled, adminFeatures });
+  // Navigation du sidebar admin — détectée automatiquement depuis
+  // sidebar.pug (voir utils/navLinks.js). Aucune liste à maintenir : un
+  // nouveau lien ajouté dans la sidebar apparaît ici tout seul, regroupé
+  // par section comme dans le sidebar lui-même.
+  const navLinks = extractNavLinks().map((l) => ({
+    ...l,
+    enabled: byKey[l.key]?.status !== "disabled",
+  }));
+  const navSections = [];
+  navLinks.forEach((l) => {
+    let group = navSections.find((s) => s.label === l.section);
+    if (!group) { group = { label: l.section, links: [] }; navSections.push(group); }
+    group.links.push(l);
+  });
+
+  res.render("superadmin/features", { features, smsNotificationsEnabled, adminFeatures, navSections });
+};
+
+// Toggle d'un lien de nav auto-détecté (voir extractNavLinks). La clé est
+// validée contre la liste RÉELLEMENT présente dans sidebar.pug à cet instant
+// — pas une liste statique à maintenir à la main.
+exports.toggleNavLink = async (req, res) => {
+  try {
+    const { key } = req.params;
+    const link = extractNavLinks().find((l) => l.key === key);
+    if (!link) {
+      return res.status(404).json({ error: "Lien de navigation inconnu." });
+    }
+
+    const { enabled } = req.body;
+    await FeatureFlag.findOneAndUpdate(
+      { key },
+      { key, label: link.label, status: enabled ? "active" : "disabled" },
+      { upsert: true }
+    );
+
+    invalidateFeatureFlagCache();
+    res.json({ success: true, enabled: !!enabled });
+  } catch (err) {
+    console.error("toggleNavLink error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
 };
 
 // Toggle générique on/off pour des fonctionnalités cachées (ex: SMS) ou des

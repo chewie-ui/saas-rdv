@@ -727,7 +727,7 @@ exports.getBooking = async (req, res) => {
 
   // Get company config so we can compute slot granularity / buffer / mode.
   const [companyDoc, activeEmployeeCount] = await Promise.all([
-    Company.findById(companyId).select("slotTime bufferTime bufferBefore bufferAfter slotMode slotInterval owner").lean(),
+    Company.findById(companyId).select("slotTime bufferTime bufferBefore bufferAfter slotMode slotInterval owner smartGrouping").lean(),
     // Only count employees when no specific one is filtered
     specificEmployee ? Promise.resolve(0) : Employee.countDocuments({ company: companyId, active: true }),
   ]);
@@ -777,6 +777,26 @@ exports.getBooking = async (req, res) => {
     }
   }
 
+  // ── Regroupement des rendez-vous ("smart grouping") ─────────────────────
+  // Si activé, on calcule les créneaux "proches" d'un RDV déjà confirmé ce
+  // jour-là pour les mettre en avant côté widget client — JAMAIS pour bloquer
+  // un créneau, uniquement pour suggérer un ordre d'affichage qui évite de
+  // fragmenter la journée d'un indépendant qui débute (peu de clients).
+  const smartGrouping = companyDoc?.smartGrouping;
+  function computeRecommendedTimes(anchorBookings) {
+    if (!smartGrouping?.enabled || !anchorBookings || anchorBookings.length === 0) return null;
+    const windowMin = Math.max(1, Number(smartGrouping.windowHours) || 3) * 60;
+    const anchors = anchorBookings.map((b) => {
+      const [h, m] = b.startTime.split(":").map(Number);
+      return h * 60 + m;
+    });
+    const recommended = new Set();
+    for (let t = 0; t < 24 * 60; t += step) {
+      if (anchors.some((a) => Math.abs(t - a) <= windowMin)) recommended.add(minutesToTimeStr(t));
+    }
+    return Array.from(recommended);
+  }
+
   // ── Agenda Google personnel : si le pro a connecté son agenda perso, on
   // bloque aussi les créneaux occupés par ses RDV persos (visio, médical, etc.) ──
   let googleRanges = [];
@@ -801,22 +821,22 @@ exports.getBooking = async (req, res) => {
 
   // ── Case 1: specific employee selected → block only their slots ──────────
   if (specificEmployee) {
-    const bookings = await Booking.find({ ...baseQuery, employee: employeeId }).select("startTime slotTime");
+    const bookings = await Booking.find({ ...baseQuery, employee: employeeId }).select("startTime slotTime").lean();
     const blockedSet = new Set();
     blockedFromRanges(blockedSet, buildOccupiedRanges(bookings));
     blockedFromRanges(blockedSet, googleRanges);
     blockPastSlots(blockedSet);
-    return res.json({ bookedTimes: Array.from(blockedSet) });
+    return res.json({ bookedTimes: Array.from(blockedSet), recommendedTimes: computeRecommendedTimes(bookings) });
   }
 
   // ── Case 2: no employees on this company → 1 booking blocks the slot ─────
   if (activeEmployeeCount === 0) {
-    const bookings = await Booking.find(baseQuery).select("startTime slotTime");
+    const bookings = await Booking.find(baseQuery).select("startTime slotTime").lean();
     const blockedSet = new Set();
     blockedFromRanges(blockedSet, buildOccupiedRanges(bookings));
     blockedFromRanges(blockedSet, googleRanges);
     blockPastSlots(blockedSet);
-    return res.json({ bookedTimes: Array.from(blockedSet) });
+    return res.json({ bookedTimes: Array.from(blockedSet), recommendedTimes: computeRecommendedTimes(bookings) });
   }
 
   // ── Case 3: company has employees, no filter → block slot only when ALL are busy ──
@@ -853,7 +873,7 @@ exports.getBooking = async (req, res) => {
   blockedFromRanges(blockedSet, googleRanges);
   blockPastSlots(blockedSet);
 
-  res.json({ bookedTimes: Array.from(blockedSet) });
+  res.json({ bookedTimes: Array.from(blockedSet), recommendedTimes: computeRecommendedTimes(bookings) });
 };
 
 function formatFutureDate(date) {

@@ -766,27 +766,46 @@ function buildSlotsPanel(slots) {
   const visible   = slots.filter(s => by(s.time));
   const available = visible.filter(s => !s.taken && !s.isPast).length;
 
+  // Regroupement actif uniquement s'il y a déjà au moins un RDV ce jour-là
+  // (le serveur ne renvoie des créneaux recommandés que dans ce cas).
+  const groupingOn = _smartGrouping.active;
+
+  const renderSlotBtn = s => {
+    const remainingHtml = (s.remaining !== undefined && !s.taken && !s.isPast)
+      ? `<span class="bk-slot__spots">${s.remaining} place${s.remaining > 1 ? "s" : ""}</span>` : "";
+    const isReco = groupingOn && s.recommended && !s.taken && !s.isPast;
+    return `<button class="bk-slot ${s.taken?"is-disabled":""} ${s.isPast?"is-past":""} ${STATE.time===s.time?"is-selected":""} ${isReco?"is-recommended":""}"
+      data-time="${s.time}" ${s.taken?"disabled":""}>${s.time}${remainingHtml}</button>`;
+  };
+  const mainSlots  = groupingOn ? visible.filter(s => s.taken || s.isPast || s.recommended) : visible;
+  const extraSlots = groupingOn ? visible.filter(s => !s.taken && !s.isPast && !s.recommended) : [];
+
   return `<div class="bk-slots">
     <h3>${fmtDate(STATE.date)}</h3>
     <p class="bk-slots__sub">${available} créneaux disponibles</p>
+    ${groupingOn ? `<p class="bk-slots__grouping-hint">🧩 On vous propose d'abord les horaires proches d'un rendez-vous déjà prévu ce jour-là.</p>` : ""}
     <div class="bk-dayparts">
       ${dayparts.map(([id,lbl]) => `<button class="bk-daypart ${STATE.daypart===id?"is-active":""}" data-dp="${id}">${lbl}</button>`).join("")}
     </div>
     <div class="bk-slot-list ${STATE.service && STATE.service.type === "group" ? "bk-slot-list--group" : ""}">
-      ${visible.length === 0
+      ${mainSlots.length === 0 && extraSlots.length === 0
         ? `<div style="grid-column:1/-1; text-align:center; color:var(--bk-muted); font-size:12.5px; padding:20px 0;">Aucun créneau</div>`
-        : visible.map(s => {
-            const remainingHtml = (s.remaining !== undefined && !s.taken && !s.isPast)
-              ? `<span class="bk-slot__spots">${s.remaining} place${s.remaining > 1 ? "s" : ""}</span>` : "";
-            return `<button class="bk-slot ${s.taken?"is-disabled":""} ${s.isPast?"is-past":""} ${STATE.time===s.time?"is-selected":""}"
-              data-time="${s.time}" ${s.taken?"disabled":""}>${s.time}${remainingHtml}</button>`;
-          }).join("")
+        : mainSlots.map(renderSlotBtn).join("")
       }
     </div>
+    ${extraSlots.length > 0 ? `
+    <button class="bk-slots__more" id="bkSlotsMore" type="button" aria-expanded="false">
+      <span>Voir ${extraSlots.length} créneau${extraSlots.length > 1 ? "x" : ""} supplémentaire${extraSlots.length > 1 ? "s" : ""}</span>
+      <svg viewBox="0 -960 960 960" width="14" height="14" fill="currentColor"><path d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z"/></svg>
+    </button>
+    <div class="bk-slot-list bk-slot-list--extra ${STATE.service && STATE.service.type === "group" ? "bk-slot-list--group" : ""}" id="bkSlotsExtra" style="display:none">
+      ${extraSlots.map(renderSlotBtn).join("")}
+    </div>` : ""}
   </div>`;
 }
 
 let _currentSlots = [];
+let _smartGrouping = { active: false, recommended: new Set() };
 
 async function renderTimePane() {
   pane.innerHTML = `<div class="bk-pane">
@@ -885,6 +904,18 @@ function bindSlots() {
       renderCart();
     };
   });
+
+  // Regroupement des rendez-vous : déplier les créneaux plus éloignés
+  const moreBtn = document.getElementById("bkSlotsMore");
+  const extraWrap = document.getElementById("bkSlotsExtra");
+  if (moreBtn && extraWrap) {
+    moreBtn.onclick = () => {
+      const isOpen = extraWrap.style.display !== "none";
+      extraWrap.style.display = isOpen ? "none" : "";
+      moreBtn.classList.toggle("is-open", !isOpen);
+      moreBtn.setAttribute("aria-expanded", String(!isOpen));
+    };
+  }
 }
 
 function bindDayparts() {
@@ -923,6 +954,13 @@ async function fetchSlots() {
   const groupAvailability = bookedData.groupAvailability || {};
   const groupCapacity     = bookedData.capacity || (STATE.service ? STATE.service.capacity : null);
 
+  // ── Regroupement des rendez-vous : si l'admin a activé l'option, le serveur
+  // renvoie les créneaux "proches" d'un RDV déjà confirmé ce jour-là — on les
+  // met en avant et on replie le reste sous "Voir plus d'horaires".
+  const recommendedTimes = bookedData.recommendedTimes;
+  _smartGrouping.active = Array.isArray(recommendedTimes) && recommendedTimes.length > 0;
+  _smartGrouping.recommended = new Set(recommendedTimes || []);
+
   // Calculer l'heure actuelle locale (pour masquer les créneaux passés si c'est aujourd'hui)
   const nowLocal    = new Date();
   const todayIso    = nowLocal.getFullYear() + "-"
@@ -936,7 +974,7 @@ async function fetchSlots() {
     const slotMin   = h * 60 + m;
     // Créneau passé si c'est aujourd'hui ET que l'heure est déjà dépassée
     const isPast    = isToday && slotMin <= nowMinutes;
-    const slot = { time: t, taken: booked.has(t) || isPast, isPast };
+    const slot = { time: t, taken: booked.has(t) || isPast, isPast, recommended: _smartGrouping.recommended.has(t) };
     if (isGroupService && groupCapacity) {
       const booked2 = groupAvailability[t] ? groupAvailability[t].booked : 0;
       slot.remaining = Math.max(0, groupCapacity - booked2);

@@ -643,12 +643,13 @@ exports.availability = async (req, res) => {
   }
   const Service  = require("../db/models/company/service.model");
   const Employee = require("../db/models/company/employee.model");
-  const [daysOff, currentSlotTime, slotConfig, serviceCount, activeEmployees] = await Promise.all([
+  const [daysOff, currentSlotTime, slotConfig, serviceCount, activeEmployees, smartGroupingDoc] = await Promise.all([
     getDaysOff(currentCompany),
     getSlotTime(currentCompany),
     getSlotConfig(currentCompany),
     Service.countDocuments({ company: currentCompany, active: true }),
     Employee.find({ company: currentCompany._id, active: true }).select("firstName lastName").lean(),
+    Company.findById(currentCompany._id).select("smartGrouping").lean(),
   ]);
   const availFeatures = getLimit("availability", req.user);
   res.render("admin/availability", {
@@ -665,6 +666,7 @@ exports.availability = async (req, res) => {
     slotInterval: slotConfig.slotInterval,
     hasServices: serviceCount > 0,
     availFeatures,
+    smartGrouping: smartGroupingDoc?.smartGrouping || { enabled: false, windowHours: 3 },
   });
 };
 

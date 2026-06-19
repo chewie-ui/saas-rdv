@@ -232,6 +232,34 @@ block content
                         input.input.slot-interval-input#slotIntervalInput(type="number" min="5" max="120" step="5" value=(slotInterval || 30))
                         span minutes
 
+                //- Regroupement des rendez-vous ("smart grouping")
+                .avail-card.sg-card
+                    .avail-card__hd
+                        .sg-card__title-row
+                            svg.sg-card__icon(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                                path(d="M160-200v-80h80v80h-80Zm160 0v-280h80v280h-80Zm160 0v-440h80v440h-80Zm160 0v-160h80v160h-80ZM160-560v-80h640v80H160Zm0-200v-80h640v80H160Z")
+                            span.avail-card__title Regroupement des rendez-vous
+                        label.sa-toggle
+                            input#sgEnabled(type="checkbox" checked=smartGrouping.enabled)
+                            .sa-toggle__track
+                    p.avail-card__sub
+                        | Idéal quand vous démarrez avec peu de clients : si quelqu'un réserve à 9h et un autre à 18h, toute votre journée se retrouve "bloquée" pour rien. Activez ceci pour mettre en avant, sur la page de réservation, les créneaux proches de vos RDV déjà confirmés — les autres restent réservables mais sont repliés sous "Voir plus d'horaires".
+                    #sgWindowRow(style=(smartGrouping.enabled ? '' : 'display:none'))
+                        .sg-window-label Regrouper les créneaux dans une fenêtre de
+                        .sg-window-pills#sgWindowPills
+                            each h in [1, 2, 3, 4, 6]
+                                button.sg-window-pill(type="button" data-hours=h class=(Number(smartGrouping.windowHours) === h ? 'active' : ''))= h + 'h'
+                    .sg-example(class=(smartGrouping.enabled ? '' : 'sg-example--off'))
+                        .sg-example__row
+                            span.sg-example__dot.sg-example__dot--booked
+                            span 9h00 — RDV confirmé
+                        .sg-example__row
+                            span.sg-example__dot.sg-example__dot--reco
+                            span Créneaux mis en avant (9h–12h si fenêtre 3h)
+                        .sg-example__row
+                            span.sg-example__dot.sg-example__dot--extra
+                            span Reste disponible, juste replié
+
                 //- Preview this week
                 .avail-card
                     .avail-card__hd

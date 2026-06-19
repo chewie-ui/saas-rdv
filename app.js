@@ -211,6 +211,11 @@ app.use((req, res, next) => {
 // « Espace client » manquant dans la topbar sur certaines pages publiques.
 app.use(require("./middlewares/injectClientUser"));
 
+// Cache du sidebar admin les liens de nav désactivés par le superadmin
+// (page /superadmin → section Navigation). Détecté automatiquement depuis
+// sidebar.pug — aucune liste à maintenir quand un nouveau lien est ajouté.
+app.use(require("./middlewares/navVisibility"));
+
 const fs = require("fs");
 
 app.use((req, res, next) => {
