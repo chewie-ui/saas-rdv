@@ -28,4 +28,6 @@ module.exports = {
 
   dbUri: env.MONGO_URI_SERVER,
   port:  Number(env.PORT) || 8080,
+
+  sessionSecret: env.SESSION_SECRET,
 };

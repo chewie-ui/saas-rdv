@@ -18,4 +18,6 @@ module.exports = {
   appBaseUrl:                env.APP_BASE_URL_LOCAL || "http://localhost:3000",
   dbUri:                     env.MONGO_URI_LOCAL,
   port:                      3000,
+
+  sessionSecret: env.SESSION_SECRET,
 };
