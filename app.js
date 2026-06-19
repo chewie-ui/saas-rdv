@@ -15,6 +15,23 @@ const app = express();
 
 app.set("trust proxy", 1);
 
+// ── Domaine canonique (www) ─────────────────────────────────────────────────
+// Le cookie de session est "host-only" (pas de Domain explicite) : se connecter
+// sur branshee.com puis naviguer vers www.branshee.com (ou l'inverse) atterrit
+// dans un AUTRE cookie jar → l'utilisateur semble déconnecté alors que sa
+// session est toujours valide sur l'autre hôte. On force tout le trafic vers
+// un seul hôte (www) avant toute logique de session. GET/HEAD uniquement pour
+// ne jamais rediriger les webhooks Stripe (POST).
+if (process.env.NODE_ENV === "production") {
+  app.use((req, res, next) => {
+    const host = req.headers.host || "";
+    if ((req.method === "GET" || req.method === "HEAD") && host === "branshee.com") {
+      return res.redirect(301, `https://www.branshee.com${req.originalUrl}`);
+    }
+    next();
+  });
+}
+
 // Compress all HTTP responses (gzip/br)
 app.use(compression());
 
