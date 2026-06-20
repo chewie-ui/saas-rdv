@@ -232,10 +232,16 @@ exports.updateSmartGrouping = async (req, res) => {
     if (enabled !== undefined) update["smartGrouping.enabled"] = !!enabled;
     if (windowHours !== undefined) {
       update["smartGrouping.windowHours"] = Math.max(1, Math.min(12, Number(windowHours) || 3));
+    } else if (enabled) {
+      // Première activation : si l'utilisateur n'a jamais choisi de fenêtre, défaut à 1h (pas 3h).
+      const existing = await Company.findById(res.locals.currentCompany._id).select("smartGrouping").lean();
+      if (existing?.smartGrouping?.windowHours === undefined) {
+        update["smartGrouping.windowHours"] = 1;
+      }
     }
 
     await Company.findByIdAndUpdate(res.locals.currentCompany._id, { $set: update });
-    return res.json({ success: true });
+    return res.json({ success: true, ...update });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ success: false, error: "Server error" });

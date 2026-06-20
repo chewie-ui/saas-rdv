@@ -1129,11 +1129,20 @@ if (sgEnabled) {
     if (sgWindowRow) sgWindowRow.style.display = enabled ? "" : "none";
     if (sgExample) sgExample.classList.toggle("sg-example--off", !enabled);
 
-    await fetch("/company/smart-grouping", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled }),
-    }).catch(() => {});
+    try {
+      const res = await fetch("/company/smart-grouping", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+      const data = await res.json();
+      const newWindowHours = data?.["smartGrouping.windowHours"];
+      if (newWindowHours !== undefined && sgWindowPills) {
+        sgWindowPills.querySelectorAll(".sg-window-pill").forEach((b) => {
+          b.classList.toggle("active", Number(b.dataset.hours) === newWindowHours);
+        });
+      }
+    } catch (_) {}
   });
 }
 

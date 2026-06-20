@@ -75,7 +75,7 @@ block content
                 -
                     var _catObj = svc.category ? categories.find(function(c){ return c.name === svc.category; }) : null
                     var _catIcon = _catObj && _catObj.icon ? _catObj.icon : ''
-                .service-card(data-id=String(svc._id) data-category=svc.category || '' data-type=(svc.type || 'individual') data-capacity=(svc.capacity || '') data-color=(svc.color || '') class=(!svc.active ? 'service-card--inactive' : ''))
+                .service-card(data-id=String(svc._id) data-category=svc.category || '' data-type=(svc.type || 'individual') data-capacity=(svc.capacity || '') data-color=(svc.color || '') data-fee-enabled=(svc.cancellationFee && svc.cancellationFee.enabled ? '1' : '0') data-fee-type=(svc.cancellationFee && svc.cancellationFee.type || 'percent') data-fee-value=(svc.cancellationFee && svc.cancellationFee.value !== null && svc.cancellationFee.value !== undefined ? svc.cancellationFee.value : '') class=(!svc.active ? 'service-card--inactive' : ''))
                     .service-card__header
                         .service-card__name-row
                             h3.service-card__name
@@ -92,6 +92,9 @@ block content
                                 span.badge.badge--duration #{svc.duration} min
                                 if svc.type === 'group'
                                     span.badge.badge--group #{svc.capacity} places
+                                if svc.cancellationFee && svc.cancellationFee.enabled
+                                    span.badge.badge--fee
+                                        = svc.cancellationFee.type === 'amount' ? `Annulation: ${svc.cancellationFee.value}€` : `Annulation: ${svc.cancellationFee.value}%`
                         .service-card__actions
                             label.sa-toggle(title=(svc.active ? t.services.deactivate : t.services.activate))
                                 input.toggle-active(type="checkbox" checked=svc.active data-id=String(svc._id))
@@ -231,48 +234,71 @@ block content
                     path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
         .service-modal__body
             input(type="hidden" id="serviceModalId")
-            .field
-                label= t.services.service_name
-                input.input#serviceModalName(placeholder="Ex: Coupe simple, Massage détente...")
-            .field
-                label= t.services.service_category
-                select.input#serviceModalCategory
-                    //- Populated by JS from window.__categories
-            #newCategorySection(style="display:none")
-                .field
-                    label= t.services.new_category_name
-                    input.input#newCategoryName(type="text" placeholder="Ex: Cheveux, Corps, Visage...")
-                .field
-                    label= t.services.new_category_icon
-                    input(type="hidden" id="newCategoryIconInput")
-                    .cat-icon-picker#catIconPicker
-            .field
-                label= t.services.service_desc
-                textarea.textarea#serviceModalDesc(placeholder="..." rows=3)
-            .field-row
-                .field
-                    label= t.services.service_price
-                    input.input#serviceModalPrice(type="number" min="0" step="0.5" placeholder="Ex: 25")
-                .field
-                    label= t.services.service_duration
-                    input.input#serviceModalDuration(type="number" min="5" step="5" placeholder="30")
-            .field
-                label Couleur (calendrier)
-                input(type="hidden" id="serviceModalColor")
-                .svc-color-picker#svcColorPicker
-            if !adminFeatures || adminFeatures.group_sessions !== false
-                .field
-                    label Type de rendez-vous
-                    .svc-type-options#svcTypeOptions
-                        button.svc-type-option.is-active(type="button" data-type="individual")
-                            span.svc-type-option__title Individuel
-                            span.svc-type-option__desc Un seul client par créneau
-                        button.svc-type-option(type="button" data-type="group")
-                            span.svc-type-option__title Collectif (places limitées)
-                            span.svc-type-option__desc Plusieurs clients peuvent réserver le même créneau
-                .field#svcCapacityField(style="display:none")
-                    label Nombre de places
-                    input.input#serviceModalCapacity(type="number" min="1" max="500" step="1" placeholder="Ex: 10")
+            .service-modal__cols
+                //- ── Colonne gauche : identité du service ────────────────────
+                .service-modal__col
+                    .field
+                        label= t.services.service_name
+                        input.input#serviceModalName(placeholder="Ex: Coupe simple, Massage détente...")
+                    .field
+                        label= t.services.service_category
+                        select.input#serviceModalCategory
+                            //- Populated by JS from window.__categories
+                    #newCategorySection(style="display:none")
+                        .field
+                            label= t.services.new_category_name
+                            input.input#newCategoryName(type="text" placeholder="Ex: Cheveux, Corps, Visage...")
+                        .field
+                            label= t.services.new_category_icon
+                            input(type="hidden" id="newCategoryIconInput")
+                            .cat-icon-picker#catIconPicker
+                    .field
+                        label= t.services.service_desc
+                        textarea.textarea#serviceModalDesc(placeholder="..." rows=3)
+                    .field-row
+                        .field
+                            label= t.services.service_price
+                            input.input#serviceModalPrice(type="number" min="0" step="0.5" placeholder="Ex: 25")
+                        .field
+                            label= t.services.service_duration
+                            input.input#serviceModalDuration(type="number" min="5" step="5" placeholder="30")
+                    .field
+                        label Couleur (calendrier)
+                        input(type="hidden" id="serviceModalColor")
+                        .svc-color-picker#svcColorPicker
+
+                //- ── Colonne droite : réservation & frais ─────────────────────
+                .service-modal__col
+                    if !adminFeatures || adminFeatures.group_sessions !== false
+                        .field
+                            label Type de rendez-vous
+                            .svc-type-options#svcTypeOptions
+                                button.svc-type-option.is-active(type="button" data-type="individual")
+                                    span.svc-type-option__title Individuel
+                                    span.svc-type-option__desc Un seul client par créneau
+                                button.svc-type-option(type="button" data-type="group")
+                                    span.svc-type-option__title Collectif (places limitées)
+                                    span.svc-type-option__desc Plusieurs clients peuvent réserver le même créneau
+                        .field#svcCapacityField(style="display:none")
+                            label Nombre de places
+                            input.input#serviceModalCapacity(type="number" min="1" max="500" step="1" placeholder="Ex: 10")
+                    .field
+                        label.svc-fee-label
+                            span Frais d'annulation personnalisés pour ce service
+                            label.sa-toggle
+                                input#serviceModalFeeEnabled(type="checkbox")
+                                .sa-toggle__track
+                        p.xs-comment Remplace la politique d'annulation globale pour ce service uniquement (annulation tardive ou absence non excusée).
+                        #svcFeeFields(style="display:none")
+                            .svc-fee-type-options#svcFeeTypeOptions
+                                button.svc-type-option.is-active(type="button" data-fee-type="percent")
+                                    span.svc-type-option__title %
+                                    span.svc-type-option__desc Pourcentage du prix
+                                button.svc-type-option(type="button" data-fee-type="amount")
+                                    span.svc-type-option__title €
+                                    span.svc-type-option__desc Montant fixe
+                            .field
+                                input.input#serviceModalFeeValue(type="number" min="0" step="0.5" placeholder="Ex: 30")
         .service-modal__footer
             button.sm-btn.sm-btn--ghost#cancelServiceModal
                 span= t.services.cancel

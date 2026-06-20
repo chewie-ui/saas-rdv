@@ -1,0 +1,118 @@
+-
+  var _year = new Date().getFullYear()
+  var _clientName = (name || '') + (surname ? ' ' + surname : '')
+  var _hasService = !!(serviceName)
+  var _keptAmount = chargeResult ? (chargeResult.kept || (chargeResult.charged ? chargeResult.amount : 0)) : 0
+
+div(style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;")
+  style.
+    @media (max-width: 600px) {
+      .email-card-header { padding: 24px 20px !important; }
+      .email-card-body { padding: 24px 20px 0 !important; }
+      .email-row td { display: block !important; width: 100% !important; }
+      .email-label { padding-bottom: 2px !important; }
+      .email-datetime td { display: block !important; width: 100% !important; text-align: left !important; }
+      .email-datetime td:last-child { margin-top: 12px; text-align: left !important; }
+    }
+  table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0;padding:0;background-color:#f0f4f8;")
+    tr
+      td(align="center" style="padding:40px 16px;")
+        table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;margin:0 auto;")
+
+          //- ── Logo ─────────────────────────────────────────────────────────
+          tr
+            td(align="center" style="padding:0 0 24px;")
+              a(href="https://www.branshee.com" style="display:inline-block;text-decoration:none;")
+                table(cellpadding="0" cellspacing="0" role="presentation" style="display:inline-table;")
+                  tr
+                    td(valign="middle" style="padding-right:8px;")
+                      span(style="display:block;width:32px;height:32px;background:#1a7a4a;border-radius:9px;font-size:16px;font-weight:800;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,sans-serif;text-align:center;line-height:32px;") B
+                    td(valign="middle")
+                      span(style="font-size:15px;font-weight:700;color:#1e2923;letter-spacing:-0.2px;") BranShee
+
+          //- ── Carte principale ─────────────────────────────────────────────
+          tr
+            td(style="background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);border:1px solid #e2e8f0;")
+
+              //- Header
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td.email-card-header(style="background:linear-gradient(135deg,#475569 0%,#334155 100%);padding:32px 40px;text-align:center;")
+                    table(cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto 16px;")
+                      tr
+                        td(style="width:56px;height:56px;background:rgba(255,255,255,0.15);border-radius:50%;text-align:center;vertical-align:middle;")
+                          span(style="font-size:22px;line-height:56px;") ✕
+                    p(style="margin:0 0 6px;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;") Rendez-vous annulé
+                    p(style="margin:0;font-size:14px;color:rgba(255,255,255,0.8);") Un client vient d'annuler un rendez-vous
+
+              //- Corps
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td.email-card-body(style="padding:32px 40px 0;")
+
+                    //- ── Bloc date/heure ──────────────────────────────────────
+                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:24px;")
+                      tr
+                        td(style="padding:20px 24px;")
+                          table.email-datetime(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                            tr
+                              td(width="50%" style="vertical-align:top;")
+                                p(style="margin:0 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;") Date
+                                p(style="margin:0;font-size:16px;font-weight:700;color:#1e293b;") #{formattedDate}
+                              td(width="50%" style="vertical-align:top;text-align:right;")
+                                p(style="margin:0 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;") Heure
+                                p(style="margin:0;font-size:16px;font-weight:700;color:#1e293b;") #{startHour} — #{endHour}
+
+                    //- ── Informations client ─────────────────────────────────
+                    p(style="margin:0 0 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;") Informations client
+
+                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:24px;")
+                      tr
+                        td(style="padding:13px 18px;" + (email || _hasService ? "border-bottom:1px solid #f1f5f9;" : ""))
+                          table.email-row(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                            tr
+                              td.email-label(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Nom
+                              td(style="font-size:14px;font-weight:600;color:#1e293b;") #{_clientName}
+                      if email
+                        tr
+                          td(style="padding:13px 18px;" + (_hasService ? "border-bottom:1px solid #f1f5f9;" : ""))
+                            table.email-row(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                              tr
+                                td.email-label(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Email
+                                td
+                                  a(href="mailto:#{email}" style="font-size:14px;font-weight:600;color:#1a7a4a;text-decoration:none;") #{email}
+                      if _hasService
+                        tr
+                          td(style="padding:13px 18px;")
+                            table.email-row(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                              tr
+                                td.email-label(width="30%" style="font-size:12px;font-weight:600;color:#94a3b8;") Service
+                                td(style="font-size:14px;font-weight:600;color:#1e293b;") #{serviceName}
+
+                    //- ── Frais retenus éventuels ─────────────────────────────
+                    if _keptAmount > 0
+                      table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f0fdf4;border-radius:12px;border:1px solid #bbf7d0;margin-bottom:24px;")
+                        tr
+                          td(style="padding:16px 20px;")
+                            p(style="margin:0;font-size:13.5px;color:#166534;line-height:1.5;")
+                              strong #{_keptAmount.toFixed(2)} €
+                              |  ont été automatiquement prélevés sur la carte du client (frais d'annulation).
+
+                    //- ── CTA bouton ──────────────────────────────────────────
+                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:32px;")
+                      tr
+                        td(align="center")
+                          a(
+                            href="https://www.branshee.com/appointment"
+                            style="display:inline-block;background:#1a7a4a;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:10px;letter-spacing:-0.2px;"
+                          ) Voir mon calendrier →
+
+          //- ── Footer ───────────────────────────────────────────────────────
+          tr
+            td(style="padding:24px 0 0;text-align:center;")
+              p(style="margin:0 0 6px;font-size:12px;color:#94a3b8;") Vous recevez cet email car les notifications sont activées sur votre compte BranShee.
+              p(style="margin:0;font-size:12px;color:#94a3b8;")
+                a(href="https://www.branshee.com/settings" style="color:#94a3b8;text-decoration:underline;") Gérer mes notifications
+                |  ·
+                a(href="https://www.branshee.com" style="color:#94a3b8;text-decoration:underline;") branshee.com
+              p(style="margin:8px 0 0;font-size:11px;color:#cbd5e1;") © #{_year} BranShee

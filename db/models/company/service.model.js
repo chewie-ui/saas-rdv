@@ -61,6 +61,16 @@ const serviceSchema = new mongoose.Schema(
         ref: "Employee",
       },
     ],
+    // Frais d'annulation/no-show personnalisés pour ce service — remplace le
+    // % de la politique d'annulation globale (ex: un soin à 100€ où le pro
+    // préfère ne retenir que 30€ plutôt que 50% imposés par la politique).
+    // Ne s'applique que quand la politique globale aurait déjà retenu des
+    // frais (annulation tardive) ou en cas d'absence non excusée.
+    cancellationFee: {
+      enabled: { type: Boolean, default: false },
+      type:    { type: String, enum: ["percent", "amount"], default: "percent" },
+      value:   { type: Number, default: null },
+    },
   },
   { timestamps: true }
 );

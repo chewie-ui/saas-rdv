@@ -304,3 +304,89 @@ setInterval(updateTimeline, 60000);
     }
   });
 })();
+
+// ---- Densité du calendrier (Confort / Compact) ---------------------------
+// Les blocs de RDV sont positionnés en hauteur via `data-slot-minutes` +
+// la hauteur réelle (rendue) d'une ligne — jamais une valeur figée — afin que
+// TOUT s'adapte automatiquement : durée de service, pas de grille (gridStep,
+// qui se resserre si un RDV démarre à une minute non multiple de 30), mode
+// Confort/Compact, et redimensionnement de la fenêtre.
+(function initCalendarDensity() {
+  const section = document.getElementById("calendarSection");
+  if (!section) return;
+
+  const STORAGE_KEY = "branshee_calendar_density";
+  const gridStep = Number(section.dataset.gridStep) || 30;
+  const toggle = document.getElementById("calDensityToggle");
+
+  function currentRowHeightPx() {
+    const sample = section.querySelector(".cell.time:not(.time--half)") || section.querySelector(".cell.time");
+    if (!sample) return 52;
+    const h = sample.getBoundingClientRect().height;
+    return h > 0 ? h : 52;
+  }
+
+  function applyApptHeights() {
+    const rowH = currentRowHeightPx();
+    section.querySelectorAll("[data-slot-minutes]").forEach((el) => {
+      const minutes = Number(el.dataset.slotMinutes) || gridStep;
+      const gap = Math.min(4, rowH * 0.08);
+      const h = Math.max(Math.round((minutes / gridStep) * rowH) - gap, Math.min(20, rowH - 2));
+      el.style.height = `${h}px`;
+    });
+  }
+
+  function setCompact(enabled) {
+    section.classList.toggle("is-compact", enabled);
+    if (toggle) {
+      toggle.querySelectorAll(".cal-view-btn").forEach((btn) => {
+        btn.classList.toggle("is-active", (btn.dataset.density === "compact") === enabled);
+      });
+    }
+
+    if (enabled) {
+      const headerCell = section.querySelector(".cell.time-header, .cell.day-header");
+      const headerH = headerCell ? headerCell.getBoundingClientRect().height : 0;
+      const rowCells = section.querySelectorAll(".cell.time");
+      const numRows = rowCells.length || 1;
+
+      // Hauteur minimale de 22px par ligne — sous cette limite, le libellé
+      // d'heure (ex: "08:00") n'a plus la place de s'afficher proprement.
+      const MIN_ROW_H = 22;
+      const top = section.getBoundingClientRect().top;
+      const available = Math.max(window.innerHeight - top - 24, 200);
+      const bodyHeight = Math.max(available - headerH, numRows * MIN_ROW_H);
+      const rowH = Math.max(Math.floor(bodyHeight / numRows), MIN_ROW_H);
+
+      section.style.height = `${available}px`;
+      section.style.setProperty("--cal-row-h", `${rowH}px`);
+    } else {
+      section.style.height = "";
+      section.style.removeProperty("--cal-row-h");
+    }
+
+    // Attendre que le reflow CSS soit appliqué avant de mesurer les lignes
+    requestAnimationFrame(applyApptHeights);
+  }
+
+  if (toggle) {
+    toggle.addEventListener("click", (e) => {
+      const btn = e.target.closest(".cal-view-btn");
+      if (!btn) return;
+      const compact = btn.dataset.density === "compact";
+      localStorage.setItem(STORAGE_KEY, compact ? "compact" : "comfort");
+      setCompact(compact);
+    });
+  }
+
+  const saved = localStorage.getItem(STORAGE_KEY);
+  setCompact(saved === "compact");
+
+  let resizeTimer = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      setCompact(section.classList.contains("is-compact"));
+    }, 150);
+  });
+})();

@@ -256,6 +256,33 @@
   border: 1px solid #f5d0fe;
 }
 
+.badge--fee {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+/* ── Frais d'annulation personnalisés (modal service) ───────────────────── */
+.svc-fee-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.svc-fee-type-options {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.svc-fee-type-options .svc-type-option {
+  flex: 1;
+  align-items: center;
+  text-align: center;
+}
+
 /* ── Type de service (individuel / collectif) ──────────────────────────── */
 .svc-type-options {
   display: flex;
@@ -511,21 +538,61 @@
   transform: translate(-50%, -50%) scale(0.96);
   background: var(--surface-card);
   border-radius: 18px;
-  width: 100%;
+  width: calc(100% - 32px);
   max-width: 500px;
   padding: 28px 24px;
   z-index: 101;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
   opacity: 0;
   pointer-events: none;
   transition:
     opacity 0.2s,
     transform 0.2s;
+  /* Hauteur fixe pour la fenêtre du modal — header et footer restent
+     toujours visibles, seul .service-modal__body défile en interne
+     (pattern modal standard) plutôt que de scroller le modal entier).
+     Pas de plafond en pixels : on utilise tout l'espace vertical
+     disponible (90vh) pour éviter un scroll interne inutile sur desktop. */
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
+}
+
+/* Le modal de service a deux colonnes — plus large pour tenir sans scroll */
+#serviceModal {
+  max-width: 500px;
+}
+
+@media (min-width: 760px) {
+  #serviceModal {
+    max-width: 760px;
+  }
+}
+
+.service-modal__cols {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.service-modal__col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+@media (min-width: 760px) {
+  .service-modal__cols {
+    flex-direction: row;
+    gap: 28px;
+  }
+
+  .service-modal__col {
+    flex: 1;
+  }
 }
 
 .service-modal.show {
@@ -539,6 +606,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .service-modal__header h3 {
@@ -568,6 +636,14 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Léger padding interne pour que le contenu ne touche pas le bord du
+     modal et que la scrollbar ne chevauche pas les champs */
+  padding: 2px 4px 2px 2px;
+  margin: 0 -4px;
 }
 
 .service-modal__body .field {
@@ -604,6 +680,32 @@
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+/* ── Responsive : mobile ──────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .service-modal {
+    width: calc(100% - 20px);
+    padding: 20px 16px;
+    border-radius: 16px;
+    max-height: calc(100vh - 24px);
+    gap: 12px;
+  }
+
+  .service-modal__footer {
+    flex-direction: column-reverse;
+  }
+
+  .service-modal__footer .sm-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .service-modal__body .field-row {
+    flex-direction: column;
+    gap: 16px;
+  }
 }
 
 /* ── Employee select list ──────────────────────────────────────── */

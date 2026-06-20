@@ -227,7 +227,8 @@ const userSchema = schema(
 
     // ── Notifications email ───────────────────────────────────────────────────
     notifications: {
-      newBooking: { type: Boolean, default: true }, // recevoir un email à chaque nouvelle réservation
+      newBooking:   { type: Boolean, default: true }, // recevoir un email à chaque nouvelle réservation
+      cancellation: { type: Boolean, default: true }, // recevoir un email à chaque annulation
     },
 
     googleCalendar: {

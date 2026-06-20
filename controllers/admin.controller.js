@@ -414,6 +414,7 @@ exports.appointment = async (req, res) => {
     pageName: "Appointment",
     title: res.locals.t.titles.calendar,
     slotTime,
+    gridStep,
     hours: generateTimeSlots(minHour, maxHour, gridStep),
     weekDays: weekDaysWithFill,
     appointments: formatted,

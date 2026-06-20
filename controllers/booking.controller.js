@@ -31,6 +31,23 @@ function hoursUntil(bookingDate, startTime) {
   return (dt - Date.now()) / 3_600_000;
 }
 
+/**
+ * Montant des frais à retenir/prélever pour une réservation.
+ * Si le service a des frais d'annulation/no-show personnalisés (ex: 30€ fixe
+ * plutôt que les 50%/100% de la politique globale), ils remplacent le montant
+ * "fallback" calculé depuis la politique globale — mais seulement quand cette
+ * dernière aurait déjà appliqué des frais (fallbackAmount > 0). Si la politique
+ * globale ne prélève rien à ce moment (ex: annulation > 24h avant), aucun frais
+ * personnalisé n'est appliqué non plus.
+ */
+function resolveFeeAmount(serviceDoc, totalAmount, fallbackAmount) {
+  if (!fallbackAmount || fallbackAmount <= 0) return fallbackAmount;
+  const fee = serviceDoc?.cancellationFee;
+  if (!fee?.enabled || fee.value === null || fee.value === undefined) return fallbackAmount;
+  if (fee.type === "amount") return Math.min(totalAmount, fee.value);
+  return totalAmount * (Math.min(100, fee.value) / 100);
+}
+
 // ── Stripe: create PaymentIntent for booking (immediate charge) ───────────────
 exports.createBookingPaymentIntent = async (req, res) => {
   try {
@@ -241,7 +258,11 @@ exports.markNoShow = async (req, res) => {
       if (!stripe) return res.status(500).json({ error: "Stripe non configuré." });
 
       const amount = booking.payment.amount || 0;
-      const amountCents = toCents(amount);
+      const serviceDoc = booking.service
+        ? await Service.findById(booking.service).select("cancellationFee").lean()
+        : null;
+      const feeAmount = resolveFeeAmount(serviceDoc, amount, amount);
+      const amountCents = toCents(feeAmount);
       if (amountCents < 50) {
         await booking.save();
         return res.json({ success: false, error: "Montant trop faible pour être prélevé." });
@@ -270,11 +291,11 @@ exports.markNoShow = async (req, res) => {
 
         booking.payment.status = "penalty";
         booking.payment.stripePaymentIntentId = pi.id;
-        booking.payment.penaltyAmount = amount;
+        booking.payment.penaltyAmount = feeAmount;
         booking.payment.paidAt = new Date();
         await booking.save();
 
-        return res.json({ success: true, charged: true, amount });
+        return res.json({ success: true, charged: true, amount: feeAmount });
       } catch (stripeErr) {
         console.error("markNoShow off-session error:", stripeErr.message);
         booking.payment.status = "failed";
@@ -1090,6 +1111,9 @@ exports.cancelBooking = async (req, res) => {
   const company = await Company.findById(canceledBooking.company);
   const coach   = await User.findById(company.owner);
   const policyRule = company?.cancellationPolicy?.rule || "free";
+  const serviceDoc = canceledBooking.service
+    ? await Service.findById(canceledBooking.service).select("cancellationFee").lean()
+    : null;
 
   // ── % des frais retenus / prélevés selon la politique d'annulation ────────
   function penaltyPct(rule, hrs) {
@@ -1111,9 +1135,10 @@ exports.cancelBooking = async (req, res) => {
         canceledBooking.payment?.stripePaymentMethodId) {
 
       const pct = penaltyPct(policyRule, hrs);
-      const chargeCents = toCents(amount * pct);
+      const feeAmount = resolveFeeAmount(serviceDoc, amount, amount * pct);
+      const chargeCents = toCents(feeAmount);
 
-      if (pct > 0 && amount > 0 && chargeCents >= 50) {
+      if (pct > 0 && feeAmount > 0 && chargeCents >= 50) {
         let connectedAccountId = null;
         if (company?.stripeConnect?.status === "active" && company.stripeConnect.accountId) {
           connectedAccountId = company.stripeConnect.accountId;
@@ -1134,10 +1159,10 @@ exports.cancelBooking = async (req, res) => {
           await Booking.findByIdAndUpdate(canceledBooking._id, {
             "payment.status": "penalty",
             "payment.stripePaymentIntentId": pi.id,
-            "payment.penaltyAmount": amount * pct,
+            "payment.penaltyAmount": feeAmount,
             "payment.paidAt": new Date(),
           });
-          chargeResult = { charged: true, pct: pct * 100, amount: amount * pct };
+          chargeResult = { charged: true, pct: Math.round((feeAmount / amount) * 100), amount: feeAmount };
         } catch (stripeErr) {
           console.error("Penalty charge error:", stripeErr.message);
           await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "failed" });
@@ -1152,26 +1177,27 @@ exports.cancelBooking = async (req, res) => {
     // ── Ancien flux : montant total déjà capturé → remboursement ────────────
     } else if (canceledBooking.payment?.status === "paid" && canceledBooking.payment?.stripePaymentIntentId) {
       const piId = canceledBooking.payment.stripePaymentIntentId;
-      const pct  = penaltyPct(policyRule, hrs); // % retenu par l'établissement
-      const refundPct = 1 - pct;
+      const pct  = penaltyPct(policyRule, hrs); // % retenu par l'établissement (avant override service)
+      const keptAmount = resolveFeeAmount(serviceDoc, amount, amount * pct);
+      const refundAmount = Math.max(0, amount - keptAmount);
 
       try {
-        if (refundPct >= 1) {
+        if (keptAmount <= 0) {
           await stripe.refunds.create({ payment_intent: piId, reason: "requested_by_customer", reverse_transfer: true });
           await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "refunded" });
           chargeResult = { refunded: true, pct: 100, amount };
-        } else if (refundPct > 0 && amount > 0) {
-          const refundCents = toCents(amount * refundPct);
+        } else if (refundAmount > 0) {
+          const refundCents = toCents(refundAmount);
           if (refundCents >= 50) {
             await stripe.refunds.create({ payment_intent: piId, amount: refundCents, reason: "requested_by_customer", reverse_transfer: true });
             await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "partial" });
-            chargeResult = { refunded: true, pct: Math.round(refundPct * 100), amount: amount * refundPct, kept: amount * pct };
+            chargeResult = { refunded: true, pct: Math.round((refundAmount / amount) * 100), amount: refundAmount, kept: keptAmount };
           } else {
             await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "refunded" });
             chargeResult = { refunded: true, pct: 100, amount };
           }
         }
-        // refundPct === 0 (pénalité 100%) : rien à rembourser, l'établissement garde tout
+        // keptAmount >= amount (pénalité 100%) : rien à rembourser, l'établissement garde tout
       } catch (stripeErr) {
         console.error("Refund error:", stripeErr.message);
       }
@@ -1187,6 +1213,55 @@ exports.cancelBooking = async (req, res) => {
     } catch (gcalErr) {
       console.error("Google Calendar sync error (public cancel):", gcalErr.message);
     }
+  }
+
+  // ── Emails de confirmation d'annulation (client + admin) ─────────────────
+  // Couvre les deux points d'entrée : lien d'annulation reçu par email ET
+  // bouton "Annuler" depuis l'espace client — les deux passent par cette
+  // même route /cancel-booking/:userId.
+  try {
+    const formattedCancelDate = new Date(canceledBooking.date).toLocaleDateString("fr-FR", {
+      weekday: "long", day: "2-digit", month: "long", year: "numeric",
+    });
+    const clientDisplay = [canceledBooking.name, canceledBooking.surname].filter(Boolean).join(" ") || canceledBooking.email;
+
+    if (canceledBooking.email) {
+      const clientHtml = pug.renderFile(
+        path.join(__dirname, "../views/templates/emails/booking-canceled-client.pug"),
+        {
+          name: canceledBooking.name,
+          surname: canceledBooking.surname,
+          formattedDate: formattedCancelDate,
+          startHour: canceledBooking.startTime,
+          endHour: canceledBooking.endTime,
+          serviceName: canceledBooking.serviceName || "",
+          chargeResult,
+        },
+      );
+      await sendEmail(canceledBooking.email, "Votre rendez-vous a été annulé — BranShee", clientHtml);
+    }
+
+    if (coach && coach.notifications?.cancellation !== false) {
+      const adminEmail = coach.emailPro || coach.email;
+      if (adminEmail) {
+        const adminHtml = pug.renderFile(
+          path.join(__dirname, "../views/templates/emails/admin-booking-canceled.pug"),
+          {
+            name: canceledBooking.name,
+            surname: canceledBooking.surname,
+            email: canceledBooking.email,
+            formattedDate: formattedCancelDate,
+            startHour: canceledBooking.startTime,
+            endHour: canceledBooking.endTime,
+            serviceName: canceledBooking.serviceName || "",
+            chargeResult,
+          },
+        );
+        await sendEmail(adminEmail, `❌ Annulation — ${clientDisplay}`, adminHtml);
+      }
+    }
+  } catch (emailErr) {
+    console.error("Cancellation email error:", emailErr.message);
   }
 
   res.render("client/cancel-confirmation.pug", {

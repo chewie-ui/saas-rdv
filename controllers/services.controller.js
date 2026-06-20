@@ -3,6 +3,19 @@ const User = require("../db/models/user.model");
 const { getLimit } = require("../utils/planLimits");
 const { nextAvailableColor } = require("../utils/serviceColors");
 
+// ── Frais d'annulation/no-show personnalisés (par service) ────────────────────
+function sanitizeCancellationFee(raw) {
+  if (!raw || typeof raw !== "object") return undefined;
+  const enabled = !!raw.enabled;
+  const type = raw.type === "amount" ? "amount" : "percent";
+  let value = raw.value !== undefined && raw.value !== "" ? Number(raw.value) : null;
+  if (value !== null && !Number.isFinite(value)) value = null;
+  if (value !== null) {
+    value = type === "percent" ? Math.max(0, Math.min(100, value)) : Math.max(0, value);
+  }
+  return { enabled: enabled && value !== null, type, value };
+}
+
 // ── Page admin ────────────────────────────────────────────────────────────────
 exports.servicesPage = async (req, res) => {
   const services = await Service.find({ company: res.locals.currentCompany._id })
@@ -56,7 +69,7 @@ exports.createService = async (req, res) => {
       return res.status(403).json({ error: "plan_limit", message: `Limite de ${maxServices} services atteinte.` });
     }
 
-    const { name, description, price, duration, category, type, capacity, color } = req.body;
+    const { name, description, price, duration, category, type, capacity, color, cancellationFee } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ error: "Le nom du service est requis." });
     }
@@ -88,6 +101,7 @@ exports.createService = async (req, res) => {
       type: isGroup ? "group" : "individual",
       capacity: cap,
       color: resolvedColor,
+      cancellationFee: sanitizeCancellationFee(cancellationFee),
     });
     res.json({ success: true, service });
   } catch (err) {
@@ -100,7 +114,7 @@ exports.createService = async (req, res) => {
 exports.updateService = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, duration, category, type, capacity, color } = req.body;
+    const { name, description, price, duration, category, type, capacity, color, cancellationFee } = req.body;
     const update = {};
     if (name !== undefined) update.name = name.trim();
     if (description !== undefined) update.description = description.trim();
@@ -123,6 +137,9 @@ exports.updateService = async (req, res) => {
       update.capacity = isGroup ? Math.max(1, Math.min(500, Number(capacity) || 1)) : null;
     } else if (capacity !== undefined) {
       update.capacity = Math.max(1, Math.min(500, Number(capacity) || 1));
+    }
+    if (cancellationFee !== undefined) {
+      update.cancellationFee = sanitizeCancellationFee(cancellationFee);
     }
 
     const service = await Service.findOneAndUpdate(

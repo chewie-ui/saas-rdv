@@ -19,6 +19,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const svcColorPicker     = document.getElementById("svcColorPicker");
   const svcCapacityField   = document.getElementById("svcCapacityField");
   const svcTypeOptions     = document.getElementById("svcTypeOptions");
+  const serviceModalFeeEnabled = document.getElementById("serviceModalFeeEnabled");
+  const svcFeeFields       = document.getElementById("svcFeeFields");
+  const svcFeeTypeOptions  = document.getElementById("svcFeeTypeOptions");
+  const serviceModalFeeValue = document.getElementById("serviceModalFeeValue");
   const newCategorySection = document.getElementById("newCategorySection");
   const newCategoryName    = document.getElementById("newCategoryName");
   const newCategoryIcon    = document.getElementById("newCategoryIconInput");
@@ -195,6 +199,39 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // ── Frais d'annulation/no-show personnalisés ─────────────────────────────
+  function setFeeType(type) {
+    if (!svcFeeTypeOptions) return;
+    svcFeeTypeOptions.querySelectorAll(".svc-type-option").forEach((b) => {
+      b.classList.toggle("is-active", b.dataset.feeType === type);
+    });
+  }
+
+  function getFeeType() {
+    if (!svcFeeTypeOptions) return "percent";
+    const active = svcFeeTypeOptions.querySelector(".svc-type-option.is-active");
+    return active ? active.dataset.feeType : "percent";
+  }
+
+  function setFeeEnabled(enabled) {
+    if (serviceModalFeeEnabled) serviceModalFeeEnabled.checked = enabled;
+    if (svcFeeFields) svcFeeFields.style.display = enabled ? "" : "none";
+  }
+
+  if (svcFeeTypeOptions) {
+    svcFeeTypeOptions.addEventListener("click", (e) => {
+      const btn = e.target.closest(".svc-type-option");
+      if (!btn) return;
+      setFeeType(btn.dataset.feeType);
+    });
+  }
+
+  if (serviceModalFeeEnabled) {
+    serviceModalFeeEnabled.addEventListener("change", () => {
+      if (svcFeeFields) svcFeeFields.style.display = serviceModalFeeEnabled.checked ? "" : "none";
+    });
+  }
+
   const empModal           = document.getElementById("empModal");
   const empModalOverlay    = document.getElementById("empModalOverlay");
   const closeEmpModal      = document.getElementById("closeEmpModal");
@@ -261,6 +298,9 @@ document.addEventListener("DOMContentLoaded", () => {
     serviceModalDuration.value = "30";
     if (serviceModalCapacity) serviceModalCapacity.value = "";
     setServiceType("individual");
+    setFeeEnabled(false);
+    setFeeType("percent");
+    if (serviceModalFeeValue) serviceModalFeeValue.value = "";
     _editingServiceId = null;
     const defaultColor = nextAvailableColor();
     setServiceColor(defaultColor);
@@ -340,6 +380,11 @@ document.addEventListener("DOMContentLoaded", () => {
       type: svcType,
       capacity: svcType === "group" ? (serviceModalCapacity ? serviceModalCapacity.value : 1) : null,
       color: getServiceColor(),
+      cancellationFee: {
+        enabled: serviceModalFeeEnabled ? serviceModalFeeEnabled.checked : false,
+        type: getFeeType(),
+        value: serviceModalFeeValue ? serviceModalFeeValue.value : "",
+      },
     };
 
     const url    = id ? `/api/services/${id}` : "/api/services";
@@ -380,6 +425,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const svcType = card.dataset.type === "group" ? "group" : "individual";
       setServiceType(svcType);
       if (serviceModalCapacity) serviceModalCapacity.value = card.dataset.capacity || "";
+      setFeeEnabled(card.dataset.feeEnabled === "1");
+      setFeeType(card.dataset.feeType === "amount" ? "amount" : "percent");
+      if (serviceModalFeeValue) serviceModalFeeValue.value = card.dataset.feeValue || "";
       _editingServiceId = id;
       const ownColor = card.dataset.color || nextAvailableColor();
       setServiceColor(ownColor);
