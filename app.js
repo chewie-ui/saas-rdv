@@ -216,6 +216,10 @@ app.use(require("./middlewares/injectClientUser"));
 // sidebar.pug — aucune liste à maintenir quand un nouveau lien est ajouté.
 app.use(require("./middlewares/navVisibility"));
 
+// Compteur de vues du site (total + visiteurs uniques), affiché dans le
+// superadmin. Cookie longue durée, fire-and-forget, ne bloque jamais la requête.
+app.use(require("./middlewares/trackPageView"));
+
 const fs = require("fs");
 
 app.use((req, res, next) => {

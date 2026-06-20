@@ -358,12 +358,15 @@ setInterval(updateTimeline, 60000);
     positionDayColumns();
     const rowH = currentRowHeightPx();
     const pxPerMin = rowH / gridStep;
-    const gap = Math.min(4, rowH * 0.08);
+    // Inset haut ET bas (pas juste en bas) pour que le RDV ne touche jamais
+    // la ligne de grille du dessus — sinon ça colle visuellement à la case.
+    const inset = Math.min(3, rowH * 0.06);
     section.querySelectorAll("[data-start-minutes]").forEach((el) => {
       const startMin = Number(el.dataset.startMinutes) || 0;
       const slotMin = Number(el.dataset.slotMinutes) || gridStep;
-      const top = Math.round((startMin - minHourMinutes) * pxPerMin);
-      const h = Math.max(Math.round(slotMin * pxPerMin) - gap, Math.min(20, rowH - 2));
+      const top = Math.round((startMin - minHourMinutes) * pxPerMin) + inset;
+      const rawH = Math.round(slotMin * pxPerMin);
+      const h = Math.max(rawH - inset * 2, Math.min(20, rowH - 2));
       el.style.top = `${top}px`;
       el.style.height = `${h}px`;
     });

@@ -462,3 +462,274 @@ svg {
   height: 1px;
   background: var(--border-light, #e5e7eb);
 }
+
+/* ── Widget de chat support flottant ─────────────────────────────────── */
+.support-widget {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.support-widget__btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent, #1e7a4e);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.support-widget__btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+.support-widget.is-open .support-widget__btn {
+  background: var(--ink, #1e2025);
+}
+/* Les icônes héritent d'une règle globale `svg { fill: var(--grey-primary) }`
+   qui les rendait grises/noires malgré fill="currentColor" — on force le
+   blanc explicitement pour tous les boutons du widget. */
+.support-widget__btn svg,
+.support-widget__close svg,
+.support-widget__send svg {
+  fill: #fff;
+}
+.support-widget__badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+}
+
+.support-widget__panel {
+  display: none;
+  flex-direction: column;
+  width: 340px;
+  max-height: 480px;
+  height: 480px;
+  background: var(--surface-card, #fff);
+  border-radius: var(--radius-xl, 18px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+}
+.support-widget.is-open .support-widget__panel {
+  display: flex;
+  animation: supportWidgetIn 0.18s ease;
+}
+@keyframes supportWidgetIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.support-widget__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 18px;
+  background: var(--accent, #1e7a4e);
+  color: #fff;
+  flex-shrink: 0;
+}
+.support-widget__header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.support-widget__header-text strong {
+  font-size: 14.5px;
+  font-weight: 700;
+}
+.support-widget__header-text span {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.85);
+}
+.support-widget__close {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.support-widget__close:hover { background: rgba(255, 255, 255, 0.28); }
+
+.support-widget__messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--surface, #f5f4f1);
+}
+.support-chat__loading,
+.support-chat__empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 24px 0;
+  margin: auto;
+}
+.support-chat__msg {
+  max-width: 80%;
+  padding: 9px 13px;
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.support-chat__msg--user {
+  align-self: flex-end;
+  background: var(--accent, #1e7a4e);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.support-chat__msg--admin {
+  align-self: flex-start;
+  background: var(--surface-card, #fff);
+  border: 1px solid var(--border-light);
+  color: var(--ink);
+  border-bottom-left-radius: 4px;
+}
+.support-chat__msg-time {
+  display: block;
+  margin-top: 4px;
+  font-size: 10.5px;
+  opacity: 0.65;
+}
+.support-chat__hint {
+  align-self: flex-start;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 2px 4px;
+}
+
+.support-chat__closed {
+  align-self: center;
+  width: 100%;
+  text-align: center;
+  background: var(--surface-card, #fff);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.support-chat__closed p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+.support-chat__stars {
+  display: flex;
+  gap: 4px;
+}
+.support-chat__star {
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--border-medium, #c8c5be);
+  cursor: pointer;
+  padding: 2px;
+  transition: color 0.15s, transform 0.1s;
+}
+.support-chat__star:hover { transform: scale(1.15); }
+.support-chat__star.is-active { color: #f5b400; }
+.support-chat__rate-thanks {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.support-chat__restart {
+  background: var(--accent-soft, #e8f5ee);
+  color: var(--accent, #1e7a4e);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.support-chat__restart:hover { background: var(--accent); color: #fff; }
+
+.support-widget__form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border-light);
+  background: var(--surface-card, #fff);
+  flex-shrink: 0;
+}
+.support-widget__input {
+  flex: 1;
+  resize: none;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--ink);
+  background: var(--surface, #f5f4f1);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 9px 13px;
+  outline: none;
+  transition: border-color 0.15s;
+  min-height: 36px;
+  max-height: 90px;
+  box-sizing: border-box;
+}
+.support-widget__input:focus { border-color: var(--accent-border); }
+.support-widget__send {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent, #1e7a4e);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.support-widget__send:hover { opacity: 0.88; }
+.support-widget__send:disabled { opacity: 0.45; cursor: default; }
+
+@media (max-width: 600px) {
+  .support-widget {
+    right: 16px;
+    bottom: 16px;
+  }
+  .support-widget__btn { width: 50px; height: 50px; }
+  .support-widget__panel {
+    width: calc(100vw - 32px);
+    max-width: 360px;
+    height: min(480px, calc(100vh - 140px));
+  }
+}

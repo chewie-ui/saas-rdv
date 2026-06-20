@@ -1,6 +1,6 @@
 //- Shared superadmin navigation bar
 //- Expects: saPage (string) — active page key
-//- Keys: 'users' | 'logs' | 'promo' | 'links' | 'boost' | 'referrals' | 'features'
+//- Keys: 'users' | 'logs' | 'promo' | 'links' | 'boost' | 'referrals' | 'features' | 'chat' | 'support'
 nav.sa-topbar
     .sa-topbar__brand
         .sa-topbar__mark SA
@@ -13,5 +13,31 @@ nav.sa-topbar
         a.sa-topbar__link(href="/superadmin/boost" class=saPage === 'boost' ? 'active' : '') ⭐ Boost
         a.sa-topbar__link(href="/superadmin/referrals" class=saPage === 'referrals' ? 'active' : '') 🎁 Parrainage
         a.sa-topbar__link(href="/superadmin/features" class=saPage === 'features' ? 'active' : '') 🚧 Pages
+        a.sa-topbar__link(href="/superadmin/support-chat" class=saPage === 'chat' ? 'active' : '')
+            span 💬 Chat
+            span.sa-chat-badge#saChatBadge(style="display:none")
         a.sa-topbar__link(href="/superadmin/support-editor" class=saPage === 'support' ? 'active' : '') 📝 Support
     a.sa-topbar__logout(href="/superadmin/logout") Déconnexion
+
+script(src="/socket.io/socket.io.js")
+script.
+    (function() {
+        var badge = document.getElementById('saChatBadge');
+        function refreshBadge() {
+            if (!badge) return;
+            fetch('/superadmin/support-chat-unread-total').then(function(r) { return r.json(); }).then(function(d) {
+                var count = d.unread || 0;
+                if (count > 0) { badge.textContent = count > 99 ? '99+' : count; badge.style.display = ''; }
+                else { badge.style.display = 'none'; }
+            }).catch(function() {});
+        }
+        refreshBadge();
+        // Connexion socket partagée par toutes les pages superadmin
+        // (window.__saSocket) — rejoint explicitement la room "superadmin".
+        try {
+            var socket = io();
+            window.__saSocket = socket;
+            socket.on('connect', function() { socket.emit('support:joinAdmin'); });
+            socket.on('support:newMessage', refreshBadge);
+        } catch (e) {}
+    })();

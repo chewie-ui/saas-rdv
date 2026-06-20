@@ -219,10 +219,16 @@ const userSchema = schema(
       ref: "User",
       default: null,
     },
+    // Empêche de compter un même filleul plusieurs fois dans totalPaying
+    // (ex: désabonnement puis réabonnement ne doit pas re-déclencher le bonus).
+    referralPaidCounted: {
+      type: Boolean,
+      default: false,
+    },
     referral: {
       totalInvited:  { type: Number, default: 0 }, // nb de filleuls inscrits
-      totalPaying:   { type: Number, default: 0 }, // nb de filleuls payants
-      creditMonths:  { type: Number, default: 0 }, // mois gratuits gagnés (non encore utilisés)
+      totalPaying:   { type: Number, default: 0 }, // nb de filleuls devenus payants (1ère fois)
+      creditMonths:  { type: Number, default: 0 }, // mois gratuits déjà réclamés (déduits du calcul du solde disponible)
     },
 
     // ── Notifications email ───────────────────────────────────────────────────

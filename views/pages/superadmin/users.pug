@@ -325,6 +325,12 @@ html(lang="fr")
             .stat-card
                 .stat-card__value= totalBusiness
                 .stat-card__label Business
+            .stat-card
+                .stat-card__value= (totalViews || 0).toLocaleString('fr-FR')
+                .stat-card__label Vues totales
+            .stat-card
+                .stat-card__value= (uniqueViews || 0).toLocaleString('fr-FR')
+                .stat-card__label Vues uniques
 
         .search-bar
             form(method="GET" action="/superadmin")

@@ -117,6 +117,10 @@ router.post("/forms/save", isVerified, adminController.saveForm);
 router.get("/customize-calendar", isAuth, injectCompany, adminController.customizeCalendarPage);
 
 router.get("/support", isVerified, adminController.supportPage);
+router.get("/support/chat", isAuth, adminController.getSupportChat);
+router.get("/support/chat/unread-count", isAuth, adminController.getSupportChatUnreadCount);
+router.post("/support/chat", isAuth, adminController.sendSupportChatMessage);
+router.post("/support/chat/rate", isAuth, adminController.rateSupportChat);
 router.get("/parrainage", isVerified, adminController.parrainage);
 router.post("/parrainage/claim", isVerified, adminController.parrainageClaim);
 

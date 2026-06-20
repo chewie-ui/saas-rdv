@@ -1,77 +1,155 @@
-.parrainage-page { max-width: 780px; }
+/* ============================================================
+   Page Parrainage — utilise le pattern .info-card (informations.css)
+   pour rester cohérent avec le reste de l'admin (fond gris de page,
+   sections en cartes blanches), et les classes .sm-btn pour tous
+   les boutons.
+   ============================================================ */
 
-.parrainage-page__header { margin-bottom: 32px; }
-.parrainage-page__header h2 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
-.parrainage-page__header p { font-size: 14px; color: var(--muted); margin-top: 6px; }
+/* ── Comment ça marche ───────────────────────────────────────────── */
+.parrainage-how {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.parrainage-how__step {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+}
+.parrainage-how__step__num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.parrainage-how__step__text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
 
-.parrainage-section { margin-bottom: 28px; }
-.parrainage-section__title {
+/* ── Lien / code / QR ────────────────────────────────────────────── */
+.parrainage-share {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.parrainage-share__cols {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.parrainage-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.parrainage-field__label {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--muted);
-  margin-bottom: 12px;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
 }
-
-.parrainage-card {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
-  padding: 20px 22px;
-}
-
-/* Referral link copy box */
-.parrainage-link-box {
+.parrainage-field__row {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--subtle);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 8px 8px 8px 14px;
+  min-height: 44px;
+  box-sizing: border-box;
 }
-.parrainage-link-box__url {
+.parrainage-field__value {
   flex: 1;
-  font-size: 13px;
-  color: var(--ink-2);
-  word-break: break-all;
   min-width: 0;
-  font-family: var(--mono);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.03em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.parrainage-link-box__copy {
+.parrainage-field__value--link {
+  font-family: var(--font-primary);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.parrainage-field__row .sm-btn {
   flex-shrink: 0;
-  background: var(--accent);
-  color: var(--accent-fg);
-  border: none;
-  border-radius: 8px;
+  height: 30px;
+  padding: 0 12px;
   font-size: 12px;
-  font-weight: 600;
-  padding: 7px 14px;
-  cursor: pointer;
-  transition: opacity .15s;
 }
-.parrainage-link-box__copy:hover { opacity: .85; }
-.parrainage-link-box__copy.copied { background: var(--success); }
+.parrainage-field__row .sm-btn.is-copied {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
 
-/* Stats row */
+.parrainage-qr {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.parrainage-qr__img {
+  width: 140px;
+  height: 140px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: #fff;
+}
+
+/* ── Statistiques ────────────────────────────────────────────────── */
 .parrainage-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
-  margin-bottom: 0;
 }
 .parrainage-stat {
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
   background: var(--surface);
   padding: 16px 18px;
   text-align: center;
 }
-.parrainage-stat__value { font-size: 26px; font-weight: 800; color: var(--ink); letter-spacing: -.03em; }
-.parrainage-stat__label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.parrainage-stat--accent {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+}
+.parrainage-stat__value {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+}
+.parrainage-stat--accent .parrainage-stat__value { color: var(--accent); }
+.parrainage-stat__label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
 
-/* Filleuls table */
+/* ── Table filleuls ──────────────────────────────────────────────── */
 .parrainage-table {
   width: 100%;
   border-collapse: collapse;
@@ -80,17 +158,17 @@
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .07em;
-  color: var(--muted);
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
   padding: 0 0 10px;
   text-align: left;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-light);
 }
 .parrainage-table tbody td {
   font-size: 13px;
-  color: var(--ink-2);
+  color: var(--text-secondary);
   padding: 11px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-light);
   vertical-align: middle;
 }
 .parrainage-table tbody tr:last-child td { border-bottom: none; }
@@ -99,79 +177,49 @@
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .05em;
-  padding: 2px 7px;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
   border-radius: 6px;
 }
 .parrainage-badge--paying {
-  color: var(--success);
-  background: oklch(0.62 0.13 155 / .1);
-  border: 1px solid oklch(0.62 0.13 155 / .2);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
 }
 .parrainage-badge--free {
-  color: var(--muted);
-  background: var(--subtle);
-  border: 1px solid var(--border);
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border-light);
 }
 
-/* Claim reward */
+.parrainage-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ── Réclamer ─────────────────────────────────────────────────────── */
 .parrainage-claim {
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
+  align-items: center;
+  gap: 16px;
   flex-wrap: wrap;
 }
 .parrainage-claim__info {
   flex: 1;
   min-width: 200px;
 }
-.parrainage-claim__info p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.parrainage-claim__info p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
 .parrainage-claim__info strong { color: var(--ink); }
 
-.parrainage-claim__btn {
-  background: var(--accent);
-  color: var(--accent-fg);
-  border: none;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 10px 20px;
-  cursor: pointer;
-  transition: opacity .15s;
-  white-space: nowrap;
+@media (max-width: 600px) {
+  .parrainage-stats { grid-template-columns: 1fr; }
+  .parrainage-share { flex-direction: column; }
+  .parrainage-qr { align-self: stretch; }
+  .parrainage-qr__img { width: 100%; max-width: 200px; align-self: center; }
 }
-.parrainage-claim__btn:hover { opacity: .85; }
-.parrainage-claim__btn:disabled { opacity: .4; cursor: default; }
-
-.parrainage-empty {
-  text-align: center;
-  padding: 32px 16px;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.parrainage-how {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-}
-.parrainage-how__step {
-  background: var(--subtle);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 18px;
-}
-.parrainage-how__step__num {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: var(--accent-fg);
-  font-size: 12px;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 10px;
-}
-.parrainage-how__step__text { font-size: 13px; color: var(--ink-2); line-height: 1.5; }

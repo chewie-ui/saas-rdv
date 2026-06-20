@@ -69,13 +69,30 @@ function needsPaymentStep() {
   return cardRequiredByPolicy();
 }
 
+// Utilisé pour décider si l'étape "Paiement" doit apparaître dans le stepper
+// — basé sur TOUS les services (pas seulement celui sélectionné), pour que
+// le nombre d'étapes affichées reste IDENTIQUE du tout premier rendu (avant
+// même de choisir un service) jusqu'à la fin du parcours. Sans ça, l'étape
+// "Paiement" apparaissait/disparaissait selon le service choisi, donnant
+// l'impression d'un stepper buggé (5 étapes puis soudain 6).
+// Si le service réellement choisi n'a pas besoin de paiement, le flux
+// continue de sauter cette étape à l'usage (cf. needsPaymentStep() dans
+// goToNextStep) — elle reste juste visible dans la liste, jamais "active".
+function anyServiceNeedsPayment() {
+  const hasPayableService = SERVICES.some(
+    (s) => s.price !== null && s.price !== undefined && Number(s.price) > 0
+  );
+  if (!hasPayableService) return false;
+  return PREPAYMENT.enabled || cardRequiredByPolicy();
+}
+
 function buildSteps() {
   const steps = [];
   if (SERVICES.length > 0)  steps.push({ id: "service",  label: "Service" });
   if (EMPLOYEES.length > 0 || hasAnyServiceEmployees()) steps.push({ id: "employee", label: "Avec" });
   steps.push({ id: "time",    label: "Créneau" });
   steps.push({ id: "details", label: "Détails" });
-  if (needsPaymentStep())     steps.push({ id: "payment",  label: "Paiement" });
+  if (anyServiceNeedsPayment()) steps.push({ id: "payment",  label: "Paiement" });
   steps.push({ id: "confirm", label: "Confirmer" });
   return steps;
 }
@@ -107,7 +124,11 @@ function recomputeSteps() {
   if (showEmployeeStep)     steps.push({ id: "employee", label: "Avec" });
   steps.push({ id: "time",    label: "Créneau" });
   steps.push({ id: "details", label: "Détails" });
-  if (needsPaymentStep())   steps.push({ id: "payment",  label: "Paiement" });
+  // Même critère "any service" que buildSteps() — le nombre d'étapes ne doit
+  // jamais changer selon le service réellement sélectionné (cf. commentaire
+  // sur anyServiceNeedsPayment). Le saut effectif de l'étape "Paiement" pour
+  // un service gratuit reste géré par needsPaymentStep() dans goToNextStep.
+  if (anyServiceNeedsPayment()) steps.push({ id: "payment",  label: "Paiement" });
   steps.push({ id: "confirm", label: "Confirmer" });
   STEPS = steps;
 }

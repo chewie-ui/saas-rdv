@@ -52,6 +52,13 @@ router.patch("/superadmin/features/:key", isSuperAdmin, ctrl.setFeatureStatus);
 router.patch("/superadmin/hidden-features/:key", isSuperAdmin, ctrl.toggleHiddenFeature);
 router.patch("/superadmin/nav/:key/toggle", isSuperAdmin, ctrl.toggleNavLink);
 
+// Support chat (founder ↔ utilisateurs)
+router.get("/superadmin/support-chat", isSuperAdmin, ctrl.supportChatPage);
+router.get("/superadmin/support-chat-unread-total", isSuperAdmin, ctrl.getSupportChatUnreadTotal);
+router.get("/superadmin/support-chat/:userId", isSuperAdmin, ctrl.getSupportChatThread);
+router.post("/superadmin/support-chat/:userId/reply", isSuperAdmin, ctrl.replySupportChat);
+router.delete("/superadmin/support-chat/:userId", isSuperAdmin, ctrl.deleteSupportChat);
+
 // Support content editor
 router.get("/superadmin/support-editor", isSuperAdmin, ctrl.supportEditorPage);
 router.post("/superadmin/support-editor/sections", isSuperAdmin, ctrl.addSection);

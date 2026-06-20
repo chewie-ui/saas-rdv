@@ -42,11 +42,21 @@ exports.usersPage = async (req, res) => {
     const regex = { $regex: search, $options: "i" };
     query = { $or: [{ fullName: regex }, { email: regex }] };
   }
-  const users = await User.find(query)
-    .select("fullName email isPremium manualPremium manualPremiumExpiry subscription createdAt isDisabled")
-    .sort("-createdAt")
-    .lean();
-  res.render("superadmin/users", { users, search: search || "" });
+  const PageView = require("../db/models/pageView.model");
+  const [users, totalViews, uniqueVisitors] = await Promise.all([
+    User.find(query)
+      .select("fullName email isPremium manualPremium manualPremiumExpiry subscription createdAt isDisabled")
+      .sort("-createdAt")
+      .lean(),
+    PageView.countDocuments({}),
+    PageView.distinct("visitorId"),
+  ]);
+  res.render("superadmin/users", {
+    users,
+    search: search || "",
+    totalViews,
+    uniqueViews: uniqueVisitors.length,
+  });
 };
 
 exports.toggleManualPremium = async (req, res) => {
@@ -644,6 +654,93 @@ async function getOrCreateSupportContent() {
   if (!doc) doc = await SupportContent.create({ sections: [] });
   return doc;
 }
+
+// ── Chat support (founder) ──────────────────────────────────────────────────
+exports.supportChatPage = async (req, res) => {
+  try {
+    const SupportChat = require("../db/models/supportChat.model");
+    const chats = await SupportChat.find({}).sort({ lastMessageAt: -1 }).lean();
+    res.render("superadmin/support-chat", { saPage: "chat", chats });
+  } catch (err) {
+    console.error("supportChatPage error:", err);
+    res.status(500).send("Erreur serveur.");
+  }
+};
+
+exports.getSupportChatThread = async (req, res) => {
+  try {
+    const SupportChat = require("../db/models/supportChat.model");
+    const chat = await SupportChat.findOneAndUpdate(
+      { user: req.params.userId },
+      { unreadByAdmin: 0 },
+      { new: true }
+    ).lean();
+    if (!chat) return res.status(404).json({ error: "Conversation introuvable." });
+    res.json({ success: true, chat });
+  } catch (err) {
+    console.error("getSupportChatThread error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.replySupportChat = async (req, res) => {
+  try {
+    const text = (req.body.text || "").trim();
+    if (!text) return res.status(400).json({ error: "Message vide." });
+    const SupportChat = require("../db/models/supportChat.model");
+    const chat = await SupportChat.findOneAndUpdate(
+      { user: req.params.userId },
+      {
+        $push: { messages: { sender: "admin", text } },
+        $inc: { unreadByUser: 1 },
+        $set: { lastMessageAt: new Date() },
+      },
+      { new: true }
+    );
+    if (!chat) return res.status(404).json({ error: "Conversation introuvable." });
+    const io = req.app.get("io");
+    if (io) {
+      const lastMsg = chat.messages[chat.messages.length - 1];
+      io.to(`user:${req.params.userId}`).emit("support:newMessage", {
+        sender: "admin",
+        text: lastMsg.text,
+        createdAt: lastMsg.createdAt,
+      });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error("replySupportChat error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// Fermer une conversation = la supprimer (pas d'archivage — on ne garde pas
+// l'historique pour économiser la base). Si l'utilisateur réécrit ensuite,
+// un nouveau fil est recréé automatiquement (cf. getSupportChat côté user).
+exports.deleteSupportChat = async (req, res) => {
+  try {
+    const SupportChat = require("../db/models/supportChat.model");
+    await SupportChat.deleteOne({ user: req.params.userId });
+    const io = req.app.get("io");
+    if (io) io.to(`user:${req.params.userId}`).emit("support:chatClosed");
+    res.json({ success: true });
+  } catch (err) {
+    console.error("deleteSupportChat error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.getSupportChatUnreadTotal = async (req, res) => {
+  try {
+    const SupportChat = require("../db/models/supportChat.model");
+    const result = await SupportChat.aggregate([
+      { $group: { _id: null, total: { $sum: "$unreadByAdmin" } } },
+    ]);
+    res.json({ success: true, unread: result[0]?.total || 0 });
+  } catch (err) {
+    res.json({ success: true, unread: 0 });
+  }
+};
 
 exports.supportEditorPage = async (req, res) => {
   try {

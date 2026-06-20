@@ -136,8 +136,222 @@ html(lang="fr")
                                 strong Outlook
                                 span Outlook.com · Microsoft 365
 
+        //- ── Widget de chat support flottant (disponible partout) ───────────
+        .support-widget#supportWidget
+            button.support-widget__btn#supportWidgetBtn(type="button" title="Discuter avec nous")
+                svg.support-widget__icon--chat(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor")
+                    path(d="M240-400h480v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Z")
+                svg.support-widget__icon--close(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor" style="display:none")
+                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                span.sb-badge.support-widget__badge#supportWidgetBadge(style="display:none")
+
+            .support-widget__panel#supportWidgetPanel
+                .support-widget__header
+                    .support-widget__header-text
+                        strong Support BranShee
+                        span On vous répond le plus vite possible
+                    button.support-widget__close#supportWidgetClose(type="button" title="Fermer")
+                        svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                            path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                .support-widget__messages#supportWidgetMessages
+                    .support-chat__loading Chargement…
+                .support-widget__form
+                    textarea.support-widget__input#supportWidgetInput(rows="1" placeholder="Écrivez votre message…")
+                    button.support-widget__send#supportWidgetSend(type="button" title="Envoyer")
+                        svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                            path(d="M120-160v-640l760 320-760 320Zm80-120 474-200-474-200v140l240 60-240 60v140Z")
+
         script(src="/js/layouts/admin.js" type="module")
         script(src="/js/theme.js")
+        script(src="/socket.io/socket.io.js")
+        script.
+            window.__userId = !{user ? JSON.stringify(String(user._id)) : 'null'};
+
+            // ── Badge "non lu" (uniquement sur le bouton du widget flottant) ─────
+            (function() {
+                var widgetBadge = document.getElementById('supportWidgetBadge');
+                function render(count) {
+                    if (!widgetBadge) return;
+                    if (count > 0) { widgetBadge.textContent = count > 99 ? '99+' : count; widgetBadge.style.display = ''; }
+                    else { widgetBadge.style.display = 'none'; }
+                }
+                window.__refreshSupportBadge = function() {
+                    fetch('/support/chat/unread-count').then(function(r) { return r.json(); }).then(function(d) { render(d.unread || 0); }).catch(function() {});
+                };
+                window.__refreshSupportBadge();
+            })();
+
+            // ── Connexion socket unique pour toute la page (badge + widget) ──────
+            try {
+                var socket = io();
+                window.__supportSocket = socket;
+                socket.on('connect', function() {
+                    if (window.__userId) socket.emit('support:joinUser', window.__userId);
+                });
+                socket.on('support:newMessage', function() { window.__refreshSupportBadge(); });
+                document.dispatchEvent(new Event('support:socketReady'));
+            } catch (e) {}
+
+            // ── Widget de chat flottant ──────────────────────────────────────────
+            (function() {
+                var widget   = document.getElementById('supportWidget');
+                var btn      = document.getElementById('supportWidgetBtn');
+                var closeBtn = document.getElementById('supportWidgetClose');
+                var panel    = document.getElementById('supportWidgetPanel');
+                var box      = document.getElementById('supportWidgetMessages');
+                var input    = document.getElementById('supportWidgetInput');
+                var sendBtn  = document.getElementById('supportWidgetSend');
+                if (!widget || !btn || !box || !input || !sendBtn) return;
+
+                var iconChat  = widget.querySelector('.support-widget__icon--chat');
+                var iconClose = widget.querySelector('.support-widget__icon--close');
+                var loaded = false;
+                var chatClosed = false;
+
+                function escapeHtml(s) { return s.replace(/</g, '&lt;'); }
+                function fmtTime(iso) {
+                    var d = new Date(iso);
+                    return d.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'}) + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+                }
+                function msgHtml(m) {
+                    return '<div class="support-chat__msg support-chat__msg--' + m.sender + '">' +
+                        escapeHtml(m.text) +
+                        '<span class="support-chat__msg-time">' + fmtTime(m.createdAt) + '</span></div>';
+                }
+                function renderMessages(messages) {
+                    if (!messages.length) {
+                        box.innerHTML = '<div class="support-chat__empty">Aucun message pour l\'instant — posez votre question !</div>';
+                        return;
+                    }
+                    box.innerHTML = messages.map(msgHtml).join('');
+                    box.scrollTop = box.scrollHeight;
+                }
+                function appendMessage(m) {
+                    var empty = box.querySelector('.support-chat__empty');
+                    if (empty) empty.remove();
+                    box.insertAdjacentHTML('beforeend', msgHtml(m));
+                    box.scrollTop = box.scrollHeight;
+                }
+                function showHint() {
+                    if (box.querySelector('.support-chat__hint')) return;
+                    box.insertAdjacentHTML('beforeend', '<div class="support-chat__hint">💬 Message envoyé — on vous répond le plus vite possible !</div>');
+                    box.scrollTop = box.scrollHeight;
+                }
+
+                function showClosedNotice() {
+                    chatClosed = true;
+                    input.disabled = true;
+                    sendBtn.disabled = true;
+                    if (box.querySelector('.support-chat__closed')) return;
+                    box.insertAdjacentHTML('beforeend',
+                        '<div class="support-chat__closed">' +
+                        '<p>La conversation a été fermée par l\'administrateur.</p>' +
+                        '<div class="support-chat__stars" data-rated="0">' +
+                        [1,2,3,4,5].map(function(n) { return '<button type="button" class="support-chat__star" data-star="' + n + '">★</button>'; }).join('') +
+                        '</div>' +
+                        '<div class="support-chat__rate-thanks" style="display:none">Merci pour votre retour !</div>' +
+                        '<button type="button" class="support-chat__restart">🔄 Démarrer une nouvelle conversation</button>' +
+                        '</div>'
+                    );
+                    box.scrollTop = box.scrollHeight;
+                }
+
+                function restartChat() {
+                    chatClosed = false;
+                    input.disabled = false;
+                    sendBtn.disabled = false;
+                    loaded = false;
+                    box.innerHTML = '<div class="support-chat__loading">Chargement…</div>';
+                    loadMessages();
+                }
+
+                // Délégation : étoiles de notation + relance (créés dynamiquement)
+                box.addEventListener('click', function(e) {
+                    var star = e.target.closest('.support-chat__star');
+                    if (star) {
+                        var starsEl = star.parentElement;
+                        var value = Number(star.dataset.star);
+                        starsEl.querySelectorAll('.support-chat__star').forEach(function(s) {
+                            s.classList.toggle('is-active', Number(s.dataset.star) <= value);
+                        });
+                        starsEl.dataset.rated = '1';
+                        fetch('/support/chat/rate', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rating: value })
+                        }).catch(function() {});
+                        var thanks = starsEl.parentElement.querySelector('.support-chat__rate-thanks');
+                        if (thanks) thanks.style.display = '';
+                        return;
+                    }
+                    var restartBtn = e.target.closest('.support-chat__restart');
+                    if (restartBtn) restartChat();
+                });
+
+                function loadMessages() {
+                    fetch('/support/chat').then(function(r) { return r.json(); }).then(function(d) {
+                        if (d.success) renderMessages(d.messages);
+                        loaded = true;
+                    }).catch(function() {
+                        box.innerHTML = '<div class="support-chat__empty">Erreur de chargement.</div>';
+                    });
+                }
+
+                function openWidget() {
+                    widget.classList.add('is-open');
+                    if (iconChat) iconChat.style.display = 'none';
+                    if (iconClose) iconClose.style.display = '';
+                    // On lit la conversation en l'ouvrant → plus besoin du badge.
+                    var widgetBadge = document.getElementById('supportWidgetBadge');
+                    if (widgetBadge) widgetBadge.style.display = 'none';
+                    if (!loaded) loadMessages();
+                }
+                function closeWidget() {
+                    widget.classList.remove('is-open');
+                    if (iconChat) iconChat.style.display = '';
+                    if (iconClose) iconClose.style.display = 'none';
+                }
+                window.openSupportChat = openWidget;
+
+                btn.addEventListener('click', function() {
+                    widget.classList.contains('is-open') ? closeWidget() : openWidget();
+                });
+                if (closeBtn) closeBtn.addEventListener('click', closeWidget);
+
+                function send() {
+                    if (chatClosed) return;
+                    var text = input.value.trim();
+                    if (!text) return;
+                    sendBtn.disabled = true;
+                    fetch('/support/chat', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text })
+                    }).then(function(r) { return r.json(); }).then(function(d) {
+                        sendBtn.disabled = false;
+                        if (d.success) {
+                            input.value = '';
+                            appendMessage({ sender: 'user', text: text, createdAt: new Date().toISOString() });
+                            showHint();
+                        }
+                    }).catch(function() { sendBtn.disabled = false; });
+                }
+                sendBtn.addEventListener('click', send);
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+                });
+
+                function bindRealtime(socket) {
+                    socket.on('support:newMessage', function(payload) {
+                        if (!widget.classList.contains('is-open')) return;
+                        var hint = box.querySelector('.support-chat__hint');
+                        if (hint) hint.remove();
+                        if (payload && payload.text) appendMessage(payload);
+                        else loadMessages();
+                    });
+                    socket.on('support:chatClosed', function() {
+                        showClosedNotice();
+                    });
+                }
+                if (window.__supportSocket) bindRealtime(window.__supportSocket);
+                else document.addEventListener('support:socketReady', function() { bindRealtime(window.__supportSocket); }, { once: true });
+            })();
         
         block scripts
 

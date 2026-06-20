@@ -1617,6 +1617,22 @@ exports.paymentVerification = async (req, res) => {
     const { enforcePlanLimits } = require("./account.controller");
     enforcePlanLimits(userId, planName).catch(() => {});
 
+    // ── Parrainage : compter ce filleul comme "payant" pour son parrain ────────
+    // Seulement la 1ère fois qu'il devient payant (un désabonnement/réabonnement
+    // ne doit pas recompter — referralPaidCounted le garantit).
+    try {
+      const filleul = await User.findOneAndUpdate(
+        { _id: userId, referredBy: { $ne: null }, referralPaidCounted: { $ne: true } },
+        { referralPaidCounted: true },
+      );
+      if (filleul && filleul.referredBy) {
+        await User.findByIdAndUpdate(filleul.referredBy, { $inc: { "referral.totalPaying": 1 } });
+        console.log(`✅ [paymentVerification] Parrainage : ${filleul.referredBy} +1 filleul payant`);
+      }
+    } catch (refErr) {
+      console.error("[paymentVerification] Erreur MAJ parrainage:", refErr.message);
+    }
+
     // ── Incrémenter l'utilisation du code promo maintenant que le paiement
     //    est confirmé (évite de compter les abandons sur la page Stripe).
     const promoCodeId = session.metadata?.promoCodeId;
@@ -2021,25 +2037,116 @@ exports.supportPage = async (req, res) => {
   });
 };
 
+// ── Chat support (utilisateur) ──────────────────────────────────────────────
+// Un seul fil de discussion par utilisateur avec le founder (superadmin).
+exports.getSupportChat = async (req, res) => {
+  try {
+    const SupportChat = require("../db/models/supportChat.model");
+    let chat = await SupportChat.findOneAndUpdate(
+      { user: req.user._id },
+      {
+        $setOnInsert: {
+          user: req.user._id,
+          businessName: req.user.businessName || req.user.fullName || "",
+          email: req.user.email || "",
+        },
+      },
+      { upsert: true, new: true }
+    );
+    if (chat.unreadByUser > 0) {
+      chat.unreadByUser = 0;
+      await chat.save();
+    }
+    return res.json({ success: true, messages: chat.messages });
+  } catch (err) {
+    console.error("getSupportChat error:", err);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.getSupportChatUnreadCount = async (req, res) => {
+  try {
+    const SupportChat = require("../db/models/supportChat.model");
+    const chat = await SupportChat.findOne({ user: req.user._id }).select("unreadByUser").lean();
+    return res.json({ success: true, unread: chat ? chat.unreadByUser : 0 });
+  } catch (err) {
+    return res.json({ success: true, unread: 0 });
+  }
+};
+
+exports.sendSupportChatMessage = async (req, res) => {
+  try {
+    const text = (req.body.text || "").trim();
+    if (!text) return res.status(400).json({ error: "Message vide." });
+    const SupportChat = require("../db/models/supportChat.model");
+    const chat = await SupportChat.findOneAndUpdate(
+      { user: req.user._id },
+      {
+        $push: { messages: { sender: "user", text } },
+        $inc: { unreadByAdmin: 1 },
+        $set: {
+          lastMessageAt: new Date(),
+          businessName: req.user.businessName || req.user.fullName || "",
+          email: req.user.email || "",
+        },
+      },
+      { upsert: true, new: true }
+    );
+    const io = req.app.get("io");
+    if (io) {
+      const lastMsg = chat.messages[chat.messages.length - 1];
+      io.to("superadmin").emit("support:newMessage", {
+        userId: String(req.user._id),
+        businessName: chat.businessName,
+        email: chat.email,
+        text: lastMsg.text,
+        sender: "user",
+        createdAt: lastMsg.createdAt,
+      });
+    }
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("sendSupportChatMessage error:", err);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// Note de satisfaction laissée après la fermeture d'une conversation par l'admin.
+exports.rateSupportChat = async (req, res) => {
+  try {
+    const rating = Number(req.body.rating);
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: "Note invalide." });
+    }
+    const SupportRating = require("../db/models/supportRating.model");
+    await SupportRating.create({ user: req.user._id, rating });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("rateSupportChat error:", err);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
 exports.parrainage = async (req, res) => {
   const filleuls = await User.find({ referredBy: req.user._id })
     .select("fullName email isPremium subscription createdAt")
     .lean();
   const referralCode = req.user.referralCode || "";
   const referral = req.user.referral || { totalInvited: 0, totalPaying: 0, creditMonths: 0 };
+  const referralLink = `https://www.branshee.com/register?ref=${referralCode}`;
   return res.render("admin/parrainage", {
     pageName: "Parrainage",
     title: "Parrainage — BranShee",
     referralCode,
     referral,
     filleuls,
-    referralLink: `https://branshee.com/register?ref=${referralCode}`,
+    referralLink,
+    qrUrl: `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(referralLink)}`,
   });
 };
 
 exports.parrainageClaim = async (req, res) => {
   try {
-    const { rewardType } = req.body;
     const user = req.user;
     const referral = user.referral || {};
     const totalPaying = referral.totalPaying || 0;
@@ -2048,18 +2155,50 @@ exports.parrainageClaim = async (req, res) => {
     if (claimable <= 0) {
       return res.status(400).json({ error: "Aucun crédit à réclamer pour le moment." });
     }
-    const nodemailer = require("nodemailer");
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-    });
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: "quentin.rennies@gmail.com",
-      subject: `[Parrainage] Demande de récompense — ${user.fullName}`,
-      text: `Utilisateur : ${user.fullName} (${user.email})\nID : ${user._id}\nFilleuls payants : ${totalPaying}\nCrédits déjà utilisés : ${creditMonths}\nMois à accorder : ${claimable}\nType souhaité : ${rewardType || "mois offerts"}\n`,
-    });
-    return res.json({ success: true, claimable });
+
+    const subId = user.subscription?.stripeSubscriptionId;
+    let applied = false;
+
+    // ── Application réelle : 100% de réduction sur les `claimable` prochaines
+    // factures de l'abonnement Stripe actif du parrain. ─────────────────────
+    if (subId) {
+      try {
+        const coupon = await stripe.coupons.create({
+          percent_off: 100,
+          duration: claimable > 1 ? "repeating" : "once",
+          duration_in_months: claimable > 1 ? claimable : undefined,
+          name: `Parrainage — ${claimable} mois offert${claimable > 1 ? "s" : ""}`,
+        });
+        await stripe.subscriptions.update(subId, { coupon: coupon.id });
+        applied = true;
+      } catch (stripeErr) {
+        console.error("[parrainageClaim] Stripe coupon error:", stripeErr.message);
+      }
+    }
+
+    // Crédit marqué comme réclamé dans tous les cas — si Stripe a échoué
+    // (pas d'abonnement actif, erreur API), le mois reste dû et sera régularisé
+    // manuellement (email envoyé ci-dessous), mais on ne fait jamais perdre le
+    // crédit ni recompter une 2e fois la même tranche.
+    await User.findByIdAndUpdate(user._id, { $inc: { "referral.creditMonths": claimable } });
+
+    try {
+      const nodemailer = require("nodemailer");
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+      });
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: "quentin.rennies@gmail.com",
+        subject: `[Parrainage] Récompense réclamée — ${user.fullName}`,
+        text: `Utilisateur : ${user.fullName} (${user.email})\nID : ${user._id}\nFilleuls payants : ${totalPaying}\nMois accordés : ${claimable}\nAppliqué automatiquement sur Stripe : ${applied ? "OUI" : "NON — à régulariser manuellement (pas d'abonnement actif trouvé)"}\n`,
+      });
+    } catch (mailErr) {
+      console.error("[parrainageClaim] Email notification error:", mailErr.message);
+    }
+
+    return res.json({ success: true, claimable, applied });
   } catch (err) {
     console.error("parrainageClaim error:", err);
     return res.status(500).json({ error: "Erreur serveur." });
