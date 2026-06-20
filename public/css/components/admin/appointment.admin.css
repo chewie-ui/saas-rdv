@@ -540,42 +540,31 @@
   background-color: var(--grey-soft);
 }
 
-/* Single pill — absolutely positioned */
-.calendar-section .grid-section .cell.day > .appt-pill[data-id] {
+/* ── Couche des RDV : une colonne par jour, par-dessus la grille de fond ──
+   Positionnement 100% en JS (top/left/width/height mesurés sur les vraies
+   cellules, comme la ligne "maintenant") — AUCUN placement CSS Grid explicite
+   ici : ça perturbait l'auto-placement des cellules de fond et cassait toute
+   la grille. .day-events-col est un enfant absolument positionné de
+   .grid-section, donc complètement hors du flux Grid. */
+.day-events-col {
   position: absolute;
-  top: 2px;
-  left: 4px;
-  right: 4px;
-  width: auto;
-  z-index: 20;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  display: none; /* affiché par JS une fois positionné, pour éviter le flash */
 }
 
-/* Multi-wrap — absolutely positioned, height driven by tallest card */
-.calendar-section .grid-section .cell.day > .appt-multi-wrap {
+.day-events-col .appt-pill,
+.day-events-col .appt-pill--summary {
   position: absolute;
-  top: 2px;
-  left: 4px;
-  right: 4px;
-  width: auto;
+  pointer-events: auto;
   z-index: 20;
-  align-items: stretch;
+  box-sizing: border-box;
 }
 
 /* ════════════════════════════════════════════════════════
    Appointment pill — Google Calendar style
    ════════════════════════════════════════════════════════ */
-
-/* Absolute positioning inside day cell */
-.calendar-section .grid-section .cell.day > .appt-pill,
-.calendar-section .grid-section .cell.day > .appt-multi-wrap,
-.calendar-section .grid-section .cell.day > .appt-pill--summary {
-  position: absolute;
-  top: 2px;
-  left: 4px;
-  right: 4px;
-  width: auto;
-  z-index: 20;
-}
 
 .appt-pill {
   display: flex;

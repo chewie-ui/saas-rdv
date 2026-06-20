@@ -306,17 +306,19 @@ setInterval(updateTimeline, 60000);
 })();
 
 // ---- Densité du calendrier (Confort / Compact) ---------------------------
-// Les blocs de RDV sont positionnés en hauteur via `data-slot-minutes` +
-// la hauteur réelle (rendue) d'une ligne — jamais une valeur figée — afin que
-// TOUT s'adapte automatiquement : durée de service, pas de grille (gridStep,
-// qui se resserre si un RDV démarre à une minute non multiple de 30), mode
-// Confort/Compact, et redimensionnement de la fenêtre.
+// Les RDV sont positionnés en continu (top + height) à partir de leur heure
+// de début exacte (`data-start-minutes`) et de leur durée (`data-slot-minutes`),
+// rapportées à la hauteur réelle (rendue) d'une ligne de 30 min — jamais une
+// valeur figée — afin que TOUT s'adapte automatiquement : durée de service,
+// RDV à une minute "impaire" (9h20 reste positionné dans sa case 9h–9h30 sans
+// jamais resserrer toute la grille), mode Confort/Compact, redimensionnement.
 (function initCalendarDensity() {
   const section = document.getElementById("calendarSection");
   if (!section) return;
 
   const STORAGE_KEY = "branshee_calendar_density";
   const gridStep = Number(section.dataset.gridStep) || 30;
+  const minHourMinutes = (Number(section.dataset.minHour) || 0) * 60;
   const toggle = document.getElementById("calDensityToggle");
 
   function currentRowHeightPx() {
@@ -326,12 +328,43 @@ setInterval(updateTimeline, 60000);
     return h > 0 ? h : 52;
   }
 
+  // Positionne chaque colonne "RDV" (une par jour) en mesurant la vraie
+  // cellule d'en-tête correspondante — pas de placement CSS Grid, qui
+  // perturbait l'auto-placement des cellules de fond.
+  function positionDayColumns() {
+    const gridSection = section.querySelector(".grid-section");
+    if (!gridSection) return;
+    const gridRect = gridSection.getBoundingClientRect();
+    const headerCell = section.querySelector(".cell.time-header, .cell.day-header");
+    const headerH = headerCell ? headerCell.getBoundingClientRect().height : 0;
+
+    section.querySelectorAll(".day-events-col").forEach((col) => {
+      const iso = col.dataset.iso;
+      const headerForDay = gridSection.querySelector(`.cell.day-header[data-iso="${iso}"]`);
+      if (!headerForDay || headerForDay.offsetParent === null) {
+        col.style.display = "none";
+        return;
+      }
+      const dayRect = headerForDay.getBoundingClientRect();
+      col.style.display = "block";
+      col.style.left = `${Math.round(dayRect.left - gridRect.left)}px`;
+      col.style.width = `${Math.round(dayRect.width)}px`;
+      col.style.top = `${Math.round(headerH)}px`;
+      col.style.height = `${Math.round(gridRect.height - headerH)}px`;
+    });
+  }
+
   function applyApptHeights() {
+    positionDayColumns();
     const rowH = currentRowHeightPx();
-    section.querySelectorAll("[data-slot-minutes]").forEach((el) => {
-      const minutes = Number(el.dataset.slotMinutes) || gridStep;
-      const gap = Math.min(4, rowH * 0.08);
-      const h = Math.max(Math.round((minutes / gridStep) * rowH) - gap, Math.min(20, rowH - 2));
+    const pxPerMin = rowH / gridStep;
+    const gap = Math.min(4, rowH * 0.08);
+    section.querySelectorAll("[data-start-minutes]").forEach((el) => {
+      const startMin = Number(el.dataset.startMinutes) || 0;
+      const slotMin = Number(el.dataset.slotMinutes) || gridStep;
+      const top = Math.round((startMin - minHourMinutes) * pxPerMin);
+      const h = Math.max(Math.round(slotMin * pxPerMin) - gap, Math.min(20, rowH - 2));
+      el.style.top = `${top}px`;
       el.style.height = `${h}px`;
     });
   }
@@ -355,13 +388,21 @@ setInterval(updateTimeline, 60000);
       const MIN_ROW_H = 22;
       const top = section.getBoundingClientRect().top;
       const available = Math.max(window.innerHeight - top - 24, 200);
-      const bodyHeight = Math.max(available - headerH, numRows * MIN_ROW_H);
+      const neededBody = numRows * MIN_ROW_H;
+      const fitsWithoutScroll = headerH + neededBody <= available;
+
+      // Si même à la hauteur minimale les heures ne rentrent pas (plage de
+      // disponibilité très large), on autorise un léger scroll interne plutôt
+      // que de couper silencieusement les heures en fin de journée.
+      const bodyHeight = fitsWithoutScroll ? Math.max(available - headerH, neededBody) : neededBody;
       const rowH = Math.max(Math.floor(bodyHeight / numRows), MIN_ROW_H);
 
       section.style.height = `${available}px`;
+      section.style.overflowY = fitsWithoutScroll ? "hidden" : "auto";
       section.style.setProperty("--cal-row-h", `${rowH}px`);
     } else {
       section.style.height = "";
+      section.style.overflowY = "";
       section.style.removeProperty("--cal-row-h");
     }
 

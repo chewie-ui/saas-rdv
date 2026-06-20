@@ -151,20 +151,21 @@ block content
                                     span.cal-month__count(style=(cc.color ? `background:${cc.color}` : ''))= cc.count
 
     //- ── Vue Semaine (masquée en mode mois) ─────────────────────────────────
-    .calendar-section#calendarSection(class=(view === 'month' ? 'u-hidden-month' : '') data-grid-step=gridStep)
+    .calendar-section#calendarSection(class=(view === 'month' ? 'u-hidden-month' : '') data-grid-step=gridStep data-min-hour=minHour)
         .grid-section
             //- Current time indicator
             #current-time-line.calendar-timeline(style="display:none")
                 .timeline-circle
             .cell.time-header GMT+1
             each weekday in weekDays
-                .cell.day-header(class=[weekday.isToday && "today", weekday.isFocused && "focused", weekday.isDayOff && "off-day"])
+                .cell.day-header(data-iso=weekday.isoDate class=[weekday.isToday && "today", weekday.isFocused && "focused", weekday.isDayOff && "off-day"])
                     .dh-inner
                         span.dh-name= weekday.label
                         span.dh-num= weekday.dayNumber
                     if weekday.isDayOff
                         span.dh-off Off
 
+            //- ── Grille de fond (purement visuelle, pas de RDV à l'intérieur) ──
             each hour in hours
                 - const isHalf = hour.split(':')[1] !== '00'
                 .cell.time(class=isHalf ? 'time--half' : '' data-time=hour)
@@ -172,52 +173,40 @@ block content
                         = hour
                 each day, dayIndex in weekDays
                     .cell.day(class=[day.isFocused && "focused", isHalf && "day--half", day.isDayOff && "off-day"])
-                        - var cellAppts = appointments.filter(a => a.isoDate === day.isoDate && a.startHour === hour)
-                        if cellAppts.length >= 2
-                            //- 2+ bookings: pills side-by-side (or summary if 4+)
-                            - var maxSlot = cellAppts.reduce(function(mx, a){ return Math.max(mx, a.slotTime || gridStep); }, 0)
-                            - var wrapH = Math.max(Math.round(maxSlot / gridStep * 52) - 4, 20)
-                            if cellAppts.length > 3
-                                //- 4+ → summary pill linking to day view
-                                a.appt-pill.appt-pill--summary(href=`/appointment?date=${day.isoDate}` style=`height:${wrapH}px` data-slot-minutes=maxSlot)
-                                    .appt-pill__avatars
-                                        each appt, i in cellAppts
-                                            if i < 3
-                                                img.appt-pill__photo(src=appt.employeePhoto alt="" title=appt.employeeName)
-                                        .appt-pill__extra +#{cellAppts.length - 3}
-                                    span.appt-pill__label= cellAppts.length + ' RDV · ' + hour
-                            else
-                                .appt-multi-wrap(style=`height:${wrapH}px` data-slot-minutes=maxSlot)
-                                    each appointment in cellAppts
-                                        if appointment.isExternal
-                                            .appt-pill.appt-pill--external(title="Indisponible — autre événement")
-                                                span.appt-pill__name Autre événement
-                                                span.appt-pill__time= appointment.startHour
-                                        else
-                                            - var canColor = appointment.serviceColor && appointment.status !== 'canceled' && appointment.status !== 'pending' && appointment.status !== 'no-show'
-                                            div.appt-pill(
-                                                role="button" tabindex="0"
-                                                class={ 'appt-pill--canceled': appointment.status === 'canceled' }
-                                                style=(canColor ? `background:${appointment.serviceColor}` : '')
-                                                data-id=String(appointment._id)
-                                                data-name=appointment.name
-                                                data-surname=(appointment.surname || '')
-                                                data-start=appointment.startHour
-                                                data-end=appointment.endHour
-                                                data-employee=(appointment.employeeName || '')
-                                                data-photo=(appointment.employeePhoto || '')
-                                                data-service=(appointment.serviceName || '')
-                                                data-color=(appointment.serviceColor || '')
-                                                data-status=(appointment.status || '')
-                                                data-date=appointment.isoDate
-                                            )
-                                                span.appt-pill__name= appointment.name
-                                                span.appt-pill__time= appointment.startHour
-                        else if cellAppts.length === 1
-                            - var appointment = cellAppts[0]
-                            - var apptH = Math.max(Math.round((appointment.slotTime || gridStep) / gridStep * 52) - 4, 20)
+
+            //- ── RDV positionnés en continu par-dessus la grille ────────────
+            //- Une colonne par jour, positionnée en JS (top/left/width/height
+            //- calculés à partir des cellules réelles — pas de placement CSS
+            //- Grid explicite, qui perturbait l'auto-placement des autres
+            //- cellules) — pour placer chaque RDV exactement à sa minute de
+            //- début/durée réelle sans jamais resserrer le pas de la grille.
+            each day, dayIndex in weekDays
+                .day-events-col(data-iso=day.isoDate)
+                    each box in (boxesByDay[day.isoDate] || [])
+                        if box.kind === 'summary'
+                            a.appt-pill.appt-pill--summary(
+                                href=`/appointment?date=${day.isoDate}`
+                                style="left:calc(0% + 3px);width:calc(100% - 6px)"
+                                data-start-minutes=box.startMin
+                                data-slot-minutes=(box.endMin - box.startMin)
+                            )
+                                .appt-pill__avatars
+                                    each appt, i in box.items
+                                        if i < 3
+                                            img.appt-pill__photo(src=appt.employeePhoto alt="" title=appt.employeeName)
+                                    .appt-pill__extra +#{box.items.length - 3}
+                                span.appt-pill__label= box.items.length + ' RDV'
+                        else
+                            - var appointment = box.appointment
+                            - var leftPct = (box.col / box.colCount) * 100
+                            - var widthPct = (1 / box.colCount) * 100
                             if appointment.isExternal
-                                .appt-pill.appt-pill--external(style=`height:${apptH}px` data-slot-minutes=(appointment.slotTime || gridStep) title="Indisponible — autre événement")
+                                .appt-pill.appt-pill--external(
+                                    style=`left:calc(${leftPct}% + 3px);width:calc(${widthPct}% - 6px)`
+                                    data-start-minutes=box.startMin
+                                    data-slot-minutes=(box.endMin - box.startMin)
+                                    title="Indisponible — autre événement"
+                                )
                                     span.appt-pill__name Autre événement
                                     span.appt-pill__time= appointment.startHour + '–' + appointment.endHour
                             else
@@ -225,8 +214,9 @@ block content
                                 div.appt-pill(
                                     role="button" tabindex="0"
                                     class={ 'appt-pill--canceled': appointment.status === 'canceled' }
-                                    style=`height:${apptH}px;` + (canColor ? `background:${appointment.serviceColor}` : '')
-                                    data-slot-minutes=(appointment.slotTime || gridStep)
+                                    style=`left:calc(${leftPct}% + 3px);width:calc(${widthPct}% - 6px);` + (canColor ? `background:${appointment.serviceColor}` : '')
+                                    data-start-minutes=box.startMin
+                                    data-slot-minutes=(box.endMin - box.startMin)
                                     data-id=String(appointment._id)
                                     data-name=appointment.name
                                     data-surname=(appointment.surname || '')

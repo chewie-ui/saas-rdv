@@ -105,6 +105,68 @@ function generateTimeSlots(startHour, endHour, slotTime) {
   return slots;
 }
 
+function timeStrToMinutes(t) {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
+/**
+ * Positionne les RDV d'une journée en continu (comme Google Calendar) plutôt
+ * que de les caler sur une grille dont le pas changerait selon les minutes de
+ * début (ex: un RDV à 9h20 ne doit JAMAIS resserrer toute la grille à 10 min —
+ * il doit juste s'afficher légèrement décalé dans la case 9h00–9h30).
+ * Repère les RDV qui se chevauchent dans le temps et leur assigne une colonne
+ * (côte à côte) ; au-delà de 3 RDV simultanés, regroupe en un seul résumé
+ * cliquable (comme avant) pour ne pas surcharger la vue.
+ */
+function buildDayBoxes(dayItems) {
+  const sorted = dayItems.slice().sort((a, b) => timeStrToMinutes(a.startHour) - timeStrToMinutes(b.startHour));
+  const clusters = [];
+  let cluster = [];
+  let clusterEnd = -Infinity;
+  sorted.forEach((ev) => {
+    const s = timeStrToMinutes(ev.startHour);
+    const e = s + (ev.slotTime || 30);
+    if (cluster.length && s >= clusterEnd) {
+      clusters.push(cluster);
+      cluster = [];
+      clusterEnd = -Infinity;
+    }
+    cluster.push(ev);
+    clusterEnd = Math.max(clusterEnd, e);
+  });
+  if (cluster.length) clusters.push(cluster);
+
+  const boxes = [];
+  clusters.forEach((cl) => {
+    if (cl.length > 3) {
+      const starts = cl.map((ev) => timeStrToMinutes(ev.startHour));
+      const ends   = cl.map((ev) => timeStrToMinutes(ev.startHour) + (ev.slotTime || 30));
+      boxes.push({
+        kind: "summary",
+        startMin: Math.min(...starts),
+        endMin: Math.max(...ends),
+        count: cl.length,
+        items: cl,
+      });
+      return;
+    }
+    const colEnds = [];
+    const startIndex = boxes.length;
+    cl.forEach((ev) => {
+      const s = timeStrToMinutes(ev.startHour);
+      const e = s + (ev.slotTime || 30);
+      let col = colEnds.findIndex((end) => end <= s);
+      if (col === -1) { col = colEnds.length; colEnds.push(e); }
+      else colEnds[col] = e;
+      boxes.push({ kind: "single", startMin: s, endMin: e, col, colCount: 0, appointment: ev });
+    });
+    const colCount = colEnds.length;
+    for (let i = startIndex; i < boxes.length; i++) boxes[i].colCount = colCount;
+  });
+  return boxes;
+}
+
 exports.appointment = async (req, res) => {
   const currentCompany = res.locals.currentCompany;
   if (!currentCompany) {
@@ -399,25 +461,25 @@ exports.appointment = async (req, res) => {
   const prevMonthIso = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth()+1).padStart(2,"0")}-01`;
   const nextMonthIso = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth()+1).padStart(2,"0")}-01`;
 
-  // Grille horaire : 30 min par défaut, mais on resserre le pas si des RDV
-  // démarrent sur des minutes non multiples de 30 (ex: services de 15 min
-  // qui débutent à :15 ou :45) afin qu'ils ne disparaissent jamais de la vue.
-  const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
-  let gridStep = 30;
-  formatted.forEach((a) => {
-    const m = parseInt(a.startHour.split(":")[1], 10);
-    if (!isNaN(m) && m !== 0) gridStep = gcd(gridStep, m);
+  // Grille horaire fixe à 30 min (2 lignes par heure) — un RDV qui démarre à
+  // une minute non multiple de 30 (ex: 9h20) ne resserre plus toute la grille :
+  // il s'affiche en continu, légèrement décalé dans sa case, via boxesByDay.
+  const gridStep = 30;
+  const boxesByDay = {};
+  weekDays.forEach((d) => {
+    boxesByDay[d.isoDate] = buildDayBoxes(formatted.filter((a) => a.isoDate === d.isoDate));
   });
-  if (gridStep === 0) gridStep = 30;
 
   res.render("admin/appointment", {
     pageName: "Appointment",
     title: res.locals.t.titles.calendar,
     slotTime,
     gridStep,
+    minHour,
     hours: generateTimeSlots(minHour, maxHour, gridStep),
     weekDays: weekDaysWithFill,
     appointments: formatted,
+    boxesByDay,
     weekLabel,
     dayLabel,
     focusedDayName,
