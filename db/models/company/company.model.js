@@ -121,6 +121,11 @@ const companySchema = schema(
     // l'admin, pour éviter de le renvoyer à chaque nouvelle réservation bloquée.
     limitReachedNotifiedMonth: { type: String, default: "" },
 
+    // Distinct du précédent : marque le mois où on a déjà prévenu l'admin
+    // qu'un CLIENT a essayé de réserver et s'est fait refuser (signal plus
+    // urgent — perte de revenu concrète, pas juste "vous êtes plein").
+    limitBlockedNotifiedMonth: { type: String, default: "" },
+
     // ── Regroupement des rendez-vous ──────────────────────────────────────────
     // Pour les indépendants qui démarrent avec peu de clients : évite qu'une
     // journée se retrouve "bloquée" par deux RDV isolés (ex: 9h et 18h) en

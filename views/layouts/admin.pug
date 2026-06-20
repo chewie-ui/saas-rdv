@@ -51,13 +51,34 @@ html(lang="fr")
                                     path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
                                 span= navCta.label
                 if monthlyLimitReached
-                    .global-limit-banner
-                        svg.global-limit-banner__icon(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
-                            path(d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z")
-                        .global-limit-banner__text
-                            strong Limite de #{monthlyBookingsLimit} rendez-vous atteinte ce mois-ci
-                            span Vos clients ne peuvent plus réserver de nouveaux créneaux jusqu'au mois prochain. Passez à un forfait supérieur pour débloquer les réservations illimitées.
-                        a.btn-upgrade-business.global-limit-banner__cta(href="/subscription") Voir les forfaits →
+                    .limit-toast#limitToast
+                        button.limit-toast__close#limitToastClose(type="button" title="Fermer")
+                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                        .limit-toast__icon
+                            svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                                path(d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z")
+                        .limit-toast__body
+                            strong Vous n'avez plus de crédit ce mois-ci
+                            span Limite de #{monthlyBookingsLimit} rendez-vous atteinte — vos clients ne peuvent plus réserver.
+                            a.limit-toast__cta(href="/subscription") Passer au Pro →
+                    script.
+                        (function() {
+                            var toast = document.getElementById('limitToast');
+                            var closeBtn = document.getElementById('limitToastClose');
+                            if (!toast || !closeBtn) return;
+                            // Reste visible sur TOUTES les pages tant qu'il n'est pas fermé —
+                            // une fois fermé, on s'en souvient pour le reste de la session de
+                            // navigation (réapparaît à la prochaine session si toujours plein).
+                            if (sessionStorage.getItem('bs_limit_toast_dismissed') === '1') {
+                                toast.style.display = 'none';
+                                return;
+                            }
+                            closeBtn.addEventListener('click', function() {
+                                toast.style.display = 'none';
+                                sessionStorage.setItem('bs_limit_toast_dismissed', '1');
+                            });
+                        })();
                 .main-wrapper
                     block content
         +dialog()

@@ -11,6 +11,40 @@ let CLIENT       = window.__clientUser || null; // { firstName, lastName, email,
 const PREPAYMENT = window.__prepayment || { enabled: false, required: false };
 const STRIPE_KEY = window.__stripeKey  || "";
 
+/* ── Popup "plus de créneaux ce mois-ci" (remplace l'alert() natif moche) ── */
+function showLimitReachedModal() {
+  const businessName = (window.__companyInfo && window.__companyInfo.businessName) || "ce professionnel";
+  let modal = document.getElementById("bkLimitModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "bkLimitModal";
+    modal.className = "bk-limit-modal";
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div class="bk-limit-modal__backdrop"></div>
+    <div class="bk-limit-modal__card">
+      <div class="bk-limit-modal__icon">
+        <svg xmlns="http://www.w3.org/2000/svg" height="28px" viewBox="0 -960 960 960" width="28px" fill="currentColor">
+          <path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm280 240q-17 0-28.5-11.5T440-480q0-17 11.5-28.5T480-520q17 0 28.5 11.5T520-480q0 17-11.5 28.5T480-440Z"/>
+        </svg>
+      </div>
+      <h3 class="bk-limit-modal__title">Complet pour ce mois-ci</h3>
+      <p class="bk-limit-modal__text">${businessName} a atteint sa limite de réservations en ligne pour ce mois. Les créneaux rouvrent automatiquement le mois prochain — vous pouvez aussi le/la contacter directement en attendant.</p>
+      <button type="button" class="bk-limit-modal__btn" id="bkLimitModalClose">J'ai compris</button>
+    </div>
+  `;
+  modal.classList.add("is-open");
+  document.body.style.overflow = "hidden";
+
+  function close() {
+    modal.classList.remove("is-open");
+    document.body.style.overflow = "";
+  }
+  modal.querySelector(".bk-limit-modal__backdrop").addEventListener("click", close);
+  modal.querySelector("#bkLimitModalClose").addEventListener("click", close);
+}
+
 /* ── Stripe instances (lazy) ─────────────────────────────────────────────── */
 let _stripe      = null;   // Stripe.js instance
 let _cardElement = null;   // CardElement mounted in the payment step
@@ -1947,7 +1981,7 @@ async function submitBooking() {
         STATE.date = null;
         STATE.time = null;
       } else if (data.error === "monthly_limit_reached") {
-        alert("Ce professionnel ne peut plus accepter de nouvelles réservations ce mois-ci. Revenez le mois prochain ou contactez-les directement.");
+        showLimitReachedModal();
         goToStep("service");
       } else {
         alert("Une erreur est survenue. Veuillez réessayer.");

@@ -1,0 +1,82 @@
+-
+  var _year = new Date().getFullYear()
+  var _hasOwnerName = !!(ownerName)
+
+div(style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;")
+  table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0;padding:0;background-color:#f0f4f8;")
+    tr
+      td(align="center" style="padding:40px 16px;")
+        table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;margin:0 auto;")
+
+          //- ── Logo ─────────────────────────────────────────────────────────
+          tr
+            td(align="center" style="padding:0 0 24px;")
+              a(href="https://www.branshee.com" style="display:inline-block;text-decoration:none;")
+                table(cellpadding="0" cellspacing="0" role="presentation" style="display:inline-table;")
+                  tr
+                    td(valign="middle" style="padding-right:8px;")
+                      span(style="display:block;width:32px;height:32px;background:#1a7a4a;border-radius:9px;font-size:16px;font-weight:800;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,sans-serif;text-align:center;line-height:32px;") B
+                    td(valign="middle")
+                      span(style="font-size:15px;font-weight:700;color:#1e2923;letter-spacing:-0.2px;") BranShee
+
+          //- ── Carte principale ─────────────────────────────────────────────
+          tr
+            td(style="background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);border:1px solid #e2e8f0;")
+
+              //- Header rouge (urgent — perte de client)
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%);padding:32px 40px;text-align:center;")
+                    table(cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto 16px;")
+                      tr
+                        td(style="width:56px;height:56px;background:rgba(255,255,255,0.18);border-radius:50%;text-align:center;vertical-align:middle;")
+                          span(style="font-size:24px;line-height:56px;") 🚫
+                    p(style="margin:0 0 6px;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;") Un client n'a pas pu réserver
+                    p(style="margin:0;font-size:14px;color:rgba(255,255,255,0.85);") Votre limite mensuelle est atteinte
+
+              //- Corps
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="padding:32px 40px 8px;")
+                    p(style="margin:0 0 16px;font-size:15px;color:#1e293b;line-height:1.6;")
+                      if _hasOwnerName
+                        | Bonjour #{ownerName},
+                      else
+                        | Bonjour,
+                    p(style="margin:0 0 20px;font-size:14.5px;color:#475569;line-height:1.65;")
+                      | Quelqu'un vient d'essayer de réserver un rendez-vous chez vous
+                      if companyName
+                        |
+                        strong= companyName
+                      |  mais n'a pas pu : vous avez atteint la limite de
+                      |
+                      strong= `${monthlyLimit} rendez-vous`
+                      |  incluse dans votre forfait actuel ce mois-ci.
+
+                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#fef2f2;border-radius:12px;border:1px solid #fecaca;margin-bottom:24px;")
+                      tr
+                        td(style="padding:18px 22px;")
+                          p(style="margin:0;font-size:14px;font-weight:700;color:#991b1b;") 💸 C'est un client potentiel perdu
+                          p(style="margin:6px 0 0;font-size:13.5px;color:#b91c1c;line-height:1.55;") Tant que vous resterez sur ce forfait, tous les nouveaux clients qui tentent de réserver verront ce même message jusqu'au mois prochain.
+
+                    p(style="margin:0 0 24px;font-size:14.5px;color:#475569;line-height:1.65;")
+                      | Passez à un forfait supérieur pour rouvrir immédiatement les réservations et ne plus perdre de clients.
+
+                    //- ── CTA bouton ──────────────────────────────────────────
+                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:32px;")
+                      tr
+                        td(align="center")
+                          a(
+                            href="https://www.branshee.com/subscription"
+                            style="display:inline-block;background:#1a7a4a;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:10px;letter-spacing:-0.2px;"
+                          ) Réactiver les réservations →
+
+          //- ── Footer ───────────────────────────────────────────────────────
+          tr
+            td(style="padding:24px 0 0;text-align:center;")
+              p(style="margin:0 0 6px;font-size:12px;color:#94a3b8;") Vous recevez cet email car vous gérez un établissement sur BranShee.
+              p(style="margin:0;font-size:12px;color:#94a3b8;")
+                a(href="https://www.branshee.com/subscription" style="color:#94a3b8;text-decoration:underline;") Gérer mon forfait
+                |  ·
+                a(href="https://www.branshee.com" style="color:#94a3b8;text-decoration:underline;") branshee.com
+              p(style="margin:8px 0 0;font-size:11px;color:#cbd5e1;") © #{_year} BranShee

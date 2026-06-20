@@ -110,12 +110,19 @@ exports.setPlan = async (req, res) => {
 exports.setTrialDuration = async (req, res) => {
   try {
     const { userId }   = req.params;
-    const { duration } = req.body; // "1d" | "7d" | "30d" | "90d" | "infinite"
+    const { duration, customDays } = req.body; // "1d" | "7d" | "30d" | "90d" | "custom" | "infinite"
 
     const daysMap = { "1d": 1, "7d": 7, "30d": 30, "90d": 90 };
     let expiry = null;
 
-    if (duration !== "infinite") {
+    if (duration === "custom") {
+      const days = Number(customDays);
+      if (!Number.isFinite(days) || days <= 0 || days > 3650) {
+        return res.status(400).json({ error: "Nombre de jours invalide (1 à 3650)." });
+      }
+      expiry = new Date();
+      expiry.setDate(expiry.getDate() + days);
+    } else if (duration !== "infinite") {
       const days = daysMap[duration];
       if (!days) return res.status(400).json({ error: "Durée invalide." });
       expiry = new Date();

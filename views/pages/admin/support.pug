@@ -21,17 +21,8 @@ block content
             var _chapters = (sections && sections.length) ? sections.map(function(s){ return s.title; }) : ['Comment ça marche ?', 'Questions fréquentes']
             _chapters.push('Nous contacter')
         .support-chapters
-            button.support-chapter-pill(type="button" onclick="window.openSupportChat && window.openSupportChat()") 💬 Discuter avec nous
             each chapter, i in _chapters
                 a.support-chapter-pill(href=`#chapter-${i}`)= chapter
-
-        //- ── Chat support — le widget flottant (bas droite) gère la conversation ──
-        .info-card
-            .info-card__header
-                h3 💬 Discuter avec nous
-                p.info-card__desc Une question ? Écrivez-nous, on vous répond le plus vite possible.
-            button.sm-btn.sm-btn--primary(type="button" onclick="window.openSupportChat && window.openSupportChat()")
-                span Ouvrir le chat →
 
         if sections && sections.length
             each section, i in sections

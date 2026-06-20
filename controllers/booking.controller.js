@@ -390,6 +390,35 @@ exports.createBooking = async (req, res) => {
           status: { $ne: "canceled" },
         });
         if (monthlyCount >= monthlyLimit) {
+          // ── Alerte admin : un client vient de se faire refuser ─────────────
+          // Signal distinct de "limite atteinte" (déjà envoyé plus haut quand
+          // LEUR propre réservation a fait passer le cap) — ici c'est "vous
+          // venez concrètement de perdre un client". Throttlé à 1x/mois pour
+          // ne pas spammer si plusieurs clients se font refuser le même mois.
+          (async () => {
+            try {
+              const now = new Date();
+              const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+              if (response.limitBlockedNotifiedMonth === monthKey) return;
+              await Company.findByIdAndUpdate(company, { limitBlockedNotifiedMonth: monthKey });
+              const owner = await User.findById(response.owner).lean();
+              const adminEmail = owner?.emailPro || owner?.email;
+              if (adminEmail) {
+                const html = pug.renderFile(
+                  path.join(__dirname, "../views/templates/emails/blocked-booking-attempt.pug"),
+                  {
+                    ownerName:   owner.fullName || "",
+                    companyName: owner.businessName || owner.fullName || "",
+                    monthlyLimit,
+                  },
+                );
+                await sendEmail(adminEmail, "🚫 Un client n'a pas pu réserver — limite atteinte | BranShee", html);
+              }
+            } catch (blockedNotifErr) {
+              console.error("Blocked booking notification email error:", blockedNotifErr.message);
+            }
+          })();
+
           return res.json({
             success: false,
             error: "monthly_limit_reached",

@@ -3242,3 +3242,70 @@ body.bk-embed #bkCart .bk-cart {
 }
 
 .bk-signup-nudge__skip:hover { color: rgba(255,255,255,0.7); }
+
+/* ── Popup "plus de créneaux ce mois-ci" ─────────────────────────────────── */
+.bk-limit-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+}
+.bk-limit-modal.is-open { display: flex; }
+.bk-limit-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 25, 0.55);
+  backdrop-filter: blur(3px);
+  animation: bkLimitFadeIn 0.18s ease;
+}
+.bk-limit-modal__card {
+  position: relative;
+  z-index: 1;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.22);
+  padding: 32px 28px 24px;
+  max-width: 380px;
+  width: calc(100% - 32px);
+  text-align: center;
+  animation: bkLimitSlideIn 0.22s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes bkLimitFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bkLimitSlideIn { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.bk-limit-modal__icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: var(--bk-subtle, #fff7ed);
+  color: #ea580c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bk-limit-modal__title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--bk-ink, #111);
+  margin: 0 0 8px;
+}
+.bk-limit-modal__text {
+  font-size: 13.5px;
+  color: var(--bk-ink-2, #4a5260);
+  line-height: 1.55;
+  margin: 0 0 22px;
+}
+.bk-limit-modal__btn {
+  background: var(--bk-accent, #1e7a4e);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 11px 28px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.bk-limit-modal__btn:hover { opacity: 0.88; }

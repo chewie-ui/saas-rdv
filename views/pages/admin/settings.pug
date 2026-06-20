@@ -586,6 +586,7 @@ block content
                                     = ppMe ? 'https://paypal.me/' + ppMe + '/{montant}' : 'https://paypal.me/votre-nom/{montant}'
 
             p#prepayFeedback(style="display:none;font-size:13px;color:var(--accent);margin-top:14px") ✓ Paramètres sauvegardés
+            p#prepayError(style="display:none;font-size:13px;color:#dc2626;margin-top:14px")
 
         //- ── Politique d'annulation ──────────────────────────────────────────
         .info-card
@@ -979,6 +980,7 @@ block scripts
                 var reqRow         = document.getElementById('prepayRequiredRow');
                 var stripeExpand   = document.getElementById('stripeExpandBody');
                 var feedback       = document.getElementById('prepayFeedback');
+                var errorEl        = document.getElementById('prepayError');
                 var pmCash         = document.getElementById('pmCash');
                 var pmCardOnSite   = document.getElementById('pmCardOnSite');
                 var pmBankTransfer = document.getElementById('pmBankTransfer');
@@ -1044,6 +1046,7 @@ block scripts
 
                 async function savePrepay() {
                     if (feedback) feedback.style.display = 'none';
+                    if (errorEl) errorEl.style.display = 'none';
                     try {
                         var r = await fetch('/settings/prepayment', {
                             method: 'PATCH',
@@ -1066,6 +1069,19 @@ block scripts
                         if (d.success && feedback) {
                             feedback.style.display = 'block';
                             setTimeout(function () { feedback.style.display = 'none'; }, 2500);
+                        } else if (!d.success) {
+                            // Le paiement en ligne a été refusé (Stripe pas connecté) —
+                            // on décoche pour ne jamais laisser un état "activé" qui ne
+                            // marche pas réellement côté réservation client.
+                            if (enabledCb && d.error === 'stripe_not_connected') {
+                                enabledCb.checked = false;
+                                // On laisse la section Stripe dépliée : c'est là que vit
+                                // le bouton « Continuer la configuration » dont l'admin a besoin.
+                            }
+                            if (errorEl) {
+                                errorEl.textContent = '⚠ ' + (d.message || d.error || 'Erreur lors de la sauvegarde.');
+                                errorEl.style.display = 'block';
+                            }
                         }
                     } catch(e) {}
                 }

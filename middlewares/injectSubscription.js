@@ -77,23 +77,10 @@ module.exports = async (req, res, next) => {
       }
     }
 
-    // ── Bypass local : si NODE_ENV=development et isPremium=true SANS vrai abonnement Stripe
-    // Si un vrai Subscription doc existe → on utilise le flux normal (vraies dates)
-    if (process.env.NODE_ENV !== "production" && req.user.isPremium === true) {
-      const hasSub = await Subscription.exists({ user: req.user._id, status: "active" });
-      if (!hasSub) {
-        res.locals.isPro        = true;
-        res.locals.currentPlan  = req.user.subscription && req.user.subscription.plan || "pro";
-        res.locals.daysLeft     = 999;
-        res.locals.hoursLeft    = null;
-        res.locals.isExpired    = false;
-        res.locals.isExpiring   = false;
-        res.locals.subscription = null;
-        res.locals.autoRenew    = false;
-        return next();
-      }
-      // Un vrai abonnement existe → on continue vers le flux normal ci-dessous
-    }
+    // (Ancien bypass dev qui figeait daysLeft à 999 en permanence — supprimé.
+    // Le flux unifié ci-dessous (recherche Subscription, sinon fallback sur
+    // manualPremiumExpiry) calcule maintenant un vrai compte à rebours dans
+    // TOUS les cas, dev comme prod — plus besoin de cas spécial.)
 
     const subscription = await Subscription.findOne({
       user: req.user._id,
@@ -156,35 +143,76 @@ module.exports = async (req, res, next) => {
          req.user.subscription?.stripeSubscriptionId || req.user.subscription?.stripeCustomerId);
 
       if (hasPremiumUser) {
-        // Recréer le doc Subscription manquant pour les prochaines requêtes
+        // Source de vérité pour le compte à rebours : manualPremiumExpiry si
+        // défini (octroi manuel via superadmin), sinon accès considéré illimité
+        // tant qu'aucune date n'a été fixée — on n'invente jamais un "30" fixe.
+        const manualExpiry = req.user.manualPremiumExpiry ? new Date(req.user.manualPremiumExpiry) : null;
+        const endDate = manualExpiry || (() => {
+          const d = new Date();
+          d.setMonth(d.getMonth() + 1);
+          return d;
+        })();
+
+        // Recréer/mettre à jour le doc Subscription manquant pour les prochaines
+        // requêtes. upsert (pas create()) : un `create()` plantait silencieusement
+        // sur l'index unique sparse de stripeSubscriptionId dès qu'un 2e utilisateur
+        // sans Stripe (stripeSubscriptionId explicitement `null`) passait par ici —
+        // Mongo traite `null` explicite comme une valeur indexée, pas comme "absent",
+        // donc l'index sparse ne protégeait pas du duplicata. Résultat : le doc
+        // n'était JAMAIS recréé après le premier utilisateur manuel, et ce fallback
+        // (avec son daysLeft figé) tournait en boucle pour tout le monde après lui.
+        const stripeSubId = req.user.subscription?.stripeSubscriptionId || undefined;
         try {
-          const expDate = new Date();
-          expDate.setMonth(expDate.getMonth() + 1);
-          await Subscription.create({
-            user:     req.user._id,
-            plan:     embeddedPlan,
-            status:   "active",
-            startDate: new Date(),
-            endDate:   expDate,
-            stripeCustomerId:    req.user.subscription?.stripeCustomerId    || null,
-            stripeSubscriptionId: req.user.subscription?.stripeSubscriptionId || null,
-            amount:   0,
-            currency: "eur",
-            autoRenew: true,
-          });
-          console.log(`[injectSubscription] Doc Subscription recréé pour user ${req.user._id} (plan: ${embeddedPlan})`);
+          await Subscription.findOneAndUpdate(
+            { user: req.user._id, status: "active" },
+            {
+              user:     req.user._id,
+              plan:     embeddedPlan,
+              status:   "active",
+              startDate: new Date(),
+              endDate,
+              stripeCustomerId:    req.user.subscription?.stripeCustomerId || null,
+              ...(stripeSubId ? { stripeSubscriptionId: stripeSubId } : {}),
+              amount:   0,
+              currency: "eur",
+              autoRenew: true,
+            },
+            { upsert: true, setDefaultsOnInsert: true }
+          );
         } catch (createErr) {
-          // Ignore si déjà existant (unique index)
+          console.error(`[injectSubscription] Erreur recréation Subscription pour ${req.user._id}:`, createErr.message);
         }
 
         res.locals.isPro        = true;
         res.locals.currentPlan  = embeddedPlan;
         res.locals.subscription = null;
         res.locals.autoRenew    = true;
-        res.locals.daysLeft     = 30;
-        res.locals.hoursLeft    = null;
         res.locals.isExpired    = false;
-        res.locals.isExpiring   = false;
+
+        if (!manualExpiry) {
+          // Pas de date fixée par le superadmin → accès illimité.
+          res.locals.daysLeft   = null;
+          res.locals.hoursLeft  = null;
+          res.locals.isExpiring = false;
+        } else {
+          const now = new Date();
+          const diffMs   = endDate - now;
+          const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+          const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+          if (diffMs <= 0) {
+            res.locals.daysLeft   = 0;
+            res.locals.hoursLeft  = 0;
+            res.locals.isExpiring = true;
+          } else if (diffDays <= 1) {
+            res.locals.daysLeft   = 0;
+            res.locals.hoursLeft  = diffHours > 0 ? diffHours : 1;
+            res.locals.isExpiring = true;
+          } else {
+            res.locals.daysLeft   = diffDays;
+            res.locals.hoursLeft  = null;
+            res.locals.isExpiring = diffDays <= 3;
+          }
+        }
       } else {
         // Vraiment free — pas de plan premium
         res.locals.isPro        = false;

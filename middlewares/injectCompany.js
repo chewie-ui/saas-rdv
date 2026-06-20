@@ -17,8 +17,15 @@ module.exports = async (req, res, next) => {
       owner: req.user._id,
     }).lean();
 
-    // 3. Si l'utilisateur est un "Pro" mais n'a pas encore de profil Company
-    if (!currentCompany && req.user.role === "admin") {
+    // 3. Si l'utilisateur n'a pas encore de profil Company, on le redirige
+    // vers la création — pas de système de "rôles" dans ce modèle User,
+    // c'est la présence d'un Company doc qui définit un compte "Pro".
+    // (Ancien check `req.user.role === "admin"` : ce champ n'existe nulle
+    // part sur le modèle User → toujours undefined → condition toujours
+    // fausse. Conséquence concrète : la limite mensuelle de RDV n'était
+    // JAMAIS calculée, donc le message "plus de crédit" n'apparaissait
+    // jamais, peu importe le nombre de réservations.)
+    if (!currentCompany) {
       // On évite de rediriger si on est déjà sur la page de création
       if (req.path === "/register") return next();
       return res.redirect("/register");
@@ -40,7 +47,7 @@ module.exports = async (req, res, next) => {
     res.locals.monthlyLimitReached = false;
     res.locals.monthlyBookingsCount = 0;
     res.locals.monthlyBookingsLimit = Infinity;
-    if (currentCompany && req.user.role === "admin") {
+    if (currentCompany) {
       const monthlyLimit = getLimit("monthlyBookings", req.user);
       res.locals.monthlyBookingsLimit = monthlyLimit;
       if (monthlyLimit !== Infinity) {
