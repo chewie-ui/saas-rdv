@@ -124,6 +124,56 @@ html(lang="fr")
                 text-transform: uppercase;
                 letter-spacing: 0.06em;
             }
+            .sources-card {
+                background: #1a1a1a;
+                border: 1px solid #2a2a2a;
+                border-radius: 12px;
+                padding: 18px 20px;
+                margin-bottom: 24px;
+            }
+            .sources-card__title {
+                font-size: 12px;
+                font-weight: 600;
+                color: #999;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin-bottom: 14px;
+            }
+            .source-row {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 8px;
+            }
+            .source-row__name {
+                width: 150px;
+                flex-shrink: 0;
+                font-size: 13px;
+                color: #ddd;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .source-row__bar-wrap {
+                flex: 1;
+                height: 8px;
+                background: #2a2a2a;
+                border-radius: 4px;
+                overflow: hidden;
+            }
+            .source-row__bar {
+                height: 100%;
+                background: #22c55e;
+                border-radius: 4px;
+            }
+            .source-row__count {
+                width: 60px;
+                flex-shrink: 0;
+                text-align: right;
+                font-size: 13px;
+                font-weight: 600;
+                color: #fff;
+            }
             .users-table {
                 width: 100%;
                 border-collapse: collapse;
@@ -356,6 +406,26 @@ html(lang="fr")
             .stat-card
                 .stat-card__value= (uniqueViews || 0).toLocaleString('fr-FR')
                 .stat-card__label Vues uniques
+            .stat-card
+                .stat-card__value= totalClients || 0
+                .stat-card__label Clients (total)
+            .stat-card
+                .stat-card__value= clientsToday || 0
+                .stat-card__label Clients inscrits aujourd'hui
+            .stat-card
+                .stat-card__value= adminsToday || 0
+                .stat-card__label Pros inscrits aujourd'hui
+
+        if topSources && topSources.length
+            - var maxSourceCount = Math.max.apply(null, topSources.map(function(s){ return s.count; }))
+            .sources-card
+                .sources-card__title Provenance des vues
+                each s in topSources
+                    .source-row
+                        .source-row__name= s._id || 'direct'
+                        .source-row__bar-wrap
+                            .source-row__bar(style=`width:${Math.round((s.count / maxSourceCount) * 100)}%`)
+                        .source-row__count= s.count.toLocaleString('fr-FR')
 
         .search-bar
             form(method="GET" action="/superadmin")

@@ -8,6 +8,9 @@ const pageViewSchema = new mongoose.Schema(
   {
     visitorId: { type: String, required: true, index: true },
     path: { type: String, default: "" },
+    // Domaine du referrer (ex: "google.com", "instagram.com"), ou "direct"
+    // si la visite arrive sans referrer (lien direct, app, favoris...).
+    source: { type: String, default: "direct" },
   },
   { timestamps: true }
 );

@@ -10,6 +10,7 @@ const Employee  = require("../db/models/company/employee.model");
 const DaysOff   = require("../db/models/company/daysOff.model");
 const Form      = require("../db/models/form.model");
 const Review    = require("../db/models/review.model");
+const Client    = require("../db/models/client.model");
 const { FEATURES, ADMIN_FEATURES, invalidateFeatureFlagCache } = require("../middlewares/featureFlag");
 const { extractNavLinks } = require("../utils/navLinks");
 
@@ -43,19 +44,33 @@ exports.usersPage = async (req, res) => {
     query = { $or: [{ fullName: regex }, { email: regex }] };
   }
   const PageView = require("../db/models/pageView.model");
-  const [users, totalViews, uniqueVisitors] = await Promise.all([
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const [users, totalViews, uniqueVisitors, totalClients, clientsToday, adminsToday, topSources] = await Promise.all([
     User.find(query)
       .select("fullName email isPremium manualPremium manualPremiumExpiry subscription createdAt isDisabled")
       .sort("-createdAt")
       .lean(),
     PageView.countDocuments({}),
     PageView.distinct("visitorId"),
+    Client.countDocuments({}),
+    Client.countDocuments({ createdAt: { $gte: startOfDay } }),
+    User.countDocuments({ createdAt: { $gte: startOfDay } }),
+    PageView.aggregate([
+      { $group: { _id: { $ifNull: ["$source", "direct"] }, count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 8 },
+    ]),
   ]);
   res.render("superadmin/users", {
     users,
     search: search || "",
+    topSources,
     totalViews,
     uniqueViews: uniqueVisitors.length,
+    totalClients,
+    clientsToday,
+    adminsToday,
   });
 };
 
