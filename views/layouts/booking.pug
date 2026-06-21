@@ -34,6 +34,7 @@ html(lang=lang || "fr")
     body
         block content
         block scripts
+        script(src="/js/pageview-beacon.js")
         script.
             const COMPANY_ID = !{company ? `"${company._id}"` : "null"};
             window.__t = !{JSON.stringify(t.js)};

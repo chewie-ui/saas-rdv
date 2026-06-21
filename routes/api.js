@@ -2,6 +2,42 @@ const router = require("express").Router();
 const https  = require("https");
 const http   = require("http");
 const User   = require("../db/models/user.model");
+const PageView = require("../db/models/pageView.model");
+const { isBotUserAgent } = require("../utils/botDetection");
+
+// Domaine du referrer ("google.com", "instagram.com"...), ou "direct" si la
+// visite arrive sans referrer (lien direct, app, favoris, navigation interne).
+function getViewSource(referrerUrl, ownHostname) {
+  if (!referrerUrl) return "direct";
+  try {
+    const host = new URL(referrerUrl).hostname.replace(/^www\./, "");
+    if (host === (ownHostname || "").replace(/^www\./, "")) return "direct";
+    return host;
+  } catch (_) {
+    return "direct";
+  }
+}
+
+// Compteur de vues "réelles" : appelé par un petit script JS depuis le
+// navigateur (public/js/pageview-beacon.js) une fois la page chargée. Un
+// script/scanner qui ne charge jamais le JS d'une page ne déclenchera donc
+// jamais cet endpoint, contrairement à un comptage fait à chaque requête HTTP
+// côté serveur (facilement pollué par des bots qui imitent un vrai navigateur).
+router.post("/track-view", (req, res) => {
+  res.json({ ok: true }); // on répond tout de suite, le tracking est best-effort
+  try {
+    const ua = req.headers["user-agent"] || "";
+    if (isBotUserAgent(ua)) return;
+    const visitorId = req.cookies && req.cookies.bs_vid;
+    if (!visitorId) return;
+    const path = (req.body && req.body.path) || "";
+    if (!path) return;
+    const source = getViewSource(req.body && req.body.referrer, req.hostname);
+    PageView.create({ visitorId, path, source }).catch(() => {});
+  } catch (_) {
+    // Le tracking ne doit jamais casser une requête.
+  }
+});
 
 // ── Résoudre un lien Google Maps court et extraire les coordonnées ────────────
 function parseGmapCoords(url) {
