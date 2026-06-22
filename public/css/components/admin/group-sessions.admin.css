@@ -159,3 +159,218 @@
     width: 100%;
   }
 }
+
+/* ============================================================
+   Gestion des cours collectifs (définition + planning récurrent)
+   ============================================================ */
+
+.gs-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.gs-page__header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gs-counter {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--surface-hover, #f4f2ed);
+  border-radius: 99px;
+  padding: 6px 14px;
+  white-space: nowrap;
+}
+
+.gs-divider {
+  border: none;
+  border-top: 1px solid var(--border-light);
+  margin: 8px 0;
+}
+
+/* ── Grille de cartes "cours" ──────────────────────────────────────────── */
+.gs-courses-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media (max-width: 1100px) { .gs-courses-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px)  { .gs-courses-grid { grid-template-columns: 1fr; } }
+
+.gs-course-card {
+  background: var(--surface-card, #fff);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl, 16px);
+  padding: 18px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: opacity 0.2s, border-color 0.15s, box-shadow 0.15s;
+}
+.gs-course-card:hover { border-color: var(--border-medium); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); }
+.gs-course-card--inactive { opacity: 0.55; }
+
+.gs-course-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.gs-course-card__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink, #111);
+}
+
+.gs-course-card__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gs-course-card__desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.gs-course-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gs-course-card__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--surface-hover, #f4f2ed);
+  border-radius: 99px;
+  padding: 4px 10px;
+}
+.gs-course-card__chip svg { flex-shrink: 0; }
+.gs-course-card__chip--price { color: var(--accent); background: var(--accent-soft); }
+
+.gs-course-card__employees {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+  min-height: 30px;
+}
+
+.gs-course-card__emp-label {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.gs-course-card__emp-none {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.gs-course-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+.gs-course-card__actions .edit-course-btn { flex: 1; }
+
+.gs-course-card__delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-light);
+  background: transparent;
+  color: #ef4444;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  flex-shrink: 0;
+}
+.gs-course-card__delete:hover { background: #fef2f2; border-color: #fecaca; }
+
+/* ── Sélecteur de jours de la semaine (modal) ─────────────────────────── */
+.gs-weekday-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.gs-weekday-chip {
+  width: 44px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-light);
+  background: var(--surface-card, #fff);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.gs-weekday-chip:hover { border-color: var(--border-medium); }
+.gs-weekday-chip.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ── Sélecteur d'employés (modal) ─────────────────────────────────────── */
+.gs-employee-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+}
+
+.gs-employee-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.gs-employee-chip:hover { background: var(--surface-hover, #f4f2ed); }
+.gs-employee-chip img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.gs-employee-chip span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #111);
+}

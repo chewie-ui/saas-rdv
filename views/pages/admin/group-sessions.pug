@@ -1,20 +1,99 @@
 extends ../../layouts/admin
 
 block links
+    link(rel="stylesheet" href="/css/components/admin/appointment.admin.css")
+    link(rel="stylesheet" href="/css/layouts/services.css")
     link(rel="stylesheet" href="/css/components/admin/group-sessions.admin.css")
 
 block content
     .gs-page
         .gs-page__header
-            h2 Cours collectifs
-            p.gs-page__subtitle Retrouvez ici toutes vos sessions de groupe à venir et gérez leurs participants.
+            .gs-page__header-left
+                h2 Cours collectifs
+                p.gs-page__subtitle Créez des cours récurrents (ex: Yoga tous les lundis à 18h) — leur créneau bloque automatiquement les employés assignés pour les autres rendez-vous.
+            .gs-page__header-right
+                if maxServices > 0
+                    span.gs-counter #{courses.length} / #{maxServices}
+                button.sm-btn.sm-btn--primary#addCourseBtn(disabled=(maxServices === 0))
+                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                        path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                    span Nouveau cours
+
+        if courses.length === 0
+            .gs-empty
+                svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor")
+                    path(d="M480-120 200-272v-240L40-600l440-240 440 240v320h-80v-276l-80 44v240L480-120Zm0-332 274-148-274-148-274 148 274 148Zm0 240 200-108v-153l-200 108-200-108v153l200 108Z")
+                p Aucun cours collectif pour le moment.
+                p.gs-empty__hint Créez votre premier cours récurrent — ex: "Yoga" tous les lundis et mercredis à 18h.
+        else
+            .gs-courses-grid
+                each course in courses
+                    - var weekdayLabels = { 0: 'Dim', 1: 'Lun', 2: 'Mar', 3: 'Mer', 4: 'Jeu', 5: 'Ven', 6: 'Sam' }
+                    .gs-course-card(
+                        data-id=String(course._id)
+                        data-name=course.name
+                        data-description=course.description || ''
+                        data-price=(course.price !== null && course.price !== undefined ? course.price : '')
+                        data-duration=course.duration
+                        data-capacity=course.capacity
+                        data-weekdays=(course.recurring.weekdays || []).join(',')
+                        data-start-time=course.recurring.startTime
+                        data-employees=(course.employees || []).map(function(e){ return String(e._id); }).join(',')
+                        class=(!course.active ? 'gs-course-card--inactive' : '')
+                    )
+                        .gs-course-card__top
+                            h3.gs-course-card__name
+                                span.gs-course-card__dot(style=`background:${course.color || '#16a34a'}`)
+                                = course.name
+                            label.sa-toggle(title=(course.active ? 'Désactiver' : 'Activer'))
+                                input.toggle-course-active(type="checkbox" checked=course.active data-id=String(course._id))
+                                .sa-toggle__track
+                        if course.description
+                            p.gs-course-card__desc= course.description
+                        .gs-course-card__meta
+                            span.gs-course-card__chip
+                                svg(xmlns="http://www.w3.org/2000/svg" height="13px" viewBox="0 -960 960 960" width="13px" fill="currentColor")
+                                    path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
+                                = (course.recurring.weekdays || []).map(function(d){ return weekdayLabels[d]; }).join(', ')
+                            span.gs-course-card__chip
+                                svg(xmlns="http://www.w3.org/2000/svg" height="13px" viewBox="0 -960 960 960" width="13px" fill="currentColor")
+                                    path(d="M612-292 320-584l56-56 236 236 236-236 56 56-292 292Z" style="display:none")
+                                    path(d="M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q150 0 255 105t105 255q0 150-105 255T480-120Zm56-260L480-440v-200h80v167l140 140-44 44Z")
+                                = course.recurring.startTime
+                            span.gs-course-card__chip #{course.duration} min
+                            span.gs-course-card__chip #{course.capacity} places
+                            if course.price !== null && course.price !== undefined
+                                span.gs-course-card__chip.gs-course-card__chip--price #{course.price}€
+                        .gs-course-card__employees
+                            if course.employees && course.employees.length > 0
+                                .gs-course-card__emp-label Avec :
+                                each emp in course.employees
+                                    .emp-chip
+                                        img(src=emp.profilePicture alt="")
+                                        span= emp.firstName + ' ' + emp.lastName
+                            else
+                                .gs-course-card__emp-none
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="13px" viewBox="0 -960 960 960" width="13px" fill="currentColor")
+                                        path(d="M480-481q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Z")
+                                    | Bloque tout le monde sur ce créneau
+                        .gs-course-card__actions
+                            button.sm-btn.sm-btn--ghost.edit-course-btn(data-id=String(course._id)) Modifier
+                            button.gs-course-card__delete.delete-course-btn(data-id=String(course._id) data-name=course.name title="Supprimer")
+                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                    path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+
+        .gs-divider
+        .gs-page__header
+            .gs-page__header-left
+                h2 Sessions à venir
+                p.gs-page__subtitle Retrouvez ici les prochaines occurrences de vos cours, avec leurs participants inscrits.
 
         if sessions.length === 0
             .gs-empty
                 svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor")
                     path(d="M40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm720 0v-120q0-44-24.5-84.5T666-434q51 6 96 20.5t84 35.5q36 20 55 44.5t19 53.5v120H760ZM360-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Z")
-                p Aucune session collective à venir.
-                p.gs-empty__hint Créez un service de type "Collectif" dans la section Services pour commencer.
+                p Aucune session à venir.
+                p.gs-empty__hint Les inscriptions à vos cours apparaîtront ici une fois que des clients auront réservé.
         else
             .gs-table
                 .gs-table__head
@@ -37,7 +116,82 @@ block content
                             | #{session.count} / #{session.capacity} places
                         button.gs-row__btn(type="button") Voir les participants
 
+    //- ── Modal : Créer / Modifier un cours collectif ─────────────────────────
+    .modal-overlay#courseModalOverlay
+    .service-modal#courseModal
+        .service-modal__header
+            h3#courseModalTitle Nouveau cours collectif
+            button.modal-close#closeCourseModal(type="button")
+                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+        .service-modal__body
+            input(type="hidden" id="courseModalId")
+            .field
+                label Nom du cours *
+                input.input#courseName(type="text" placeholder="Ex: Yoga, Pilates, Cross-training...")
+            .field
+                label Description
+                textarea.input.textarea#courseDescription(rows="2" placeholder="Quelques mots pour décrire le cours...")
+            .field-row
+                .field
+                    label Prix (€)
+                    input.input#coursePrice(type="number" min="0" step="0.5" placeholder="Ex: 15")
+                .field
+                    label Durée (min) *
+                    input.input#courseDuration(type="number" min="5" step="5" value="60")
+                .field
+                    label Places *
+                    input.input#courseCapacity(type="number" min="1" max="500" value="10")
+
+            .field
+                label Jour(s) de la semaine *
+                .gs-weekday-picker#courseWeekdayPicker
+                    button.gs-weekday-chip(type="button" data-day="1") Lun
+                    button.gs-weekday-chip(type="button" data-day="2") Mar
+                    button.gs-weekday-chip(type="button" data-day="3") Mer
+                    button.gs-weekday-chip(type="button" data-day="4") Jeu
+                    button.gs-weekday-chip(type="button" data-day="5") Ven
+                    button.gs-weekday-chip(type="button" data-day="6") Sam
+                    button.gs-weekday-chip(type="button" data-day="0") Dim
+
+            .field
+                label Heure *
+                .appt-time-field
+                    .appt-time-box#courseStartBox(tabindex="0" role="button") --:--
+                    .appt-time-panel#courseStartPanel
+                        input.appt-time-search(type="text" placeholder="Heure… (ex: 18 ou 1800)" autocomplete="off")
+                        .appt-time-list#courseStartList
+
+            if employees && employees.length > 0
+                .field
+                    label.svc-fee-label
+                        span Ce cours a un ou plusieurs employés assignés ?
+                        label.sa-toggle
+                            input#courseHasEmployees(type="checkbox")
+                            .sa-toggle__track
+                    p.xs-comment Si activé, seuls les employés cochés seront indisponibles pour d'autres RDV sur ce créneau — les autres restent réservables normalement.
+                    #courseEmployeesField(style="display:none")
+                        .gs-employee-list#courseEmployeeList
+                            each emp in employees
+                                label.gs-employee-chip
+                                    input(type="checkbox" value=String(emp._id))
+                                    img(src=emp.profilePicture alt="")
+                                    span= emp.firstName + ' ' + emp.lastName
+            else
+                p.xs-comment Vous n'avez aucun employé actif — ce cours bloquera automatiquement tout le monde sur son créneau.
+
+            p.new-appt-modal__error#courseModalError(style="display:none")
+        .service-modal__footer
+            button.sm-btn.sm-btn--ghost#cancelCourseModal(type="button") Annuler
+            button.sm-btn.sm-btn--primary#saveCourseBtn(type="button")
+                span Enregistrer
+
+    script.
+        window.__defaultDuration = 60;
+
 block scripts
+    script(src="/js/utils/confirm-modal.js")
+    script(src="/js/components/admin/group-sessions.admin.js" type="module")
     script.
         (function() {
             function buildModal(opts) {

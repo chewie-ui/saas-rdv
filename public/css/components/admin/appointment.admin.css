@@ -531,13 +531,33 @@
   border-bottom: none;
 }
 
-/* Day cell hover */
+/* Day cell hover — cliquable pour créer un rendez-vous à cette date/heure */
 .calendar-section .grid-section .cell.day {
   overflow: visible; /* let appointments overflow into rows below */
   transition: background-color 0.12s ease;
+  cursor: pointer;
 }
 .calendar-section .grid-section .cell.day:hover {
   background-color: var(--grey-soft);
+}
+.calendar-section .grid-section .cell.day:hover::after {
+  /* Croix dessinée en SVG (pas du texte) : un caractère "+" n'est jamais
+     parfaitement centré dans sa boîte à cause des métriques de la police
+     (ascendantes/descendantes) — un fond SVG, lui, se centre au pixel près. */
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='white' d='M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 11px 11px;
+  pointer-events: none;
 }
 
 /* ── Couche des RDV : une colonne par jour, par-dessus la grille de fond ──
@@ -901,6 +921,10 @@
 .appt-popup__footer {
   padding: 8px 18px 14px;
   border-top: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .appt-popup__detail-btn {
@@ -1448,6 +1472,32 @@
   color: var(--accent, #16a34a);
 }
 
+.cal-month__add-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent, #16a34a);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.12s, transform 0.12s;
+  z-index: 2;
+}
+.cal-month__cell:hover .cal-month__add-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+.cal-month__add-btn:hover { filter: brightness(0.92); }
+.cal-month__add-btn svg { fill: #fff; }
+
 .cal-month__counts {
   display: flex;
   flex-wrap: wrap;
@@ -1606,4 +1656,90 @@ body:has(.cal-month) .cal-month {
   .new-appt-modal .edit-fields-row.two-col {
     flex-direction: column;
   }
+}
+
+/* ── Sélecteur d'heure "Nouveau rendez-vous" ──────────────────────────────
+   Même esprit que le panneau d'heures de Disponibilités : un champ cliquable
+   qui ouvre une liste filtrable par saisie ("9" ou "0930") plutôt qu'un
+   <input type="time"> natif peu pratique pour ce cas d'usage. */
+.appt-time-field {
+  position: relative;
+}
+
+.appt-time-box {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text-primary);
+  background-color: var(--surface-card);
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.15s;
+}
+.appt-time-box:hover { border-color: var(--border-medium); }
+.appt-time-box.is-open { border-color: var(--accent); }
+
+.appt-time-panel {
+  position: fixed;
+  z-index: 10000;
+  width: 190px;
+  background: var(--surface-card, #fff);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px -8px rgba(15, 23, 25, 0.15), 0 4px 8px rgba(15, 23, 25, 0.06);
+  overflow: hidden;
+  display: none;
+}
+.appt-time-panel.open { display: block; }
+
+.appt-time-search {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-bottom: 1px solid var(--border-light);
+  padding: 10px 12px;
+  font-size: 13.5px;
+  font-family: inherit;
+  outline: none;
+}
+.appt-time-search:focus { background: var(--accent-soft, #f0fdf4); }
+
+.appt-time-list {
+  max-height: 190px;
+  overflow-y: auto;
+}
+
+.appt-time-opt {
+  padding: 8px 14px;
+  font-size: 13.5px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.appt-time-opt:hover { background: var(--accent-soft, #f0fdf4); }
+.appt-time-opt.is-hidden { display: none; }
+
+.appt-duration-display {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  /* Même boîte que .input (padding 10px 14px, border 1.5px, font-size 14px)
+     pour un alignement vertical parfait avec les champs date/heure à côté —
+     pas de hauteur fixe, on laisse le navigateur calculer la même chose. */
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft, #f0fdf4);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-md);
+}
+
+.appt-duration-hint {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
 }

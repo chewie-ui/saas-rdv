@@ -85,6 +85,7 @@ export default function () {
         COMPANY_ID,
         date: datePicked,
         serviceDuration,
+        serviceId: window.__selectedService?.id || null,
       }),
     });
     const slotsData = await slotsRes.json();

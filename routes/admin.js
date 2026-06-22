@@ -3,7 +3,6 @@ const { renderAppointments } = require("../controllers/booking.controller");
 const {
   panel,
   appointment,
-  client,
   availability,
   toggleDay,
   editAvailabilty,
@@ -27,7 +26,11 @@ const {
 } = require("../controllers/admin.controller");
 
 const adminController = require("../controllers/admin.controller");
-const { listGroupSessions, getSessionParticipants } = require("../controllers/groupSession.controller");
+const {
+  listGroupSessions, getSessionParticipants,
+  createCourse, updateCourse, toggleCourse, deleteCourse,
+} = require("../controllers/groupSession.controller");
+const clientDossierController = require("../controllers/clientDossier.controller");
 
 const isAuth = require("../middlewares/isAuth");
 const injectCompany = require("../middlewares/injectCompany");
@@ -51,7 +54,19 @@ router.post("/appointment/create", isAuth, injectCompany, requireFeatureActive("
 router.get("/availability", isAuth, injectCompany, availability);
 router.get("/group-sessions", isAuth, injectCompany, requireAdminFeature("group_sessions"), listGroupSessions);
 router.get("/group-sessions/participants", isAuth, injectCompany, requireAdminFeature("group_sessions"), getSessionParticipants);
-router.get("/client", isAuth, injectCompany, client);
+router.post("/api/courses", isAuth, injectCompany, requireAdminFeature("group_sessions"), createCourse);
+router.patch("/api/courses/:id", isAuth, injectCompany, requireAdminFeature("group_sessions"), updateCourse);
+router.patch("/api/courses/:id/toggle", isAuth, injectCompany, requireAdminFeature("group_sessions"), toggleCourse);
+router.delete("/api/courses/:id", isAuth, injectCompany, requireAdminFeature("group_sessions"), deleteCourse);
+router.get("/client", (req, res) => res.redirect("/clients"));
+
+// ── Dossiers clients ────────────────────────────────────────────────────────
+router.get("/clients", isAuth, injectCompany, clientDossierController.listClients);
+router.get("/clients/:email", isAuth, injectCompany, clientDossierController.viewClient);
+router.patch("/clients/dossier/:dossierId/general", isAuth, injectCompany, clientDossierController.updateGeneralInfo);
+router.post("/clients/dossier/:dossierId/entries", isAuth, injectCompany, clientDossierController.addEntry);
+router.patch("/clients/dossier/:dossierId/entries/:entryId", isAuth, injectCompany, clientDossierController.updateEntry);
+router.delete("/clients/dossier/:dossierId/entries/:entryId", isAuth, injectCompany, clientDossierController.deleteEntry);
 router.get("/informations", (req, res) => res.redirect(301, "/settings"));
 router.get("/subscription", isAuth, injectCompany, requireFeatureActive("subscription"), async (req, res) => {
   let monthlyBookingCount = null;

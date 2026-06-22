@@ -349,6 +349,11 @@ block content
         .edit-actions-bar
             button.sm-btn.sm-btn--ghost(type="button" onclick="history.back()")
                 span= t.hist_edit.back
+            if results.email
+                a.sm-btn.sm-btn--soft(href=`/clients/${encodeURIComponent(results.email)}`)
+                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                        path(d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z")
+                    span Voir le dossier client
             button.sm-btn.sm-btn--primary#saveBtnEdit(type="button")
                 svg.save-icon(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px")
                     path(d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z")

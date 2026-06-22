@@ -1,0 +1,62 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet" href="/css/layouts/services.css")
+    link(rel="stylesheet" href="/css/layouts/clients.css")
+
+block content
+    .clients-page
+        .clients-page__header
+            .clients-page__header-left
+                h2 Dossiers clients
+                p.clients-page__subtitle Gardez un historique de chaque client : constats, soins effectués, suivi d'une visite à l'autre.
+            .clients-page__header-right
+                span.clients-counter #{clients.length} client#{clients.length === 1 ? '' : 's'}
+
+        form.clients-search(method="GET" action="/clients")
+            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                path(d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z")
+            input.clients-search__input(type="text" name="search" placeholder="Rechercher un client par nom, email ou téléphone..." value=search)
+            if search
+                a.clients-search__clear(href="/clients") ✕
+
+        if clients.length === 0
+            .clients-empty
+                svg(xmlns="http://www.w3.org/2000/svg" height="48px" viewBox="0 -960 960 960" width="48px" fill="currentColor")
+                    path(d="M480-481q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Z")
+                if search
+                    p Aucun client ne correspond à « #{search} ».
+                else
+                    p Dès qu'un client aura réservé un rendez-vous, il apparaîtra ici pour que vous puissiez créer son dossier.
+
+        .clients-list
+            each c in clients
+                -
+                    var parts = c.fullName.split(' ').filter(Boolean)
+                    var initials = ((parts[0] || '?')[0] + ((parts[1] || '')[0] || '')).toUpperCase()
+                a.client-card(href=`/clients/${encodeURIComponent(c.email)}`)
+                    .client-card__top
+                        .client-card__avatar= initials
+                        if c.entriesCount > 0
+                            span.client-card__badge #{c.entriesCount} note#{c.entriesCount === 1 ? '' : 's'}
+                        else
+                            span.client-card__badge.client-card__badge--empty Aucune note
+                    .client-card__name= c.fullName
+                    .client-card__detail
+                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                            path(d="M200-160q-33 0-56.5-23.5T120-240v-480q0-33 23.5-56.5T200-800h560q33 0 56.5 23.5T840-720v480q0 33-23.5 56.5T760-160H200Zm280-280L200-640v400h560v-400L480-440Zm0-80 280-200H200l280 200ZM200-640v-80 480-400Z")
+                        span= c.email
+                    if c.phone
+                        .client-card__detail
+                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                path(d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-387q31 31 65 57Q487 39 524 59l98-98q9-9 23.5-13.5T672-114l138 28q14 4 22.5 14.5T841-696v138q0 18-12 30t-30 12Z")
+                            span= c.phone
+                    .client-card__visits
+                        if c.lastVisit
+                            span.client-card__visit
+                                strong Dernière visite
+                                |  #{new Date(c.lastVisit).toLocaleDateString('fr-FR')}
+                        if c.nextVisit
+                            span.client-card__visit.client-card__visit--next
+                                strong Prochain RDV
+                                |  #{new Date(c.nextVisit).toLocaleDateString('fr-FR')}

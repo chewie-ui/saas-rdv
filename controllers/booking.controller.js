@@ -11,6 +11,7 @@ const path = require("path");
 const { getLimit, atLeast } = require("../utils/planLimits");
 const { sendEmail } = require("../utils/mailer");
 const { isFeatureEnabled } = require("../middlewares/featureFlag");
+const { getCoursesForDate, courseRangesFor } = require("../utils/recurringCourses");
 const { log } = require("console");
 
 const Stripe = require("stripe");
@@ -494,6 +495,15 @@ exports.createBooking = async (req, res) => {
           }
         });
 
+        // Un employé en cours collectif à ce moment-là n'est pas disponible
+        // pour un autre service, même sans RDV individuel enregistré.
+        const coursesForThisDate = await getCoursesForDate(company, date);
+        activeEmployees.forEach((e) => {
+          const blocked = courseRangesFor(coursesForThisDate, String(e._id))
+            .some(([rs, re]) => startTimeInMinutes < re && endTimeInMinutes > rs);
+          if (blocked) busyIds.add(String(e._id));
+        });
+
         const free = activeEmployees.find((e) => !busyIds.has(String(e._id)));
         if (!free) {
           return res.json({ success: false, error: "no_employee_available" });
@@ -775,6 +785,11 @@ exports.getBooking = async (req, res) => {
     }
   }
 
+  // Cours collectifs récurrents ce jour-là — leurs créneaux bloquent les
+  // employés assignés (ou tout le monde, si aucun employé n'est assigné) pour
+  // les AUTRES services. Calculé une fois, réutilisé par les 3 cas ci-dessous.
+  const coursesToday = await getCoursesForDate(companyId, date);
+
   // Get company config so we can compute slot granularity / buffer / mode.
   const [companyDoc, activeEmployeeCount] = await Promise.all([
     Company.findById(companyId).select("slotTime bufferTime bufferBefore bufferAfter slotMode slotInterval owner smartGrouping").lean(),
@@ -875,6 +890,7 @@ exports.getBooking = async (req, res) => {
     const blockedSet = new Set();
     blockedFromRanges(blockedSet, buildOccupiedRanges(bookings));
     blockedFromRanges(blockedSet, googleRanges);
+    blockedFromRanges(blockedSet, courseRangesFor(coursesToday, employeeId));
     blockPastSlots(blockedSet);
     return res.json({ bookedTimes: Array.from(blockedSet), recommendedTimes: computeRecommendedTimes(bookings) });
   }
@@ -885,6 +901,7 @@ exports.getBooking = async (req, res) => {
     const blockedSet = new Set();
     blockedFromRanges(blockedSet, buildOccupiedRanges(bookings));
     blockedFromRanges(blockedSet, googleRanges);
+    blockedFromRanges(blockedSet, courseRangesFor(coursesToday, null));
     blockPastSlots(blockedSet);
     return res.json({ bookedTimes: Array.from(blockedSet), recommendedTimes: computeRecommendedTimes(bookings) });
   }
@@ -897,9 +914,12 @@ exports.getBooking = async (req, res) => {
     employee: { $in: activeEmployees.map((e) => e._id) },
   }).select("startTime slotTime employee").lean();
 
-  // Group bookings per employee, then build their occupied ranges.
+  // Group bookings per employee, then build their occupied ranges — pré-rempli
+  // avec les cours collectifs qui occupent chaque employé ce jour-là (un cours
+  // sans employé assigné se retrouve dans la liste de TOUS, donc bloque la
+  // disponibilité générale même sans filtre employé précis).
   const rangesByEmployee = new Map(); // employeeId string → ranges[]
-  activeEmployees.forEach((e) => rangesByEmployee.set(String(e._id), []));
+  activeEmployees.forEach((e) => rangesByEmployee.set(String(e._id), courseRangesFor(coursesToday, String(e._id))));
   bookings.forEach((b) => {
     const empId = String(b.employee);
     const ranges = buildOccupiedRanges([b]);
@@ -993,8 +1013,19 @@ exports.renderAppointments = async (req, res, next) => {
 };
 
 exports.getSchedule = async (req, res) => {
-  const { index, COMPANY_ID, date, serviceDuration, employeeId } = req.body;
+  const { index, COMPANY_ID, date, serviceDuration, employeeId, serviceId } = req.body;
   const jsWeekdayIndex = parseInt(index);
+
+  // ── Cours collectif (planning récurrent fixe) : pas de grille horaire — un
+  // seul créneau possible, celui du cours, et seulement les jours où il a lieu.
+  if (serviceId) {
+    const courseService = await Service.findById(serviceId).select("type recurring").lean();
+    if (courseService?.type === "group" && courseService.recurring?.enabled) {
+      const onThisWeekday = (courseService.recurring.weekdays || []).includes(jsWeekdayIndex);
+      return res.json({ slots: onThisWeekday ? [courseService.recurring.startTime] : [] });
+    }
+  }
+
   // 1. Récupérer la config de base (pour le slotTime et les horaires par défaut)
   const company = await Company.findById(COMPANY_ID)
     .select("schedule slotTime slotMode slotInterval")

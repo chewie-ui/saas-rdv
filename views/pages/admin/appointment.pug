@@ -145,6 +145,9 @@ block content
                         class=[(d.isToday ? 'is-today' : ''), (!d.current ? 'is-other-month' : ''), (d.iso === focusedIso ? 'is-focused' : '')]
                     )
                         span.cal-month__day= d.day
+                        button.cal-month__add-btn(type="button" data-iso=d.iso title="Nouveau rendez-vous ce jour-là")
+                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
                         if d.colorCounts && d.colorCounts.length > 0
                             .cal-month__counts
                                 each cc in d.colorCounts
@@ -172,7 +175,7 @@ block content
                     if !isHalf
                         = hour
                 each day, dayIndex in weekDays
-                    .cell.day(class=[day.isFocused && "focused", isHalf && "day--half", day.isDayOff && "off-day"])
+                    .cell.day(class=[day.isFocused && "focused", isHalf && "day--half", day.isDayOff && "off-day"] data-iso=day.isoDate data-time=hour)
 
             //- ── RDV positionnés en continu par-dessus la grille ────────────
             //- Une colonne par jour, positionnée en JS (top/left/width/height
@@ -220,6 +223,7 @@ block content
                                     data-id=String(appointment._id)
                                     data-name=appointment.name
                                     data-surname=(appointment.surname || '')
+                                    data-email=(appointment.email || '')
                                     data-start=appointment.startHour
                                     data-end=appointment.endHour
                                     data-employee=(appointment.employeeName || '')
@@ -265,6 +269,10 @@ block content
                 svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                     path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
                 | Voir le détail
+            a.appt-popup__detail-btn#apptPopupDossierBtn(href="#")
+                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                    path(d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z")
+                | Dossier client
 
     //- ── Nouveau rendez-vous (panel admin) ──────────────────────────────────
     .new-appt-overlay#newApptOverlay
@@ -280,13 +288,25 @@ block content
                         label Date *
                         input.input(type="date" id="newApptDate")
                     .field-container.flex.col
-                        label Heure *
-                        input.input(type="time" id="newApptTime")
+                        label Heure de début *
+                        .appt-time-field
+                            .appt-time-box#newApptStartBox(tabindex="0" role="button") --:--
+                            .appt-time-panel#newApptStartPanel
+                                input.appt-time-search(type="text" placeholder="Heure… (ex: 9 ou 0930)" autocomplete="off")
+                                .appt-time-list#newApptStartList
+                .edit-fields-row.two-col
+                    .field-container.flex.col
+                        label Heure de fin
+                        span.appt-duration-display#newApptEndTime --:--
+                    .field-container.flex.col
+                        label Durée
+                        span.appt-duration-display#newApptDuration —
 
                 if services && services.length > 0
                     .edit-fields-row
                         .field-container.flex.col
                             label Service
+                                span.appt-duration-hint#newApptServiceDuration
                             select.input#newApptService
                                 option(value="") — Aucun service —
                                 each svc in services
@@ -326,6 +346,9 @@ block content
                 button.sm-btn.sm-btn--ghost#newApptCancel(type="button") Annuler
                 button.sm-btn.sm-btn--primary#newApptSubmit(type="button")
                     span Créer le rendez-vous
+
+    script.
+        window.__defaultSlotTime = !{slotTime || 60};
 
 block scripts
     script(src="/js/layouts/appointment.js" type="module")

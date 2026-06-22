@@ -3,6 +3,7 @@ import {
   initCalendarHeader,
   initAppointmentPopup,
 } from "../components/admin/appointment.admin.js";
+import { createTimePicker } from "../utils/time-picker.js";
 
 initDeleteAppointment();
 initCalendarHeader();
@@ -212,7 +213,6 @@ setInterval(updateTimeline, 60000);
   if (!openBtn || !overlay) return;
 
   const dateInput    = document.getElementById("newApptDate");
-  const timeInput    = document.getElementById("newApptTime");
   const serviceSel   = document.getElementById("newApptService");
   const employeeSel  = document.getElementById("newApptEmployee");
   const nameInput    = document.getElementById("newApptName");
@@ -220,6 +220,57 @@ setInterval(updateTimeline, 60000);
   const emailInput   = document.getElementById("newApptEmail");
   const phoneInput   = document.getElementById("newApptPhone");
   const messageInput = document.getElementById("newApptMessage");
+  const durationEl   = document.getElementById("newApptDuration");
+  const endTimeEl    = document.getElementById("newApptEndTime");
+  const serviceDurationHint = document.getElementById("newApptServiceDuration");
+  const defaultSlotTime = window.__defaultSlotTime || 60;
+
+  function minutesOf(hhmm) {
+    if (!hhmm) return null;
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  }
+  function hhmmOf(totalMinutes) {
+    const m = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
+    return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  }
+  function durationLabel(diff) {
+    const h = Math.floor(diff / 60);
+    const m = diff % 60;
+    return h > 0 ? `${h} h${m ? String(m).padStart(2, "0") : ""}` : `${m} min`;
+  }
+
+  // Heure de fin et durée ne se choisissent pas à la main : elles découlent
+  // toujours de l'heure de début + la durée du service sélectionné, ou — si
+  // aucun service n'est choisi — de la durée par défaut des rendez-vous
+  // définie dans les paramètres de l'entreprise (`defaultSlotTime`).
+  function recomputeEndAndDuration() {
+    const opt = serviceSel && serviceSel.options[serviceSel.selectedIndex];
+    const serviceDuration = opt && opt.dataset.duration ? Number(opt.dataset.duration) : null;
+    const duration = serviceDuration || defaultSlotTime;
+
+    if (serviceDurationHint) {
+      serviceDurationHint.textContent = serviceDuration ? ` · ${serviceDuration} min` : "";
+    }
+
+    const start = minutesOf(startPicker.get());
+    if (start === null) {
+      endTimeEl.textContent = "--:--";
+      durationEl.textContent = "—";
+      return;
+    }
+    endTimeEl.textContent = hhmmOf(start + duration);
+    durationEl.textContent = durationLabel(duration);
+  }
+
+  const startPicker = createTimePicker(
+    document.getElementById("newApptStartBox"),
+    document.getElementById("newApptStartPanel"),
+    document.getElementById("newApptStartList"),
+    () => { recomputeEndAndDuration(); }
+  );
+
+  if (serviceSel) serviceSel.addEventListener("change", recomputeEndAndDuration);
 
   function showError(msg) {
     errorEl.textContent = msg;
@@ -228,7 +279,7 @@ setInterval(updateTimeline, 60000);
 
   function resetForm() {
     dateInput.value = "";
-    timeInput.value = "";
+    startPicker.set("");
     if (serviceSel) serviceSel.value = "";
     if (employeeSel) employeeSel.value = "";
     nameInput.value = "";
@@ -238,20 +289,37 @@ setInterval(updateTimeline, 60000);
     messageInput.value = "";
     errorEl.style.display = "none";
     errorEl.textContent = "";
+    if (serviceDurationHint) serviceDurationHint.textContent = "";
+    endTimeEl.textContent = "--:--";
+    durationEl.textContent = "—";
   }
 
-  function open() {
+  function open(prefill) {
     resetForm();
     const today = new Date();
-    dateInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    dateInput.value = (prefill && prefill.date) ||
+      `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    if (prefill && prefill.time) startPicker.set(prefill.time);
+
+    // Pré-sélectionne l'employé déjà filtré dans le calendrier, sauf si le
+    // clic sur une case précise visait un employé différent.
+    if (employeeSel) {
+      const empFilter = document.getElementById("empFilterSelect");
+      const wantedEmployeeId = (prefill && prefill.employeeId) ||
+        (empFilter && empFilter.value !== "all" ? empFilter.value : "");
+      if (wantedEmployeeId) employeeSel.value = wantedEmployeeId;
+    }
+
     overlay.classList.add("show");
+    nameInput.focus();
   }
 
   function close() {
     overlay.classList.remove("show");
+    document.querySelectorAll(".appt-time-panel.open").forEach((p) => p.classList.remove("open"));
   }
 
-  openBtn.addEventListener("click", open);
+  openBtn.addEventListener("click", () => open());
   closeBtn.addEventListener("click", close);
   cancelBtn.addEventListener("click", close);
   overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
@@ -259,16 +327,35 @@ setInterval(updateTimeline, 60000);
     if (e.key === "Escape" && overlay.classList.contains("show")) close();
   });
 
+  // ── Clic sur une case vide du calendrier → ouvre le formulaire pré-rempli ──
+  // .day-events-col (qui contient les RDV) a pointer-events:none sur les zones
+  // vides, donc un clic dans le "vide" arrive bien jusqu'à la cellule .cell.day
+  // en-dessous — pas besoin de vérifier qu'on n'a pas cliqué un RDV existant.
+  document.querySelectorAll(".calendar-section .cell.day").forEach((cell) => {
+    cell.addEventListener("click", () => {
+      open({ date: cell.dataset.iso, time: cell.dataset.time });
+    });
+  });
+
+  // ── Vue Mois : bouton "+" sur une case jour (sans heure précise) ──────────
+  document.querySelectorAll(".cal-month__add-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      open({ date: btn.dataset.iso });
+    });
+  });
+
   submitBtn.addEventListener("click", async () => {
     errorEl.style.display = "none";
 
     const date  = dateInput.value;
-    const time  = timeInput.value;
+    const time  = startPicker.get();
     const name  = nameInput.value.trim();
     const email = emailInput.value.trim();
 
     if (!date || !time || !name || !email) {
-      showError("Veuillez remplir les champs obligatoires (date, heure, prénom, email).");
+      showError("Veuillez remplir les champs obligatoires (date, heure de début, prénom, email).");
       return;
     }
 

@@ -2,6 +2,7 @@ const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
 const Stripe = require("stripe");
 const getServices = require("../utils/services");
 const { getLimit, atLeast } = require("../utils/planLimits");
+const { getCoursesForDate, courseRangesFor } = require("../utils/recurringCourses");
 
 const stripe = new Stripe(env.stripeSecretKey);
 
@@ -563,6 +564,13 @@ exports.createAdminBooking = async (req, res) => {
       if (conflict) {
         return res.json({ success: false, error: "conflict", message: "Cet employé a déjà un rendez-vous sur ce créneau." });
       }
+
+      const coursesForThisDate = await getCoursesForDate(currentCompany, date);
+      const courseConflict = courseRangesFor(coursesForThisDate, employeeId)
+        .some(([rs, re]) => startTimeInMinutes < re && endTimeInMinutes > rs);
+      if (courseConflict) {
+        return res.json({ success: false, error: "conflict", message: "Cet employé est en cours collectif sur ce créneau." });
+      }
     }
 
     const newBooking = await Booking.create({
@@ -657,12 +665,6 @@ exports.createAdminBooking = async (req, res) => {
 const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
 const { addEventToCalendar, deleteEventFromCalendar, updateEventInCalendar, getBusyIntervals } = require("../utils/googleCalendarSync");
-
-exports.client = (req, res) => {
-  res.render("admin/client", {
-    pageName: "Clients",
-  });
-};
 
 async function getSlotTime(companyId) {
   const res = await Company.findById(companyId).select("slotTime").lean();

@@ -1,0 +1,138 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet" href="/css/layouts/services.css")
+    link(rel="stylesheet" href="/css/layouts/clients.css")
+
+block content
+    -
+        var parts = client.fullName.split(' ').filter(Boolean)
+        var initials = ((parts[0] || '?')[0] + ((parts[1] || '')[0] || '')).toUpperCase()
+
+    .dossier-page
+        a.dossier-back(href="/clients")
+            svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                path(d="M400-80 0-480l400-400 56 56-344 344 344 344-56 56Z")
+            span Tous les clients
+
+        .dossier-header
+            .dossier-header__id
+                .dossier-header__avatar= initials
+                .dossier-header__info
+                    h2= client.fullName
+                    .dossier-header__contact
+                        span
+                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                path(d="M200-160q-33 0-56.5-23.5T120-240v-480q0-33 23.5-56.5T200-800h560q33 0 56.5 23.5T840-720v480q0 33-23.5 56.5T760-160H200Zm280-280L200-640v400h560v-400L480-440Zm0-80 280-200H200l280 200ZM200-640v-80 480-400Z")
+                            = client.email
+                        if client.phone
+                            span
+                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                    path(d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-387q31 31 65 57Q487 39 524 59l98-98q9-9 23.5-13.5T672-114l138 28q14 4 22.5 14.5T841-696v138q0 18-12 30t-30 12Z")
+                                = client.phone
+            .dossier-header__stats
+                .dossier-stat
+                    .dossier-stat__n= bookings.length
+                    .dossier-stat__l Rendez-vous
+                if lastVisit
+                    .dossier-stat
+                        .dossier-stat__n= new Date(lastVisit.date).toLocaleDateString('fr-FR')
+                        .dossier-stat__l Dernière visite
+                if nextVisit
+                    .dossier-stat.dossier-stat--next
+                        .dossier-stat__n= new Date(nextVisit.date).toLocaleDateString('fr-FR')
+                        .dossier-stat__l Prochain RDV
+
+        .dossier-layout
+            //- ── Colonne principale : chronologie des notes ──────────────────
+            .dossier-main
+                .dossier-main__header
+                    h3 Suivi du client
+                    button.sm-btn.sm-btn--primary#addEntryBtn
+                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                            path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                        span Nouvelle note
+
+                #timelineList.dossier-timeline
+                    if entries.length === 0
+                        .dossier-timeline__empty
+                            svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor")
+                                path(d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z")
+                            p Aucune note encore pour ce client.
+                            p.dossier-timeline__empty-sub Ajoutez la première — constat initial, soin réalisé, objectif fixé...
+                    each entry in entries
+                        .timeline-entry(data-id=String(entry._id) data-note=entry.note data-todo=entry.todo data-date=new Date(entry.date).toISOString().slice(0,10))
+                            .timeline-entry__rail
+                                .timeline-entry__dot
+                            .timeline-entry__card
+                                .timeline-entry__head
+                                    span.timeline-entry__date= new Date(entry.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                                    .timeline-entry__actions
+                                        button.timeline-entry__btn.edit-entry-btn(title="Modifier")
+                                            svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
+                                                path(d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Z")
+                                        button.timeline-entry__btn.timeline-entry__btn--danger.delete-entry-btn(title="Supprimer")
+                                            svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
+                                                path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-272h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+                                p.timeline-entry__note= entry.note
+                                if entry.todo
+                                    .timeline-entry__todo
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                            path(d="M482-160q-134 0-228-93t-94-227v-7l-64 64-56-56 160-160 160 160-56 56-64-64v7q0 100 70.5 170T482-240q26 0 51-6t49-18l60 60q-38 22-78 33t-82 11Zm278-149L600-469l56-56 64 64v-7q0-100-70.5-170T478-708q-26 0-51 6t-49 18l-60-60q38-22 78-33t82-11q134 0 228 93t94 227v7l64-64 56 56-160 160Z")
+                                        span
+                                            strong À faire la prochaine fois :&nbsp;
+                                            = entry.todo
+
+            //- ── Colonne latérale : infos générales + historique RDV ─────────
+            .dossier-side
+                .section__container.dossier-general
+                    h3 Informations générales
+                    p.xs-comment Antécédents, allergies, objectifs... tout ce qui reste valable d'une visite à l'autre.
+                    textarea.textarea#generalInfoInput(rows=6 placeholder="Ex: Douleur lombaire chronique depuis 2022, allergie au latex...")= dossier.generalInfo
+                    .dossier-general__footer
+                        button.sm-btn.sm-btn--primary#saveGeneralBtn(disabled) Enregistrer
+                        span#generalSaveStatus.dossier-general__status
+
+                .section__container.dossier-history
+                    h3 Historique des rendez-vous
+                    if bookings.length === 0
+                        p.xs-comment Aucun rendez-vous trouvé.
+                    else
+                        ul.booking-mini-list
+                            each b in bookings.slice(0, 10)
+                                li.booking-mini-item
+                                    span.booking-mini-item__date= new Date(b.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+                                    span.booking-mini-item__service= b.serviceName || 'Rendez-vous'
+                                    span.booking-mini-item__status(class=`booking-mini-item__status--${b.status}`)= b.status === 'canceled' ? 'Annulé' : 'Confirmé'
+
+    //- ── Modal : Nouvelle / Modifier une note ─────────────────────────────────
+    .modal-overlay#entryModalOverlay
+    .service-modal#entryModal
+        .service-modal__header
+            h3#entryModalTitle Nouvelle note
+            button.modal-close#closeEntryModal
+                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                    path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
+        .service-modal__body
+            input(type="hidden" id="entryModalId")
+            .field
+                label Date
+                input.input#entryModalDate(type="date")
+            .field
+                label Constat / ce qui a été fait
+                textarea.textarea#entryModalNote(rows=4 placeholder="Ex: Douleur à l'épaule droite, mobilité réduite. Massage + étirements ciblés.")
+            .field
+                label
+                    | À faire au prochain rendez-vous
+                    span.auth-label-opt &nbsp;(optionnel)
+                textarea.textarea#entryModalTodo(rows=2 placeholder="Ex: Continuer le renforcement, revoir la posture assise.")
+        .service-modal__footer
+            button.sm-btn.sm-btn--ghost#cancelEntryModal Annuler
+            button.sm-btn.sm-btn--primary#saveEntryBtn Enregistrer
+
+    script.
+        window.__dossierId = !{JSON.stringify(String(dossier._id))};
+
+block scripts
+    script(src="/js/utils/confirm-modal.js")
+    script(src="/js/layouts/client-dossier.js")

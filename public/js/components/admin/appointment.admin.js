@@ -125,6 +125,7 @@ export const initAppointmentPopup = function () {
   const deleteBtn  = document.getElementById("apptPopupDelete");
   const closeBtn   = document.getElementById("apptPopupClose");
   const detailBtn  = document.getElementById("apptPopupDetailBtn");
+  const dossierBtn = document.getElementById("apptPopupDossierBtn");
 
   let currentId = null;
 
@@ -186,6 +187,16 @@ export const initAppointmentPopup = function () {
     // Edit / detail links
     editBtn.onclick  = () => { window.location.href = `/history/edit/${currentId}`; };
     detailBtn.href   = `/history/edit/${currentId}`;
+
+    // Dossier client (caché si pas d'email — événement "autre" sans client)
+    if (dossierBtn) {
+      if (d.email) {
+        dossierBtn.href = `/clients/${encodeURIComponent(d.email)}`;
+        dossierBtn.style.display = "";
+      } else {
+        dossierBtn.style.display = "none";
+      }
+    }
 
     // Position BEFORE showing (offsetHeight works because visibility:hidden keeps layout)
     positionPopup(card);
