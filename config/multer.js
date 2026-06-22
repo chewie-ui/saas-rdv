@@ -9,5 +9,9 @@ const storage = multer.memoryStorage();
 
 module.exports = multer({
   storage,
-  limits: { fileSize: 25 * 1024 * 1024 }, // 25 Mo avant compression
+  // Aligné sur le plafond client (image-upload.js) : le navigateur compresse
+  // déjà la photo avant l'envoi — cette limite ne sert que de filet de
+  // sécurité pour le cas de secours où l'original brut est envoyé tel quel
+  // (échec de préparation côté navigateur).
+  limits: { fileSize: 60 * 1024 * 1024 },
 });

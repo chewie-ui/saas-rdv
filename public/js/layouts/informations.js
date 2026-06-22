@@ -1,17 +1,3 @@
-// Petit toast d'erreur autonome (pas de dépendance CSS de la page) — utilisé
-// pour signaler clairement un échec d'upload plutôt que de laisser l'image
-// disparaître silencieusement (cas vécu avec les photos iPhone/HEIC).
-function showUploadError(message) {
-  const existing = document.getElementById("uploadErrorToast");
-  if (existing) existing.remove();
-  const toast = document.createElement("div");
-  toast.id = "uploadErrorToast";
-  toast.textContent = message;
-  toast.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#dc2626;color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.2);z-index:99999;max-width:90vw;text-align:center;";
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 5000);
-}
-
 const uploadBtn = document.getElementById("uploadBtn");
 const fileInput = document.getElementById("fileInput");
 const avatarPreview = document.getElementById("avatarPreview");
@@ -26,25 +12,18 @@ if (uploadBtn && fileInput && avatarPreview) {
     const previousSrc = avatarPreview.src;
     avatarPreview.src = URL.createObjectURL(file);
 
-    const formData = new FormData();
-    formData.append("profilePicture", file);
-
     try {
-      const res = await fetch("/account/profile-picture", {
+      const data = await window.BkImageUpload.uploadImage({
+        url: "/account/profile-picture",
         method: "PATCH",
-        body: formData,
+        fieldName: "profilePicture",
+        file,
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data.success === false) {
-        avatarPreview.src = previousSrc;
-        showUploadError(data.message || "Cette photo n'a pas pu être envoyée. Essayez un autre fichier.");
-      } else if (data.path) {
-        avatarPreview.src = data.path;
-      }
+      avatarPreview.src = data.path || previousSrc;
     } catch (err) {
-      console.error(err);
       avatarPreview.src = previousSrc;
-      showUploadError("Erreur réseau lors de l'envoi de la photo.");
+    } finally {
+      fileInput.value = "";
     }
   };
 }
@@ -80,23 +59,18 @@ if (uploadBusinessBtn && businessFileInput) {
       }
     }
 
-    const formData = new FormData();
-    formData.append("businessPicture", file);
-
     try {
-      const res = await fetch("/account/business-picture", {
+      const data = await window.BkImageUpload.uploadImage({
+        url: "/account/business-picture",
         method: "PATCH",
-        body: formData,
+        fieldName: "businessPicture",
+        file,
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data.success === false) {
-        showUploadError(data.message || "Cette photo n'a pas pu être envoyée. Essayez un autre fichier.");
-      } else if (data.path && previewImg) {
-        previewImg.src = data.path;
-      }
+      if (data.path && previewImg) previewImg.src = data.path;
     } catch (err) {
-      console.error(err);
-      showUploadError("Erreur réseau lors de l'envoi de la photo.");
+      // L'erreur est déjà affichée à l'écran par BkImageUpload.
+    } finally {
+      businessFileInput.value = "";
     }
   };
 }

@@ -97,22 +97,28 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!lastName)  { empModalLastName.focus();  return; }
 
     const id = empModalId.value;
-    const formData = new FormData();
-    formData.append("firstName",   firstName);
-    formData.append("lastName",    lastName);
     let age = empModalAge.value;
     if (age !== "") age = Math.min(Math.max(Math.round(Number(age)), 16), 100);
-    formData.append("age",         age);
-    formData.append("description", empModalDesc.value.trim());
-    if (pendingPhotoFile) formData.append("profilePicture", pendingPhotoFile);
+    const extraFields = { firstName, lastName, age, description: empModalDesc.value.trim() };
 
     const url    = id ? `/api/employees/${id}` : "/api/employees";
     const method = id ? "PATCH" : "POST";
 
     try {
       saveEmpBtn.disabled = true;
-      const res  = await fetch(url, { method, body: formData });
-      const data = await res.json();
+      let data;
+      if (pendingPhotoFile) {
+        // BkImageUpload gère la conversion (HEIC/iPhone inclus), le
+        // redimensionnement, la progression et les erreurs à l'écran.
+        data = await window.BkImageUpload.uploadImage({
+          url, method, fieldName: "profilePicture", file: pendingPhotoFile, extraFields,
+        });
+      } else {
+        const formData = new FormData();
+        Object.keys(extraFields).forEach((k) => formData.append(k, extraFields[k]));
+        const res = await fetch(url, { method, body: formData });
+        data = await res.json();
+      }
       if (data.success) {
         if (!id) { currentCount++; }
         location.reload();
@@ -121,7 +127,11 @@ document.addEventListener("DOMContentLoaded", () => {
         alert(msg);
         saveEmpBtn.disabled = false;
       }
-    } catch (_) { alert("Erreur réseau."); saveEmpBtn.disabled = false; }
+    } catch (err) {
+      // Cas photo : le message précis est déjà affiché à l'écran par BkImageUpload.
+      if (!pendingPhotoFile) alert("Erreur réseau.");
+      saveEmpBtn.disabled = false;
+    }
   });
 
   if (!employeesList) return;
@@ -181,18 +191,17 @@ document.addEventListener("DOMContentLoaded", () => {
       const file = photoInput.files[0];
       if (!file) return;
       const id = photoInput.dataset.id;
-      const fd = new FormData();
-      fd.append("profilePicture", file);
       try {
-        const res  = await fetch(`/api/employees/${id}`, { method: "PATCH", body: fd });
-        const data = await res.json();
-        if (data.success) {
-          const img = photoInput.closest(".emp-card").querySelector(".emp-card__photo img");
-          if (img) img.src = (data.employee && data.employee.profilePicture) || URL.createObjectURL(file);
-        } else {
-          alert(data.message || data.error || "Cette photo n'a pas pu être envoyée.");
-        }
-      } catch (_) { alert("Erreur réseau lors de l'envoi de la photo."); }
+        const data = await window.BkImageUpload.uploadImage({
+          url: `/api/employees/${id}`, method: "PATCH", fieldName: "profilePicture", file,
+        });
+        const img = photoInput.closest(".emp-card").querySelector(".emp-card__photo img");
+        if (img) img.src = (data.employee && data.employee.profilePicture) || URL.createObjectURL(file);
+      } catch (err) {
+        // Le message d'erreur précis est déjà affiché à l'écran par BkImageUpload.
+      } finally {
+        photoInput.value = "";
+      }
     }
   });
 
