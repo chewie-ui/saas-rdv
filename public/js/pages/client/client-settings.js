@@ -35,11 +35,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (data.success) {
           showToast("Photo de profil mise à jour !", "success");
+          if (data.path) avatarPreview.src = data.path;
           // Mise à jour dans la sidebar aussi
           const sidebarAvatar = document.querySelector(".client-layout .sidebar .profile-image img");
           if (sidebarAvatar) sidebarAvatar.src = data.path;
         } else {
-          showToast("Erreur lors de l'upload.", "error");
+          showToast(data.message || "Erreur lors de l'upload.", "error");
           avatarPreview.src = avatarPreview.dataset.original || "/images/no-user.webp";
         }
       } catch (err) {

@@ -832,8 +832,14 @@ function buildSlotsPanel(slots) {
     return `<button class="bk-slot ${s.taken?"is-disabled":""} ${s.isPast?"is-past":""} ${STATE.time===s.time?"is-selected":""} ${isReco?"is-recommended":""}"
       data-time="${s.time}" ${s.taken?"disabled":""}>${s.time}${remainingHtml}</button>`;
   };
-  const mainSlots  = groupingOn ? visible.filter(s => s.taken || s.isPast || s.recommended) : visible;
-  const extraSlots = groupingOn ? visible.filter(s => !s.taken && !s.isPast && !s.recommended) : [];
+  // Le serveur ne renvoie déjà que des créneaux recommandés réellement libres
+  // (cf. computeRecommendedTimes côté serveur) — donc ici on n'a plus besoin
+  // de mélanger les créneaux pris/passés dans la liste principale : ça
+  // donnait l'impression que le regroupement "recommandait" des horaires
+  // indisponibles. Tout le reste (pris, passé, libre non-recommandé) part
+  // sous "Voir plus".
+  const mainSlots  = groupingOn ? visible.filter(s => s.recommended) : visible;
+  const extraSlots = groupingOn ? visible.filter(s => !s.recommended) : [];
 
   return `<div class="bk-slots">
     <h3>${fmtDate(STATE.date)}</h3>

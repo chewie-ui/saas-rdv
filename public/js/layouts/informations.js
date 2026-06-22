@@ -1,3 +1,17 @@
+// Petit toast d'erreur autonome (pas de dépendance CSS de la page) — utilisé
+// pour signaler clairement un échec d'upload plutôt que de laisser l'image
+// disparaître silencieusement (cas vécu avec les photos iPhone/HEIC).
+function showUploadError(message) {
+  const existing = document.getElementById("uploadErrorToast");
+  if (existing) existing.remove();
+  const toast = document.createElement("div");
+  toast.id = "uploadErrorToast";
+  toast.textContent = message;
+  toast.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#dc2626;color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.2);z-index:99999;max-width:90vw;text-align:center;";
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 5000);
+}
+
 const uploadBtn = document.getElementById("uploadBtn");
 const fileInput = document.getElementById("fileInput");
 const avatarPreview = document.getElementById("avatarPreview");
@@ -9,18 +23,28 @@ if (uploadBtn && fileInput && avatarPreview) {
     const file = fileInput.files[0];
     if (!file) return;
 
+    const previousSrc = avatarPreview.src;
     avatarPreview.src = URL.createObjectURL(file);
 
     const formData = new FormData();
     formData.append("profilePicture", file);
 
     try {
-      await fetch("/account/profile-picture", {
+      const res = await fetch("/account/profile-picture", {
         method: "PATCH",
         body: formData,
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) {
+        avatarPreview.src = previousSrc;
+        showUploadError(data.message || "Cette photo n'a pas pu être envoyée. Essayez un autre fichier.");
+      } else if (data.path) {
+        avatarPreview.src = data.path;
+      }
     } catch (err) {
       console.error(err);
+      avatarPreview.src = previousSrc;
+      showUploadError("Erreur réseau lors de l'envoi de la photo.");
     }
   };
 }
@@ -38,9 +62,10 @@ if (uploadBusinessBtn && businessFileInput) {
     if (!file) return;
 
     // Show immediate preview — replace placeholder div with img if needed
-    if (businessPicWrapper) {
-      if (businessPicWrapper.tagName === "IMG") {
-        businessPicWrapper.src = URL.createObjectURL(file);
+    let previewImg = businessPicWrapper;
+    if (previewImg) {
+      if (previewImg.tagName === "IMG") {
+        previewImg.src = URL.createObjectURL(file);
       } else {
         // Was a placeholder div — swap to an img
         const img = document.createElement("img");
@@ -50,7 +75,8 @@ if (uploadBusinessBtn && businessFileInput) {
         img.style.width = "100%";
         img.style.height = "100%";
         img.style.objectFit = "cover";
-        businessPicWrapper.replaceWith(img);
+        previewImg.replaceWith(img);
+        previewImg = img;
       }
     }
 
@@ -58,12 +84,19 @@ if (uploadBusinessBtn && businessFileInput) {
     formData.append("businessPicture", file);
 
     try {
-      await fetch("/account/business-picture", {
+      const res = await fetch("/account/business-picture", {
         method: "PATCH",
         body: formData,
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) {
+        showUploadError(data.message || "Cette photo n'a pas pu être envoyée. Essayez un autre fichier.");
+      } else if (data.path && previewImg) {
+        previewImg.src = data.path;
+      }
     } catch (err) {
       console.error(err);
+      showUploadError("Erreur réseau lors de l'envoi de la photo.");
     }
   };
 }

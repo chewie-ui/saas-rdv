@@ -2,6 +2,7 @@ const router = require("express").Router();
 const ctrl = require("../controllers/client.controller");
 const isClientAuth = require("../middlewares/isClientAuth");
 const upload = require("../config/multer");
+const { processSingleImage } = require("../middlewares/processImageUpload");
 const { google } = require("googleapis");
 const { createOAuthClient } = require("../config/googleCalendar");
 const Client = require("../db/models/client.model");
@@ -114,7 +115,7 @@ router.get("/espace-client", isClientAuth, ctrl.getDashboard);
 // ─── Settings ────────────────────────────────────────────────────────────────
 router.get("/espace-client/parametres", isClientAuth, ctrl.getSettings);
 router.post("/espace-client/parametres/profile", isClientAuth, ctrl.updateProfile);
-router.patch("/espace-client/parametres/picture", isClientAuth, upload.single("profilePicture"), ctrl.updateClientPicture);
+router.patch("/espace-client/parametres/picture", isClientAuth, upload.single("profilePicture"), processSingleImage("profilePicture"), ctrl.updateClientPicture);
 router.post("/espace-client/parametres/email", isClientAuth, ctrl.updateClientEmail);
 router.post("/espace-client/parametres/password", isClientAuth, ctrl.updateClientPassword);
 router.post("/espace-client/parametres/language", isClientAuth, ctrl.updateClientLang);

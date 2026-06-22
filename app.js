@@ -249,4 +249,16 @@ app.use(injectSubscription);
 app.use(googleCalendarRoutes);
 app.use(routes);
 
+// Erreurs multer (ex: fichier image trop volumineux) — renvoyer un message
+// clair en JSON plutôt que de laisser planter la requête en page d'erreur.
+app.use((err, req, res, next) => {
+  if (err && err.name === "MulterError") {
+    const message = err.code === "LIMIT_FILE_SIZE"
+      ? "Cette image est trop volumineuse (25 Mo max)."
+      : "Erreur lors de l'envoi du fichier.";
+    return res.status(400).json({ success: false, message });
+  }
+  next(err);
+});
+
 module.exports = app;

@@ -1,6 +1,7 @@
 const router = require("express").Router();
 
 const upload = require("../../config/multer");
+const { processSingleImage, processMultipleImages } = require("../../middlewares/processImageUpload");
 const accountController = require("../../controllers/account.controller");
 
 const injectCompany = require("../../middlewares/injectCompany");
@@ -8,6 +9,7 @@ const isAuth = require("../../middlewares/isAuth");
 router.patch(
   "/profile-picture",
   upload.single("profilePicture"),
+  processSingleImage("profilePicture"),
   accountController.editProfilePicture,
 );
 
@@ -45,6 +47,7 @@ router.patch("/about", accountController.updateAbout);
 router.patch(
   "/business-picture",
   upload.single("businessPicture"),
+  processSingleImage("businessPicture"),
   accountController.editBusinessPicture,
 );
 
@@ -56,10 +59,16 @@ router.patch("/embed-settings", isAuth, accountController.updateEmbedSettings);
 router.patch(
   "/calendar-bg-image",
   upload.single("calendarBgImage"),
+  processSingleImage("calendarBgImage"),
   accountController.editCalendarBgImage
 );
 
-router.patch("/gallery", upload.array("galleryPhotos", 12), accountController.updateGallery);
+router.patch(
+  "/gallery",
+  upload.array("galleryPhotos", 12),
+  processMultipleImages("galleryPhoto"),
+  accountController.updateGallery,
+);
 router.patch("/gallery/reorder", accountController.reorderGallery);
 router.delete("/gallery/:index", accountController.deleteGalleryPhoto);
 router.patch("/gallery-layout", accountController.updateGalleryLayout);

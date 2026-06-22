@@ -184,6 +184,11 @@
   overflow: hidden;
 }
 .client-card__detail svg { flex-shrink: 0; color: var(--text-muted); }
+/* fill:none explicite UNIQUEMENT sur l'icône téléphone (à traits) — une
+   règle globale `svg { fill: ... }` écraserait sinon son fill="none". Ne
+   pas l'appliquer à .client-card__detail svg en général : ça inclut aussi
+   l'icône email (pleine, fill="currentColor") qui partage le même conteneur. */
+.client-card__detail svg.icon-phone { fill: none; }
 .client-card__detail span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .client-card__visits {
@@ -201,6 +206,7 @@
 }
 .client-card__visit strong { color: var(--text-secondary); font-weight: 600; }
 .client-card__visit--next strong { color: var(--accent); }
+.client-card__visit--none { opacity: 0.55; }
 
 /* ════════════════════════════════════════════════════════════════════════
    Page détail — dossier d'un client
@@ -281,6 +287,8 @@
   color: var(--text-muted);
 }
 .dossier-header__contact svg { flex-shrink: 0; }
+/* fill:none explicite UNIQUEMENT sur l'icône téléphone — cf. note plus haut. */
+.dossier-header__contact svg.icon-phone { fill: none; }
 
 .dossier-header__stats {
   display: flex;

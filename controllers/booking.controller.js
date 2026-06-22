@@ -848,18 +848,30 @@ exports.getBooking = async (req, res) => {
   // un créneau, uniquement pour suggérer un ordre d'affichage qui évite de
   // fragmenter la journée d'un indépendant qui débute (peu de clients).
   const smartGrouping = companyDoc?.smartGrouping;
-  function computeRecommendedTimes(anchorBookings) {
+  // blockedSet est passé une fois entièrement construit par chaque cas
+  // ci-dessous, afin de ne JAMAIS recommander un créneau déjà pris/passé.
+  // Si la fenêtre configurée ne contient aucun créneau libre (ex: elle est
+  // presque entièrement recouverte par le RDV existant lui-même), on
+  // l'élargit progressivement par tranches de 60 min jusqu'à trouver au
+  // moins un créneau disponible — sinon le client ne voit qu'un mur de
+  // créneaux barrés sans rien à réserver.
+  function computeRecommendedTimes(anchorBookings, blockedSet) {
     if (!smartGrouping?.enabled || !anchorBookings || anchorBookings.length === 0) return null;
-    const windowMin = Math.max(1, Number(smartGrouping.windowHours) || 3) * 60;
+    const baseWindowMin = Math.max(1, Number(smartGrouping.windowHours) || 3) * 60;
     const anchors = anchorBookings.map((b) => {
       const [h, m] = b.startTime.split(":").map(Number);
       return h * 60 + m;
     });
-    const recommended = new Set();
-    for (let t = 0; t < 24 * 60; t += step) {
-      if (anchors.some((a) => Math.abs(t - a) <= windowMin)) recommended.add(minutesToTimeStr(t));
+    for (let windowMin = baseWindowMin; windowMin <= 24 * 60; windowMin += 60) {
+      const recommended = new Set();
+      for (let t = 0; t < 24 * 60; t += step) {
+        const timeStr = minutesToTimeStr(t);
+        if (blockedSet.has(timeStr)) continue;
+        if (anchors.some((a) => Math.abs(t - a) <= windowMin)) recommended.add(timeStr);
+      }
+      if (recommended.size > 0) return Array.from(recommended);
     }
-    return Array.from(recommended);
+    return null; // toute la journée est prise — rien à recommander
   }
 
   // ── Agenda Google personnel : si le pro a connecté son agenda perso, on
@@ -892,7 +904,7 @@ exports.getBooking = async (req, res) => {
     blockedFromRanges(blockedSet, googleRanges);
     blockedFromRanges(blockedSet, courseRangesFor(coursesToday, employeeId));
     blockPastSlots(blockedSet);
-    return res.json({ bookedTimes: Array.from(blockedSet), recommendedTimes: computeRecommendedTimes(bookings) });
+    return res.json({ bookedTimes: Array.from(blockedSet), recommendedTimes: computeRecommendedTimes(bookings, blockedSet) });
   }
 
   // ── Case 2: no employees on this company → 1 booking blocks the slot ─────
@@ -903,7 +915,7 @@ exports.getBooking = async (req, res) => {
     blockedFromRanges(blockedSet, googleRanges);
     blockedFromRanges(blockedSet, courseRangesFor(coursesToday, null));
     blockPastSlots(blockedSet);
-    return res.json({ bookedTimes: Array.from(blockedSet), recommendedTimes: computeRecommendedTimes(bookings) });
+    return res.json({ bookedTimes: Array.from(blockedSet), recommendedTimes: computeRecommendedTimes(bookings, blockedSet) });
   }
 
   // ── Case 3: company has employees, no filter → block slot only when ALL are busy ──
@@ -943,7 +955,7 @@ exports.getBooking = async (req, res) => {
   blockedFromRanges(blockedSet, googleRanges);
   blockPastSlots(blockedSet);
 
-  res.json({ bookedTimes: Array.from(blockedSet), recommendedTimes: computeRecommendedTimes(bookings) });
+  res.json({ bookedTimes: Array.from(blockedSet), recommendedTimes: computeRecommendedTimes(bookings, blockedSet) });
 };
 
 function formatFutureDate(date) {

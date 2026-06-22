@@ -1,17 +1,13 @@
 const multer = require("multer");
-const path = require("path");
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "public/uploads/profiles");
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(
-      null,
-      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname),
-    );
-  },
+// Stockage en mémoire : le buffer brut est ensuite traité par
+// middlewares/processImageUpload.js (sharp) qui valide le format réel,
+// corrige l'orientation et écrit le fichier final sur disque. On ne peut
+// plus se fier à l'extension/MIME envoyée par le navigateur (les photos
+// iPhone/HEIC arrivent parfois avec un type MIME générique).
+const storage = multer.memoryStorage();
+
+module.exports = multer({
+  storage,
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25 Mo avant compression
 });
-
-module.exports = multer({ storage });

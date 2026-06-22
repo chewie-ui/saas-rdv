@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!id) { currentCount++; }
         location.reload();
       } else {
-        const msg = data.error === "plan_limit" ? data.message : (data.error || "Erreur.");
+        const msg = data.error === "plan_limit" ? data.message : (data.message || data.error || "Erreur.");
         alert(msg);
         saveEmpBtn.disabled = false;
       }
@@ -188,9 +188,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await res.json();
         if (data.success) {
           const img = photoInput.closest(".emp-card").querySelector(".emp-card__photo img");
-          if (img) img.src = URL.createObjectURL(file);
+          if (img) img.src = (data.employee && data.employee.profilePicture) || URL.createObjectURL(file);
+        } else {
+          alert(data.message || data.error || "Cette photo n'a pas pu être envoyée.");
         }
-      } catch (_) { alert("Erreur upload."); }
+      } catch (_) { alert("Erreur réseau lors de l'envoi de la photo."); }
     }
   });
 

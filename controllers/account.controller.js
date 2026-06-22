@@ -93,9 +93,10 @@ exports.editProfilePicture = async (req, res) => {
       profilePicture: imagePath,
     });
 
-    return res.json({ success: true });
+    return res.json({ success: true, path: imagePath });
   } catch (err) {
-    return res.json(err);
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Erreur lors de l'enregistrement de la photo." });
   }
 };
 

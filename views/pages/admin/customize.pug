@@ -1428,12 +1428,35 @@ block scripts
                     + '</div>';
             }
 
+            function glShowError(message) {
+                var existing = document.getElementById('glUploadErrorToast');
+                if (existing) existing.remove();
+                var toast = document.createElement('div');
+                toast.id = 'glUploadErrorToast';
+                toast.textContent = message;
+                toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#dc2626;color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.2);z-index:99999;max-width:90vw;text-align:center;';
+                document.body.appendChild(toast);
+                setTimeout(function () { toast.remove(); }, 5000);
+            }
+
             async function glUploadFiles(files) {
                 if (!files || !files.length) return;
                 var formData = new FormData();
                 Array.from(files).forEach(function (f) { formData.append('galleryPhotos', f); });
-                var res  = await fetch('/account/gallery', { method: 'PATCH', body: formData });
-                var data = await res.json();
+                var res, data;
+                try {
+                    res  = await fetch('/account/gallery', { method: 'PATCH', body: formData });
+                    data = await res.json();
+                } catch (err) {
+                    glShowError('Erreur réseau lors de l\'envoi des photos.');
+                    if (glInput) glInput.value = '';
+                    return;
+                }
+                if (!res.ok || data.success === false) {
+                    glShowError(data.message || 'Une ou plusieurs photos n\'ont pas pu être envoyées. Essayez un autre format (JPG, PNG, WEBP, HEIC).');
+                    if (glInput) glInput.value = '';
+                    return;
+                }
                 if (data.success && data.paths) {
                     data.paths.forEach(function (path) {
                         var grid = glGetGrid();
