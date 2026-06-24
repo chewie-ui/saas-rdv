@@ -15,6 +15,7 @@ const Company = require("../db/models/company/company.model");
 const mongoose = require("mongoose");
 const crypto = require("crypto");
 const { requireFeatureActive } = require("../middlewares/featureFlag");
+const isAuth = require("../middlewares/isAuth");
 
 function buildUserRedirectUri() {
   const base = (process.env.BASE_URL || "http://localhost:3000").replace(/\/$/, "");
@@ -111,6 +112,12 @@ router.post("/set-pending", (req, res) => {
 
 router.post("/register", createUser);
 
+// ── Liste des métiers pour le formulaire d'inscription (utilisée par le
+// client desktop — le site web la passe directement au template Pug) ───────
+router.get("/api/business-types", (req, res) => {
+  res.json({ businessTypes: getServices(res.locals.lang || "fr") });
+});
+
 router.post("/login", (req, res, next) => {
   const isAjax = req.headers["x-requested-with"] === "fetch";
   passport.authenticate("local", (err, user, info) => {
@@ -173,14 +180,21 @@ router.get("/login/2fa", (req, res) => {
 });
 
 router.post("/login/2fa", async (req, res) => {
+  const isAjax = req.headers["x-requested-with"] === "fetch";
   const { pending2FAUserId } = req.session;
-  if (!pending2FAUserId) return res.redirect("/login");
+  if (!pending2FAUserId) {
+    if (isAjax) return res.status(400).json({ error: "Session expirée, veuillez vous reconnecter." });
+    return res.redirect("/login");
+  }
 
   const { code } = req.body;
   try {
     const speakeasy = require("speakeasy");
     const user = await User.findById(pending2FAUserId);
-    if (!user) return res.redirect("/login");
+    if (!user) {
+      if (isAjax) return res.status(400).json({ error: "Session expirée, veuillez vous reconnecter." });
+      return res.redirect("/login");
+    }
 
     const isValid = speakeasy.totp.verify({
       secret: user.twoFA.secret,
@@ -188,17 +202,25 @@ router.post("/login/2fa", async (req, res) => {
       token: String(code).replace(/\s/g, ""),
       window: 1,
     });
-    if (!isValid) return res.redirect("/login/2fa?error=1");
+    if (!isValid) {
+      if (isAjax) return res.status(400).json({ error: "Code incorrect. Vérifiez votre application." });
+      return res.redirect("/login/2fa?error=1");
+    }
 
     delete req.session.pending2FAUserId;
     req.logIn(user, (err) => {
-      if (err) return res.redirect("/login");
+      if (err) {
+        if (isAjax) return res.status(500).json({ error: "Erreur serveur." });
+        return res.redirect("/login");
+      }
 
       // Access link
       const pendingCode = req.session.pendingAccessCode;
       if (pendingCode) {
         delete req.session.pendingAccessCode;
-        return res.redirect(`/access/${pendingCode}`);
+        const dest = `/access/${pendingCode}`;
+        if (isAjax) return res.json({ success: true, redirect: dest });
+        return res.redirect(dest);
       }
       // Promo / plan
       const pp = req.session.pendingPlan;
@@ -209,17 +231,30 @@ router.post("/login/2fa", async (req, res) => {
         let dest = `/subscription?autoCheckout=1`;
         if (pp) dest += `&plan=${pp}&billing=${bl}`;
         if (pr) dest += `&promo=${encodeURIComponent(pr)}`;
+        if (isAjax) return res.json({ success: true, redirect: dest });
         return res.redirect(dest);
       }
+      if (isAjax) return res.json({ success: true, redirect: "/appointment" });
       return res.redirect("/appointment");
     });
   } catch (err) {
     console.error("2FA login error:", err.message);
+    if (isAjax) return res.status(500).json({ error: "Erreur serveur." });
     return res.redirect("/login/2fa?error=1");
   }
 });
 
 router.get("/logout", logout);
+
+// ── Identité de l'utilisateur connecté (consommé par le client desktop) ──────
+router.get("/me", isAuth, (req, res) => {
+  res.json({
+    fullName: req.user.fullName,
+    email: req.user.email,
+    businessName: req.user.businessName || "",
+    profilePicture: req.user.profilePicture || "",
+  });
+});
 
 // ─── Google OAuth for users (admin/pro) ─────────────────────────────────────
 

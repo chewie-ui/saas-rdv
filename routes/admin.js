@@ -120,7 +120,7 @@ router.delete("/appointment/:bookId/delete", deleteBooking);
 router.patch("/appointment/:bookId/restore", restoreBooking);
 router.patch("/appointment/:id/cancel", cancelBooking);
 router.patch("/appointment/:id/send-reminder", isAuth, adminController.sendManualReminder);
-router.get("/appointment/week-data", getWeekData);
+router.get("/appointment/week-data", isAuth, injectCompany, getWeekData);
 
 router.patch("/appointement/:bookId/admin-notes", saveAdminNotes);
 router.patch("/appointement/:bookId/employee", updateBookingEmployee);
