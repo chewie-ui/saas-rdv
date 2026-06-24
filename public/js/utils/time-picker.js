@@ -5,6 +5,15 @@
 // Requiert les classes CSS .appt-time-box / .appt-time-panel / .appt-time-search
 // / .appt-time-list / .appt-time-opt (définies dans appointment.admin.css).
 export function createTimePicker(boxEl, panelEl, listEl, onChange) {
+  // Le panneau est position:fixed et positionné via getBoundingClientRect()
+  // (coordonnées relatives au viewport). Si un ancêtre a une transform CSS
+  // (ex: les modals .service-modal centrés en transform: translate(-50%,-50%)),
+  // le navigateur fait de cet ancêtre le containing block du panneau "fixed" —
+  // le panneau se positionne alors par rapport au modal, pas au viewport, et
+  // apparaît décalé/coupé. On le rattache directement à <body> pour garantir
+  // un positionnement fiable peu importe où le composant est utilisé.
+  document.body.appendChild(panelEl);
+
   const TIME_OPTIONS = [];
   for (let m = 0; m < 24 * 60; m += 10) {
     TIME_OPTIONS.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
@@ -37,8 +46,20 @@ export function createTimePicker(boxEl, panelEl, listEl, onChange) {
   function open() {
     document.querySelectorAll(".appt-time-panel.open").forEach((p) => { if (p !== panelEl) p.classList.remove("open"); });
     const rect = boxEl.getBoundingClientRect();
-    panelEl.style.top = `${rect.bottom + 4}px`;
-    panelEl.style.left = `${rect.left}px`;
+    // Le panneau a une hauteur fixe (recherche + liste max-height 190px) —
+    // s'il ne tient pas sous le champ jusqu'au bas de l'écran (mobile, champ
+    // proche du bas), on l'ouvre vers le haut à la place pour ne jamais le
+    // laisser dépasser le viewport et devenir inaccessible/coupé.
+    const panelHeight = panelEl.offsetHeight || 240;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUpward = spaceBelow < panelHeight + 8 && rect.top > panelHeight + 8;
+    panelEl.style.top = openUpward
+      ? `${Math.max(4, rect.top - panelHeight - 4)}px`
+      : `${rect.bottom + 4}px`;
+    // Idem horizontalement : ne jamais dépasser le bord droit de l'écran.
+    const panelWidth = panelEl.offsetWidth || 190;
+    const left = Math.min(rect.left, window.innerWidth - panelWidth - 4);
+    panelEl.style.left = `${Math.max(4, left)}px`;
     panelEl.classList.add("open");
     boxEl.classList.add("is-open");
     searchInput.value = "";
