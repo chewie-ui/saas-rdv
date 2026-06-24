@@ -51,6 +51,7 @@ router.get("/welcome", isAuth, injectCompany, (req, res) => {
 router.get("/panel", isAuth, injectCompany, requireFeatureActive("admin_panel"), renderAppointments, panel);
 router.get("/appointment", isAuth, injectCompany, requireFeatureActive("admin_panel"), appointment);
 router.post("/appointment/create", isAuth, injectCompany, requireFeatureActive("admin_panel"), adminController.createAdminBooking);
+router.post("/appointment/block", isAuth, injectCompany, requireFeatureActive("admin_panel"), adminController.createAdminBlock);
 router.get("/availability", isAuth, injectCompany, availability);
 router.get("/group-sessions", isAuth, injectCompany, requireAdminFeature("group_sessions"), listGroupSessions);
 router.get("/group-sessions/participants", isAuth, injectCompany, requireAdminFeature("group_sessions"), getSessionParticipants);
@@ -67,6 +68,9 @@ router.patch("/clients/dossier/:dossierId/general", isAuth, injectCompany, clien
 router.post("/clients/dossier/:dossierId/entries", isAuth, injectCompany, clientDossierController.addEntry);
 router.patch("/clients/dossier/:dossierId/entries/:entryId", isAuth, injectCompany, clientDossierController.updateEntry);
 router.delete("/clients/dossier/:dossierId/entries/:entryId", isAuth, injectCompany, clientDossierController.deleteEntry);
+router.patch("/clients/booking/:bookingId/payment", isAuth, injectCompany, clientDossierController.updateBookingPayment);
+router.patch("/clients/dossier/:dossierId/block", isAuth, injectCompany, clientDossierController.blockClient);
+router.patch("/clients/dossier/:dossierId/unblock", isAuth, injectCompany, clientDossierController.unblockClient);
 router.get("/informations", (req, res) => res.redirect(301, "/settings"));
 router.get("/subscription", isAuth, injectCompany, requireFeatureActive("subscription"), async (req, res) => {
   let monthlyBookingCount = null;

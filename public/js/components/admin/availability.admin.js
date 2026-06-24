@@ -1162,6 +1162,97 @@ if (sgWindowPills) {
   });
 }
 
+/* ── Regroupement : jours de la semaine ("uniquement ces jours") ─────────
+   Plusieurs jours peuvent être actifs en même temps (ce n'est pas un choix
+   unique comme la fenêtre horaire) — aucun coché = tous les jours. */
+const sgWeekdayPills = document.getElementById("sgWeekdayPills");
+if (sgWeekdayPills) {
+  sgWeekdayPills.querySelectorAll(".sg-window-pill").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      btn.classList.toggle("active");
+      const weekdays = Array.from(sgWeekdayPills.querySelectorAll(".sg-window-pill.active"))
+        .map((b) => Number(b.dataset.day));
+
+      await fetch("/company/smart-grouping", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ weekdays }),
+      }).catch(() => {});
+    });
+  });
+}
+
+/* ── Délai minimum de réservation ─────────────────────────────────────────
+   Modulable de 0 (aucun délai) à plusieurs mois : presets rapides + champ
+   personnalisé (valeur + unité minutes/heures/jours), tout converti en
+   minutes avant l'envoi au serveur. */
+const ltEnabled      = document.getElementById("ltEnabled");
+const ltRow          = document.getElementById("ltRow");
+const ltPresetPills  = document.getElementById("ltPresetPills");
+const ltValueInput   = document.getElementById("ltValue");
+const ltUnitSelect   = document.getElementById("ltUnit");
+
+const LT_UNIT_TO_MINUTES = { minutes: 1, hours: 60, days: 1440 };
+
+function ltSyncActivePill(minutes) {
+  if (!ltPresetPills) return;
+  ltPresetPills.querySelectorAll(".sg-window-pill").forEach((b) => {
+    b.classList.toggle("active", Number(b.dataset.minutes) === minutes);
+  });
+}
+
+async function ltSaveMinutes(minutes) {
+  ltSyncActivePill(minutes);
+  await fetch("/company/booking-lead-time", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ minutes }),
+  }).catch(() => {});
+}
+
+if (ltEnabled) {
+  ltEnabled.addEventListener("change", async () => {
+    const enabled = ltEnabled.checked;
+    if (ltRow) ltRow.style.display = enabled ? "" : "none";
+
+    await fetch("/company/booking-lead-time", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    }).catch(() => {});
+  });
+}
+
+if (ltPresetPills) {
+  ltPresetPills.querySelectorAll(".sg-window-pill").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const minutes = Number(btn.dataset.minutes);
+      // Reflète le preset choisi dans le champ personnalisé (unité la plus lisible).
+      if (ltValueInput && ltUnitSelect) {
+        if (minutes > 0 && minutes % 1440 === 0) { ltValueInput.value = minutes / 1440; ltUnitSelect.value = "days"; }
+        else if (minutes > 0 && minutes % 60 === 0) { ltValueInput.value = minutes / 60; ltUnitSelect.value = "hours"; }
+        else { ltValueInput.value = minutes; ltUnitSelect.value = "minutes"; }
+      }
+      ltSaveMinutes(minutes);
+    });
+  });
+}
+
+function ltCommitCustomValue() {
+  if (!ltValueInput || !ltUnitSelect) return;
+  const raw = Math.max(0, Math.round(Number(ltValueInput.value) || 0));
+  ltValueInput.value = raw;
+  const minutes = raw * (LT_UNIT_TO_MINUTES[ltUnitSelect.value] || 1);
+  ltSaveMinutes(minutes);
+}
+
+if (ltValueInput) {
+  ltValueInput.addEventListener("change", ltCommitCustomValue);
+}
+if (ltUnitSelect) {
+  ltUnitSelect.addEventListener("change", ltCommitCustomValue);
+}
+
 // ── Saisie intelligente des heures ────────────────────────────────────────────
 // Quand un panel d'heures s'ouvre, injecte un input de recherche en haut
 // L'utilisateur peut taper "18" → filtre sur "18:XX", "1800" → "18:00"

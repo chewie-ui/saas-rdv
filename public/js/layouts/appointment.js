@@ -224,6 +224,10 @@ setInterval(updateTimeline, 60000);
   const endTimeEl    = document.getElementById("newApptEndTime");
   const serviceDurationHint = document.getElementById("newApptServiceDuration");
   const defaultSlotTime = window.__defaultSlotTime || 60;
+  // Durée "glissée" sur le calendrier (clic-glisser) — prioritaire sur la
+  // durée par défaut tant qu'aucun service n'est choisi (un service choisi
+  // reprend la main, comme avant).
+  let manualDurationOverride = null;
 
   function minutesOf(hhmm) {
     if (!hhmm) return null;
@@ -247,7 +251,7 @@ setInterval(updateTimeline, 60000);
   function recomputeEndAndDuration() {
     const opt = serviceSel && serviceSel.options[serviceSel.selectedIndex];
     const serviceDuration = opt && opt.dataset.duration ? Number(opt.dataset.duration) : null;
-    const duration = serviceDuration || defaultSlotTime;
+    const duration = serviceDuration || manualDurationOverride || defaultSlotTime;
 
     if (serviceDurationHint) {
       serviceDurationHint.textContent = serviceDuration ? ` · ${serviceDuration} min` : "";
@@ -292,6 +296,7 @@ setInterval(updateTimeline, 60000);
     if (serviceDurationHint) serviceDurationHint.textContent = "";
     endTimeEl.textContent = "--:--";
     durationEl.textContent = "—";
+    manualDurationOverride = null;
   }
 
   function open(prefill) {
@@ -300,6 +305,7 @@ setInterval(updateTimeline, 60000);
     dateInput.value = (prefill && prefill.date) ||
       `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     if (prefill && prefill.time) startPicker.set(prefill.time);
+    if (prefill && prefill.duration) manualDurationOverride = prefill.duration;
 
     // Pré-sélectionne l'employé déjà filtré dans le calendrier, sauf si le
     // clic sur une case précise visait un employé différent.
@@ -311,8 +317,12 @@ setInterval(updateTimeline, 60000);
     }
 
     overlay.classList.add("show");
+    recomputeEndAndDuration();
     nameInput.focus();
   }
+
+  // Exposé pour le clic-glisser sur le calendrier (autre IIFE plus bas).
+  window.__openNewApptModal = open;
 
   function close() {
     overlay.classList.remove("show");
@@ -327,15 +337,9 @@ setInterval(updateTimeline, 60000);
     if (e.key === "Escape" && overlay.classList.contains("show")) close();
   });
 
-  // ── Clic sur une case vide du calendrier → ouvre le formulaire pré-rempli ──
-  // .day-events-col (qui contient les RDV) a pointer-events:none sur les zones
-  // vides, donc un clic dans le "vide" arrive bien jusqu'à la cellule .cell.day
-  // en-dessous — pas besoin de vérifier qu'on n'a pas cliqué un RDV existant.
-  document.querySelectorAll(".calendar-section .cell.day").forEach((cell) => {
-    cell.addEventListener("click", () => {
-      open({ date: cell.dataset.iso, time: cell.dataset.time });
-    });
-  });
+  // Le clic simple ET le clic-glisser sur une case vide du calendrier sont
+  // gérés ensemble plus bas (voir "Clic-glisser pour créer un RDV") — ça
+  // appelle window.__openNewApptModal(...) défini juste au-dessus.
 
   // ── Vue Mois : bouton "+" sur une case jour (sans heure précise) ──────────
   document.querySelectorAll(".cal-month__add-btn").forEach((btn) => {
@@ -369,6 +373,10 @@ setInterval(updateTimeline, 60000);
       message: messageInput.value.trim(),
       serviceId: serviceSel ? serviceSel.value : "",
       employeeId: employeeSel ? employeeSel.value : "",
+      // Durée glissée sur le calendrier (clic-glisser) — le serveur lui
+      // donne priorité sur la durée par défaut, mais le service choisi (s'il
+      // y en a un) reste prioritaire sur les deux, comme affiché ici même.
+      duration: manualDurationOverride || undefined,
     };
 
     submitBtn.disabled = true;
@@ -383,6 +391,90 @@ setInterval(updateTimeline, 60000);
         window.location.reload();
       } else {
         showError(data.message || "Erreur lors de la création du rendez-vous.");
+        submitBtn.disabled = false;
+      }
+    } catch (e) {
+      showError("Erreur réseau.");
+      submitBtn.disabled = false;
+    }
+  });
+})();
+
+// ── Marquer une absence (panel admin) ───────────────────────────────────────
+// Ouverte depuis le choix "Absence" après un clic-glisser sur le calendrier
+// (voir "Clic-glisser pour créer un RDV" plus bas, qui appelle
+// window.__openBlockApptModal). Occupe le créneau comme un vrai RDV côté
+// serveur (mêmes règles de chevauchement) mais sans client.
+(function () {
+  const overlay   = document.getElementById("blockApptOverlay");
+  const closeBtn  = document.getElementById("blockApptClose");
+  const cancelBtn = document.getElementById("blockApptCancel");
+  const submitBtn = document.getElementById("blockApptSubmit");
+  const errorEl   = document.getElementById("blockApptError");
+  if (!overlay || !submitBtn) return;
+
+  const dateEl      = document.getElementById("blockApptDate");
+  const rangeEl     = document.getElementById("blockApptRange");
+  const employeeSel = document.getElementById("blockApptEmployee");
+  const noteInput   = document.getElementById("blockApptNote");
+
+  let current = null; // { date, time, endTime }
+
+  function showError(msg) {
+    errorEl.textContent = msg;
+    errorEl.style.display = "block";
+  }
+
+  function close() {
+    overlay.classList.remove("show");
+  }
+
+  function open(info) {
+    current = info;
+    errorEl.style.display = "none";
+    errorEl.textContent = "";
+    noteInput.value = "";
+    if (employeeSel) employeeSel.value = "";
+    if (dateEl) {
+      const [y, m, d] = info.date.split("-");
+      dateEl.textContent = `${d}/${m}/${y}`;
+    }
+    if (rangeEl) rangeEl.textContent = `${info.time} – ${info.endTime}`;
+    overlay.classList.add("show");
+    noteInput.focus();
+  }
+
+  // Exposé pour le clic-glisser sur le calendrier (autre IIFE plus bas).
+  window.__openBlockApptModal = open;
+
+  closeBtn.addEventListener("click", close);
+  cancelBtn.addEventListener("click", close);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && overlay.classList.contains("show")) close();
+  });
+
+  submitBtn.addEventListener("click", async () => {
+    if (!current) return;
+    errorEl.style.display = "none";
+    submitBtn.disabled = true;
+    try {
+      const res = await fetch("/appointment/block", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: current.date,
+          startTime: current.time,
+          endTime: current.endTime,
+          employeeId: employeeSel ? employeeSel.value : "",
+          note: noteInput.value.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location.reload();
+      } else {
+        showError(data.message || "Erreur lors de la création de l'absence.");
         submitBtn.disabled = false;
       }
     } catch (e) {
@@ -519,5 +611,205 @@ setInterval(updateTimeline, 60000);
     resizeTimer = setTimeout(() => {
       setCompact(section.classList.contains("is-compact"));
     }, 150);
+  });
+})();
+
+// ── Clic-glisser pour créer un RDV (façon Google Calendar) ─────────────────
+// Glisser sur une case vide dessine un aperçu qui suit la durée glissée,
+// puis ouvre "Nouveau rendez-vous" pré-rempli avec cette durée — un simple
+// clic (sans glisser) garde l'ancien comportement (1 créneau de la grille).
+// L'aperçu passe en rouge si la plage glissée chevauche déjà un RDV ce
+// jour-là — un repère visuel seulement : la vraie validation (avec la
+// logique employé : un employé B libre reste autorisé même si A est pris)
+// se fait côté serveur à l'envoi du formulaire.
+(function initDragToCreate() {
+  const section = document.getElementById("calendarSection");
+  if (!section) return;
+  const gridSection = section.querySelector(".grid-section");
+  if (!gridSection) return;
+
+  const gridStep = Number(section.dataset.gridStep) || 30;
+  const minHourMinutes = (Number(section.dataset.minHour) || 0) * 60;
+
+  function rowHeightPx() {
+    const sample = section.querySelector(".cell.time:not(.time--half)") || section.querySelector(".cell.time");
+    const h = sample ? sample.getBoundingClientRect().height : 0;
+    return h > 0 ? h : 52;
+  }
+
+  function minutesToHHMM(min) {
+    const m = ((min % (24 * 60)) + 24 * 60) % (24 * 60);
+    return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  }
+
+  function timeToMinutes(hhmm) {
+    const [h, m] = (hhmm || "0:0").split(":").map(Number);
+    return h * 60 + m;
+  }
+
+  function rangesOverlap(aStart, aEnd, bStart, bEnd) {
+    return aStart < bEnd && aEnd > bStart;
+  }
+
+  function getEventsCol(iso) {
+    return section.querySelector(`.day-events-col[data-iso="${iso}"]`);
+  }
+
+  function existingRangesForDay(iso) {
+    const col = getEventsCol(iso);
+    if (!col) return [];
+    return Array.from(col.querySelectorAll("[data-start-minutes]")).map((el) => {
+      const s = Number(el.dataset.startMinutes) || 0;
+      const d = Number(el.dataset.slotMinutes) || gridStep;
+      return [s, s + d];
+    });
+  }
+
+  // Cellule .cell.day du même jour la plus proche verticalement du point Y.
+  function cellAt(iso, clientY) {
+    const cells = gridSection.querySelectorAll(`.cell.day[data-iso="${iso}"]`);
+    let closest = null;
+    let bestDist = Infinity;
+    cells.forEach((c) => {
+      const r = c.getBoundingClientRect();
+      const dist = Math.abs(clientY - (r.top + r.height / 2));
+      if (dist < bestDist) { bestDist = dist; closest = c; }
+    });
+    return closest;
+  }
+
+  let drag = null;
+
+  function updateGhost(currentMin) {
+    if (!drag) return;
+    const rowH = rowHeightPx();
+    const pxPerMin = rowH / gridStep;
+    const startMin = Math.min(drag.startMin, currentMin);
+    const endMin = Math.max(drag.startMin, currentMin) + gridStep;
+
+    drag.ghost.style.top = `${Math.round((startMin - minHourMinutes) * pxPerMin)}px`;
+    drag.ghost.style.height = `${Math.round((endMin - startMin) * pxPerMin)}px`;
+    drag.ghost.textContent = `${minutesToHHMM(startMin)} – ${minutesToHHMM(endMin)}`;
+
+    const conflict = existingRangesForDay(drag.iso).some(([rs, re]) => rangesOverlap(startMin, endMin, rs, re));
+    drag.ghost.classList.toggle("cal-drag-ghost--conflict", conflict);
+
+    drag.finalStart = startMin;
+    drag.finalEnd = endMin;
+  }
+
+  function onMouseMove(e) {
+    if (!drag) return;
+    const cell = cellAt(drag.iso, e.clientY);
+    const currentMin = cell ? timeToMinutes(cell.dataset.time) : drag.startMin;
+    updateGhost(currentMin);
+  }
+
+  function showDragChoice(anchorRect, info) {
+    const menu = document.getElementById("dragChoice");
+    const apptBtn = document.getElementById("dragChoiceAppt");
+    const blockBtn = document.getElementById("dragChoiceBlock");
+
+    function openApptModal() {
+      if (typeof window.__openNewApptModal === "function") {
+        window.__openNewApptModal({
+          date: info.date,
+          time: minutesToHHMM(info.startMin),
+          duration: Math.max(gridStep, info.endMin - info.startMin),
+        });
+      }
+    }
+
+    // Pas de choix dispo sur cette page (page sans la modale d'absence) →
+    // ancien comportement, ouvre directement "Nouveau rendez-vous".
+    if (!menu || !apptBtn || !blockBtn) { openApptModal(); return; }
+
+    const top = Math.max(8, Math.min(anchorRect.bottom + 6, window.innerHeight - 100));
+    const left = Math.max(8, Math.min(anchorRect.left, window.innerWidth - 200));
+    menu.style.top = `${top}px`;
+    menu.style.left = `${left}px`;
+    menu.style.display = "flex";
+
+    function cleanup() {
+      menu.style.display = "none";
+      apptBtn.removeEventListener("click", onApptChoice);
+      blockBtn.removeEventListener("click", onBlockChoice);
+      document.removeEventListener("mousedown", onOutside, true);
+    }
+    function onApptChoice() { cleanup(); openApptModal(); }
+    function onBlockChoice() {
+      cleanup();
+      if (typeof window.__openBlockApptModal === "function") {
+        window.__openBlockApptModal({
+          date: info.date,
+          time: minutesToHHMM(info.startMin),
+          endTime: minutesToHHMM(info.endMin),
+        });
+      }
+    }
+    function onOutside(e) { if (!menu.contains(e.target)) cleanup(); }
+
+    apptBtn.addEventListener("click", onApptChoice);
+    blockBtn.addEventListener("click", onBlockChoice);
+    // Capture + délai : sinon le mouseup qui vient de déclencher ce menu le referme aussitôt.
+    setTimeout(() => document.addEventListener("mousedown", onOutside, true), 0);
+  }
+
+  // Annule un glisser en cours sans rien ouvrir — utilisé en filet de
+  // sécurité (voir plus bas) quand le navigateur ne reçoit jamais le
+  // "mouseup" qui termine normalement le glisser (ex: l'outil de capture
+  // Windows "Win+Maj+S" pris EN PLEIN glisser garde la souris "enfoncée"
+  // du point de vue de la page — sans ça, le ghost reste affiché pour
+  // toujours et un nouveau glisser s'empile par-dessus au lieu de le
+  // remplacer).
+  function cancelDrag() {
+    if (!drag) return;
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+    drag.ghost.remove();
+    drag = null;
+  }
+
+  function onMouseUp() {
+    if (!drag) return;
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+
+    const { iso, finalStart, finalEnd, ghost } = drag;
+    const anchorRect = ghost.getBoundingClientRect();
+    ghost.remove();
+    drag = null;
+
+    showDragChoice(anchorRect, { date: iso, startMin: finalStart, endMin: finalEnd });
+  }
+
+  // La fenêtre perd le focus (capture d'écran, alt-tab, autre appli au
+  // premier plan...) → on ne saura jamais si le bouton de la souris a été
+  // relâché ailleurs, donc on annule plutôt que de laisser un ghost orphelin.
+  window.addEventListener("blur", cancelDrag);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) cancelDrag();
+  });
+
+  gridSection.querySelectorAll(".cell.day").forEach((cell) => {
+    cell.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return; // clic gauche uniquement
+      cancelDrag(); // au cas où un glisser précédent serait resté coincé
+      const iso = cell.dataset.iso;
+      const startMin = timeToMinutes(cell.dataset.time);
+      const col = getEventsCol(iso);
+      if (!col) return;
+
+      const ghost = document.createElement("div");
+      ghost.className = "cal-drag-ghost";
+      col.appendChild(ghost);
+
+      drag = { iso, startMin, ghost, finalStart: startMin, finalEnd: startMin + gridStep };
+      updateGhost(startMin);
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+      e.preventDefault();
+    });
   });
 })();

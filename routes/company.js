@@ -13,6 +13,7 @@ const {
   updateBuffer,
   updateSlotMode,
   updateSmartGrouping,
+  updateBookingLeadTime,
 } = require("../controllers/company.controller");
 const injectCompany = require("../middlewares/injectCompany");
 
@@ -32,5 +33,6 @@ router.patch("/company/set-schedule-day-off", injectCompany, setScheduleDayOff);
 router.patch("/company/buffer", injectCompany, updateBuffer);
 router.patch("/company/slot-mode", injectCompany, updateSlotMode);
 router.patch("/company/smart-grouping", injectCompany, updateSmartGrouping);
+router.patch("/company/booking-lead-time", injectCompany, updateBookingLeadTime);
 
 module.exports = router;

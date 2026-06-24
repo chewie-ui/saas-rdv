@@ -1,6 +1,8 @@
 import { createTimePicker } from "../../utils/time-picker.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+  const T    = window.__t_group_sessions || {};
+  const LANG = window.__lang || "fr";
   const addBtn      = document.getElementById("addCourseBtn");
   const overlay     = document.getElementById("courseModalOverlay");
   const modal       = document.getElementById("courseModal");
@@ -22,6 +24,63 @@ document.addEventListener("DOMContentLoaded", () => {
   const hasEmployeesChk  = document.getElementById("courseHasEmployees");
   const employeesField   = document.getElementById("courseEmployeesField");
   const employeeCheckboxes = Array.from(document.querySelectorAll("#courseEmployeeList input[type=checkbox]"));
+  const locationInput    = document.getElementById("courseLocation");
+
+  // ── Mode de planification : récurrent (hebdomadaire) ou dates ponctuelles ──
+  const modeOptions       = document.getElementById("courseModeOptions");
+  const recurringFieldsEl = document.getElementById("courseRecurringFields");
+  const fixedFieldsEl     = document.getElementById("courseFixedFields");
+  const sessionRowsEl     = document.getElementById("courseSessionRows");
+  const newSessionDateInput = document.getElementById("newSessionDate");
+  const addSessionRowBtn  = document.getElementById("addSessionRowBtn");
+
+  let currentMode  = "recurring";
+  let sessionRows  = []; // { date: "yyyy-mm-dd", startTime: "HH:MM", endTime: "HH:MM" }
+
+  function setMode(mode) {
+    currentMode = mode === "fixed" ? "fixed" : "recurring";
+    if (modeOptions) {
+      modeOptions.querySelectorAll(".svc-type-option").forEach((b) => {
+        b.classList.toggle("is-active", b.dataset.mode === currentMode);
+      });
+    }
+    if (recurringFieldsEl) recurringFieldsEl.style.display = currentMode === "recurring" ? "" : "none";
+    if (fixedFieldsEl)     fixedFieldsEl.style.display     = currentMode === "fixed"     ? "" : "none";
+  }
+
+  if (modeOptions) {
+    modeOptions.addEventListener("click", (e) => {
+      const btn = e.target.closest(".svc-type-option");
+      if (!btn) return;
+      setMode(btn.dataset.mode);
+    });
+  }
+
+  function renderSessionRows() {
+    if (!sessionRowsEl) return;
+    if (sessionRows.length === 0) {
+      sessionRowsEl.innerHTML = `<p class="gs-session-rows__empty">${T.no_dates_added || ""}</p>`;
+      return;
+    }
+    sessionRowsEl.innerHTML = sessionRows.map((s, i) => {
+      const d = new Date(`${s.date}T00:00:00`);
+      const label = d.toLocaleDateString(LANG, { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
+      return `<div class="gs-session-row">
+        <span class="gs-session-row__date">${label}</span>
+        <span class="gs-session-row__time">${s.startTime} – ${s.endTime}</span>
+        <button type="button" class="gs-session-row__remove" data-index="${i}" aria-label="${T.remove_date_label || ""}">×</button>
+      </div>`;
+    }).join("");
+  }
+
+  if (sessionRowsEl) {
+    sessionRowsEl.addEventListener("click", (e) => {
+      const btn = e.target.closest(".gs-session-row__remove");
+      if (!btn) return;
+      sessionRows.splice(Number(btn.dataset.index), 1);
+      renderSessionRows();
+    });
+  }
 
   const startPicker = createTimePicker(
     document.getElementById("courseStartBox"),
@@ -29,6 +88,39 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("courseStartList"),
     () => {}
   );
+
+  const newSessionStartPicker = createTimePicker(
+    document.getElementById("newSessionStartBox"),
+    document.getElementById("newSessionStartPanel"),
+    document.getElementById("newSessionStartList"),
+    () => {}
+  );
+  const newSessionEndPicker = createTimePicker(
+    document.getElementById("newSessionEndBox"),
+    document.getElementById("newSessionEndPanel"),
+    document.getElementById("newSessionEndList"),
+    () => {}
+  );
+
+  if (addSessionRowBtn) {
+    addSessionRowBtn.addEventListener("click", () => {
+      const date  = newSessionDateInput ? newSessionDateInput.value : "";
+      const start = newSessionStartPicker.get();
+      const end   = newSessionEndPicker.get();
+      if (!date)        { showError(T.required_session_date_error); return; }
+      if (!start || !end) { showError(T.required_session_time_error); return; }
+      if (start === end) { showError(T.session_time_order_error); return; }
+
+      sessionRows.push({ date, startTime: start, endTime: end });
+      sessionRows.sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime));
+      renderSessionRows();
+
+      newSessionDateInput.value = "";
+      newSessionStartPicker.set("");
+      newSessionEndPicker.set("");
+      errorEl.style.display = "none";
+    });
+  }
 
   function showError(msg) {
     errorEl.textContent = msg;
@@ -60,8 +152,15 @@ document.addEventListener("DOMContentLoaded", () => {
     priceInput.value = "";
     durationInput.value = String(window.__defaultDuration || 60);
     capacityInput.value = "10";
+    if (locationInput) locationInput.value = "";
     setSelectedWeekdays([]);
     startPicker.set("");
+    setMode("recurring");
+    sessionRows = [];
+    renderSessionRows();
+    if (newSessionDateInput) newSessionDateInput.value = "";
+    newSessionStartPicker.set("");
+    newSessionEndPicker.set("");
     if (hasEmployeesChk) {
       hasEmployeesChk.checked = false;
       employeesField.style.display = "none";
@@ -83,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   addBtn.addEventListener("click", () => {
     resetForm();
-    titleEl.textContent = "Nouveau cours collectif";
+    titleEl.textContent = T.modal_new_title || "";
     open();
     nameInput.focus();
   });
@@ -108,8 +207,24 @@ document.addEventListener("DOMContentLoaded", () => {
       priceInput.value = card.dataset.price || "";
       durationInput.value = card.dataset.duration || "60";
       capacityInput.value = card.dataset.capacity || "10";
+      if (locationInput) locationInput.value = card.dataset.location || "";
       setSelectedWeekdays((card.dataset.weekdays || "").split(",").filter(Boolean).map(Number));
       startPicker.set(card.dataset.startTime || "");
+
+      const mode = card.dataset.mode === "fixed" ? "fixed" : "recurring";
+      setMode(mode);
+      if (mode === "fixed") {
+        try {
+          sessionRows = JSON.parse(card.dataset.sessions || "[]").map((s) => ({
+            date: String(s.date).split("T")[0],
+            startTime: s.startTime,
+            endTime: s.endTime,
+          }));
+        } catch (e) {
+          sessionRows = [];
+        }
+        renderSessionRows();
+      }
 
       const assignedIds = (card.dataset.employees || "").split(",").filter(Boolean);
       if (hasEmployeesChk && assignedIds.length > 0) {
@@ -118,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
         employeeCheckboxes.forEach((cb) => { cb.checked = assignedIds.includes(cb.value); });
       }
 
-      titleEl.textContent = "Modifier le cours";
+      titleEl.textContent = T.modal_edit_title || "";
       open();
     });
   });
@@ -127,16 +242,12 @@ document.addEventListener("DOMContentLoaded", () => {
     errorEl.style.display = "none";
 
     const name = nameInput.value.trim();
-    const weekdays = selectedWeekdays();
-    const startTime = startPicker.get();
     const duration = Number(durationInput.value);
     const capacity = Number(capacityInput.value);
 
-    if (!name) { showError("Le nom du cours est requis."); return; }
-    if (weekdays.length === 0) { showError("Choisissez au moins un jour de la semaine."); return; }
-    if (!startTime) { showError("Choisissez une heure."); return; }
-    if (!duration || duration < 5) { showError("Durée invalide."); return; }
-    if (!capacity || capacity < 1) { showError("Le nombre de places doit être au moins 1."); return; }
+    if (!name) { showError(T.required_name_error); return; }
+    if (!duration || duration < 5) { showError(T.duration_error); return; }
+    if (!capacity || capacity < 1) { showError(T.capacity_error); return; }
 
     const payload = {
       name,
@@ -144,12 +255,24 @@ document.addEventListener("DOMContentLoaded", () => {
       price: priceInput.value !== "" ? Number(priceInput.value) : "",
       duration,
       capacity,
-      weekdays,
-      startTime,
+      mode: currentMode,
+      location: locationInput ? locationInput.value.trim() : "",
       employees: hasEmployeesChk && hasEmployeesChk.checked
         ? employeeCheckboxes.filter((cb) => cb.checked).map((cb) => cb.value)
         : [],
     };
+
+    if (currentMode === "fixed") {
+      if (sessionRows.length === 0) { showError(T.required_session_error); return; }
+      payload.sessions = sessionRows;
+    } else {
+      const weekdays = selectedWeekdays();
+      const startTime = startPicker.get();
+      if (weekdays.length === 0) { showError(T.required_weekday_error); return; }
+      if (!startTime) { showError(T.required_time_error); return; }
+      payload.weekdays = weekdays;
+      payload.startTime = startTime;
+    }
 
     const id = idInput.value;
     const url = id ? `/api/courses/${id}` : "/api/courses";
@@ -166,11 +289,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (data.success) {
         window.location.reload();
       } else {
-        showError(data.message || data.error || "Erreur lors de l'enregistrement.");
+        showError(data.message || data.error || T.save_error);
         saveBtn.disabled = false;
       }
     } catch (e) {
-      showError("Erreur réseau.");
+      showError(T.network_error);
       saveBtn.disabled = false;
     }
   });
@@ -199,8 +322,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".delete-course-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const ok = await window.confirmModal(
-        `Supprimer "${btn.dataset.name}" ?`,
-        "Ce cours sera définitivement supprimé. Les inscriptions déjà passées restent visibles dans l'historique."
+        (T.delete_confirm_title || "").replace("{name}", btn.dataset.name),
+        T.delete_confirm_desc
       );
       if (!ok) return;
       try {
@@ -209,10 +332,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (data.success) {
           window.location.reload();
         } else {
-          alert(data.message || "Erreur lors de la suppression.");
+          alert(data.message || T.remove_error);
         }
       } catch (e) {
-        alert("Erreur réseau.");
+        alert(T.network_error);
       }
     });
   });

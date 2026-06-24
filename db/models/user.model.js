@@ -148,6 +148,10 @@ const userSchema = schema(
       accentText:  { type: String,  default: '#ffffff' },
       dayBg:       { type: String,  default: '#ffffff' },
       dayText:     { type: String,  default: '#111111' },
+      // ── Couleurs du calendrier selon la disponibilité du jour ────────────
+      dayAvailableColor: { type: String, default: '#16a34a' }, // jour avec des créneaux libres
+      dayBusyColor:      { type: String, default: '#ea580c' }, // jour bien rempli (≥50%)
+      dayFullColor:      { type: String, default: '#ef4444' }, // jour complet / indisponible
       btnBg:       { type: String,  default: '#111111' },
       btnText:     { type: String,  default: '#ffffff' },
       lang:        { type: String,  default: 'fr' },

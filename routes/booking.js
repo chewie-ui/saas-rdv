@@ -11,6 +11,7 @@ const {
   createBookingSetupIntent,
   markNoShow,
   reviewCancellationPenalty,
+  getGroupSessions,
 } = require("../controllers/booking.controller");
 const Form = require("../db/models/form.model");
 
@@ -19,6 +20,7 @@ router.get("/get-booking", getBooking);
 router.post("/get-schedule", getSchedule);
 router.post("/get-days-off", getDaysOff);
 router.get("/get-disabled-days/:companyId", getDisabledDays);
+router.get("/get-group-sessions/:serviceId", getGroupSessions);
 
 router.get("/get-booking/:companyId", getBookingC);
 router.get("/cancel-booking/:userId", cancelBooking);

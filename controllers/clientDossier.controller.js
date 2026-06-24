@@ -11,7 +11,7 @@ exports.listClients = async (req, res) => {
     const companyId = res.locals.currentCompany._id;
     const search = (req.query.search || "").toLowerCase().trim();
 
-    const bookings = await Booking.find({ company: companyId })
+    const bookings = await Booking.find({ company: companyId, status: { $ne: "canceled" } })
       .select("name surname email phone date clientRef")
       .sort({ date: -1 })
       .lean();
@@ -63,24 +63,33 @@ exports.listClients = async (req, res) => {
       company: companyId,
       email: { $in: clients.map((c) => c.email) },
     })
-      .select("email entries")
+      .select("email entries blocked blockedReason")
       .lean();
     const entriesByEmail = new Map(dossiers.map((d) => [d.email, d.entries.length]));
+    const blockedByEmail = new Map(dossiers.filter((d) => d.blocked).map((d) => [d.email, d.blockedReason || ""]));
 
     clients = clients.map((c) => ({
       ...c,
       entriesCount: entriesByEmail.get(c.email) || 0,
+      blocked: blockedByEmail.has(c.email),
+      blockedReason: blockedByEmail.get(c.email) || "",
     }));
+
+    const onlyBlocked = req.query.blocked === "1";
+    const blockedCount = clients.filter((c) => c.blocked).length;
+    if (onlyBlocked) clients = clients.filter((c) => c.blocked);
 
     res.render("admin/clients", {
       pageName: "Clients",
       title: "Clients",
       clients,
       search: req.query.search || "",
+      onlyBlocked,
+      blockedCount,
     });
   } catch (err) {
     console.error("listClients error:", err);
-    res.render("admin/clients", { pageName: "Clients", title: "Clients", clients: [], search: "" });
+    res.render("admin/clients", { pageName: "Clients", title: "Clients", clients: [], search: "", onlyBlocked: false, blockedCount: 0 });
   }
 };
 
@@ -111,9 +120,14 @@ exports.viewClient = async (req, res) => {
       });
     }
 
+    // "Dernière visite" / "Prochain RDV" / le compteur d'en-tête ne doivent
+    // refléter que de VRAIS rendez-vous — une réservation annulée ne doit
+    // jamais s'afficher comme "prochain RDV" (le tableau "Historique" plus
+    // bas, lui, garde volontairement tout l'historique y compris annulé).
+    const confirmedBookings = bookings.filter((b) => b.status !== "canceled");
     const now = new Date();
-    const lastVisit = bookings.find((b) => new Date(b.date) <= now) || null;
-    const nextVisit = [...bookings].reverse().find((b) => new Date(b.date) > now) || null;
+    const lastVisit = confirmedBookings.find((b) => new Date(b.date) <= now) || null;
+    const nextVisit = [...confirmedBookings].reverse().find((b) => new Date(b.date) > now) || null;
 
     const entries = [...dossier.entries].sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -124,6 +138,7 @@ exports.viewClient = async (req, res) => {
       entries,
       client: { email, fullName, phone: dossier.phone || latest.phone || "" },
       bookings,
+      confirmedCount: confirmedBookings.length,
       lastVisit,
       nextVisit,
     });
@@ -220,5 +235,76 @@ exports.deleteEntry = async (req, res) => {
   } catch (err) {
     console.error("deleteEntry error:", err);
     res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Enregistrer le moyen de paiement réel d'une séance ─────────────────────────
+// Distinct du choix fait par le client à la réservation : permet au pro de
+// corriger/renseigner après coup comment la séance a réellement été payée
+// (ex: réservé "à confirmer" puis payé en espèces sur place).
+const PAYMENT_METHODS = ["online", "on_site", "bank_transfer", "paypal", "cash", "none"];
+
+exports.updateBookingPayment = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { method } = req.body;
+    if (!PAYMENT_METHODS.includes(method)) {
+      return res.status(400).json({ success: false, error: "Moyen de paiement invalide." });
+    }
+
+    const update = { "payment.method": method };
+    // Marquer comme payé dès qu'un moyen concret est choisi (hors "none") —
+    // évite de devoir aussi jongler avec le statut séparément pour ce cas
+    // simple de saisie manuelle après coup.
+    if (method !== "none") {
+      update["payment.status"] = "paid";
+      update["payment.paidAt"] = new Date();
+    }
+
+    const booking = await Booking.findOneAndUpdate(
+      { _id: bookingId, company: res.locals.currentCompany._id },
+      { $set: update },
+      { new: true }
+    ).lean();
+
+    if (!booking) return res.status(404).json({ success: false, error: "Rendez-vous introuvable." });
+    res.json({ success: true, payment: booking.payment });
+  } catch (err) {
+    console.error("updateBookingPayment error:", err);
+    res.status(500).json({ success: false, error: "Erreur serveur." });
+  }
+};
+
+// ── Bloquer / débloquer un client (l'empêche de réserver à nouveau) ────────────
+exports.blockClient = async (req, res) => {
+  try {
+    const companyId = res.locals.currentCompany._id;
+    const { reason } = req.body;
+    const dossier = await ClientDossier.findOneAndUpdate(
+      { _id: req.params.dossierId, company: companyId },
+      { $set: { blocked: true, blockedAt: new Date(), blockedReason: (reason || "").trim().slice(0, 200) } },
+      { new: true }
+    );
+    if (!dossier) return res.status(404).json({ success: false, error: "Dossier introuvable." });
+    res.json({ success: true, blocked: true, blockedReason: dossier.blockedReason });
+  } catch (err) {
+    console.error("blockClient error:", err);
+    res.status(500).json({ success: false, error: "Erreur serveur." });
+  }
+};
+
+exports.unblockClient = async (req, res) => {
+  try {
+    const companyId = res.locals.currentCompany._id;
+    const dossier = await ClientDossier.findOneAndUpdate(
+      { _id: req.params.dossierId, company: companyId },
+      { $set: { blocked: false, blockedAt: null, blockedReason: "" } },
+      { new: true }
+    );
+    if (!dossier) return res.status(404).json({ success: false, error: "Dossier introuvable." });
+    res.json({ success: true, blocked: false });
+  } catch (err) {
+    console.error("unblockClient error:", err);
+    res.status(500).json({ success: false, error: "Erreur serveur." });
   }
 };

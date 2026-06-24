@@ -1,6 +1,63 @@
 document.addEventListener("DOMContentLoaded", () => {
   const dossierId = window.__dossierId;
 
+  // ── Bloquer / débloquer ce client ────────────────────────────────────────
+  const blockBtn = document.getElementById("blockClientBtn");
+  const unblockBtn = document.getElementById("unblockClientBtn");
+
+  if (blockBtn) {
+    blockBtn.addEventListener("click", async () => {
+      const ok = await window.confirmModal(
+        "Bloquer ce client ?",
+        "Il ne pourra plus prendre rendez-vous avec vous via la page de réservation en ligne. Vous pourrez le débloquer à tout moment."
+      );
+      if (!ok) return;
+      try {
+        const res = await fetch(`/clients/dossier/${dossierId}/block`, { method: "PATCH" });
+        const data = await res.json();
+        if (data.success) window.location.reload();
+        else alert(data.error || "Erreur lors du blocage.");
+      } catch (e) {
+        alert("Erreur réseau.");
+      }
+    });
+  }
+
+  if (unblockBtn) {
+    unblockBtn.addEventListener("click", async () => {
+      const ok = await window.confirmModal(
+        "Débloquer ce client ?",
+        "Il pourra à nouveau prendre rendez-vous avec vous via la page de réservation en ligne."
+      );
+      if (!ok) return;
+      try {
+        const res = await fetch(`/clients/dossier/${dossierId}/unblock`, { method: "PATCH" });
+        const data = await res.json();
+        if (data.success) window.location.reload();
+        else alert(data.error || "Erreur lors du déblocage.");
+      } catch (e) {
+        alert("Erreur réseau.");
+      }
+    });
+  }
+
+  // ── Lien "Tous les patients" : revient à la page précédente quand elle
+  // vient du même site (ex: la fiche "Historique" d'un rendez-vous) au lieu
+  // de toujours retomber sur la liste complète — sinon on perd sa place.
+  const backLink = document.getElementById("dossierBackLink");
+  if (backLink) {
+    backLink.addEventListener("click", (e) => {
+      if (window.history.length > 1 && document.referrer) {
+        try {
+          if (new URL(document.referrer).origin === window.location.origin) {
+            e.preventDefault();
+            window.history.back();
+          }
+        } catch (_) {}
+      }
+    });
+  }
+
   // ── Bloc "Informations générales" ──────────────────────────────────────────
   const generalInput  = document.getElementById("generalInfoInput");
   const saveGeneralBtn = document.getElementById("saveGeneralBtn");
@@ -146,4 +203,32 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // ── Moyen de paiement par séance (historique des rendez-vous) ──────────────
+  document.querySelectorAll(".booking-mini-item__payment").forEach((select) => {
+    select.dataset.lastSaved = select.value;
+    select.addEventListener("change", async () => {
+      const bookingId = select.dataset.id;
+      select.disabled = true;
+      try {
+        const r = await fetch(`/clients/booking/${bookingId}/payment`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ method: select.value }),
+        });
+        const data = await r.json();
+        if (data.success) {
+          select.dataset.lastSaved = select.value;
+        } else {
+          select.value = select.dataset.lastSaved;
+          alert(data.error || "Erreur lors de l'enregistrement.");
+        }
+      } catch (e) {
+        select.value = select.dataset.lastSaved;
+        alert("Erreur réseau.");
+      } finally {
+        select.disabled = false;
+      }
+    });
+  });
 });

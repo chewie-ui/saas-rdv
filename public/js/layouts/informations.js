@@ -122,7 +122,33 @@ if (saveChanges) {
 
 const socialContainer = document.querySelector(".social-grid");
 
+// Bascule visuelle entre "modifié, pas encore sauvegardé" (bouton coloré,
+// actif) et "déjà enregistré" (bouton grisé, désactivé) — comparé à la
+// dernière valeur effectivement sauvegardée, pas juste "vide ou pas".
+function updateSocialSaveButton(box, input, button) {
+  const span = button.querySelector("span");
+  if (span && button.dataset.labelSave === undefined) {
+    button.dataset.labelSave = span.textContent;
+  }
+  const isDirty = input.value.trim() !== box.dataset.savedValue;
+  button.disabled = !isDirty;
+  button.classList.toggle("btn__social-save--dirty", isDirty);
+  input.classList.toggle("input--dirty", isDirty);
+  if (span) span.textContent = isDirty ? button.dataset.labelSave : "✓ Enregistré";
+}
+
 if (socialContainer) {
+  socialContainer.querySelectorAll(".social-box").forEach(function (box) {
+    const input  = box.querySelector("input.input");
+    const button = box.querySelector(".btn__social-save");
+    if (!input || !button) return;
+    box.dataset.savedValue = input.value.trim();
+    updateSocialSaveButton(box, input, button);
+    input.addEventListener("input", function () {
+      updateSocialSaveButton(box, input, button);
+    });
+  });
+
   /* ── Visibility toggles ── */
   socialContainer.addEventListener("change", async function (e) {
     const checkbox = e.target.closest(".social-visibility-toggle__input");
@@ -210,17 +236,11 @@ if (socialContainer) {
     const data = await response.json();
 
     if (data.success) {
-      const btnSpan = button.querySelector("span");
-      if (btnSpan) {
-        const orig = btnSpan.textContent;
-        btnSpan.textContent = "✓ Enregistré";
-        button.disabled = true;
-        if (button._saveTimer) clearTimeout(button._saveTimer);
-        button._saveTimer = setTimeout(() => {
-          btnSpan.textContent = orig;
-          button.disabled = false;
-        }, 2200);
-      }
+      // La valeur vient d'être confirmée sauvegardée — le bouton repasse en
+      // état "grisé" et y reste jusqu'à ce que l'utilisateur modifie à
+      // nouveau le champ (au lieu de revenir à "Sauvegarder" après 2s).
+      box.dataset.savedValue = value;
+      updateSocialSaveButton(box, input, button);
     } else {
       // Erreur serveur — afficher le message
       input.classList.add("input--error");

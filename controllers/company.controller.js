@@ -226,7 +226,7 @@ exports.updateSlotMode = async (req, res) => {
 // ── Regroupement des rendez-vous ("smart grouping") ────────────────────────
 exports.updateSmartGrouping = async (req, res) => {
   try {
-    const { enabled, windowHours } = req.body;
+    const { enabled, windowHours, weekdays } = req.body;
     const update = {};
 
     if (enabled !== undefined) update["smartGrouping.enabled"] = !!enabled;
@@ -238,6 +238,34 @@ exports.updateSmartGrouping = async (req, res) => {
       if (existing?.smartGrouping?.windowHours === undefined) {
         update["smartGrouping.windowHours"] = 1;
       }
+    }
+    if (weekdays !== undefined) {
+      update["smartGrouping.weekdays"] = Array.isArray(weekdays)
+        ? [...new Set(weekdays.map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6))]
+        : [];
+    }
+
+    await Company.findByIdAndUpdate(res.locals.currentCompany._id, { $set: update });
+    return res.json({ success: true, ...update });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: "Server error" });
+  }
+};
+
+// ── Délai minimum de réservation ────────────────────────────────────────────
+// `minutes` est toujours exprimé en minutes côté backend — l'admin choisit
+// une valeur + une unité (minutes/heures/jours) côté UI, convertie en minutes
+// avant l'envoi. Plafonné à 90 jours, largement suffisant ("même 1 mois").
+exports.updateBookingLeadTime = async (req, res) => {
+  try {
+    const { enabled, minutes } = req.body;
+    const update = {};
+    const MAX_MINUTES = 90 * 24 * 60;
+
+    if (enabled !== undefined) update["minBookingLeadTime.enabled"] = !!enabled;
+    if (minutes !== undefined) {
+      update["minBookingLeadTime.minutes"] = Math.max(0, Math.min(MAX_MINUTES, Math.round(Number(minutes)) || 0));
     }
 
     await Company.findByIdAndUpdate(res.locals.currentCompany._id, { $set: update });

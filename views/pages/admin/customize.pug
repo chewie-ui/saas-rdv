@@ -692,6 +692,68 @@ block content
                                     svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                                         path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
 
+                    //- Disponibilité des jours (vert/orange/rouge)
+                    .cz-ds-card
+                        .cz-ds-card__head
+                            .cz-ds-card__head-icon
+                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                    path(d="M480-480q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Z")
+                            p.cz-ds-card__title Disponibilité des jours
+                        .cz-ds-card__body
+                            .cz-color-row(data-color="dayAvailableColor")
+                                .cz-color-row__label
+                                    strong Jour disponible
+                                    | Au moins un créneau libre
+                                .cz-color-picker
+                                    .cz-color-picker__swatch(style="background:" + (cs.dayAvailableColor || '#16a34a'))
+                                    input(type="color" value=(cs.dayAvailableColor || '#16a34a') tabindex="-1" aria-hidden="true")
+                                    input.cz-color-picker__hex(type="text" value=((cs.dayAvailableColor || '#16a34a').toUpperCase()) maxlength="7" spellcheck="false")
+                                button.cz-color-reset(type="button" title="Réinitialiser")
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+
+                            .cz-color-row(data-color="dayBusyColor")
+                                .cz-color-row__label
+                                    strong Jour bien rempli
+                                    | 50% des créneaux pris ou plus
+                                .cz-color-picker
+                                    .cz-color-picker__swatch(style="background:" + (cs.dayBusyColor || '#ea580c'))
+                                    input(type="color" value=(cs.dayBusyColor || '#ea580c') tabindex="-1" aria-hidden="true")
+                                    input.cz-color-picker__hex(type="text" value=((cs.dayBusyColor || '#ea580c').toUpperCase()) maxlength="7" spellcheck="false")
+                                button.cz-color-reset(type="button" title="Réinitialiser")
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+
+                            .cz-color-row(data-color="dayFullColor")
+                                .cz-color-row__label
+                                    strong Jour complet
+                                    | Plus aucun créneau disponible
+                                .cz-color-picker
+                                    .cz-color-picker__swatch(style="background:" + (cs.dayFullColor || '#ef4444'))
+                                    input(type="color" value=(cs.dayFullColor || '#ef4444') tabindex="-1" aria-hidden="true")
+                                    input.cz-color-picker__hex(type="text" value=((cs.dayFullColor || '#ef4444').toUpperCase()) maxlength="7" spellcheck="false")
+                                button.cz-color-reset(type="button" title="Réinitialiser")
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+
+                            //- Aperçu indépendant des vraies données — pour voir le rendu
+                            //- des 3 états sans devoir attendre/forcer un jour réel complet.
+                            .cz-day-preview__label Aperçu
+                            .cz-day-preview
+                                .cz-day-preview__cell#czPreviewAvailable 12
+                                .cz-day-preview__cell#czPreviewBusy 13
+                                .cz-day-preview__cell#czPreviewFull 14
+                            .cz-day-preview__legend
+                                span
+                                    i.cz-day-preview__dot#czLegendAvailable
+                                    |  Disponible
+                                span
+                                    i.cz-day-preview__dot#czLegendBusy
+                                    |  Bien rempli
+                                span
+                                    i.cz-day-preview__dot#czLegendFull
+                                    |  Complet
+
                     //- Police de caractères
                     .cz-ds-card
                         .cz-ds-card__head

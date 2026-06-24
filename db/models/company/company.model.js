@@ -135,6 +135,33 @@ const companySchema = schema(
     smartGrouping: {
       enabled:     { type: Boolean, default: false },
       windowHours: { type: Number, default: 3 }, // fenêtre de regroupement autour d'un RDV existant
+      // Jours de la semaine où le regroupement s'applique (0=dimanche…6=samedi,
+      // cf. JS Date#getDay) — vide = tous les jours. Permet par ex. de ne
+      // regrouper que le lundi/mardi si ce sont les jours les plus creux.
+      weekdays:    { type: [Number], default: [] },
+    },
+
+    // ── Délai minimum de réservation ──────────────────────────────────────────
+    // Empêche un client de réserver un créneau trop proche dans le temps
+    // (ex: à 11h59 pour un RDV à 12h) si le pro a besoin de temps pour se
+    // préparer. Stocké en minutes pour rester simple côté backend — l'admin
+    // choisit la valeur + l'unité (minutes/heures/jours) côté UI.
+    minBookingLeadTime: {
+      enabled: { type: Boolean, default: false },
+      minutes: { type: Number, default: 60 },
+    },
+
+    // ── Question préalable au choix du service ────────────────────────────────
+    // Ex: "Est-ce la première fois que vous nous consultez ?" → 2 réponses
+    // fixes (nouveau / déjà venu), dont le libellé exact reste personnalisable.
+    // Posée AVANT l'étape "Service" sur la page de réservation publique ;
+    // chaque service peut être limité à l'une des deux réponses
+    // (Service.answerVisibility) — "all" (par défaut) = toujours affiché.
+    bookingQuestion: {
+      enabled:       { type: Boolean, default: false },
+      question:      { type: String, default: "Est-ce la première fois que vous nous consultez ?" },
+      newLabel:      { type: String, default: "Oui, je suis nouveau" },
+      existingLabel: { type: String, default: "Non, j'ai déjà consulté" },
     },
   },
   { timestamps: true },

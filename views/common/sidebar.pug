@@ -37,7 +37,7 @@ aside.sidebar#sidebar
                 a.sb-link(href="/clients" class=pageName === 'Clients' ? 'active' : '')
                     svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
                         path(d="M480-481q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Zm80-80h480v-14q0-11-5.5-20T700-287q-64-31-117-42.5T480-340q-50 0-103.5 11.5T260-287q-9 5-14.5 14t-5.5 20v14Zm240-320q-33 0-56.5-23.5T400-640q0-33 23.5-56.5T480-720q33 0 56.5 23.5T560-640q0 33-23.5 56.5T480-560Zm0-80Zm0 400Z")
-                    span Dossiers clients
+                    span Dossiers #{clientTermPlural || 'clients'}
                 if !adminFeatures || adminFeatures.group_sessions !== false
                     a.sb-link(href="/group-sessions" class=pageName === 'GroupSessions' ? 'active' : '')
                         svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")

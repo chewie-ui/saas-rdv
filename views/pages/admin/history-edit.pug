@@ -24,7 +24,7 @@ block content
             button.sm-btn.sm-btn--danger#deleteHistoryBtn(type="button")
                 svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                     path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-272h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
-                span Supprimer ce rendez-vous
+                span= t.hist_edit.delete_btn
 
         .edit-layout
 
@@ -43,7 +43,7 @@ block content
                         .edit-sidebar__meta-row
                             svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px")
                                 path(d="M224.62-120q-27.62 0-46.12-18.5Q160-157 160-184.62v-510.76q0-27.62 18.5-46.12Q197-760 224.62-760h70.76v-89.23h43.08V-760h286.16v-89.23h40V-760h70.76q27.62 0 46.12 18.5Q800-723 800-695.38v510.76q0 27.62-18.5 46.12Q763-120 735.38-120H224.62Zm0-40h510.76q9.24 0 16.93-7.69 7.69-7.69 7.69-16.93v-350.76H200v350.76q0 9.24 7.69 16.93 7.69 7.69 16.93 7.69ZM200-575.39h560v-119.99q0-9.24-7.69-16.93-7.69-7.69-16.93-7.69H224.62q-9.24 0-16.93 7.69-7.69 7.69-7.69 16.93v119.99Zm0 0V-720-575.39Z")
-                            span= results.date.toLocaleDateString("fr-FR")
+                            span= results.date.toLocaleDateString(lang)
 
                         .edit-sidebar__meta-row
                             svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px")
@@ -78,17 +78,17 @@ block content
                             .reminder-status-badge.reminder-status-badge--manual
                                 svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                                     path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                                span Rappel de RDV envoyé
+                                span= t.hist_edit.reminder_sent_manual
                         else if results.reminderSent
                             .reminder-status-badge.reminder-status-badge--auto
                                 svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                                     path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                                span Rappel automatique envoyé
+                                span= t.hist_edit.reminder_sent_auto
                         if results.status === 'confirmed' && results.email && !isPast
                             button.sm-btn.sm-btn--ghost#sendReminderBtn(type="button" style="width:100%;justify-content:center;margin-top:8px")
                                 svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                                     path(d="M160-200v-80l80-80v-280q0-83 50-147.5T420-880v-20q0-25 17.5-42.5T480-960q25 0 42.5 17.5T540-900v20q80 20 130 84.5T720-640v280l80 80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-360h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z")
-                                span Envoyer un rappel
+                                span= t.hist_edit.send_reminder_btn
 
             //- ── Right form content ──
             .edit-content
@@ -110,7 +110,7 @@ block content
                                     button.datepicker-trigger(type="button" id="datepickerTrigger")
                                         svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                                             path(d="M224.62-120q-27.62 0-46.12-18.5Q160-157 160-184.62v-510.76q0-27.62 18.5-46.12Q197-760 224.62-760h70.76v-89.23h43.08V-760h286.16v-89.23h40V-760h70.76q27.62 0 46.12 18.5Q800-723 800-695.38v510.76q0 27.62-18.5 46.12Q763-120 735.38-120H224.62Zm0-40h510.76q9.24 0 16.93-7.69 7.69-7.69 7.69-16.93v-350.76H200v350.76q0 9.24 7.69 16.93 7.69 7.69 16.93 7.69ZM200-575.39h560v-119.99q0-9.24-7.69-16.93-7.69-7.69-16.93-7.69H224.62q-9.24 0-16.93 7.69-7.69 7.69-7.69 16.93v119.99Zm0 0V-720-575.39Z")
-                                        span#datepickerDisplay= results.date.toLocaleDateString("fr-FR", {weekday:"long", year:"numeric", month:"long", day:"numeric"})
+                                        span#datepickerDisplay= results.date.toLocaleDateString(lang, {weekday:"long", year:"numeric", month:"long", day:"numeric"})
                                     .datepicker-popup(id="datepickerPopup" style="display:none")
                                         .datepicker-header
                                             button.datepicker-nav(type="button" id="dpPrevMonth")
@@ -121,13 +121,13 @@ block content
                                                 svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                                                     path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
                                         .datepicker-weekdays
-                                            span L
-                                            span M
-                                            span M
-                                            span J
-                                            span V
-                                            span S
-                                            span D
+                                            span= t.days_abbr.monday.charAt(0)
+                                            span= t.days_abbr.tuesday.charAt(0)
+                                            span= t.days_abbr.wednesday.charAt(0)
+                                            span= t.days_abbr.thursday.charAt(0)
+                                            span= t.days_abbr.friday.charAt(0)
+                                            span= t.days_abbr.saturday.charAt(0)
+                                            span= t.days_abbr.sunday.charAt(0)
                                         .datepicker-days(id="dpDays")
                         .edit-fields-row.two-col
                             .field-container.flex.col
@@ -141,10 +141,10 @@ block content
                         if services && services.length > 0
                             .edit-fields-row
                                 .field-container.flex.col
-                                    label Service
+                                    label= t.hist_edit.service_label
                                     .svc-select-row
                                         select.input#editService
-                                            option(value="") — Aucun service —
+                                            option(value="")= t.hist_edit.no_service
                                             each svc in services
                                                 - var svcId = String(svc._id)
                                                 - var currentSvcId = results.service ? String(results.service) : ''
@@ -163,9 +163,9 @@ block content
                         if employees && employees.length > 0
                             .edit-fields-row
                                 .field-container.flex.col
-                                    label Employé
+                                    label= t.hist_edit.employee_label
                                     select.input#editEmployee
-                                        option(value="") — Aucun employé —
+                                        option(value="")= t.hist_edit.no_employee
                                         each emp in employees
                                             - var empId = String(emp._id)
                                             - var currentEmpId = results.employee ? String(results.employee._id || results.employee) : ''
@@ -175,20 +175,20 @@ block content
                 //- Section: Paiement
                 -
                     var payMethodLabels = {
-                        online: "En ligne (carte bancaire)",
-                        on_site: "Sur place",
-                        bank_transfer: "Virement bancaire",
-                        paypal: "PayPal",
-                        none: "Aucun paiement en ligne",
+                        online: t.hist_edit.pay_method_online,
+                        on_site: t.hist_edit.pay_method_on_site,
+                        bank_transfer: t.hist_edit.pay_method_bank_transfer,
+                        paypal: t.hist_edit.pay_method_paypal,
+                        none: t.hist_edit.pay_method_none,
                     }
                     var payStatusLabels = {
-                        none: "—",
-                        authorized: "Carte enregistrée (0 € prélevé)",
-                        paid: "Payé intégralement",
-                        refunded: "Remboursé",
-                        partial: "Remboursement partiel",
-                        penalty: "Frais d'annulation/absence prélevés",
-                        failed: "Échec du prélèvement",
+                        none: t.hist_edit.pay_status_none,
+                        authorized: t.hist_edit.pay_status_authorized,
+                        paid: t.hist_edit.pay_status_paid,
+                        refunded: t.hist_edit.pay_status_refunded,
+                        partial: t.hist_edit.pay_status_partial,
+                        penalty: t.hist_edit.pay_status_penalty,
+                        failed: t.hist_edit.pay_status_failed,
                     }
                     var payStatusClass = {
                         none: "neutral",
@@ -208,25 +208,25 @@ block content
                         .edit-section__icon
                             svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
                                 path(d="M880-720v480q0 33-23.5 56.5T800-160H160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720ZM160-640h640v-80H160v80Zm0 160v240h640v-240H160Z")
-                        h3 Paiement
+                        h3= t.hist_edit.payment_title
                     .edit-section__body
                         .pay-info-grid
                             .pay-info-item
-                                span.pay-info-label Mode de paiement
+                                span.pay-info-label= t.hist_edit.payment_method_label
                                 span.pay-info-value= payMethodLabels[payMethod] || payMethod
                             if payMethod !== "none"
                                 .pay-info-item
-                                    span.pay-info-label Statut
+                                    span.pay-info-label= t.hist_edit.payment_status_label
                                     span.pay-info-value
                                         span.pay-status-badge(class="pay-status-badge--" + (payStatusClass[payStatus] || "neutral"))= payStatusLabels[payStatus] || payStatus
                             if pay.amount
                                 .pay-info-item
-                                    span.pay-info-label Montant de la prestation
+                                    span.pay-info-label= t.hist_edit.payment_amount_label
                                     span.pay-info-value= pay.amount.toFixed(2).replace(".", ",") + " €"
                             if pay.paidAt
                                 .pay-info-item
-                                    span.pay-info-label Date du prélèvement
-                                    span.pay-info-value= new Date(pay.paidAt).toLocaleString("fr-FR")
+                                    span.pay-info-label= t.hist_edit.payment_date_label
+                                    span.pay-info-value= new Date(pay.paidAt).toLocaleString(lang)
 
                         if results.noShow
                             .pay-noshow-row(class=results.noShowReason === "invalid" ? "pay-noshow-row--charged" : "pay-noshow-row--free")
@@ -235,9 +235,9 @@ block content
                                     line(x1="12" y1="8" x2="12" y2="12")
                                     line(x1="12" y1="16" x2="12.01" y2="16")
                                 if results.noShowReason === "invalid"
-                                    span Client absent — raison non valable, frais prélevés
+                                    span= t.hist_edit.noshow_charged
                                 else
-                                    span Client absent — raison valable, aucun frais
+                                    span= t.hist_edit.noshow_free
 
                         //- ── Marquer une absence (no-show) ───────────────────────────
                         -
@@ -250,18 +250,18 @@ block content
                                         circle(cx="12" cy="12" r="10")
                                         line(x1="12" y1="8" x2="12" y2="12")
                                         line(x1="12" y1="16" x2="12.01" y2="16")
-                                    span Client absent
+                                    span= t.hist_edit.noshow_btn
                                 .noshow-choices#noShowChoices(style="display:none")
-                                    p.noshow-choices__title Quelle est la raison de l'absence ?
+                                    p.noshow-choices__title= t.hist_edit.noshow_question
                                     button.sm-btn.sm-btn--soft#noShowValid(type="button" data-reason="valid")
-                                        span Raison valable (gratuit)
+                                        span= t.hist_edit.noshow_valid
                                     if canChargeNoShow
                                         button.sm-btn.sm-btn--danger#noShowInvalid(type="button" data-reason="invalid" data-amount=(pay.amount || 0))
-                                            span Raison non valable (encaisser #{pay.amount}€)
+                                            span= t.hist_edit.noshow_invalid_charge.replace('{amount}', pay.amount)
                                     else
                                         button.sm-btn.sm-btn--danger#noShowInvalid(type="button" data-reason="invalid")
-                                            span Raison non valable
-                                    button.sm-btn.sm-btn--ghost#noShowCancel(type="button") Annuler
+                                            span= t.hist_edit.noshow_invalid
+                                    button.sm-btn.sm-btn--ghost#noShowCancel(type="button")= t.hist_edit.generic_cancel
 
                         //- ── Revue des frais d'annulation prélevés automatiquement ────
                         if results.status === 'canceled' && pay && pay.status === 'penalty' && !pay.cancellationReviewDecision
@@ -272,21 +272,21 @@ block content
                                         circle(cx="12" cy="12" r="10")
                                         line(x1="12" y1="8" x2="12" y2="12")
                                         line(x1="12" y1="16" x2="12.01" y2="16")
-                                    span Frais d'annulation prélevés (#{penaltyAmt}€)
+                                    span= t.hist_edit.cancel_fee_charged.replace('{amount}', penaltyAmt)
                                 .noshow-choices#cancelReviewChoices(style="display:none")
-                                    p.noshow-choices__title Le client a annulé tardivement, #{penaltyAmt}€ ont été prélevés automatiquement. Raison valable ?
+                                    p.noshow-choices__title= t.hist_edit.cancel_fee_question.replace('{amount}', penaltyAmt)
                                     button.sm-btn.sm-btn--soft#cancelReviewRefund(type="button")
-                                        span Raison valable (rembourser le client)
+                                        span= t.hist_edit.cancel_fee_refund
                                     button.sm-btn.sm-btn--danger#cancelReviewKeep(type="button")
-                                        span Raison non valable (garder les frais)
-                                    button.sm-btn.sm-btn--ghost#cancelReviewCancel(type="button") Annuler
+                                        span= t.hist_edit.cancel_fee_keep
+                                    button.sm-btn.sm-btn--ghost#cancelReviewCancel(type="button")= t.hist_edit.generic_cancel
                         if pay && pay.cancellationReviewDecision
                             .noshow-badge(class=pay.cancellationReviewDecision === 'refunded' ? 'noshow-badge--free' : 'noshow-badge--charged')
                                 svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
                                     circle(cx="12" cy="12" r="10")
                                     line(x1="12" y1="8" x2="12" y2="12")
                                     line(x1="12" y1="16" x2="12.01" y2="16")
-                                span= pay.cancellationReviewDecision === 'refunded' ? 'Annulation tardive — frais remboursés' : 'Annulation tardive — frais conservés'
+                                span= pay.cancellationReviewDecision === 'refunded' ? t.hist_edit.cancel_late_refunded : t.hist_edit.cancel_late_kept
 
                 //- Section: Client
                 .edit-section
@@ -353,7 +353,7 @@ block content
                 a.sm-btn.sm-btn--soft(href=`/clients/${encodeURIComponent(results.email)}`)
                     svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                         path(d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z")
-                    span Voir le dossier client
+                    span= t.hist_edit.view_client_file
             button.sm-btn.sm-btn--primary#saveBtnEdit(type="button")
                 svg.save-icon(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px")
                     path(d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z")
@@ -365,19 +365,19 @@ block content
             .conflict-modal__icon
                 svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
                     path(d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z")
-            h3.conflict-modal__title Conflit de rendez-vous détecté
-            p.conflict-modal__desc Le créneau choisi est déjà occupé par les rendez-vous suivants :
+            h3.conflict-modal__title= t.hist_edit.conflict_title
+            p.conflict-modal__desc= t.hist_edit.conflict_desc
             ul.conflict-list(id="conflictList")
             .conflict-modal__warning
                 svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                     path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Z")
-                span Forcer la sauvegarde supprimera définitivement ces rendez-vous.
+                span= t.hist_edit.conflict_warning
             .conflict-modal__actions
-                button.sm-btn.sm-btn--ghost(type="button" id="conflictCancel") Annuler
+                button.sm-btn.sm-btn--ghost(type="button" id="conflictCancel")= t.hist_edit.generic_cancel
                 button.sm-btn.sm-btn--danger(type="button" id="conflictForce")
                     svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                         path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-272h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
-                    span Forcer et supprimer les conflits
+                    span= t.hist_edit.conflict_force
 
 block scripts
     script(src="/js/layouts/history.js" type="module")
@@ -421,10 +421,10 @@ block scripts
                     '</style>' +
                     '<div class="cm">' +
                     '<div class="cm__head"><div class="cm__icon-wrap">' + iconSvg + '</div>' +
-                    '<button class="cm__close" aria-label="Fermer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>' +
+                    '<button class="cm__close" aria-label="#{t.hist_edit.generic_cancel}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>' +
                     '<div class="cm__body"><p class="cm__title">' + opts.title + '</p><p class="cm__desc">' + opts.desc + '</p></div>' +
                     '<div class="cm__actions">' +
-                    (opts.alertOnly ? '' : '<button class="cm__cancel">' + (opts.cancelLabel || 'Annuler') + '</button>') +
+                    (opts.alertOnly ? '' : '<button class="cm__cancel">' + (opts.cancelLabel || '#{t.hist_edit.generic_cancel}') + '</button>') +
                     '<button class="cm__confirm">' + opts.confirmLabel + '</button>' +
                     '</div></div>';
 
@@ -434,9 +434,9 @@ block scripts
             window.__alertModal = function(desc, title) {
                 return new Promise(function(resolve) {
                     var overlay = buildModal({
-                        title: title || 'Information',
+                        title: title || '#{t.hist_edit.generic_info_title}',
                         desc: desc,
-                        confirmLabel: 'OK',
+                        confirmLabel: '#{t.hist_edit.generic_ok}',
                         alertOnly: true,
                     });
                     function close() { overlay.remove(); resolve(); }
@@ -454,10 +454,10 @@ block scripts
                 opts = opts || {};
                 return new Promise(function(resolve) {
                     var overlay = buildModal({
-                        title: opts.title || 'Confirmer',
+                        title: opts.title || '#{t.hist_edit.generic_confirm_title}',
                         desc: desc,
-                        confirmLabel: opts.confirmLabel || 'Confirmer',
-                        cancelLabel: opts.cancelLabel || 'Annuler',
+                        confirmLabel: opts.confirmLabel || '#{t.hist_edit.generic_confirm}',
+                        cancelLabel: opts.cancelLabel || '#{t.hist_edit.generic_cancel}',
                         danger: opts.danger || false,
                     });
                     function close(result) { overlay.remove(); resolve(result); }
@@ -508,9 +508,9 @@ block scripts
                     '</style>' +
                     '<div class="dm">' +
                     '<div class="dm__head"><div class="dm__icon-wrap"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M9 6V4h6v2"></path></svg></div>' +
-                    '<button class="dm__close" aria-label="Fermer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>' +
-                    '<div class="dm__body"><p class="dm__title">Supprimer ce rendez-vous ?</p><p class="dm__desc">Cette action est irréversible. Le rendez-vous sera définitivement supprimé.</p></div>' +
-                    '<div class="dm__actions"><button class="dm__cancel">Annuler</button><button class="dm__confirm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>Supprimer</button></div>' +
+                    '<button class="dm__close" aria-label="#{t.hist_edit.generic_cancel}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>' +
+                    '<div class="dm__body"><p class="dm__title">' + window.__deleteModalTitle + '</p><p class="dm__desc">' + window.__deleteModalDesc + '</p></div>' +
+                    '<div class="dm__actions"><button class="dm__cancel">#{t.hist_edit.generic_cancel}</button><button class="dm__confirm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>#{t.hist_edit.delete_modal_confirm}</button></div>' +
                     '</div>';
 
                 function close() { overlay.remove(); }
@@ -519,14 +519,14 @@ block scripts
                 overlay.querySelector('.dm__cancel').addEventListener('click', close);
                 overlay.querySelector('.dm__confirm').addEventListener('click', async function() {
                     this.classList.add('loading');
-                    this.textContent = 'Suppression…';
+                    this.textContent = '#{t.hist_edit.deleting_label}';
                     try {
                         var res  = await fetch('/appointment/' + bookingId + '/delete', { method: 'DELETE' });
                         var data = await res.json();
                         close();
                         if (data.success) { window.location.href = '/history'; }
-                        else window.__alertModal(data.message || 'Erreur lors de la suppression.');
-                    } catch(e) { close(); window.__alertModal('Erreur réseau.'); }
+                        else window.__alertModal(data.message || "#{t.hist_edit.delete_error}");
+                    } catch(e) { close(); window.__alertModal('#{t.hist_edit.network_error}'); }
                 });
 
                 document.body.appendChild(overlay);
@@ -538,6 +538,8 @@ block scripts
     script.
         window.__servicesData = !{JSON.stringify(services || [])};
         window.__bookingId    = '!{results._id}';
+        window.__deleteModalTitle = !{JSON.stringify(t.hist_edit.delete_modal_title)};
+        window.__deleteModalDesc  = !{JSON.stringify(t.hist_edit.delete_modal_desc)};
     script.
         (function() {
             const bookId = '!{results._id}';
@@ -565,13 +567,13 @@ block scripts
             async function submitNoShow(reason, btn) {
                 const amount = btn.dataset.amount;
                 if (reason === 'invalid' && amount) {
-                    if (!(await window.__confirmModal(`Encaisser ${amount}€ pour absence sans raison valable ?`, { title: 'Confirmer le prélèvement', confirmLabel: 'Encaisser', danger: true }))) return;
+                    if (!(await window.__confirmModal(`#{t.hist_edit.charge_question}`.replace('{amount}', amount), { title: "#{t.hist_edit.charge_confirm_title}", confirmLabel: '#{t.hist_edit.charge_confirm_btn}', danger: true }))) return;
                 } else if (reason === 'invalid') {
-                    if (!(await window.__confirmModal('Marquer cette absence comme non valable ?', { title: 'Confirmer', confirmLabel: 'Confirmer', danger: true }))) return;
+                    if (!(await window.__confirmModal('#{t.hist_edit.mark_invalid_question}', { title: '#{t.hist_edit.generic_confirm_title}', confirmLabel: '#{t.hist_edit.generic_confirm}', danger: true }))) return;
                 }
 
                 noShowChoices.querySelectorAll('button').forEach(b => b.disabled = true);
-                btn.querySelector('span').textContent = 'Traitement…';
+                btn.querySelector('span').textContent = '#{t.hist_edit.processing_label}';
 
                 try {
                     const res  = await fetch(`/appointment/${bookId}/no-show`, {
@@ -583,14 +585,14 @@ block scripts
                     if (data.success) {
                         location.reload();
                     } else {
-                        await window.__alertModal(data.error || 'Erreur lors du traitement.', 'Erreur');
+                        await window.__alertModal(data.error || "#{t.hist_edit.processing_error}", '#{t.hist_edit.generic_info_title}');
                         noShowChoices.querySelectorAll('button').forEach(b => b.disabled = false);
                         btn.querySelector('span').textContent = reason === 'invalid'
-                            ? (amount ? `Raison non valable (encaisser ${amount}€)` : 'Raison non valable')
-                            : 'Raison valable (gratuit)';
+                            ? (amount ? `#{t.hist_edit.noshow_invalid_charge}`.replace('{amount}', amount) : '#{t.hist_edit.noshow_invalid}')
+                            : '#{t.hist_edit.noshow_valid}';
                     }
                 } catch (e) {
-                    await window.__alertModal('Erreur réseau.', 'Erreur');
+                    await window.__alertModal('#{t.hist_edit.network_error}', '#{t.hist_edit.generic_info_title}');
                     noShowChoices.querySelectorAll('button').forEach(b => b.disabled = false);
                 }
             }
@@ -619,11 +621,11 @@ block scripts
             }
 
             async function submitCancelReview(decision, btn) {
-                if (decision === 'refunded' && !(await window.__confirmModal('Rembourser les frais d\'annulation au client ?', { title: 'Confirmer le remboursement', confirmLabel: 'Rembourser' }))) return;
-                if (decision === 'kept' && !(await window.__confirmModal('Confirmer que l\'établissement conserve les frais d\'annulation ?', { title: 'Confirmer', confirmLabel: 'Confirmer', danger: true }))) return;
+                if (decision === 'refunded' && !(await window.__confirmModal("#{t.hist_edit.refund_question}", { title: '#{t.hist_edit.refund_confirm_title}', confirmLabel: '#{t.hist_edit.refund_confirm_btn}' }))) return;
+                if (decision === 'kept' && !(await window.__confirmModal("#{t.hist_edit.keep_question}", { title: '#{t.hist_edit.generic_confirm_title}', confirmLabel: '#{t.hist_edit.generic_confirm}', danger: true }))) return;
 
                 cancelReviewChoices.querySelectorAll('button').forEach(b => b.disabled = true);
-                btn.querySelector('span').textContent = 'Traitement…';
+                btn.querySelector('span').textContent = '#{t.hist_edit.processing_label}';
 
                 try {
                     const res  = await fetch(`/appointment/${bookId}/review-cancellation`, {
@@ -635,14 +637,14 @@ block scripts
                     if (data.success) {
                         location.reload();
                     } else {
-                        await window.__alertModal(data.error || 'Erreur lors du traitement.', 'Erreur');
+                        await window.__alertModal(data.error || "#{t.hist_edit.processing_error}", '#{t.hist_edit.generic_info_title}');
                         cancelReviewChoices.querySelectorAll('button').forEach(b => b.disabled = false);
                         btn.querySelector('span').textContent = decision === 'refunded'
-                            ? 'Raison valable (rembourser le client)'
-                            : 'Raison non valable (garder les frais)';
+                            ? '#{t.hist_edit.cancel_fee_refund}'
+                            : '#{t.hist_edit.cancel_fee_keep}';
                     }
                 } catch (e) {
-                    await window.__alertModal('Erreur réseau.', 'Erreur');
+                    await window.__alertModal('#{t.hist_edit.network_error}', '#{t.hist_edit.generic_info_title}');
                     cancelReviewChoices.querySelectorAll('button').forEach(b => b.disabled = false);
                 }
             }
@@ -655,14 +657,14 @@ block scripts
             if (sendReminderBtn) {
                 sendReminderBtn.addEventListener('click', async () => {
                     const confirmed = await window.__confirmModal(
-                        'Un email de rappel de rendez-vous va être envoyé au client.',
-                        { title: 'Envoyer le rappel ?', confirmLabel: 'Envoyer' }
+                        "#{t.hist_edit.send_reminder_question}",
+                        { title: "#{t.hist_edit.send_reminder_title}", confirmLabel: '#{t.hist_edit.send_reminder_confirm}' }
                     );
                     if (!confirmed) return;
 
                     const origHtml = sendReminderBtn.innerHTML;
                     sendReminderBtn.disabled = true;
-                    sendReminderBtn.querySelector('span').textContent = 'Envoi…';
+                    sendReminderBtn.querySelector('span').textContent = '#{t.hist_edit.sending_label}';
 
                     try {
                         const res = await fetch(`/appointment/${bookId}/send-reminder`, {
@@ -673,12 +675,12 @@ block scripts
                         if (data.success) {
                             location.reload();
                         } else {
-                            await window.__alertModal(data.message || data.error || 'Erreur lors de l\'envoi.', 'Erreur');
+                            await window.__alertModal(data.message || data.error || "#{t.hist_edit.send_error}", '#{t.hist_edit.generic_info_title}');
                             sendReminderBtn.disabled = false;
                             sendReminderBtn.innerHTML = origHtml;
                         }
                     } catch (e) {
-                        await window.__alertModal('Erreur réseau.', 'Erreur');
+                        await window.__alertModal('#{t.hist_edit.network_error}', '#{t.hist_edit.generic_info_title}');
                         sendReminderBtn.disabled = false;
                         sendReminderBtn.innerHTML = origHtml;
                     }

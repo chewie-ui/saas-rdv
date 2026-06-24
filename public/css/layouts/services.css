@@ -210,6 +210,32 @@
   text-shadow: 0 0 2px rgba(0,0,0,.6);
 }
 
+/* Bouton "+" — couleur personnalisée via le sélecteur natif de l'OS,
+   plutôt que limité aux pastilles de la palette. */
+.svc-color-swatch--add {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px dashed var(--border-medium, #d1d5db);
+  background: var(--surface, #f9fafb);
+  color: var(--text-secondary, #6b7280);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.12s, color 0.12s, transform 0.12s;
+}
+
+.svc-color-swatch--add:hover {
+  border-color: var(--accent, #1e7a4e);
+  color: var(--accent, #1e7a4e);
+  transform: scale(1.1);
+}
+
 .service-card__badges {
   display: flex;
   gap: 5px;
@@ -281,6 +307,25 @@
   flex: 1;
   align-items: center;
   text-align: center;
+}
+
+/* ── Durée approximative ("30-40 min") ───────────────────────────────────── */
+#svcDurationMaxRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+#svcDurationMaxRow label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+#svcDurationMaxRow .input {
+  flex: 1;
 }
 
 /* ── Type de service (individuel / collectif) ──────────────────────────── */
@@ -1064,4 +1109,84 @@
 .cat-manage-panel__status {
   font-size: 13px;
   font-weight: 600;
+}
+
+/* ── Question préalable au choix du service ─────────────────────────────── */
+.bq-card {
+  background: var(--surface-card, #fff);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl, 16px);
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.bq-card__hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bq-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bq-card__icon {
+  fill: var(--accent);
+  flex-shrink: 0;
+}
+
+.bq-card__title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.bq-card__sub {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 6px;
+}
+
+#bqRow {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+/* ── Sélecteur "afficher pour" dans le modal de service (3 choix fixes :
+   Tous / réponse "nouveau" / réponse "déjà venu") ───────────────────────── */
+.svc-answer-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.svc-answer-opt {
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-light);
+  background: var(--color-white, #fff);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color .12s, background .12s, color .12s;
+}
+
+.svc-answer-opt:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.svc-answer-opt.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }

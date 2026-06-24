@@ -108,6 +108,29 @@ html {
   flex-wrap: wrap;
 }
 
+.pro-hero__card-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 8px 0 0;
+}
+
+.pro-hero__alt-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.pro-hero__alt-link:hover {
+  color: var(--accent);
+}
+.pro-hero__alt-link svg {
+  fill: currentColor;
+}
+
 .pro-micro {
   display: flex;
   gap: 18px;
@@ -786,10 +809,119 @@ html {
 }
 
 /* ════════════════════════════════════════════════════════
-   PRICING CTA — gradient card
+   PRICING — 3 vrais tarifs (Starter / Pro / Business)
    ════════════════════════════════════════════════════════ */
 .pro-pricing {
   padding: 32px 0 80px;
+}
+.pro-plans {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+@media (min-width: 860px) {
+  .pro-plans {
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: start;
+  }
+}
+.pro-plan {
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: 28px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: var(--shadow-card);
+  position: relative;
+}
+.pro-plan--featured {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-hover);
+}
+@media (min-width: 860px) {
+  .pro-plan--featured {
+    transform: translateY(-10px);
+  }
+}
+.pro-plan__badge {
+  position: absolute;
+  top: -12px;
+  left: 26px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+}
+.pro-plan__name {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 6px 0 0;
+}
+.pro-plan__desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+.pro-plan__price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.pro-plan__price-n {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -1px;
+}
+.pro-plan__price-s {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.pro-plan__features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+.pro-plan__features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.pro-plan__features svg {
+  flex-shrink: 0;
+  fill: var(--accent);
+  margin-top: 2px;
+}
+.pro-plan__cta {
+  margin-top: 4px;
+  text-align: center;
+  justify-content: center;
+}
+.pro-pricing__note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 24px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.pro-pricing__note svg {
+  fill: var(--text-muted);
 }
 .pro-pricing__card {
   background: linear-gradient(135deg, var(--accent) 0%, #145f3a 100%);

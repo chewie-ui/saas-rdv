@@ -371,12 +371,42 @@ exports.createBooking = async (req, res) => {
     // → le RDV n'apparaissait pas dans "Mes rendez-vous" une fois connecté.
     const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : rawEmail;
 
+    // ── Client bloqué par cet établissement → ne peut plus réserver ─────────
+    if (email) {
+      const ClientDossier = require("../db/models/clientDossier.model");
+      const dossier = await ClientDossier.findOne({ company, email, blocked: true }).select("_id").lean();
+      if (dossier) {
+        return res.json({
+          success: false,
+          error: "client_blocked",
+          message: "Ce professionnel n'accepte plus de réservation de votre part. Merci de le contacter directement.",
+        });
+      }
+    }
+
     // employeeId / employeeName may be auto-resolved below — use let
     let employeeId   = req.body.employeeId   || null;
     let employeeName = req.body.employeeName || "";
 
     const response = await Company.findById(company);
     const companySlotTime = response.slotTime;
+
+    // ── Délai minimum de réservation — revalidé côté serveur : la liste de
+    // créneaux affichée au client respecte déjà ce délai, mais on ne fait
+    // jamais confiance uniquement au frontend pour une règle métier. ───────
+    if (response.minBookingLeadTime?.enabled) {
+      const leadMinutes = Math.max(0, Number(response.minBookingLeadTime.minutes) || 0);
+      const slotDateTime = new Date(date);
+      const [slotH, slotM] = startTime.split(":").map(Number);
+      slotDateTime.setHours(slotH, slotM, 0, 0);
+      if (slotDateTime.getTime() < Date.now() + leadMinutes * 60000) {
+        return res.json({
+          success: false,
+          error: "lead_time_not_met",
+          message: "Ce créneau est trop proche pour être réservé. Merci de choisir un horaire plus tard.",
+        });
+      }
+    }
 
     // ── Plan gate: monthly bookings cap for basic (free) plan ─────────────
     if (response.owner) {
@@ -447,11 +477,35 @@ exports.createBooking = async (req, res) => {
     // d'employé ni de vérification de chevauchement individuelle. ──────────
     let serviceDoc = null;
     if (serviceId) {
-      serviceDoc = await Service.findById(serviceId).select("type capacity").lean();
+      serviceDoc = await Service.findById(serviceId).select("type capacity color recurring sessions location duration").lean();
     }
     const isGroup = !!(serviceDoc && serviceDoc.type === "group");
 
     if (isGroup) {
+      // ── Défense en profondeur : le (date, startTime) envoyé doit
+      // correspondre à une vraie occurrence du cours (récurrente ou
+      // ponctuelle) — on ne fait jamais confiance uniquement au frontend
+      // pour une règle métier (même principe que minBookingLeadTime
+      // ci-dessus). Empêche de réserver un créneau de cours qui n'existe
+      // plus (date supprimée par l'admin) ou n'a jamais existé. ──────────
+      const bookingDateObj = new Date(date);
+      const occurrenceValid = serviceDoc.recurring?.enabled
+        ? (serviceDoc.recurring.weekdays || []).includes(bookingDateObj.getDay()) && serviceDoc.recurring.startTime === startTime
+        : (serviceDoc.sessions || []).some((s) => {
+            const sDate = new Date(s.date);
+            return sDate.getFullYear() === bookingDateObj.getFullYear()
+              && sDate.getMonth() === bookingDateObj.getMonth()
+              && sDate.getDate() === bookingDateObj.getDate()
+              && s.startTime === startTime;
+          });
+      if (!occurrenceValid) {
+        return res.json({
+          success: false,
+          error: "invalid_session",
+          message: "Cette session n'existe plus, merci de rafraîchir la page.",
+        });
+      }
+
       const capacity = serviceDoc.capacity || 1;
       const participantCount = await Booking.countDocuments({
         company,
@@ -549,6 +603,7 @@ exports.createBooking = async (req, res) => {
       clientRef: req.session?.clientId || null,
       service:      serviceId   || null,
       serviceName:  serviceName || "",
+      serviceColor: serviceDoc?.color || "",
       employee:     employeeId  || null,
       employeeName: employeeName || "",
       isGroup,
@@ -606,13 +661,16 @@ exports.createBooking = async (req, res) => {
       console.error("Monthly limit notification email error:", limitNotifErr.message);
     }
 
-    // Build location text
-    let locationText = "";
-    const loc = companyOwner?.location;
-    if (loc?.serviceType === "en_ligne") {
-      locationText = "En ligne";
-    } else if (loc?.address || loc?.city) {
-      locationText = [loc.address, loc.city].filter(Boolean).join(", ");
+    // Build location text — un cours collectif peut avoir un lieu spécifique
+    // (ex: studio loué pour un atelier) qui remplace l'adresse par défaut.
+    let locationText = serviceDoc?.location || "";
+    if (!locationText) {
+      const loc = companyOwner?.location;
+      if (loc?.serviceType === "en_ligne") {
+        locationText = "En ligne";
+      } else if (loc?.address || loc?.city) {
+        locationText = [loc.address, loc.city].filter(Boolean).join(", ");
+      }
     }
 
     // Cancel URL
@@ -722,6 +780,109 @@ function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && aEnd > bStart;
 }
 
+// ── Cours collectif : prochaines occurrences réservables ─────────────────────
+// Génère les occurrences futures d'un cours récurrent (weekdays + startTime,
+// fin calculée depuis la durée du service — pas de fin propre stockée pour ce
+// mode). Horizon volontairement large (90 jours / 12 occurrences, le premier
+// plafond atteint) pour couvrir aussi les cours à plusieurs jours/semaine.
+const GROUP_SESSIONS_MAX_OCCURRENCES = 12;
+const GROUP_SESSIONS_HORIZON_DAYS = 90;
+
+function generateRecurringOccurrences(recurring, duration, maxCount, horizonDays) {
+  const out = [];
+  const now = new Date();
+  const [h, m] = (recurring.startTime || "00:00").split(":").map(Number);
+  const endMin = h * 60 + m + (duration || 60);
+  const endTime = minutesToTimeStr(endMin);
+  for (let i = 0; i < horizonDays && out.length < maxCount; i++) {
+    // Jour calendaire local "aujourd'hui + i" — un constructeur par composants
+    // (y,m,d) est nécessaire ici pour déterminer le bon jour de semaine en
+    // heure locale. On le convertit ensuite en chaîne "YYYY-MM-DD" puis on la
+    // reparse : c'est la MÊME convention que `sanitizeSessions` (dates
+    // ponctuelles) et `createBooking` (new Date("YYYY-MM-DD") = minuit UTC,
+    // jamais minuit local) — sans ça, sur un serveur en UTC+1/+2, la date
+    // stockée ici se décale d'un jour par rapport aux vraies réservations et
+    // le comptage de places ne matche jamais rien (vérifié : la clé de
+    // comptage retombait sur la veille).
+    const probe = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+    if ((recurring.weekdays || []).includes(probe.getDay())) {
+      const ymd = `${probe.getFullYear()}-${String(probe.getMonth() + 1).padStart(2, "0")}-${String(probe.getDate()).padStart(2, "0")}`;
+      out.push({ date: new Date(ymd), startTime: recurring.startTime, endTime });
+    }
+  }
+  return out;
+}
+
+// ── API publique : liste des prochaines séances réservables pour un service
+// collectif (récurrent ou dates ponctuelles), avec places restantes — alimente
+// la liste affichée côté client à la place du calendrier classique. ──────────
+exports.getGroupSessions = async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+    const service = await Service.findById(serviceId)
+      .select("type capacity name color recurring sessions location duration company")
+      .lean();
+    if (!service || service.type !== "group") {
+      return res.status(404).json({ success: false, error: "service_not_found" });
+    }
+
+    const company = await Company.findById(service.company).select("minBookingLeadTime owner").lean();
+    const leadConfig = company?.minBookingLeadTime;
+    const leadCutoffMs = Date.now() + (leadConfig?.enabled ? Math.max(0, Number(leadConfig.minutes) || 0) * 60000 : 0);
+
+    let occurrences = service.recurring?.enabled
+      ? generateRecurringOccurrences(service.recurring, service.duration, GROUP_SESSIONS_MAX_OCCURRENCES, GROUP_SESSIONS_HORIZON_DAYS)
+      : (service.sessions || []).map((s) => ({ date: s.date, startTime: s.startTime, endTime: s.endTime }));
+
+    // Passé + délai minimum de réservation (même règle que createBooking/getBooking)
+    occurrences = occurrences
+      .filter((o) => {
+        const [oh, om] = o.startTime.split(":").map(Number);
+        const dt = new Date(o.date);
+        dt.setHours(oh, om, 0, 0);
+        return dt.getTime() >= leadCutoffMs;
+      })
+      .sort((a, b) => new Date(a.date) - new Date(b.date) || a.startTime.localeCompare(b.startTime));
+
+    // Compter les réservations confirmées par occurrence (une seule requête,
+    // puis on rapproche en mémoire — le volume par service reste minime).
+    const minDate = occurrences.length
+      ? new Date(Math.min(...occurrences.map((o) => new Date(o.date).getTime())))
+      : null;
+    const existingBookings = minDate
+      ? await Booking.find({ company: service.company, service: serviceId, status: "confirmed", isGroup: true, date: { $gte: minDate } })
+          .select("date startTime").lean()
+      : [];
+    const counts = new Map(); // `${yyyy-mm-dd}|${startTime}` → nb de réservations
+    existingBookings.forEach((b) => {
+      const key = `${new Date(b.date).toISOString().split("T")[0]}|${b.startTime}`;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+
+    const capacity = service.capacity || null;
+    const sessions = occurrences.map((o) => {
+      const key = `${new Date(o.date).toISOString().split("T")[0]}|${o.startTime}`;
+      const booked = counts.get(key) || 0;
+      const remaining = capacity !== null ? Math.max(0, capacity - booked) : null;
+      return { date: o.date, startTime: o.startTime, endTime: o.endTime, capacity, remaining, full: capacity !== null && remaining === 0 };
+    });
+
+    // Lieu : surcharge du cours, sinon adresse par défaut du compte.
+    let locationText = service.location || "";
+    if (!locationText && company?.owner) {
+      const owner = await User.findById(company.owner).select("location").lean();
+      const loc = owner?.location;
+      if (loc?.serviceType === "en_ligne") locationText = "En ligne";
+      else if (loc?.address || loc?.city) locationText = [loc.address, loc.city].filter(Boolean).join(", ");
+    }
+
+    res.json({ success: true, sessions, capacity, locationText, serviceName: service.name, serviceColor: service.color });
+  } catch (err) {
+    console.error("getGroupSessions error:", err);
+    res.status(500).json({ success: false, error: "Erreur serveur." });
+  }
+};
+
 exports.getBooking = async (req, res) => {
   const { date, companyId, employeeId, serviceDuration, serviceId } = req.query;
 
@@ -743,6 +904,25 @@ exports.getBooking = async (req, res) => {
     requestedDate.getDate()     === now.getDate();
   const nowMinutes = isToday ? now.getHours() * 60 + now.getMinutes() : -1;
 
+  // Get company config so we can compute slot granularity / buffer / mode.
+  const [companyDoc, activeEmployeeCount] = await Promise.all([
+    Company.findById(companyId).select("slotTime bufferTime bufferBefore bufferAfter slotMode slotInterval owner smartGrouping minBookingLeadTime").lean(),
+    // Only count employees when no specific one is filtered
+    specificEmployee ? Promise.resolve(0) : Employee.countDocuments({ company: companyId, active: true }),
+  ]);
+
+  // ── Délai minimum de réservation ──────────────────────────────────────────
+  // "On vous propose un créneau dans 5 min, pas le temps de vous préparer" —
+  // si activé, aucun créneau ne peut être réservé avant `now + leadMinutes`,
+  // quel que soit le jour demandé (peut donc bloquer des jours entiers si le
+  // délai dépasse 24h). On exprime ce seuil en minutes depuis minuit DU JOUR
+  // DEMANDÉ pour pouvoir le combiner avec les boucles de blocage existantes.
+  const leadConfig = companyDoc?.minBookingLeadTime;
+  const leadMinutesConfig = leadConfig?.enabled ? Math.max(0, Number(leadConfig.minutes) || 0) : 0;
+  const leadCutoffMs = now.getTime() + leadMinutesConfig * 60000;
+  const requestedMidnightMs = new Date(requestedDate.getFullYear(), requestedDate.getMonth(), requestedDate.getDate()).getTime();
+  const leadCutoffMinutesForDay = Math.ceil((leadCutoffMs - requestedMidnightMs) / 60000);
+
   // ── Service "collectif" : la disponibilité dépend du nombre de places
   // restantes par créneau, indépendamment des plannings employés/buffer. ───
   if (serviceId && serviceId !== "null" && serviceId !== "") {
@@ -763,8 +943,6 @@ exports.getBooking = async (req, res) => {
         counts[b.startTime] = (counts[b.startTime] || 0) + 1;
       });
 
-      const isTodayG = isToday;
-      const nowMinutesG = isTodayG ? now.getHours() * 60 + now.getMinutes() : -1;
       const blockedSet = new Set();
       const groupAvailability = {};
 
@@ -773,10 +951,11 @@ exports.getBooking = async (req, res) => {
         if (counts[startTime] >= capacity) blockedSet.add(startTime);
       });
 
-      // Block past slots for today (every minute mark — the client only
-      // checks the exact slot strings returned by /get-schedule).
-      if (nowMinutesG >= 0) {
-        for (let t = 0; t < nowMinutesG; t += 5) {
+      // Block past slots + délai minimum (every minute mark — the client
+      // only checks the exact slot strings returned by /get-schedule).
+      const cutoffG = Math.min(Math.max(nowMinutes, leadCutoffMinutesForDay), 24 * 60);
+      if (cutoffG > 0) {
+        for (let t = 0; t < cutoffG; t += 5) {
           blockedSet.add(minutesToTimeStr(t));
         }
       }
@@ -789,13 +968,6 @@ exports.getBooking = async (req, res) => {
   // employés assignés (ou tout le monde, si aucun employé n'est assigné) pour
   // les AUTRES services. Calculé une fois, réutilisé par les 3 cas ci-dessous.
   const coursesToday = await getCoursesForDate(companyId, date);
-
-  // Get company config so we can compute slot granularity / buffer / mode.
-  const [companyDoc, activeEmployeeCount] = await Promise.all([
-    Company.findById(companyId).select("slotTime bufferTime bufferBefore bufferAfter slotMode slotInterval owner smartGrouping").lean(),
-    // Only count employees when no specific one is filtered
-    specificEmployee ? Promise.resolve(0) : Employee.countDocuments({ company: companyId, active: true }),
-  ]);
 
   // Durée de la prestation demandée (utilisée pour vérifier les chevauchements).
   const newDuration = (serviceDuration && Number(serviceDuration) > 0)
@@ -834,10 +1006,13 @@ exports.getBooking = async (req, res) => {
     }
   }
 
-  // Helper: mark all past slots for today as blocked
+  // Helper: bloque les créneaux passés ET ceux trop proches dans le temps
+  // (délai minimum de réservation configuré par l'admin) — peut couvrir la
+  // journée entière si le délai dépasse les heures restantes de ce jour.
   function blockPastSlots(blockedSet) {
-    if (nowMinutes < 0) return;
-    for (let t = 0; t < nowMinutes; t += step) {
+    const cutoff = Math.min(Math.max(nowMinutes, leadCutoffMinutesForDay), 24 * 60);
+    if (cutoff <= 0) return;
+    for (let t = 0; t < cutoff; t += step) {
       blockedSet.add(minutesToTimeStr(t));
     }
   }
@@ -855,8 +1030,13 @@ exports.getBooking = async (req, res) => {
   // l'élargit progressivement par tranches de 60 min jusqu'à trouver au
   // moins un créneau disponible — sinon le client ne voit qu'un mur de
   // créneaux barrés sans rien à réserver.
+  // Jours où le regroupement s'applique (vide = tous les jours).
+  const smartGroupingWeekdays = smartGrouping?.weekdays || [];
+  const smartGroupingActiveToday = smartGroupingWeekdays.length === 0
+    || smartGroupingWeekdays.includes(requestedDate.getDay());
+
   function computeRecommendedTimes(anchorBookings, blockedSet) {
-    if (!smartGrouping?.enabled || !anchorBookings || anchorBookings.length === 0) return null;
+    if (!smartGrouping?.enabled || !smartGroupingActiveToday || !anchorBookings || anchorBookings.length === 0) return null;
     const baseWindowMin = Math.max(1, Number(smartGrouping.windowHours) || 3) * 60;
     const anchors = anchorBookings.map((b) => {
       const [h, m] = b.startTime.split(":").map(Number);

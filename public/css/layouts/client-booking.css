@@ -642,6 +642,68 @@ body.bk-embed #bkCart .bk-cart {
   gap: 10px;
 }
 
+.bk-svc-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--bk-muted);
+  font: 600 13.5px var(--bk-font);
+  background: var(--bk-surface);
+  border: 1px dashed var(--bk-border);
+  border-radius: var(--bk-r-lg);
+}
+
+/* ── Question préalable ("Nouveau patient ?" etc.) ───────────────────────── */
+.bk-question-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.bk-question-opt {
+  background: var(--bk-surface);
+  border: 1px solid var(--bk-border);
+  border-radius: var(--bk-r-lg);
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  font: 700 14.5px var(--bk-font);
+  color: var(--bk-ink);
+  transition: all 0.15s;
+  box-shadow: var(--bk-shadow-xs);
+}
+
+.bk-question-opt:hover {
+  border-color: var(--bk-accent);
+  transform: translateY(-1px);
+  box-shadow: var(--bk-shadow-sm);
+}
+
+.bk-question-opt.is-selected {
+  border: 2px solid var(--bk-accent);
+  padding: 17px;
+  background: linear-gradient(180deg, var(--bk-accent-soft) 0%, var(--bk-surface) 70%);
+}
+
+.bk-question-opt svg {
+  flex-shrink: 0;
+  color: var(--bk-accent);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: all 0.2s;
+}
+
+.bk-question-opt.is-selected svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (max-width: 560px) {
+  .bk-question-options { grid-template-columns: 1fr; }
+}
+
 .bk-svc {
   background: var(--bk-surface);
   border: 1px solid var(--bk-border);
@@ -1114,23 +1176,29 @@ body.bk-embed #bkCart .bk-cart {
 }
 
 /* Repère visuel du taux de remplissage du jour ("si un jour est full met
-   le en rouge et si la moitié des rdv est pris met orange") — mêmes teintes
-   que le code couleur déjà utilisé côté admin (fill-dot--red / --orange). */
+   le en rouge et si la moitié des rdv est pris met orange") — couleurs
+   personnalisables par l'admin (Personnaliser → Design → Disponibilité des
+   jours), avec des teintes par défaut cohérentes avec l'admin (vert/orange/rouge). */
+.bk-cal-cell.is-available {
+  color: var(--bk-day-available-color, #16a34a);
+  background: var(--bk-day-available-bg, rgba(22, 163, 74, 0.08));
+}
+
 .bk-cal-cell.is-full {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.08);
+  color: var(--bk-day-full-color, #ef4444);
+  background: var(--bk-day-full-bg, rgba(239, 68, 68, 0.08));
   cursor: not-allowed;
   text-decoration: line-through;
-  text-decoration-color: rgba(239, 68, 68, 0.4);
+  text-decoration-color: var(--bk-day-full-color, rgba(239, 68, 68, 0.4));
 }
 
 .bk-cal-cell.is-busy {
-  color: #ea580c;
-  background: rgba(249, 115, 22, 0.10);
+  color: var(--bk-day-busy-color, #ea580c);
+  background: var(--bk-day-busy-bg, rgba(249, 115, 22, 0.10));
   font-weight: 700;
 }
 
-.bk-cal-cell:not(.is-disabled):not(.is-empty):not(.is-full):not(.is-busy):hover {
+.bk-cal-cell:not(.is-disabled):not(.is-empty):not(.is-full):not(.is-busy):not(.is-available):hover {
   background: var(--bk-accent-soft);
   /* On garde la couleur de texte d'origine pour rester lisible quelle que soit
      la combinaison accent / day-bg choisie par l'admin */
@@ -1140,7 +1208,11 @@ body.bk-embed #bkCart .bk-cart {
 /* Un jour "à moitié plein" reste cliquable — on garde son repère orange
    visible au survol plutôt que de le faire disparaître sous le vert. */
 .bk-cal-cell.is-busy:hover {
-  background: rgba(249, 115, 22, 0.18);
+  background: var(--bk-day-busy-bg-hover, rgba(249, 115, 22, 0.18));
+}
+
+.bk-cal-cell.is-available:hover {
+  background: var(--bk-day-available-bg-hover, rgba(22, 163, 74, 0.16));
 }
 
 .bk-cal-cell.is-today {
@@ -1345,6 +1417,113 @@ body.bk-embed #bkCart .bk-cart {
 
 .bk-slot-list--extra {
   margin-top: 6px;
+}
+
+/* ── Cours collectif : liste de séances (remplace le calendrier) ─────────── */
+.bk-gs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bk-gs-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: var(--bk-surface);
+  border: 1px solid var(--bk-border);
+  border-radius: var(--bk-r-lg);
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  width: 100%;
+  font-family: var(--bk-font);
+}
+
+.bk-gs-card:hover {
+  border-color: var(--bk-accent-border);
+  background: var(--bk-accent-soft);
+}
+
+.bk-gs-card.is-selected {
+  border: 2px solid var(--bk-accent);
+  padding: 15px 17px;
+  background: linear-gradient(180deg, var(--bk-accent-soft) 0%, var(--bk-surface) 70%);
+}
+
+.bk-gs-card.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.bk-gs-card.is-disabled:hover {
+  border-color: var(--bk-border);
+  background: var(--bk-surface);
+}
+
+.bk-gs-card__main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.bk-gs-card__date {
+  font: 700 14.5px var(--bk-font);
+  color: var(--bk-ink);
+  text-transform: capitalize;
+}
+
+.bk-gs-card__time {
+  font: 600 12.5px var(--bk-mono, var(--bk-font));
+  color: var(--bk-muted);
+}
+
+.bk-gs-card__loc {
+  font: 500 12px var(--bk-font);
+  color: var(--bk-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bk-gs-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: var(--bk-r-pill);
+  font: 700 11.5px var(--bk-font);
+  white-space: nowrap;
+}
+
+.bk-gs-pill.is-ok {
+  background: var(--bk-accent-soft);
+  color: var(--bk-accent-ink);
+  border: 1px solid var(--bk-accent-border);
+}
+
+.bk-gs-pill.is-low {
+  background: rgba(234, 88, 12, 0.1);
+  color: #c2410c;
+  border: 1px solid rgba(234, 88, 12, 0.3);
+}
+
+.bk-gs-pill.is-full {
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+}
+
+.bk-gs-empty {
+  background: var(--bk-surface);
+  border: 1px dashed var(--bk-border);
+  border-radius: var(--bk-r-lg);
+  padding: 24px 18px;
+  text-align: center;
+  font: 500 13px var(--bk-font);
+  color: var(--bk-muted);
 }
 
 /* ── Details form pane ──────────────────────────────────────────────────── */

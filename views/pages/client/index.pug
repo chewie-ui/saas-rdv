@@ -52,6 +52,14 @@ block content
         }
         var accentRgb = hexToRgb(accentColor)
 
+        // Couleurs de disponibilité du calendrier (vert/orange/rouge perso)
+        var dayAvailableColor = cs.dayAvailableColor || '#16a34a'
+        var dayBusyColor      = cs.dayBusyColor      || '#ea580c'
+        var dayFullColor      = cs.dayFullColor      || '#ef4444'
+        var dayAvailableRgb   = hexToRgb(dayAvailableColor)
+        var dayBusyRgb        = hexToRgb(dayBusyColor)
+        var dayFullRgb        = hexToRgb(dayFullColor)
+
         var bizName    = (coach && (coach.businessName || coach.fullName)) || 'BranShee'
         var bizType    = (coach && coach.businessType) || ''
         var bizStreet  = (coach && coach.location && coach.location.address) || ''
@@ -153,6 +161,14 @@ block content
             --bk-surface: #{cs.calBg    || '#ffffff'};
             --bk-day-bg:  #{cs.dayBg    || '#ffffff'};
             --bk-day-text:#{cs.dayText  || '#111111'};
+            --bk-day-available-color: #{dayAvailableColor};
+            --bk-day-available-bg:    rgba(#{dayAvailableRgb}, 0.08);
+            --bk-day-available-bg-hover: rgba(#{dayAvailableRgb}, 0.16);
+            --bk-day-busy-color: #{dayBusyColor};
+            --bk-day-busy-bg:    rgba(#{dayBusyRgb}, 0.10);
+            --bk-day-busy-bg-hover: rgba(#{dayBusyRgb}, 0.18);
+            --bk-day-full-color: #{dayFullColor};
+            --bk-day-full-bg:    rgba(#{dayFullRgb}, 0.08);
             --bk-btn-bg:  #{cs.btnBg    || '#111111'};
             --bk-btn-text:#{cs.btnText  || '#ffffff'};
             --bk-font:    !{_fontVal};
@@ -454,6 +470,7 @@ block scripts
         window.__bookingCategoryStyle = !{JSON.stringify(cs.bookingCategoryStyle || 'pills')};
         window.__prepayment     = !{JSON.stringify(prepaymentConfig || { enabled: false, required: false })};
         window.__stripeKey      = '!{stripePublishableKey || ""}';
+        window.__bookingQuestion = !{JSON.stringify((company && company.bookingQuestion) || { enabled: false, question: '', newLabel: '', existingLabel: '' })};
     if clientUser
         script.
             window.__clientUser = !{JSON.stringify(clientUser)};

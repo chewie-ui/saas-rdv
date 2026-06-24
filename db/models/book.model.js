@@ -93,6 +93,16 @@ const bookingSchema = new schema(
       default: false,
     },
 
+    // Bloc d'indisponibilité posé par l'admin (ex: "Absent — dentiste") —
+    // occupe le créneau exactement comme un RDV (mêmes vérifications de
+    // chevauchement) mais n'a pas de client : pas d'email de confirmation,
+    // n'apparaît pas dans les dossiers clients/patients. Le motif (ex:
+    // "dentiste", "pause") est stocké dans `message`.
+    isBlock: {
+      type: Boolean,
+      default: false,
+    },
+
     formAnswers: [
       {
         question: { type: String },
@@ -116,6 +126,16 @@ const bookingSchema = new schema(
       type: String,
       default: "",
     },
+    // Couleur du service au moment de la réservation — figée ici plutôt que
+    // recalculée à chaque affichage : si le service est supprimé ou
+    // désactivé plus tard, les RDV déjà pris gardent leur couleur d'origine
+    // au lieu de tous retomber sur une couleur par défaut (confusion visuelle
+    // dans le calendrier admin sinon, ex: "TESTER TER" hérite du bleu de
+    // "NEW kine" une fois le service supprimé).
+    serviceColor: {
+      type: String,
+      default: "",
+    },
     employee: {
       type: schema.Types.ObjectId,
       ref: "Employee",
@@ -128,7 +148,7 @@ const bookingSchema = new schema(
 
     // ── Paiement ──────────────────────────────────────────────────────────────
     payment: {
-      method:   { type: String, enum: ["online", "on_site", "bank_transfer", "paypal", "none"], default: "none" },
+      method:   { type: String, enum: ["online", "on_site", "bank_transfer", "paypal", "cash", "none"], default: "none" },
       // status:
       //   none       = pas de paiement en ligne
       //   authorized = carte enregistrée, 0€ prélevé (nouveau flux pré-autorisation)

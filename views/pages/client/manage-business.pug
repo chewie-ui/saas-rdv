@@ -67,15 +67,27 @@ block content
                             br
                             em= pl.hero.title_2
                         p.pro-sub= t.hero.description
+                        //- Un seul bouton bien visible — la page cible des PROFESSIONNELS
+                        //- pour du trafic Google Ads payant : un 2ème bouton de même poids
+                        //- ("Prendre rendez-vous" → /search, pensé pour des CLIENTS) divisait
+                        //- l'attention et envoyait une partie des clics vers le mauvais
+                        //- public. Le lien reste disponible mais en simple texte discret,
+                        //- pour le rare visiteur qui cherchait en fait à réserver chez
+                        //- quelqu'un plutôt qu'à créer son propre compte pro.
                         .pro-actions
                             a.sm-btn.sm-btn--primary(href="/register?plan=pro&billing=monthly")= t.hero.btn_1
-                            a.sm-btn.sm-btn--soft(href="/search")
-                                //- Icône calendrier ("event") — l'ancienne ressemblait à un
-                                //- casque de support client, pas vraiment lié à "prendre
-                                //- rendez-vous" ("change le bouton genre le logo stp").
-                                svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="16" height="16")
-                                    path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z")
-                                = pl.hero.cta_booking || 'Prendre rendez-vous'
+                        //- Disclosure honnête à l'endroit même où ça compte : le bouton
+                        //- ci-dessus mène à l'essai Pro, qui demande une carte (débitée
+                        //- seulement après le mois gratuit) — on ne prétend plus le
+                        //- contraire ("Sans carte bancaire" affiché juste à côté d'un bouton
+                        //- qui en demande une, c'est le genre de chose qui casse la confiance
+                        //- au pire moment : juste avant de payer).
+                        if pl.hero.card_note
+                            p.pro-hero__card-note= pl.hero.card_note
+                        a.pro-hero__alt-link(href="/search")
+                            svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="13" height="13")
+                                path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z")
+                            = pl.hero.cta_booking || 'Prendre rendez-vous'
 
                         .pro-pricing-note
                             span Gratuit pour commencer ·&nbsp;
@@ -314,20 +326,70 @@ block content
                                         .pro-test__role= item.r
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- PRICING CTA
+        //- PRICING — vrais tarifs affichés ici (pas besoin d'un compte pour
+        //- les voir : "Voir les plans" renvoyait avant vers /subscription,
+        //- une page admin qui exige d'être connecté → un visiteur Ads tombait
+        //- sur un mur de connexion au lieu des prix qu'il venait chercher).
+        //- Mêmes données que la page d'abonnement (t.subscription.*), donc
+        //- toujours synchronisé avec les vrais tarifs/fonctionnalités.
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         section.pro-pricing
             .container
-                .pro-pricing__card
-                    div
-                        .pro-pricing__label
-                            span.pro-badge__dot(style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.8);display:inline-block;margin-right:4px")
-                            = pl.pricing.label
-                        h2.pro-pricing__h2= pl.pricing.title
-                        p.pro-pricing__sub= pl.pricing.desc
-                    .pro-pricing__actions
-                        a.sm-btn.sm-btn--primary(href="/subscription")= pl.pricing.cta_1
-                        a.sm-btn.sm-btn--ghost(href="/register?plan=pro&billing=monthly")= pl.pricing.cta_2
+                .pro-sec-hd
+                    .pro-pill= pl.pricing.label
+                    h2.pro-h2= pl.pricing.title
+                    p.pro-desc= pl.pricing.desc
+
+                .pro-plans
+                    .pro-plan
+                        h3.pro-plan__name= t.subscription.plan_1
+                        p.pro-plan__desc= t.subscription.plan_1_desc
+                        .pro-plan__price
+                            span.pro-plan__price-n= t.subscription.price_1
+                            span.pro-plan__price-s &nbsp;#{t.subscription.price_1_sub}
+                        ul.pro-plan__features
+                            each feature in t.subscription.plan_1_features
+                                li
+                                    svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
+                                        path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                    span= feature
+                        a.sm-btn.sm-btn--soft.pro-plan__cta(href="/register")= pl.pricing.cta_2
+
+                    .pro-plan.pro-plan--featured
+                        .pro-plan__badge= t.sub_extra.popular || 'Le plus populaire'
+                        h3.pro-plan__name= t.subscription.plan_2
+                        p.pro-plan__desc= t.subscription.plan_2_desc
+                        .pro-plan__price
+                            span.pro-plan__price-n= t.subscription.price_2
+                            span.pro-plan__price-s= t.subscription.price_2_sub
+                        ul.pro-plan__features
+                            each feature, fi in t.subscription.plan_2_features
+                                if fi < 5
+                                    li
+                                        svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
+                                            path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                        span= feature
+                        a.sm-btn.sm-btn--primary.pro-plan__cta(href="/register?plan=pro&billing=monthly")= pl.pricing.cta_2
+
+                    .pro-plan
+                        h3.pro-plan__name= t.subscription.plan_3
+                        p.pro-plan__desc= t.subscription.plan_3_desc
+                        .pro-plan__price
+                            span.pro-plan__price-n= t.subscription.price_3
+                            span.pro-plan__price-s= t.subscription.price_3_sub
+                        ul.pro-plan__features
+                            each feature, fi in t.subscription.plan_3_features
+                                if fi < 5
+                                    li
+                                        svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
+                                            path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                        span= feature
+                        a.sm-btn.sm-btn--soft.pro-plan__cta(href="/register?plan=business&billing=monthly")= pl.pricing.cta_2
+
+                p.pro-pricing__note
+                    svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
+                        path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
+                    | Paiement sécurisé par Stripe
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //- FAQ

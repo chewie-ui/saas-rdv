@@ -282,11 +282,22 @@
   background: var(--color-white);
   border-top: 1px solid var(--border-light, #e8e8e8);
   padding: 14px 20px;
+  /* Marge droite supplémentaire (80px = 56px bouton + 24px offset) pour ne
+     pas passer sous la bulle de chat flottante (.support-widget, toujours
+     en bas à droite, z-index 900 > 100) — sinon elle recouvre une partie du
+     bouton "Enregistrer" et le rend partiellement injoignable au clic. */
+  padding-right: calc(20px + 80px);
   display: flex;
   justify-content: flex-end;
   gap: 10px;
   z-index: 100;
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 600px) {
+  .edit-actions-bar {
+    padding-right: calc(16px + 66px);
+  }
 }
 
 /* Account for sidebar width on large desktop (sidebar is in-flow at ≥1280px) */

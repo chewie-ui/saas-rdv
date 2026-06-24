@@ -179,12 +179,17 @@ exports.appointment = async (req, res) => {
 
   const Employee = require("../db/models/company/employee.model");
   const Service = require("../db/models/company/service.model");
-  const [apps, rowTime, employees, daysOffDoc, services] = await Promise.all([
+  const [apps, rowTime, employees, daysOffDoc, services, allServicesForColor] = await Promise.all([
     GetAllAppointments(currentCompany, employeeFilter),
     Company.findById(currentCompany).select("slotTime schedule").lean(),
     Employee.find({ company: currentCompany, active: true }).lean(),
     DaysOff.findOne({ company: currentCompany }).lean(),
     Service.find({ company: currentCompany, active: true }).select("_id name duration price employees color").lean(),
+    // Filet de secours pour les anciens RDV créés avant qu'on fige la couleur
+    // sur la réservation elle-même (serviceColor) — inclut les services
+    // désactivés (mais pas supprimés) pour ne pas leur faire perdre leur
+    // couleur d'un coup.
+    Service.find({ company: currentCompany }).select("_id color").lean(),
   ]);
 
   const slotTime = rowTime.slotTime || 60;
@@ -192,6 +197,8 @@ exports.appointment = async (req, res) => {
   // Map serviceId → color pour colorer les RDV selon le service réservé
   const serviceColorById = {};
   services.forEach((s) => { if (s.color) serviceColorById[String(s._id)] = s.color; });
+  const serviceColorByIdAll = {};
+  allServicesForColor.forEach((s) => { if (s.color) serviceColorByIdAll[String(s._id)] = s.color; });
 
   const formatted = apps.map((appointment) => {
     const [h, m] = appointment.startTime.split(":").map(Number);
@@ -214,11 +221,16 @@ exports.appointment = async (req, res) => {
       email: appointment.email,
       phone: appointment.phone,
       message: appointment.message,
+      isBlock: !!appointment.isBlock,
       weekday: (startDate.getDay() + 6) % 7,
       status: appointment.status,
       slotTime: duration,
       serviceName: appointment.serviceName || "",
-      serviceColor: appointment.service ? (serviceColorById[String(appointment.service)] || "") : "",
+      // Priorité à la couleur figée sur la réservation (correcte même si le
+      // service a été supprimé/désactivé depuis) ; sinon recalculée en
+      // direct pour les anciens RDV créés avant ce correctif.
+      serviceColor: appointment.serviceColor
+        || (appointment.service ? (serviceColorById[String(appointment.service)] || serviceColorByIdAll[String(appointment.service)] || "") : ""),
       employeeId:   emp ? String(emp._id) : "",
       employeeName: empName,
       employeePhoto: empPhoto,
@@ -497,6 +509,69 @@ exports.appointment = async (req, res) => {
   });
 };
 
+// ── Conflit d'horaire : jamais deux RDV/absences qui se chevauchent sur la
+// même ressource — un employé précis si choisi, l'établissement entier s'il
+// n'y a pas d'employés, ou "n'importe quel employé disponible" si aucun
+// n'est choisi alors que l'entreprise en a (même logique que la réservation
+// publique, cf. booking.controller.js#getBooking : on ne bloque que si TOUS
+// les employés sont occupés). Partagé entre createAdminBooking et
+// createAdminBlock (absences). Retourne un message d'erreur ou null. ───────
+async function checkBookingConflict({ Booking, Employee, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, actualDuration }) {
+  const baseConflictQuery = { company: currentCompany, date: new Date(date), status: { $ne: "canceled" } };
+  function overlapsRange(b) {
+    const [bh, bm] = b.startTime.split(":").map(Number);
+    const bStart = bh * 60 + bm;
+    const bEnd = bStart + (b.slotTime || actualDuration);
+    return startTimeInMinutes < bEnd && endTimeInMinutes > bStart;
+  }
+
+  if (employeeId) {
+    const overlapping = await Booking.find({ ...baseConflictQuery, employee: employeeId }).select("startTime slotTime").lean();
+    if (overlapping.some(overlapsRange)) return "Cet employé a déjà un rendez-vous sur ce créneau.";
+
+    const coursesForThisDate = await getCoursesForDate(currentCompany, date);
+    const courseConflict = courseRangesFor(coursesForThisDate, employeeId)
+      .some(([rs, re]) => startTimeInMinutes < re && endTimeInMinutes > rs);
+    if (courseConflict) return "Cet employé est en cours collectif sur ce créneau.";
+    return null;
+  }
+
+  const activeEmployees = await Employee.find({ company: currentCompany, active: true }).select("_id").lean();
+
+  if (activeEmployees.length === 0) {
+    const overlapping = await Booking.find(baseConflictQuery).select("startTime slotTime").lean();
+    if (overlapping.some(overlapsRange)) return "Un rendez-vous existe déjà sur ce créneau.";
+
+    const coursesForThisDate = await getCoursesForDate(currentCompany, date);
+    const courseConflict = courseRangesFor(coursesForThisDate, null)
+      .some(([rs, re]) => startTimeInMinutes < re && endTimeInMinutes > rs);
+    if (courseConflict) return "Un cours collectif est déjà prévu sur ce créneau.";
+    return null;
+  }
+
+  const empBookings = await Booking.find({
+    ...baseConflictQuery,
+    employee: { $in: activeEmployees.map((e) => e._id) },
+  }).select("startTime slotTime employee").lean();
+
+  const coursesForThisDate = await getCoursesForDate(currentCompany, date);
+  const busyByEmployee = new Map();
+  activeEmployees.forEach((e) => busyByEmployee.set(String(e._id), courseRangesFor(coursesForThisDate, String(e._id))));
+  empBookings.forEach((b) => {
+    const empId = String(b.employee);
+    if (!busyByEmployee.has(empId)) return;
+    const [bh, bm] = b.startTime.split(":").map(Number);
+    const bStart = bh * 60 + bm;
+    busyByEmployee.get(empId).push([bStart, bStart + (b.slotTime || actualDuration)]);
+  });
+
+  const allBusy = activeEmployees.every((e) => {
+    const ranges = busyByEmployee.get(String(e._id)) || [];
+    return ranges.some(([rs, re]) => startTimeInMinutes < re && endTimeInMinutes > rs);
+  });
+  return allBusy ? "Tous les employés sont déjà occupés sur ce créneau." : null;
+}
+
 // ── Création manuelle d'un rendez-vous depuis le panel admin ─────────────────
 exports.createAdminBooking = async (req, res) => {
   try {
@@ -505,7 +580,7 @@ exports.createAdminBooking = async (req, res) => {
 
     const {
       date, startTime, name, surname, phone, message,
-      serviceId, employeeId,
+      serviceId, employeeId, duration,
     } = req.body;
     const rawEmail = req.body.email;
     const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : rawEmail;
@@ -525,12 +600,18 @@ exports.createAdminBooking = async (req, res) => {
     if (!company) return res.json({ success: false, error: "company_not_found" });
 
     let serviceName = "";
-    let actualDuration = company.slotTime || 60;
+    let serviceColor = "";
+    // Priorité : durée du service choisi > durée glissée sur le calendrier
+    // (clic-glisser, voir public/js/layouts/appointment.js#manualDurationOverride)
+    // > durée par défaut de l'entreprise — même ordre que l'aperçu affiché
+    // dans la modale ("Heure de fin" / "Durée").
+    let actualDuration = (Number(duration) > 0 ? Number(duration) : null) || company.slotTime || 60;
     if (serviceId) {
-      const service = await Service.find({ _id: serviceId, company: currentCompany }).select("name duration").lean();
+      const service = await Service.find({ _id: serviceId, company: currentCompany }).select("name duration color").lean();
       const svc = service[0];
       if (svc) {
         serviceName = svc.name || "";
+        serviceColor = svc.color || "";
         actualDuration = svc.duration || actualDuration;
       }
     }
@@ -546,31 +627,11 @@ exports.createAdminBooking = async (req, res) => {
     const endTimeInMinutes = startTimeInMinutes + actualDuration;
     const endTime = `${String(Math.floor(endTimeInMinutes / 60)).padStart(2, "0")}:${String(endTimeInMinutes % 60).padStart(2, "0")}`;
 
-    // ── Conflit : un même employé ne peut pas avoir deux RDV qui se chevauchent ──
-    if (employeeId) {
-      const overlapping = await Booking.find({
-        company: currentCompany,
-        date: new Date(date),
-        status: { $ne: "canceled" },
-        employee: employeeId,
-      }).select("startTime slotTime").lean();
-
-      const conflict = overlapping.some((b) => {
-        const [bh, bm] = b.startTime.split(":").map(Number);
-        const bStart = bh * 60 + bm;
-        const bEnd = bStart + (b.slotTime || actualDuration);
-        return startTimeInMinutes < bEnd && endTimeInMinutes > bStart;
-      });
-      if (conflict) {
-        return res.json({ success: false, error: "conflict", message: "Cet employé a déjà un rendez-vous sur ce créneau." });
-      }
-
-      const coursesForThisDate = await getCoursesForDate(currentCompany, date);
-      const courseConflict = courseRangesFor(coursesForThisDate, employeeId)
-        .some(([rs, re]) => startTimeInMinutes < re && endTimeInMinutes > rs);
-      if (courseConflict) {
-        return res.json({ success: false, error: "conflict", message: "Cet employé est en cours collectif sur ce créneau." });
-      }
+    const conflictMessage = await checkBookingConflict({
+      Booking, Employee, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, actualDuration,
+    });
+    if (conflictMessage) {
+      return res.json({ success: false, error: "conflict", message: conflictMessage });
     }
 
     const newBooking = await Booking.create({
@@ -587,6 +648,7 @@ exports.createAdminBooking = async (req, res) => {
       status: "confirmed",
       service: serviceId || null,
       serviceName,
+      serviceColor,
       employee: employeeId || null,
       employeeName,
       payment: { method: "none", status: "none", amount: 0, currency: "eur" },
@@ -662,6 +724,67 @@ exports.createAdminBooking = async (req, res) => {
   }
 };
 
+// ── Pose un bloc d'indisponibilité ("Absent") depuis le calendrier admin —
+// clic-glisser sur une case vide, choix "Absence" plutôt que "Rendez-vous".
+// Occupe le créneau comme un RDV (mêmes règles de chevauchement) mais sans
+// client : pas d'email, n'apparaît jamais dans les dossiers clients. ───────
+exports.createAdminBlock = async (req, res) => {
+  try {
+    const currentCompany = res.locals.currentCompany;
+    if (!currentCompany) return res.status(401).json({ success: false, error: "unauthorized" });
+
+    const { date, startTime, endTime, employeeId, note } = req.body;
+    if (!date || !startTime || !endTime) {
+      return res.json({ success: false, error: "missing_fields", message: "Date et horaires requis." });
+    }
+
+    const Employee = require("../db/models/company/employee.model");
+    const Booking = require("../db/models/book.model");
+
+    const [sh, sm] = startTime.split(":").map(Number);
+    const [eh, em] = endTime.split(":").map(Number);
+    const startTimeInMinutes = sh * 60 + sm;
+    const endTimeInMinutes = eh * 60 + em;
+    if (!(endTimeInMinutes > startTimeInMinutes)) {
+      return res.json({ success: false, error: "invalid_range", message: "L'heure de fin doit être après l'heure de début." });
+    }
+    const actualDuration = endTimeInMinutes - startTimeInMinutes;
+
+    let employeeName = "";
+    if (employeeId) {
+      const emp = await Employee.findOne({ _id: employeeId, company: currentCompany }).select("firstName lastName").lean();
+      if (emp) employeeName = `${emp.firstName} ${emp.lastName}`.trim();
+    }
+
+    const conflictMessage = await checkBookingConflict({
+      Booking, Employee, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, actualDuration,
+    });
+    if (conflictMessage) {
+      return res.json({ success: false, error: "conflict", message: conflictMessage });
+    }
+
+    const block = await Booking.create({
+      date: new Date(date),
+      startTime,
+      endTime,
+      company: currentCompany,
+      name: "Absent",
+      message: (note || "").trim().slice(0, 200),
+      slotTime: actualDuration,
+      status: "confirmed",
+      isBlock: true,
+      employee: employeeId || null,
+      employeeName,
+      payment: { method: "none", status: "none", amount: 0, currency: "eur" },
+    });
+
+    res.json({ success: true, bookingId: block._id });
+  } catch (err) {
+    console.error("createAdminBlock error:", err);
+    res.status(500).json({ success: false, error: "server_error", message: "Une erreur est survenue." });
+  }
+};
+
 const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
 const { addEventToCalendar, deleteEventFromCalendar, updateEventInCalendar, getBusyIntervals } = require("../utils/googleCalendarSync");
@@ -714,7 +837,7 @@ exports.availability = async (req, res) => {
     getSlotConfig(currentCompany),
     Service.countDocuments({ company: currentCompany, active: true }),
     Employee.find({ company: currentCompany._id, active: true }).select("firstName lastName").lean(),
-    Company.findById(currentCompany._id).select("smartGrouping").lean(),
+    Company.findById(currentCompany._id).select("smartGrouping minBookingLeadTime").lean(),
   ]);
   const availFeatures = getLimit("availability", req.user);
   res.render("admin/availability", {
@@ -731,7 +854,8 @@ exports.availability = async (req, res) => {
     slotInterval: slotConfig.slotInterval,
     hasServices: serviceCount > 0,
     availFeatures,
-    smartGrouping: smartGroupingDoc?.smartGrouping || { enabled: false, windowHours: 3 },
+    smartGrouping: Object.assign({ enabled: false, windowHours: 3, weekdays: [] }, smartGroupingDoc?.smartGrouping || {}),
+    minBookingLeadTime: smartGroupingDoc?.minBookingLeadTime || { enabled: false, minutes: 60 },
   });
 };
 

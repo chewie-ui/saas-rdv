@@ -623,6 +623,31 @@
   background: rgba(220, 38, 38, 0.03) !important;
 }
 
+/* ── État "modifié mais pas encore sauvegardé" ──────────────────────────────
+   Sans ça, rien ne distingue un champ qu'on vient d'éditer d'un champ déjà
+   enregistré — l'utilisateur ne sait pas qu'il doit cliquer sur Sauvegarder. */
+.social-box__field .input--dirty {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft, #edfaf3);
+}
+
+.btn__social-save--dirty {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn__social-save--dirty:hover {
+  background: var(--accent-hover);
+  color: #fff;
+}
+
+.btn__social-save:disabled {
+  background: var(--subtle, #f4f2f3);
+  color: var(--muted, #7a7478);
+  border-color: var(--border-light);
+  cursor: default;
+}
+
 /* ── Social visibility toggle (top-right of each box) ────────────────────── */
 .social-visibility-toggle {
   position: absolute;

@@ -13,12 +13,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const serviceModalDesc   = document.getElementById("serviceModalDesc");
   const serviceModalPrice  = document.getElementById("serviceModalPrice");
   const serviceModalDuration = document.getElementById("serviceModalDuration");
+  const serviceModalDurationRangeEnabled = document.getElementById("serviceModalDurationRangeEnabled");
+  const svcDurationMaxRow    = document.getElementById("svcDurationMaxRow");
+  const serviceModalDurationMax = document.getElementById("serviceModalDurationMax");
   const serviceModalCategory = document.getElementById("serviceModalCategory");
-  const serviceModalCapacity = document.getElementById("serviceModalCapacity");
   const serviceModalColor  = document.getElementById("serviceModalColor");
   const svcColorPicker     = document.getElementById("svcColorPicker");
-  const svcCapacityField   = document.getElementById("svcCapacityField");
-  const svcTypeOptions     = document.getElementById("svcTypeOptions");
   const serviceModalFeeEnabled = document.getElementById("serviceModalFeeEnabled");
   const svcFeeFields       = document.getElementById("svcFeeFields");
   const svcFeeTypeOptions  = document.getElementById("svcFeeTypeOptions");
@@ -30,8 +30,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const servicesList       = document.getElementById("servicesList");
   const svcCounter         = document.getElementById("svcCounter");
 
+  const bqEnabled          = document.getElementById("bqEnabled");
+  const bqRow              = document.getElementById("bqRow");
+  const bqQuestionInput    = document.getElementById("bqQuestionInput");
+  const bqNewLabelInput    = document.getElementById("bqNewLabelInput");
+  const bqExistingLabelInput = document.getElementById("bqExistingLabelInput");
+  const svcAnswerVisibilityField = document.getElementById("svcAnswerVisibilityField");
+  const svcAnswerOptionsEl       = document.getElementById("svcAnswerOptions");
+
   const MAX_SERVICES = window.__maxServices || 0;
   let currentCount   = window.__svcCount   || 0;
+  let BOOKING_QUESTION = window.__bookingQuestion || { enabled: false, question: "", newLabel: "", existingLabel: "" };
+  let selectedAnswerVisibility = "all"; // état du modal en cours (création/édition)
 
   // ── Category icons ─────────────────────────────────────────────────────────
   const CAT_ICONS = [
@@ -99,16 +109,56 @@ document.addEventListener("DOMContentLoaded", () => {
     const swatches = [];
     for (let i = 0; i < swatchCount; i++) swatches.push(colorAt(i));
 
-    svcColorPicker.innerHTML = swatches.map((c) => {
-      const isTaken = taken.has(c.toLowerCase()) && c.toLowerCase() !== (selected || "").toLowerCase();
-      const cls = "svc-color-swatch" + (isTaken ? " is-taken" : "");
+    // Couleur personnalisée (choisie via le "+") absente de la palette
+    // générée — on l'ajoute pour qu'elle reste visible/sélectionnée.
+    const selectedLower = (selected || "").toLowerCase();
+    if (selectedLower && !swatches.some((c) => c.toLowerCase() === selectedLower)) {
+      swatches.push(selected);
+    }
+
+    const swatchesHtml = swatches.map((c) => {
+      const isTaken = taken.has(c.toLowerCase()) && c.toLowerCase() !== selectedLower;
+      const isActive = c.toLowerCase() === selectedLower;
+      const cls = "svc-color-swatch" + (isTaken ? " is-taken" : "") + (isActive ? " is-active" : "");
       return `<button type="button" class="${cls}" data-color="${c}" style="background:${c}" title="${isTaken ? "Déjà utilisée par un autre service" : ""}" ${isTaken ? "disabled" : ""}></button>`;
     }).join("");
 
+    svcColorPicker.innerHTML = swatchesHtml +
+      '<button type="button" class="svc-color-swatch--add" id="svcColorAddBtn" title="Couleur personnalisée">+</button>' +
+      '<input type="color" id="svcColorCustomInput" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;">';
+  }
+
+  // Un seul écouteur délégué, posé une fois pour toutes (buildColorPicker
+  // réécrit le HTML à chaque appel — y attacher un listener à chaque fois
+  // les empilerait indéfiniment).
+  if (svcColorPicker) {
     svcColorPicker.addEventListener("click", (e) => {
+      if (e.target.closest("#svcColorAddBtn")) {
+        const input = svcColorPicker.querySelector("#svcColorCustomInput");
+        if (input) {
+          input.value = getServiceColor();
+          input.click();
+        }
+        return;
+      }
       const btn = e.target.closest(".svc-color-swatch");
       if (!btn || btn.disabled) return;
       setServiceColor(btn.dataset.color);
+    });
+
+    // Couleur choisie via le sélecteur natif de l'OS (bouton "+") — on
+    // vérifie qu'elle n'est pas déjà prise par un autre service avant de
+    // l'accepter, puis on réaffiche la palette pour l'y inclure.
+    svcColorPicker.addEventListener("change", (e) => {
+      if (e.target.id !== "svcColorCustomInput") return;
+      const color = e.target.value;
+      const taken = new Set(getTakenColors());
+      if (taken.has(color.toLowerCase())) {
+        alert("Cette couleur est déjà utilisée par un autre service — choisissez-en une autre.");
+        return;
+      }
+      setServiceColor(color);
+      buildColorPicker(color);
     });
   }
 
@@ -176,29 +226,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ── Type de service (individuel / collectif) ─────────────────────────────
-  function setServiceType(type) {
-    if (!svcTypeOptions) return;
-    svcTypeOptions.querySelectorAll(".svc-type-option").forEach((b) => {
-      b.classList.toggle("is-active", b.dataset.type === type);
-    });
-    if (svcCapacityField) svcCapacityField.style.display = type === "group" ? "" : "none";
-  }
-
-  function getServiceType() {
-    if (!svcTypeOptions) return "individual";
-    const active = svcTypeOptions.querySelector(".svc-type-option.is-active");
-    return active ? active.dataset.type : "individual";
-  }
-
-  if (svcTypeOptions) {
-    svcTypeOptions.addEventListener("click", (e) => {
-      const btn = e.target.closest(".svc-type-option");
-      if (!btn) return;
-      setServiceType(btn.dataset.type);
-    });
-  }
-
   // ── Frais d'annulation/no-show personnalisés ─────────────────────────────
   function setFeeType(type) {
     if (!svcFeeTypeOptions) return;
@@ -229,6 +256,20 @@ document.addEventListener("DOMContentLoaded", () => {
   if (serviceModalFeeEnabled) {
     serviceModalFeeEnabled.addEventListener("change", () => {
       if (svcFeeFields) svcFeeFields.style.display = serviceModalFeeEnabled.checked ? "" : "none";
+    });
+  }
+
+  // ── Durée approximative ("30-40 min") ────────────────────────────────────
+  function setDurationRange(enabled, maxValue) {
+    if (serviceModalDurationRangeEnabled) serviceModalDurationRangeEnabled.checked = enabled;
+    if (svcDurationMaxRow) svcDurationMaxRow.style.display = enabled ? "" : "none";
+    if (serviceModalDurationMax) serviceModalDurationMax.value = maxValue || "";
+  }
+
+  if (serviceModalDurationRangeEnabled) {
+    serviceModalDurationRangeEnabled.addEventListener("change", () => {
+      if (svcDurationMaxRow) svcDurationMaxRow.style.display = serviceModalDurationRangeEnabled.checked ? "" : "none";
+      if (!serviceModalDurationRangeEnabled.checked && serviceModalDurationMax) serviceModalDurationMax.value = "";
     });
   }
 
@@ -279,6 +320,80 @@ document.addEventListener("DOMContentLoaded", () => {
   updateCounter();
   updateAddBtn();
 
+  // ── Question préalable au choix du service ─────────────────────────────────
+  async function saveBookingQuestion(payload) {
+    try {
+      await fetch("/api/services/booking-question", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch (_) {}
+  }
+
+  if (bqEnabled) {
+    bqEnabled.addEventListener("change", async () => {
+      BOOKING_QUESTION.enabled = bqEnabled.checked;
+      if (bqRow) bqRow.style.display = BOOKING_QUESTION.enabled ? "" : "none";
+      updateSvcAnswerVisibilityVisibility();
+      await saveBookingQuestion({ enabled: BOOKING_QUESTION.enabled });
+    });
+  }
+
+  if (bqQuestionInput) {
+    bqQuestionInput.addEventListener("change", async () => {
+      BOOKING_QUESTION.question = bqQuestionInput.value.trim();
+      await saveBookingQuestion({ question: BOOKING_QUESTION.question });
+    });
+  }
+
+  if (bqNewLabelInput) {
+    bqNewLabelInput.addEventListener("change", async () => {
+      BOOKING_QUESTION.newLabel = bqNewLabelInput.value.trim();
+      updateAnswerOptLabels();
+      await saveBookingQuestion({ newLabel: BOOKING_QUESTION.newLabel });
+    });
+  }
+
+  if (bqExistingLabelInput) {
+    bqExistingLabelInput.addEventListener("change", async () => {
+      BOOKING_QUESTION.existingLabel = bqExistingLabelInput.value.trim();
+      updateAnswerOptLabels();
+      await saveBookingQuestion({ existingLabel: BOOKING_QUESTION.existingLabel });
+    });
+  }
+
+  // ── Sélecteur "afficher pour" dans le modal de service (3 choix fixes) ──────
+  function updateAnswerOptLabels() {
+    if (!svcAnswerOptionsEl) return;
+    const newBtn = svcAnswerOptionsEl.querySelector('[data-value="new"]');
+    const exBtn  = svcAnswerOptionsEl.querySelector('[data-value="existing"]');
+    if (newBtn) newBtn.textContent = BOOKING_QUESTION.newLabel || "Nouveau";
+    if (exBtn)  exBtn.textContent  = BOOKING_QUESTION.existingLabel || "Déjà venu";
+  }
+
+  function updateSvcAnswerVisibilityVisibility() {
+    if (!svcAnswerVisibilityField) return;
+    svcAnswerVisibilityField.style.display = BOOKING_QUESTION.enabled ? "" : "none";
+  }
+  updateSvcAnswerVisibilityVisibility();
+
+  function setAnswerVisibility(value) {
+    selectedAnswerVisibility = value;
+    if (!svcAnswerOptionsEl) return;
+    svcAnswerOptionsEl.querySelectorAll(".svc-answer-opt").forEach((b) => {
+      b.classList.toggle("is-active", b.dataset.value === value);
+    });
+  }
+
+  if (svcAnswerOptionsEl) {
+    svcAnswerOptionsEl.addEventListener("click", (e) => {
+      const btn = e.target.closest(".svc-answer-opt");
+      if (!btn) return;
+      setAnswerVisibility(btn.dataset.value);
+    });
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────────────
   function openModal(modal, overlay) {
     overlay.classList.add("show");
@@ -296,8 +411,7 @@ document.addEventListener("DOMContentLoaded", () => {
     serviceModalDesc.value = "";
     serviceModalPrice.value = "";
     serviceModalDuration.value = "30";
-    if (serviceModalCapacity) serviceModalCapacity.value = "";
-    setServiceType("individual");
+    setDurationRange(false, "");
     setFeeEnabled(false);
     setFeeType("percent");
     if (serviceModalFeeValue) serviceModalFeeValue.value = "";
@@ -307,6 +421,7 @@ document.addEventListener("DOMContentLoaded", () => {
     buildColorPicker(defaultColor);
     buildCategorySelect("");
     showNewCategorySection(false);
+    setAnswerVisibility("all");
     serviceModalTitle.textContent = "Nouveau service";
     saveServiceBtn.querySelector("span").textContent = "Enregistrer";
   }
@@ -370,21 +485,22 @@ document.addEventListener("DOMContentLoaded", () => {
       categoryValue = newName;
     }
 
-    const svcType = getServiceType();
     const body = {
       name,
       description: serviceModalDesc.value.trim(),
       price: serviceModalPrice.value,
       duration: serviceModalDuration.value || 30,
+      durationMax: (serviceModalDurationRangeEnabled && serviceModalDurationRangeEnabled.checked && serviceModalDurationMax)
+        ? serviceModalDurationMax.value
+        : "",
       category: categoryValue,
-      type: svcType,
-      capacity: svcType === "group" ? (serviceModalCapacity ? serviceModalCapacity.value : 1) : null,
       color: getServiceColor(),
       cancellationFee: {
         enabled: serviceModalFeeEnabled ? serviceModalFeeEnabled.checked : false,
         type: getFeeType(),
         value: serviceModalFeeValue ? serviceModalFeeValue.value : "",
       },
+      answerVisibility: selectedAnswerVisibility,
     };
 
     const url    = id ? `/api/services/${id}` : "/api/services";
@@ -421,10 +537,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const priceBadge = card.querySelector(".badge--price");
       serviceModalPrice.value = priceBadge ? priceBadge.textContent.replace("€", "").trim() : "";
       const durBadge = card.querySelector(".badge--duration");
-      serviceModalDuration.value = durBadge ? parseInt(durBadge.textContent) : 30;
-      const svcType = card.dataset.type === "group" ? "group" : "individual";
-      setServiceType(svcType);
-      if (serviceModalCapacity) serviceModalCapacity.value = card.dataset.capacity || "";
+      serviceModalDuration.value = durBadge ? parseInt(durBadge.textContent, 10) : 30;
+      setDurationRange(!!card.dataset.durationMax, card.dataset.durationMax || "");
       setFeeEnabled(card.dataset.feeEnabled === "1");
       setFeeType(card.dataset.feeType === "amount" ? "amount" : "percent");
       if (serviceModalFeeValue) serviceModalFeeValue.value = card.dataset.feeValue || "";
@@ -434,6 +548,7 @@ document.addEventListener("DOMContentLoaded", () => {
       buildColorPicker(ownColor);
       buildCategorySelect(card.dataset.category || "");
       showNewCategorySection(false);
+      setAnswerVisibility(card.dataset.answerVisibility || "all");
       serviceModalTitle.textContent = "Modifier le service";
       openModal(serviceModal, serviceModalOverlay);
       serviceModalName.focus();

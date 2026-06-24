@@ -433,12 +433,24 @@ block scripts
                 if (countEl) countEl.textContent = visible.length;
 
                 // Mettre à jour les counts de la sidebar
-                updateSidebarCounts(visible);
+                updateSidebarCounts();
             }
 
-            function updateSidebarCounts(visible) {
+            // Recalcule TOUJOURS depuis l'ensemble complet des cartes (filtré
+            // seulement par la distance, jamais par la catégorie active) —
+            // sinon sélectionner une catégorie écrasait le badge de TOUTES
+            // les autres à "0" puisque `visible` ne contenait alors que les
+            // cartes de la catégorie choisie.
+            function updateSidebarCounts() {
+                var byDistance = allCards.filter(function(c) {
+                    if (refLat && refLon && maxDistance < 200) {
+                        var d = parseFloat(c.dataset.distance);
+                        if (!isNaN(d) && d > maxDistance) return false;
+                    }
+                    return true;
+                });
                 var countMap = {};
-                visible.forEach(function(c) {
+                byDistance.forEach(function(c) {
                     var t = (c.dataset.type || '').trim().toLowerCase();
                     countMap[t] = (countMap[t] || 0) + 1;
                 });
@@ -446,7 +458,7 @@ block scripts
                     var cat = btn.dataset.cat || '';
                     var span = btn.querySelector('.srp__filter-count');
                     if (!span) return;
-                    if (!cat) { span.textContent = visible.length; return; }
+                    if (!cat) { span.textContent = byDistance.length; return; }
                     span.textContent = countMap[cat] || 0;
                 });
             }

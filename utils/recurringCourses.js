@@ -6,19 +6,54 @@ function weekdayOf(dateInput) {
   return new Date(dateInput).getDay();
 }
 
-// Tous les cours collectifs actifs qui ont lieu (récurrence hebdomadaire) le
-// jour de la semaine correspondant à `dateInput`, pour cette entreprise.
+// Nombre de minutes entre deux heures "HH:MM" — utilisé pour calculer la
+// durée réelle d'une séance ponctuelle, qui peut différer de Service.duration
+// (ex: service.duration=60 mais un atelier précis dure 19h00-19h45).
+function minutesBetween(startTime, endTime) {
+  const [sh, sm] = startTime.split(":").map(Number);
+  const [eh, em] = endTime.split(":").map(Number);
+  return (eh * 60 + em) - (sh * 60 + sm);
+}
+
+// Tous les cours collectifs actifs qui ont lieu ce jour-là pour cette
+// entreprise — récurrence hebdomadaire (recurring.enabled) OU date ponctuelle
+// exacte présente dans `sessions[]`. Le résultat est normalisé : un cours en
+// mode ponctuel est recopié avec un `recurring.startTime` + une `duration`
+// effective tirés de SA séance de ce jour précis, afin que `courseRange` /
+// `courseRangesFor` ci-dessous n'aient besoin d'AUCUNE connaissance du mode
+// sous-jacent (récurrent vs ponctuel) — ils ne lisent jamais `sessions`.
 async function getCoursesForDate(companyId, dateInput) {
   const weekday = weekdayOf(dateInput);
-  return Service.find({
+  const dayStart = new Date(dateInput);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+
+  const courses = await Service.find({
     company: companyId,
     type: "group",
     active: true,
-    "recurring.enabled": true,
-    "recurring.weekdays": weekday,
+    $or: [
+      { "recurring.enabled": true, "recurring.weekdays": weekday },
+      { "recurring.enabled": false, sessions: { $elemMatch: { date: { $gte: dayStart, $lt: dayEnd } } } },
+    ],
   })
-    .select("name duration recurring employees")
+    .select("name duration recurring sessions employees")
     .lean();
+
+  return courses.map((c) => {
+    if (c.recurring?.enabled) return c;
+    const todaySession = (c.sessions || []).find((s) => s.date >= dayStart && s.date < dayEnd);
+    if (!todaySession) return c; // garde-fou théorique — déjà filtré par la requête ci-dessus
+    const effectiveDuration = todaySession.endTime
+      ? minutesBetween(todaySession.startTime, todaySession.endTime)
+      : c.duration;
+    return {
+      ...c,
+      recurring: { enabled: true, weekdays: [weekday], startTime: todaySession.startTime },
+      duration: effectiveDuration,
+    };
+  });
 }
 
 function courseRange(course) {

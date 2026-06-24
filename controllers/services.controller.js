@@ -1,4 +1,5 @@
 const Service = require("../db/models/company/service.model");
+const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
 const { getLimit } = require("../utils/planLimits");
 const { nextAvailableColor } = require("../utils/serviceColors");
@@ -16,12 +17,48 @@ function sanitizeCancellationFee(raw) {
   return { enabled: enabled && value !== null, type, value };
 }
 
+// ── Réponse de la "question préalable" pour laquelle ce service est
+// proposé — "all" = visible pour tout le monde. ─────────────────────────────
+function sanitizeAnswerVisibility(raw) {
+  return ["new", "existing"].includes(raw) ? raw : "all";
+}
+
+// ── Durée approximative ("30-40 min") — borne haute optionnelle, doit
+// toujours être strictement supérieure à la durée de base. ──────────────────
+function sanitizeDurationMax(baseDuration, raw) {
+  if (raw === undefined || raw === null || raw === "") return null;
+  const max = Number(raw);
+  if (!Number.isFinite(max) || max <= baseDuration) return null;
+  return max;
+}
+
 // ── Page admin ────────────────────────────────────────────────────────────────
 exports.servicesPage = async (req, res) => {
-  const services = await Service.find({ company: res.locals.currentCompany._id })
-    .populate("employees", "firstName lastName profilePicture")
-    .sort("order")
-    .lean();
+  const [services, companyDoc] = await Promise.all([
+    Service.find({ company: res.locals.currentCompany._id })
+      .populate("employees", "firstName lastName profilePicture")
+      .sort("order")
+      .lean(),
+    Company.findById(res.locals.currentCompany._id).select("bookingQuestion").lean(),
+  ]);
+
+  // ── Rattrapage : services sans couleur (créés avant cette fonctionnalité,
+  // ou via un autre chemin) — sans ça, ils retombent tous sur LE MÊME vert
+  // par défaut à l'affichage (`svc.color || '#1e7a4e'`), donnant l'impression
+  // que plusieurs services partagent une couleur alors qu'aucune n'est
+  // réellement assignée. On leur attribue une vraie couleur unique ici, une
+  // fois pour toutes (persisté, pas juste à l'affichage). ───────────────────
+  const missingColor = services.filter((s) => !s.color);
+  if (missingColor.length > 0) {
+    const usedColors = services.map((s) => s.color).filter(Boolean);
+    for (const s of missingColor) {
+      const newColor = nextAvailableColor(usedColors);
+      usedColors.push(newColor);
+      s.color = newColor;
+      await Service.updateOne({ _id: s._id }, { $set: { color: newColor } });
+    }
+  }
+
   const maxServices = getLimit("services", req.user);
   const cs = (req.user.calendarSettings) || {};
   const categories  = cs.categories || [];
@@ -33,7 +70,30 @@ exports.servicesPage = async (req, res) => {
     maxServices,
     categories,
     bookingCategoryStyle,
+    bookingQuestion: companyDoc?.bookingQuestion || {
+      enabled: false,
+      question: "Est-ce la première fois que vous nous consultez ?",
+      newLabel: "Oui, je suis nouveau",
+      existingLabel: "Non, j'ai déjà consulté",
+    },
   });
+};
+
+// ── API : question préalable au choix du service ──────────────────────────────
+exports.updateBookingQuestion = async (req, res) => {
+  try {
+    const { enabled, question, newLabel, existingLabel } = req.body;
+    const update = {};
+    if (enabled !== undefined) update["bookingQuestion.enabled"] = !!enabled;
+    if (question !== undefined) update["bookingQuestion.question"] = String(question).trim().slice(0, 200);
+    if (newLabel !== undefined) update["bookingQuestion.newLabel"] = String(newLabel).trim().slice(0, 80);
+    if (existingLabel !== undefined) update["bookingQuestion.existingLabel"] = String(existingLabel).trim().slice(0, 80);
+    await Company.findByIdAndUpdate(res.locals.currentCompany._id, { $set: update });
+    return res.json({ success: true, ...update });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: "Server error" });
+  }
 };
 
 // ── API : liste des services (public + admin) ─────────────────────────────────
@@ -69,10 +129,12 @@ exports.createService = async (req, res) => {
       return res.status(403).json({ error: "plan_limit", message: `Limite de ${maxServices} services atteinte.` });
     }
 
-    const { name, description, price, duration, category, type, capacity, color, cancellationFee } = req.body;
+    const { name, description, price, duration, durationMax, category, type, capacity, color, cancellationFee, answerVisibility } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ error: "Le nom du service est requis." });
     }
+
+    const baseDuration = duration ? Number(duration) : 30;
 
     const isGroup = type === "group";
     const cap = isGroup ? Math.max(1, Math.min(500, Number(capacity) || 1)) : null;
@@ -95,13 +157,15 @@ exports.createService = async (req, res) => {
       name: name.trim(),
       description: (description || "").trim(),
       price: price !== undefined && price !== "" ? Number(price) : null,
-      duration: duration ? Number(duration) : 30,
+      duration: baseDuration,
+      durationMax: sanitizeDurationMax(baseDuration, durationMax),
       category: (category || "").trim(),
       order: count,
       type: isGroup ? "group" : "individual",
       capacity: cap,
       color: resolvedColor,
       cancellationFee: sanitizeCancellationFee(cancellationFee),
+      answerVisibility: sanitizeAnswerVisibility(answerVisibility),
     });
     res.json({ success: true, service });
   } catch (err) {
@@ -114,12 +178,18 @@ exports.createService = async (req, res) => {
 exports.updateService = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, duration, category, type, capacity, color, cancellationFee } = req.body;
+    const { name, description, price, duration, durationMax, category, type, capacity, color, cancellationFee, answerVisibility } = req.body;
     const update = {};
     if (name !== undefined) update.name = name.trim();
     if (description !== undefined) update.description = description.trim();
     if (price !== undefined) update.price = price !== "" ? Number(price) : null;
     if (duration !== undefined) update.duration = Number(duration);
+    if (durationMax !== undefined) {
+      const baseDuration = duration !== undefined
+        ? Number(duration)
+        : (await Service.findById(id).select("duration").lean())?.duration || 30;
+      update.durationMax = sanitizeDurationMax(baseDuration, durationMax);
+    }
     if (category !== undefined) update.category = category.trim();
     if (color !== undefined) {
       if (color) {
@@ -140,6 +210,9 @@ exports.updateService = async (req, res) => {
     }
     if (cancellationFee !== undefined) {
       update.cancellationFee = sanitizeCancellationFee(cancellationFee);
+    }
+    if (answerVisibility !== undefined) {
+      update.answerVisibility = sanitizeAnswerVisibility(answerVisibility);
     }
 
     const service = await Service.findOneAndUpdate(

@@ -59,12 +59,12 @@ block content
             table.hist-table#histTable
                 thead
                     tr
-                        th= t.hist.table.name || 'CLIENT'
-                        th= t.hist.table.service || 'SERVICE'
-                        th= t.hist.table.employee || 'EMPLOYEE'
-                        th= t.hist.table.date || 'DATE'
-                        th= t.hist.table.duration || 'DURATION'
-                        th= t.hist.table.status || 'STATUS'
+                        th= t.hist.table.name
+                        th= t.hist.table.service
+                        th= t.hist.table.employee
+                        th= t.hist.table.date
+                        th= t.hist.table.duration
+                        th= t.hist.table.status
                         th
 
                 tbody
@@ -80,8 +80,7 @@ block content
                         - var initials = (h.name||'').charAt(0).toUpperCase() + (h.surname||'').charAt(0).toUpperCase()
                         - var colorIdx = (((h.name||'A').charCodeAt(0) + (h.surname||'A').charCodeAt(0)) % 8)
                         - var d = h.date ? new Date(h.date) : null
-                        - var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-                        - var dateStr = d ? months[d.getMonth()] + ' ' + d.getDate() + ', ' + (h.startTime||'') : '-'
+                        - var dateStr = d ? d.toLocaleDateString(lang, { month: 'short', day: 'numeric' }) + ', ' + (h.startTime||'') : '-'
                         - var statusKey = (h.status || 'confirmed').toLowerCase()
                         - var pillClass = statusKey === 'canceled' || statusKey === 'cancelled' ? 'cancelled' : statusKey === 'no-show' ? 'no-show' : statusKey === 'completed' ? 'completed' : 'confirmed'
                         - var statusLabel = pillClass === 'confirmed' ? (t.hist_page.status_confirmed||'Confirmed') : pillClass === 'cancelled' ? (t.hist_page.status_canceled||'Cancelled') : pillClass === 'completed' ? (t.hist_page.status_completed||'Completed') : (t.hist_page.status_noshow||'No-show')
@@ -104,7 +103,7 @@ block content
                                     = statusLabel
                             td.hist-td.hist-td--action
                                 a.hist-open-btn(href=`/history/edit/${h._id}`)
-                                    | Open
+                                    = t.hist_page.view
                                     svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13")
                                         path(d="M5 12h14M13 6l6 6-6 6")
 
@@ -139,8 +138,7 @@ block content
                 - var initials = (h.name||'').charAt(0).toUpperCase() + (h.surname||'').charAt(0).toUpperCase()
                 - var colorIdx2 = (((h.name||'A').charCodeAt(0) + (h.surname||'A').charCodeAt(0)) % 8)
                 - var d2 = h.date ? new Date(h.date) : null
-                - var months2 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-                - var dateStr2 = d2 ? months2[d2.getMonth()] + ' ' + d2.getDate() + ', ' + (h.startTime||'') : '-'
+                - var dateStr2 = d2 ? d2.toLocaleDateString(lang, { month: 'short', day: 'numeric' }) + ', ' + (h.startTime||'') : '-'
                 - var sk2 = (h.status||'confirmed').toLowerCase()
                 - var pk2 = sk2 === 'canceled' || sk2 === 'cancelled' ? 'cancelled' : sk2 === 'no-show' ? 'no-show' : sk2 === 'completed' ? 'completed' : 'confirmed'
                 - var sl2 = pk2 === 'confirmed' ? (t.hist_page.status_confirmed||'Confirmed') : pk2 === 'cancelled' ? (t.hist_page.status_canceled||'Cancelled') : pk2 === 'completed' ? (t.hist_page.status_completed||'Completed') : (t.hist_page.status_noshow||'No-show')
@@ -155,22 +153,22 @@ block content
                     .hist-card__body
                         if h.serviceName
                             .hist-card__row
-                                span.hist-card__lbl Service
+                                span.hist-card__lbl= t.hist.table.service
                                 span= h.serviceName
                         if h.employeeName
                             .hist-card__row
-                                span.hist-card__lbl Employee
+                                span.hist-card__lbl= t.hist.table.employee
                                 span= h.employeeName
                         .hist-card__row
-                            span.hist-card__lbl Date
+                            span.hist-card__lbl= t.hist_page.date
                             span= dateStr2
                         if h.slotTime
                             .hist-card__row
-                                span.hist-card__lbl Duration
+                                span.hist-card__lbl= t.hist.table.duration
                                 span= h.slotTime + ' min'
                     .hist-card__footer
                         a.hist-open-btn(href=`/history/edit/${h._id}`)
-                            | Open
+                            = t.hist_page.view
                             svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13")
                                 path(d="M5 12h14M13 6l6 6-6 6")
 

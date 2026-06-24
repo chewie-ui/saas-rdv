@@ -35,6 +35,9 @@
     { key: 'calBg',       def: '#ffffff' },
     { key: 'dayBg',       def: '#ffffff' },
     { key: 'dayText',     def: '#111111' },
+    { key: 'dayAvailableColor', def: '#16a34a' },
+    { key: 'dayBusyColor',      def: '#ea580c' },
+    { key: 'dayFullColor',      def: '#ef4444' },
     { key: 'btnBg',       def: '#111111' },
     { key: 'btnText',     def: '#ffffff' },
   ];
@@ -202,6 +205,7 @@
      Si l'iframe n'est pas encore prête, on schedule un retry.
      ═══════════════════════════════════════════════════════════════ */
   function injectPreviewCss() {
+    updateDayPreviewSwatch(); // indépendant de l'iframe — toujours à jour
     clearTimeout(_injectRetryTimer);
     if (!previewIframe) return;
 
@@ -252,6 +256,14 @@
       '--bk-surface':       current.calBg,
       '--bk-day-bg':        current.dayBg,
       '--bk-day-text':      current.dayText,
+      '--bk-day-available-color': current.dayAvailableColor,
+      '--bk-day-available-bg':       'rgba(' + hexToRgb(current.dayAvailableColor) + ',0.08)',
+      '--bk-day-available-bg-hover': 'rgba(' + hexToRgb(current.dayAvailableColor) + ',0.16)',
+      '--bk-day-busy-color': current.dayBusyColor,
+      '--bk-day-busy-bg':       'rgba(' + hexToRgb(current.dayBusyColor) + ',0.10)',
+      '--bk-day-busy-bg-hover': 'rgba(' + hexToRgb(current.dayBusyColor) + ',0.18)',
+      '--bk-day-full-color': current.dayFullColor,
+      '--bk-day-full-bg':    'rgba(' + hexToRgb(current.dayFullColor) + ',0.08)',
       '--bk-btn-bg':        current.btnBg,
       '--bk-btn-text':      current.btnText,
       '--bk-font':          fontVal,
@@ -271,6 +283,42 @@
     Object.keys(vars).forEach(function (k) {
       htmlEl.style.setProperty(k, vars[k]);
     });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     Aperçu statique des 3 états de disponibilité — indépendant des
+     vraies données du calendrier (pas besoin d'avoir un jour complet
+     réel pour voir le rendu). Mêmes teintes que client-booking.css.
+     ═══════════════════════════════════════════════════════════════ */
+  function updateDayPreviewSwatch() {
+    var availCell = $('czPreviewAvailable');
+    var busyCell  = $('czPreviewBusy');
+    var fullCell  = $('czPreviewFull');
+    var availDot  = $('czLegendAvailable');
+    var busyDot   = $('czLegendBusy');
+    var fullDot   = $('czLegendFull');
+
+    var availRgb = hexToRgb(current.dayAvailableColor);
+    var busyRgb  = hexToRgb(current.dayBusyColor);
+    var fullRgb  = hexToRgb(current.dayFullColor);
+
+    if (availCell) {
+      availCell.style.color = current.dayAvailableColor;
+      availCell.style.background = 'rgba(' + availRgb + ',0.08)';
+    }
+    if (busyCell) {
+      busyCell.style.color = current.dayBusyColor;
+      busyCell.style.background = 'rgba(' + busyRgb + ',0.10)';
+      busyCell.style.fontWeight = '700';
+    }
+    if (fullCell) {
+      fullCell.style.color = current.dayFullColor;
+      fullCell.style.background = 'rgba(' + fullRgb + ',0.08)';
+      fullCell.style.textDecoration = 'line-through';
+    }
+    if (availDot) availDot.style.background = current.dayAvailableColor;
+    if (busyDot)  busyDot.style.background  = current.dayBusyColor;
+    if (fullDot)  fullDot.style.background  = current.dayFullColor;
   }
 
   // scheduleInject = throttle pour les sliders (drag continu)
@@ -675,6 +723,9 @@
             calBg:        current.calBg,
             dayBg:        current.dayBg,
             dayText:      current.dayText,
+            dayAvailableColor: current.dayAvailableColor,
+            dayBusyColor:      current.dayBusyColor,
+            dayFullColor:      current.dayFullColor,
             btnBg:        current.btnBg,
             btnText:      current.btnText,
             font:         current.font,
@@ -1090,5 +1141,8 @@
       });
     }
   }
+
+  // Affiche l'aperçu disponibilité dès le chargement, sans attendre l'iframe.
+  updateDayPreviewSwatch();
 
 })();

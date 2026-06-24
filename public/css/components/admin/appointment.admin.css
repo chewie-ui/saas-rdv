@@ -617,6 +617,33 @@
   color: #9ca3af !important;
 }
 
+/* ── Aperçu ("ghost") du clic-glisser pour créer un RDV ───────────────────── */
+.cal-drag-ghost {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  z-index: 25;
+  border-radius: 6px;
+  background: var(--accent-soft, rgba(30, 122, 78, 0.18));
+  border: 1.5px dashed var(--accent, #1e7a4e);
+  color: var(--accent, #1e7a4e);
+  font-size: 11.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2px 4px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.cal-drag-ghost--conflict {
+  background: rgba(220, 38, 38, 0.12);
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
 /* Événement externe (Google Calendar) — créneau bloqué, non cliquable */
 .appt-pill--external {
   background-color: #f3f4f6;
@@ -634,6 +661,20 @@
 .appt-pill--external:hover {
   filter: none;
   transform: none;
+}
+
+/* Bloc d'indisponibilité posé par l'admin ("Absent") — créé/supprimable,
+   contrairement à .appt-pill--external (événement externe en lecture seule). */
+.appt-pill--block {
+  background-color: #4b5563;
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0px,
+    rgba(255, 255, 255, 0.08) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  color: #fff;
 }
 
 /* Status variants */
@@ -1638,10 +1679,28 @@ body:has(.cal-month) .cal-month {
 }
 
 .new-appt-modal__error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  padding: 10px 14px;
   font-size: 13px;
   font-weight: 600;
+  line-height: 1.4;
   margin: 0;
+}
+
+.new-appt-modal__error::before {
+  content: "";
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  background: #dc2626;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 
 .new-appt-modal__actions {
@@ -1656,6 +1715,53 @@ body:has(.cal-month) .cal-month {
   .new-appt-modal .edit-fields-row.two-col {
     flex-direction: column;
   }
+}
+
+.new-appt-modal--sm {
+  max-width: 420px;
+}
+
+/* ── Choix après clic-glisser : "Rendez-vous" ou "Absence" ───────────────── */
+.drag-choice {
+  position: fixed;
+  z-index: 99998;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.18);
+  padding: 6px;
+  animation: __newApptIn 0.14s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.drag-choice__btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font: 600 13px var(--font-primary, inherit);
+  color: var(--ink, #12171b);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+
+.drag-choice__btn:hover {
+  background: var(--surface-hover, #f4f2ed);
+}
+
+.drag-choice__btn svg {
+  flex-shrink: 0;
+  color: var(--accent, #1e7a4e);
+}
+
+.drag-choice__btn--block svg {
+  color: #4b5563;
 }
 
 /* ── Sélecteur d'heure "Nouveau rendez-vous" ──────────────────────────────

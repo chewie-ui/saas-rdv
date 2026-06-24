@@ -374,3 +374,92 @@
   font-weight: 500;
   color: var(--text-primary, #111);
 }
+
+/* ── Chip atténué ("Aucune date à venir") ─────────────────────────────── */
+.gs-course-card__chip--muted {
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px dashed var(--border-light);
+}
+
+/* ── Dates ponctuelles : liste de séances ajoutées (modal) ────────────── */
+.gs-session-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.gs-session-rows__empty {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--border-light);
+  border-radius: 10px;
+  text-align: center;
+}
+
+.gs-session-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--surface-card, #fff);
+}
+
+.gs-session-row__date {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink, #111);
+  text-transform: capitalize;
+  flex: 1;
+}
+
+.gs-session-row__time {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.gs-session-row__remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface-hover, #f4f2ed);
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+.gs-session-row__remove:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.gs-session-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.gs-session-add-row .input {
+  flex: 1;
+  min-width: 130px;
+}
+.gs-session-add-row .appt-time-field {
+  flex: 1;
+  min-width: 90px;
+}
+.gs-session-add-row #addSessionRowBtn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}

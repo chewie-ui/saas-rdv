@@ -24,14 +24,37 @@ router.use(require("./superadmin"));
 router.use(require("./services"));
 router.use(require("./employees"));
 
+// Échappe les caractères spéciaux regex — la catégorie/nom/ville viennent de
+// l'utilisateur (champ de recherche ou clic sidebar), jamais d'une liste figée
+// côté serveur, donc toujours traiter ça comme une regex non fiable.
+function escapeRegex(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 /* ── Catégories dynamiques depuis la base ────────────────────────────────── */
+// Ne compte que les utilisateurs ayant RÉELLEMENT un établissement créé (et
+// non désactivé) — sinon une inscription jamais terminée (pas de Company,
+// cf. injectCompany qui redirige vers /register tant qu'il n'y en a pas)
+// fait apparaître une catégorie dans la sidebar qui renvoie ensuite "0
+// professionnels trouvés" au clic, puisque /search ne liste que des Companies.
 async function getDynamicCategories() {
   const counts = await User.aggregate([
-    { $match: { businessType: { $exists: true, $ne: "" } } },
-    { $group: { _id: "$businessType", count: { $sum: 1 } } },
+    {
+      $match: {
+        businessType: { $exists: true, $ne: "" },
+        $or: [{ isDisabled: false }, { isDisabled: { $exists: false } }],
+      },
+    },
+    { $lookup: { from: "companies", localField: "_id", foreignField: "owner", as: "company" } },
+    { $match: { "company.0": { $exists: true } } },
+    // Regroupe par valeur normalisée (espaces + casse) pour fusionner les
+    // doublons type "Développeur freelance" / "développeur freelance " qui
+    // apparaissaient sinon comme deux catégories distinctes dans la sidebar.
+    { $project: { businessType: 1, _norm: { $toLower: { $trim: { input: "$businessType" } } } } },
+    { $group: { _id: "$_norm", name: { $first: "$businessType" }, count: { $sum: 1 } } },
     { $sort: { count: -1 } },
   ]);
-  return counts.map(c => ({ name: c._id, count: c.count }));
+  return counts.map(c => ({ name: (c.name || "").trim(), count: c.count }));
 }
 
 /* ── Tri des établissements : Business > Pro > Gratuit, puis par boost, puis par note ── */
@@ -176,23 +199,29 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
 
     if (name) {
       // Recherche sur le nom complet OU le type de service/métier
-      const flexibleName = name.trim().replace(/[\s\-\']/g, ".*");
+      const flexibleName = escapeRegex(name.trim()).replace(/[\s\-\']/g, ".*");
       conditions.push({
         $or: [{ fullName: { $regex: flexibleName, $options: "i" } }, { businessType: { $regex: flexibleName, $options: "i" } }],
       });
     }
 
     if (location) {
-      const flexibleLocation = location.trim().replace(/[\s\-\']/g, ".*");
+      const flexibleLocation = escapeRegex(location.trim()).replace(/[\s\-\']/g, ".*");
       const locationFilters = [{ "location.city": { $regex: flexibleLocation, $options: "i" } }, { "location.address": { $regex: flexibleLocation, $options: "i" } }];
       const zipValue = parseInt(location);
       if (!isNaN(zipValue)) locationFilters.push({ "location.zip": zipValue });
       conditions.push({ $or: locationFilters });
     }
 
-    // Filtre par catégorie (optionnel)
+    // Filtre par catégorie (optionnel) — valeur exacte (insensible à la
+    // casse) plutôt qu'une regex partielle : la catégorie vient du clic sur
+    // un nom déjà connu (sidebar/onglets), pas d'une saisie libre, donc on
+    // évite tout faux positif par sous-chaîne entre deux métiers différents.
     if (category && category.trim()) {
-      conditions.push({ businessType: { $regex: category.trim(), $options: "i" } });
+      // \s* en bordure : tolère un éventuel espace résiduel en base (cf.
+      // normalisation faite dans getDynamicCategories pour fusionner les
+      // doublons "Développeur freelance" / "développeur freelance ").
+      conditions.push({ businessType: { $regex: `^\\s*${escapeRegex(category.trim())}\\s*$`, $options: "i" } });
     }
 
     // PAS de filtre isPremium — tous les établissements, gratuits ET premium
@@ -400,7 +429,16 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
         description: s.description || "",
         price: s.price,
         duration: s.duration,
+        durationMax: s.durationMax || null,
         category: s.category || "",
+        answerVisibility: s.answerVisibility || "all",
+        // type/capacity/location manquaient ici — STATE.service.type retombait
+        // TOUJOURS sur "individual" côté client (cf. public/js/layouts/index.js),
+        // rendant tout le code "collectif" déjà écrit (saut étape employé,
+        // places restantes) inerte en production.
+        type: s.type || "individual",
+        capacity: s.capacity || null,
+        location: s.location || "",
         employees: (s.employees || []).map(function (e) {
           return {
             _id: String(e._id),

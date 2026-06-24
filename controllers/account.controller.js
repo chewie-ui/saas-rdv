@@ -792,6 +792,7 @@ exports.updateCalendarSettings = async (req, res) => {
   try {
     const {
       pageBg, calBg, accentColor, accentText, dayBg, dayText, btnBg, btnText,
+      dayAvailableColor, dayBusyColor, dayFullColor,
       lang, font, customFontUrl, customFontFamily, borderRadius, borderStyle, shadowStyle, showInfo, showSocials, layoutStyle, pageBgType, pageBgImage,
       showSectionAbout, showSectionServices, showSectionTeam,
       showSectionReviews, showSectionAmenities, showSectionFaq,
@@ -806,6 +807,9 @@ exports.updateCalendarSettings = async (req, res) => {
         "calendarSettings.accentText":           accentText,
         "calendarSettings.dayBg":                dayBg,
         "calendarSettings.dayText":              dayText,
+        "calendarSettings.dayAvailableColor":    dayAvailableColor,
+        "calendarSettings.dayBusyColor":         dayBusyColor,
+        "calendarSettings.dayFullColor":         dayFullColor,
         "calendarSettings.btnBg":                btnBg,
         "calendarSettings.btnText":              btnText,
         "calendarSettings.lang":                 lang,

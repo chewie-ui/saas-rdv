@@ -184,9 +184,12 @@ export const initAppointmentPopup = function () {
       dotEl.style.background   = d.color || "";
     }
 
-    // Edit / detail links
+    // Edit / detail links — "Voir le détail" mène à la page d'édition d'un
+    // vrai RDV (nom, email...) : ça n'a pas de sens pour un bloc d'absence,
+    // qui n'a pas de client.
     editBtn.onclick  = () => { window.location.href = `/history/edit/${currentId}`; };
     detailBtn.href   = `/history/edit/${currentId}`;
+    if (detailBtn) detailBtn.style.display = d.isBlock === "1" ? "none" : "";
 
     // Dossier client (caché si pas d'email — événement "autre" sans client)
     if (dossierBtn) {

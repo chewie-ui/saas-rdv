@@ -27,6 +27,11 @@ const clientDossierSchema = new schema(
     // aux entrées, ce bloc ne change pas à chaque visite.
     generalInfo: { type: String, default: "" },
     entries: [dossierEntrySchema],
+    // Empêche ce client de réserver à nouveau (ex: abus, non-présentations
+    // répétées) — vérifié à chaque tentative de réservation publique.
+    blocked: { type: Boolean, default: false },
+    blockedAt: { type: Date, default: null },
+    blockedReason: { type: String, default: "", trim: true },
   },
   { timestamps: true }
 );

@@ -7,19 +7,19 @@ block links
 block content
     .info-page
         .info-page__header
-            h2 Centre d'aide
-            p.info-page__subtitle Retrouvez les guides, tutoriels et contacts pour utiliser BranShee au maximum.
+            h2= t.support.title
+            p.info-page__subtitle= t.support.subtitle
 
         .support-search
             svg.support-search__icon(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                 path(d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z")
-            input#supportSearch.support-search__input(type="text" placeholder="Rechercher dans l'aide… ex: retirer ma carte, changer d'horaire")
+            input#supportSearch.support-search__input(type="text" placeholder=t.support.search_placeholder)
             .support-search__results#searchResults
 
         //- ── Barre de chapitres — générée automatiquement depuis les sections ──
         -
-            var _chapters = (sections && sections.length) ? sections.map(function(s){ return s.title; }) : ['Comment ça marche ?', 'Questions fréquentes']
-            _chapters.push('Nous contacter')
+            var _chapters = (sections && sections.length) ? sections.map(function(s){ return s.title; }) : [t.support.default_chapter_how, t.support.default_chapter_faq]
+            _chapters.push(t.support.contact_chapter)
         .support-chapters
             each chapter, i in _chapters
                 a.support-chapter-pill(href=`#chapter-${i}`)= chapter
@@ -37,7 +37,7 @@ block content
                                     .support-video-card__thumb 🎬
                                     .support-video-card__info
                                         .support-video-card__title= video.title
-                                        .support-video-card__duration= video.duration || 'Voir la vidéo'
+                                        .support-video-card__duration= video.duration || t.support.video_default_label
 
                     if section.faqs && section.faqs.length
                         .support-faq-list
@@ -51,66 +51,68 @@ block content
         else
             .info-card.support-section(id="chapter-0")
                 .info-card__header
-                    h3 Comment ça marche ?
+                    h3= t.support.default_chapter_how
                 .support-video-grid
                     .support-video-card
                         .support-video-card__thumb 🎬
                         .support-video-card__info
-                            .support-video-card__title Créer votre premier service
-                            .support-video-card__duration Bientôt disponible
+                            .support-video-card__title= t.support.demo_video1_title
+                            .support-video-card__duration= t.support.video_soon
                     .support-video-card
                         .support-video-card__thumb 🎬
                         .support-video-card__info
-                            .support-video-card__title Configurer vos disponibilités
-                            .support-video-card__duration Bientôt disponible
+                            .support-video-card__title= t.support.demo_video2_title
+                            .support-video-card__duration= t.support.video_soon
 
             .info-card.support-section(id="chapter-1")
                 .info-card__header
-                    h3 Questions fréquentes
+                    h3= t.support.default_chapter_faq
                 .support-faq-list
                     .support-faq-item
                         .support-faq-item__q
-                            span Comment partager ma page de réservation ?
+                            span= t.support.demo_faq1_q
                             svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                                 path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
-                        .support-faq-item__a Rendez-vous dans <strong>Réglages</strong> → votre lien public apparaît en bas de page.
+                        .support-faq-item__a!= t.support.demo_faq1_a
                     .support-faq-item
                         .support-faq-item__q
-                            span Comment ajouter un employé ?
+                            span= t.support.demo_faq2_q
                             svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                                 path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
-                        .support-faq-item__a Allez dans <strong>Collaborateurs</strong> et cliquez sur le bouton vert pour créer un profil.
+                        .support-faq-item__a!= t.support.demo_faq2_a
                     .support-faq-item
                         .support-faq-item__q
-                            span Comment passer au plan Pro ?
+                            span= t.support.demo_faq3_q
                             svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                                 path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
-                        .support-faq-item__a Allez dans <strong>Abonnement</strong> → choisissez votre plan.
+                        .support-faq-item__a!= t.support.demo_faq3_a
                     .support-faq-item
                         .support-faq-item__q
-                            span Mes clients reçoivent-ils une confirmation ?
+                            span= t.support.demo_faq4_q
                             svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                                 path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
-                        .support-faq-item__a Oui ! Un email de confirmation est envoyé automatiquement à chaque réservation.
+                        .support-faq-item__a= t.support.demo_faq4_a
 
         .info-card.support-section(id=`chapter-${_chapters.length - 1}`)
             .info-card__header
-                h3 Nous contacter
+                h3= t.support.contact_chapter
             .support-contact-grid
                 a.support-contact-card(href="mailto:quentin.rennies@gmail.com")
                     .support-contact-card__icon ✉️
-                    .support-contact-card__label Email
+                    .support-contact-card__label= t.support.email_label
                     .support-contact-card__sub quentin.rennies@gmail.com
                 a.support-contact-card(href="https://wa.me/32477443988" target="_blank")
                     .support-contact-card__icon 💬
-                    .support-contact-card__label WhatsApp / Chat
-                    .support-contact-card__sub Réponse sous 24h
+                    .support-contact-card__label= t.support.whatsapp_label
+                    .support-contact-card__sub= t.support.whatsapp_sub
                 a.support-contact-card(href="tel:+33600000000")
                     .support-contact-card__icon 📞
-                    .support-contact-card__label Téléphone
-                    .support-contact-card__sub Lun–Ven, 9h–18h
+                    .support-contact-card__label= t.support.phone_label
+                    .support-contact-card__sub= t.support.phone_sub
 
     script.
+        window.__t_support = !{JSON.stringify(t.support)};
+
         // FAQ accordion
         document.querySelectorAll('.support-faq-item').forEach(function(item) {
             item.addEventListener('click', function() {
@@ -155,6 +157,7 @@ block content
 
         var searchInput = document.getElementById('supportSearch');
         var resultsBox = document.getElementById('searchResults');
+        var T = window.__t_support || {};
 
         function normalize(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 
@@ -164,16 +167,18 @@ block content
             if (!q) { resultsBox.classList.remove('open'); return; }
             var hits = searchIndex.filter(function(r) { return normalize(r.label).includes(q) || normalize(r.section).includes(q); }).slice(0, 6);
             if (!hits.length) {
-                resultsBox.innerHTML = '<div class="support-search__no-result">Aucun résultat pour "' + searchInput.value + '"</div>';
+                var noResultText = (T.no_result || 'Aucun résultat pour "{query}"').replace('{query}', searchInput.value);
+                resultsBox.innerHTML = '<div class="support-search__no-result">' + noResultText + '</div>';
                 resultsBox.classList.add('open');
                 return;
             }
             hits.forEach(function(hit) {
                 var div = document.createElement('div');
                 div.className = 'support-search__result-item';
+                var typeLabel = hit.type === 'faq' ? ('❓ ' + (T.type_faq || 'Question fréquente')) : ('🎬 ' + (T.type_video || 'Vidéo') + (hit.sub ? ' · ' + hit.sub : ''));
                 div.innerHTML = '<div class="support-search__result-item__section">' + hit.section + '</div>' +
                     '<div class="support-search__result-item__label">' + hit.label + '</div>' +
-                    '<div class="support-search__result-item__type">' + (hit.type === 'faq' ? '❓ Question fréquente' : '🎬 Vidéo' + (hit.sub ? ' · ' + hit.sub : '')) + '</div>';
+                    '<div class="support-search__result-item__type">' + typeLabel + '</div>';
                 div.addEventListener('click', function() {
                     searchInput.value = '';
                     resultsBox.classList.remove('open');

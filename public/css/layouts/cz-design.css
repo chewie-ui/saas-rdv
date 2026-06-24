@@ -102,6 +102,50 @@
 .cz-color-picker:hover { border-color: #22c55e; }
 .cz-color-picker.is-open { border-color: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.15); }
 
+/* ── Aperçu des 3 états de disponibilité (indépendant des vraies données) ── */
+.cz-day-preview__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #9ca3af);
+  margin-top: 4px;
+}
+
+.cz-day-preview {
+  display: flex;
+  gap: 10px;
+}
+
+.cz-day-preview__cell {
+  width: 44px;
+  height: 44px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 13px var(--font-primary, inherit);
+  transition: background .12s, color .12s;
+}
+
+.cz-day-preview__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+}
+
+.cz-day-preview__dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 2px;
+  vertical-align: middle;
+  transition: background .12s;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    COLOR PICKER PANEL
    ═══════════════════════════════════════════════════════════════ */

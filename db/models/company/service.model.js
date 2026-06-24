@@ -23,7 +23,16 @@ const serviceSchema = new mongoose.Schema(
     },
     duration: {
       type: Number,
-      default: 30, // en minutes
+      default: 30, // en minutes — borne basse si durationMax est défini
+    },
+    // Durée approximative ("30-40 min") — borne haute optionnelle. Si
+    // définie, le calcul réel des créneaux (chevauchements, blocage du
+    // planning) utilise TOUJOURS cette valeur pour ne jamais sur-réserver
+    // un pro qui aurait sous-estimé un soin ; seul l'affichage montre la
+    // fourchette "duration-durationMax min" au client.
+    durationMax: {
+      type: Number,
+      default: null,
     },
     active: {
       type: Boolean,
@@ -74,6 +83,28 @@ const serviceSchema = new mongoose.Schema(
       weekdays: [{ type: Number, min: 0, max: 6 }],
       startTime: { type: String, default: "" },
     },
+    // Dates ponctuelles ("ateliers") — utilisé quand recurring.enabled === false
+    // sur un service "group" : chaque entrée est une occurrence indépendante
+    // avec sa propre date + plage horaire, au lieu d'une récurrence
+    // hebdomadaire fixe (ex: un atelier le 1/7 19h-20h, un autre le 5/7
+    // 12h-13h, pas forcément le même jour de semaine ni la même heure).
+    // La capacité reste PARTAGÉE (capacity ci-dessus) entre toutes les
+    // occurrences — pas de surcharge par date, pour garder l'admin simple.
+    sessions: [
+      {
+        date: { type: Date, required: true },
+        startTime: { type: String, required: true }, // "HH:MM"
+        endTime: { type: String, required: true }, // "HH:MM"
+      },
+    ],
+    // Lieu spécifique à ce service (utilisé pour les cours collectifs, ex: un
+    // studio loué pour l'occasion) — vide = adresse par défaut du compte
+    // (User.location), résolue côté contrôleur au moment de l'affichage.
+    location: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     // Frais d'annulation/no-show personnalisés pour ce service — remplace le
     // % de la politique d'annulation globale (ex: un soin à 100€ où le pro
     // préfère ne retenir que 30€ plutôt que 50% imposés par la politique).
@@ -83,6 +114,14 @@ const serviceSchema = new mongoose.Schema(
       enabled: { type: Boolean, default: false },
       type:    { type: String, enum: ["percent", "amount"], default: "percent" },
       value:   { type: Number, default: null },
+    },
+    // Limite ce service à l'une des deux réponses de la "question préalable"
+    // du compte (Company.bookingQuestion) — "all" (par défaut) = toujours
+    // affiché, peu importe la réponse (ou si la question est désactivée).
+    answerVisibility: {
+      type: String,
+      enum: ["all", "new", "existing"],
+      default: "all",
     },
   },
   { timestamps: true }

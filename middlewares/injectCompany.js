@@ -2,6 +2,7 @@ const Company = require("../db/models/company/company.model");
 const Booking = require("../db/models/book.model");
 const { getLimit } = require("../utils/planLimits");
 const { getAdminFeaturesFlags } = require("./featureFlag");
+const { clientWord } = require("../utils/terminology");
 
 module.exports = async (req, res, next) => {
   try {
@@ -35,6 +36,14 @@ module.exports = async (req, res, next) => {
     // Ces variables seront accessibles direct dans tes fichiers .pug
     res.locals.currentCompany = currentCompany;
     res.locals.user = req.user;
+
+    // 4a. Vocabulaire "client" vs "patient" selon le métier (kiné, dentiste,
+    // psy... → patient ; coiffeur, coach... → client) — dispo dans TOUTES
+    // les pages admin sans avoir à le repasser depuis chaque contrôleur.
+    res.locals.clientTerm           = clientWord(req.user.businessType);
+    res.locals.clientTermPlural     = clientWord(req.user.businessType, { plural: true });
+    res.locals.clientTermCap        = clientWord(req.user.businessType, { capitalize: true });
+    res.locals.clientTermCapPlural  = clientWord(req.user.businessType, { capitalize: true, plural: true });
 
     // 4b. Fonctionnalités admin activables/désactivables depuis le superadmin
     // (ex: Cours collectifs, Temps tampon) — utilisées pour cacher des

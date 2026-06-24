@@ -7,158 +7,165 @@ block links
 block content
     .info-page
         .info-page__header
-            h2 Parrainage
-            p.info-page__subtitle Invitez vos amis et gagnez des mois offerts dès qu'ils passent au Pro.
+            h2= t.referral.title
+            p.info-page__subtitle= t.referral.subtitle
 
         //- ── Comment ça marche ───────────────────────────────────────────────
         .info-card
             .info-card__header
-                h3 Comment ça marche ?
+                h3= t.referral.how_title
             .parrainage-how
                 .parrainage-how__step
                     .parrainage-how__step__num 1
-                    .parrainage-how__step__text Partagez votre lien, votre code ou votre QR code à vos contacts indépendants.
+                    .parrainage-how__step__text= t.referral.step1
                 .parrainage-how__step
                     .parrainage-how__step__num 2
-                    .parrainage-how__step__text Ils s'inscrivent et prennent un abonnement Pro ou Business.
+                    .parrainage-how__step__text= t.referral.step2
                 .parrainage-how__step
                     .parrainage-how__step__num 3
-                    .parrainage-how__step__text Dès 2 filleuls payants : 1 mois offert sur votre abonnement.
+                    .parrainage-how__step__text= t.referral.step3
 
         //- ── Lien / code / QR ────────────────────────────────────────────────
         .info-card
             .info-card__header
-                h3 Votre lien de parrainage
-                p.info-card__desc Partagez l'un de ces trois moyens — dès qu'un filleul prend un abonnement payant, le compteur se met à jour automatiquement.
+                h3= t.referral.link_title
+                p.info-card__desc= t.referral.link_desc
             .parrainage-share
                 .parrainage-share__cols
                     .parrainage-field
-                        label.parrainage-field__label Votre code
+                        label.parrainage-field__label= t.referral.code_label
                         .parrainage-field__row
                             span.parrainage-field__value#referralCode= referralCode || '—'
-                            button.sm-btn.sm-btn--ghost(type="button" data-copy=referralCode title="Copier le code")
+                            button.sm-btn.sm-btn--ghost(type="button" data-copy=referralCode title=t.referral.copy_code_title)
                                 svg(viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
                                     rect(x="9" y="9" width="13" height="13" rx="2" ry="2")
                                     path(d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1")
-                                span Copier
+                                span= t.referral.copy_btn
                     .parrainage-field
-                        label.parrainage-field__label Lien d'invitation
+                        label.parrainage-field__label= t.referral.link_label
                         .parrainage-field__row
                             span.parrainage-field__value.parrainage-field__value--link#referralUrl= referralLink
-                            button.sm-btn.sm-btn--ghost(type="button" data-copy=referralLink title="Copier le lien")
+                            button.sm-btn.sm-btn--ghost(type="button" data-copy=referralLink title=t.referral.copy_link_title)
                                 svg(viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
                                     rect(x="9" y="9" width="13" height="13" rx="2" ry="2")
                                     path(d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1")
-                                span Copier
+                                span= t.referral.copy_btn
 
                 .parrainage-qr
-                    label.parrainage-field__label QR Code
-                    img.parrainage-qr__img(src=qrUrl alt="QR Code de parrainage" loading="lazy")
+                    label.parrainage-field__label= t.referral.qr_label
+                    img.parrainage-qr__img(src=qrUrl alt=t.referral.qr_alt loading="lazy")
                     a.sm-btn.sm-btn--ghost.sm-btn--full(href=qrUrl download="branshee-parrainage-qr.png" target="_blank")
                         svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                             path(d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z")
-                        span Télécharger
+                        span= t.referral.download_btn
 
         //- ── Statistiques ────────────────────────────────────────────────────
         .info-card
             .info-card__header
-                h3 Vos statistiques
+                h3= t.referral.stats_title
             .parrainage-stats
                 .parrainage-stat
                     .parrainage-stat__value= referral.totalInvited || 0
-                    .parrainage-stat__label Invités
+                    .parrainage-stat__label= t.referral.stat_invited
                 .parrainage-stat
                     .parrainage-stat__value= referral.totalPaying || 0
-                    .parrainage-stat__label Filleuls payants
+                    .parrainage-stat__label= t.referral.stat_paying
                 .parrainage-stat.parrainage-stat--accent
                     .parrainage-stat__value= referral.creditMonths || 0
-                    .parrainage-stat__label Mois réclamés
+                    .parrainage-stat__label= t.referral.stat_months
 
         //- ── Filleuls ─────────────────────────────────────────────────────────
         .info-card
             .info-card__header
-                h3 Vos filleuls
+                h3= t.referral.referrals_title
             if filleuls && filleuls.length
                 table.parrainage-table
                     thead
                         tr
-                            th Nom
-                            th Email
-                            th Inscrit le
-                            th Statut
+                            th= t.referral.col_name
+                            th= t.referral.col_email
+                            th= t.referral.col_signup_date
+                            th= t.referral.col_status
                     tbody
                         each f in filleuls
                             - var dt = new Date(f.createdAt)
-                            - var dateStr = dt.toLocaleDateString('fr-FR', {day:'2-digit', month:'short', year:'numeric'})
+                            - var dateStr = dt.toLocaleDateString(lang, {day:'2-digit', month:'short', year:'numeric'})
                             tr
                                 td= f.fullName || '—'
                                 td= f.email || '—'
                                 td= dateStr
                                 td
                                     if f.isPremium
-                                        span.parrainage-badge.parrainage-badge--paying Payant ✓
+                                        span.parrainage-badge.parrainage-badge--paying= t.referral.status_paying
                                     else
-                                        span.parrainage-badge.parrainage-badge--free Gratuit
+                                        span.parrainage-badge.parrainage-badge--free= t.referral.status_free
             else
-                .parrainage-empty Aucun filleul pour l'instant. Partagez votre lien pour commencer !
+                .parrainage-empty= t.referral.empty
 
         //- ── Réclamer ─────────────────────────────────────────────────────────
         -
             var totalPaying = (referral && referral.totalPaying) || 0;
             var creditMonths = (referral && referral.creditMonths) || 0;
             var claimable = Math.max(0, Math.floor(totalPaying / 2) - creditMonths);
+            var claimableMonthsText = (claimable > 1 ? t.referral.claimable_many : t.referral.claimable_one).replace('{n}', claimable);
+            var claimBtnText = claimable > 1 ? t.referral.claim_btn_many.replace('{n}', claimable) : t.referral.claim_btn_one.replace('{n}', claimable);
 
         .info-card
             .info-card__header
-                h3 Réclamer ma récompense
+                h3= t.referral.claim_title
             .parrainage-claim
                 .parrainage-claim__info
                     if claimable > 0
-                        p Vous pouvez réclamer <strong>#{claimable} mois offert#{claimable > 1 ? 's' : ''}</strong> grâce à vos filleuls payants — appliqué directement sur votre abonnement.
+                        p!= t.referral.claimable_html.replace('{months}', claimableMonthsText)
                     else
-                        p Vous n'avez pas encore de crédit à réclamer. Il vous faut 2 filleuls payants pour obtenir 1 mois offert.
+                        p= t.referral.no_credit
                 button.sm-btn.sm-btn--primary#claimBtn(type="button" disabled=claimable <= 0)
-                    span= claimable > 0 ? 'Réclamer ' + claimable + ' mois' : 'Réclamer'
+                    span= claimable > 0 ? claimBtnText : t.referral.claim_btn
 
     script.
-        // Copy code / link
-        document.querySelectorAll('[data-copy]').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var text = btn.dataset.copy;
-                if (!text) return;
-                navigator.clipboard.writeText(text).then(function() {
-                    var span = btn.querySelector('span');
-                    var orig = span ? span.textContent : null;
-                    if (span) span.textContent = 'Copié !';
-                    btn.classList.add('is-copied');
-                    setTimeout(function() {
-                        if (span && orig) span.textContent = orig;
-                        btn.classList.remove('is-copied');
-                    }, 2000);
+        window.__t_referral = !{JSON.stringify(t.referral)};
+        (function() {
+            var T = window.__t_referral || {};
+
+            // Copy code / link
+            document.querySelectorAll('[data-copy]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var text = btn.dataset.copy;
+                    if (!text) return;
+                    navigator.clipboard.writeText(text).then(function() {
+                        var span = btn.querySelector('span');
+                        var orig = span ? span.textContent : null;
+                        if (span) span.textContent = T.copied || '✓ Copié !';
+                        btn.classList.add('is-copied');
+                        setTimeout(function() {
+                            if (span && orig) span.textContent = orig;
+                            btn.classList.remove('is-copied');
+                        }, 2000);
+                    });
                 });
             });
-        });
 
-        // Claim reward
-        var claimBtn = document.getElementById('claimBtn');
-        if (claimBtn && !claimBtn.disabled) {
-            claimBtn.addEventListener('click', async function() {
-                var span = claimBtn.querySelector('span');
-                claimBtn.disabled = true;
-                if (span) span.textContent = '...';
-                try {
-                    var res = await fetch('/parrainage/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-                    var data = await res.json();
-                    if (data.success) {
-                        if (span) span.textContent = '✓ Mois offert appliqué !';
-                        setTimeout(function() { window.location.reload(); }, 1500);
-                    } else {
-                        if (span) span.textContent = data.error || 'Erreur';
+            // Claim reward
+            var claimBtn = document.getElementById('claimBtn');
+            if (claimBtn && !claimBtn.disabled) {
+                claimBtn.addEventListener('click', async function() {
+                    var span = claimBtn.querySelector('span');
+                    claimBtn.disabled = true;
+                    if (span) span.textContent = '...';
+                    try {
+                        var res = await fetch('/parrainage/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                        var data = await res.json();
+                        if (data.success) {
+                            if (span) span.textContent = T.claim_success || '✓ Mois offert appliqué !';
+                            setTimeout(function() { window.location.reload(); }, 1500);
+                        } else {
+                            if (span) span.textContent = data.error || T.claim_error || 'Erreur';
+                            claimBtn.disabled = false;
+                        }
+                    } catch (e) {
+                        if (span) span.textContent = T.claim_network_error || 'Erreur réseau';
                         claimBtn.disabled = false;
                     }
-                } catch (e) {
-                    if (span) span.textContent = 'Erreur réseau';
-                    claimBtn.disabled = false;
-                }
-            });
-        }
+                });
+            }
+        })();

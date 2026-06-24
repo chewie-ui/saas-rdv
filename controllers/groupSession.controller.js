@@ -12,6 +12,29 @@ function sanitizeWeekdays(raw) {
   return [...new Set(raw.map(Number).filter((d) => WEEKDAYS.includes(d)))].sort();
 }
 
+// Garde-fou anti-abus (pas une limite de plan) — un cours en dates ponctuelles
+// n'a aucune raison dépasser ça en usage réel.
+const MAX_SESSIONS = 200;
+
+// ── Dates ponctuelles ("ateliers") : valide chaque {date,startTime,endTime} ──
+// Retourne null si la liste est invalide (rejet complet — on ne sauvegarde
+// jamais une liste partiellement valide, sinon l'admin perd silencieusement
+// des dates qu'il pensait avoir ajoutées).
+function sanitizeSessions(raw) {
+  if (!Array.isArray(raw)) return null;
+  const out = [];
+  for (const s of raw) {
+    if (!s || !TIME_RE.test(s.startTime || "") || !TIME_RE.test(s.endTime || "")) return null;
+    if (s.startTime === s.endTime) return null;
+    const d = new Date(s.date);
+    if (isNaN(d.getTime())) return null;
+    out.push({ date: d, startTime: s.startTime, endTime: s.endTime });
+  }
+  return out
+    .slice(0, MAX_SESSIONS)
+    .sort((a, b) => a.date - b.date || a.startTime.localeCompare(b.startTime));
+}
+
 // ── Page admin : cours définis + sessions à venir avec participants ────────
 exports.listGroupSessions = async (req, res) => {
   const currentCompany = res.locals.currentCompany;
@@ -23,7 +46,11 @@ exports.listGroupSessions = async (req, res) => {
   startOfToday.setHours(0, 0, 0, 0);
 
   const [courses, employees, sessions] = await Promise.all([
-    Service.find({ company: currentCompany._id, type: "group", "recurring.enabled": true })
+    // Pas de filtre "recurring.enabled" : remonte aussi les cours en mode
+    // "dates ponctuelles" (recurring.enabled === false + sessions[]), ainsi
+    // que tout service "group" orphelin créé sans planning depuis la page
+    // Services générique — il devient ainsi complétable depuis cette page.
+    Service.find({ company: currentCompany._id, type: "group" })
       .populate("employees", "firstName lastName profilePicture")
       .sort("-createdAt")
       .lean(),
@@ -126,17 +153,32 @@ exports.createCourse = async (req, res) => {
       return res.status(403).json({ error: "plan_limit", message: `Limite de ${maxServices} services/cours atteinte.` });
     }
 
-    const { name, description, price, duration, capacity, weekdays, startTime, employees } = req.body;
+    const { name, description, price, duration, capacity, weekdays, startTime, employees, mode, sessions, location } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ error: "Le nom du cours est requis." });
     }
-    const sanitizedWeekdays = sanitizeWeekdays(weekdays);
-    if (sanitizedWeekdays.length === 0) {
-      return res.status(400).json({ error: "Choisissez au moins un jour de la semaine." });
-    }
-    if (!TIME_RE.test(startTime || "")) {
-      return res.status(400).json({ error: "Heure invalide." });
+
+    // ── Mode de planification : "fixed" (dates ponctuelles) ou "recurring"
+    // (hebdomadaire fixe, comportement historique — par défaut si absent). ──
+    let recurringField, sessionsField;
+    if (mode === "fixed") {
+      const sanitizedSessions = sanitizeSessions(sessions);
+      if (!sanitizedSessions || sanitizedSessions.length === 0) {
+        return res.status(400).json({ error: "Ajoutez au moins une date." });
+      }
+      recurringField = { enabled: false, weekdays: [], startTime: "" };
+      sessionsField = sanitizedSessions;
+    } else {
+      const sanitizedWeekdays = sanitizeWeekdays(weekdays);
+      if (sanitizedWeekdays.length === 0) {
+        return res.status(400).json({ error: "Choisissez au moins un jour de la semaine." });
+      }
+      if (!TIME_RE.test(startTime || "")) {
+        return res.status(400).json({ error: "Heure invalide." });
+      }
+      recurringField = { enabled: true, weekdays: sanitizedWeekdays, startTime };
+      sessionsField = [];
     }
 
     const existingColors = (await Service.find({ company: companyId }).select("color").lean())
@@ -153,7 +195,9 @@ exports.createCourse = async (req, res) => {
       capacity: Math.max(1, Math.min(500, Number(capacity) || 1)),
       color: nextAvailableColor(existingColors),
       employees: Array.isArray(employees) ? employees : [],
-      recurring: { enabled: true, weekdays: sanitizedWeekdays, startTime },
+      recurring: recurringField,
+      sessions: sessionsField,
+      location: (location || "").trim(),
     });
 
     const populated = await Service.findById(course._id).populate("employees", "firstName lastName profilePicture").lean();
@@ -168,7 +212,7 @@ exports.createCourse = async (req, res) => {
 exports.updateCourse = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, duration, capacity, weekdays, startTime, employees, active } = req.body;
+    const { name, description, price, duration, capacity, weekdays, startTime, employees, active, mode, sessions, location } = req.body;
 
     const update = {};
     if (name !== undefined) {
@@ -181,8 +225,22 @@ exports.updateCourse = async (req, res) => {
     if (capacity !== undefined) update.capacity = Math.max(1, Math.min(500, Number(capacity) || 1));
     if (employees !== undefined) update.employees = Array.isArray(employees) ? employees : [];
     if (active !== undefined) update.active = !!active;
+    if (location !== undefined) update.location = (location || "").trim();
 
-    if (weekdays !== undefined || startTime !== undefined) {
+    // ── Planning : l'UI envoie systématiquement "mode" à chaque sauvegarde
+    // (création ET édition) — on bascule toujours PLEINEMENT d'un mode à
+    // l'autre en nettoyant les données de l'ancien mode. Sans ça, repasser un
+    // cours de "ponctuel" à "récurrent" laisserait des `sessions` fantômes
+    // (toujours comptées par l'API de réservation), et inversement des
+    // `weekdays` fantômes qui rebloqueraient des jours pour les employés. ──
+    if (mode === "fixed") {
+      const sanitizedSessions = sanitizeSessions(sessions);
+      if (!sanitizedSessions || sanitizedSessions.length === 0) {
+        return res.status(400).json({ error: "Ajoutez au moins une date." });
+      }
+      update.sessions = sanitizedSessions;
+      update.recurring = { enabled: false, weekdays: [], startTime: "" };
+    } else if (mode === "recurring" || weekdays !== undefined || startTime !== undefined) {
       const course = await Service.findOne({ _id: id, company: res.locals.currentCompany._id }).select("recurring").lean();
       if (!course) return res.status(404).json({ error: "Cours non trouvé." });
 
@@ -195,6 +253,7 @@ exports.updateCourse = async (req, res) => {
         return res.status(400).json({ error: "Heure invalide." });
       }
       update.recurring = { enabled: true, weekdays: sanitizedWeekdays, startTime: resolvedStartTime };
+      update.sessions = [];
     }
 
     const course = await Service.findOneAndUpdate(

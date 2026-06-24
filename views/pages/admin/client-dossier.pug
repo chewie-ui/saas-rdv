@@ -10,16 +10,19 @@ block content
         var initials = ((parts[0] || '?')[0] + ((parts[1] || '')[0] || '')).toUpperCase()
 
     .dossier-page
-        a.dossier-back(href="/clients")
+        a.dossier-back#dossierBackLink(href="/clients")
             svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                 path(d="M400-80 0-480l400-400 56 56-344 344 344 344-56 56Z")
-            span Tous les clients
+            span Tous les #{clientTermPlural || 'clients'}
 
         .dossier-header
             .dossier-header__id
                 .dossier-header__avatar= initials
                 .dossier-header__info
-                    h2= client.fullName
+                    h2
+                        = client.fullName
+                        if dossier.blocked
+                            span.dossier-blocked-badge Bloqué
                     .dossier-header__contact
                         span
                             svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
@@ -32,7 +35,7 @@ block content
                                 = client.phone
             .dossier-header__stats
                 .dossier-stat
-                    .dossier-stat__n= bookings.length
+                    .dossier-stat__n= confirmedCount
                     .dossier-stat__l Rendez-vous
                 if lastVisit
                     .dossier-stat
@@ -42,12 +45,23 @@ block content
                     .dossier-stat.dossier-stat--next
                         .dossier-stat__n= new Date(nextVisit.date).toLocaleDateString('fr-FR')
                         .dossier-stat__l Prochain RDV
+            .dossier-header__actions
+                if dossier.blocked
+                    button.sm-btn.sm-btn--ghost#unblockClientBtn(type="button")
+                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                            path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm-99-184 99-99 99 99 56-57-99-98 99-98-56-57-99 99-99-99-57 57 99 98-99 98 57 57Z")
+                        span Débloquer ce #{clientTerm || 'client'}
+                else
+                    button.sm-btn.sm-btn--danger#blockClientBtn(type="button")
+                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                            path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80ZM240-275q54-42 117-65.5T480-364q66 0 129 23.5T726-275q41-49 57.5-103T800-480q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 60 16.5 113.5T240-275Zm240-125q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Z")
+                        span Bloquer ce #{clientTerm || 'client'}
 
         .dossier-layout
             //- ── Colonne principale : chronologie des notes ──────────────────
             .dossier-main
                 .dossier-main__header
-                    h3 Suivi du client
+                    h3 Suivi du #{clientTerm || 'client'}
                     button.sm-btn.sm-btn--primary#addEntryBtn
                         svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                             path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
@@ -58,7 +72,7 @@ block content
                         .dossier-timeline__empty
                             svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor")
                                 path(d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z")
-                            p Aucune note encore pour ce client.
+                            p Aucune note encore pour ce #{clientTerm || 'client'}.
                             p.dossier-timeline__empty-sub Ajoutez la première — constat initial, soin réalisé, objectif fixé...
                     each entry in entries
                         .timeline-entry(data-id=String(entry._id) data-note=entry.note data-todo=entry.todo data-date=new Date(entry.date).toISOString().slice(0,10))
@@ -100,9 +114,18 @@ block content
                     else
                         ul.booking-mini-list
                             each b in bookings.slice(0, 10)
-                                li.booking-mini-item
+                                - var pm = (b.payment && b.payment.method) || 'none'
+                                li.booking-mini-item(data-id=String(b._id))
                                     span.booking-mini-item__date= new Date(b.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
                                     span.booking-mini-item__service= b.serviceName || 'Rendez-vous'
+                                    span.booking-mini-item__price= (b.payment && b.payment.amount) ? `${b.payment.amount}€` : '—'
+                                    select.booking-mini-item__payment(data-id=String(b._id) title="Moyen de paiement de cette séance")
+                                        option(value="none" selected=(pm === 'none')) Moyen ?
+                                        option(value="cash" selected=(pm === 'cash')) Espèces
+                                        option(value="on_site" selected=(pm === 'on_site')) Carte sur place
+                                        option(value="bank_transfer" selected=(pm === 'bank_transfer')) Virement
+                                        option(value="paypal" selected=(pm === 'paypal')) PayPal
+                                        option(value="online" selected=(pm === 'online')) Payé en ligne
                                     span.booking-mini-item__status(class=`booking-mini-item__status--${b.status}`)= b.status === 'canceled' ? 'Annulé' : 'Confirmé'
 
     //- ── Modal : Nouvelle / Modifier une note ─────────────────────────────────

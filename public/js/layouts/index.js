@@ -10,6 +10,21 @@ const EMPLOYEES  = window.__employees || [];
 let CLIENT       = window.__clientUser || null; // { firstName, lastName, email, phone } — mutable pour login inline
 const PREPAYMENT = window.__prepayment || { enabled: false, required: false };
 const STRIPE_KEY = window.__stripeKey  || "";
+const BOOKING_QUESTION = window.__bookingQuestion || { enabled: false, question: "", newLabel: "", existingLabel: "" };
+
+/* ── Question préalable ("Première fois ?" etc.) ───────────────────────────
+   Posée AVANT le choix du service si l'admin l'a activée. Deux réponses
+   fixes : "new" (nouveau) / "existing" (déjà venu). Chaque service peut être
+   limité à l'une des deux (service.answerVisibility) — "all" (par défaut)
+   reste visible quelle que soit la réponse choisie. ──────────────────────── */
+function questionStepNeeded() {
+  return !!BOOKING_QUESTION.enabled;
+}
+function matchesAnswer(s) {
+  if (!questionStepNeeded() || !STATE.answer) return true;
+  const vis = s.answerVisibility || "all";
+  return vis === "all" || vis === STATE.answer;
+}
 
 /* ── Popup "plus de créneaux ce mois-ci" (remplace l'alert() natif moche) ── */
 function showLimitReachedModal() {
@@ -56,6 +71,7 @@ function getStripe() {
 
 /* ── State ──────────────────────────────────────────────────────────────── */
 const STATE = {
+  answer:     null,      // réponse choisie à la question préalable (ex: "Nouveau patient")
   service:    null,      // { id, name, price, duration, desc }
   employee:   undefined, // undefined = not yet chosen; null = "no preference"
   date:       null,   // "yyyy-mm-dd"
@@ -122,6 +138,7 @@ function anyServiceNeedsPayment() {
 
 function buildSteps() {
   const steps = [];
+  if (questionStepNeeded()) steps.push({ id: "question", label: "Profil" });
   if (SERVICES.length > 0)  steps.push({ id: "service",  label: "Service" });
   if (EMPLOYEES.length > 0 || hasAnyServiceEmployees()) steps.push({ id: "employee", label: "Avec" });
   steps.push({ id: "time",    label: "Créneau" });
@@ -154,6 +171,7 @@ function recomputeSteps() {
   const showEmployeeStep = STATE.service?.type !== "group" && (svcEmployees.length > 0 || globalEmps);
 
   const steps = [];
+  if (questionStepNeeded()) steps.push({ id: "question", label: "Profil" });
   if (SERVICES.length > 0) steps.push({ id: "service",  label: "Service" });
   if (showEmployeeStep)     steps.push({ id: "employee", label: "Avec" });
   steps.push({ id: "time",    label: "Créneau" });
@@ -285,6 +303,7 @@ function goToStep(id) {
 
 /* ── Guide contextuel ──────────────────────────────────────────────────── */
 const GUIDE_MSGS = {
+  question: "Répondez à cette question pour qu'on vous propose les bonnes prestations.",
   service:  "Choisissez un service pour commencer votre réservation.",
   employee: "Sélectionnez le prestataire de votre choix (ou laissez-nous choisir).",
   time:     "Choisissez une date sur le calendrier puis un créneau horaire.",
@@ -302,7 +321,8 @@ function render() {
   renderStepper();
   const sid = stepId();
   updateGuide(sid);
-  if (sid === "service")       renderServicePane();
+  if (sid === "question")      renderQuestionPane();
+  else if (sid === "service")  renderServicePane();
   else if (sid === "employee") renderEmployeePane();
   else if (sid === "time")     renderTimePane();
   else if (sid === "details")  renderDetailsPane();
@@ -326,6 +346,55 @@ function escHtml(s) {
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
+   STEP 0 — QUESTION PRÉALABLE (ex: "Êtes-vous un nouveau patient ?")
+   ═══════════════════════════════════════════════════════════════════════════ */
+function renderQuestionPane() {
+  const choices = [
+    { value: "new",      label: BOOKING_QUESTION.newLabel      || "Oui, je suis nouveau" },
+    { value: "existing", label: BOOKING_QUESTION.existingLabel || "Non, j'ai déjà consulté" },
+  ];
+  const optionsHtml = choices.map(c => `
+    <button class="bk-question-opt${STATE.answer === c.value ? " is-selected" : ""}" data-answer="${c.value}">
+      <span>${escHtml(c.label)}</span>
+      <svg width="16" height="16" viewBox="0 -960 960 960" fill="currentColor"><path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z"/></svg>
+    </button>`).join("");
+
+  pane.innerHTML = `<div class="bk-pane">
+    <h2 class="bk-pane-title">${escHtml(BOOKING_QUESTION.question || "Une petite question avant de commencer")}</h2>
+    <p class="bk-pane-sub">Cela nous permet de vous proposer les bonnes prestations.</p>
+    <div class="bk-question-options">${optionsHtml}</div>
+  </div>`;
+
+  pane.querySelectorAll("[data-answer]").forEach(btn => {
+    btn.onclick = () => {
+      STATE.answer = btn.dataset.answer;
+      // Si le service déjà sélectionné ne correspond plus à la réponse, on
+      // réinitialise pour éviter de réserver un service qui ne devrait plus
+      // être proposé (ex: "Intro kiné" alors qu'on vient de dire "pas nouveau").
+      if (STATE.service) {
+        const svc = SERVICES.find(s => s._id === STATE.service.id);
+        if (!svc || !matchesAnswer(svc)) {
+          STATE.service = null;
+          STATE.employee = undefined;
+        }
+      }
+      goToStep("service");
+    };
+  });
+}
+
+/* ── Durée approximative ("30-40 min") — pour l'affichage uniquement. Tout
+   le calcul de créneaux utilise toujours la borne haute (durationMax si
+   définie, sinon duration) pour ne jamais sur-réserver un pro. ──────────── */
+function formatDuration(s) {
+  if (s.durationMax && s.durationMax > s.duration) return `${s.duration}-${s.durationMax} min`;
+  return `${s.duration} min`;
+}
+function bookableDuration(s) {
+  return (s.durationMax && s.durationMax > s.duration) ? s.durationMax : s.duration;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
    STEP 1 — SERVICE
    ═══════════════════════════════════════════════════════════════════════════ */
 function renderSvcCard(s) {
@@ -343,7 +412,7 @@ function renderSvcCard(s) {
         <div class="bk-svc__name">${escHtml(s.name)}</div>
         ${infoBtn}
       </div>
-      <span class="bk-svc__dur">${s.duration} min</span>
+      <span class="bk-svc__dur">${formatDuration(s)}</span>
     </div>
     <div class="bk-svc__right">
       ${price}
@@ -362,7 +431,7 @@ function bindSvcCards(container) {
       if (e.target.closest(".bk-svc__info-btn")) return;
       const svc = SERVICES.find(s => s._id === el.dataset.svc);
       if (!svc) return;
-      STATE.service  = { id: svc._id, name: svc.name, price: svc.price, duration: svc.duration, category: svc.category || "", type: svc.type || "individual", capacity: svc.capacity || null };
+      STATE.service  = { id: svc._id, name: svc.name, price: svc.price, duration: bookableDuration(svc), durationLabel: formatDuration(svc), category: svc.category || "", type: svc.type || "individual", capacity: svc.capacity || null, location: svc.location || "" };
       STATE.employee = undefined;
       STATE.date     = null;
       STATE.time     = null;
@@ -417,37 +486,44 @@ function openSvcDescModal(name, desc) {
 }
 
 /* ── Ordered categories (respects admin-set order from __categoriesMeta) ─── */
-function getOrderedCats() {
+function getOrderedCats(list) {
+  const services = list || SERVICES;
   const META = window.__categoriesMeta || [];
   // Categories explicitly ordered by admin
   const ordered = META.map(m => m.name).filter(Boolean);
   // Any categories on services not in META (appended at end)
-  SERVICES.forEach(s => {
+  services.forEach(s => {
     const cat = (s.category || "").trim();
     if (cat && !ordered.includes(cat)) ordered.push(cat);
   });
   // Only keep cats that actually have services
-  return ordered.filter(cat => SERVICES.some(s => (s.category || "").trim() === cat));
+  return ordered.filter(cat => services.some(s => (s.category || "").trim() === cat));
 }
 
 function renderServicePane() {
-  const hasCategories = SERVICES.some(s => s.category && s.category.trim() !== "");
+  // Ne garde que les services compatibles avec la réponse choisie à la
+  // question préalable (ou tous, si la question est désactivée / pas encore
+  // répondue / le service n'a aucune restriction).
+  const visibleServices = SERVICES.filter(matchesAnswer);
+  const hasCategories = visibleServices.some(s => s.category && s.category.trim() !== "");
   const style = window.__bookingCategoryStyle || "pills";
 
   let bodyHtml;
 
-  if (!hasCategories) {
+  if (visibleServices.length === 0) {
+    bodyHtml = `<div class="bk-svc-empty">Aucune prestation ne correspond à votre réponse pour le moment.</div>`;
+  } else if (!hasCategories) {
     // No categories → flat grid
-    bodyHtml = `<div class="bk-svc-grid">${SERVICES.map(renderSvcCard).join("")}</div>`;
+    bodyHtml = `<div class="bk-svc-grid">${visibleServices.map(renderSvcCard).join("")}</div>`;
   } else if (style === "accordion") {
     // ── Accordion style ───────────────────────────────────────────────────
-    const cats = getOrderedCats();
-    const uncategorized = SERVICES.filter(s => !(s.category || "").trim());
+    const cats = getOrderedCats(visibleServices);
+    const uncategorized = visibleServices.filter(s => !(s.category || "").trim());
 
     if (STATE._openCat === null && cats.length > 0) STATE._openCat = cats[0];
 
     const groupsHtml = cats.map(cat => {
-      const svcs      = SERVICES.filter(s => (s.category || "").trim() === cat);
+      const svcs      = visibleServices.filter(s => (s.category || "").trim() === cat);
       const hasSelSvc = svcs.some(s => STATE.service && STATE.service.id === s._id);
       const isOpen    = STATE._openCat === cat || hasSelSvc;
       return `<div class="bk-cat-group${isOpen ? " is-open" : ""}" data-cat="${escHtml(cat)}">
@@ -471,34 +547,34 @@ function renderServicePane() {
 
   } else if (style === "grid") {
     // ── Grid style: all services grouped by category label, no filter ─────
-    const cats = getOrderedCats();
+    const cats = getOrderedCats(visibleServices);
     const groupsHtml = cats.map(cat => {
-      const svcs = SERVICES.filter(s => (s.category || "").trim() === cat);
+      const svcs = visibleServices.filter(s => (s.category || "").trim() === cat);
       return `<div class="bk-cat-section">
         <h3 class="bk-cat-section__title">${escHtml(cat)}</h3>
         <div class="bk-svc-grid">${svcs.map(renderSvcCard).join("")}</div>
       </div>`;
     }).join("");
-    const uncategorized = SERVICES.filter(s => !(s.category || "").trim());
+    const uncategorized = visibleServices.filter(s => !(s.category || "").trim());
     const uncatHtml = uncategorized.length > 0
       ? `<div class="bk-svc-grid" style="margin-top:8px">${uncategorized.map(renderSvcCard).join("")}</div>` : "";
     bodyHtml = `<div class="bk-cat-sections">${groupsHtml}${uncatHtml}</div>`;
 
   } else {
     // ── Pills style (default) — filter by category ────────────────────────
-    const cats = getOrderedCats();
+    const cats = getOrderedCats(visibleServices);
 
     // If selected service is in a category, pre-select it
     if (STATE._activeCat === null && STATE.service) {
-      const selSvc = SERVICES.find(s => s._id === STATE.service.id);
+      const selSvc = visibleServices.find(s => s._id === STATE.service.id);
       if (selSvc && selSvc.category && selSvc.category.trim()) {
         STATE._activeCat = selSvc.category.trim();
       }
     }
 
     const filtered = STATE._activeCat
-      ? SERVICES.filter(s => (s.category || "").trim() === STATE._activeCat)
-      : SERVICES;
+      ? visibleServices.filter(s => (s.category || "").trim() === STATE._activeCat)
+      : visibleServices;
 
     const pillsHtml = `
       <div class="bk-cat-pills">
@@ -541,8 +617,8 @@ function renderServicePane() {
       const grid = pane.querySelector("#bkSvcGrid");
       if (grid) {
         const toShow = STATE._activeCat
-          ? SERVICES.filter(s => (s.category || "").trim() === STATE._activeCat)
-          : SERVICES;
+          ? visibleServices.filter(s => (s.category || "").trim() === STATE._activeCat)
+          : visibleServices;
         grid.innerHTML = toShow.map(renderSvcCard).join("");
         bindSvcCards(grid);
       }
@@ -632,6 +708,7 @@ let _dayOffArray      = null;
 let _disabledDays     = null;
 let _specificBookings = null;
 let _slotTime         = null;
+let _leadTimeMinutes  = 0;
 let _calDataLoaded    = false;
 let _calLoadedEmpId   = undefined; // track which employee the cache was built for
 
@@ -663,11 +740,11 @@ function monthHasAvailableDay(y, m) {
 
     if (activeWH.length === 0 && !exception) continue; // no schedule = closed
 
-    const maxSlots   = countPossibleSlots(activeWH, slotT);
-    const bookedCount = _specificBookings ? _specificBookings.filter(b => toDateStr(b.date) === iso).length : 0;
-    const markedFull  = _specificBookings ? _specificBookings.find(b => toDateStr(b.date) === iso && b.isFull) : false;
+    const dayBookings = _specificBookings ? _specificBookings.filter(b => toDateStr(b.date) === iso) : [];
+    const markedFull  = dayBookings.find(b => b.isFull);
+    const { free, total } = countFreeSlots(activeWH, slotT, dayBookings, cutoffMinutesForDate(c));
 
-    if (maxSlots > 0 && bookedCount >= maxSlots) continue;
+    if (total > 0 && free === 0) continue;
     if (markedFull) continue;
 
     return true; // found at least one available day
@@ -697,18 +774,56 @@ async function loadCalendarData() {
   _specificBookings   = await bookingsRes.json();
   const info          = await infoRes.json();
   _slotTime           = info.slotTime || 30;
+  const lead          = info.minBookingLeadTime;
+  _leadTimeMinutes    = (lead && lead.enabled) ? Math.max(0, Number(lead.minutes) || 0) : 0;
   _calDataLoaded      = true;
 }
 
-function countPossibleSlots(workingHours, slotTime) {
-  if (!workingHours || workingHours.length === 0) return 0;
-  let count = 0;
+// Minute-du-jour (0–1440, voire au-delà si le délai dépasse minuit ce
+// jour-là) avant laquelle AUCUN créneau n'est réservable pour la date
+// donnée — combine "c'est déjà passé" (si c'est aujourd'hui) et le délai
+// minimum de réservation configuré par l'admin. Même logique que le serveur
+// (controllers/booking.controller.js) pour que le calendrier et le panneau
+// de créneaux ne se contredisent jamais.
+function cutoffMinutesForDate(dateObj) {
+  const now = new Date();
+  const isSameDay = dateObj.getFullYear() === now.getFullYear()
+    && dateObj.getMonth() === now.getMonth()
+    && dateObj.getDate()  === now.getDate();
+  const nowMinutesOfDay = isSameDay ? now.getHours() * 60 + now.getMinutes() : -1;
+  const cutoffMs = now.getTime() + (_leadTimeMinutes || 0) * 60000;
+  const dayMidnightMs = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()).getTime();
+  const leadCutoffForDay = Math.ceil((cutoffMs - dayMidnightMs) / 60000);
+  return Math.min(Math.max(nowMinutesOfDay, leadCutoffForDay), 24 * 60);
+}
+
+// Compte les créneaux réellement libres pour UNE durée de service donnée —
+// contrairement à un simple ratio "nombre de RDV / nombre de créneaux max",
+// ça tient compte du fait qu'un seul RDV long peut bloquer plusieurs
+// créneaux courts (et inversement, qu'un service plus court peut encore
+// tenir dans les trous laissés par des RDV plus longs), ET du délai minimum
+// de réservation (cutoffMinutes).
+function countFreeSlots(workingHours, slotTime, dayBookings, cutoffMinutes) {
+  if (!workingHours || workingHours.length === 0) return { free: 0, total: 0 };
+  const cutoff = cutoffMinutes || 0;
+  const occupied = (dayBookings || []).map(b => {
+    const [h, m] = b.startTime.split(":").map(Number);
+    const startMin = h * 60 + m;
+    return [startMin, startMin + (b.slotTime || slotTime)];
+  });
+  let free = 0, total = 0;
   workingHours.forEach(p => {
     const [sh, sm] = p.start.split(":").map(Number);
     const [eh, em] = p.end.split(":").map(Number);
-    count += Math.floor((eh*60+em - (sh*60+sm)) / slotTime);
+    const startMin = sh * 60 + sm, endMin = eh * 60 + em;
+    for (let t = startMin; t + slotTime <= endMin; t += slotTime) {
+      total++;
+      if (t < cutoff) continue; // passé ou trop proche (délai minimum)
+      const overlaps = occupied.some(([os, oe]) => t < oe && (t + slotTime) > os);
+      if (!overlaps) free++;
+    }
   });
-  return count;
+  return { free, total };
 }
 
 function toDateStr(d) {
@@ -767,16 +882,17 @@ function buildCalendar() {
         if (exception && exception.workingHours) activeWH = exception.workingHours;
         else if (dayConfig && !dayConfig.dayOff)  activeWH = dayConfig.workingHours || [];
 
-        // Full day (all slots booked)
+        // Full day (plus aucun créneau libre POUR LA DURÉE DU SERVICE choisi)
         const slotT = STATE.service ? STATE.service.duration : (_slotTime || 30);
-        const maxSlots = countPossibleSlots(activeWH, slotT);
-        const bookedCount = _specificBookings ? _specificBookings.filter(b => toDateStr(b.date) === iso).length : 0;
-        const isFull = maxSlots > 0 && bookedCount >= maxSlots;
-        const markedFull = _specificBookings ? _specificBookings.find(b => toDateStr(b.date) === iso && b.isFull) : false;
+        const dayBookings = _specificBookings ? _specificBookings.filter(b => toDateStr(b.date) === iso) : [];
+        const markedFull = dayBookings.find(b => b.isFull);
+        const { free, total } = countFreeSlots(activeWH, slotT, dayBookings, cutoffMinutesForDate(c));
+        const isFull = total > 0 && free === 0;
         // "si un jour est full met le en rouge et si la moitié des rdv est
-        // pris met orange" — taux de remplissage du jour, affiché en couleur
-        // pour donner un repère visuel rapide avant même d'ouvrir le créneau.
-        const fillRatio = maxSlots > 0 ? (bookedCount / maxSlots) : 0;
+        // pris met orange" — taux de remplissage RÉEL (créneaux libres pour
+        // cette durée précise, pas juste le nombre de RDV) donné en couleur
+        // pour un repère visuel rapide avant même d'ouvrir le créneau.
+        const fillRatio = total > 0 ? 1 - (free / total) : 0;
         const isHalfBooked = !isFull && !markedFull && fillRatio >= 0.5;
 
         const isDisabled = isPast || isDayOff || (exception && (!exception.workingHours || exception.workingHours.length === 0));
@@ -787,6 +903,7 @@ function buildCalendar() {
         if (isDisabled)      cls += " is-disabled";
         else if (isFull || markedFull) cls += " is-full";
         else if (isHalfBooked) cls += " is-busy";
+        else cls += " is-available";
         if (isToday)         cls += " is-today";
         if (isSelected)      cls += " is-selected";
 
@@ -865,10 +982,102 @@ function buildSlotsPanel(slots) {
   </div>`;
 }
 
+/* ── Cours collectif : liste de séances (à la place du calendrier) ────────
+   Remplace entièrement le calendrier pour un service "group" — l'admin a
+   défini des séances précises (récurrentes ou ponctuelles) côté
+   /group-sessions, donc le client choisit directement parmi cette liste au
+   lieu de chercher une date au hasard sur un calendrier classique. ────── */
+let _groupSessions     = [];
+let _groupLocationText = "";
+
+async function renderGroupSessionsPane() {
+  pane.innerHTML = `<div class="bk-pane">
+    <h2 class="bk-pane-title">Choisissez votre séance</h2>
+    <p class="bk-pane-sub">${escHtml(STATE.service.name)}</p>
+    <div class="bk-loading"><div class="bk-spinner"></div> Chargement…</div>
+  </div>`;
+
+  try {
+    const res  = await fetch(`/get-group-sessions/${STATE.service.id}`);
+    const data = await res.json();
+    _groupSessions     = (data && data.sessions) || [];
+    _groupLocationText = (data && data.locationText) || "";
+  } catch (e) {
+    _groupSessions     = [];
+    _groupLocationText = "";
+  }
+
+  renderGroupSessionsList();
+}
+
+function renderGroupSessionsList() {
+  const body = _groupSessions.length === 0
+    ? `<div class="bk-gs-empty">Aucune séance programmée pour le moment — revenez bientôt !</div>`
+    : `<div class="bk-gs-list">${_groupSessions.map(renderGroupSessionCard).join("")}</div>`;
+
+  pane.innerHTML = `<div class="bk-pane">
+    <h2 class="bk-pane-title">Choisissez votre séance</h2>
+    <p class="bk-pane-sub">${escHtml(STATE.service.name)}</p>
+    ${body}
+  </div>`;
+
+  bindGroupSessionCards();
+}
+
+function renderGroupSessionCard(s) {
+  const iso      = toDateStr(s.date);
+  const selected = STATE.date === iso && STATE.time === s.startTime;
+  const full     = !!s.full || s.remaining === 0;
+
+  let pillClass = "is-ok";
+  let pillLabel = "";
+  if (full) {
+    pillClass = "is-full";
+    pillLabel = "Complet";
+  } else if (s.remaining !== null && s.remaining !== undefined) {
+    // "Bas" = dernière place dispo (urgence universelle, quelle que soit la
+    // capacité) OU moins d'un quart des places pour les cours à grande
+    // capacité. Un simple seuil absolu ("≤ 2 restantes") déclenchait à tort
+    // l'orange pour un cours à 2 places qui vient d'ouvrir (2 restantes sur
+    // 2 = complètement vide, pas "presque plein") — cas réel pour les petits
+    // ateliers (4-5 personnes) que cette fonctionnalité cible en premier lieu.
+    const ratio = s.capacity ? s.remaining / s.capacity : 1;
+    pillClass = (s.remaining === 1 || ratio <= 0.25) ? "is-low" : "is-ok";
+    pillLabel = `${s.remaining} place${s.remaining > 1 ? "s" : ""}`;
+  }
+
+  return `<button class="bk-gs-card ${selected ? "is-selected" : ""} ${full ? "is-disabled" : ""}"
+    data-date="${iso}" data-start="${escHtml(s.startTime)}" ${full ? "disabled" : ""}>
+    <div class="bk-gs-card__main">
+      <div class="bk-gs-card__date">${fmtDate(iso)}</div>
+      <div class="bk-gs-card__time">${escHtml(s.startTime)}${s.endTime ? ` – ${escHtml(s.endTime)}` : ""}</div>
+      ${_groupLocationText ? `<div class="bk-gs-card__loc">📍 ${escHtml(_groupLocationText)}</div>` : ""}
+    </div>
+    ${pillLabel ? `<span class="bk-gs-pill ${pillClass}">${pillLabel}</span>` : ""}
+  </button>`;
+}
+
+function bindGroupSessionCards() {
+  pane.querySelectorAll(".bk-gs-card[data-date]").forEach(el => {
+    el.onclick = () => {
+      if (el.disabled) return;
+      STATE.date = el.dataset.date;
+      STATE.time = el.dataset.start;
+      pane.querySelectorAll(".bk-gs-card").forEach(c => c.classList.remove("is-selected"));
+      el.classList.add("is-selected");
+      renderCart();
+    };
+  });
+}
+
 let _currentSlots = [];
 let _smartGrouping = { active: false, recommended: new Set() };
 
 async function renderTimePane() {
+  if (STATE.service && STATE.service.type === "group") {
+    return renderGroupSessionsPane();
+  }
+
   pane.innerHTML = `<div class="bk-pane">
     <h2 class="bk-pane-title">Choisissez votre créneau</h2>
     <p class="bk-pane-sub">Heure de Bruxelles (GMT+1).</p>
@@ -2015,9 +2224,12 @@ function renderConfirmPane() {
   const email     = CLIENT ? CLIENT.email     : STATE.form.email;
   const info      = window.__companyInfo || {};
 
-  // Location row
+  // Location row — un cours collectif peut avoir un lieu spécifique (ex: un
+  // studio loué pour un atelier) qui remplace l'adresse par défaut affichée ici.
   let locationText = "";
-  if (info.serviceType === "en_ligne") {
+  if (STATE.service && STATE.service.location) {
+    locationText = STATE.service.location;
+  } else if (info.serviceType === "en_ligne") {
     locationText = "En ligne";
   } else if (info.address || info.city) {
     locationText = [info.address, info.city].filter(Boolean).join(", ");
@@ -2048,7 +2260,7 @@ function renderConfirmPane() {
 
       <!-- Recap -->
       <div class="bk-conf__recap">
-        ${STATE.service ? `<div class="bk-conf__row"><span class="k">Service</span><span class="v">${escHtml(STATE.service.name)}${STATE.service.duration ? ` · ${STATE.service.duration} min` : ""}</span></div>` : ""}
+        ${STATE.service ? `<div class="bk-conf__row"><span class="k">Service</span><span class="v">${escHtml(STATE.service.name)}${STATE.service.durationLabel ? ` · ${STATE.service.durationLabel}` : ""}</span></div>` : ""}
         ${STATE.employee ? `<div class="bk-conf__row"><span class="k">Avec</span><span class="v">${escHtml(STATE.employee.name)}</span></div>` : ""}
         <div class="bk-conf__row"><span class="k">Quand</span><span class="v">${fmtDate(STATE.date)} · ${STATE.time}</span></div>
         ${locationText ? `<div class="bk-conf__row"><span class="k">Lieu</span><span class="v">${escHtml(locationText)}</span></div>` : ""}

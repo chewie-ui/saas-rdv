@@ -192,7 +192,7 @@ exports.getDashboard = async (req, res) => {
 
   return res.render("client/client-dashboard", {
     title: "Mon espace — BranShee",
-    pageName: "Dashboard",
+    pageName: "Mes rendez-vous",
     client,
     bookings: { upcoming, past },
     myReviews: myReviewsEnriched,
@@ -205,7 +205,7 @@ exports.getDashboard = async (req, res) => {
 exports.getSettings = (req, res) => {
   return res.render("client/client-settings", {
     title: "Paramètres — BranShee",
-    pageName: "Settings",
+    pageName: "Paramètres",
     client: req.client,
     success: req.query.success || null,
     error: req.query.error || null,

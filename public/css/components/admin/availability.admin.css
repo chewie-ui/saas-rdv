@@ -1656,6 +1656,52 @@
 .sg-example__dot--reco   { background: #2563eb; }
 .sg-example__dot--extra  { background: var(--border-medium, #d1d5db); }
 
+/* ── Délai minimum de réservation ───────────────────────────────────────── */
+#ltRow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lt-custom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lt-custom__label {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.lt-custom__input {
+  width: 72px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1.5px solid var(--border-light);
+  font: 600 0.84rem var(--font-primary);
+  color: var(--ink, #12171b);
+  text-align: center;
+}
+
+.lt-custom__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.lt-custom__unit {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1.5px solid var(--border-light);
+  font: 600 0.84rem var(--font-primary);
+  color: var(--ink, #12171b);
+  background: var(--color-white);
+  cursor: pointer;
+}
+
 @keyframes toastIn {
   from { opacity: 0; transform: translateX(-50%) translateY(10px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
