@@ -35,6 +35,8 @@ const clientDossierController = require("../controllers/clientDossier.controller
 const isAuth = require("../middlewares/isAuth");
 const injectCompany = require("../middlewares/injectCompany");
 const { requireFeatureActive, requireAdminFeature } = require("../middlewares/featureFlag");
+const upload = require("../config/multer");
+const { processSingleImage } = require("../middlewares/processImageUpload");
 
 router.get("/appointement/:bookId", isAuth, (req, res) => res.redirect(`/history/edit/${req.params.bookId}`));
 
@@ -152,6 +154,14 @@ router.patch("/settings/notifications", isVerified, adminController.saveNotifica
 // ── Pré-paiement ──────────────────────────────────────────────────────────────
 router.patch("/settings/prepayment", isVerified, adminController.savePrepaymentSettings);
 router.patch("/settings/cancellation-policy", isVerified, adminController.saveCancellationPolicy);
+router.patch(
+  "/settings/payment-qr-code",
+  isVerified,
+  upload.single("qrCodeImage"),
+  processSingleImage("qrCodeImage"),
+  adminController.uploadPaymentQrCode,
+);
+router.delete("/settings/payment-qr-code", isVerified, adminController.deletePaymentQrCode);
 
 // ── Stripe Connect (Express onboarding) ───────────────────────────────────────
 router.get("/settings/stripe-connect",          isVerified, adminController.initiateStripeConnect);

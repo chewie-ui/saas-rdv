@@ -65,10 +65,6 @@ block content
                             placeholder="Ex: Salon de Marie"
                         )
                     .field
-                        label Description
-                        textarea.textarea#descriptionCoach(maxlength=500 placeholder="Décrivez votre activité en quelques mots...")= user.description || ''
-                        span.field-hint#descCount #{(user.description || '').length}/500
-                    .field
                         label Type d'activité
                         .service-select-wrapper
                             input.input#businessTypeInput(
@@ -572,6 +568,17 @@ block content
                 //- ── Colonne contrôles ─────────────────────────────────────────
                 .cz-design__controls
 
+                    //- Thèmes — palettes complètes prêtes à l'emploi
+                    .cz-ds-card
+                        .cz-ds-card__head
+                            .cz-ds-card__head-icon
+                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                    path(d="M480-80q-33 0-56.5-23.5T400-160q0-33 23.5-56.5T480-240q33 0 56.5 23.5T560-160q0 33-23.5 56.5T480-80Zm0-640q-33 0-56.5-23.5T400-800q0-33 23.5-56.5T480-880q33 0 56.5 23.5T560-800q0 33-23.5 56.5T480-720ZM160-560q-33 0-56.5-23.5T80-640q0-33 23.5-56.5T160-720q33 0 56.5 23.5T240-640q0 33-23.5 56.5T160-560Zm640 0q-33 0-56.5-23.5T720-640q0-33 23.5-56.5T800-720q33 0 56.5 23.5T880-640q0 33-23.5 56.5T800-560ZM160-160q-33 0-56.5-23.5T80-240q0-33 23.5-56.5T160-320q33 0 56.5 23.5T240-240q0 33-23.5 56.5T160-160Zm640 0q-33 0-56.5-23.5T720-240q0-33 23.5-56.5T800-320q33 0 56.5 23.5T880-240q0 33-23.5 56.5T800-160Z")
+                            p.cz-ds-card__title Thèmes
+                        .cz-ds-card__body
+                            p(style="font-size:12.5px;color:var(--muted,#6b7280);margin:0 0 12px") Un clic applique une palette complète (couleurs, police, arrondi, ombre) — vous pourrez ensuite tout affiner ci-dessous.
+                            #czThemeGrid.cz-theme-grid
+
                     //- Couleurs principales
                     .cz-ds-card
                         .cz-ds-card__head
@@ -637,6 +644,9 @@ block content
                                         path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
 
                     //- Jours & bouton
+                    - var _accFallback  = cs.accentColor || '#22c55e'
+                    - var _accTxtFallback = cs.accentText || '#ffffff'
+                    - var _availFallback = cs.dayAvailableColor || '#16a34a'
                     .cz-ds-card
                         .cz-ds-card__head
                             .cz-ds-card__head-icon
@@ -656,41 +666,87 @@ block content
                                     svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                                         path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
 
-                            .cz-color-row(data-color="dayText")
+                            .cz-color-row(data-color="daySelectedBg")
                                 .cz-color-row__label
-                                    strong Texte des jours
-                                    | Numéros de jour
+                                    strong Fond sélection
+                                    | Jour sélectionné
                                 .cz-color-picker
-                                    .cz-color-picker__swatch(style="background:" + (cs.dayText || '#111111'))
-                                    input(type="color" value=(cs.dayText || '#111111') tabindex="-1" aria-hidden="true")
-                                    input.cz-color-picker__hex(type="text" value=((cs.dayText || '#111111').toUpperCase()) maxlength="7" spellcheck="false")
-                                button.cz-color-reset(type="button" title="Réinitialiser")
+                                    .cz-color-picker__swatch(style="background:" + (cs.daySelectedBg || _accFallback))
+                                    input(type="color" value=(cs.daySelectedBg || _accFallback) tabindex="-1" aria-hidden="true")
+                                    input.cz-color-picker__hex(type="text" value=((cs.daySelectedBg || _accFallback).toUpperCase()) maxlength="7" spellcheck="false")
+                                button.cz-color-reset(type="button" title="Suivre la couleur d'accent")
                                     svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                                         path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
 
-                            .cz-color-row(data-color="btnBg")
+                            .cz-color-row(data-color="daySelectedText")
                                 .cz-color-row__label
-                                    strong Fond bouton CTA
+                                    strong Texte sélection
+                                    | Jour sélectionné
+                                .cz-color-picker
+                                    .cz-color-picker__swatch(style="background:" + (cs.daySelectedText || _accTxtFallback))
+                                    input(type="color" value=(cs.daySelectedText || _accTxtFallback) tabindex="-1" aria-hidden="true")
+                                    input.cz-color-picker__hex(type="text" value=((cs.daySelectedText || _accTxtFallback).toUpperCase()) maxlength="7" spellcheck="false")
+                                button.cz-color-reset(type="button" title="Suivre la couleur d'accent")
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+
+                            .cz-color-row(data-color="dayHoverBg")
+                                .cz-color-row__label
+                                    strong Survol du jour
+                                    | Au passage du curseur
+                                .cz-color-picker
+                                    .cz-color-picker__swatch(style="background:" + (cs.dayHoverBg || _availFallback))
+                                    input(type="color" value=(cs.dayHoverBg || _availFallback) tabindex="-1" aria-hidden="true")
+                                    input.cz-color-picker__hex(type="text" value=((cs.dayHoverBg || _availFallback).toUpperCase()) maxlength="7" spellcheck="false")
+                                button.cz-color-reset(type="button" title="Revenir au survol automatique")
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+
+                            .cz-color-row(data-color="btnHoverBg")
+                                .cz-color-row__label
+                                    strong Survol bouton
                                     | Bouton "Réserver"
                                 .cz-color-picker
-                                    .cz-color-picker__swatch(style="background:" + (cs.btnBg || '#111111'))
-                                    input(type="color" value=(cs.btnBg || '#111111') tabindex="-1" aria-hidden="true")
-                                    input.cz-color-picker__hex(type="text" value=((cs.btnBg || '#111111').toUpperCase()) maxlength="7" spellcheck="false")
-                                button.cz-color-reset(type="button" title="Réinitialiser")
+                                    .cz-color-picker__swatch(style="background:" + (cs.btnHoverBg || _accFallback))
+                                    input(type="color" value=(cs.btnHoverBg || _accFallback) tabindex="-1" aria-hidden="true")
+                                    input.cz-color-picker__hex(type="text" value=((cs.btnHoverBg || _accFallback).toUpperCase()) maxlength="7" spellcheck="false")
+                                button.cz-color-reset(type="button" title="Revenir au survol automatique")
                                     svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                                         path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
 
-                            .cz-color-row(data-color="btnText")
-                                .cz-color-row__label
-                                    strong Texte bouton CTA
-                                    | Texte sur "Réserver"
-                                .cz-color-picker
-                                    .cz-color-picker__swatch(style="background:" + (cs.btnText || '#ffffff'))
-                                    input(type="color" value=(cs.btnText || '#ffffff') tabindex="-1" aria-hidden="true")
-                                    input.cz-color-picker__hex(type="text" value=((cs.btnText || '#ffffff').toUpperCase()) maxlength="7" spellcheck="false")
-                                button.cz-color-reset(type="button" title="Réinitialiser")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+                    //- Textes du parcours de réservation
+                    .cz-ds-card
+                        .cz-ds-card__head
+                            .cz-ds-card__head-icon
+                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                    path(d="M220-200v-560h80v240h360v-240h80v560h-80v-240H300v240h-80Z")
+                            p.cz-ds-card__title Textes
+                        .cz-ds-card__body
+                            .field
+                                label.bk-label Aide au-dessus du calendrier
+                                input.input#czTextCalendarHelp(
+                                    type="text"
+                                    maxlength="160"
+                                    placeholder="Choisissez une date sur le calendrier puis un créneau horaire."
+                                    value=(cs.textCalendarHelp || '')
+                                )
+                            .field(style="margin-top:12px")
+                                label.bk-label Titre de l'étape créneau
+                                input.input#czTextSlotHeading(
+                                    type="text"
+                                    maxlength="160"
+                                    placeholder="Choisissez votre créneau"
+                                    value=(cs.textSlotHeading || '')
+                                )
+                            .field(style="margin-top:12px")
+                                label.bk-label Fuseau horaire affiché
+                                input.input#czTextTimezone(
+                                    type="text"
+                                    maxlength="160"
+                                    placeholder="Heure de Bruxelles (GMT+1)."
+                                    value=(cs.textTimezone || '')
+                                )
+                            p(style="font-size:12px;color:var(--muted,#6b7280);margin:10px 0 0") Laissez vide pour garder le texte par défaut.
 
                     //- Disponibilité des jours (vert/orange/rouge)
                     .cz-ds-card
@@ -1397,15 +1453,6 @@ block scripts
                 });
             }
 
-            // ── Description counter ───────────────────────────────────────────
-            var textarea = document.getElementById('descriptionCoach');
-            var counter  = document.getElementById('descCount');
-            if (textarea && counter) {
-                textarea.addEventListener('input', function () {
-                    counter.textContent = textarea.value.length + '/500';
-                });
-            }
-
             // ── Save business info ────────────────────────────────────────────
             var saveBusinessInfo  = document.getElementById('saveBusinessInfo');
             var businessNameInput = document.getElementById('businessNameInput');
@@ -1413,12 +1460,11 @@ block scripts
                 saveBusinessInfo.addEventListener('click', async function () {
                     var btn          = saveBusinessInfo;
                     var businessName = businessNameInput ? businessNameInput.value.trim() : '';
-                    var description  = textarea ? textarea.value.trim() : '';
                     var businessType = btInput ? btInput.value.trim() : '';
                     var res = await fetch('/account/business-info', {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ businessName, description, businessType })
+                        body: JSON.stringify({ businessName, businessType })
                     });
                     var data = await res.json();
                     if (data.success) {

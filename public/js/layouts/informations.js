@@ -76,15 +76,32 @@ if (uploadBusinessBtn && businessFileInput) {
 }
 
 const saveChanges = document.getElementById("saveChanges");
+const fullNameInput = document.getElementById("fullname");
+const phoneInput = document.getElementById("phone");
 
-if (saveChanges) {
+// Même logique "modifié vs déjà enregistré" que pour les liens sociaux : le
+// bouton reste grisé tant que rien n'a changé par rapport à la dernière
+// valeur sauvegardée, pour éviter un clic (et un message "mis à jour")
+// alors qu'aucun champ n'a réellement été modifié.
+function updateSaveChangesButton() {
+  if (!saveChanges || !fullNameInput || !phoneInput) return;
+  const isDirty =
+    fullNameInput.value.trim() !== fullNameInput.dataset.savedValue ||
+    phoneInput.value.trim() !== phoneInput.dataset.savedValue;
+  saveChanges.disabled = !isDirty;
+}
+
+if (saveChanges && fullNameInput && phoneInput) {
+  fullNameInput.dataset.savedValue = fullNameInput.value.trim();
+  phoneInput.dataset.savedValue = phoneInput.value.trim();
+  updateSaveChangesButton();
+  fullNameInput.addEventListener("input", updateSaveChangesButton);
+  phoneInput.addEventListener("input", updateSaveChangesButton);
+
   saveChanges.onclick = async function (e) {
     e.preventDefault();
 
     try {
-      const fullNameInput = document.getElementById("fullname");
-      const phoneInput = document.getElementById("phone");
-
       const response = await fetch(`/account/update-info`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -114,6 +131,12 @@ if (saveChanges) {
         if (data.changes.fullName) showSuccess(fullNameInput, __t.name_updated || "Nom mis à jour !");
         if (data.changes.phone) showSuccess(phoneInput, __t.phone_updated || "Téléphone mis à jour !");
       }
+
+      // La valeur vient d'être confirmée sauvegardée — le bouton repasse en
+      // état "grisé" jusqu'à la prochaine modification.
+      fullNameInput.dataset.savedValue = fullNameInput.value.trim();
+      phoneInput.dataset.savedValue = phoneInput.value.trim();
+      updateSaveChangesButton();
     } catch (err) {
       console.error(err);
     }

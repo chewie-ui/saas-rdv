@@ -582,6 +582,40 @@ block content
                                 p.pm-paypal-preview(id="pmPaypalPreview" style="font-size:12px;color:var(--muted,#6b7280);margin:4px 0 0")
                                     = ppMe ? 'https://paypal.me/' + ppMe + '/{' + t.js.paypal_placeholder_amount + '}' : 'https://paypal.me/' + t.js.paypal_placeholder_name + '/{' + t.js.paypal_placeholder_amount + '}'
 
+                //- ── 6. QR code ──────────────────────────────────────────────
+                - var qrEnabled = !!(acceptedPayments && acceptedPayments.qrCode && acceptedPayments.qrCode.enabled)
+                - var qrImage = (acceptedPayments && acceptedPayments.qrCode) ? (acceptedPayments.qrCode.imageUrl || '') : ''
+                - var qrNote = (acceptedPayments && acceptedPayments.qrCode) ? (acceptedPayments.qrCode.note || '') : ''
+                .pm-method-expandable(class=(qrEnabled ? 'is-open' : ''))
+                    label.pm-method-row.pm-method-row--top
+                        input#pmQrCode(
+                            type="checkbox"
+                            checked=qrEnabled
+                        )
+                        .pm-method-info
+                            span.pm-method-icon 📱
+                            div
+                                span.pm-method-label= t.settings.pm_qr_label
+                                span.pm-method-sub= t.settings.pm_qr_sub
+
+                    .pm-method-expand-body#pmQrDetails(style=(!qrEnabled ? 'display:none' : ''))
+                        .field(style="margin-bottom:14px")
+                            label.bk-label= t.settings.pm_qr_image_label
+                            div
+                                if qrImage
+                                    img#pmQrPreview(src=qrImage alt="QR code" style="display:block;width:140px;height:140px;object-fit:contain;border:1px solid var(--border,#e5e7eb);border-radius:10px;margin-bottom:8px;background:#fff")
+                                else
+                                    img#pmQrPreview(style="display:none;width:140px;height:140px;object-fit:contain;border:1px solid var(--border,#e5e7eb);border-radius:10px;margin-bottom:8px;background:#fff")
+                                input#pmQrFile(type="file" accept="image/*" style="display:none")
+                                button.sm-btn.sm-btn--ghost#pmQrUploadBtn(type="button")= t.settings.pm_qr_upload_btn
+                        .field
+                            label.bk-label= t.settings.pm_qr_note_label
+                            input.input#pmQrNote(
+                                type="text"
+                                placeholder=t.settings.pm_qr_note_placeholder
+                                value=qrNote
+                            )
+
             p#prepayFeedback(style="display:none;font-size:13px;color:var(--accent);margin-top:14px")= t.settings.pm_saved
             p#prepayError(style="display:none;font-size:13px;color:#dc2626;margin-top:14px")
 
@@ -995,6 +1029,12 @@ block scripts
                 var pmPaypalDet    = document.getElementById('pmPaypalDetails');
                 var pmPaypalMe     = document.getElementById('pmPaypalMe');
                 var pmPaypalPrev   = document.getElementById('pmPaypalPreview');
+                var pmQrCode       = document.getElementById('pmQrCode');
+                var pmQrDetails    = document.getElementById('pmQrDetails');
+                var pmQrNote       = document.getElementById('pmQrNote');
+                var pmQrFile       = document.getElementById('pmQrFile');
+                var pmQrUploadBtn  = document.getElementById('pmQrUploadBtn');
+                var pmQrPreview    = document.getElementById('pmQrPreview');
 
                 // Expand/collapse "Paiement en ligne"
                 if (enabledCb) {
@@ -1034,6 +1074,39 @@ block scripts
                     });
                 }
 
+                // Expand/collapse QR code
+                if (pmQrCode) {
+                    pmQrCode.addEventListener('change', function () {
+                        if (pmQrDetails) pmQrDetails.style.display = pmQrCode.checked ? '' : 'none';
+                        savePrepay();
+                    });
+                }
+
+                // Upload de l'image du QR code
+                if (pmQrUploadBtn && pmQrFile) {
+                    pmQrUploadBtn.addEventListener('click', function () { pmQrFile.click(); });
+                    pmQrFile.addEventListener('change', async function () {
+                        var file = pmQrFile.files[0];
+                        if (!file) return;
+                        try {
+                            var data = await window.BkImageUpload.uploadImage({
+                                url: '/settings/payment-qr-code',
+                                method: 'PATCH',
+                                fieldName: 'qrCodeImage',
+                                file: file,
+                            });
+                            if (data.path && pmQrPreview) {
+                                pmQrPreview.src = data.path;
+                                pmQrPreview.style.display = '';
+                            }
+                        } catch (e) {
+                            // L'erreur est déjà affichée à l'écran par BkImageUpload.
+                        } finally {
+                            pmQrFile.value = '';
+                        }
+                    });
+                }
+
                 if (requiredCb) requiredCb.addEventListener('change', savePrepay);
                 [pmCash, pmCardOnSite].forEach(function(el) {
                     if (el) el.addEventListener('change', savePrepay);
@@ -1041,7 +1114,7 @@ block scripts
 
                 // Débounce pour les champs texte
                 var _textTimer;
-                [pmIban, pmBic, pmBankName, pmBankNote, pmPaypalMe].forEach(function(el) {
+                [pmIban, pmBic, pmBankName, pmBankNote, pmPaypalMe, pmQrNote].forEach(function(el) {
                     if (el) el.addEventListener('input', function () {
                         clearTimeout(_textTimer);
                         _textTimer = setTimeout(savePrepay, 800);
@@ -1067,6 +1140,8 @@ block scripts
                                 bankNote:            pmBankNote ? pmBankNote.value : '',
                                 paypalEnabled:       pmPaypal   ? pmPaypal.checked   : false,
                                 paypalMe:            pmPaypalMe ? pmPaypalMe.value.trim() : '',
+                                qrCodeEnabled:       pmQrCode   ? pmQrCode.checked   : false,
+                                qrCodeNote:          pmQrNote   ? pmQrNote.value     : '',
                             })
                         });
                         var d = await r.json();

@@ -147,13 +147,20 @@ const userSchema = schema(
       accentColor: { type: String,  default: '#22c55e' },
       accentText:  { type: String,  default: '#ffffff' },
       dayBg:       { type: String,  default: '#ffffff' },
-      dayText:     { type: String,  default: '#111111' },
       // ── Couleurs du calendrier selon la disponibilité du jour ────────────
       dayAvailableColor: { type: String, default: '#16a34a' }, // jour avec des créneaux libres
       dayBusyColor:      { type: String, default: '#ea580c' }, // jour bien rempli (≥50%)
       dayFullColor:      { type: String, default: '#ef4444' }, // jour complet / indisponible
-      btnBg:       { type: String,  default: '#111111' },
-      btnText:     { type: String,  default: '#ffffff' },
+      // ── États jour sélectionné / survol — vide = suit accentColor/accentText
+      // (ou la teinte de dispo. en survol) automatiquement, sans rien stocker ──
+      daySelectedBg:   { type: String, default: '' },
+      daySelectedText: { type: String, default: '' },
+      dayHoverBg:      { type: String, default: '' },
+      btnHoverBg:      { type: String, default: '' }, // vide = juste un assombrissement (opacity)
+      // ── Textes du parcours de réservation — vide = texte par défaut (FR) ──
+      textCalendarHelp: { type: String, default: '' },
+      textSlotHeading:  { type: String, default: '' },
+      textTimezone:     { type: String, default: '' },
       lang:        { type: String,  default: 'fr' },
       font:         { type: String,  default: 'Inter' },
       customFontUrl:    { type: String, default: '' }, // URL d'une police perso (Google Fonts ou @font-face CSS) pour le calendrier

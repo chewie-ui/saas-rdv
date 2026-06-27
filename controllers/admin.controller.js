@@ -1959,7 +1959,8 @@ exports.savePrepaymentSettings = async (req, res) => {
   try {
     const { enabled, required, cash, cardOnSite,
             bankTransferEnabled, iban, bic, bankName, bankNote,
-            paypalEnabled, paypalMe } = req.body;
+            paypalEnabled, paypalMe,
+            qrCodeEnabled, qrCodeNote } = req.body;
     const companyId = res.locals.currentCompany._id;
 
     // Le paiement en ligne ne peut JAMAIS être activé sans un compte Stripe
@@ -1988,11 +1989,42 @@ exports.savePrepaymentSettings = async (req, res) => {
       "acceptedPayments.bankTransfer.note":     (bankNote || "").trim(),
       "acceptedPayments.paypal.enabled":        !!paypalEnabled,
       "acceptedPayments.paypal.paypalMe":       (paypalMe || "").trim().replace(/^https?:\/\/paypal\.me\//i, ""),
+      "acceptedPayments.qrCode.enabled":        !!qrCodeEnabled,
+      "acceptedPayments.qrCode.note":           (qrCodeNote || "").trim(),
     });
     res.json({ success: true });
   } catch (err) {
     console.error("savePrepaymentSettings error:", err);
     res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── QR code de paiement (photo) ─────────────────────────────────────────────
+exports.uploadPaymentQrCode = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: "Aucune image reçue." });
+    const companyId = res.locals.currentCompany._id;
+    const imagePath = `/uploads/profiles/${req.file.filename}`;
+    await Company.findByIdAndUpdate(companyId, {
+      "acceptedPayments.qrCode.imageUrl": imagePath,
+    });
+    res.json({ success: true, path: imagePath });
+  } catch (err) {
+    console.error("uploadPaymentQrCode error:", err);
+    res.status(500).json({ success: false, message: "Erreur serveur." });
+  }
+};
+
+exports.deletePaymentQrCode = async (req, res) => {
+  try {
+    const companyId = res.locals.currentCompany._id;
+    await Company.findByIdAndUpdate(companyId, {
+      "acceptedPayments.qrCode.imageUrl": "",
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("deletePaymentQrCode error:", err);
+    res.status(500).json({ success: false, message: "Erreur serveur." });
   }
 };
 

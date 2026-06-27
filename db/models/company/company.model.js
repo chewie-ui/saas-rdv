@@ -110,6 +110,11 @@ const companySchema = schema(
         enabled:  { type: Boolean, default: false },
         paypalMe: { type: String,  default: "" },      // ex: "username" ou "https://paypal.me/username"
       },
+      qrCode: {
+        enabled:  { type: Boolean, default: false },
+        imageUrl: { type: String,  default: "" },      // photo du QR code (Payconiq, virement instantané, etc.)
+        note:     { type: String,  default: "" },      // ex: "Scannez avec votre application bancaire"
+      },
     },
 
     // ── Mise en avant (boost) ─────────────────────────────────────────────────

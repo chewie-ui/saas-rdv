@@ -70,6 +70,22 @@ block content
                         span Limite gratuit : #{maxServices}/#{maxServices} services
                         a.btn-upgrade-pro(href="/subscription") Passer au Pro
 
+        //- ── Passerelle vers "Cours collectifs" — un service ici reste un
+        //- rendez-vous individuel classique. Pour un atelier/cours à plusieurs
+        //- dates et places limitées (1/7 19h-20h, 5/7 12h-13h, max 5 places...),
+        //- c'est une page dédiée qui gère ça (planning récurrent OU dates
+        //- ponctuelles) — sans ce lien, on ne la trouve pas en partant d'ici.
+        if !adminFeatures || adminFeatures.group_sessions !== false
+            a.svc-gs-banner(href="/group-sessions")
+                .svc-gs-banner__icon
+                    svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                        path(d="M480-120 200-272v-240L40-600l440-240 440 240v320h-80v-276l-80 44v240L480-120Zm0-332 274-148-274-148-274 148 274 148Zm0 240 200-108v-153l-200 108-200-108v153l200 108Z")
+                .svc-gs-banner__text
+                    strong Vous proposez plutôt un atelier ou cours collectif ?
+                    span Plusieurs participants, une ou plusieurs dates, un nombre de places max — gérez ça dans "Cours collectifs".
+                svg.svc-gs-banner__arrow(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                    path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+
         //- ── Question préalable au choix du service ──────────────────────────
         .bq-card
             .bq-card__hd

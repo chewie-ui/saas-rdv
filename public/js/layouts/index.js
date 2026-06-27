@@ -11,6 +11,7 @@ let CLIENT       = window.__clientUser || null; // { firstName, lastName, email,
 const PREPAYMENT = window.__prepayment || { enabled: false, required: false };
 const STRIPE_KEY = window.__stripeKey  || "";
 const BOOKING_QUESTION = window.__bookingQuestion || { enabled: false, question: "", newLabel: "", existingLabel: "" };
+const BK_TEXTS = window.__bkTexts || { calendarHelp: "", slotHeading: "", timezone: "" };
 
 /* ── Question préalable ("Première fois ?" etc.) ───────────────────────────
    Posée AVANT le choix du service si l'admin l'a activée. Deux réponses
@@ -306,7 +307,7 @@ const GUIDE_MSGS = {
   question: "Répondez à cette question pour qu'on vous propose les bonnes prestations.",
   service:  "Choisissez un service pour commencer votre réservation.",
   employee: "Sélectionnez le prestataire de votre choix (ou laissez-nous choisir).",
-  time:     "Choisissez une date sur le calendrier puis un créneau horaire.",
+  time:     BK_TEXTS.calendarHelp || "Choisissez une date sur le calendrier puis un créneau horaire.",
   details:  "Renseignez vos coordonnées pour finaliser la réservation.",
   payment:  "Procédez au paiement pour confirmer votre rendez-vous.",
   confirm:  "Votre rendez-vous est confirmé ! Vous allez recevoir un email.",
@@ -1079,8 +1080,8 @@ async function renderTimePane() {
   }
 
   pane.innerHTML = `<div class="bk-pane">
-    <h2 class="bk-pane-title">Choisissez votre créneau</h2>
-    <p class="bk-pane-sub">Heure de Bruxelles (GMT+1).</p>
+    <h2 class="bk-pane-title">${escHtml(BK_TEXTS.slotHeading || "Choisissez votre créneau")}</h2>
+    <p class="bk-pane-sub">${escHtml(BK_TEXTS.timezone || "Heure de Bruxelles (GMT+1).")}</p>
     <div class="bk-booker">
       <div class="bk-loading"><div class="bk-spinner"></div> Chargement…</div>
     </div>
@@ -1106,8 +1107,8 @@ function refreshTimePane() {
   const slotsHtml = buildSlotsPanel(_currentSlots);
 
   pane.innerHTML = `<div class="bk-pane">
-    <h2 class="bk-pane-title">Choisissez votre créneau</h2>
-    <p class="bk-pane-sub">Heure de Bruxelles (GMT+1).</p>
+    <h2 class="bk-pane-title">${escHtml(BK_TEXTS.slotHeading || "Choisissez votre créneau")}</h2>
+    <p class="bk-pane-sub">${escHtml(BK_TEXTS.timezone || "Heure de Bruxelles (GMT+1).")}</p>
     <div class="bk-booker">
       ${calHtml}
       ${slotsHtml}
@@ -1733,6 +1734,9 @@ function renderPaymentPane() {
   if (PREPAYMENT.bankTransfer) {
     methods.push("bank_transfer");
   }
+  if (PREPAYMENT.qrCode) {
+    methods.push("qr_code");
+  }
   if (PREPAYMENT.cash || PREPAYMENT.cardOnSite) {
     methods.push("on_site");
   }
@@ -1787,6 +1791,9 @@ function renderPaymentPane() {
     if (methods.includes("bank_transfer"))
       choicesHtml += choiceBtn("payChoiceBankTransfer", "bank_transfer", "🏦",
         "Virement bancaire", "Coordonnées affichées après confirmation");
+    if (methods.includes("qr_code"))
+      choicesHtml += choiceBtn("payChoiceQrCode", "qr_code", "📱",
+        "QR code", "Scannez avec votre application bancaire");
     if (methods.includes("on_site"))
       choicesHtml += choiceBtn("payChoiceOnSite", "on_site", "🏪",
         "Payer sur place", onSiteSub);
@@ -1829,6 +1836,19 @@ function renderPaymentPane() {
         ${bd.bankName ? `<div class="bk-iban-row"><span>Banque</span><strong>${bd.bankName}</strong></div>` : ""}
         ${bd.note     ? `<div class="bk-iban-note">${bd.note}</div>` : ""}
       </div>
+    </div>` : "";
+
+  // ── QR code block ───────────────────────────────────────────────────────────
+  const qrCodeBlock = STATE.paymentMethod === "qr_code" && PREPAYMENT.qrCodeImage ? `
+    <div class="bk-iban-block">
+      <div class="bk-iban-header">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="21"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
+        Scanner pour payer
+      </div>
+      <div style="display:flex;justify-content:center;margin:8px 0">
+        <img src="${PREPAYMENT.qrCodeImage}" alt="QR code de paiement" style="width:160px;height:160px;object-fit:contain;border:1px solid var(--border,#e5e7eb);border-radius:10px;background:#fff" />
+      </div>
+      ${PREPAYMENT.qrCodeNote ? `<div class="bk-iban-note">${PREPAYMENT.qrCodeNote}</div>` : ""}
     </div>` : "";
 
   // La carte est aussi requise en garantie si l'utilisateur choisit de payer
@@ -1912,6 +1932,7 @@ function renderPaymentPane() {
       ${stripeBlock}
       ${paypalBlock}
       ${ibanBlock}
+      ${qrCodeBlock}
       ${cancelPolicy}
     </div>
   `;
@@ -1926,6 +1947,7 @@ function renderPaymentPane() {
   document.getElementById("payChoicePaypal")?.addEventListener("click", () => selectPayMethod("paypal"));
   document.getElementById("payChoiceOnSite")?.addEventListener("click", () => selectPayMethod("on_site"));
   document.getElementById("payChoiceBankTransfer")?.addEventListener("click", () => selectPayMethod("bank_transfer"));
+  document.getElementById("payChoiceQrCode")?.addEventListener("click", () => selectPayMethod("qr_code"));
 }
 
 function selectPayMethod(method) {

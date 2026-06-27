@@ -28,19 +28,36 @@
   var BOOKING_URL = window.__czBookingUrl || '';
 
   /* ── Color fields mapping ───────────────────────────────────────────────── */
+  // Champs "auto" (def: '') : vides par défaut, ils suivent une autre couleur
+  // (voir effectiveColor()) tant que l'utilisateur n'a pas choisi explicitement
+  // une couleur — pour ne jamais "figer" une teinte pour qui n'a jamais touché
+  // ce champ (ça casserait le rendu au prochain Enregistrer d'un autre champ).
   var COLOR_FIELDS = [
     { key: 'accentColor', def: '#22c55e' },
     { key: 'accentText',  def: '#ffffff' },
     { key: 'pageBg',      def: '#f7f8f7' },
     { key: 'calBg',       def: '#ffffff' },
     { key: 'dayBg',       def: '#ffffff' },
-    { key: 'dayText',     def: '#111111' },
     { key: 'dayAvailableColor', def: '#16a34a' },
     { key: 'dayBusyColor',      def: '#ea580c' },
     { key: 'dayFullColor',      def: '#ef4444' },
-    { key: 'btnBg',       def: '#111111' },
-    { key: 'btnText',     def: '#ffffff' },
+    { key: 'daySelectedBg',   def: '', fallback: 'accentColor' },
+    { key: 'daySelectedText', def: '', fallback: 'accentText' },
+    { key: 'dayHoverBg',      def: '', fallback: 'dayAvailableColor' },
+    { key: 'btnHoverBg',      def: '', fallback: 'accentColor' },
   ];
+  var COLOR_FIELDS_BY_KEY = {};
+  COLOR_FIELDS.forEach(function (f) { COLOR_FIELDS_BY_KEY[f.key] = f; });
+
+  // Couleur à AFFICHER dans le picker — la valeur réelle stockée si elle
+  // existe, sinon la couleur qu'elle suit automatiquement (jamais de blanc/
+  // swatch vide à l'écran, même quand rien n'a encore été choisi).
+  function effectiveColor(key) {
+    if (current[key]) return current[key];
+    var f = COLOR_FIELDS_BY_KEY[key];
+    if (f && f.fallback) return effectiveColor(f.fallback);
+    return '#000000';
+  }
 
   /* ── État courant ───────────────────────────────────────────────────────── */
   var current = {};
@@ -53,6 +70,9 @@
   current.borderRadius = CS.borderRadius || 'md';
   current.borderStyle  = CS.borderStyle  || 'subtle';
   current.shadowStyle  = CS.shadowStyle  || 'subtle';
+  current.textCalendarHelp = CS.textCalendarHelp || '';
+  current.textSlotHeading  = CS.textSlotHeading  || '';
+  current.textTimezone     = CS.textTimezone     || '';
 
   /* ═══════════════════════════════════════════════════════════════
      UNDO / REDO
@@ -81,7 +101,11 @@
     var s = JSON.parse(snap);
     Object.assign(current, s);
     // Mettre à jour tous les pickers
-    COLOR_FIELDS.forEach(function (f) { syncPickerUI(f.key, current[f.key]); });
+    COLOR_FIELDS.forEach(function (f) { syncPickerUI(f.key, effectiveColor(f.key)); });
+    // Textes
+    if ($('czTextCalendarHelp')) $('czTextCalendarHelp').value = current.textCalendarHelp || '';
+    if ($('czTextSlotHeading'))  $('czTextSlotHeading').value  = current.textSlotHeading  || '';
+    if ($('czTextTimezone'))     $('czTextTimezone').value     = current.textTimezone     || '';
     // Font
     document.querySelectorAll('.cz-font-btn').forEach(function (b) {
       b.classList.toggle('is-active', b.dataset.font === current.font);
@@ -255,7 +279,6 @@
       '--bk-bg':            current.pageBg,
       '--bk-surface':       current.calBg,
       '--bk-day-bg':        current.dayBg,
-      '--bk-day-text':      current.dayText,
       '--bk-day-available-color': current.dayAvailableColor,
       '--bk-day-available-bg':       'rgba(' + hexToRgb(current.dayAvailableColor) + ',0.08)',
       '--bk-day-available-bg-hover': 'rgba(' + hexToRgb(current.dayAvailableColor) + ',0.16)',
@@ -264,8 +287,6 @@
       '--bk-day-busy-bg-hover': 'rgba(' + hexToRgb(current.dayBusyColor) + ',0.18)',
       '--bk-day-full-color': current.dayFullColor,
       '--bk-day-full-bg':    'rgba(' + hexToRgb(current.dayFullColor) + ',0.08)',
-      '--bk-btn-bg':        current.btnBg,
-      '--bk-btn-text':      current.btnText,
       '--bk-font':          fontVal,
       '--bk-r-xs':          R.xs,
       '--bk-r-sm':          R.sm,
@@ -280,9 +301,33 @@
       '--bk-shadow-md':     SH.md,
       '--bk-shadow-lg':     SH.lg,
     };
+    // États "auto" — uniquement injectés quand l'admin a choisi une couleur
+    // explicite, sinon on laisse le fallback CSS (var(--a, var(--b))) suivre
+    // accent / la teinte de dispo. automatiquement.
+    if (current.daySelectedBg)   vars['--bk-day-selected-bg']   = current.daySelectedBg;
+    if (current.daySelectedText) vars['--bk-day-selected-text'] = current.daySelectedText;
+    if (current.dayHoverBg)      vars['--bk-day-hover-bg']      = current.dayHoverBg;
+    if (current.btnHoverBg) {
+      vars['--bk-btn-hover-bg']      = current.btnHoverBg;
+      vars['--bk-btn-hover-opacity'] = '1';
+    }
     Object.keys(vars).forEach(function (k) {
       htmlEl.style.setProperty(k, vars[k]);
     });
+    // Si l'utilisateur revient en arrière (undo/reset) sur un champ "auto",
+    // il faut explicitement RETIRER la variable inline pour que le fallback
+    // CSS reprenne la main — setProperty ne suffit pas à "désinjecter".
+    [
+      ['daySelectedBg',   '--bk-day-selected-bg'],
+      ['daySelectedText', '--bk-day-selected-text'],
+      ['dayHoverBg',      '--bk-day-hover-bg'],
+    ].forEach(function (pair) {
+      if (!current[pair[0]]) htmlEl.style.removeProperty(pair[1]);
+    });
+    if (!current.btnHoverBg) {
+      htmlEl.style.removeProperty('--bk-btn-hover-bg');
+      htmlEl.style.removeProperty('--bk-btn-hover-opacity');
+    }
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -549,8 +594,8 @@
 
   function openPanel(key, anchorEl) {
     _cpKey = key;
-    // Initialiser avec la couleur actuelle
-    var initHex = normalizeHex(current[key]) || '#22c55e';
+    // Initialiser avec la couleur actuelle (ou celle suivie automatiquement)
+    var initHex = normalizeHex(effectiveColor(key)) || '#22c55e';
     _cpHsv = hexToHsv(initHex);
     cpHue.value = Math.round(_cpHsv.h);
     _cpUpdateSpectrumBg();
@@ -591,7 +636,7 @@
     var resetBtn = document.querySelector('[data-color="' + f.key + '"] .cz-color-reset');
 
     // Initialiser l'affichage
-    syncPickerUI(f.key, current[f.key]);
+    syncPickerUI(f.key, effectiveColor(f.key));
 
     // Clic swatch → ouvrir/fermer le panel
     if (swatch) {
@@ -613,14 +658,17 @@
       hexInput.addEventListener('keydown', function (e) { e.stopPropagation(); });
     }
 
-    // Bouton reset
+    // Bouton reset — pour les champs "auto" (def: ''), ça revient à suivre
+    // à nouveau la couleur dont ils dépendent, pas à un hex figé.
     if (resetBtn) {
       resetBtn.addEventListener('click', function (e) {
         e.stopPropagation();
-        current[f.key] = f.def; syncPickerUI(f.key, f.def);
+        current[f.key] = f.def;
+        var display = effectiveColor(f.key);
+        syncPickerUI(f.key, display);
         if (_cpKey === f.key) {
-          _cpHsv = hexToHsv(f.def); cpHue.value = Math.round(_cpHsv.h);
-          _cpUpdateSpectrumBg(); _cpUpdateThumb(); _cpUpdateHex(f.def);
+          _cpHsv = hexToHsv(display); cpHue.value = Math.round(_cpHsv.h);
+          _cpUpdateSpectrumBg(); _cpUpdateThumb(); _cpUpdateHex(display);
         }
         injectPreviewCss(); snapshotState();
       });
@@ -628,6 +676,113 @@
   }
 
   COLOR_FIELDS.forEach(initColorPicker);
+
+  /* ═══════════════════════════════════════════════════════════════
+     THÈMES — palettes complètes prêtes à l'emploi. Un clic fusionne tous
+     les champs du thème dans `current`, met à jour tous les contrôles à
+     l'écran (comme applySnapshot) et déclenche un nouveau point d'undo.
+     ═══════════════════════════════════════════════════════════════ */
+  var THEMES = [
+    { id: 'noir', name: 'Noir', values: {
+        accentColor:'#111111', accentText:'#ffffff', pageBg:'#f5f5f5', calBg:'#ffffff', dayBg:'#ffffff',
+        dayAvailableColor:'#16a34a', dayBusyColor:'#ea580c', dayFullColor:'#ef4444',
+        daySelectedBg:'#111111', daySelectedText:'#ffffff', dayHoverBg:'#ececec', btnHoverBg:'#2b2b2b',
+        font:'Inter', borderRadius:'sm', borderStyle:'subtle', shadowStyle:'medium' } },
+    { id: 'emeraude', name: 'Émeraude', values: {
+        accentColor:'#16a34a', accentText:'#ffffff', pageBg:'#f3faf5', calBg:'#ffffff', dayBg:'#ffffff',
+        dayAvailableColor:'#16a34a', dayBusyColor:'#ea580c', dayFullColor:'#ef4444',
+        daySelectedBg:'#16a34a', daySelectedText:'#ffffff', dayHoverBg:'#dcf5e6', btnHoverBg:'#15803d',
+        font:'Inter', borderRadius:'md', borderStyle:'subtle', shadowStyle:'subtle' } },
+    { id: 'marine', name: 'Bleu Marine', values: {
+        accentColor:'#1e3a8a', accentText:'#ffffff', pageBg:'#f4f6fb', calBg:'#ffffff', dayBg:'#ffffff',
+        dayAvailableColor:'#16a34a', dayBusyColor:'#ea580c', dayFullColor:'#ef4444',
+        daySelectedBg:'#1e3a8a', daySelectedText:'#ffffff', dayHoverBg:'#e2e8f7', btnHoverBg:'#1b3175',
+        font:'Montserrat', borderRadius:'md', borderStyle:'medium', shadowStyle:'medium' } },
+    { id: 'ocean', name: 'Océan', values: {
+        accentColor:'#0284c7', accentText:'#ffffff', pageBg:'#f0f9ff', calBg:'#ffffff', dayBg:'#ffffff',
+        dayAvailableColor:'#16a34a', dayBusyColor:'#ea580c', dayFullColor:'#ef4444',
+        daySelectedBg:'#0284c7', daySelectedText:'#ffffff', dayHoverBg:'#dff1fb', btnHoverBg:'#026da3',
+        font:'Lato', borderRadius:'lg', borderStyle:'subtle', shadowStyle:'subtle' } },
+    { id: 'rubis', name: 'Rouge Rubis', values: {
+        accentColor:'#be123c', accentText:'#ffffff', pageBg:'#fbf4f5', calBg:'#ffffff', dayBg:'#ffffff',
+        dayAvailableColor:'#16a34a', dayBusyColor:'#ea580c', dayFullColor:'#ef4444',
+        daySelectedBg:'#be123c', daySelectedText:'#ffffff', dayHoverBg:'#f7dfe4', btnHoverBg:'#9f0f32',
+        font:'Montserrat', borderRadius:'sm', borderStyle:'medium', shadowStyle:'medium' } },
+    { id: 'corail', name: 'Corail', values: {
+        accentColor:'#f25c54', accentText:'#ffffff', pageBg:'#fff5f3', calBg:'#ffffff', dayBg:'#ffffff',
+        dayAvailableColor:'#16a34a', dayBusyColor:'#ea580c', dayFullColor:'#ef4444',
+        daySelectedBg:'#f25c54', daySelectedText:'#ffffff', dayHoverBg:'#fde3e0', btnHoverBg:'#d9483f',
+        font:'Nunito', borderRadius:'lg', borderStyle:'none', shadowStyle:'subtle' } },
+    { id: 'lavande', name: 'Lavande', values: {
+        accentColor:'#7c3aed', accentText:'#ffffff', pageBg:'#f7f5fc', calBg:'#ffffff', dayBg:'#ffffff',
+        dayAvailableColor:'#16a34a', dayBusyColor:'#ea580c', dayFullColor:'#ef4444',
+        daySelectedBg:'#7c3aed', daySelectedText:'#ffffff', dayHoverBg:'#ebe3fa', btnHoverBg:'#6526d0',
+        font:'Poppins', borderRadius:'lg', borderStyle:'subtle', shadowStyle:'subtle' } },
+    { id: 'rose', name: 'Rose Poudré', values: {
+        accentColor:'#db2777', accentText:'#ffffff', pageBg:'#fdf2f8', calBg:'#ffffff', dayBg:'#ffffff',
+        dayAvailableColor:'#16a34a', dayBusyColor:'#ea580c', dayFullColor:'#ef4444',
+        daySelectedBg:'#db2777', daySelectedText:'#ffffff', dayHoverBg:'#fbe0ee', btnHoverBg:'#bb1c63',
+        font:'Poppins', borderRadius:'lg', borderStyle:'none', shadowStyle:'subtle' } },
+    { id: 'champagne', name: 'Or Champagne', values: {
+        accentColor:'#b8924a', accentText:'#ffffff', pageBg:'#faf6ee', calBg:'#fffdf8', dayBg:'#fffdf8',
+        dayAvailableColor:'#16a34a', dayBusyColor:'#ea580c', dayFullColor:'#ef4444',
+        daySelectedBg:'#b8924a', daySelectedText:'#ffffff', dayHoverBg:'#f1e6d0', btnHoverBg:'#9c7a3a',
+        font:'Playfair Display', borderRadius:'lg', borderStyle:'subtle', shadowStyle:'subtle' } },
+    { id: 'foret', name: 'Forêt', values: {
+        accentColor:'#2f5233', accentText:'#ffffff', pageBg:'#f5f3ea', calBg:'#fffefb', dayBg:'#fffefb',
+        dayAvailableColor:'#16a34a', dayBusyColor:'#ea580c', dayFullColor:'#ef4444',
+        daySelectedBg:'#2f5233', daySelectedText:'#ffffff', dayHoverBg:'#e3e8d6', btnHoverBg:'#23401f',
+        font:'Nunito', borderRadius:'md', borderStyle:'medium', shadowStyle:'subtle' } },
+    { id: 'ardoise', name: 'Ardoise', values: {
+        accentColor:'#475569', accentText:'#ffffff', pageBg:'#f1f5f9', calBg:'#ffffff', dayBg:'#ffffff',
+        dayAvailableColor:'#16a34a', dayBusyColor:'#ea580c', dayFullColor:'#ef4444',
+        daySelectedBg:'#475569', daySelectedText:'#ffffff', dayHoverBg:'#e2e8f0', btnHoverBg:'#334155',
+        font:'Inter', borderRadius:'sm', borderStyle:'subtle', shadowStyle:'none' } },
+    { id: 'sarcelle', name: 'Sarcelle', values: {
+        accentColor:'#0d9488', accentText:'#ffffff', pageBg:'#f0fbf9', calBg:'#ffffff', dayBg:'#ffffff',
+        dayAvailableColor:'#16a34a', dayBusyColor:'#ea580c', dayFullColor:'#ef4444',
+        daySelectedBg:'#0d9488', daySelectedText:'#ffffff', dayHoverBg:'#d8f3ef', btnHoverBg:'#0b7a70',
+        font:'Lato', borderRadius:'md', borderStyle:'subtle', shadowStyle:'subtle' } },
+  ];
+
+  function applyTheme(theme) {
+    Object.assign(current, theme.values);
+    COLOR_FIELDS.forEach(function (f) { syncPickerUI(f.key, effectiveColor(f.key)); });
+    document.querySelectorAll('.cz-font-btn').forEach(function (b) {
+      b.classList.toggle('is-active', b.dataset.font === current.font);
+    });
+    document.querySelectorAll('.cz-radius-btn').forEach(function (b) {
+      b.classList.toggle('is-active', b.dataset.radius === current.borderRadius);
+    });
+    document.querySelectorAll('[data-border]').forEach(function (b) {
+      b.classList.toggle('is-active', b.dataset.border === current.borderStyle);
+    });
+    document.querySelectorAll('[data-shadow]').forEach(function (b) {
+      b.classList.toggle('is-active', b.dataset.shadow === current.shadowStyle);
+    });
+    injectPreviewCss();
+    snapshotState();
+  }
+
+  var themeGrid = $('czThemeGrid');
+  if (themeGrid) {
+    THEMES.forEach(function (theme) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cz-theme-btn';
+      b.title = theme.name;
+      var v = theme.values;
+      b.innerHTML =
+        '<span class="cz-theme-btn__swatch">' +
+          '<span style="background:' + v.pageBg + '"></span>' +
+          '<span style="background:' + v.accentColor + '"></span>' +
+          '<span style="background:' + v.dayAvailableColor + '"></span>' +
+        '</span>' +
+        '<span class="cz-theme-btn__name">' + theme.name + '</span>';
+      b.addEventListener('click', function () { applyTheme(theme); });
+      themeGrid.appendChild(b);
+    });
+  }
 
   /* ═══════════════════════════════════════════════════════════════
      FONT PICKER
@@ -660,6 +815,28 @@
       scheduleInject();
     });
   }
+
+  /* ═══════════════════════════════════════════════════════════════
+     TEXTES DU PARCOURS DE RÉSERVATION — pas de live preview DOM (le texte
+     vit dans le HTML généré par le serveur, pas dans une variable CSS) ;
+     l'aperçu se mettra à jour au prochain rechargement de l'iframe (bouton
+     Rafraîchir, changement d'onglet, ou après Enregistrer).
+     ═══════════════════════════════════════════════════════════════ */
+  var TEXT_FIELDS = [
+    { id: 'czTextCalendarHelp', key: 'textCalendarHelp' },
+    { id: 'czTextSlotHeading',  key: 'textSlotHeading'  },
+    { id: 'czTextTimezone',     key: 'textTimezone'      },
+  ];
+  var _textTimer;
+  TEXT_FIELDS.forEach(function (tf) {
+    var input = $(tf.id);
+    if (!input) return;
+    input.addEventListener('input', function () {
+      current[tf.key] = input.value;
+      clearTimeout(_textTimer);
+      _textTimer = setTimeout(snapshotState, 800);
+    });
+  });
 
   /* ═══════════════════════════════════════════════════════════════
      RADIUS PICKER
@@ -722,18 +899,22 @@
             pageBg:       current.pageBg,
             calBg:        current.calBg,
             dayBg:        current.dayBg,
-            dayText:      current.dayText,
             dayAvailableColor: current.dayAvailableColor,
             dayBusyColor:      current.dayBusyColor,
             dayFullColor:      current.dayFullColor,
-            btnBg:        current.btnBg,
-            btnText:      current.btnText,
+            daySelectedBg:   current.daySelectedBg,
+            daySelectedText: current.daySelectedText,
+            dayHoverBg:      current.dayHoverBg,
+            btnHoverBg:      current.btnHoverBg,
             font:         current.font,
             customFontUrl:    current.customFontUrl,
             customFontFamily: current.customFontFamily,
             borderRadius: current.borderRadius,
             borderStyle:  current.borderStyle,
             shadowStyle:  current.shadowStyle,
+            textCalendarHelp: current.textCalendarHelp,
+            textSlotHeading:  current.textSlotHeading,
+            textTimezone:     current.textTimezone,
             lang:         CS.lang         || 'fr',
             showInfo:     CS.showInfo     !== false,
             showSocials:  CS.showSocials  !== false,
@@ -751,8 +932,9 @@
             saveStatus.style.color = '#22c55e';
             setTimeout(function () { saveStatus.textContent = ''; }, 2500);
           }
-          // Re-inject dans l'iframe (au cas où elle a rechargé)
-          injectPreviewCss();
+          // Rechargement complet (pas juste injectPreviewCss) : nécessaire
+          // pour refléter les textes personnalisés, rendus côté serveur.
+          loadPreview();
         } else {
           if (saveStatus) { saveStatus.textContent = 'Erreur'; saveStatus.style.color = '#ef4444'; }
         }
@@ -771,7 +953,15 @@
       if (!confirm('Réinitialiser tous les réglages de design ?')) return;
       COLOR_FIELDS.forEach(function (f) {
         current[f.key] = f.def;
-        syncPickerUI(f.key, f.def);
+      });
+      // Deuxième passe : les champs "auto" dépendent d'accentColor/etc.,
+      // qui viennent eux-mêmes d'être réinitialisés ci-dessus.
+      COLOR_FIELDS.forEach(function (f) {
+        syncPickerUI(f.key, effectiveColor(f.key));
+      });
+      TEXT_FIELDS.forEach(function (tf) {
+        current[tf.key] = '';
+        if ($(tf.id)) $(tf.id).value = '';
       });
       current.font = 'Inter';
       document.querySelectorAll('.cz-font-btn').forEach(function (b) {
@@ -860,46 +1050,6 @@
   var embedFrame    = document.getElementById('czEmbedPreviewFrame');
   var embedFrameWrap = document.getElementById('czEmbedFrameWrap');
 
-  /* ── Mapping section → sélecteurs CSS dans la page booking ─── */
-  var SECTION_SELECTORS = {
-    'profile':  '.bk-head',
-    'reviews':  'section.bk-reviews, .bk-reviews',
-    'about':    '.bk-about-card, .bk-info-section, .bk-location-card',
-    'hours':    '.bk-hours-card',
-  };
-
-  /* ── Injecter le masquage des sections dans l'iframe embed ─── */
-  var _embedRetry = null;
-  function injectEmbedSections() {
-    clearTimeout(_embedRetry);
-    if (!embedFrame) return;
-    var doc;
-    try {
-      doc = embedFrame.contentDocument;
-    } catch(e) { return; }
-    if (!doc || doc.readyState !== 'complete') {
-      _embedRetry = setTimeout(injectEmbedSections, 100);
-      return;
-    }
-
-    // Construire le CSS de masquage
-    var hidden = [];
-    Object.keys(SECTION_SELECTORS).forEach(function (key) {
-      var cb = document.getElementById('embedSec' + key.charAt(0).toUpperCase() + key.slice(1));
-      var checked = cb ? cb.checked : true;
-      if (!checked) hidden.push(SECTION_SELECTORS[key] + ' { display:none !important; }');
-    });
-
-    var styleId = '__cz_embed_sections';
-    var style = doc.getElementById(styleId);
-    if (!style) {
-      style = doc.createElement('style');
-      style.id = styleId;
-      (doc.head || doc.documentElement).appendChild(style);
-    }
-    style.textContent = hidden.join('\n');
-  }
-
   /* ── Sections cochées → paramètre URL (pour le code à copier) ── */
   function getSelectedSections() {
     var all = ['booking','profile','reviews','about','hours'];
@@ -985,9 +1135,6 @@
       var wCss = /^\d+$/.test(w) ? w + 'px' : w;
       embedFrameWrap.style.maxWidth = (wCss === '100%') ? '100%' : wCss;
     }
-
-    // 4. Masquer/afficher les sections dans l'iframe (sans rechargement)
-    injectEmbedSections();
   }
 
   /* ── Construit l'URL de l'aperçu : exactement la même que l'iframe générée
@@ -1009,10 +1156,6 @@
 
   // Charger l'iframe embed (src vide dans le HTML, on la charge ici)
   if (embedFrame && BOOKING_PATH) {
-    embedFrame.addEventListener('load', function () {
-      // Après chargement : appliquer immédiatement les sections cochées
-      setTimeout(injectEmbedSections, 60);
-    });
     embedFrame.src = buildPreviewUrl();
   }
 
@@ -1030,16 +1173,21 @@
   if (widthInput)  widthInput.addEventListener('input', updatePreview);
   if (heightInput) heightInput.addEventListener('input', updatePreview);
 
-  // Checkboxes sections → masquage INSTANTANÉ sans rechargement
+  // Checkboxes sections → on recharge l'aperçu avec la nouvelle URL
+  // (?sections=...). Un simple masquage CSS depuis le parent ne suffit pas :
+  // la page booking masque déjà elle-même ses sections au chargement selon
+  // l'URL (même logique que sur un vrai site externe) — sans recharger, ce
+  // masquage déjà posé par la page elle-même reste actif et la section cochée
+  // ne réapparaît jamais, même si on essaie de l'annuler depuis le parent.
   document.querySelectorAll('input[name="embedSection"]').forEach(function (cb) {
     cb.addEventListener('change', function () {
-      // Met à jour le code à copier
       if (codeArea) {
         codeArea.value = buildIframeCode();
         autosizeCodeArea();
       }
-      // Masque/affiche la section dans l'iframe immédiatement
-      injectEmbedSections();
+      if (embedFrame && BOOKING_PATH) {
+        embedFrame.src = buildPreviewUrl();
+      }
     });
   });
 

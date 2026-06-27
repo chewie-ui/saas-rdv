@@ -568,6 +568,10 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
     // PayPal
     paypal:       !!(company.acceptedPayments?.paypal?.enabled),
     paypalMe:     company.acceptedPayments?.paypal?.paypalMe || "",
+    // QR code
+    qrCode:       !!(company.acceptedPayments?.qrCode?.enabled) && !!(company.acceptedPayments?.qrCode?.imageUrl),
+    qrCodeImage:  company.acceptedPayments?.qrCode?.imageUrl || "",
+    qrCodeNote:   company.acceptedPayments?.qrCode?.note     || "",
     cancellationRule: company.cancellationPolicy?.rule || "free",
   };
 

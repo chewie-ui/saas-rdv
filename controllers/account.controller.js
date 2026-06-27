@@ -690,11 +690,15 @@ exports.updateBusinessType = async (req, res) => {
 exports.editBusinessInfo = async (req, res) => {
   try {
     const { businessName, description, businessType } = req.body;
-    await User.findByIdAndUpdate(req.user._id, {
-      businessName: businessName || "",
-      description: description || "",
-      businessType: businessType || "",
-    });
+    // Mise à jour partielle : ne touche que les champs envoyés. Le champ
+    // "Description" a été retiré de ce formulaire (Personnaliser) mais reste
+    // utilisé ailleurs (page publique, méta SEO) — un envoi blind écraserait
+    // la valeur existante à chaque sauvegarde du nom/type d'activité.
+    const update = {};
+    if (businessName !== undefined) update.businessName = businessName || "";
+    if (description !== undefined) update.description = description || "";
+    if (businessType !== undefined) update.businessType = businessType || "";
+    await User.findByIdAndUpdate(req.user._id, update);
     return res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -791,12 +795,20 @@ exports.deleteAccount = async (req, res) => {
 exports.updateCalendarSettings = async (req, res) => {
   try {
     const {
-      pageBg, calBg, accentColor, accentText, dayBg, dayText, btnBg, btnText,
+      pageBg, calBg, accentColor, accentText, dayBg,
       dayAvailableColor, dayBusyColor, dayFullColor,
+      daySelectedBg, daySelectedText, dayHoverBg, btnHoverBg,
+      textCalendarHelp, textSlotHeading, textTimezone,
       lang, font, customFontUrl, customFontFamily, borderRadius, borderStyle, shadowStyle, showInfo, showSocials, layoutStyle, pageBgType, pageBgImage,
       showSectionAbout, showSectionServices, showSectionTeam,
       showSectionReviews, showSectionAmenities, showSectionFaq,
     } = req.body;
+    // Champs couleur "auto" : seule une valeur hex bien formée est acceptée
+    // (sinon vide, pour laisser le fallback CSS suivre accent automatiquement) —
+    // ces valeurs sont injectées telles quelles dans une feuille de style côté
+    // page publique, donc on ne fait jamais confiance à une chaîne libre ici.
+    var HEX_RE = /^#[0-9a-fA-F]{3,8}$/;
+    var cleanHex = function (v) { return typeof v === "string" && HEX_RE.test(v) ? v : ""; };
     await User.findByIdAndUpdate(req.user._id, {
       $set: {
         "calendarSettings.customFontUrl":        (customFontUrl || "").toString().trim(),
@@ -806,12 +818,16 @@ exports.updateCalendarSettings = async (req, res) => {
         "calendarSettings.accentColor":          accentColor,
         "calendarSettings.accentText":           accentText,
         "calendarSettings.dayBg":                dayBg,
-        "calendarSettings.dayText":              dayText,
         "calendarSettings.dayAvailableColor":    dayAvailableColor,
         "calendarSettings.dayBusyColor":         dayBusyColor,
         "calendarSettings.dayFullColor":         dayFullColor,
-        "calendarSettings.btnBg":                btnBg,
-        "calendarSettings.btnText":              btnText,
+        "calendarSettings.daySelectedBg":        cleanHex(daySelectedBg),
+        "calendarSettings.daySelectedText":      cleanHex(daySelectedText),
+        "calendarSettings.dayHoverBg":           cleanHex(dayHoverBg),
+        "calendarSettings.btnHoverBg":           cleanHex(btnHoverBg),
+        "calendarSettings.textCalendarHelp":     (textCalendarHelp || "").toString().trim().slice(0, 160),
+        "calendarSettings.textSlotHeading":      (textSlotHeading  || "").toString().trim().slice(0, 160),
+        "calendarSettings.textTimezone":         (textTimezone     || "").toString().trim().slice(0, 160),
         "calendarSettings.lang":                 lang,
         "calendarSettings.font":                 font,
         "calendarSettings.borderRadius":         borderRadius  || 'md',

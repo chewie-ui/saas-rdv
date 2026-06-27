@@ -150,41 +150,58 @@ block content
             'strong': { xs:'0 2px 6px rgba(0,0,0,0.18)',    sm:'0 4px 12px rgba(0,0,0,0.22)',   md:'0 10px 28px rgba(0,0,0,0.26)',   lg:'0 24px 56px rgba(0,0,0,0.30)' }
         };
         var _SH = _shMap[cs.shadowStyle] || _shMap['subtle'];
-    style.
-        :root {
-            --bk-accent:        #{accentColor};
-            --bk-accent-text:   #{accentText};
-            --bk-accent-soft:   rgba(#{accentRgb}, 0.10);
-            --bk-accent-border: rgba(#{accentRgb}, 0.35);
-            --bk-accent-ink:    #{accentColor};
-            --bk-bg:      #{cs.pageBg   || '#f7f8f7'};
-            --bk-surface: #{cs.calBg    || '#ffffff'};
-            --bk-day-bg:  #{cs.dayBg    || '#ffffff'};
-            --bk-day-text:#{cs.dayText  || '#111111'};
-            --bk-day-available-color: #{dayAvailableColor};
-            --bk-day-available-bg:    rgba(#{dayAvailableRgb}, 0.08);
-            --bk-day-available-bg-hover: rgba(#{dayAvailableRgb}, 0.16);
-            --bk-day-busy-color: #{dayBusyColor};
-            --bk-day-busy-bg:    rgba(#{dayBusyRgb}, 0.10);
-            --bk-day-busy-bg-hover: rgba(#{dayBusyRgb}, 0.18);
-            --bk-day-full-color: #{dayFullColor};
-            --bk-day-full-bg:    rgba(#{dayFullRgb}, 0.08);
-            --bk-btn-bg:  #{cs.btnBg    || '#111111'};
-            --bk-btn-text:#{cs.btnText  || '#ffffff'};
-            --bk-font:    !{_fontVal};
-            --bk-r-xs:    #{_R.xs};
-            --bk-r-sm:    #{_R.sm};
-            --bk-r-md:    #{_R.md};
-            --bk-r-lg:    #{_R.lg};
-            --bk-r-xl:    #{_R.xl};
-            --bk-r-pill:  #{_R.pill};
-            --bk-border:        !{_BD.color};
-            --bk-border-strong: !{_BD.strong};
-            --bk-shadow-xs: !{_SH.xs};
-            --bk-shadow-sm: !{_SH.sm};
-            --bk-shadow-md: !{_SH.md};
-            --bk-shadow-lg: !{_SH.lg};
+
+        // Couleurs optionnelles (jour sélectionné / survol / bouton survol) —
+        // vide = pas injecté du tout, pour laisser le fallback CSS (var(--a,
+        // var(--b))) suivre automatiquement accent / teintes de dispo.
+        // isHexColor() : on n'injecte dans le <style> que des valeurs qui
+        // ressemblent vraiment à une couleur — ces champs viennent d'un
+        // <input type="color">, mais on ne fait jamais confiance à une valeur
+        // stockée pour l'écrire telle quelle dans une feuille de style.
+        function isHexColor(v) { return typeof v === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(v); }
+
+        var rootVars = {
+            '--bk-accent':        accentColor,
+            '--bk-accent-text':   accentText,
+            '--bk-accent-soft':   'rgba(' + accentRgb + ', 0.10)',
+            '--bk-accent-border': 'rgba(' + accentRgb + ', 0.35)',
+            '--bk-accent-ink':    accentColor,
+            '--bk-bg':      cs.pageBg || '#f7f8f7',
+            '--bk-surface': cs.calBg  || '#ffffff',
+            '--bk-day-bg':  cs.dayBg  || '#ffffff',
+            '--bk-day-available-color': dayAvailableColor,
+            '--bk-day-available-bg':    'rgba(' + dayAvailableRgb + ', 0.08)',
+            '--bk-day-available-bg-hover': 'rgba(' + dayAvailableRgb + ', 0.16)',
+            '--bk-day-busy-color': dayBusyColor,
+            '--bk-day-busy-bg':    'rgba(' + dayBusyRgb + ', 0.10)',
+            '--bk-day-busy-bg-hover': 'rgba(' + dayBusyRgb + ', 0.18)',
+            '--bk-day-full-color': dayFullColor,
+            '--bk-day-full-bg':    'rgba(' + dayFullRgb + ', 0.08)',
+            '--bk-font':    _fontVal,
+            '--bk-r-xs':    _R.xs,
+            '--bk-r-sm':    _R.sm,
+            '--bk-r-md':    _R.md,
+            '--bk-r-lg':    _R.lg,
+            '--bk-r-xl':    _R.xl,
+            '--bk-r-pill':  _R.pill,
+            '--bk-border':        _BD.color,
+            '--bk-border-strong': _BD.strong,
+            '--bk-shadow-xs': _SH.xs,
+            '--bk-shadow-sm': _SH.sm,
+            '--bk-shadow-md': _SH.md,
+            '--bk-shadow-lg': _SH.lg
+        };
+        if (isHexColor(cs.daySelectedBg))   rootVars['--bk-day-selected-bg']   = cs.daySelectedBg;
+        if (isHexColor(cs.daySelectedText)) rootVars['--bk-day-selected-text'] = cs.daySelectedText;
+        if (isHexColor(cs.dayHoverBg))      rootVars['--bk-day-hover-bg']      = cs.dayHoverBg;
+        if (isHexColor(cs.btnHoverBg)) {
+            rootVars['--bk-btn-hover-bg']      = cs.btnHoverBg;
+            rootVars['--bk-btn-hover-opacity'] = '1';
         }
+        var rootCss = ':root{' + Object.keys(rootVars).map(function (k) {
+            return k + ':' + rootVars[k] + ';';
+        }).join('') + '}';
+    style!= rootCss
 
     //- ── Top bar ────────────────────────────────────────────────────────────
     header.bk-top
@@ -462,6 +479,17 @@ block scripts
         }
     if prepaymentConfig && prepaymentConfig.enabled && prepaymentConfig.stripeActive && stripePublishableKey
         script(src="https://js.stripe.com/v3/")
+    -
+        // Textes personnalisés du parcours de réservation — JSON.stringify
+        // échappe déjà les guillemets, mais pas un éventuel "</script>" dans
+        // le texte libre, qui couperait la balise <script> côté navigateur.
+        // On échappe donc aussi "<" avant d'injecter.
+        function jsonForScript(v) { return JSON.stringify(v).replace(/</g, '\\u003c'); }
+        var bkTexts = {
+            calendarHelp: cs.textCalendarHelp || '',
+            slotHeading:  cs.textSlotHeading  || '',
+            timezone:     cs.textTimezone     || ''
+        };
     script.
         window.__services       = !{servicesJson  || '[]'};
         window.__employees      = !{employeesJson || '[]'};
@@ -471,6 +499,7 @@ block scripts
         window.__prepayment     = !{JSON.stringify(prepaymentConfig || { enabled: false, required: false })};
         window.__stripeKey      = '!{stripePublishableKey || ""}';
         window.__bookingQuestion = !{JSON.stringify((company && company.bookingQuestion) || { enabled: false, question: '', newLabel: '', existingLabel: '' })};
+        window.__bkTexts        = !{jsonForScript(bkTexts)};
     if clientUser
         script.
             window.__clientUser = !{JSON.stringify(clientUser)};
