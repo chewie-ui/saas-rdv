@@ -1,0 +1,188 @@
+extends ../../layouts/auth
+
+block links
+    link(rel="stylesheet", href="/css/layouts/auth-register.css")
+    link(rel="stylesheet", href="/css/layouts/informations.css")
+    style.
+        .auth-form-panel .biz-row { margin-bottom: 22px; }
+        .auth-form-panel .biz-photo-preview { width: 120px; }
+        .etab-back-link { display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--text-muted,#6b7280); text-decoration:none; margin-bottom:18px; }
+        .etab-back-link:hover { color:var(--text-primary,#111); }
+        .etab-error { display:none; font-size:13px; color:#dc2626; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 14px; margin-bottom:16px; }
+
+block content
+    .auth-split
+
+        //- ── Panneau gauche décoratif ───────────────────────────────
+        .auth-art
+            a.auth-art__logo(href="/")
+                img.auth-art__logo-mark(src="/images/icon.svg" alt="BranShee")
+                span BranShee
+
+            .auth-art__body
+                .auth-art__headline
+                    | Votre établissement,&nbsp;
+                    br
+                    | en ligne en 2 minutes.
+                .auth-art__stats
+                    .auth-art__stat
+                        .auth-art__stat-num 0 appel
+                        .auth-art__stat-label pour réserver
+                    .auth-art__stat
+                        .auth-art__stat-num 24/7
+                        .auth-art__stat-label réservations auto
+                    .auth-art__stat
+                        .auth-art__stat-num Gratuit
+                        .auth-art__stat-label pour commencer
+
+            .auth-art__foot © BranShee · Bruxelles
+
+        //- ── Panneau droit : formulaire ────────────────────────────
+        .auth-form-panel
+            .auth-form-inner
+                a.etab-back-link(href="/espace-client")
+                    svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                        path(d="M19 12H5M12 19l-7-7 7-7")
+                    | Retour à mon espace
+
+                h1 Créez votre établissement
+                p.auth-sub Donnez un nom et une activité à votre établissement — vous pourrez tout personnaliser ensuite.
+
+                .etab-error#createError
+
+                .biz-row
+                    .biz-photo-col
+                        .biz-photo-preview
+                            .biz-photo-placeholder#businessPicPreview
+                                svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
+                                    path(d="M160-120q-33 0-56.5-23.5T80-200v-480q0-33 23.5-56.5T160-760h126l74-80h240l74 80h126q33 0 56.5 23.5T880-680v480q0 33-23.5 56.5T800-120H160Zm0-80h640v-480H160v480Zm320-80q-58 0-99-41t-41-99q0-58 41-99t99-41q58 0 99 41t41 99q0 58-41 99t-99 41Zm0-80q25 0 42.5-17.5T540-420q0-25-17.5-42.5T480-480q-25 0-42.5 17.5T420-420q0 25 17.5 42.5T480-360Z")
+                        input#businessFileInput(type="file" style="display:none" accept="image/*")
+                        button.sm-btn.sm-btn--ghost(type="button")#uploadBusinessBtn
+                            span Photo
+
+                    .biz-fields
+                        .auth-field
+                            label.auth-label Nom de l'établissement
+                            input.auth-input#businessNameInput(type="text" placeholder="Ex: Salon de Marie" autocomplete="off")
+                        .auth-field
+                            label.auth-label Type d'activité
+                            .service-select-wrapper
+                                input.auth-input.service-input#businessTypeInput(type="text" placeholder="Ex: Coiffeur, Médecin, Coach sportif..." autocomplete="off")
+                                .service-dropdown#businessTypeDropdown
+
+                button.sm-btn.sm-btn--primary.sm-btn--full#confirmCreateCompanyBtn(type="button")
+                    span Créer mon établissement
+
+block scripts
+    script(src="/js/utils/image-upload.js")
+    script.
+        (function () {
+            var __services = !{JSON.stringify(services)};
+            var bizNameInput = document.getElementById('businessNameInput');
+            var bizTypeInput = document.getElementById('businessTypeInput');
+            var bizTypeDropdown = document.getElementById('businessTypeDropdown');
+            var errorEl = document.getElementById('createError');
+            var confirmBtn = document.getElementById('confirmCreateCompanyBtn');
+
+            var uploadBtn = document.getElementById('uploadBusinessBtn');
+            var fileInput = document.getElementById('businessFileInput');
+            var picPreview = document.getElementById('businessPicPreview');
+            var uploadedPath = '';
+
+            if (uploadBtn && fileInput) {
+                uploadBtn.onclick = function () { fileInput.click(); };
+                fileInput.onchange = async function () {
+                    var file = fileInput.files[0];
+                    if (!file) return;
+                    var previewImg = picPreview;
+                    if (previewImg.tagName !== 'IMG') {
+                        var img = document.createElement('img');
+                        img.id = 'businessPicPreview';
+                        img.alt = "Photo établissement";
+                        img.style.width = '100%';
+                        img.style.height = '100%';
+                        img.style.objectFit = 'cover';
+                        previewImg.replaceWith(img);
+                        previewImg = img;
+                        picPreview = img;
+                    }
+                    previewImg.src = URL.createObjectURL(file);
+                    try {
+                        var data = await window.BkImageUpload.uploadImage({
+                            url: '/account/business-picture',
+                            method: 'PATCH',
+                            fieldName: 'businessPicture',
+                            file: file,
+                        });
+                        if (data.path) { uploadedPath = data.path; previewImg.src = data.path; }
+                    } catch (e) {}
+                    fileInput.value = '';
+                };
+            }
+
+            function normalize(str) { return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+            function renderList(items) {
+                bizTypeDropdown.innerHTML = '';
+                if (!items.length) { bizTypeDropdown.style.display = 'none'; return; }
+                items.forEach(function (item) {
+                    var div = document.createElement('div');
+                    div.className = 'service-dropdown__item';
+                    div.textContent = item;
+                    div.addEventListener('mousedown', function (e) {
+                        e.preventDefault();
+                        bizTypeInput.value = item;
+                        bizTypeDropdown.style.display = 'none';
+                    });
+                    bizTypeDropdown.appendChild(div);
+                });
+                bizTypeDropdown.style.display = 'block';
+            }
+            if (bizTypeInput) {
+                bizTypeInput.addEventListener('input', function () {
+                    var q = normalize(bizTypeInput.value.trim());
+                    if (!q) { bizTypeDropdown.style.display = 'none'; return; }
+                    renderList(__services.filter(function (s) { return normalize(s).includes(q); }).slice(0, 8));
+                });
+                bizTypeInput.addEventListener('focus', function () {
+                    var q = normalize(bizTypeInput.value.trim());
+                    if (q) renderList(__services.filter(function (s) { return normalize(s).includes(q); }).slice(0, 8));
+                });
+                bizTypeInput.addEventListener('blur', function () {
+                    setTimeout(function () { bizTypeDropdown.style.display = 'none'; }, 150);
+                });
+            }
+
+            function showError(msg) {
+                errorEl.textContent = msg;
+                errorEl.style.display = 'block';
+            }
+
+            confirmBtn.addEventListener('click', async function () {
+                var businessName = bizNameInput.value.trim();
+                var businessType = bizTypeInput.value.trim();
+                if (!businessName) {
+                    showError('Indiquez un nom pour votre établissement.');
+                    bizNameInput.focus();
+                    return;
+                }
+                confirmBtn.disabled = true;
+                try {
+                    await fetch('/account/business-info', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ businessName: businessName, businessType: businessType }),
+                    });
+                    var res = await fetch('/account/create-company', { method: 'POST' });
+                    var data = await res.json();
+                    if (data.success) {
+                        window.location.href = data.redirect || '/welcome';
+                    } else {
+                        showError(data.error || 'Erreur lors de la création.');
+                        confirmBtn.disabled = false;
+                    }
+                } catch (e) {
+                    showError('Erreur réseau.');
+                    confirmBtn.disabled = false;
+                }
+            });
+        })();

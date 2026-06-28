@@ -99,4 +99,11 @@ router.post("/2fa/disable", isAuth, accountController.disable2FA);
 // ── Langue de l'interface ────────────────────────────────────────────────────
 router.post("/language", isAuth, accountController.updateLanguage);
 
+// ── Établissement (créer / mettre en pause / reprendre) ───────────────────────
+router.post("/create-company", isAuth, accountController.createCompanyForExistingUser);
+router.patch("/company-pause", isAuth, injectCompany, accountController.pauseCompany);
+router.patch("/company-resume", isAuth, injectCompany, accountController.resumeCompany);
+router.post("/join-company", isAuth, accountController.requestJoinCompany);
+router.patch("/join-requests/:requestId", isAuth, injectCompany, accountController.respondJoinRequest);
+
 module.exports = router;

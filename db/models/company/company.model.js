@@ -9,6 +9,14 @@ const companySchema = schema(
       required: true,
     },
 
+    // Mis en pause par le pro lui-même (≠ isDisabled, qui est une action du
+    // superadmin) — masque la page publique et /search, mais n'affecte ni la
+    // connexion, ni l'abonnement Stripe, ni aucune donnée. Réversible.
+    isPaused: {
+      type: Boolean,
+      default: false,
+    },
+
     slug: {
       type: String,
       unique: true,

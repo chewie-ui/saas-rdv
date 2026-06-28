@@ -1717,15 +1717,16 @@ function renderPaymentPane() {
   const pane = document.getElementById("bkPane");
   const price      = STATE.service?.price;
   const priceLabel = price !== null && price !== undefined ? `${Number(price).toFixed(2)} €` : "";
-  // La carte est obligatoire soit parce que le prépaiement est activé,
-  // soit parce que la politique d'annulation de l'établissement exige
-  // une carte enregistrée en garantie (sans prélèvement immédiat).
+  // "Obligatoire" ne reflète QUE le réglage admin "Rendre le paiement
+  // obligatoire" — la politique d'annulation exige une carte en garantie,
+  // mais ne doit jamais forcer un paiement immédiat ni retirer au client le
+  // choix de payer sur place (carte enregistrée, 0 € débité maintenant).
   const policyRequiresCard = cardRequiredByPolicy();
-  const isRequired = PREPAYMENT.required || policyRequiresCard;
+  const isRequired = !!PREPAYMENT.required;
 
   // Build the list of available payment methods from admin config
   const methods = [];
-  if (PREPAYMENT.stripeActive && STRIPE_KEY) {
+  if (PREPAYMENT.enabled && PREPAYMENT.stripeActive && STRIPE_KEY) {
     methods.push("online");
   }
   if (PREPAYMENT.paypal && PREPAYMENT.paypalMe) {
@@ -1737,14 +1738,16 @@ function renderPaymentPane() {
   if (PREPAYMENT.qrCode) {
     methods.push("qr_code");
   }
-  if (PREPAYMENT.cash || PREPAYMENT.cardOnSite) {
+  // "Payer sur place" apparaît dès que la politique d'annulation exige une
+  // carte en garantie (même si l'admin n'a coché ni espèces ni CB sur
+  // place) — c'est ce choix qui enregistre la carte sans rien débiter.
+  if (PREPAYMENT.cash || PREPAYMENT.cardOnSite || (policyRequiresCard && !isRequired)) {
     methods.push("on_site");
   }
 
-  // Si la carte n'est requise que pour la garantie d'annulation (prépaiement
-  // non activé), on ne propose que la carte — pas de choix entre plusieurs
-  // moyens de paiement, puisqu'aucun montant n'est prélevé ici.
-  if (policyRequiresCard && !PREPAYMENT.enabled) {
+  // Si le paiement est réellement obligatoire (réglage admin), un seul choix
+  // possible : payer maintenant par carte.
+  if (isRequired) {
     methods.length = 0;
     methods.push("online");
   }
@@ -1781,7 +1784,8 @@ function renderPaymentPane() {
 
   let choicesHtml = "";
   if (!isRequired || methods.length > 1) {
-    const onSiteSub = [PREPAYMENT.cash && "espèces", PREPAYMENT.cardOnSite && "CB sur place"].filter(Boolean).join(" · ") || "sur place";
+    let onSiteSub = [PREPAYMENT.cash && "espèces", PREPAYMENT.cardOnSite && "CB sur place"].filter(Boolean).join(" · ") || "sur place";
+    if (policyRequiresCard) onSiteSub += " · carte enregistrée, rien débité maintenant";
     if (methods.includes("online"))
       choicesHtml += choiceBtn("payChoiceOnline", "online", "💳",
         "Payer maintenant par carte", "Sécurisé via Stripe · Paiement immédiat");
@@ -1867,13 +1871,20 @@ function renderPaymentPane() {
       <div id="bkCardError" class="bk-card-error" style="display:none"></div>
     </div>` : "";
 
-  // ── Required badge (if only stripe and mandatory) ──────────────────────────
-  const requiredBadge = isRequired && methods.length <= 1 ? `
+  // ── Required badge (paiement réellement obligatoire) ───────────────────────
+  const requiredBadge = isRequired ? `
     <div class="bk-pay-required-badge">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      ${policyRequiresCard && !PREPAYMENT.enabled
-        ? "Carte bancaire obligatoire pour garantir cette réservation (aucun débit immédiat)"
-        : "Paiement obligatoire pour cette réservation"}
+      Paiement obligatoire pour cette réservation
+    </div>` : "";
+
+  // ── Info note (carte demandée en garantie, mais paiement pas obligatoire) ──
+  // Explique au client POURQUOI une carte lui est demandée même quand il
+  // garde le choix de payer sur place — sans ça, ça ressemble à un bug.
+  const cardInfoNote = (policyRequiresCard && !isRequired) ? `
+    <div class="bk-pay-info-note">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      Une carte vous sera demandée pour garantir cette réservation, conformément à la politique d'annulation de l'établissement. Rien n'est débité maintenant — elle ne sera utilisée qu'en cas d'annulation tardive ou d'absence.
     </div>` : "";
 
   // ── Cancel policy (Stripe only) ─────────────────────────────────────────────
@@ -1928,6 +1939,7 @@ function renderPaymentPane() {
         </div>
       </div>
       ${requiredBadge}
+      ${cardInfoNote}
       ${choicesHtml ? `<div class="bk-pay-choices">${choicesHtml}</div>` : ""}
       ${stripeBlock}
       ${paypalBlock}

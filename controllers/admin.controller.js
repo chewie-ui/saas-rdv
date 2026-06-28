@@ -786,6 +786,7 @@ exports.createAdminBlock = async (req, res) => {
 };
 
 const Company = require("../db/models/company/company.model");
+const CompanyMembership = require("../db/models/company/companyMembership.model");
 const User = require("../db/models/user.model");
 const { addEventToCalendar, deleteEventFromCalendar, updateEventInCalendar, getBusyIntervals } = require("../utils/googleCalendarSync");
 
@@ -1444,6 +1445,36 @@ exports.settingsInit = async (req, res) => {
   const twoFAEnabled = req.user?.twoFA?.enabled || false;
   const currentLang  = req.cookies?.user_lang || req.user?.preferredLang || "fr";
 
+  // ── "Rejoindre un établissement" — cf. plan d'unification des comptes ──────
+  // Côté demandeur : a-t-il une demande en cours/refusée à afficher ?
+  let myJoinRequest = null;
+  if (!res.locals.currentCompany) {
+    const membership = await CompanyMembership.findOne({ user: req.user._id })
+      .sort("-createdAt")
+      .populate({ path: "company", select: "owner", populate: { path: "owner", select: "businessName fullName" } })
+      .lean();
+    if (membership && membership.company) {
+      myJoinRequest = {
+        status: membership.status,
+        companyName: membership.company.owner?.businessName || membership.company.owner?.fullName || "Établissement",
+      };
+    }
+  }
+
+  // Côté propriétaire : demandes en attente pour SON établissement (Business uniquement)
+  let pendingJoinRequests = [];
+  if (res.locals.currentCompany && res.locals.membershipRole === "owner") {
+    const requests = await CompanyMembership.find({ company: res.locals.currentCompany._id, status: "pending" })
+      .populate("user", "fullName email profilePicture")
+      .lean();
+    pendingJoinRequests = requests.filter((r) => r.user).map((r) => ({
+      id: String(r._id),
+      fullName: r.user.fullName,
+      email: r.user.email,
+      profilePicture: r.user.profilePicture || "/images/no-user.webp",
+    }));
+  }
+
   return res.render("admin/settings", {
     pageName: "Settings",
     title: res.locals.t?.titles?.infos || "Paramètres",
@@ -1469,6 +1500,9 @@ exports.settingsInit = async (req, res) => {
     stripeConnectSuccess:  req.query.stripeConnectSuccess === "1",
     stripeConnectError:    req.query.stripeConnectError   || null,
     stripeConnectMsg:      req.query.stripeMsg            || null,
+    membershipRole: res.locals.membershipRole || null,
+    myJoinRequest,
+    pendingJoinRequests,
   });
 };
 
@@ -2055,6 +2089,9 @@ exports.saveCancellationPolicy = async (req, res) => {
  */
 exports.initiateStripeConnect = async (req, res) => {
   try {
+    if (res.locals.membershipRole !== "owner") {
+      return res.redirect("/settings?stripeConnectError=owner_only");
+    }
     const baseUrl   = env.appBaseUrl || "https://www.branshee.com";
     const companyId = res.locals.currentCompany._id.toString();
 
@@ -2158,6 +2195,9 @@ exports.stripeConnectRefresh = async (req, res) => {
 /** Déconnecte le compte Stripe Connect (supprime la liaison en DB) */
 exports.disconnectStripeConnect = async (req, res) => {
   try {
+    if (res.locals.membershipRole !== "owner") {
+      return res.status(403).json({ error: "Seul le propriétaire peut faire ça." });
+    }
     const company = res.locals.currentCompany;
     await Company.findByIdAndUpdate(company._id, {
       "stripeConnect.accountId":    "",

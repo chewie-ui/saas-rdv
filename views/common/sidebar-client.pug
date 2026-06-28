@@ -22,14 +22,34 @@ aside.sidebar#sidebar
                     svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
                         path(d="M200-640h560v-80H200v80Zm0 0v-80 80Zm0 560q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T800-120H200Zm0-80h560v-400H200v400Zm80-40h160v-160H280v160Zm240 0h160v-40H520v40Zm0-120h160v-40H520v40Zm-240-120h400v-80H280v80Z")
                     span Mes rendez-vous
+                //- Établissement (cf. plan d'unification) : "le gérer" s'il en a
+                //- déjà un (propriétaire ou membre accepté), sinon deux entrées
+                //- séparées vers les pages dédiées créer/rejoindre.
+                if hasEstablishment
+                    a.sb-link(href="/appointment")
+                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                            path(d="M160-120v-650l320-150 320 150v650H160Zm240-80h160v-200H400v200Zm-160 0h80v-280h320v280h80v-528l-240-112-240 112v528Z")
+                        span Gérer mon établissement
+                else
+                    a.sb-link(href="/etablissement/creer")
+                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                            path(d="M440-440H240v-80h200v-200h80v200h200v80H520v200h-80v-200Z")
+                        span Créer un établissement
+                    a.sb-link(href="/etablissement/rejoindre")
+                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                            path(d="M600-400q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29ZM80-240v-50q0-29 16-54t44-37q34-16 70.5-24.5T280-414q43 0 79 8.5t70 24.5q28 12 44.5 37t16.5 54v50H80Zm520 0v-42q0-32-15.5-58.5T538-385q23-7 47-11t55-4q47 0 89 13.5t68 36.5q26 16 41 38.5t15 51.5v60H600Zm-320-95q47 0 79 16.5t32 35.5v23H120v-23q0-19 32-35.5t128-16.5ZM280-480q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29Z")
+                        span Rejoindre un établissement
 
             .sb-section
                 p.sb-section__hd Compte
+                //- Page Paramètres dédiée espace-client (légère, sans chrome
+                //- admin) — pour tout le monde, compte unifié ou legacy
+                //- Client, désormais en mode dual via isClientOrUserAuth.
                 a.sb-link(href="/espace-client/parametres" class=pageName === 'Paramètres' ? 'active' : '')
                     svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
                         path(d="m370-80-16-128q-13-5-24.5-12T307-235l-119 50L78-375l103-78q-1-7-1-13.5v-27q0-6.5 1-13.5L78-585l110-190 119 50q11-8 23-15t24-12l16-128h220l16 128q13 5 24.5 12t22.5 15l119-50 110 190-103 78q1 7 1 13.5v27q0 6.5-2 13.5l103 78-110 190-118-50q-11 8-23 15t-24 12L590-80H370Zm70-80h79l14-106q31-8 57.5-23.5T639-327l99 41 39-68-86-65q5-14 7-29.5t2-31.5q0-16-2-31.5t-7-29.5l86-65-39-68-99 42q-22-23-48.5-38.5T533-694l-13-106h-79l-14 106q-31 8-57.5 23.5T321-633l-99-41-39 68 86 65q-5 14-7 29.5t-2 31.5q0 16 2 31.5t7 29.5l-86 65 39 68 99-42q22 23 48.5 38.5T427-266l13 106Zm42-180q58 0 99-41t41-99q0-58-41-99t-99-41q-59 0-99.5 41T342-480q0 58 40.5 99t99.5 41Zm-2-140Z")
                     span Paramètres
-                a.sb-link(href="/client/logout")
+                a.sb-link(href="/logout")
                     svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
                         path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z")
                     span Déconnexion

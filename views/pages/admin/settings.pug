@@ -44,8 +44,56 @@ block content
             .info-card__actions
                 button.sm-btn.sm-btn--danger#deleteAccountBtn(type="button")
                     span= t.profile.delete_account
-                button.sm-btn.sm-btn--primary#saveChanges
+                button.sm-btn.sm-btn--primary#saveChanges(disabled)
                     span= t.profile.save
+
+        //- ── Votre établissement ─────────────────────────────────────────────
+        .info-card#establishmentCard
+            .info-card__header
+                h3 Votre établissement
+            if !currentCompany
+                if myJoinRequest && myJoinRequest.status === 'pending'
+                    p.info-card__desc(style="color:#b45309") Votre demande pour rejoindre #{myJoinRequest.companyName} est en attente d'approbation par le propriétaire.
+                else
+                    if myJoinRequest && myJoinRequest.status === 'rejected'
+                        p.info-card__desc(style="color:#b45309") Votre demande pour rejoindre #{myJoinRequest.companyName} a été refusée. Vous pouvez créer votre propre établissement, ou essayer d'en rejoindre un autre.
+                    else
+                        p.info-card__desc Vous n'avez pas encore d'établissement — créez le vôtre, ou rejoignez une équipe existante (plan Business).
+                    .info-card__actions
+                        a.sm-btn.sm-btn--primary(href="/etablissement/creer")
+                            span Créer mon établissement
+                        a.sm-btn.sm-btn--ghost(href="/etablissement/rejoindre")
+                            span Rejoindre un établissement
+            else if membershipRole === 'member'
+                p.info-card__desc Vous faites partie de l'équipe de cet établissement.
+            else if currentCompany.isPaused
+                p.info-card__desc(style="color:#b45309")
+                    | Votre établissement est en pause — il n'apparaît plus dans les résultats de recherche et votre page de réservation est masquée aux visiteurs. Votre abonnement continue normalement.
+                .info-card__actions
+                    button.sm-btn.sm-btn--primary#resumeCompanyBtn(type="button")
+                        span Reprendre mon établissement
+            else
+                p.info-card__desc Votre établissement est actif et visible publiquement.
+                .info-card__actions
+                    button.sm-btn.sm-btn--ghost#pauseCompanyBtn(type="button")
+                        span Mettre en pause
+            p#establishmentStatus(style="display:none;font-size:13px;color:var(--accent);margin-top:10px")
+            p#establishmentError(style="display:none;font-size:13px;color:#dc2626;margin-top:10px")
+
+        //- ── Demandes pour rejoindre votre équipe (propriétaire uniquement) ──
+        if membershipRole === 'owner' && pendingJoinRequests && pendingJoinRequests.length
+            .info-card#joinRequestsCard
+                .info-card__header
+                    h3 Demandes pour rejoindre votre équipe
+                    p.info-card__desc= pendingJoinRequests.length + ' demande(s) en attente.'
+                each reqst in pendingJoinRequests
+                    .join-request-row(data-id=reqst.id style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border-light,#e5e7eb)")
+                        img(src=reqst.profilePicture alt=reqst.fullName style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0")
+                        div(style="flex:1;min-width:0")
+                            div(style="font-weight:600;font-size:14px")= reqst.fullName
+                            div(style="font-size:12.5px;color:var(--muted,#6b7280)")= reqst.email
+                        button.sm-btn.sm-btn--ghost.join-request-reject(type="button" data-id=reqst.id) Refuser
+                        button.sm-btn.sm-btn--primary.join-request-accept(type="button" data-id=reqst.id) Accepter
 
         //- ── Mot de passe ────────────────────────────────────────────────────
         .info-card#pwdCard
@@ -112,175 +160,143 @@ block content
                 });
             })();
 
-        //- ── Votre abonnement ────────────────────────────────────────────────
-        .info-card
-            .info-card__header
-                h3= t.info.sub_title
-                p.info-card__desc= t.info.sub_desc
-            .sub-summary
-                .sub-summary__row
-                    span.sub-summary__label= t.info.sub_current_plan
-                    span.sub-summary__badge(class='sub-badge--' + (currentPlan || 'basic'))
-                        = currentPlan === 'business' ? 'Business' : currentPlan === 'pro' ? 'Pro' : 'Starter'
-                if isPro && !isExpired
-                    .sub-status
-                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                            path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-56-240 226-226-57-57-169 169-85-85-57 57 142 142Z")
-                        .sub-status__body
-                            strong= t.info.sub_active_title.replace('{plan}', currentPlan === 'business' ? 'Business' : 'Pro')
-                            span= t.info.sub_active_desc
-                else if isExpired
-                    .sub-status.sub-status--expired
-                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                            path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
-                        .sub-status__body
-                            strong= t.info.sub_expired_title
-                            span= t.info.sub_expired_desc
+        //- ── Cartes pro (abonnement, paiements, politique d'annulation) ──────
+        //- N'ont de sens que pour un établissement (cf. plan d'unification) —
+        //- sans ça, leurs boutons mènent vers des routes injectCompany-gated
+        //- (ex. /subscription) qui redirigent silencieusement vers "/".
+        if currentCompany
+
+            //- ── Votre abonnement ────────────────────────────────────────────
+            .info-card
+                .info-card__header
+                    h3= t.info.sub_title
+                    p.info-card__desc= t.info.sub_desc
+                .sub-summary
+                    .sub-summary__row
+                        span.sub-summary__label= t.info.sub_current_plan
+                        span.sub-summary__badge(class='sub-badge--' + (currentPlan || 'basic'))
+                            = currentPlan === 'business' ? 'Business' : currentPlan === 'pro' ? 'Pro' : 'Starter'
+                    if isPro && !isExpired
+                        .sub-status
+                            svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                                path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-56-240 226-226-57-57-169 169-85-85-57 57 142 142Z")
+                            .sub-status__body
+                                strong= t.info.sub_active_title.replace('{plan}', currentPlan === 'business' ? 'Business' : 'Pro')
+                                span= t.info.sub_active_desc
+                    else if isExpired
+                        .sub-status.sub-status--expired
+                            svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                                path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                            .sub-status__body
+                                strong= t.info.sub_expired_title
+                                span= t.info.sub_expired_desc
+                    else
+                        .sub-status.sub-status--inactive
+                            svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                                path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                            .sub-status__body
+                                strong= t.info.sub_inactive_title
+                                span= t.info.sub_inactive_desc
+                .info-card__actions
+                    a.sm-btn.sm-btn--ghost(href="/subscription")= t.info.sub_manage_btn
+
+            //- ── Moyens de paiement ──────────────────────────────────────────────
+            .info-card
+                .info-card__header
+                    h3= t.info.pm_title
+                    p.info-card__desc= t.info.pm_desc
+                if paymentMethods && paymentMethods.length > 0
+                    .pm-list
+                        each pm in paymentMethods
+                            .pm-item(data-pmid=pm.id class=pm.isDefault ? 'pm-item--default' : '')
+                                .pm-item__icon(class='pm-brand--' + pm.brand)
+                                    = pm.brand.charAt(0).toUpperCase() + pm.brand.slice(1)
+                                .pm-item__info
+                                    span.pm-item__number •••• #{pm.last4}
+                                    span.pm-item__expiry= t.info.pm_expires.replace('{date}', String(pm.expMonth).padStart(2,'0') + '/' + String(pm.expYear).slice(-2))
+                                .pm-item__actions
+                                    if pm.isDefault
+                                        span.pm-badge--default
+                                            svg(xmlns="http://www.w3.org/2000/svg" height="11px" viewBox="0 -960 960 960" width="11px" fill="currentColor")
+                                                path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-56-240 226-226-57-57-169 169-85-85-57 57 142 142Z")
+                                            = t.info.pm_default_badge
+                                    else
+                                        button.pm-btn--set-default(type="button" data-pmid=pm.id)= t.info.pm_set_default
+                                    button.pm-item__del(type="button" data-pmid=pm.id title=t.info.pm_delete_title)
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                            path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
                 else
-                    .sub-status.sub-status--inactive
-                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                            path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
-                        .sub-status__body
-                            strong= t.info.sub_inactive_title
-                            span= t.info.sub_inactive_desc
-            .info-card__actions
-                a.sm-btn.sm-btn--ghost(href="/subscription")= t.info.sub_manage_btn
+                    p.pm-empty= t.info.pm_empty
+                .pm-add-wrap
+                    button.sm-btn.sm-btn--ghost#pmAddBtn(type="button")
+                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                            path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                        span= t.info.pm_add_btn
+                .pm-form-wrap#pmFormWrap(style="display:none")
+                    .pm-form
+                        p.pm-form__label= t.info.pm_form_label
+                        #pm-card-element.pm-card-input
+                        .pm-form__error#pmCardError
+                        .pm-form__actions
+                            button.sm-btn.sm-btn--primary#pmConfirmBtn(type="button")
+                                span= t.info.pm_confirm_btn
+                            button.sm-btn.sm-btn--ghost#pmCancelBtn(type="button")= t.info.pm_cancel_btn
 
-        //- ── Moyens de paiement ──────────────────────────────────────────────
-        .info-card
-            .info-card__header
-                h3= t.info.pm_title
-                p.info-card__desc= t.info.pm_desc
-            if paymentMethods && paymentMethods.length > 0
-                .pm-list
-                    each pm in paymentMethods
-                        .pm-item(data-pmid=pm.id class=pm.isDefault ? 'pm-item--default' : '')
-                            .pm-item__icon(class='pm-brand--' + pm.brand)
-                                = pm.brand.charAt(0).toUpperCase() + pm.brand.slice(1)
-                            .pm-item__info
-                                span.pm-item__number •••• #{pm.last4}
-                                span.pm-item__expiry= t.info.pm_expires.replace('{date}', String(pm.expMonth).padStart(2,'0') + '/' + String(pm.expYear).slice(-2))
-                            .pm-item__actions
-                                if pm.isDefault
-                                    span.pm-badge--default
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="11px" viewBox="0 -960 960 960" width="11px" fill="currentColor")
-                                            path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-56-240 226-226-57-57-169 169-85-85-57 57 142 142Z")
-                                        = t.info.pm_default_badge
-                                else
-                                    button.pm-btn--set-default(type="button" data-pmid=pm.id)= t.info.pm_set_default
-                                button.pm-item__del(type="button" data-pmid=pm.id title=t.info.pm_delete_title)
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
-            else
-                p.pm-empty= t.info.pm_empty
-            .pm-add-wrap
-                button.sm-btn.sm-btn--ghost#pmAddBtn(type="button")
-                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                        path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
-                    span= t.info.pm_add_btn
-            .pm-form-wrap#pmFormWrap(style="display:none")
-                .pm-form
-                    p.pm-form__label= t.info.pm_form_label
-                    #pm-card-element.pm-card-input
-                    .pm-form__error#pmCardError
-                    .pm-form__actions
-                        button.sm-btn.sm-btn--primary#pmConfirmBtn(type="button")
-                            span= t.info.pm_confirm_btn
-                        button.sm-btn.sm-btn--ghost#pmCancelBtn(type="button")= t.info.pm_cancel_btn
-
-        //- ── Historique de paiement ──────────────────────────────────────────
-        .info-card
-            .info-card__header
-                h3= t.info.inv_title
-                p.info-card__desc= t.info.inv_desc
-            if invoices && invoices.length > 0
-                .inv-table
-                    .inv-table__head
-                        span= t.info.inv_col_date
-                        span= t.info.inv_col_desc
-                        span= t.info.inv_col_amount
-                        span= t.info.inv_col_status
-                        span
-                    each inv in invoices
-                        -
-                            var d = new Date(inv.date * 1000)
-                            var dateStr = d.toLocaleDateString(lang, {day:'2-digit', month:'short', year:'numeric'})
-                            var statusClass = inv.status === 'paid' ? 'inv-badge--paid' : inv.status === 'open' ? 'inv-badge--open' : 'inv-badge--other'
-                            var statusLabel = inv.status === 'paid' ? t.info.inv_status_paid : inv.status === 'open' ? t.info.inv_status_pending : inv.status === 'void' ? t.info.inv_status_void : inv.status
-                        .inv-row
-                            span.inv-row__date= dateStr
-                            span.inv-row__desc= inv.description
-                            span.inv-row__amount #{inv.amount} #{inv.currency}
+            //- ── Historique de paiement ──────────────────────────────────────────
+            .info-card
+                .info-card__header
+                    h3= t.info.inv_title
+                    p.info-card__desc= t.info.inv_desc
+                if invoices && invoices.length > 0
+                    .inv-table
+                        .inv-table__head
+                            span= t.info.inv_col_date
+                            span= t.info.inv_col_desc
+                            span= t.info.inv_col_amount
+                            span= t.info.inv_col_status
                             span
-                                span.inv-badge(class=statusClass)= statusLabel
-                            span.inv-row__actions
-                                if inv.pdfUrl
-                                    a.inv-dl-btn(href=inv.pdfUrl target="_blank" rel="noopener" title=t.info.inv_dl_title)
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
-                                            path(d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z")
-                                        span PDF
-            else
-                p.pm-empty= t.info.inv_empty
-
-        //- ── Authentification à deux facteurs ────────────────────────────────
-        .info-card
-            .info-card__header
-                h3= t.settings.tfa_title
-                p.info-card__desc= t.settings.tfa_desc
-
-            .settings-2fa
-
-                if twoFAEnabled
-                    .twofa-status.twofa-status--on
-                        svg(width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round")
-                            path(d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z")
-                        span= t.settings.tfa_on
-
-                    .twofa-disable
-                        p.twofa-hint= t.settings.tfa_disable_hint
-                        .twofa-row
-                            .twofa-code-wrap
-                                svg.twofa-code-icon(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                    path(d="M80-200v-80h400v80H80Zm0-200v-80h200v80H80Zm0-200v-80h200v80H80Zm736 400L670-336q-22 14-47.5 21t-52.5 7q-75 0-127.5-52.5T390-488q0-75 52.5-127.5T570-668q75 0 127.5 52.5T750-488q0 27-7 52.5T722-388l146 146-52 52ZM570-390q42 0 71-29t29-71q0-42-29-71t-71-29q-42 0-71 29t-29 71q0 42 29 71t71 29Z")
-                                input#disableCode.twofa-code-input(
-                                    type="tel"
-                                    placeholder="123 456"
-                                    maxlength="7"
-                                    inputmode="numeric"
-                                    autocomplete="one-time-code"
-                                    pattern="[0-9 ]*"
-                                )
-                            button.sm-btn.sm-btn--danger#disable2FABtn(type="button")= t.settings.tfa_disable_btn
-                        .twofa-feedback#disableFeedback
-
+                        each inv in invoices
+                            -
+                                var d = new Date(inv.date * 1000)
+                                var dateStr = d.toLocaleDateString(lang, {day:'2-digit', month:'short', year:'numeric'})
+                                var statusClass = inv.status === 'paid' ? 'inv-badge--paid' : inv.status === 'open' ? 'inv-badge--open' : 'inv-badge--other'
+                                var statusLabel = inv.status === 'paid' ? t.info.inv_status_paid : inv.status === 'open' ? t.info.inv_status_pending : inv.status === 'void' ? t.info.inv_status_void : inv.status
+                            .inv-row
+                                span.inv-row__date= dateStr
+                                span.inv-row__desc= inv.description
+                                span.inv-row__amount #{inv.amount} #{inv.currency}
+                                span
+                                    span.inv-badge(class=statusClass)= statusLabel
+                                span.inv-row__actions
+                                    if inv.pdfUrl
+                                        a.inv-dl-btn(href=inv.pdfUrl target="_blank" rel="noopener" title=t.info.inv_dl_title)
+                                            svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
+                                                path(d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z")
+                                            span PDF
                 else
-                    .twofa-status.twofa-status--off
-                        svg(width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round")
-                            path(d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z")
-                        span= t.settings.tfa_off
+                    p.pm-empty= t.info.inv_empty
 
-                    .twofa-setup#twoFASetup
+            //- ── Authentification à deux facteurs ────────────────────────────────
+            .info-card
+                .info-card__header
+                    h3= t.settings.tfa_title
+                    p.info-card__desc= t.settings.tfa_desc
 
-                        .twofa-step#step1
-                            button.sm-btn.sm-btn--primary#start2FABtn(type="button")
-                                svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
-                                    path(d="M12 5v14M5 12h14")
-                                span= t.settings.tfa_setup_btn
+                .settings-2fa
 
-                        .twofa-step(id="step2" style="display:none")
-                            .twofa-qr-block
-                                p.twofa-hint!= t.settings.tfa_step1_html
-                                p.twofa-hint= t.settings.tfa_step2
-                                .twofa-qr-wrap
-                                    img#twoFAQR(src="" alt=t.settings.tfa_qr_alt width="180" height="180")
-                                p.twofa-hint.twofa-hint--small= t.settings.tfa_step2_manual
-                                code.twofa-secret#twoFASecret
-                            p.twofa-hint= t.settings.tfa_step3
+                    if twoFAEnabled
+                        .twofa-status.twofa-status--on
+                            svg(width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round")
+                                path(d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z")
+                            span= t.settings.tfa_on
+
+                        .twofa-disable
+                            p.twofa-hint= t.settings.tfa_disable_hint
                             .twofa-row
                                 .twofa-code-wrap
                                     svg.twofa-code-icon(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                                         path(d="M80-200v-80h400v80H80Zm0-200v-80h200v80H80Zm0-200v-80h200v80H80Zm736 400L670-336q-22 14-47.5 21t-52.5 7q-75 0-127.5-52.5T390-488q0-75 52.5-127.5T570-668q75 0 127.5 52.5T750-488q0 27-7 52.5T722-388l146 146-52 52ZM570-390q42 0 71-29t29-71q0-42-29-71t-71-29q-42 0-71 29t-29 71q0 42 29 71t71 29Z")
-                                    input#enableCode.twofa-code-input(
+                                    input#disableCode.twofa-code-input(
                                         type="tel"
                                         placeholder="123 456"
                                         maxlength="7"
@@ -288,423 +304,461 @@ block content
                                         autocomplete="one-time-code"
                                         pattern="[0-9 ]*"
                                     )
-                                button.sm-btn.sm-btn--primary#enable2FABtn(type="button")= t.settings.tfa_enable_btn
-                            .twofa-feedback#enableFeedback
+                                button.sm-btn.sm-btn--danger#disable2FABtn(type="button")= t.settings.tfa_disable_btn
+                            .twofa-feedback#disableFeedback
 
-        //- ── Notifications email ─────────────────────────────────────────────
-        .info-card
-            .info-card__header
-                h3= t.settings.notif_title
-                p.info-card__desc= t.settings.notif_desc
-            .notif-list
-                .notif-row
-                    .notif-row__left
-                        .notif-row__icon
-                            svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                path(d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9")
-                                path(d="M13.73 21a2 2 0 0 1-3.46 0")
-                        .notif-row__text
-                            .notif-row__title= t.settings.notif_new_booking_title
-                            .notif-row__desc= t.settings.notif_new_booking_desc
-                    label.notif-toggle
-                        input#notifNewBooking(
-                            type="checkbox"
-                            checked=(user.notifications && user.notifications.newBooking !== false)
-                        )
-                        .notif-toggle__track
-            .notif-status#notifStatus
-        style.
-            .notif-list { display:flex; flex-direction:column; gap:0; }
-            .notif-row { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 0; border-bottom:1px solid var(--border-light,#f0f0f0); }
-            .notif-row:last-child { border-bottom:none; padding-bottom:0; }
-            .notif-row__left { display:flex; align-items:center; gap:14px; }
-            .notif-row__icon { width:38px; height:38px; border-radius:10px; background:var(--main-color-pale,#f0fdf4); display:flex; align-items:center; justify-content:center; color:var(--main-color,#16a34a); flex-shrink:0; }
-            .notif-row__text { display:flex; flex-direction:column; gap:2px; }
-            .notif-row__title { font-size:14px; font-weight:600; color:var(--text-primary,#111); }
-            .notif-row__desc { font-size:12.5px; color:var(--text-muted,#6b7280); line-height:1.4; }
-            .notif-toggle { position:relative; display:inline-block; width:46px; height:26px; flex-shrink:0; cursor:pointer; }
-            .notif-toggle input { opacity:0; width:0; height:0; position:absolute; }
-            .notif-toggle__track { position:absolute; inset:0; background:#d1d5db; border-radius:99px; transition:background .2s; }
-            .notif-toggle__track::after { content:''; position:absolute; left:3px; top:3px; width:20px; height:20px; background:#fff; border-radius:50%; transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,.15); }
-            .notif-toggle input:checked + .notif-toggle__track { background:var(--main-color,#16a34a); }
-            .notif-toggle input:checked + .notif-toggle__track::after { transform:translateX(20px); }
-            .notif-status { font-size:12.5px; margin-top:8px; min-height:18px; color:var(--main-color,#16a34a); }
-            .notif-status.error { color:#dc2626; }
-        script.
-            (function() {
-                var cb = document.getElementById('notifNewBooking');
-                var st = document.getElementById('notifStatus');
-                if (!cb) return;
-                cb.addEventListener('change', async function() {
-                    try {
-                        var r = await fetch('/settings/notifications', {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ newBooking: this.checked })
-                        });
-                        var d = await r.json();
-                        if (d.success) {
-                            st.className = 'notif-status';
-                            st.textContent = this.checked ? ((window.__t && window.__t.notif_enabled) || '✓ Notifications activées') : ((window.__t && window.__t.notif_disabled) || '✓ Notifications désactivées');
-                        } else {
-                            st.className = 'notif-status error';
-                            st.textContent = (window.__t && window.__t.save_error) || 'Erreur lors de la sauvegarde.';
-                        }
-                    } catch(e) {
-                        st.className = 'notif-status error';
-                        st.textContent = (window.__t && window.__t.network_error) || 'Erreur réseau.';
-                    }
-                    setTimeout(function() { st.textContent = ''; }, 3000);
-                });
-            })();
+                    else
+                        .twofa-status.twofa-status--off
+                            svg(width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round")
+                                path(d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z")
+                            span= t.settings.tfa_off
 
-        //- ── Modes de paiement ───────────────────────────────────────────────
-        .info-card
-            .info-card__header
-                h3= t.settings.pm_modes_title
-                p.info-card__desc= t.settings.pm_modes_desc
+                        .twofa-setup#twoFASetup
 
-            -
-                var scStatus   = (stripeConnect && stripeConnect.status) || 'not_connected'
-                var scEmail    = (stripeConnect && stripeConnect.accountEmail) || ''
-                var scId       = (stripeConnect && stripeConnect.accountId) || ''
-                var scIsActive = scStatus === 'active'
-                var prepayOn   = !!(currentCompany && currentCompany.prepayment && currentCompany.prepayment.enabled)
-                var prepayReq  = !!(currentCompany && currentCompany.prepayment && currentCompany.prepayment.required)
+                            .twofa-step#step1
+                                button.sm-btn.sm-btn--primary#start2FABtn(type="button")
+                                    svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                                        path(d="M12 5v14M5 12h14")
+                                    span= t.settings.tfa_setup_btn
 
-            //- Banners connect/error (s'affichent si on revient de l'OAuth)
-            if stripeConnectSuccess
-                .sc-success-banner(style="margin-bottom:16px")
-                    svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5")
-                        polyline(points="20 6 9 17 4 12")
-                    = t.settings.sc_connected_banner
-            if stripeConnectError === 'incomplete'
-                .sc-error-banner(style="margin-bottom:16px;background:#fffbeb;border-color:#fbbf24;color:#92400e")
-                    svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
-                        circle(cx="12" cy="12" r="10")
-                        line(x1="12" y1="8" x2="12" y2="12")
-                        line(x1="12" y1="16" x2="12.01" y2="16")
-                    = t.settings.sc_incomplete_banner
-            else if stripeConnectError
-                .sc-error-banner(style="margin-bottom:16px")
-                    svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
-                        circle(cx="12" cy="12" r="10")
-                        line(x1="12" y1="8" x2="12" y2="12")
-                        line(x1="12" y1="16" x2="12.01" y2="16")
-                    = t.settings.sc_error_prefix + ' ' + stripeConnectError
-                    if stripeConnectMsg
-                        span(style="display:block;font-size:11px;opacity:.75;margin-top:4px") #{stripeConnectMsg}
+                            .twofa-step(id="step2" style="display:none")
+                                .twofa-qr-block
+                                    p.twofa-hint!= t.settings.tfa_step1_html
+                                    p.twofa-hint= t.settings.tfa_step2
+                                    .twofa-qr-wrap
+                                        img#twoFAQR(src="" alt=t.settings.tfa_qr_alt width="180" height="180")
+                                    p.twofa-hint.twofa-hint--small= t.settings.tfa_step2_manual
+                                    code.twofa-secret#twoFASecret
+                                p.twofa-hint= t.settings.tfa_step3
+                                .twofa-row
+                                    .twofa-code-wrap
+                                        svg.twofa-code-icon(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                            path(d="M80-200v-80h400v80H80Zm0-200v-80h200v80H80Zm0-200v-80h200v80H80Zm736 400L670-336q-22 14-47.5 21t-52.5 7q-75 0-127.5-52.5T390-488q0-75 52.5-127.5T570-668q75 0 127.5 52.5T750-488q0 27-7 52.5T722-388l146 146-52 52ZM570-390q42 0 71-29t29-71q0-42-29-71t-71-29q-42 0-71 29t-29 71q0 42 29 71t71 29Z")
+                                        input#enableCode.twofa-code-input(
+                                            type="tel"
+                                            placeholder="123 456"
+                                            maxlength="7"
+                                            inputmode="numeric"
+                                            autocomplete="one-time-code"
+                                            pattern="[0-9 ]*"
+                                        )
+                                    button.sm-btn.sm-btn--primary#enable2FABtn(type="button")= t.settings.tfa_enable_btn
+                                .twofa-feedback#enableFeedback
 
-            .pm-methods-grid
-
-                //- ── 1. Paiement en ligne à l'avance ─────────────────────────
-                .pm-method-expandable(class=(prepayOn ? 'is-open' : ''))
-                    label.pm-method-row.pm-method-row--top
-                        input#prepayEnabled(
-                            type="checkbox"
-                            checked=prepayOn
-                        )
-                        .pm-method-info
-                            .pm-method-icon-wrap
-                                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                                    path(d="M880-720v480q0 33-23.5 56.5T800-160H160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720Zm-720 80h640v-80H160v80Zm0 160v240h640v-240H160Zm0 240v-480 480Z")
-                            div
-                                .pm-method-label-row
-                                    span.pm-method-label= t.settings.pm_online_label
-                                    span.pm-method-badge Stripe
-                                span.pm-method-sub= t.settings.pm_online_sub
-
-                    //- Sous-section Stripe (visible si coché)
-                    .pm-method-expand-body#stripeExpandBody(style=(!prepayOn ? 'display:none' : ''))
-
-                        //- Stripe Connect
-                        .sc-connect-inner
-                            if scIsActive
-                                .sc-connected-row
-                                    .sc-connected-badge
-                                        svg(width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5")
-                                            polyline(points="20 6 9 17 4 12")
-                                        = t.settings.sc_connected_label
-                                    .sc-connected-info
-                                        span.sc-connected-email= scEmail || scId
-                                        span.sc-connected-id= scId
-                                    button.sm-btn.sm-btn--ghost.sm-btn--sm#disconnectStripeBtn(
-                                        type="button"
-                                        data-confirm=t.settings.sc_disconnect_confirm
-                                    )= t.settings.sc_disconnect_btn
-                            else if scStatus === 'pending'
-                                .sc-not-connected-inline
-                                    p.sc-not-connected-desc
-                                        = t.settings.sc_pending_l1
-                                        br
-                                        = t.settings.sc_pending_l2
-                                    a.sm-btn.sm-btn--primary.sm-btn--sm(href="/settings/stripe-connect")= t.settings.sc_continue_btn
-                                    span(style="display:block;font-size:11px;color:var(--muted,#6b7280);margin-top:8px")= t.settings.sc_redirect_note
-
-                            else
-                                .sc-not-connected-inline
-                                    p.sc-not-connected-desc
-                                        = t.settings.sc_not_connected_l1
-                                        br
-                                        = t.settings.sc_not_connected_l2
-                                    a.sm-btn.sm-btn--primary.sm-btn--sm(href="/settings/stripe-connect")
-                                        svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:-2px")
-                                            path(d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71")
-                                            path(d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71")
-                                        = t.settings.sc_connect_btn
-                                    span(style="display:block;font-size:11px;color:var(--muted,#6b7280);margin-top:8px")= t.settings.sc_redirect_note
-
-                        //- Toggle obligatoire
-                        .prepayment-toggle-row.prepayment-toggle-row--sub(
-                            id="prepayRequiredRow"
-                            style=(!scIsActive ? 'opacity:.45;pointer-events:none' : '')
-                        )
-                            .prepayment-toggle-info
-                                span.prepayment-toggle-label= t.settings.pm_required_label
-                                span.prepayment-toggle-sub= t.settings.pm_required_sub
-                            label.sa-toggle-wrap
-                                input#prepayRequired(
-                                    type="checkbox"
-                                    checked=prepayReq
-                                    disabled=(!scIsActive)
-                                )
-                                .sa-toggle-track
-
-                        //- Politique annulation
-                        .prepayment-policy-box.prepayment-policy-box--sm
-                            svg(width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                circle(cx="12" cy="12" r="10")
-                                polyline(points="12 6 12 12 16 14")
-                            div
-                                strong= t.settings.cp_auto_title
-                                ul
-                                    li= t.settings.cp_rule_gt24
-                                    li= t.settings.cp_rule_lt24
-                                    li= t.settings.cp_rule_noshow
-
-                //- ── 2. Espèces ──────────────────────────────────────────────
-                label.pm-method-row
-                    input#pmCash(
-                        type="checkbox"
-                        checked=(acceptedPayments && acceptedPayments.cash)
-                    )
-                    .pm-method-info
-                        span.pm-method-icon 💵
-                        div
-                            span.pm-method-label= t.settings.pm_cash_label
-                            span.pm-method-sub= t.settings.pm_cash_sub
-
-                //- ── 3. Carte bancaire sur place ─────────────────────────────
-                label.pm-method-row
-                    input#pmCardOnSite(
-                        type="checkbox"
-                        checked=(acceptedPayments && acceptedPayments.cardOnSite)
-                    )
-                    .pm-method-info
-                        span.pm-method-icon 💳
-                        div
-                            span.pm-method-label= t.settings.pm_card_onsite_label
-                            span.pm-method-sub= t.settings.pm_card_onsite_sub
-
-                //- ── 4. Virement IBAN ────────────────────────────────────────
-                .pm-method-expandable(class=(acceptedPayments && acceptedPayments.bankTransfer && acceptedPayments.bankTransfer.enabled ? 'is-open' : ''))
-                    label.pm-method-row.pm-method-row--top
-                        input#pmBankTransfer(
-                            type="checkbox"
-                            checked=(acceptedPayments && acceptedPayments.bankTransfer && acceptedPayments.bankTransfer.enabled)
-                        )
-                        .pm-method-info
-                            span.pm-method-icon 🏦
-                            div
-                                span.pm-method-label= t.settings.pm_bank_label
-                                span.pm-method-sub= t.settings.pm_bank_sub
-
-                    .pm-method-expand-body#pmBankDetails(style=(!(acceptedPayments && acceptedPayments.bankTransfer && acceptedPayments.bankTransfer.enabled) ? 'display:none' : ''))
-                        .pm-iban-grid
-                            .field
-                                label.bk-label= t.settings.pm_bank_iban
-                                input.input#pmIban(
-                                    type="text"
-                                    placeholder="BE XX XXXX XXXX XXXX"
-                                    value=(acceptedPayments && acceptedPayments.bankTransfer ? acceptedPayments.bankTransfer.iban : '')
-                                )
-                            .field
-                                label.bk-label= t.settings.pm_bank_bic
-                                input.input#pmBic(
-                                    type="text"
-                                    placeholder="GEBABEBB"
-                                    value=(acceptedPayments && acceptedPayments.bankTransfer ? acceptedPayments.bankTransfer.bic : '')
-                                )
-                            .field
-                                label.bk-label= t.settings.pm_bank_name
-                                input.input#pmBankName(
-                                    type="text"
-                                    placeholder="BNP Paribas, ING…"
-                                    value=(acceptedPayments && acceptedPayments.bankTransfer ? acceptedPayments.bankTransfer.bankName : '')
-                                )
-                            .field
-                                label.bk-label= t.settings.pm_bank_note
-                                input.input#pmBankNote(
-                                    type="text"
-                                    placeholder="Mentionner votre nom en communication"
-                                    value=(acceptedPayments && acceptedPayments.bankTransfer ? acceptedPayments.bankTransfer.note : '')
-                                )
-
-                //- ── 5. PayPal ───────────────────────────────────────────────
-                - var ppEnabled = !!(acceptedPayments && acceptedPayments.paypal && acceptedPayments.paypal.enabled)
-                - var ppMe = (acceptedPayments && acceptedPayments.paypal) ? (acceptedPayments.paypal.paypalMe || '') : ''
-                .pm-method-expandable(class=(ppEnabled ? 'is-open' : ''))
-                    label.pm-method-row.pm-method-row--top
-                        input#pmPaypal(
-                            type="checkbox"
-                            checked=ppEnabled
-                        )
-                        .pm-method-info
-                            span.pm-method-icon 🅿️
-                            div
-                                span.pm-method-label PayPal
-                                span.pm-method-sub= t.settings.pm_paypal_sub
-
-                    .pm-method-expand-body#pmPaypalDetails(style=(!ppEnabled ? 'display:none' : ''))
-                        .pm-iban-grid
-                            .field
-                                label.bk-label= t.settings.pm_paypal_username
-                                .sc-manual-form
-                                    span.sc-manual-prefix paypal.me/
-                                    input.input#pmPaypalMe(
-                                        type="text"
-                                        placeholder=t.js.paypal_placeholder_name
-                                        autocomplete="off"
-                                        value=ppMe
-                                    )
-                            .field
-                                label.bk-label= t.settings.pm_paypal_preview_label
-                                p.pm-paypal-preview(id="pmPaypalPreview" style="font-size:12px;color:var(--muted,#6b7280);margin:4px 0 0")
-                                    = ppMe ? 'https://paypal.me/' + ppMe + '/{' + t.js.paypal_placeholder_amount + '}' : 'https://paypal.me/' + t.js.paypal_placeholder_name + '/{' + t.js.paypal_placeholder_amount + '}'
-
-                //- ── 6. QR code ──────────────────────────────────────────────
-                - var qrEnabled = !!(acceptedPayments && acceptedPayments.qrCode && acceptedPayments.qrCode.enabled)
-                - var qrImage = (acceptedPayments && acceptedPayments.qrCode) ? (acceptedPayments.qrCode.imageUrl || '') : ''
-                - var qrNote = (acceptedPayments && acceptedPayments.qrCode) ? (acceptedPayments.qrCode.note || '') : ''
-                .pm-method-expandable(class=(qrEnabled ? 'is-open' : ''))
-                    label.pm-method-row.pm-method-row--top
-                        input#pmQrCode(
-                            type="checkbox"
-                            checked=qrEnabled
-                        )
-                        .pm-method-info
-                            span.pm-method-icon 📱
-                            div
-                                span.pm-method-label= t.settings.pm_qr_label
-                                span.pm-method-sub= t.settings.pm_qr_sub
-
-                    .pm-method-expand-body#pmQrDetails(style=(!qrEnabled ? 'display:none' : ''))
-                        .field(style="margin-bottom:14px")
-                            label.bk-label= t.settings.pm_qr_image_label
-                            div
-                                if qrImage
-                                    img#pmQrPreview(src=qrImage alt="QR code" style="display:block;width:140px;height:140px;object-fit:contain;border:1px solid var(--border,#e5e7eb);border-radius:10px;margin-bottom:8px;background:#fff")
-                                else
-                                    img#pmQrPreview(style="display:none;width:140px;height:140px;object-fit:contain;border:1px solid var(--border,#e5e7eb);border-radius:10px;margin-bottom:8px;background:#fff")
-                                input#pmQrFile(type="file" accept="image/*" style="display:none")
-                                button.sm-btn.sm-btn--ghost#pmQrUploadBtn(type="button")= t.settings.pm_qr_upload_btn
-                        .field
-                            label.bk-label= t.settings.pm_qr_note_label
-                            input.input#pmQrNote(
-                                type="text"
-                                placeholder=t.settings.pm_qr_note_placeholder
-                                value=qrNote
+            //- ── Notifications email ─────────────────────────────────────────────
+            .info-card
+                .info-card__header
+                    h3= t.settings.notif_title
+                    p.info-card__desc= t.settings.notif_desc
+                .notif-list
+                    .notif-row
+                        .notif-row__left
+                            .notif-row__icon
+                                svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                    path(d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9")
+                                    path(d="M13.73 21a2 2 0 0 1-3.46 0")
+                            .notif-row__text
+                                .notif-row__title= t.settings.notif_new_booking_title
+                                .notif-row__desc= t.settings.notif_new_booking_desc
+                        label.notif-toggle
+                            input#notifNewBooking(
+                                type="checkbox"
+                                checked=(user.notifications && user.notifications.newBooking !== false)
                             )
+                            .notif-toggle__track
+                .notif-status#notifStatus
+            style.
+                .notif-list { display:flex; flex-direction:column; gap:0; }
+                .notif-row { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 0; border-bottom:1px solid var(--border-light,#f0f0f0); }
+                .notif-row:last-child { border-bottom:none; padding-bottom:0; }
+                .notif-row__left { display:flex; align-items:center; gap:14px; }
+                .notif-row__icon { width:38px; height:38px; border-radius:10px; background:var(--main-color-pale,#f0fdf4); display:flex; align-items:center; justify-content:center; color:var(--main-color,#16a34a); flex-shrink:0; }
+                .notif-row__text { display:flex; flex-direction:column; gap:2px; }
+                .notif-row__title { font-size:14px; font-weight:600; color:var(--text-primary,#111); }
+                .notif-row__desc { font-size:12.5px; color:var(--text-muted,#6b7280); line-height:1.4; }
+                .notif-toggle { position:relative; display:inline-block; width:46px; height:26px; flex-shrink:0; cursor:pointer; }
+                .notif-toggle input { opacity:0; width:0; height:0; position:absolute; }
+                .notif-toggle__track { position:absolute; inset:0; background:#d1d5db; border-radius:99px; transition:background .2s; }
+                .notif-toggle__track::after { content:''; position:absolute; left:3px; top:3px; width:20px; height:20px; background:#fff; border-radius:50%; transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,.15); }
+                .notif-toggle input:checked + .notif-toggle__track { background:var(--main-color,#16a34a); }
+                .notif-toggle input:checked + .notif-toggle__track::after { transform:translateX(20px); }
+                .notif-status { font-size:12.5px; margin-top:8px; min-height:18px; color:var(--main-color,#16a34a); }
+                .notif-status.error { color:#dc2626; }
+            script.
+                (function() {
+                    var cb = document.getElementById('notifNewBooking');
+                    var st = document.getElementById('notifStatus');
+                    if (!cb) return;
+                    cb.addEventListener('change', async function() {
+                        try {
+                            var r = await fetch('/settings/notifications', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ newBooking: this.checked })
+                            });
+                            var d = await r.json();
+                            if (d.success) {
+                                st.className = 'notif-status';
+                                st.textContent = this.checked ? ((window.__t && window.__t.notif_enabled) || '✓ Notifications activées') : ((window.__t && window.__t.notif_disabled) || '✓ Notifications désactivées');
+                            } else {
+                                st.className = 'notif-status error';
+                                st.textContent = (window.__t && window.__t.save_error) || 'Erreur lors de la sauvegarde.';
+                            }
+                        } catch(e) {
+                            st.className = 'notif-status error';
+                            st.textContent = (window.__t && window.__t.network_error) || 'Erreur réseau.';
+                        }
+                        setTimeout(function() { st.textContent = ''; }, 3000);
+                    });
+                })();
 
-            p#prepayFeedback(style="display:none;font-size:13px;color:var(--accent);margin-top:14px")= t.settings.pm_saved
-            p#prepayError(style="display:none;font-size:13px;color:#dc2626;margin-top:14px")
+            //- ── Modes de paiement ───────────────────────────────────────────────
+            .info-card
+                .info-card__header
+                    h3= t.settings.pm_modes_title
+                    p.info-card__desc= t.settings.pm_modes_desc
 
-        //- ── Politique d'annulation ──────────────────────────────────────────
-        .info-card
-            .info-card__header
-                h3= t.settings.cp_title
-                p.info-card__desc= t.settings.cp_desc
+                -
+                    var scStatus   = (stripeConnect && stripeConnect.status) || 'not_connected'
+                    var scEmail    = (stripeConnect && stripeConnect.accountEmail) || ''
+                    var scId       = (stripeConnect && stripeConnect.accountId) || ''
+                    var scIsActive = scStatus === 'active'
+                    var prepayOn   = !!(currentCompany && currentCompany.prepayment && currentCompany.prepayment.enabled)
+                    var prepayReq  = !!(currentCompany && currentCompany.prepayment && currentCompany.prepayment.required)
 
-            -
-                var cancelRule = (currentCompany && currentCompany.cancellationPolicy && currentCompany.cancellationPolicy.rule) || 'free'
+                //- Banners connect/error (s'affichent si on revient de l'OAuth)
+                if stripeConnectSuccess
+                    .sc-success-banner(style="margin-bottom:16px")
+                        svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5")
+                            polyline(points="20 6 9 17 4 12")
+                        = t.settings.sc_connected_banner
+                if stripeConnectError === 'incomplete'
+                    .sc-error-banner(style="margin-bottom:16px;background:#fffbeb;border-color:#fbbf24;color:#92400e")
+                        svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+                            circle(cx="12" cy="12" r="10")
+                            line(x1="12" y1="8" x2="12" y2="12")
+                            line(x1="12" y1="16" x2="12.01" y2="16")
+                        = t.settings.sc_incomplete_banner
+                else if stripeConnectError
+                    .sc-error-banner(style="margin-bottom:16px")
+                        svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+                            circle(cx="12" cy="12" r="10")
+                            line(x1="12" y1="8" x2="12" y2="12")
+                            line(x1="12" y1="16" x2="12.01" y2="16")
+                        = t.settings.sc_error_prefix + ' ' + stripeConnectError
+                        if stripeConnectMsg
+                            span(style="display:block;font-size:11px;opacity:.75;margin-top:4px") #{stripeConnectMsg}
 
-            .cp-grid
-                //- ── Option 1 : Gratuit ─────────────────────────────────
-                label.cp-card(class=(cancelRule === 'free' ? 'is-selected' : ''))
-                    input(type="radio" name="cancelRule" value="free" checked=(cancelRule === 'free'))
-                    .cp-card__top
-                        .cp-card__icon.cp-card__icon--green
-                            svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                        .cp-card__check
-                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                    .cp-card__badge.cp-card__badge--green= t.settings.cp_free_badge
-                    h4.cp-card__title= t.settings.cp_free_title
-                    p.cp-card__desc= t.settings.cp_free_desc
-                    .cp-card__rules
-                        .cp-rule
-                            .cp-rule__dot.cp-rule__dot--green
-                            span= t.settings.cp_free_rule
+                .pm-methods-grid
 
-                //- ── Option 2 : 50 % si &lt; 24h ─────────────────────────
-                label.cp-card(class=(cancelRule === 'half_24h' ? 'is-selected' : ''))
-                    input(type="radio" name="cancelRule" value="half_24h" checked=(cancelRule === 'half_24h'))
-                    .cp-card__top
-                        .cp-card__icon.cp-card__icon--orange
-                            svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
-                                path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm112-260 56-56-128-128v-176h-80v208l152 152Z")
-                        .cp-card__check
-                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                    .cp-card__badge.cp-card__badge--orange= t.settings.cp_half_badge
-                    h4.cp-card__title= t.settings.cp_half_title
-                    p.cp-card__desc= t.settings.cp_half_desc
-                    .cp-card__rules
-                        .cp-rule
-                            .cp-rule__dot.cp-rule__dot--green
-                            span= t.settings.cp_rule_full_refund
-                        .cp-rule
-                            .cp-rule__dot.cp-rule__dot--orange
-                            span= t.settings.cp_rule_half_kept
+                    //- ── 1. Paiement en ligne à l'avance ─────────────────────────
+                    .pm-method-expandable(class=(prepayOn ? 'is-open' : ''))
+                        label.pm-method-row.pm-method-row--top
+                            input#prepayEnabled(
+                                type="checkbox"
+                                checked=prepayOn
+                            )
+                            .pm-method-info
+                                .pm-method-icon-wrap
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                                        path(d="M880-720v480q0 33-23.5 56.5T800-160H160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720Zm-720 80h640v-80H160v80Zm0 160v240h640v-240H160Zm0 240v-480 480Z")
+                                div
+                                    .pm-method-label-row
+                                        span.pm-method-label= t.settings.pm_online_label
+                                        span.pm-method-badge Stripe
+                                    span.pm-method-sub= t.settings.pm_online_sub
 
-                //- ── Option 3 : 100 % si &lt; 12h ────────────────────────
-                label.cp-card(class=(cancelRule === 'full_12h' ? 'is-selected' : ''))
-                    input(type="radio" name="cancelRule" value="full_12h" checked=(cancelRule === 'full_12h'))
-                    .cp-card__top
-                        .cp-card__icon.cp-card__icon--red
-                            svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
-                                path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
-                        .cp-card__check
-                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                    .cp-card__badge.cp-card__badge--red= t.settings.cp_full_badge
-                    h4.cp-card__title= t.settings.cp_full_title
-                    p.cp-card__desc= t.settings.cp_full_desc
-                    .cp-card__rules
-                        .cp-rule
-                            .cp-rule__dot.cp-rule__dot--green
-                            span= t.settings.cp_rule_full_refund
-                        .cp-rule
-                            .cp-rule__dot.cp-rule__dot--orange
-                            span= t.settings.cp_rule_half_12_24
-                        .cp-rule
-                            .cp-rule__dot.cp-rule__dot--red
-                            span= t.settings.cp_rule_full_lt12
+                        //- Sous-section Stripe (visible si coché)
+                        .pm-method-expand-body#stripeExpandBody(style=(!prepayOn ? 'display:none' : ''))
 
-            if cancelRule !== 'free' && !scIsActive
-                .cp-warning
-                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                        path(d="M40-120l440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Z")
-                    span
-                        strong= t.settings.cp_warning
-                        = ' ' + t.settings.cp_warning_desc
+                            //- Stripe Connect
+                            .sc-connect-inner
+                                if scIsActive
+                                    .sc-connected-row
+                                        .sc-connected-badge
+                                            svg(width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5")
+                                                polyline(points="20 6 9 17 4 12")
+                                            = t.settings.sc_connected_label
+                                        .sc-connected-info
+                                            span.sc-connected-email= scEmail || scId
+                                            span.sc-connected-id= scId
+                                        button.sm-btn.sm-btn--ghost.sm-btn--sm#disconnectStripeBtn(
+                                            type="button"
+                                            data-confirm=t.settings.sc_disconnect_confirm
+                                        )= t.settings.sc_disconnect_btn
+                                else if scStatus === 'pending'
+                                    .sc-not-connected-inline
+                                        p.sc-not-connected-desc
+                                            = t.settings.sc_pending_l1
+                                            br
+                                            = t.settings.sc_pending_l2
+                                        a.sm-btn.sm-btn--primary.sm-btn--sm(href="/settings/stripe-connect")= t.settings.sc_continue_btn
+                                        span(style="display:block;font-size:11px;color:var(--muted,#6b7280);margin-top:8px")= t.settings.sc_redirect_note
 
-            .cp-footer
-                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                    path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
-                span= t.settings.cp_footer_note
-            p#cancelPolicyFeedback(style="display:none;font-size:13px;color:var(--accent);margin-top:12px")= t.settings.cp_saved
+                                else
+                                    .sc-not-connected-inline
+                                        p.sc-not-connected-desc
+                                            = t.settings.sc_not_connected_l1
+                                            br
+                                            = t.settings.sc_not_connected_l2
+                                        a.sm-btn.sm-btn--primary.sm-btn--sm(href="/settings/stripe-connect")
+                                            svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:-2px")
+                                                path(d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71")
+                                                path(d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71")
+                                            = t.settings.sc_connect_btn
+                                        span(style="display:block;font-size:11px;color:var(--muted,#6b7280);margin-top:8px")= t.settings.sc_redirect_note
+
+                            //- Toggle obligatoire
+                            .prepayment-toggle-row.prepayment-toggle-row--sub(
+                                id="prepayRequiredRow"
+                                style=(!scIsActive ? 'opacity:.45;pointer-events:none' : '')
+                            )
+                                .prepayment-toggle-info
+                                    span.prepayment-toggle-label= t.settings.pm_required_label
+                                    span.prepayment-toggle-sub= t.settings.pm_required_sub
+                                label.sa-toggle-wrap
+                                    input#prepayRequired(
+                                        type="checkbox"
+                                        checked=prepayReq
+                                        disabled=(!scIsActive)
+                                    )
+                                    .sa-toggle-track
+
+                            //- Politique annulation
+                            .prepayment-policy-box.prepayment-policy-box--sm
+                                svg(width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                    circle(cx="12" cy="12" r="10")
+                                    polyline(points="12 6 12 12 16 14")
+                                div
+                                    strong= t.settings.cp_auto_title
+                                    ul
+                                        li= t.settings.cp_rule_gt24
+                                        li= t.settings.cp_rule_lt24
+                                        li= t.settings.cp_rule_noshow
+
+                    //- ── 2. Espèces ──────────────────────────────────────────────
+                    label.pm-method-row
+                        input#pmCash(
+                            type="checkbox"
+                            checked=(acceptedPayments && acceptedPayments.cash)
+                        )
+                        .pm-method-info
+                            span.pm-method-icon 💵
+                            div
+                                span.pm-method-label= t.settings.pm_cash_label
+                                span.pm-method-sub= t.settings.pm_cash_sub
+
+                    //- ── 3. Carte bancaire sur place ─────────────────────────────
+                    label.pm-method-row
+                        input#pmCardOnSite(
+                            type="checkbox"
+                            checked=(acceptedPayments && acceptedPayments.cardOnSite)
+                        )
+                        .pm-method-info
+                            span.pm-method-icon 💳
+                            div
+                                span.pm-method-label= t.settings.pm_card_onsite_label
+                                span.pm-method-sub= t.settings.pm_card_onsite_sub
+
+                    //- ── 4. Virement IBAN ────────────────────────────────────────
+                    .pm-method-expandable(class=(acceptedPayments && acceptedPayments.bankTransfer && acceptedPayments.bankTransfer.enabled ? 'is-open' : ''))
+                        label.pm-method-row.pm-method-row--top
+                            input#pmBankTransfer(
+                                type="checkbox"
+                                checked=(acceptedPayments && acceptedPayments.bankTransfer && acceptedPayments.bankTransfer.enabled)
+                            )
+                            .pm-method-info
+                                span.pm-method-icon 🏦
+                                div
+                                    span.pm-method-label= t.settings.pm_bank_label
+                                    span.pm-method-sub= t.settings.pm_bank_sub
+
+                        .pm-method-expand-body#pmBankDetails(style=(!(acceptedPayments && acceptedPayments.bankTransfer && acceptedPayments.bankTransfer.enabled) ? 'display:none' : ''))
+                            .pm-iban-grid
+                                .field
+                                    label.bk-label= t.settings.pm_bank_iban
+                                    input.input#pmIban(
+                                        type="text"
+                                        placeholder="BE XX XXXX XXXX XXXX"
+                                        value=(acceptedPayments && acceptedPayments.bankTransfer ? acceptedPayments.bankTransfer.iban : '')
+                                    )
+                                .field
+                                    label.bk-label= t.settings.pm_bank_bic
+                                    input.input#pmBic(
+                                        type="text"
+                                        placeholder="GEBABEBB"
+                                        value=(acceptedPayments && acceptedPayments.bankTransfer ? acceptedPayments.bankTransfer.bic : '')
+                                    )
+                                .field
+                                    label.bk-label= t.settings.pm_bank_name
+                                    input.input#pmBankName(
+                                        type="text"
+                                        placeholder="BNP Paribas, ING…"
+                                        value=(acceptedPayments && acceptedPayments.bankTransfer ? acceptedPayments.bankTransfer.bankName : '')
+                                    )
+                                .field
+                                    label.bk-label= t.settings.pm_bank_note
+                                    input.input#pmBankNote(
+                                        type="text"
+                                        placeholder="Mentionner votre nom en communication"
+                                        value=(acceptedPayments && acceptedPayments.bankTransfer ? acceptedPayments.bankTransfer.note : '')
+                                    )
+
+                    //- ── 5. PayPal ───────────────────────────────────────────────
+                    - var ppEnabled = !!(acceptedPayments && acceptedPayments.paypal && acceptedPayments.paypal.enabled)
+                    - var ppMe = (acceptedPayments && acceptedPayments.paypal) ? (acceptedPayments.paypal.paypalMe || '') : ''
+                    .pm-method-expandable(class=(ppEnabled ? 'is-open' : ''))
+                        label.pm-method-row.pm-method-row--top
+                            input#pmPaypal(
+                                type="checkbox"
+                                checked=ppEnabled
+                            )
+                            .pm-method-info
+                                span.pm-method-icon 🅿️
+                                div
+                                    span.pm-method-label PayPal
+                                    span.pm-method-sub= t.settings.pm_paypal_sub
+
+                        .pm-method-expand-body#pmPaypalDetails(style=(!ppEnabled ? 'display:none' : ''))
+                            .pm-iban-grid
+                                .field
+                                    label.bk-label= t.settings.pm_paypal_username
+                                    .sc-manual-form
+                                        span.sc-manual-prefix paypal.me/
+                                        input.input#pmPaypalMe(
+                                            type="text"
+                                            placeholder=t.js.paypal_placeholder_name
+                                            autocomplete="off"
+                                            value=ppMe
+                                        )
+                                .field
+                                    label.bk-label= t.settings.pm_paypal_preview_label
+                                    p.pm-paypal-preview(id="pmPaypalPreview" style="font-size:12px;color:var(--muted,#6b7280);margin:4px 0 0")
+                                        = ppMe ? 'https://paypal.me/' + ppMe + '/{' + t.js.paypal_placeholder_amount + '}' : 'https://paypal.me/' + t.js.paypal_placeholder_name + '/{' + t.js.paypal_placeholder_amount + '}'
+
+                    //- ── 6. QR code ──────────────────────────────────────────────
+                    - var qrEnabled = !!(acceptedPayments && acceptedPayments.qrCode && acceptedPayments.qrCode.enabled)
+                    - var qrImage = (acceptedPayments && acceptedPayments.qrCode) ? (acceptedPayments.qrCode.imageUrl || '') : ''
+                    - var qrNote = (acceptedPayments && acceptedPayments.qrCode) ? (acceptedPayments.qrCode.note || '') : ''
+                    .pm-method-expandable(class=(qrEnabled ? 'is-open' : ''))
+                        label.pm-method-row.pm-method-row--top
+                            input#pmQrCode(
+                                type="checkbox"
+                                checked=qrEnabled
+                            )
+                            .pm-method-info
+                                span.pm-method-icon 📱
+                                div
+                                    span.pm-method-label= t.settings.pm_qr_label
+                                    span.pm-method-sub= t.settings.pm_qr_sub
+
+                        .pm-method-expand-body#pmQrDetails(style=(!qrEnabled ? 'display:none' : ''))
+                            .field(style="margin-bottom:14px")
+                                label.bk-label= t.settings.pm_qr_image_label
+                                div
+                                    if qrImage
+                                        img#pmQrPreview(src=qrImage alt="QR code" style="display:block;width:140px;height:140px;object-fit:contain;border:1px solid var(--border,#e5e7eb);border-radius:10px;margin-bottom:8px;background:#fff")
+                                    else
+                                        img#pmQrPreview(style="display:none;width:140px;height:140px;object-fit:contain;border:1px solid var(--border,#e5e7eb);border-radius:10px;margin-bottom:8px;background:#fff")
+                                    input#pmQrFile(type="file" accept="image/*" style="display:none")
+                                    button.sm-btn.sm-btn--ghost#pmQrUploadBtn(type="button")= t.settings.pm_qr_upload_btn
+                            .field
+                                label.bk-label= t.settings.pm_qr_note_label
+                                input.input#pmQrNote(
+                                    type="text"
+                                    placeholder=t.settings.pm_qr_note_placeholder
+                                    value=qrNote
+                                )
+
+                p#prepayFeedback(style="display:none;font-size:13px;color:var(--accent);margin-top:14px")= t.settings.pm_saved
+                p#prepayError(style="display:none;font-size:13px;color:#dc2626;margin-top:14px")
+
+            //- ── Politique d'annulation ──────────────────────────────────────────
+            .info-card
+                .info-card__header
+                    h3= t.settings.cp_title
+                    p.info-card__desc= t.settings.cp_desc
+
+                -
+                    var cancelRule = (currentCompany && currentCompany.cancellationPolicy && currentCompany.cancellationPolicy.rule) || 'free'
+
+                .cp-grid
+                    //- ── Option 1 : Gratuit ─────────────────────────────────
+                    label.cp-card(class=(cancelRule === 'free' ? 'is-selected' : ''))
+                        input(type="radio" name="cancelRule" value="free" checked=(cancelRule === 'free'))
+                        .cp-card__top
+                            .cp-card__icon.cp-card__icon--green
+                                svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                            .cp-card__check
+                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .cp-card__badge.cp-card__badge--green= t.settings.cp_free_badge
+                        h4.cp-card__title= t.settings.cp_free_title
+                        p.cp-card__desc= t.settings.cp_free_desc
+                        .cp-card__rules
+                            .cp-rule
+                                .cp-rule__dot.cp-rule__dot--green
+                                span= t.settings.cp_free_rule
+
+                    //- ── Option 2 : 50 % si &lt; 24h ─────────────────────────
+                    label.cp-card(class=(cancelRule === 'half_24h' ? 'is-selected' : ''))
+                        input(type="radio" name="cancelRule" value="half_24h" checked=(cancelRule === 'half_24h'))
+                        .cp-card__top
+                            .cp-card__icon.cp-card__icon--orange
+                                svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
+                                    path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm112-260 56-56-128-128v-176h-80v208l152 152Z")
+                            .cp-card__check
+                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .cp-card__badge.cp-card__badge--orange= t.settings.cp_half_badge
+                        h4.cp-card__title= t.settings.cp_half_title
+                        p.cp-card__desc= t.settings.cp_half_desc
+                        .cp-card__rules
+                            .cp-rule
+                                .cp-rule__dot.cp-rule__dot--green
+                                span= t.settings.cp_rule_full_refund
+                            .cp-rule
+                                .cp-rule__dot.cp-rule__dot--orange
+                                span= t.settings.cp_rule_half_kept
+
+                    //- ── Option 3 : 100 % si &lt; 12h ────────────────────────
+                    label.cp-card(class=(cancelRule === 'full_12h' ? 'is-selected' : ''))
+                        input(type="radio" name="cancelRule" value="full_12h" checked=(cancelRule === 'full_12h'))
+                        .cp-card__top
+                            .cp-card__icon.cp-card__icon--red
+                                svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
+                                    path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
+                            .cp-card__check
+                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                        .cp-card__badge.cp-card__badge--red= t.settings.cp_full_badge
+                        h4.cp-card__title= t.settings.cp_full_title
+                        p.cp-card__desc= t.settings.cp_full_desc
+                        .cp-card__rules
+                            .cp-rule
+                                .cp-rule__dot.cp-rule__dot--green
+                                span= t.settings.cp_rule_full_refund
+                            .cp-rule
+                                .cp-rule__dot.cp-rule__dot--orange
+                                span= t.settings.cp_rule_half_12_24
+                            .cp-rule
+                                .cp-rule__dot.cp-rule__dot--red
+                                span= t.settings.cp_rule_full_lt12
+
+                if cancelRule !== 'free' && !scIsActive
+                    .cp-warning
+                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                            path(d="M40-120l440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Z")
+                        span
+                            strong= t.settings.cp_warning
+                            = ' ' + t.settings.cp_warning_desc
+
+                .cp-footer
+                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
+                        path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                    span= t.settings.cp_footer_note
+                p#cancelPolicyFeedback(style="display:none;font-size:13px;color:var(--accent);margin-top:12px")= t.settings.cp_saved
 
         .info-card
             .info-card__header
@@ -755,6 +809,92 @@ block scripts
     script(src='/js/templates/dialog.js' type="module")
     script(src='/js/templates/edit-email.js')
     script.
+        // ── Votre établissement (pause / reprendre / demandes reçues) ───────────
+        // Créer/rejoindre un établissement vivent désormais sur des pages dédiées
+        // (/etablissement/creer, /etablissement/rejoindre) — cf. plan d'unification.
+        (function () {
+            var pauseBtn  = document.getElementById('pauseCompanyBtn');
+            var resumeBtn = document.getElementById('resumeCompanyBtn');
+            var statusEl  = document.getElementById('establishmentStatus');
+            var errorEl   = document.getElementById('establishmentError');
+
+            function showStatus(msg) {
+                if (errorEl) errorEl.style.display = 'none';
+                if (statusEl) { statusEl.textContent = msg; statusEl.style.display = 'block'; }
+            }
+            function showError(msg) {
+                if (statusEl) statusEl.style.display = 'none';
+                if (errorEl) { errorEl.textContent = msg; errorEl.style.display = 'block'; }
+            }
+
+            if (pauseBtn) {
+                pauseBtn.addEventListener('click', async function () {
+                    if (!confirm('Mettre votre établissement en pause ? Il ne sera plus visible publiquement, mais rien n\'est supprimé et vous pourrez le reprendre à tout moment.')) return;
+                    pauseBtn.disabled = true;
+                    try {
+                        var res = await fetch('/account/company-pause', { method: 'PATCH' });
+                        var data = await res.json();
+                        if (data.success) {
+                            showStatus('✓ Établissement mis en pause.');
+                            setTimeout(function () { location.reload(); }, 900);
+                        } else {
+                            showError(data.error || 'Erreur lors de la mise en pause.');
+                            pauseBtn.disabled = false;
+                        }
+                    } catch (e) {
+                        showError('Erreur réseau.');
+                        pauseBtn.disabled = false;
+                    }
+                });
+            }
+
+            if (resumeBtn) {
+                resumeBtn.addEventListener('click', async function () {
+                    resumeBtn.disabled = true;
+                    try {
+                        var res = await fetch('/account/company-resume', { method: 'PATCH' });
+                        var data = await res.json();
+                        if (data.success) {
+                            showStatus('✓ Établissement repris.');
+                            setTimeout(function () { location.reload(); }, 900);
+                        } else {
+                            showError(data.error || 'Erreur lors de la reprise.');
+                            resumeBtn.disabled = false;
+                        }
+                    } catch (e) {
+                        showError('Erreur réseau.');
+                        resumeBtn.disabled = false;
+                    }
+                });
+            }
+
+            // ── Demandes reçues (propriétaire) ──────────────────────────────────
+            document.querySelectorAll('.join-request-accept, .join-request-reject').forEach(function (btn) {
+                btn.addEventListener('click', async function () {
+                    var row = btn.closest('.join-request-row');
+                    var decision = btn.classList.contains('join-request-accept') ? 'accepted' : 'rejected';
+                    row.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+                    try {
+                        var res = await fetch('/account/join-requests/' + btn.dataset.id, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ decision: decision }),
+                        });
+                        var data = await res.json();
+                        if (data.success) {
+                            row.remove();
+                        } else {
+                            alert(data.error || 'Erreur.');
+                            row.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+                        }
+                    } catch (e) {
+                        alert('Erreur réseau.');
+                        row.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+                    }
+                });
+            });
+        })();
+
         // ── Payment methods ────────────────────────────────────────────────────
         (function () {
             var STRIPE_KEY = '!{stripePublishableKey}';

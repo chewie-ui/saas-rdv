@@ -46,7 +46,7 @@ async function getDynamicCategories() {
       },
     },
     { $lookup: { from: "companies", localField: "_id", foreignField: "owner", as: "company" } },
-    { $match: { "company.0": { $exists: true } } },
+    { $match: { company: { $elemMatch: { isPaused: { $ne: true } } } } },
     // Regroupe par valeur normalisée (espaces + casse) pour fusionner les
     // doublons type "Développeur freelance" / "développeur freelance " qui
     // apparaissaient sinon comme deux catégories distinctes dans la sidebar.
@@ -239,7 +239,7 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
     const matchingIds   = matchingUsers.map((u) => u._id);
     const premiumSet    = new Set(matchingUsers.filter(u => u.isPremium || u.manualPremium).map(u => String(u._id)));
 
-    const filteredCoachs = await Companies.find({ owner: { $in: matchingIds } })
+    const filteredCoachs = await Companies.find({ owner: { $in: matchingIds }, isPaused: { $ne: true } })
       .populate("owner", "_id fullName businessName businessType businessPicture profilePicture description location verified subscription isPremium manualPremium")
       .select("_id owner slug boostPosition")
       .limit(100)
@@ -355,10 +355,27 @@ router.get("/pro", (req, res) => {
   });
 });
 
-router.get("/s-inscrire", (req, res) => {
-  res.render("auth/choose-account", {
-    title: "Créer un compte — BranShee",
-    alwaysSticky: true,
+// Le choix pro/client se fait désormais dans le formulaire d'inscription
+// unifié lui-même (étape "Intention") — cette page de fork est obsolète.
+router.get("/s-inscrire", (req, res) => res.redirect(301, "/register"));
+
+// ─── Créer / rejoindre un établissement (compte déjà existant, sans
+// établissement) — pages dédiées au look "register", accessibles depuis le
+// sidebar espace-client (cf. plan d'unification). ───────────────────────────
+router.get("/etablissement/creer", require("../middlewares/isAuth"), async (req, res) => {
+  const existing = await Companies.findOne({ owner: req.user._id }).lean();
+  if (existing) return res.redirect("/settings");
+  res.render("etablissement/creer", {
+    title: "Créer votre établissement — BranShee",
+    services: getServices(res.locals.lang),
+  });
+});
+
+router.get("/etablissement/rejoindre", require("../middlewares/isAuth"), async (req, res) => {
+  const existing = await Companies.findOne({ owner: req.user._id }).lean();
+  if (existing) return res.redirect("/settings");
+  res.render("etablissement/rejoindre", {
+    title: "Rejoindre un établissement — BranShee",
   });
 });
 
@@ -411,6 +428,12 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
   // Compte désactivé par le superadmin → page de blocage
   if (coach && coach.isDisabled) {
     return res.status(403).render("client/account-disabled");
+  }
+
+  // Établissement mis en pause par le pro lui-même → page neutre (réversible,
+  // ≠ isDisabled qui est une action du superadmin)
+  if (company.isPaused) {
+    return res.status(403).render("client/company-paused");
   }
 
   const Service = require("../db/models/company/service.model");

@@ -11,11 +11,21 @@ const getServices = require("../utils/services");
 const { google } = require("googleapis");
 const { createOAuthClient } = require("../config/googleCalendar");
 const User = require("../db/models/user.model");
+const Client = require("../db/models/client.model");
 const Company = require("../db/models/company/company.model");
 const mongoose = require("mongoose");
 const crypto = require("crypto");
 const { requireFeatureActive } = require("../middlewares/featureFlag");
 const isAuth = require("../middlewares/isAuth");
+const LoginEvent = require("../db/models/loginEvent.model");
+
+// Fire-and-forget : ne doit jamais faire échouer une connexion si l'écriture
+// du log rate (DB lente, etc.) — c'est juste un historique pour le superadmin.
+function logLoginEvent(user, method) {
+  LoginEvent.create({ user: user._id, method }).catch((err) => {
+    console.error("LoginEvent create error:", err.message);
+  });
+}
 
 function buildUserRedirectUri() {
   const base = (process.env.BASE_URL || "http://localhost:3000").replace(/\/$/, "");
@@ -66,7 +76,9 @@ router.get("/register", requireFeatureActive("register"), (req, res) => {
 });
 
 router.get("/login", requireFeatureActive("login"), (req, res) => {
-  const error = req.query.error === "google" ? "La connexion avec Google a échoué. Veuillez réessayer." : null;
+  const error = req.query.error === "google" ? "La connexion avec Google a échoué. Veuillez réessayer."
+    : req.query.error === "google_email_taken" ? "Cette adresse email est déjà utilisée par un autre compte. Connectez-vous avec votre mot de passe."
+    : null;
 
   // Conserver promo/plan si on vient d'un lien d'invitation
   const allowedPlans = ["pro", "business"];
@@ -120,10 +132,27 @@ router.get("/api/business-types", (req, res) => {
 
 router.post("/login", (req, res, next) => {
   const isAjax = req.headers["x-requested-with"] === "fetch";
-  passport.authenticate("local", (err, user, info) => {
+  passport.authenticate("local", async (err, user, info) => {
     if (err) return next(err);
 
     if (!user) {
+      // Filet de compatibilité tant que des comptes Client séparés existent
+      // encore (cf. scripts/migrate-merge-client-into-user.js) — UNE seule
+      // page/formulaire de connexion pour tout le monde : si ce n'est pas un
+      // User, on essaie l'ancien compte Client avant de déclarer l'échec.
+      try {
+        const bcrypt = require("bcrypt");
+        const email = (req.body.email || "").toLowerCase().trim();
+        const client = await Client.findOne({ email });
+        if (client && (await bcrypt.compare(req.body.password || "", client.password))) {
+          req.session.clientId = client._id.toString();
+          if (isAjax) return res.json({ success: true, redirect: "/espace-client" });
+          return res.redirect("/espace-client");
+        }
+      } catch (_) {
+        // Si la vérification Client échoue pour une raison quelconque, on
+        // retombe sur le message d'erreur générique ci-dessous.
+      }
       if (isAjax) return res.status(400).json({ error: "Email ou mot de passe incorrect." });
       return res.render("auth/login", {
         error: "Email ou mot de passe incorrect.",
@@ -141,6 +170,7 @@ router.post("/login", (req, res, next) => {
 
     req.logIn(user, (err) => {
       if (err) return next(err);
+      logLoginEvent(user, "local");
 
       // 1. Access link
       const pendingCode = req.session.pendingAccessCode;
@@ -213,6 +243,7 @@ router.post("/login/2fa", async (req, res) => {
         if (isAjax) return res.status(500).json({ error: "Erreur serveur." });
         return res.redirect("/login");
       }
+      logLoginEvent(user, "2fa");
 
       // Access link
       const pendingCode = req.session.pendingAccessCode;
@@ -259,6 +290,14 @@ router.get("/me", isAuth, (req, res) => {
 // ─── Google OAuth for users (admin/pro) ─────────────────────────────────────
 
 router.get("/auth/google", (req, res) => {
+  // Intention choisie à l'étape 0 du formulaire d'inscription (avant le bouton
+  // Google) — on la garde en session pour la retrouver après l'aller-retour
+  // OAuth, même mécanisme que pendingPlan/pendingPromo/pendingRef ci-dessous.
+  const ALLOWED_INTENTS = ["pro", "client", "undecided"];
+  if (ALLOWED_INTENTS.includes(req.query.intent)) {
+    req.session.pendingAccountIntent = req.query.intent;
+  }
+
   const redirectUri = buildUserRedirectUri();
   console.log("🔑 Google OAuth redirect URI:", redirectUri);
   const oauth2Client = createOAuthClient(redirectUri);
@@ -292,6 +331,7 @@ router.get("/auth/google/callback", async (req, res) => {
     // Try to find existing user by googleId or email
     let user = await User.findOne({ $or: [{ googleId }, { email }] });
 
+    let isNewUser = false;
     if (user) {
       // Link googleId if not already set
       if (!user.googleId) {
@@ -299,32 +339,50 @@ router.get("/auth/google/callback", async (req, res) => {
         await user.save();
       }
     } else {
-      // Create new user + company
-      const companyId = new mongoose.Types.ObjectId();
+      // Filet de sécurité tant que l'inscription client (compte séparé)
+      // existe encore — sans ça, le même email peut avoir un compte Client
+      // ET un compte User créés indépendamment (cf. plan d'unification).
+      const existingClient = await Client.findOne({ email });
+      if (existingClient) {
+        return res.redirect("/login?error=google_email_taken");
+      }
+
+      isNewUser = true;
+      const accountIntent = req.session.pendingAccountIntent || "undecided";
+      delete req.session.pendingAccountIntent;
+      const wantsCompany = accountIntent === "pro";
+      const companyId = wantsCompany ? new mongoose.Types.ObjectId() : undefined;
+
       user = await User.create({
         fullName: name,
         email,
         password: crypto.randomBytes(32).toString("hex"),
         googleId,
+        accountIntent,
         company: companyId,
       });
-      await Company.create({
-        _id: companyId,
-        owner: user._id,
-        schedule: [
-          { weekdayIndex: 1, workingHours: [{ start: "09:00", end: "18:00" }] },
-          { weekdayIndex: 2, workingHours: [{ start: "09:00", end: "18:00" }] },
-          { weekdayIndex: 3, workingHours: [{ start: "09:00", end: "18:00" }] },
-          { weekdayIndex: 4, workingHours: [{ start: "09:00", end: "18:00" }] },
-          { weekdayIndex: 5, workingHours: [{ start: "09:00", end: "18:00" }] },
-          { weekdayIndex: 6, dayOff: true },
-          { weekdayIndex: 0, dayOff: true },
-        ],
-      });
+
+      if (wantsCompany) {
+        await Company.create({
+          _id: companyId,
+          owner: user._id,
+          schedule: [
+            { weekdayIndex: 1, workingHours: [{ start: "09:00", end: "18:00" }] },
+            { weekdayIndex: 2, workingHours: [{ start: "09:00", end: "18:00" }] },
+            { weekdayIndex: 3, workingHours: [{ start: "09:00", end: "18:00" }] },
+            { weekdayIndex: 4, workingHours: [{ start: "09:00", end: "18:00" }] },
+            { weekdayIndex: 5, workingHours: [{ start: "09:00", end: "18:00" }] },
+            { weekdayIndex: 6, dayOff: true },
+            { weekdayIndex: 0, dayOff: true },
+          ],
+        });
+      }
     }
 
     req.login(user, (err) => {
       if (err) return res.redirect("/login?error=google");
+      logLoginEvent(user, "google");
+      if (isNewUser && user.accountIntent !== "pro") return res.redirect("/");
       return res.redirect("/appointment");
     });
   } catch (err) {

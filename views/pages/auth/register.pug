@@ -54,6 +54,20 @@ block links
         .auth-promo-badge strong { color:#b45309; }
         .reg-step-title { font-size:15px; font-weight:600; color:#374151; margin:0 0 18px; }
 
+        /* ── Étape 0 : intention ──────────────────────────────────── */
+        .intent-grid { display:flex; flex-direction:column; gap:10px; margin-bottom:18px; }
+        .intent-card {
+            display:flex; align-items:center; gap:12px;
+            border:1.5px solid #e5e7eb; border-radius:12px; padding:14px 16px;
+            cursor:pointer; transition:border-color .15s, background .15s;
+        }
+        .intent-card:hover { border-color:#bbf7d0; background:#f8fdfa; }
+        .intent-card input[type="radio"] { accent-color:var(--accent,#16a34a); width:17px; height:17px; flex-shrink:0; }
+        .intent-card__body { display:flex; flex-direction:column; gap:2px; }
+        .intent-card__label { font-size:14px; font-weight:600; color:#1f2937; }
+        .intent-card__sub { font-size:12.5px; color:#6b7280; }
+        .intent-card.is-selected { border-color:#15803d; background:#f0fdf4; }
+
 block content
     .auth-split
 
@@ -85,20 +99,24 @@ block content
         .auth-form-panel
             .auth-form-inner
                 h1= t.auth.register_title || 'Créez votre compte'
-                p.auth-sub= t.auth.register_desc || 'Vous utiliserez ce compte pour gérer votre activité et inviter votre équipe.'
+                p.auth-sub= t.auth.register_desc || 'Pour gérer votre établissement ou pour réserver vos rendez-vous — un seul compte BranShee.'
 
                 //- Barre de progression
                 .reg-progress#regProgress
                     .reg-progress__step
-                        .reg-progress__dot.current#dot1 1
-                        span.reg-progress__label.current#lbl1 Profil
+                        .reg-progress__dot.current#dot0 1
+                        span.reg-progress__label.current#lbl0 Intention
+                    .reg-progress__line#line0
+                    .reg-progress__step
+                        .reg-progress__dot#dot1 2
+                        span.reg-progress__label#lbl1 Profil
                     .reg-progress__line#line1
                     .reg-progress__step
-                        .reg-progress__dot#dot2 2
+                        .reg-progress__dot#dot2 3
                         span.reg-progress__label#lbl2 Mot de passe
                     .reg-progress__line#line2
                     .reg-progress__step
-                        .reg-progress__dot#dot3 3
+                        .reg-progress__dot#dot3 4
                         span.reg-progress__label#lbl3 Finaliser
 
                 .auth-error#registerError(style="display:none")
@@ -106,11 +124,50 @@ block content
                 //- Formulaire (tout dans un seul form, soumis à l'étape 3)
                 form.auth-register-form#registerForm(action="/register" method="POST")
 
+                    //- ══ ÉTAPE 0 : Intention ═══════════════════════════════
+                    .reg-step.active#step0
+                        #intentGrid.intent-grid
+                            label.intent-card(data-intent="pro")
+                                input(type="radio" name="accountIntentRadio" value="pro")
+                                .intent-card__body
+                                    span.intent-card__label Gérer mon établissement
+                                    span.intent-card__sub Coiffeur, coach, thérapeute... vous recevez des clients
+                            label.intent-card(data-intent="client")
+                                input(type="radio" name="accountIntentRadio" value="client")
+                                .intent-card__body
+                                    span.intent-card__label Prendre des rendez-vous
+                                    span.intent-card__sub Vous réservez chez des professionnels
+                            label.intent-card(data-intent="undecided")
+                                input(type="radio" name="accountIntentRadio" value="undecided")
+                                .intent-card__body
+                                    span.intent-card__label Je ne sais pas encore
+                                    span.intent-card__sub Vous pourrez choisir plus tard
+
+                        //- Sous-choix visible seulement si "pro" est sélectionné
+                        #proModeGrid.intent-grid(style="display:none;margin-top:6px")
+                            label.intent-card(data-promode="create")
+                                input(type="radio" name="proModeRadio" value="create")
+                                .intent-card__body
+                                    span.intent-card__label Créer mon établissement
+                                    span.intent-card__sub Vous êtes le seul ou le premier compte de l'équipe
+                            label.intent-card(data-promode="join")
+                                input(type="radio" name="proModeRadio" value="join")
+                                .intent-card__body
+                                    span.intent-card__label Rejoindre un établissement
+                                    span.intent-card__sub Une équipe existe déjà sur BranShee (plan Business)
+
+                        input(type="hidden" name="accountIntent" id="accountIntentInput")
+                        input(type="hidden" name="proMode" id="proModeInput")
+                        input(type="hidden" name="joinCompanyId" id="joinCompanyIdInput")
+
+                        .reg-nav
+                            button.sm-btn.sm-btn--primary.sm-btn--full.reg-next(type="button" id="next0" disabled) Continuer →
+
                     //- ══ ÉTAPE 1 : Profil ══════════════════════════════════
-                    .reg-step.active#step1
+                    .reg-step#step1
 
                         //- Google SSO uniquement à l'étape 1
-                        a.auth-social-btn(href="/auth/google")
+                        a.auth-social-btn#googleSsoBtn(href="/auth/google")
                             svg(width="16" height="16" viewBox="0 0 48 48")
                                 path(fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8a12 12 0 1 1 0-24c3.1 0 5.8 1.2 7.9 3l5.7-5.7A20 20 0 1 0 24 44c11 0 20-9 20-20 0-1.3-.1-2.6-.4-3.9z")
                                 path(fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7A20 20 0 0 0 6.3 14.7z")
@@ -142,6 +199,7 @@ block content
                             )
 
                         .reg-nav
+                            button.reg-back(type="button" id="back1") ←
                             button.sm-btn.sm-btn--primary.sm-btn--full.reg-next(type="button" id="next1") Continuer →
 
                     //- ══ ÉTAPE 2 : Mot de passe ════════════════════════════
@@ -210,7 +268,7 @@ block content
                                     strong= pendingPromo
                                     | &nbsp;— 1er mois offert 🎁
 
-                        .auth-field
+                        .auth-field#businessTypeField
                             label.auth-label Votre métier / secteur
                             .auth-service-wrap
                                 input.auth-input.service-input(
@@ -221,6 +279,18 @@ block content
                                 )
                                 input(type="hidden" name="businessType" id="businessTypeInput")
                                 .auth-service-dropdown#serviceDropdown
+
+                        .auth-field#joinCompanyField(style="display:none")
+                            label.auth-label Établissement à rejoindre
+                            .auth-service-wrap
+                                input.auth-input.service-input(
+                                    type="text"
+                                    id="joinCompanyInput"
+                                    placeholder="Nom de l'établissement..."
+                                    autocomplete="off"
+                                )
+                                .auth-service-dropdown#joinCompanyDropdown
+                            p.auth-join-hint(style="font-size:12px;color:var(--text-muted,#9ca3af);margin-top:6px") Seuls les établissements en plan Business apparaissent ici. Le propriétaire devra approuver votre demande.
 
                         .auth-field
                             label.auth-label
@@ -266,24 +336,28 @@ block scripts
         (function() {
 
             /* ── State ────────────────────────────────────────────── */
-            var currentStep = 1;
+            var currentStep = 0;
 
-            var steps  = [null,
+            var steps  = [
+                document.getElementById('step0'),
                 document.getElementById('step1'),
                 document.getElementById('step2'),
                 document.getElementById('step3')
             ];
-            var dots   = [null,
+            var dots   = [
+                document.getElementById('dot0'),
                 document.getElementById('dot1'),
                 document.getElementById('dot2'),
                 document.getElementById('dot3')
             ];
-            var lbls   = [null,
+            var lbls   = [
+                document.getElementById('lbl0'),
                 document.getElementById('lbl1'),
                 document.getElementById('lbl2'),
                 document.getElementById('lbl3')
             ];
-            var lines  = [null,
+            var lines  = [
+                document.getElementById('line0'),
                 document.getElementById('line1'),
                 document.getElementById('line2')
             ];
@@ -299,13 +373,14 @@ block scripts
             }
 
             function updateProgress() {
-                for (var i = 1; i <= 3; i++) {
+                for (var i = 0; i <= 3; i++) {
                     dots[i].className = 'reg-progress__dot';
                     lbls[i].className = 'reg-progress__label';
                     if (i < currentStep)       { dots[i].classList.add('done');    lbls[i].classList.add('done'); }
                     else if (i === currentStep) { dots[i].classList.add('current'); lbls[i].classList.add('current'); }
                 }
                 // Lignes colorées si étape suivante atteinte
+                if (lines[0]) lines[0].className = 'reg-progress__line' + (currentStep > 0 ? ' done' : '');
                 if (lines[1]) lines[1].className = 'reg-progress__line' + (currentStep > 1 ? ' done' : '');
                 if (lines[2]) lines[2].className = 'reg-progress__line' + (currentStep > 2 ? ' done' : '');
             }
@@ -323,6 +398,81 @@ block scripts
                 if (errBox) errBox.style.display = 'none';
                 document.querySelectorAll('.auth-input--error').forEach(function(e){ e.classList.remove('auth-input--error'); });
             }
+
+            /* ── Étape 0 : intention ──────────────────────────────── */
+            var intentInput  = document.getElementById('accountIntentInput');
+            var intentCards  = document.querySelectorAll('#intentGrid .intent-card');
+            var proModeGrid  = document.getElementById('proModeGrid');
+            var proModeCards = document.querySelectorAll('#proModeGrid .intent-card');
+            var proModeInput = document.getElementById('proModeInput');
+            var next0        = document.getElementById('next0');
+            var businessTypeField = document.getElementById('businessTypeField');
+            var joinCompanyField  = document.getElementById('joinCompanyField');
+            var joinCompanyIdInput = document.getElementById('joinCompanyIdInput');
+            var googleSsoBtn = document.getElementById('googleSsoBtn');
+
+            function updateNext0State() {
+                next0.disabled = !(intentInput.value && (intentInput.value !== 'pro' || proModeInput.value));
+            }
+
+            function selectIntent(value) {
+                var match = null;
+                intentCards.forEach(function(c) {
+                    c.classList.remove('is-selected');
+                    if (c.dataset.intent === value) match = c;
+                });
+                if (!match) return;
+                match.classList.add('is-selected');
+                match.querySelector('input[type="radio"]').checked = true;
+                intentInput.value = value;
+                if (value === 'pro') {
+                    proModeGrid.style.display = '';
+                } else {
+                    proModeGrid.style.display = 'none';
+                    proModeInput.value = '';
+                    proModeCards.forEach(function(c) { c.classList.remove('is-selected'); });
+                }
+                updateNext0State();
+            }
+
+            function selectProMode(value) {
+                proModeCards.forEach(function(c) {
+                    c.classList.remove('is-selected');
+                    if (c.dataset.promode === value) c.classList.add('is-selected');
+                });
+                proModeInput.value = value;
+                updateNext0State();
+            }
+
+            intentCards.forEach(function(card) {
+                card.addEventListener('click', function() { selectIntent(card.dataset.intent); });
+            });
+            proModeCards.forEach(function(card) {
+                card.addEventListener('click', function() { selectProMode(card.dataset.promode); });
+            });
+
+            // Pré-sélection si on arrive avec ?intent=... (ex: lien "Espace
+            // client" du menu) — l'utilisateur garde la main pour changer.
+            var urlIntent = new URLSearchParams(window.location.search).get('intent');
+            if (urlIntent && ['pro','client','undecided'].includes(urlIntent)) selectIntent(urlIntent);
+
+            next0.addEventListener('click', function() {
+                clearErrors();
+                if (!intentInput.value) { showError('Veuillez faire un choix pour continuer.'); return; }
+                if (intentInput.value === 'pro' && !proModeInput.value) { showError('Veuillez choisir créer ou rejoindre.'); return; }
+                // Le métier n'est demandé que pour un compte "pro" qui crée ;
+                // la recherche d'établissement seulement pour qui rejoint.
+                var isCreate = intentInput.value === 'pro' && proModeInput.value === 'create';
+                var isJoin   = intentInput.value === 'pro' && proModeInput.value === 'join';
+                if (businessTypeField) businessTypeField.style.display = isCreate ? '' : 'none';
+                if (joinCompanyField)  joinCompanyField.style.display  = isJoin   ? '' : 'none';
+                // Transmet l'intention choisie au bouton Google (lue côté
+                // serveur après l'aller-retour OAuth, cf. routes/auth.js).
+                if (googleSsoBtn) googleSsoBtn.href = '/auth/google?intent=' + intentInput.value;
+                goTo(1);
+            });
+
+            document.getElementById('back1').addEventListener('click', function(){ clearErrors(); goTo(0); });
 
             document.getElementById('next1').addEventListener('click', function() {
                 clearErrors();
@@ -440,6 +590,58 @@ block scripts
                 });
             }
 
+            /* ── Recherche d'établissement à rejoindre (étape 3) ──── */
+            var joinInput     = document.getElementById('joinCompanyInput');
+            var joinHidden     = joinCompanyIdInput;
+            var joinDropdown   = document.getElementById('joinCompanyDropdown');
+            var joinSearchTimer = null;
+
+            function renderJoinList(companies) {
+                joinDropdown.innerHTML = '';
+                if (!companies.length) {
+                    var empty = document.createElement('div');
+                    empty.className = 'auth-service-item';
+                    empty.style.color = '#9ca3af';
+                    empty.textContent = 'Aucun établissement Business trouvé.';
+                    joinDropdown.appendChild(empty);
+                    joinDropdown.style.display = 'block';
+                    return;
+                }
+                companies.forEach(function(c) {
+                    var li = document.createElement('div');
+                    li.className = 'auth-service-item';
+                    li.textContent = c.name + (c.businessType ? ' — ' + c.businessType : '');
+                    li.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        joinInput.value  = c.name;
+                        joinHidden.value = c.id;
+                        joinDropdown.style.display = 'none';
+                        joinInput.classList.add('service-input--selected');
+                    });
+                    joinDropdown.appendChild(li);
+                });
+                joinDropdown.style.display = 'block';
+            }
+
+            if (joinInput) {
+                joinInput.addEventListener('input', function() {
+                    joinHidden.value = '';
+                    joinInput.classList.remove('service-input--selected');
+                    clearTimeout(joinSearchTimer);
+                    var q = joinInput.value.trim();
+                    if (q.length < 2) { joinDropdown.style.display = 'none'; return; }
+                    joinSearchTimer = setTimeout(function() {
+                        fetch('/api/joinable-companies?q=' + encodeURIComponent(q))
+                            .then(function(r) { return r.json(); })
+                            .then(function(data) { renderJoinList(data.companies || []); })
+                            .catch(function() { joinDropdown.style.display = 'none'; });
+                    }, 300);
+                });
+                joinInput.addEventListener('blur', function() {
+                    setTimeout(function() { joinDropdown.style.display = 'none'; }, 160);
+                });
+            }
+
             /* ── Code parrain ─────────────────────────────────────── */
             var refInput  = document.getElementById('refCodeInput');
             var refStatus = document.getElementById('refStatus');
@@ -479,11 +681,19 @@ block scripts
                 e.preventDefault();
                 clearErrors();
 
-                // Valider métier
-                if (!svcHidden.value || !__services.includes(svcHidden.value)) {
+                // Valider métier — seulement pour un compte "pro" qui crée
+                if (intentInput.value === 'pro' && proModeInput.value === 'create' &&
+                    (!svcHidden.value || !__services.includes(svcHidden.value))) {
                     svcInput.classList.add('service-input--invalid');
                     showError('Veuillez choisir votre métier dans la liste.');
                     svcInput.focus();
+                    return;
+                }
+                // Valider établissement à rejoindre — seulement pour un "pro" qui rejoint
+                if (intentInput.value === 'pro' && proModeInput.value === 'join' && !joinCompanyIdInput.value) {
+                    joinInput.classList.add('service-input--invalid');
+                    showError('Veuillez choisir un établissement dans la liste.');
+                    joinInput.focus();
                     return;
                 }
                 // Valider CGU
@@ -525,7 +735,8 @@ block scripts
             // Touche Entrée → passer à l'étape suivante
             document.addEventListener('keydown', function(e) {
                 if (e.key !== 'Enter') return;
-                if (currentStep === 1) { e.preventDefault(); document.getElementById('next1').click(); }
+                if (currentStep === 0) { if (!next0.disabled) { e.preventDefault(); next0.click(); } }
+                else if (currentStep === 1) { e.preventDefault(); document.getElementById('next1').click(); }
                 else if (currentStep === 2) { e.preventDefault(); document.getElementById('next2').click(); }
             });
 

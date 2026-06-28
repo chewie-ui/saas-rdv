@@ -1,9 +1,12 @@
 const User = require("../db/models/user.model");
+const Client = require("../db/models/client.model");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const mongoose = require("mongoose");
 const Company = require("../db/models/company/company.model");
+const CompanyMembership = require("../db/models/company/companyMembership.model");
 const { sendEmail } = require("../utils/mailer");
+const { getPlan } = require("../utils/planLimits");
 const getServices = require("../utils/services");
 const pug = require("pug");
 const path = require("path");
@@ -31,16 +34,43 @@ exports.createUser = async (req, res) => {
     });
   }
 
-  const { fullname, email, password, conformPassword, businessType } = req.body;
+  const { fullname, password, conformPassword, businessType } = req.body;
+  const email = (req.body.email || "").toLowerCase().trim();
+
+  // Intention déclarée à l'étape 0 du formulaire — seul "pro" déclenche la
+  // création d'un établissement (Company). "client"/"undecided" créent un
+  // simple compte, sans métier ni page publique (cf. plan d'unification).
+  const ALLOWED_INTENTS = ["pro", "client", "undecided"];
+  const accountIntent = ALLOWED_INTENTS.includes(req.body.accountIntent) ? req.body.accountIntent : "undecided";
+  // "Rejoindre un établissement" (proMode=join) : pas de Company créée pour
+  // ce User — une demande "pending" est créée à la place, à approuver par le
+  // propriétaire (cf. CompanyMembership). Seul "create" crée un établissement.
+  const proMode = req.body.proMode === "join" ? "join" : "create";
+  const wantsCompany = accountIntent === "pro" && proMode === "create";
+  const wantsToJoin  = accountIntent === "pro" && proMode === "join";
+  const joinCompanyId = (req.body.joinCompanyId || "").trim();
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email))
     return fail(res.locals.t?.auth?.error_invalid_email || "Veuillez entrer une adresse email valide.");
 
-  // Validate businessType against the allowed list
+  // Validate businessType against the allowed list — seulement pour un pro qui crée
   const allowedServices = getServices(res.locals.lang || "fr");
-  if (!businessType || !allowedServices.includes(businessType))
+  if (wantsCompany && (!businessType || !allowedServices.includes(businessType)))
     return fail("Veuillez choisir votre métier dans la liste proposée.");
+
+  // Valider l'établissement à rejoindre — doit exister et son propriétaire
+  // doit être en plan Business (seul plan pensé pour plusieurs comptes).
+  let joinCompany = null;
+  if (wantsToJoin) {
+    if (!mongoose.Types.ObjectId.isValid(joinCompanyId)) {
+      return fail("Veuillez choisir un établissement dans la liste.");
+    }
+    joinCompany = await Company.findById(joinCompanyId).populate("owner", "subscription isPremium manualPremium");
+    if (!joinCompany || getPlan(joinCompany.owner) !== "business") {
+      return fail("Cet établissement n'est plus disponible pour être rejoint.");
+    }
+  }
 
   const checkName = await User.findOne({ fullName: fullname }).lean();
   if (checkName)
@@ -48,6 +78,13 @@ exports.createUser = async (req, res) => {
 
   const checkEmail = await User.findOne({ email }).lean();
   if (checkEmail)
+    return fail(res.locals.t?.auth?.error_email_taken || "Cette adresse email est déjà utilisée.");
+
+  // Filet de sécurité tant que l'inscription client (compte séparé) existe
+  // encore — sans ça, le même email peut avoir un compte User ET un compte
+  // Client, ce qui crée des comptes fantômes (cf. plan d'unification).
+  const checkClientEmail = await Client.findOne({ email }).lean();
+  if (checkClientEmail)
     return fail(res.locals.t?.auth?.error_email_taken || "Cette adresse email est déjà utilisée.");
 
   if (password.trim() !== conformPassword.trim())
@@ -64,7 +101,7 @@ exports.createUser = async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const companyId = new mongoose.Types.ObjectId();
+    const companyId = wantsCompany ? new mongoose.Types.ObjectId() : undefined;
 
     // Résoudre le parrain : depuis le formulaire OU depuis la session (lien URL)
     let referrerId = null;
@@ -83,7 +120,8 @@ exports.createUser = async (req, res) => {
       email,
       password: hashedPassword,
       company: companyId,
-      businessType: businessType || "",
+      accountIntent,
+      businessType: wantsCompany ? businessType : "",
       referralCode,
       referredBy: referrerId,
     });
@@ -93,32 +131,52 @@ exports.createUser = async (req, res) => {
       await User.findByIdAndUpdate(referrerId, { $inc: { "referral.totalInvited": 1 } });
       delete req.session.pendingRef;
     }
-    await Company.create({
-      _id: companyId,
-      owner: user._id,
-      schedule: [
-        { weekdayIndex: 1, workingHours: [{ start: "09:00", end: "18:00" }] },
-        { weekdayIndex: 2, workingHours: [{ start: "09:00", end: "18:00" }] },
-        { weekdayIndex: 3, workingHours: [{ start: "09:00", end: "18:00" }] },
-        { weekdayIndex: 4, workingHours: [{ start: "09:00", end: "18:00" }] },
-        { weekdayIndex: 5, workingHours: [{ start: "09:00", end: "18:00" }] },
-        { weekdayIndex: 6, dayOff: true },
-        { weekdayIndex: 0, dayOff: true },
-      ],
-    });
 
-    // ── Email de bienvenue ───────────────────────────────────────────────────
-    try {
-      const welcomeHtml = pug.renderFile(
-        path.join(__dirname, "../views/templates/emails/welcome-pro.pug"),
-        { fullName: user.fullName }
-      );
-      sendEmail(user.email, "🎉 Bienvenue sur BranShee — Configurez votre agenda", welcomeHtml)
-        .catch(() => {}); // Silencieux si échec mail
-    } catch (_) {}
+    if (wantsCompany) {
+      await Company.create({
+        _id: companyId,
+        owner: user._id,
+        schedule: [
+          { weekdayIndex: 1, workingHours: [{ start: "09:00", end: "18:00" }] },
+          { weekdayIndex: 2, workingHours: [{ start: "09:00", end: "18:00" }] },
+          { weekdayIndex: 3, workingHours: [{ start: "09:00", end: "18:00" }] },
+          { weekdayIndex: 4, workingHours: [{ start: "09:00", end: "18:00" }] },
+          { weekdayIndex: 5, workingHours: [{ start: "09:00", end: "18:00" }] },
+          { weekdayIndex: 6, dayOff: true },
+          { weekdayIndex: 0, dayOff: true },
+        ],
+      });
+
+      // ── Email de bienvenue (pro uniquement) ─────────────────────────────
+      try {
+        const welcomeHtml = pug.renderFile(
+          path.join(__dirname, "../views/templates/emails/welcome-pro.pug"),
+          { fullName: user.fullName }
+        );
+        sendEmail(user.email, "🎉 Bienvenue sur BranShee — Configurez votre agenda", welcomeHtml)
+          .catch(() => {}); // Silencieux si échec mail
+      } catch (_) {}
+    }
+
+    if (wantsToJoin && joinCompany) {
+      try {
+        await CompanyMembership.create({ company: joinCompany._id, user: user._id, status: "pending" });
+      } catch (_) {
+        // Index unique (company,user) — déjà demandé, on ignore silencieusement
+      }
+    }
 
     req.login(user, (err) => {
       if (err) return fail("Erreur lors de la connexion.");
+
+      if (!wantsCompany) {
+        // Pas d'établissement créé maintenant (client/undecided, ou pro qui
+        // attend l'approbation pour rejoindre) → direction neutre. La carte
+        // "Votre établissement" dans /settings affiche l'état (pending, etc).
+        if (isAjax) return res.json({ success: true, redirect: wantsToJoin ? "/settings" : "/" });
+        return res.redirect(wantsToJoin ? "/settings" : "/");
+      }
+
       // Si l'utilisateur vient d'un lien d'invitation ou bouton "Essai / Plan"
       const pendingPlan  = req.session.pendingPlan;
       const pendingPromo = req.session.pendingPromo;

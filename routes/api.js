@@ -108,6 +108,60 @@ router.get("/test", (req, res) => {
   res.send("test");
 });
 
+// ── Recherche d'établissements à rejoindre (inscription + Paramètres) ─────────
+// Uniquement les établissements dont le propriétaire est en plan Business —
+// c'est le seul plan pensé pour héberger plusieurs comptes (cf. plan
+// d'unification des comptes). Pas d'auth requise : utilisé pendant
+// l'inscription, avant même que le compte du demandeur existe.
+router.get("/joinable-companies", async (req, res) => {
+  const q = (req.query.q || "").trim();
+  if (q.length < 2) return res.json({ companies: [] });
+  try {
+    const Company = require("../db/models/company/company.model");
+    const { getPlan } = require("../utils/planLimits");
+    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+
+    const candidates = await User.find({
+      $or: [{ businessName: regex }, { fullName: regex }],
+      isDisabled: { $ne: true },
+    })
+      .select("_id businessName fullName businessType subscription isPremium manualPremium")
+      .limit(30)
+      .lean();
+
+    const businessUserIds = candidates
+      .filter((u) => getPlan(u) === "business")
+      .map((u) => u._id);
+    if (!businessUserIds.length) return res.json({ companies: [] });
+
+    const companies = await Company.find({ owner: { $in: businessUserIds } })
+      .select("_id owner")
+      .limit(8)
+      .lean();
+
+    const userMap = {};
+    candidates.forEach((u) => { userMap[String(u._id)] = u; });
+
+    const results = companies
+      .map((c) => {
+        const owner = userMap[String(c.owner)];
+        if (!owner) return null;
+        return {
+          id: String(c._id),
+          name: owner.businessName || owner.fullName,
+          businessType: owner.businessType || "",
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 8);
+
+    return res.json({ companies: results });
+  } catch (err) {
+    console.error("joinable-companies error:", err.message);
+    return res.json({ companies: [] });
+  }
+});
+
 // Vérifier un code de parrainage (utilisé sur la page d'inscription)
 router.get("/check-ref", async (req, res) => {
   const code = (req.query.code || "").trim().toUpperCase();

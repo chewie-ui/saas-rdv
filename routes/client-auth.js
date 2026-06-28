@@ -1,11 +1,13 @@
 const router = require("express").Router();
 const ctrl = require("../controllers/client.controller");
 const isClientAuth = require("../middlewares/isClientAuth");
+const isClientOrUserAuth = require("../middlewares/isClientOrUserAuth");
 const upload = require("../config/multer");
 const { processSingleImage } = require("../middlewares/processImageUpload");
 const { google } = require("googleapis");
 const { createOAuthClient } = require("../config/googleCalendar");
 const Client = require("../db/models/client.model");
+const User = require("../db/models/user.model");
 const crypto = require("crypto");
 
 function buildClientRedirectUri() {
@@ -62,6 +64,13 @@ router.get("/auth/google/client/callback", async (req, res) => {
         await client.save();
       }
     } else {
+      // Filet de sécurité tant que l'inscription pro (compte séparé) existe
+      // encore — sans ça, le même email peut avoir un compte User ET un
+      // compte Client créés indépendamment (cf. plan d'unification).
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.redirect("/client/login?error=google_email_taken");
+      }
       client = await Client.create({
         fullName: name,
         email,
@@ -81,7 +90,11 @@ router.get("/auth/google/client/callback", async (req, res) => {
 router.get("/client/register", ctrl.getRegister);
 router.post("/client/register", ctrl.postRegister);
 
-router.get("/client/login", ctrl.getLogin);
+// Connexion unifiée — une seule page de login pour tout le monde (cf. plan
+// d'unification), qui sait déjà retomber sur un compte Client (cf. /login
+// dans routes/auth.js). On garde le POST pour compatibilité (vieux
+// favoris/formulaires), mais plus aucun lien dans l'app ne pointe ici.
+router.get("/client/login", (req, res) => res.redirect(301, "/login"));
 router.post("/client/login", ctrl.postLogin);
 
 // ── Session info (AJAX) ───────────────────────────────────────────────────────
@@ -110,14 +123,19 @@ router.get("/client/me", async (req, res) => {
 
 router.get("/client/logout", ctrl.logout);
 
-router.get("/espace-client", isClientAuth, ctrl.getDashboard);
+// Dual-mode (req.user OU req.session.clientId, cf. plan d'unification) —
+// uniquement la lecture des réservations ; les sous-pages /parametres
+// restent strictement isClientAuth (écritures Client-only, cf. middleware).
+router.get("/espace-client", isClientOrUserAuth, ctrl.getDashboard);
 
 // ─── Settings ────────────────────────────────────────────────────────────────
-router.get("/espace-client/parametres", isClientAuth, ctrl.getSettings);
-router.post("/espace-client/parametres/profile", isClientAuth, ctrl.updateProfile);
-router.patch("/espace-client/parametres/picture", isClientAuth, upload.single("profilePicture"), processSingleImage("profilePicture"), ctrl.updateClientPicture);
-router.post("/espace-client/parametres/email", isClientAuth, ctrl.updateClientEmail);
-router.post("/espace-client/parametres/password", isClientAuth, ctrl.updateClientPassword);
-router.post("/espace-client/parametres/language", isClientAuth, ctrl.updateClientLang);
+// Dual-mode (req.user OU req.session.clientId, cf. plan d'unification) — les
+// handlers ci-dessous écrivent dans User ou Client selon le cas (cf. controller).
+router.get("/espace-client/parametres", isClientOrUserAuth, ctrl.getSettings);
+router.post("/espace-client/parametres/profile", isClientOrUserAuth, ctrl.updateProfile);
+router.patch("/espace-client/parametres/picture", isClientOrUserAuth, upload.single("profilePicture"), processSingleImage("profilePicture"), ctrl.updateClientPicture);
+router.post("/espace-client/parametres/email", isClientOrUserAuth, ctrl.updateClientEmail);
+router.post("/espace-client/parametres/password", isClientOrUserAuth, ctrl.updateClientPassword);
+router.post("/espace-client/parametres/language", isClientOrUserAuth, ctrl.updateClientLang);
 
 module.exports = router;

@@ -5,7 +5,19 @@ block links
 
 
 block content
-    - const isPast = new Date(client.date) < new Date(new Date().setHours(0,0,0,0))
+    -
+        // "Passé" doit tenir compte de l'heure, pas juste du jour — sinon un
+        // RDV aujourd'hui à 13h reste considéré "à venir" jusqu'au lendemain,
+        // et le bouton "Client absent" ne peut jamais apparaître le jour même.
+        var isPast = false
+        if (client.endTime) {
+            var _endParts = client.endTime.split(':').map(Number)
+            var _endDt = new Date(client.date)
+            _endDt.setHours(_endParts[0], _endParts[1] || 0, 0, 0)
+            isPast = _endDt < new Date()
+        } else {
+            isPast = new Date(client.date) < new Date(new Date().setHours(0,0,0,0))
+        }
 
     .page.page--appointment
         .appointment-header.page--appointment-block.page--block-1

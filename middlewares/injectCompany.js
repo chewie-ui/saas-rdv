@@ -1,4 +1,5 @@
 const Company = require("../db/models/company/company.model");
+const CompanyMembership = require("../db/models/company/companyMembership.model");
 const Booking = require("../db/models/book.model");
 const { getLimit } = require("../utils/planLimits");
 const { getAdminFeaturesFlags } = require("./featureFlag");
@@ -14,27 +15,42 @@ module.exports = async (req, res, next) => {
 
     // 2. On cherche la company dont l'owner est l'id de l'user connecté
     // .lean() permet de récupérer un objet JS simple (plus rapide)
-    const currentCompany = await Company.findOne({
+    let currentCompany = await Company.findOne({
       owner: req.user._id,
     }).lean();
+    let membershipRole = currentCompany ? "owner" : null;
 
-    // 3. Si l'utilisateur n'a pas encore de profil Company, on le redirige
-    // vers la création — pas de système de "rôles" dans ce modèle User,
-    // c'est la présence d'un Company doc qui définit un compte "Pro".
-    // (Ancien check `req.user.role === "admin"` : ce champ n'existe nulle
-    // part sur le modèle User → toujours undefined → condition toujours
-    // fausse. Conséquence concrète : la limite mensuelle de RDV n'était
-    // JAMAIS calculée, donc le message "plus de crédit" n'apparaissait
-    // jamais, peu importe le nombre de réservations.)
+    // 2b. Pas propriétaire ? Peut-être membre d'un établissement qu'il a
+    // rejoint (cf. plan d'unification — "rejoindre un établissement",
+    // approuvé par le propriétaire) — accès complet au même titre que lui.
     if (!currentCompany) {
-      // On évite de rediriger si on est déjà sur la page de création
-      if (req.path === "/register") return next();
-      return res.redirect("/register");
+      const membership = await CompanyMembership.findOne({
+        user: req.user._id,
+        status: "accepted",
+      }).lean();
+      if (membership) {
+        currentCompany = await Company.findById(membership.company).lean();
+        membershipRole = "member";
+      }
+    }
+
+    // 3. Si l'utilisateur n'a ni établissement propre ni adhésion acceptée —
+    // compte "client"/"undecided" (cf. inscription unifiée), demande pour
+    // rejoindre encore en attente/refusée, ou pro qui n'a pas terminé sa
+    // création — pas de système de "rôles" dans ce modèle User, c'est la
+    // présence d'une Company (propriétaire ou membre) qui définit l'accès.
+    // On le laisse uniquement atteindre /settings (où il peut créer/voir
+    // l'état de sa demande, cf. carte "Votre établissement") ou /register.
+    // Les autres pages admin supposent toutes une Company existante.
+    if (!currentCompany) {
+      if (req.path === "/settings" || req.path === "/register") return next();
+      return res.redirect("/");
     }
 
     // 4. On injecte dans res.locals
     // Ces variables seront accessibles direct dans tes fichiers .pug
     res.locals.currentCompany = currentCompany;
+    res.locals.membershipRole = membershipRole;
     res.locals.user = req.user;
 
     // 4a. Vocabulaire "client" vs "patient" selon le métier (kiné, dentiste,

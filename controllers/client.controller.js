@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const Client = require("../db/models/client.model");
+const User = require("../db/models/user.model");
 const Booking = require("../db/models/book.model");
 
 // ─── REGISTER ────────────────────────────────────────────────────────────────
@@ -40,6 +41,12 @@ exports.postRegister = async (req, res) => {
   const existing = await Client.findOne({ email: email.toLowerCase().trim() });
   if (existing) return fail("Cette adresse email est déjà utilisée.");
 
+  // Filet de sécurité tant que l'inscription pro (compte séparé) existe
+  // encore — sans ça, le même email peut avoir un compte Client ET un compte
+  // User, ce qui crée des comptes fantômes (cf. plan d'unification).
+  const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
+  if (existingUser) return fail("Cette adresse email est déjà utilisée.");
+
   const hashed = await bcrypt.hash(password, 10);
   const client = await Client.create({
     fullName: fullName.trim(),
@@ -63,11 +70,14 @@ exports.postRegister = async (req, res) => {
 
 exports.getLogin = (req, res) => {
   if (req.session.clientId) return res.redirect("/espace-client");
+  const error = req.query.error === "google" ? "La connexion avec Google a échoué. Veuillez réessayer."
+    : req.query.error === "google_email_taken" ? "Cette adresse email est déjà utilisée par un autre compte. Connectez-vous avec votre mot de passe."
+    : null;
   res.render("client/client-login", {
     title: "Connexion client — BranShee",
     alwaysSticky: true,
     clientAuth: true,
-    error: null,
+    error,
   });
 };
 
@@ -207,6 +217,7 @@ exports.getSettings = (req, res) => {
     title: "Paramètres — BranShee",
     pageName: "Paramètres",
     client: req.client,
+    isUnifiedAccount: !!req.user,
     success: req.query.success || null,
     error: req.query.error || null,
   });
@@ -219,6 +230,17 @@ exports.updateProfile = async (req, res) => {
 
     if (!fullName || fullName.trim().length < 2) {
       return res.redirect("/espace-client/parametres?error=invalid_name");
+    }
+
+    if (req.user) {
+      // Le modèle User n'a ni "location" (texte libre) ni "languages"/
+      // "emailNotifications" — ces champs sont masqués côté template pour
+      // un compte unifié (cf. client-settings.pug) et ignorés ici.
+      await User.findByIdAndUpdate(req.user._id, {
+        fullName: fullName.trim(),
+        phone: phone?.trim() || "",
+      });
+      return res.redirect("/espace-client/parametres?success=profile");
     }
 
     // languages peut être une string (1 valeur) ou un tableau
@@ -248,7 +270,8 @@ exports.updateClientPicture = async (req, res) => {
     if (!req.file) return res.json({ success: false, error: "Aucun fichier" });
 
     const imagePath = `/uploads/profiles/${req.file.filename}`;
-    await Client.findByIdAndUpdate(req.client._id, { profilePicture: imagePath });
+    const Model = req.user ? User : Client;
+    await Model.findByIdAndUpdate(req.client._id, { profilePicture: imagePath });
 
     return res.json({ success: true, path: imagePath });
   } catch (err) {
@@ -266,21 +289,27 @@ exports.updateClientEmail = async (req, res) => {
     }
 
     const normalizedEmail = newEmail.toLowerCase().trim();
+    const Model = req.user ? User : Client;
 
     // Vérifier le mot de passe
-    const client = await Client.findById(req.client._id);
-    const match = await bcrypt.compare(passwordConfirm, client.password);
+    const account = await Model.findById(req.client._id);
+    const match = await bcrypt.compare(passwordConfirm, account.password);
     if (!match) {
       return res.redirect("/espace-client/parametres?error=wrong_password#compte");
     }
 
-    // Vérifier si l'email est déjà pris
-    const existing = await Client.findOne({ email: normalizedEmail });
+    // Vérifier si l'email est déjà pris — dans les deux collections (cf.
+    // plan d'unification, un même email ne doit jamais exister deux fois).
+    const [existingUser, existingClient] = await Promise.all([
+      User.findOne({ email: normalizedEmail }),
+      Client.findOne({ email: normalizedEmail }),
+    ]);
+    const existing = existingUser || existingClient;
     if (existing && existing._id.toString() !== req.client._id.toString()) {
       return res.redirect("/espace-client/parametres?error=email_taken#compte");
     }
 
-    await Client.findByIdAndUpdate(req.client._id, { email: normalizedEmail });
+    await Model.findByIdAndUpdate(req.client._id, { email: normalizedEmail });
 
     return res.redirect("/espace-client/parametres?success=email");
   } catch (err) {
@@ -306,14 +335,15 @@ exports.updateClientPassword = async (req, res) => {
       return res.redirect("/espace-client/parametres?error=password_too_short#securite");
     }
 
-    const client = await Client.findById(req.client._id);
-    const match = await bcrypt.compare(currentPassword, client.password);
+    const Model = req.user ? User : Client;
+    const account = await Model.findById(req.client._id);
+    const match = await bcrypt.compare(currentPassword, account.password);
     if (!match) {
       return res.redirect("/espace-client/parametres?error=wrong_password#securite");
     }
 
     const hashed = await bcrypt.hash(newPassword, 10);
-    await Client.findByIdAndUpdate(req.client._id, { password: hashed });
+    await Model.findByIdAndUpdate(req.client._id, { password: hashed });
 
     return res.redirect("/espace-client/parametres?success=password");
   } catch (err) {
@@ -331,7 +361,8 @@ exports.updateClientLang = async (req, res) => {
       return res.redirect("/espace-client/parametres?error=invalid_lang");
     }
 
-    await Client.findByIdAndUpdate(req.client._id, { preferredLang: lang });
+    const Model = req.user ? User : Client;
+    await Model.findByIdAndUpdate(req.client._id, { preferredLang: lang });
 
     // Set the cookie immediately so the UI refreshes in the new language
     res.cookie("user_lang", lang, { maxAge: 365 * 24 * 60 * 60 * 1000, httpOnly: false });

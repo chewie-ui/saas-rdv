@@ -1,6 +1,7 @@
 const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
 
 const User = require("../db/models/user.model");
+const Company = require("../db/models/company/company.model");
 const Subscription = require("../db/models/subscription.model");
 const Stripe = require("stripe");
 const stripe = new Stripe(env.stripeSecretKey);
@@ -778,6 +779,9 @@ exports.deleteAccount = async (req, res) => {
       await Company.findByIdAndDelete(company._id);
     }
 
+    const CompanyMembership = require("../db/models/company/companyMembership.model");
+    await CompanyMembership.deleteMany({ user: userId });
+
     await Subscription.findOneAndDelete({ user: userId });
     await User.findByIdAndDelete(userId);
 
@@ -1431,6 +1435,138 @@ exports.updateLanguage = async (req, res) => {
     return res.json({ success: true });
   } catch (err) {
     console.error("updateLanguage error:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Établissement (cf. plan d'unification des comptes) ───────────────────────
+// Un compte inscrit en "client"/"undecided" peut décider de créer son
+// établissement plus tard — même logique de création que createUser/Google
+// OAuth (controllers/auth.controller.js, routes/auth.js), juste différée.
+exports.createCompanyForExistingUser = async (req, res) => {
+  try {
+    // Pas d'injectCompany sur cette route (elle est faite pour les comptes
+    // qui n'en ont justement pas encore) — on vérifie nous-mêmes.
+    const existing = await Company.findOne({ owner: req.user._id }).lean();
+    if (existing) {
+      return res.status(400).json({ error: "Vous avez déjà un établissement." });
+    }
+    const company = await Company.create({
+      owner: req.user._id,
+      schedule: [
+        { weekdayIndex: 1, workingHours: [{ start: "09:00", end: "18:00" }] },
+        { weekdayIndex: 2, workingHours: [{ start: "09:00", end: "18:00" }] },
+        { weekdayIndex: 3, workingHours: [{ start: "09:00", end: "18:00" }] },
+        { weekdayIndex: 4, workingHours: [{ start: "09:00", end: "18:00" }] },
+        { weekdayIndex: 5, workingHours: [{ start: "09:00", end: "18:00" }] },
+        { weekdayIndex: 6, dayOff: true },
+        { weekdayIndex: 0, dayOff: true },
+      ],
+    });
+    await User.findByIdAndUpdate(req.user._id, {
+      company: company._id,
+      accountIntent: "pro",
+    });
+    return res.json({ success: true, redirect: "/welcome" });
+  } catch (err) {
+    console.error("createCompanyForExistingUser error:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// Masque la page publique / les résultats de recherche, sans toucher à
+// l'abonnement Stripe ni à aucune donnée — entièrement réversible.
+exports.pauseCompany = async (req, res) => {
+  try {
+    if (!res.locals.currentCompany) {
+      return res.status(400).json({ error: "Aucun établissement à mettre en pause." });
+    }
+    if (res.locals.membershipRole !== "owner") {
+      return res.status(403).json({ error: "Seul le propriétaire peut faire ça." });
+    }
+    // accountIntent reste "pro" : il a toujours un établissement, juste en
+    // pause — il doit garder accès à son dashboard pour le reprendre.
+    await Company.findByIdAndUpdate(res.locals.currentCompany._id, { isPaused: true });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("pauseCompany error:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.resumeCompany = async (req, res) => {
+  try {
+    if (!res.locals.currentCompany) {
+      return res.status(400).json({ error: "Aucun établissement à reprendre." });
+    }
+    if (res.locals.membershipRole !== "owner") {
+      return res.status(403).json({ error: "Seul le propriétaire peut faire ça." });
+    }
+    await Company.findByIdAndUpdate(res.locals.currentCompany._id, { isPaused: false });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("resumeCompany error:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Rejoindre un établissement (compte déjà existant, sans établissement) ────
+exports.requestJoinCompany = async (req, res) => {
+  try {
+    const CompanyMembership = require("../db/models/company/companyMembership.model");
+    const { getPlan } = require("../utils/planLimits");
+
+    const existing = await Company.findOne({ owner: req.user._id }).lean();
+    if (existing) {
+      return res.status(400).json({ error: "Vous avez déjà un établissement." });
+    }
+
+    const { companyId } = req.body;
+    if (!companyId) return res.status(400).json({ error: "Établissement manquant." });
+
+    const target = await Company.findById(companyId).populate("owner", "subscription isPremium manualPremium");
+    if (!target || getPlan(target.owner) !== "business") {
+      return res.status(400).json({ error: "Cet établissement n'est plus disponible pour être rejoint." });
+    }
+
+    await CompanyMembership.findOneAndUpdate(
+      { company: target._id, user: req.user._id },
+      { status: "pending" },
+      { upsert: true }
+    );
+    await User.findByIdAndUpdate(req.user._id, { accountIntent: "pro" });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("requestJoinCompany error:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Approbation côté propriétaire ─────────────────────────────────────────────
+exports.respondJoinRequest = async (req, res) => {
+  try {
+    const CompanyMembership = require("../db/models/company/companyMembership.model");
+    if (!res.locals.currentCompany || res.locals.membershipRole !== "owner") {
+      return res.status(403).json({ error: "Accès refusé." });
+    }
+    const { requestId } = req.params;
+    const decision = req.body.decision === "accepted" ? "accepted" : "rejected";
+
+    const membership = await CompanyMembership.findOne({
+      _id: requestId,
+      company: res.locals.currentCompany._id,
+      status: "pending",
+    });
+    if (!membership) {
+      return res.status(404).json({ error: "Demande introuvable." });
+    }
+    membership.status = decision;
+    await membership.save();
+
+    return res.json({ success: true, decision });
+  } catch (err) {
+    console.error("respondJoinRequest error:", err.message);
     return res.status(500).json({ error: "Erreur serveur." });
   }
 };

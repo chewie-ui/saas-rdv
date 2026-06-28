@@ -23,9 +23,22 @@ const userSchema = schema(
       type: String,
       default: null,
     },
+    // Intention déclarée à l'inscription — affichage seulement (quel CTA
+    // montrer dans Paramètres), n'affecte jamais l'accès aux données. La
+    // présence d'un Company doc (owner = ce User) reste l'unique source de
+    // vérité pour "est-ce un compte pro" (cf. middlewares/injectCompany.js).
+    accountIntent: {
+      type: String,
+      enum: ["pro", "client", "undecided"],
+      default: "undecided",
+    },
+    // Optionnel depuis l'unification des comptes (pro ET client s'inscrivent
+    // au même endroit) — un User peut exister sans établissement. Une fois
+    // créé, ce champ n'est jamais réassigné à null (cf. plan "mettre en
+    // pause" : on ne supprime jamais le Company, on le masque seulement).
     company: {
       type: schema.Types.ObjectId,
-      required: true,
+      required: false,
     },
     profilePicture: {
       type: String,

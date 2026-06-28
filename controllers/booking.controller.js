@@ -222,7 +222,12 @@ exports.markNoShow = async (req, res) => {
     booking.noShow = true;
     booking.noShowReason = reason;
 
-    if (booking.payment?.method !== "online") {
+    // "method" peut être "online" (prépaiement) OU "on_site" (carte enregistrée
+    // en garantie) — dans les deux cas une carte Stripe peut être prélevée ici.
+    // On se base sur le statut réel du paiement, pas sur le libellé de la
+    // méthode choisie par le client.
+    const hasStripePayment = ["authorized", "paid"].includes(booking.payment?.status);
+    if (!hasStripePayment) {
       await booking.save();
       return res.json({ success: true, charged: false });
     }
@@ -600,7 +605,10 @@ exports.createBooking = async (req, res) => {
       endTime,
       status: "confirmed",
       formAnswers: Array.isArray(formAnswers) ? formAnswers : [],
-      clientRef: req.session?.clientId || null,
+      // Identité unifiée (cf. plan d'unification) : un User connecté compte
+      // comme son propre "client" — repli sur l'ancien compte Client séparé
+      // tant que tous les comptes n'ont pas été fusionnés.
+      clientRef: req.user?._id || req.session?.clientId || null,
       service:      serviceId   || null,
       serviceName:  serviceName || "",
       serviceColor: serviceDoc?.color || "",
@@ -1377,7 +1385,12 @@ exports.cancelBooking = async (req, res) => {
 
   let chargeResult = null;
 
-  if (stripe && canceledBooking.payment?.method === "online") {
+  // "method" peut être "online" (prépaiement) OU "on_site" (carte enregistrée
+  // en garantie, cf. politique d'annulation) — dans les deux cas Stripe doit
+  // potentiellement prélever/rembourser. On se base donc sur le statut réel
+  // du paiement, pas sur le libellé de la méthode choisie par le client.
+  const hadStripePayment = ["authorized", "paid"].includes(canceledBooking.payment?.status);
+  if (stripe && hadStripePayment) {
     const hrs    = hoursUntil(canceledBooking.date, canceledBooking.startTime);
     const amount = canceledBooking.payment.amount || 0;
 

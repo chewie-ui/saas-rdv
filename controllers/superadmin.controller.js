@@ -11,6 +11,7 @@ const DaysOff   = require("../db/models/company/daysOff.model");
 const Form      = require("../db/models/form.model");
 const Review    = require("../db/models/review.model");
 const Client    = require("../db/models/client.model");
+const LoginEvent = require("../db/models/loginEvent.model");
 const { FEATURES, ADMIN_FEATURES, invalidateFeatureFlagCache } = require("../middlewares/featureFlag");
 const { extractNavLinks } = require("../utils/navLinks");
 
@@ -322,7 +323,7 @@ exports.referralsPage = async (req, res) => {
 exports.logsPage = async (req, res) => {
   const limit = 200;
 
-  const [recentUsers, recentBookings] = await Promise.all([
+  const [recentUsers, recentBookings, recentLogins] = await Promise.all([
     User.find({})
       .select("fullName email isPremium subscription createdAt referredBy")
       .sort({ createdAt: -1 })
@@ -332,6 +333,11 @@ exports.logsPage = async (req, res) => {
       .select("name surname email date startTime status company service isGroup createdAt")
       .populate("company", "slug owner")
       .populate("service", "name")
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean(),
+    LoginEvent.find({})
+      .populate("user", "fullName email")
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean(),
@@ -348,6 +354,18 @@ exports.logsPage = async (req, res) => {
       detail: u.email,
       plan: u.subscription?.plan || (u.isPremium ? 'pro' : 'basic'),
       icon: "👤",
+    });
+  });
+
+  const METHOD_LABEL = { local: "mot de passe", "2fa": "code 2FA", google: "Google" };
+  recentLogins.forEach((l) => {
+    if (!l.user) return; // utilisateur supprimé depuis
+    events.push({
+      type: "login",
+      date: l.createdAt,
+      label: `${l.user.fullName || l.user.email} s'est connecté`,
+      detail: `${l.user.email} · ${METHOD_LABEL[l.method] || l.method}`,
+      icon: "🔑",
     });
   });
 
