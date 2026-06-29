@@ -3,6 +3,7 @@ const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
 const { getLimit } = require("../utils/planLimits");
 const { nextAvailableColor } = require("../utils/serviceColors");
+const { logActivity } = require("../utils/activityLog");
 
 // ── Frais d'annulation/no-show personnalisés (par service) ────────────────────
 function sanitizeCancellationFee(raw) {
@@ -167,6 +168,13 @@ exports.createService = async (req, res) => {
       cancellationFee: sanitizeCancellationFee(cancellationFee),
       answerVisibility: sanitizeAnswerVisibility(answerVisibility),
     });
+    logActivity({
+      company: companyId,
+      user: req.user,
+      role: res.locals.membershipRole,
+      action: "service.create",
+      description: `a créé le service "${service.name}"`,
+    });
     res.json({ success: true, service });
   } catch (err) {
     console.error(err);
@@ -222,6 +230,13 @@ exports.updateService = async (req, res) => {
     ).populate("employees", "firstName lastName profilePicture");
 
     if (!service) return res.status(404).json({ error: "Service non trouvé." });
+    logActivity({
+      company: res.locals.currentCompany._id,
+      user: req.user,
+      role: res.locals.membershipRole,
+      action: "service.update",
+      description: `a modifié le service "${service.name}"`,
+    });
     res.json({ success: true, service });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur" });
@@ -260,7 +275,16 @@ exports.toggleService = async (req, res) => {
 exports.deleteService = async (req, res) => {
   try {
     const { id } = req.params;
-    await Service.findOneAndDelete({ _id: id, company: res.locals.currentCompany._id });
+    const deleted = await Service.findOneAndDelete({ _id: id, company: res.locals.currentCompany._id });
+    if (deleted) {
+      logActivity({
+        company: res.locals.currentCompany._id,
+        user: req.user,
+        role: res.locals.membershipRole,
+        action: "service.delete",
+        description: `a supprimé le service "${deleted.name}"`,
+      });
+    }
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur" });

@@ -106,4 +106,42 @@ router.patch("/company-resume", isAuth, injectCompany, accountController.resumeC
 router.post("/join-company", isAuth, accountController.requestJoinCompany);
 router.patch("/join-requests/:requestId", isAuth, injectCompany, accountController.respondJoinRequest);
 
+// ── Multi-établissements (cf. "Gérer mes établissements") ─────────────────────
+const establishmentController = require("../../controllers/establishment.controller");
+
+// Upload de la photo PENDANT la création (l'établissement n'existe pas encore
+// donc on ne peut pas la rattacher à un id) — renvoie juste le chemin, à
+// transmettre dans le payload de POST /establishments ci-dessous.
+router.post(
+  "/establishments/photo-temp",
+  isAuth,
+  upload.single("photo"),
+  processSingleImage("photo"),
+  (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "Aucune image reçue." });
+    return res.json({ success: true, path: `/uploads/profiles/${req.file.filename}` });
+  },
+);
+router.post("/establishments", isAuth, establishmentController.createEstablishment);
+router.patch("/establishments/:id", isAuth, establishmentController.updateEstablishment);
+router.patch(
+  "/establishments/:id/photo",
+  isAuth,
+  upload.single("photo"),
+  processSingleImage("photo"),
+  establishmentController.updateEstablishmentPhoto,
+);
+router.patch("/establishments/:id/pause", isAuth, establishmentController.togglePauseEstablishment);
+router.delete("/establishments/:id", isAuth, establishmentController.deleteEstablishment);
+
+router.post("/establishments/:id/collaborateurs", isAuth, establishmentController.inviteCollaborator);
+router.patch("/establishments/:id/collaborateurs/:membershipId/role", isAuth, establishmentController.updateCollaboratorRole);
+router.patch("/establishments/:id/collaborateurs/:membershipId/active", isAuth, establishmentController.toggleCollaboratorActive);
+router.delete("/establishments/:id/collaborateurs/:membershipId", isAuth, establishmentController.removeCollaborator);
+router.patch("/establishments/:id/join-requests/:membershipId", isAuth, establishmentController.respondJoinRequestForCompany);
+
+// ── Choisir l'établissement actif (utilisateur avec plusieurs établissements
+// possédés, ou membre de plusieurs équipes) — cf. middlewares/injectCompany.js
+router.post("/switch-company/:id", isAuth, establishmentController.switchActiveCompany);
+
 module.exports = router;

@@ -53,6 +53,8 @@ block links
         .auth-promo-badge svg { stroke:#d97706; flex-shrink:0; }
         .auth-promo-badge strong { color:#b45309; }
         .reg-step-title { font-size:15px; font-weight:600; color:#374151; margin:0 0 18px; }
+        .reg-substep-title { display:flex; align-items:center; gap:12px; }
+        .reg-substep-title .reg-back { margin:0; }
 
         /* ── Étape 0 : intention ──────────────────────────────────── */
         .intent-grid { display:flex; flex-direction:column; gap:10px; margin-bottom:18px; }
@@ -126,42 +128,52 @@ block content
 
                     //- ══ ÉTAPE 0 : Intention ═══════════════════════════════
                     .reg-step.active#step0
-                        #intentGrid.intent-grid
-                            label.intent-card(data-intent="pro")
-                                input(type="radio" name="accountIntentRadio" value="pro")
-                                .intent-card__body
-                                    span.intent-card__label Gérer mon établissement
-                                    span.intent-card__sub Coiffeur, coach, thérapeute... vous recevez des clients
-                            label.intent-card(data-intent="client")
-                                input(type="radio" name="accountIntentRadio" value="client")
-                                .intent-card__body
-                                    span.intent-card__label Prendre des rendez-vous
-                                    span.intent-card__sub Vous réservez chez des professionnels
-                            label.intent-card(data-intent="undecided")
-                                input(type="radio" name="accountIntentRadio" value="undecided")
-                                .intent-card__body
-                                    span.intent-card__label Je ne sais pas encore
-                                    span.intent-card__sub Vous pourrez choisir plus tard
-
-                        //- Sous-choix visible seulement si "pro" est sélectionné
-                        #proModeGrid.intent-grid(style="display:none;margin-top:6px")
-                            label.intent-card(data-promode="create")
-                                input(type="radio" name="proModeRadio" value="create")
-                                .intent-card__body
-                                    span.intent-card__label Créer mon établissement
-                                    span.intent-card__sub Vous êtes le seul ou le premier compte de l'équipe
-                            label.intent-card(data-promode="join")
-                                input(type="radio" name="proModeRadio" value="join")
-                                .intent-card__body
-                                    span.intent-card__label Rejoindre un établissement
-                                    span.intent-card__sub Une équipe existe déjà sur BranShee (plan Business)
-
                         input(type="hidden" name="accountIntent" id="accountIntentInput")
                         input(type="hidden" name="proMode" id="proModeInput")
                         input(type="hidden" name="joinCompanyId" id="joinCompanyIdInput")
 
-                        .reg-nav
-                            button.sm-btn.sm-btn--primary.sm-btn--full.reg-next(type="button" id="next0" disabled) Continuer →
+                        //- ── Sous-vue A : choix principal ───────────────
+                        #intentMain
+                            #intentGrid.intent-grid
+                                label.intent-card(data-intent="pro")
+                                    input(type="radio" name="accountIntentRadio" value="pro")
+                                    .intent-card__body
+                                        span.intent-card__label Gérer mon établissement
+                                        span.intent-card__sub Coiffeur, coach, thérapeute... vous recevez des clients
+                                label.intent-card(data-intent="client")
+                                    input(type="radio" name="accountIntentRadio" value="client")
+                                    .intent-card__body
+                                        span.intent-card__label Prendre des rendez-vous
+                                        span.intent-card__sub Vous réservez chez des professionnels
+                                label.intent-card(data-intent="undecided")
+                                    input(type="radio" name="accountIntentRadio" value="undecided")
+                                    .intent-card__body
+                                        span.intent-card__label Je ne sais pas encore
+                                        span.intent-card__sub Vous pourrez choisir plus tard
+
+                            .reg-nav
+                                button.sm-btn.sm-btn--primary.sm-btn--full.reg-next(type="button" id="next0" disabled) Continuer →
+
+                        //- ── Sous-vue B : créer ou rejoindre un établissement ──
+                        #intentProMode(style="display:none")
+                            .reg-step-title.reg-substep-title
+                                button.reg-back(type="button" id="backProMode") ←
+                                span Comment souhaitez-vous gérer votre établissement ?
+
+                            #proModeGrid.intent-grid
+                                label.intent-card(data-promode="create")
+                                    input(type="radio" name="proModeRadio" value="create")
+                                    .intent-card__body
+                                        span.intent-card__label Créer mon établissement
+                                        span.intent-card__sub Vous êtes le seul ou le premier compte de l'équipe
+                                label.intent-card(data-promode="join")
+                                    input(type="radio" name="proModeRadio" value="join")
+                                    .intent-card__body
+                                        span.intent-card__label Rejoindre un établissement
+                                        span.intent-card__sub Une équipe existe déjà sur BranShee (plan Business)
+
+                            .reg-nav
+                                button.sm-btn.sm-btn--primary.sm-btn--full.reg-next(type="button" id="next0b" disabled) Continuer →
 
                     //- ══ ÉTAPE 1 : Profil ══════════════════════════════════
                     .reg-step#step1
@@ -402,17 +414,32 @@ block scripts
             /* ── Étape 0 : intention ──────────────────────────────── */
             var intentInput  = document.getElementById('accountIntentInput');
             var intentCards  = document.querySelectorAll('#intentGrid .intent-card');
-            var proModeGrid  = document.getElementById('proModeGrid');
+            var intentMainView    = document.getElementById('intentMain');
+            var intentProModeView = document.getElementById('intentProMode');
             var proModeCards = document.querySelectorAll('#proModeGrid .intent-card');
             var proModeInput = document.getElementById('proModeInput');
             var next0        = document.getElementById('next0');
+            var next0b       = document.getElementById('next0b');
+            var backProModeBtn = document.getElementById('backProMode');
             var businessTypeField = document.getElementById('businessTypeField');
             var joinCompanyField  = document.getElementById('joinCompanyField');
             var joinCompanyIdInput = document.getElementById('joinCompanyIdInput');
             var googleSsoBtn = document.getElementById('googleSsoBtn');
 
+            function showIntentMain() {
+                intentProModeView.style.display = 'none';
+                intentMainView.style.display = '';
+            }
+            function showIntentProMode() {
+                intentMainView.style.display = 'none';
+                intentProModeView.style.display = '';
+            }
+
             function updateNext0State() {
-                next0.disabled = !(intentInput.value && (intentInput.value !== 'pro' || proModeInput.value));
+                next0.disabled = !(intentInput.value === 'client' || intentInput.value === 'undecided');
+            }
+            function updateNext0bState() {
+                next0b.disabled = !proModeInput.value;
             }
 
             function selectIntent(value) {
@@ -426,9 +453,10 @@ block scripts
                 match.querySelector('input[type="radio"]').checked = true;
                 intentInput.value = value;
                 if (value === 'pro') {
-                    proModeGrid.style.display = '';
+                    // Ouvre directement la sous-étape créer/rejoindre, au lieu
+                    // d'empiler les 2 choix sous les 3 cartes principales.
+                    showIntentProMode();
                 } else {
-                    proModeGrid.style.display = 'none';
                     proModeInput.value = '';
                     proModeCards.forEach(function(c) { c.classList.remove('is-selected'); });
                 }
@@ -441,7 +469,7 @@ block scripts
                     if (c.dataset.promode === value) c.classList.add('is-selected');
                 });
                 proModeInput.value = value;
-                updateNext0State();
+                updateNext0bState();
             }
 
             intentCards.forEach(function(card) {
@@ -450,6 +478,7 @@ block scripts
             proModeCards.forEach(function(card) {
                 card.addEventListener('click', function() { selectProMode(card.dataset.promode); });
             });
+            backProModeBtn.addEventListener('click', function() { clearErrors(); showIntentMain(); });
 
             // Pré-sélection si on arrive avec ?intent=... (ex: lien "Espace
             // client" du menu) — l'utilisateur garde la main pour changer.
@@ -458,17 +487,25 @@ block scripts
 
             next0.addEventListener('click', function() {
                 clearErrors();
-                if (!intentInput.value) { showError('Veuillez faire un choix pour continuer.'); return; }
-                if (intentInput.value === 'pro' && !proModeInput.value) { showError('Veuillez choisir créer ou rejoindre.'); return; }
-                // Le métier n'est demandé que pour un compte "pro" qui crée ;
-                // la recherche d'établissement seulement pour qui rejoint.
-                var isCreate = intentInput.value === 'pro' && proModeInput.value === 'create';
-                var isJoin   = intentInput.value === 'pro' && proModeInput.value === 'join';
-                if (businessTypeField) businessTypeField.style.display = isCreate ? '' : 'none';
-                if (joinCompanyField)  joinCompanyField.style.display  = isJoin   ? '' : 'none';
+                if (!intentInput.value || intentInput.value === 'pro') { showError('Veuillez faire un choix pour continuer.'); return; }
+                if (businessTypeField) businessTypeField.style.display = 'none';
+                if (joinCompanyField)  joinCompanyField.style.display  = 'none';
                 // Transmet l'intention choisie au bouton Google (lue côté
                 // serveur après l'aller-retour OAuth, cf. routes/auth.js).
                 if (googleSsoBtn) googleSsoBtn.href = '/auth/google?intent=' + intentInput.value;
+                goTo(1);
+            });
+
+            next0b.addEventListener('click', function() {
+                clearErrors();
+                if (!proModeInput.value) { showError('Veuillez choisir créer ou rejoindre.'); return; }
+                // Le métier n'est demandé que pour un compte "pro" qui crée ;
+                // la recherche d'établissement seulement pour qui rejoint.
+                var isCreate = proModeInput.value === 'create';
+                var isJoin   = proModeInput.value === 'join';
+                if (businessTypeField) businessTypeField.style.display = isCreate ? '' : 'none';
+                if (joinCompanyField)  joinCompanyField.style.display  = isJoin   ? '' : 'none';
+                if (googleSsoBtn) googleSsoBtn.href = '/auth/google?intent=pro';
                 goTo(1);
             });
 
@@ -623,19 +660,25 @@ block scripts
                 joinDropdown.style.display = 'block';
             }
 
+            function fetchJoinCompanies(q) {
+                fetch('/api/joinable-companies?q=' + encodeURIComponent(q))
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) { renderJoinList(data.companies || []); })
+                    .catch(function() { joinDropdown.style.display = 'none'; });
+            }
+
             if (joinInput) {
+                // Au focus (champ vide) : propose quelques établissements par
+                // défaut, plutôt qu'un menu vide tant qu'on n'a rien tapé.
+                joinInput.addEventListener('focus', function() {
+                    if (!joinInput.value.trim()) fetchJoinCompanies('');
+                });
                 joinInput.addEventListener('input', function() {
                     joinHidden.value = '';
                     joinInput.classList.remove('service-input--selected');
                     clearTimeout(joinSearchTimer);
                     var q = joinInput.value.trim();
-                    if (q.length < 2) { joinDropdown.style.display = 'none'; return; }
-                    joinSearchTimer = setTimeout(function() {
-                        fetch('/api/joinable-companies?q=' + encodeURIComponent(q))
-                            .then(function(r) { return r.json(); })
-                            .then(function(data) { renderJoinList(data.companies || []); })
-                            .catch(function() { joinDropdown.style.display = 'none'; });
-                    }, 300);
+                    joinSearchTimer = setTimeout(function() { fetchJoinCompanies(q); }, 300);
                 });
                 joinInput.addEventListener('blur', function() {
                     setTimeout(function() { joinDropdown.style.display = 'none'; }, 160);
@@ -735,7 +778,10 @@ block scripts
             // Touche Entrée → passer à l'étape suivante
             document.addEventListener('keydown', function(e) {
                 if (e.key !== 'Enter') return;
-                if (currentStep === 0) { if (!next0.disabled) { e.preventDefault(); next0.click(); } }
+                if (currentStep === 0) {
+                    if (intentProModeView.style.display !== 'none') { if (!next0b.disabled) { e.preventDefault(); next0b.click(); } }
+                    else { if (!next0.disabled) { e.preventDefault(); next0.click(); } }
+                }
                 else if (currentStep === 1) { e.preventDefault(); document.getElementById('next1').click(); }
                 else if (currentStep === 2) { e.preventDefault(); document.getElementById('next2').click(); }
             });

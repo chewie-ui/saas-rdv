@@ -85,6 +85,122 @@
   fill: currentColor;
 }
 
+/* ── Établissement actif + switcher ────────────────────────────── */
+.sb-estab {
+  position: relative;
+  margin: 0 16px 14px;
+  flex-shrink: 0;
+}
+
+.sb-estab__current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid var(--border-light);
+  background: var(--surface, #f5f4f1);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: default;
+  text-align: left;
+}
+
+.sb-estab--switchable .sb-estab__current {
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.sb-estab--switchable .sb-estab__current:hover {
+  border-color: var(--accent, #1a7a4a);
+}
+
+.sb-estab__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sb-estab__caret {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+.sb-estab.open .sb-estab__caret {
+  transform: rotate(180deg);
+}
+
+.sb-estab__panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--color-white);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md, 10px);
+  box-shadow: var(--shadow-hover, 0 8px 24px rgba(0,0,0,0.12));
+  padding: 6px;
+  z-index: 50;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.sb-estab.open .sb-estab__panel {
+  display: block;
+}
+
+.sb-estab__opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sb-estab__opt:hover { background: var(--surface, #f5f4f1); }
+
+.sb-estab__opt.is-active {
+  color: var(--accent, #1a7a4a);
+  cursor: default;
+}
+
+.sb-estab__opt-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sb-estab__opt-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  background: var(--surface, #f5f4f1);
+  padding: 2px 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.sb-estab__opt svg { flex-shrink: 0; }
+
 /* ── Navigation ─────────────────────────────────────────────── */
 .sb-nav {
   flex: 1;

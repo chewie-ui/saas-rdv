@@ -21,8 +21,32 @@ block content
             var _chapters = (sections && sections.length) ? sections.map(function(s){ return s.title; }) : [t.support.default_chapter_how, t.support.default_chapter_faq]
             _chapters.push(t.support.contact_chapter)
         .support-chapters
+            a.support-chapter-pill(href="#chapter-guides") Visites guidées
             each chapter, i in _chapters
                 a.support-chapter-pill(href=`#chapter-${i}`)= chapter
+
+        //- ── Visites guidées : assistance pas-à-pas sur une tâche précise ──────
+        -
+            var guidedTours = [
+                { key: 'employee',      icon: '👥', title: 'Créer un employé',          desc: 'On vous montre où cliquer pour ajouter un membre de votre équipe.' },
+                { key: 'groupSessions', icon: '🧘', title: 'Créer un cours collectif',   desc: 'Mettre en place un cours avec plusieurs participants, étape par étape.' },
+                { key: 'daysOff',       icon: '🌴', title: 'Ajouter un congé',           desc: 'Bloquer une date pour ne plus recevoir de réservations ce jour-là.' },
+                { key: 'availability',  icon: '🕒', title: 'Mes disponibilités',         desc: 'Activer vos jours d\'ouverture et régler vos horaires.' },
+                { key: 'settings',      icon: '⚙️', title: 'Modifier mes paramètres',    desc: 'Changer votre nom et vos informations de compte.' },
+            ]
+        .info-card.support-section(id="chapter-guides")
+            .info-card__header
+                h3 Visites guidées
+                p.info-card__desc Besoin d'aide sur une tâche précise ? On vous montre exactement où cliquer, en direct sur la page.
+            .guide-tour-grid
+                each g in guidedTours
+                    button.guide-tour-card.js-start-tour(type="button" data-tour=g.key)
+                        .guide-tour-card__icon= g.icon
+                        .guide-tour-card__body
+                            h4= g.title
+                            p= g.desc
+                        svg.guide-tour-card__arrow(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                            path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
 
         if sections && sections.length
             each section, i in sections
@@ -112,6 +136,12 @@ block content
 
     script.
         window.__t_support = !{JSON.stringify(t.support)};
+
+        document.querySelectorAll('.js-start-tour').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                if (window.BkTour) window.BkTour.start(btn.dataset.tour);
+            });
+        });
 
         // FAQ accordion
         document.querySelectorAll('.support-faq-item').forEach(function(item) {

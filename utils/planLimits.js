@@ -49,6 +49,14 @@ const LIMITS = {
   // Max employees (0 = feature locked)
   employees: { basic: 0, pro: 2, business: 10 },
 
+  // Max établissements possédés (cf. "Gérer mes établissements") — basic/pro
+  // restent à 1 (comportement historique), business peut en gérer plusieurs.
+  companies: { basic: 1, pro: 1, business: 5 },
+
+  // Max collaborateurs (CompanyMembership) par établissement possédé — distinct
+  // des "employees" (simple étiquette de planning, sans compte/connexion).
+  collaborators: { basic: 0, pro: 1, business: 5 },
+
   // Monthly bookings cap (Infinity = unlimited)
   monthlyBookings: { basic: 20, pro: Infinity, business: Infinity },
 

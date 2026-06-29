@@ -13,25 +13,56 @@ module.exports = async (req, res, next) => {
       return next();
     }
 
-    // 2. On cherche la company dont l'owner est l'id de l'user connecté
-    // .lean() permet de récupérer un objet JS simple (plus rapide)
-    let currentCompany = await Company.findOne({
+    // 2. On cherche les companies dont l'owner est l'id de l'user connecté —
+    // un User peut désormais en posséder plusieurs (cf. "Gérer mes
+    // établissements") — et aussi celles qu'il a rejointes comme collaborateur
+    // (accepté + actif). On choisit celle "active" pour cette session
+    // (req.session.activeCompanyId, posée par /account/switch-company/:id),
+    // sinon la plus ancienne possédée, sinon la première adhésion.
+    const ownedCompanies = await Company.find({
       owner: req.user._id,
-    }).lean();
-    let membershipRole = currentCompany ? "owner" : null;
+      isDeleted: { $ne: true },
+    }).sort({ createdAt: 1 }).lean();
 
-    // 2b. Pas propriétaire ? Peut-être membre d'un établissement qu'il a
-    // rejoint (cf. plan d'unification — "rejoindre un établissement",
-    // approuvé par le propriétaire) — accès complet au même titre que lui.
-    if (!currentCompany) {
-      const membership = await CompanyMembership.findOne({
-        user: req.user._id,
-        status: "accepted",
-      }).lean();
-      if (membership) {
-        currentCompany = await Company.findById(membership.company).lean();
-        membershipRole = "member";
+    const memberships = await CompanyMembership.find({
+      user: req.user._id,
+      status: "accepted",
+      isActive: { $ne: false },
+    }).lean();
+    const roleByCompanyId = {};
+    memberships.forEach((m) => { roleByCompanyId[String(m.company)] = m.role || "staff"; });
+    const memberCompanies = memberships.length
+      ? await Company.find({ _id: { $in: memberships.map((m) => m.company) }, isDeleted: { $ne: true } }).lean()
+      : [];
+
+    // Disponible côté vue pour le switcher d'établissement (sidebar.pug) —
+    // propriétaire d'abord, puis établissements rejoints comme collaborateur.
+    res.locals.myCompanies = [
+      ...ownedCompanies.map((c) => ({ id: String(c._id), name: c.name || req.user.businessName || "Établissement", isOwner: true })),
+      ...memberCompanies.map((c) => ({ id: String(c._id), name: c.name || "Établissement", isOwner: false })),
+    ];
+
+    const activeId = req.session && req.session.activeCompanyId;
+    let currentCompany = null;
+    let membershipRole = null;
+
+    if (activeId) {
+      currentCompany = ownedCompanies.find((c) => String(c._id) === String(activeId))
+        || memberCompanies.find((c) => String(c._id) === String(activeId))
+        || null;
+      if (currentCompany) {
+        membershipRole = ownedCompanies.some((c) => String(c._id) === String(currentCompany._id))
+          ? "owner"
+          : (roleByCompanyId[String(currentCompany._id)] || "staff");
       }
+    }
+    if (!currentCompany && ownedCompanies.length) {
+      currentCompany = ownedCompanies[0];
+      membershipRole = "owner";
+    }
+    if (!currentCompany && memberCompanies.length) {
+      currentCompany = memberCompanies[0];
+      membershipRole = roleByCompanyId[String(currentCompany._id)] || "staff";
     }
 
     // 3. Si l'utilisateur n'a ni établissement propre ni adhésion acceptée —

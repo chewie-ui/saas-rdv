@@ -128,17 +128,23 @@ block scripts
                 joinDropdown.style.display = 'block';
             }
 
+            function fetchCompanies(q) {
+                fetch('/api/joinable-companies?q=' + encodeURIComponent(q))
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) { renderJoinList(data.companies || []); })
+                    .catch(function () { joinDropdown.style.display = 'none'; });
+            }
+
             if (joinInput) {
+                // Au focus (champ vide) : on propose quelques établissements
+                // par défaut, plutôt qu'un menu vide tant qu'on n'a rien tapé.
+                joinInput.addEventListener('focus', function () {
+                    if (!joinInput.value.trim()) fetchCompanies('');
+                });
                 joinInput.addEventListener('input', function () {
                     clearTimeout(joinTimer);
                     var q = joinInput.value.trim();
-                    if (q.length < 2) { joinDropdown.style.display = 'none'; return; }
-                    joinTimer = setTimeout(function () {
-                        fetch('/api/joinable-companies?q=' + encodeURIComponent(q))
-                            .then(function (r) { return r.json(); })
-                            .then(function (data) { renderJoinList(data.companies || []); })
-                            .catch(function () { joinDropdown.style.display = 'none'; });
-                    }, 300);
+                    joinTimer = setTimeout(function () { fetchCompanies(q); }, 300);
                 });
                 joinInput.addEventListener('blur', function () {
                     setTimeout(function () { joinDropdown.style.display = 'none'; }, 160);

@@ -1,0 +1,451 @@
+/* ════════════════════════════════════════════════════════════════════════
+   Visite guidée — met en évidence (spotlight) un élément réel de la page et
+   affiche une bulle d'explication, en pilotant l'utilisateur à travers
+   plusieurs pages admin. Plusieurs visites nommées (onboarding, employés,
+   cours collectifs, congés, disponibilités, paramètres...) cohabitent dans
+   le même moteur — cf. window.BkTour.start(nomDuTour).
+   État persisté en localStorage pour survivre à la navigation entre pages.
+   ════════════════════════════════════════════════════════════════════════ */
+(function () {
+  "use strict";
+
+  var STORAGE_ACTIVE = "bk_tour_active";
+  var STORAGE_NAME = "bk_tour_name";
+  var STORAGE_STEP = "bk_tour_step";
+  var DEFAULT_TOUR = "onboarding";
+
+  function $(sel, root) { return (root || document).querySelector(sel); }
+
+  function firstDayRow() { return $(".row-weekday"); }
+
+  function isVisible(el) {
+    if (!el) return false;
+    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  }
+
+  // Beaucoup de formulaires admin vivent dans une modale présente dans le DOM
+  // mais masquée jusqu'à l'ajout d'une classe "show" par le JS de la page —
+  // si l'utilisateur arrive sur l'étape via "Suivant" sans avoir cliqué le
+  // vrai déclencheur, on l'ouvre nous-même pour rester cohérent.
+  function ensureModalOpen(modalSel, triggerSel) {
+    return function () {
+      var modal = $(modalSel);
+      if (modal && !modal.classList.contains("show")) {
+        var btn = $(triggerSel);
+        if (btn) btn.click();
+      }
+    };
+  }
+
+  var TOURS = {
+    // ── Visite d'accueil (depuis /welcome) ────────────────────────────────
+    onboarding: [
+      {
+        page: "/availability",
+        find: function () {
+          var row = firstDayRow();
+          return row && row.querySelector("input.input-weekday");
+        },
+        title: "Activez vos jours d'ouverture",
+        text: "Ce bouton active ou désactive un jour. Cliquez-le pour tester — vos clients ne pourront réserver que sur les jours activés.",
+        placement: "right",
+        advanceOnEvent: "change",
+      },
+      {
+        page: "/availability",
+        find: function () {
+          var row = firstDayRow();
+          return row && row.querySelector('[data-hours="start"]');
+        },
+        title: "Réglez les horaires",
+        text: "Cliquez ici pour changer l'heure de début de ce jour (et son heure de fin juste à côté).",
+        placement: "right",
+      },
+      {
+        page: "/services",
+        find: function () { return $("#addServiceBtn"); },
+        title: "Ajoutez votre premier service",
+        text: "Cliquez ici pour créer un service — une coupe, un massage, une consultation... ce que vous proposez à vos clients.",
+        placement: "bottom",
+        advanceOnEvent: "click",
+        advanceDelay: 200,
+      },
+      {
+        page: "/services",
+        preStep: ensureModalOpen("#serviceModal", "#addServiceBtn"),
+        find: function () { return $("#serviceModalName"); },
+        title: "Donnez-lui un nom",
+        text: "Indiquez le nom de ce service, par exemple «Coupe homme».",
+        placement: "bottom",
+      },
+      {
+        page: "/services",
+        preStep: ensureModalOpen("#serviceModal", "#addServiceBtn"),
+        find: function () { return $("#saveServiceBtn"); },
+        title: "Enregistrez",
+        text: "Cliquez ici pour enregistrer votre service.",
+        placement: "top",
+        advanceOnEvent: "click",
+        advanceDelay: 400,
+      },
+      {
+        page: "/customize-calendar",
+        preStep: function () {
+          var tab = $("#czTabDesign");
+          var panel = $("#czPanelDesign");
+          if (tab && panel && panel.style.display === "none") tab.click();
+        },
+        find: function () { return $(".cz-color-picker__swatch"); },
+        title: "Personnalisez votre couleur",
+        text: "Cliquez ici pour choisir la couleur principale de votre page de réservation — celle que verront vos clients.",
+        placement: "bottom",
+        isLast: true,
+      },
+    ],
+
+    // ── Assistance : créer un employé ─────────────────────────────────────
+    employee: [
+      {
+        page: "/employees",
+        find: function () { return $("#addEmpBtn"); },
+        title: "Ajoutez un employé",
+        text: "Cliquez ici pour ajouter un membre de votre équipe.",
+        placement: "bottom",
+        advanceOnEvent: "click",
+        advanceDelay: 200,
+      },
+      {
+        page: "/employees",
+        preStep: ensureModalOpen("#empModal", "#addEmpBtn"),
+        find: function () { return $("#empModalFirstName"); },
+        title: "Son prénom et son nom",
+        text: "Indiquez son prénom ici, puis son nom dans le champ juste à côté.",
+        placement: "bottom",
+      },
+      {
+        page: "/employees",
+        preStep: ensureModalOpen("#empModal", "#addEmpBtn"),
+        find: function () { return $("#saveEmpBtn"); },
+        title: "Enregistrez",
+        text: "Cliquez ici pour l'ajouter à votre équipe.",
+        placement: "top",
+        advanceOnEvent: "click",
+        advanceDelay: 400,
+        isLast: true,
+      },
+    ],
+
+    // ── Assistance : créer un cours collectif ─────────────────────────────
+    groupSessions: [
+      {
+        page: "/group-sessions",
+        find: function () { return $("#addCourseBtn"); },
+        title: "Créez un cours collectif",
+        text: "Cliquez ici pour créer un cours avec plusieurs participants (yoga, sport, atelier...).",
+        placement: "bottom",
+        advanceOnEvent: "click",
+        advanceDelay: 200,
+      },
+      {
+        page: "/group-sessions",
+        preStep: ensureModalOpen("#courseModal", "#addCourseBtn"),
+        find: function () { return $("#courseName"); },
+        title: "Donnez-lui un nom",
+        text: "Indiquez le nom de ce cours, par exemple «Yoga débutant».",
+        placement: "bottom",
+      },
+      {
+        page: "/group-sessions",
+        preStep: ensureModalOpen("#courseModal", "#addCourseBtn"),
+        find: function () { return $("#saveCourseBtn"); },
+        title: "Enregistrez",
+        text: "Cliquez ici pour créer votre cours collectif.",
+        placement: "top",
+        advanceOnEvent: "click",
+        advanceDelay: 400,
+        isLast: true,
+      },
+    ],
+
+    // ── Assistance : ajouter un congé ──────────────────────────────────────
+    daysOff: [
+      {
+        page: "/availability",
+        find: function () { return $("#addDaysOffBtn"); },
+        title: "Ajoutez un congé",
+        text: "Cliquez ici, puis choisissez une date dans le calendrier qui apparaît — ce jour sera automatiquement bloqué aux réservations.",
+        placement: "bottom",
+        isLast: true,
+      },
+    ],
+
+    // ── Assistance : disponibilités ────────────────────────────────────────
+    availability: [
+      {
+        page: "/availability",
+        find: function () {
+          var row = firstDayRow();
+          return row && row.querySelector("input.input-weekday");
+        },
+        title: "Activez vos jours d'ouverture",
+        text: "Ce bouton active ou désactive un jour. Cliquez-le pour tester — vos clients ne pourront réserver que sur les jours activés.",
+        placement: "right",
+        advanceOnEvent: "change",
+      },
+      {
+        page: "/availability",
+        find: function () {
+          var row = firstDayRow();
+          return row && row.querySelector('[data-hours="start"]');
+        },
+        title: "Réglez les horaires",
+        text: "Cliquez ici pour changer l'heure de début de ce jour (et son heure de fin juste à côté).",
+        placement: "right",
+        isLast: true,
+      },
+    ],
+
+    // ── Assistance : changer les paramètres (nom, etc.) ────────────────────
+    settings: [
+      {
+        page: "/settings",
+        find: function () { return $("#fullname"); },
+        title: "Votre nom",
+        text: "Modifiez votre nom complet ici.",
+        placement: "bottom",
+      },
+      {
+        page: "/settings",
+        find: function () { return $("#saveChanges"); },
+        title: "Enregistrez",
+        text: "Cliquez ici pour sauvegarder vos modifications.",
+        placement: "top",
+        isLast: true,
+      },
+    ],
+  };
+
+  // ── Fonctionnalités verrouillées par le plan ──────────────────────────────
+  // Pas la peine de pointer un bouton que l'utilisateur ne peut pas utiliser
+  // — on lui dit directement quel forfait débloque la fonctionnalité visée
+  // par CE tour, avant même d'afficher la 1ère étape normale.
+  var LOCK_CHECKS = {
+    employee: function () {
+      if (typeof window.__maxEmployees === "number" && window.__maxEmployees === 0) {
+        return { message: "Ajouter des employés nécessite le plan Pro ou Business. Passez à un forfait supérieur pour débloquer cette fonctionnalité." };
+      }
+      return null;
+    },
+    groupSessions: function () {
+      var btn = $("#addCourseBtn");
+      if (btn && btn.disabled) {
+        return { message: "Les cours collectifs ne sont pas inclus dans votre forfait actuel. Passez à un forfait supérieur pour les débloquer." };
+      }
+      return null;
+    },
+  };
+
+  var state = { tourName: DEFAULT_TOUR, stepIndex: -1, pollTimer: null, target: null, advanceHandler: null };
+
+  function currentSteps() { return TOURS[state.tourName] || TOURS[DEFAULT_TOUR]; }
+
+  function isActive() { return localStorage.getItem(STORAGE_ACTIVE) === "1"; }
+  function getTourName() { return localStorage.getItem(STORAGE_NAME) || DEFAULT_TOUR; }
+  function getStepIndex() { return parseInt(localStorage.getItem(STORAGE_STEP) || "0", 10); }
+  function setStepIndex(n) { localStorage.setItem(STORAGE_STEP, String(n)); }
+
+  function stopTour() {
+    localStorage.removeItem(STORAGE_ACTIVE);
+    localStorage.removeItem(STORAGE_NAME);
+    localStorage.removeItem(STORAGE_STEP);
+    teardown();
+  }
+
+  function teardown() {
+    if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
+    if (state.target && state.advanceHandler && state._evtName) {
+      state.target.removeEventListener(state._evtName, state.advanceHandler);
+    }
+    var root = document.getElementById("bkTourRoot");
+    if (root) root.remove();
+    window.removeEventListener("resize", reposition);
+    window.removeEventListener("scroll", reposition, true);
+  }
+
+  function buildRoot() {
+    var root = document.createElement("div");
+    root.id = "bkTourRoot";
+    root.innerHTML =
+      '<div class="bk-tour-mask" data-pos="top"></div>' +
+      '<div class="bk-tour-mask" data-pos="bottom"></div>' +
+      '<div class="bk-tour-mask" data-pos="left"></div>' +
+      '<div class="bk-tour-mask" data-pos="right"></div>' +
+      '<div class="bk-tour-ring"></div>' +
+      '<div class="bk-tour-tip">' +
+      '  <div class="bk-tour-tip__head">' +
+      '    <span class="bk-tour-tip__step"></span>' +
+      '    <button type="button" class="bk-tour-tip__skip">Ignorer le tutoriel</button>' +
+      "  </div>" +
+      '  <h4 class="bk-tour-tip__title"></h4>' +
+      '  <p class="bk-tour-tip__text"></p>' +
+      '  <div class="bk-tour-tip__foot">' +
+      '    <button type="button" class="bk-tour-tip__next">Suivant →</button>' +
+      "  </div>" +
+      "</div>";
+    document.body.appendChild(root);
+    root.querySelector(".bk-tour-tip__skip").addEventListener("click", stopTour);
+    return root;
+  }
+
+  function reposition() {
+    if (!state.target) return;
+    renderAt(state.target);
+  }
+
+  function renderAt(el) {
+    var root = document.getElementById("bkTourRoot");
+    if (!root) return;
+    var r = el.getBoundingClientRect();
+    var pad = 8;
+    var top = r.top - pad, left = r.left - pad, right = r.right + pad, bottom = r.bottom + pad;
+    var vw = window.innerWidth, vh = window.innerHeight;
+
+    var maskTop = root.querySelector('[data-pos="top"]');
+    var maskBottom = root.querySelector('[data-pos="bottom"]');
+    var maskLeft = root.querySelector('[data-pos="left"]');
+    var maskRight = root.querySelector('[data-pos="right"]');
+
+    maskTop.style.cssText = "top:0;left:0;width:100%;height:" + Math.max(0, top) + "px;";
+    maskBottom.style.cssText = "top:" + bottom + "px;left:0;width:100%;height:" + Math.max(0, vh - bottom) + "px;";
+    maskLeft.style.cssText = "top:" + top + "px;left:0;width:" + Math.max(0, left) + "px;height:" + (bottom - top) + "px;";
+    maskRight.style.cssText = "top:" + top + "px;left:" + right + "px;width:" + Math.max(0, vw - right) + "px;height:" + (bottom - top) + "px;";
+
+    var ring = root.querySelector(".bk-tour-ring");
+    ring.style.cssText = "top:" + top + "px;left:" + left + "px;width:" + (right - left) + "px;height:" + (bottom - top) + "px;";
+
+    var tip = root.querySelector(".bk-tour-tip");
+    var placement = state.placement || "bottom";
+    var tipTop, tipLeft;
+    var tipW = 300;
+    if (placement === "bottom") { tipTop = bottom + 14; tipLeft = Math.min(vw - tipW - 16, Math.max(16, left)); }
+    else if (placement === "top") { tipTop = top - 14; tipLeft = Math.min(vw - tipW - 16, Math.max(16, left)); tip.style.transform = "translateY(-100%)"; }
+    else if (placement === "right") { tipTop = top; tipLeft = right + 14; }
+    else { tipTop = top; tipLeft = Math.max(16, left - tipW - 14); }
+    if (placement !== "top") tip.style.transform = "";
+    tip.style.top = tipTop + "px";
+    tip.style.left = tipLeft + "px";
+  }
+
+  function findWithRetry(step, cb) {
+    var tries = 0;
+    if (state.pollTimer) clearInterval(state.pollTimer);
+    state.pollTimer = setInterval(function () {
+      tries++;
+      var el = step.find ? step.find() : null;
+      if (el && isVisible(el)) {
+        clearInterval(state.pollTimer);
+        state.pollTimer = null;
+        cb(el);
+      } else if (tries > 30) {
+        clearInterval(state.pollTimer);
+        state.pollTimer = null;
+        // Sélecteur introuvable (page changée, élément renommé...) — on
+        // n'immobilise jamais l'utilisateur : on passe simplement à l'étape
+        // suivante plutôt que de laisser le tour bloqué silencieusement.
+        goToStep(state.stepIndex + 1);
+      }
+    }, 100);
+  }
+
+  function showStep(index) {
+    teardown();
+    var steps = currentSteps();
+    if (index >= steps.length) { stopTour(); return; }
+    var step = steps[index];
+
+    if (location.pathname !== step.page) {
+      setStepIndex(index);
+      location.href = step.page;
+      return;
+    }
+
+    state.stepIndex = index;
+    setStepIndex(index);
+
+    var lockCheck = index === 0 ? LOCK_CHECKS[state.tourName] : null;
+    var lockInfo = lockCheck ? lockCheck() : null;
+
+    if (!lockInfo && step.preStep) step.preStep();
+
+    findWithRetry(step, function (el) {
+      state.target = el;
+      state.placement = step.placement;
+      var root = buildRoot();
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      setTimeout(function () {
+        renderAt(el);
+        var stepLabel = root.querySelector(".bk-tour-tip__step");
+        var titleEl = root.querySelector(".bk-tour-tip__title");
+        var textEl = root.querySelector(".bk-tour-tip__text");
+        var nextBtn = root.querySelector(".bk-tour-tip__next");
+
+        if (lockInfo) {
+          root.querySelector(".bk-tour-tip").classList.add("bk-tour-tip--locked");
+          stepLabel.textContent = "🔒 Fonctionnalité verrouillée";
+          titleEl.textContent = "Passez à un forfait supérieur";
+          textEl.textContent = lockInfo.message;
+          nextBtn.textContent = "Voir les forfaits →";
+          nextBtn.addEventListener("click", function () {
+            stopTour();
+            window.location.href = "/subscription";
+          });
+          return;
+        }
+
+        stepLabel.textContent = "Étape " + (index + 1) + " / " + steps.length;
+        titleEl.textContent = step.title;
+        textEl.textContent = step.text;
+        nextBtn.textContent = step.isLast ? "Terminer la visite" : "Suivant →";
+        nextBtn.addEventListener("click", function () {
+          if (step.isLast) stopTour();
+          else goToStep(index + 1);
+        });
+      }, 260);
+
+      window.addEventListener("resize", reposition);
+      window.addEventListener("scroll", reposition, true);
+
+      if (!lockInfo && step.advanceOnEvent) {
+        state._evtName = step.advanceOnEvent;
+        state.advanceHandler = function () {
+          setTimeout(function () { goToStep(index + 1); }, step.advanceDelay || 0);
+        };
+        el.addEventListener(step.advanceOnEvent, state.advanceHandler, { once: true });
+      }
+    });
+  }
+
+  function goToStep(index) { showStep(index); }
+
+  function startTour(name) {
+    var tourName = (name && TOURS[name]) ? name : DEFAULT_TOUR;
+    state.tourName = tourName;
+    localStorage.setItem(STORAGE_ACTIVE, "1");
+    localStorage.setItem(STORAGE_NAME, tourName);
+    setStepIndex(0);
+    showStep(0);
+  }
+
+  window.BkTour = { start: startTour, stop: stopTour };
+
+  document.addEventListener("DOMContentLoaded", function () {
+    if (!isActive()) return;
+    state.tourName = getTourName();
+    var idx = getStepIndex();
+    var steps = currentSteps();
+    var step = steps[idx];
+    if (!step) { stopTour(); return; }
+    if (location.pathname !== step.page) return; // l'utilisateur navigue librement — on n'impose rien
+    showStep(idx);
+  });
+})();

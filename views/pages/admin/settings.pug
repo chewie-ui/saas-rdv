@@ -64,8 +64,8 @@ block content
                             span Créer mon établissement
                         a.sm-btn.sm-btn--ghost(href="/etablissement/rejoindre")
                             span Rejoindre un établissement
-            else if membershipRole === 'member'
-                p.info-card__desc Vous faites partie de l'équipe de cet établissement.
+            else if membershipRole !== 'owner'
+                p.info-card__desc Vous faites partie de l'équipe de cet établissement#{membershipRole ? ' en tant que ' + (membershipRole === 'manager' ? 'manager' : 'collaborateur') : ''}.
             else if currentCompany.isPaused
                 p.info-card__desc(style="color:#b45309")
                     | Votre établissement est en pause — il n'apparaît plus dans les résultats de recherche et votre page de réservation est masquée aux visiteurs. Votre abonnement continue normalement.
@@ -77,6 +77,10 @@ block content
                 .info-card__actions
                     button.sm-btn.sm-btn--ghost#pauseCompanyBtn(type="button")
                         span Mettre en pause
+            if membershipRole === 'owner'
+                .info-card__actions(style="margin-top:10px")
+                    a.sm-btn.sm-btn--ghost(href="/etablissement/mes-etablissements")
+                        span Gérer mes établissements & collaborateurs →
             p#establishmentStatus(style="display:none;font-size:13px;color:var(--accent);margin-top:10px")
             p#establishmentError(style="display:none;font-size:13px;color:#dc2626;margin-top:10px")
 

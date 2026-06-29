@@ -9,12 +9,45 @@ const companySchema = schema(
       required: true,
     },
 
+    // ── Multi-établissements (cf. plan "gérer mes établissements") ───────────
+    // Un même owner peut désormais posséder plusieurs Company. Name/businessType/
+    // photo vivent ici (et plus seulement sur User) pour que chaque établissement
+    // ait sa propre identité dans la liste — fallback sur owner.businessName/
+    // businessType/businessPicture quand vide (établissements créés avant cette
+    // fonctionnalité, à l'époque où un seul établissement par owner existait).
+    name: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    businessType: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    photo: {
+      type: String,
+      default: "",
+    },
+
     // Mis en pause par le pro lui-même (≠ isDisabled, qui est une action du
     // superadmin) — masque la page publique et /search, mais n'affecte ni la
     // connexion, ni l'abonnement Stripe, ni aucune donnée. Réversible.
     isPaused: {
       type: Boolean,
       default: false,
+    },
+
+    // Suppression douce (cf. "supprimer un établissement") : on ne détruit
+    // jamais les données (services, employés, historique de RDV) — on masque
+    // simplement l'établissement de toutes les listes/recherches.
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
     },
 
     slug: {

@@ -92,4 +92,33 @@ function changeLanguage(lang) {
   document.cookie = `user_lang=${lang}; path=/; max-age=${60 * 60 * 24 * 365}`;
   window.location.reload();
 }
+
+// ── Switcher d'établissement (sidebar, sous le logo) ───────────────────────
+document.addEventListener("click", (event) => {
+  const estabWrap = document.getElementById("sidebarEstab");
+  if (!estabWrap) return;
+
+  const opensIt = event.target.closest("#sidebarEstab .sb-estab__current");
+  const opt = event.target.closest(".sb-estab__opt");
+
+  if (opt && !opt.classList.contains("is-active")) {
+    opt.style.opacity = "0.6";
+    fetch(`/account/switch-company/${opt.dataset.id}`, { method: "POST" })
+      .then((r) => r.json())
+      .then((data) => {
+        window.location.href = (data && data.redirect) || "/appointment";
+      })
+      .catch(() => { opt.style.opacity = ""; });
+    return;
+  }
+
+  if (opensIt) {
+    estabWrap.classList.toggle("open");
+    return;
+  }
+
+  if (!estabWrap.contains(event.target)) {
+    estabWrap.classList.remove("open");
+  }
+});
 window.changeLanguage = changeLanguage;

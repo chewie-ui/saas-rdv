@@ -1,5 +1,6 @@
 const Employee = require("../db/models/company/employee.model");
 const { getLimit } = require("../utils/planLimits");
+const { logActivity } = require("../utils/activityLog");
 
 const MAX_EMPLOYEE_AGE = 100;
 const MIN_EMPLOYEE_AGE = 16;
@@ -61,6 +62,13 @@ exports.createEmployee = async (req, res) => {
       description: parseDescription(description),
       profilePicture,
     });
+    logActivity({
+      company: companyId,
+      user: req.user,
+      role: res.locals.membershipRole,
+      action: "employee.create",
+      description: `a ajouté l'employé "${employee.firstName} ${employee.lastName}"`,
+    });
     res.json({ success: true, employee });
   } catch (err) {
     console.error(err);
@@ -85,6 +93,13 @@ exports.updateEmployee = async (req, res) => {
       { new: true }
     );
     if (!employee) return res.status(404).json({ error: "Employé non trouvé." });
+    logActivity({
+      company: res.locals.currentCompany._id,
+      user: req.user,
+      role: res.locals.membershipRole,
+      action: "employee.update",
+      description: `a modifié l'employé "${employee.firstName} ${employee.lastName}"`,
+    });
     res.json({ success: true, employee });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
@@ -93,10 +108,19 @@ exports.updateEmployee = async (req, res) => {
 
 exports.deleteEmployee = async (req, res) => {
   try {
-    await Employee.findOneAndDelete({
+    const deleted = await Employee.findOneAndDelete({
       _id: req.params.id,
       company: res.locals.currentCompany._id,
     });
+    if (deleted) {
+      logActivity({
+        company: res.locals.currentCompany._id,
+        user: req.user,
+        role: res.locals.membershipRole,
+        action: "employee.delete",
+        description: `a supprimé l'employé "${deleted.firstName} ${deleted.lastName}"`,
+      });
+    }
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });

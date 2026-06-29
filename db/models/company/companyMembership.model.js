@@ -11,6 +11,22 @@ const companyMembershipSchema = schema(
     company: { type: schema.Types.ObjectId, ref: "Company", required: true },
     user:    { type: schema.Types.ObjectId, ref: "User",    required: true },
     status:  { type: String, enum: ["pending", "accepted", "rejected"], default: "pending" },
+
+    // Rôle du collaborateur au sein de l'établissement — le "patron" reste
+    // toujours Company.owner (jamais une ligne ici) ; un collaborateur accepté
+    // est soit "manager" (accès large) soit "staff" (accès limité). Le
+    // propriétaire est seul à pouvoir changer ce rôle (cf. controllers/
+    // establishment.controller.js).
+    role: { type: String, enum: ["manager", "staff"], default: "staff" },
+
+    // Horodatage de l'acceptation (≠ createdAt, qui marque la date de la
+    // DEMANDE/invitation) — affiché côté UI comme "membre depuis le ...".
+    acceptedAt: { type: Date, default: null },
+
+    // Le propriétaire peut suspendre l'accès d'un collaborateur sans le
+    // retirer définitivement (réversible) — distinct de status:"rejected"
+    // qui s'applique uniquement aux demandes en attente.
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

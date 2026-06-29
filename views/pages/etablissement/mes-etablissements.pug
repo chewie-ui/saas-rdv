@@ -1,0 +1,314 @@
+extends ../../layouts/client
+
+block links
+    link(rel="stylesheet", href="/css/layouts/auth.css")
+    link(rel="stylesheet", href="/css/layouts/informations.css")
+    link(rel="stylesheet", href="/css/layouts/client-dashboard.css")
+    link(rel="stylesheet", href="/css/layouts/etablissements.css")
+
+block content
+    .dash-header
+        .dash-header__left
+            h1 Mes établissements
+            span.dash-header__sub
+                if companiesLimit
+                    = `${establishments.length} / ${companiesLimit} établissement(s) — forfait ${currentPlan}`
+                else
+                    = `${establishments.length} établissement(s) — forfait ${currentPlan}`
+        .dash-header__cta
+            if atCompanyLimit
+                a.sm-btn.sm-btn--ghost(href="/subscription")
+                    span Passer à un forfait supérieur
+            else
+                button.sm-btn.sm-btn--primary#createEstabBtn(type="button")
+                    svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                        path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                    span Créer un établissement
+
+    .estab-grid
+        each estab in establishments
+            .estab-card(data-id=estab.id)
+                .estab-card__cover
+                    img(src=estab.photo alt=estab.name)
+                .estab-card__body
+                    .estab-card__top
+                        span.estab-card__name= estab.name
+                        if estab.businessType
+                            span.estab-card__type= estab.businessType
+                    if estab.isPaused
+                        span.estab-badge.estab-badge--paused En pause
+                    else
+                        span.estab-badge.estab-badge--active Actif
+                .estab-card__actions
+                    a.sm-btn.sm-btn--ghost(href=`/etablissement/${estab.id}/collaborateurs`)
+                        span Collaborateurs
+                    button.sm-btn.sm-btn--ghost.js-edit-estab(type="button" data-id=estab.id data-name=estab.name data-type=estab.businessType data-photo=estab.photo)
+                        span Modifier
+                    button.sm-btn.sm-btn--ghost.js-switch-estab(type="button" data-id=estab.id)
+                        span Gérer
+                    button.sm-btn.sm-btn--ghost.js-pause-estab(type="button" data-id=estab.id data-paused=estab.isPaused ? '1' : '0')
+                        span= estab.isPaused ? 'Réactiver' : 'Désactiver'
+                    button.sm-btn.sm-btn--danger.js-delete-estab(type="button" data-id=estab.id data-name=estab.name)
+                        span Supprimer
+
+        if !atCompanyLimit
+            button.estab-card.estab-card--add#createEstabBtn2(type="button")
+                svg(viewBox="0 -960 960 960" height="28" width="28" fill="currentColor")
+                    path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                span Créer un nouvel établissement
+
+    if !establishments.length
+        .dash-empty
+            svg(xmlns="http://www.w3.org/2000/svg" height="48px" viewBox="0 -960 960 960" width="48px" fill="currentColor")
+                path(d="M160-120v-650l320-150 320 150v650H160Zm240-80h160v-200H400v200Zm-160 0h80v-280h320v280h80v-528l-240-112-240 112v528Z")
+            p Vous n'avez pas encore d'établissement.
+
+    if memberOf && memberOf.length
+        .dash-section(style="margin-top:2.5rem")
+            .dash-section__title
+                h2 Établissements où je collabore
+            .estab-grid
+                each m in memberOf
+                    .estab-card
+                        .estab-card__body(style="padding:16px")
+                            .estab-card__top
+                                span.estab-card__name= m.name
+                            span.estab-badge.estab-badge--role= m.role === 'manager' ? 'Manager' : 'Collaborateur'
+                            if m.acceptedAt
+                                span.estab-card__since Membre depuis le #{new Date(m.acceptedAt).toLocaleDateString('fr-FR')}
+                        .estab-card__actions
+                            button.sm-btn.sm-btn--ghost.js-switch-estab(type="button" data-id=m.id)
+                                span Gérer
+
+    //- ── Modale créer/modifier ────────────────────────────────────────────────
+    .cancel-modal-overlay#estabModalOverlay(style="display:none")
+        .cancel-modal.estab-modal#estabModal
+            h3.cancel-modal__title#estabModalTitle Créer un établissement
+
+            .biz-row
+                .biz-photo-col#estabPhotoCol(style="display:none")
+                    .biz-photo-preview
+                        img#estabPhotoPreview(src="" alt="Photo établissement")
+                    input#estabFileInput(type="file" style="display:none" accept="image/*")
+                    button.sm-btn.sm-btn--ghost(type="button")#estabUploadBtn
+                        span Photo
+
+                .biz-fields
+                    .auth-field
+                        label.auth-label Nom de l'établissement
+                        input.auth-input#estabNameInput(type="text" placeholder="Ex: Salon de Marie" autocomplete="off")
+                    .auth-field
+                        label.auth-label Type d'activité
+                        .service-select-wrapper
+                            input.auth-input.service-input#estabTypeInput(type="text" placeholder="Ex: Coiffeur, Médecin, Coach sportif..." autocomplete="off")
+                            .service-dropdown#estabTypeDropdown
+
+            p.etab-error#estabModalError(style="display:none")
+            .cancel-modal__actions
+                button.sm-btn.sm-btn--primary#estabModalConfirm(type="button") Enregistrer
+                button.sm-btn.sm-btn--ghost#estabModalClose(type="button") Annuler
+
+    //- ── Modale suppression ───────────────────────────────────────────────────
+    .cancel-modal-overlay#deleteModalOverlay(style="display:none")
+        .cancel-modal#deleteModal
+            .cancel-modal__icon
+                svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor")
+                    path(d="m480-440 92 92q12 12 28 12t28-12q12-12 12-28t-12-28l-92-92 92-92q12-12 12-28t-12-28q-12-12-28-12t-28 12l-92 92-92-92q-12-12-28-12t-28 12q-12 12-12 28t12 28l92 92-92 92q-12 12-12 28t12 28q12 12 28 12t28-12l92-92Z")
+            h3.cancel-modal__title Supprimer cet établissement ?
+            .cancel-modal__info#deleteModalInfo
+            .cancel-modal__warning
+                svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="none" stroke="currentColor" stroke-width="2")
+                    path(d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z")
+                span Cette action masque l'établissement et sa page de réservation publique. Vos données restent conservées.
+            .cancel-modal__actions
+                button.sm-btn.sm-btn--danger#deleteModalConfirm(type="button") Oui, supprimer
+                button.sm-btn.sm-btn--ghost#deleteModalClose(type="button") Annuler
+
+block scripts
+    script(src="/js/utils/image-upload.js")
+    script.
+        (function () {
+            var __services = !{JSON.stringify(services)};
+            var grid = document.querySelector('.estab-grid');
+
+            // ── Switch établissement actif ──────────────────────────────────
+            document.querySelectorAll('.js-switch-estab').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var id = btn.dataset.id;
+                    fetch('/account/switch-company/' + id, { method: 'POST' })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) { if (data.success) window.location.href = data.redirect || '/appointment'; })
+                        .catch(function () {});
+                });
+            });
+
+            // ── Pause / réactiver ────────────────────────────────────────────
+            document.querySelectorAll('.js-pause-estab').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var id = btn.dataset.id;
+                    var isPaused = btn.dataset.paused === '1';
+                    fetch('/account/establishments/' + id + '/pause', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ isPaused: !isPaused }),
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) { if (data.success) window.location.reload(); })
+                        .catch(function () {});
+                });
+            });
+
+            // ── Supprimer ────────────────────────────────────────────────────
+            var deleteOverlay = document.getElementById('deleteModalOverlay');
+            var deleteInfo = document.getElementById('deleteModalInfo');
+            var deleteConfirmBtn = document.getElementById('deleteModalConfirm');
+            var deleteTargetId = null;
+
+            document.querySelectorAll('.js-delete-estab').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    deleteTargetId = btn.dataset.id;
+                    deleteInfo.textContent = 'Vous êtes sur le point de supprimer "' + btn.dataset.name + '".';
+                    deleteOverlay.style.display = 'flex';
+                });
+            });
+            document.getElementById('deleteModalClose').addEventListener('click', function () {
+                deleteOverlay.style.display = 'none';
+                deleteTargetId = null;
+            });
+            deleteConfirmBtn.addEventListener('click', function () {
+                if (!deleteTargetId) return;
+                deleteConfirmBtn.disabled = true;
+                fetch('/account/establishments/' + deleteTargetId, { method: 'DELETE' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        deleteConfirmBtn.disabled = false;
+                        if (data.success) window.location.reload();
+                    })
+                    .catch(function () { deleteConfirmBtn.disabled = false; });
+            });
+
+            // ── Créer / modifier (même modale) ──────────────────────────────
+            var estabOverlay  = document.getElementById('estabModalOverlay');
+            var estabTitle    = document.getElementById('estabModalTitle');
+            var nameInput     = document.getElementById('estabNameInput');
+            var typeInput     = document.getElementById('estabTypeInput');
+            var typeDropdown  = document.getElementById('estabTypeDropdown');
+            var errorEl       = document.getElementById('estabModalError');
+            var confirmBtn    = document.getElementById('estabModalConfirm');
+            var photoCol      = document.getElementById('estabPhotoCol');
+            var photoPreview  = document.getElementById('estabPhotoPreview');
+            var uploadBtn     = document.getElementById('estabUploadBtn');
+            var fileInput     = document.getElementById('estabFileInput');
+            var editingId     = null;
+
+            function normalize(str) { return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+            function renderTypeList(items) {
+                typeDropdown.innerHTML = '';
+                if (!items.length) { typeDropdown.style.display = 'none'; return; }
+                items.forEach(function (item) {
+                    var div = document.createElement('div');
+                    div.className = 'service-dropdown__item';
+                    div.textContent = item;
+                    div.addEventListener('mousedown', function (e) {
+                        e.preventDefault();
+                        typeInput.value = item;
+                        typeDropdown.style.display = 'none';
+                    });
+                    typeDropdown.appendChild(div);
+                });
+                typeDropdown.style.display = 'block';
+            }
+            typeInput.addEventListener('input', function () {
+                var q = normalize(typeInput.value.trim());
+                if (!q) { typeDropdown.style.display = 'none'; return; }
+                renderTypeList(__services.filter(function (s) { return normalize(s).includes(q); }).slice(0, 8));
+            });
+            typeInput.addEventListener('focus', function () {
+                var q = normalize(typeInput.value.trim());
+                if (q) renderTypeList(__services.filter(function (s) { return normalize(s).includes(q); }).slice(0, 8));
+            });
+            typeInput.addEventListener('blur', function () {
+                setTimeout(function () { typeDropdown.style.display = 'none'; }, 150);
+            });
+
+            if (uploadBtn && fileInput) {
+                uploadBtn.onclick = function () { fileInput.click(); };
+                fileInput.onchange = async function () {
+                    var file = fileInput.files[0];
+                    if (!file || !editingId) return;
+                    photoPreview.src = URL.createObjectURL(file);
+                    try {
+                        var data = await window.BkImageUpload.uploadImage({
+                            url: '/account/establishments/' + editingId + '/photo',
+                            method: 'PATCH',
+                            fieldName: 'photo',
+                            file: file,
+                        });
+                        if (data.path) photoPreview.src = data.path;
+                    } catch (e) {}
+                    fileInput.value = '';
+                };
+            }
+
+            function openModal(mode, data) {
+                editingId = mode === 'edit' ? data.id : null;
+                estabTitle.textContent = mode === 'edit' ? 'Modifier l\'établissement' : 'Créer un établissement';
+                nameInput.value = (data && data.name) || '';
+                typeInput.value = (data && data.type) || '';
+                errorEl.style.display = 'none';
+                if (mode === 'edit') {
+                    photoCol.style.display = '';
+                    photoPreview.src = (data && data.photo) || '/images/no-user.webp';
+                } else {
+                    photoCol.style.display = 'none';
+                }
+                estabOverlay.style.display = 'flex';
+            }
+
+            ['createEstabBtn', 'createEstabBtn2'].forEach(function (id) {
+                var btn = document.getElementById(id);
+                if (btn) btn.addEventListener('click', function () { openModal('create'); });
+            });
+            document.querySelectorAll('.js-edit-estab').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    openModal('edit', { id: btn.dataset.id, name: btn.dataset.name, type: btn.dataset.type, photo: btn.dataset.photo });
+                });
+            });
+            document.getElementById('estabModalClose').addEventListener('click', function () {
+                estabOverlay.style.display = 'none';
+            });
+
+            confirmBtn.addEventListener('click', function () {
+                var name = nameInput.value.trim();
+                var businessType = typeInput.value.trim();
+                if (!name) {
+                    errorEl.textContent = 'Indiquez un nom pour votre établissement.';
+                    errorEl.style.display = 'block';
+                    return;
+                }
+                confirmBtn.disabled = true;
+                var url = editingId ? '/account/establishments/' + editingId : '/account/establishments';
+                var method = editingId ? 'PATCH' : 'POST';
+                fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, businessType: businessType }),
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        confirmBtn.disabled = false;
+                        if (data.success) {
+                            window.location.href = data.redirect || window.location.href;
+                            if (!data.redirect) window.location.reload();
+                        } else {
+                            errorEl.textContent = data.error || 'Une erreur est survenue.';
+                            errorEl.style.display = 'block';
+                        }
+                    })
+                    .catch(function () {
+                        confirmBtn.disabled = false;
+                        errorEl.textContent = 'Erreur réseau.';
+                        errorEl.style.display = 'block';
+                    });
+            });
+        })();

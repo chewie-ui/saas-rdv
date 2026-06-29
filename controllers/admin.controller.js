@@ -789,6 +789,17 @@ const Company = require("../db/models/company/company.model");
 const CompanyMembership = require("../db/models/company/companyMembership.model");
 const User = require("../db/models/user.model");
 const { addEventToCalendar, deleteEventFromCalendar, updateEventInCalendar, getBusyIntervals } = require("../utils/googleCalendarSync");
+const { logActivity } = require("../utils/activityLog");
+
+// Ces routes de gestion des RDV (cancel/delete/restore) n'ont pas
+// `injectCompany` dans leur chaîne de middlewares (cf. routes/admin.js) — on
+// doit donc déterminer nous-même le rôle de l'acteur pour le log.
+async function resolveActorRole(companyDoc, user) {
+  if (!companyDoc || !user) return "";
+  if (String(companyDoc.owner) === String(user._id)) return "owner";
+  const membership = await CompanyMembership.findOne({ company: companyDoc._id, user: user._id, status: "accepted" }).lean();
+  return (membership && membership.role) || "";
+}
 
 async function getSlotTime(companyId) {
   const res = await Company.findById(companyId).select("slotTime").lean();
@@ -937,17 +948,28 @@ exports.deleteBooking = async (req, res) => {
 
   const data = await Booking.findByIdAndDelete(bookId);
 
-  // Sync Google Calendar
-  if (data?.googleEventId) {
-    try {
-      const companyDoc = await Company.findById(data.company);
-      const owner = await User.findById(companyDoc?.owner);
-      if (owner?.googleCalendar?.connected && owner.googleCalendar.refreshToken) {
-        await deleteEventFromCalendar(owner.googleCalendar.refreshToken, data.googleEventId);
+  if (data) {
+    const companyDoc = await Company.findById(data.company);
+
+    // Sync Google Calendar
+    if (data.googleEventId) {
+      try {
+        const owner = await User.findById(companyDoc?.owner);
+        if (owner?.googleCalendar?.connected && owner.googleCalendar.refreshToken) {
+          await deleteEventFromCalendar(owner.googleCalendar.refreshToken, data.googleEventId);
+        }
+      } catch (gcalErr) {
+        console.error("Google Calendar sync error (delete):", gcalErr.message);
       }
-    } catch (gcalErr) {
-      console.error("Google Calendar sync error (delete):", gcalErr.message);
     }
+
+    logActivity({
+      company: data.company,
+      user: req.user,
+      role: await resolveActorRole(companyDoc, req.user),
+      action: "booking.delete",
+      description: `a supprimé le RDV de ${data.name || ""} ${data.surname || ""}`.trim(),
+    });
   }
 
   res.json({ success: true, data });
@@ -962,10 +984,11 @@ exports.restoreBooking = async (req, res) => {
 
     const booking = await Booking.findByIdAndUpdate(bookId, { status: "confirmed" }, { new: true }).lean();
 
-    // Sync Google Calendar : recréer l'événement et sauvegarder le nouvel ID
     if (booking) {
+      const companyDoc = await Company.findById(booking.company);
+
+      // Sync Google Calendar : recréer l'événement et sauvegarder le nouvel ID
       try {
-        const companyDoc = await Company.findById(booking.company);
         const owner = await User.findById(companyDoc?.owner);
         if (owner?.googleCalendar?.connected && owner.googleCalendar.refreshToken) {
           const eventId = await addEventToCalendar(owner.googleCalendar.refreshToken, booking);
@@ -976,6 +999,14 @@ exports.restoreBooking = async (req, res) => {
       } catch (gcalErr) {
         console.error("Google Calendar sync error (restore):", gcalErr.message);
       }
+
+      logActivity({
+        company: booking.company,
+        user: req.user,
+        role: await resolveActorRole(companyDoc, req.user),
+        action: "booking.restore",
+        description: `a restauré le RDV de ${booking.name || ""} ${booking.surname || ""}`.trim(),
+      });
     }
 
     res.json({ success: true });
@@ -1002,17 +1033,28 @@ exports.cancelBooking = async (req, res) => {
 
   const booking = await Booking.findByIdAndUpdate(id, { status: "canceled" }, { new: false }).lean();
 
-  // Sync Google Calendar
-  if (booking?.googleEventId) {
-    try {
-      const companyDoc = await Company.findById(booking.company);
-      const owner = await User.findById(companyDoc?.owner);
-      if (owner?.googleCalendar?.connected && owner.googleCalendar.refreshToken) {
-        await deleteEventFromCalendar(owner.googleCalendar.refreshToken, booking.googleEventId);
+  if (booking) {
+    const companyDoc = await Company.findById(booking.company);
+
+    // Sync Google Calendar
+    if (booking.googleEventId) {
+      try {
+        const owner = await User.findById(companyDoc?.owner);
+        if (owner?.googleCalendar?.connected && owner.googleCalendar.refreshToken) {
+          await deleteEventFromCalendar(owner.googleCalendar.refreshToken, booking.googleEventId);
+        }
+      } catch (gcalErr) {
+        console.error("Google Calendar sync error (admin cancel):", gcalErr.message);
       }
-    } catch (gcalErr) {
-      console.error("Google Calendar sync error (admin cancel):", gcalErr.message);
     }
+
+    logActivity({
+      company: booking.company,
+      user: req.user,
+      role: await resolveActorRole(companyDoc, req.user),
+      action: "booking.cancel",
+      description: `a annulé le RDV de ${booking.name || ""} ${booking.surname || ""}`.trim(),
+    });
   }
 
   // Send cancellation email to the client

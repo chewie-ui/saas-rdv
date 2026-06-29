@@ -690,7 +690,7 @@ exports.updateBusinessType = async (req, res) => {
 // Sauvegarde nom + description + businessType en une seule requête
 exports.editBusinessInfo = async (req, res) => {
   try {
-    const { businessName, description, businessType } = req.body;
+    const { businessName, description, businessType, businessPicture } = req.body;
     // Mise à jour partielle : ne touche que les champs envoyés. Le champ
     // "Description" a été retiré de ce formulaire (Personnaliser) mais reste
     // utilisé ailleurs (page publique, méta SEO) — un envoi blind écraserait
@@ -699,6 +699,9 @@ exports.editBusinessInfo = async (req, res) => {
     if (businessName !== undefined) update.businessName = businessName || "";
     if (description !== undefined) update.description = description || "";
     if (businessType !== undefined) update.businessType = businessType || "";
+    // Chemin déjà uploadé (cf. page de création d'établissement) — pas un
+    // fichier multipart ici, juste le path renvoyé par l'upload précédent.
+    if (businessPicture) update.businessPicture = businessPicture;
     await User.findByIdAndUpdate(req.user._id, update);
     return res.json({ success: true });
   } catch (err) {

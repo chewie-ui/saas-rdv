@@ -107,6 +107,7 @@ router.get("/subscription", isAuth, injectCompany, requireFeatureActive("subscri
 
 router.get("/settings", isVerified, settingsInit);
 router.get("/history/edit/:id", isVerified, historyEditRow);
+router.get("/logs", isVerified, require("../controllers/logs.controller").logsInit);
 router.patch("/history/edit/:id", historyEditRowPatch);
 router.get("/history/edit/:id/conflicts", isAuth, historyCheckConflicts);
 router.get("/history", isVerified, historyInit);

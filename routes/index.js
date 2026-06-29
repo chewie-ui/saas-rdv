@@ -359,19 +359,26 @@ router.get("/pro", (req, res) => {
 // unifié lui-même (étape "Intention") — cette page de fork est obsolète.
 router.get("/s-inscrire", (req, res) => res.redirect(301, "/register"));
 
-// ─── Créer / rejoindre un établissement (compte déjà existant, sans
-// établissement) — pages dédiées au look "register", accessibles depuis le
-// sidebar espace-client (cf. plan d'unification). ───────────────────────────
-router.get("/etablissement/creer", require("../middlewares/isAuth"), async (req, res) => {
-  const existing = await Companies.findOne({ owner: req.user._id }).lean();
-  if (existing) return res.redirect("/settings");
-  res.render("etablissement/creer", {
-    title: "Créer votre établissement — BranShee",
-    services: getServices(res.locals.lang),
-  });
-});
+// ─── Créer / rejoindre / gérer mes établissements (cf. plan d'unification +
+// multi-établissements) — pages dédiées, accessibles depuis le sidebar
+// espace-client. ──────────────────────────────────────────────────────────────
+const establishmentController = require("../controllers/establishment.controller");
+const isAuth = require("../middlewares/isAuth");
+const isClientOrUserAuth = require("../middlewares/isClientOrUserAuth");
 
-router.get("/etablissement/rejoindre", require("../middlewares/isAuth"), async (req, res) => {
+router.get("/etablissement/mes-etablissements", isClientOrUserAuth, establishmentController.listMyEstablishments);
+router.get("/etablissement/creer", isClientOrUserAuth, establishmentController.renderCreatePage);
+// Page admin (sidebar.pug) — bascule l'établissement actif puis réutilise
+// injectCompany pour avoir tous les locals attendus par le layout admin.
+router.get(
+  "/etablissement/:id/collaborateurs",
+  isAuth,
+  establishmentController.setActiveCompanyForCollabPage,
+  require("../middlewares/injectCompany"),
+  establishmentController.renderCollaboratorsPage,
+);
+
+router.get("/etablissement/rejoindre", isAuth, async (req, res) => {
   const existing = await Companies.findOne({ owner: req.user._id }).lean();
   if (existing) return res.redirect("/settings");
   res.render("etablissement/rejoindre", {

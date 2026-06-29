@@ -115,16 +115,20 @@ router.get("/test", (req, res) => {
 // l'inscription, avant même que le compte du demandeur existe.
 router.get("/joinable-companies", async (req, res) => {
   const q = (req.query.q || "").trim();
-  if (q.length < 2) return res.json({ companies: [] });
+  // Sans recherche : on propose quelques établissements par défaut (au lieu
+  // d'une liste vide) pour montrer à l'utilisateur ce qu'il peut rejoindre ;
+  // dès qu'il tape, la liste se filtre sur son texte.
+  const limit = q.length >= 2 ? 8 : 3;
   try {
     const Company = require("../db/models/company/company.model");
     const { getPlan } = require("../utils/planLimits");
-    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    const userFilter = { isDisabled: { $ne: true } };
+    if (q.length >= 2) {
+      const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      userFilter.$or = [{ businessName: regex }, { fullName: regex }];
+    }
 
-    const candidates = await User.find({
-      $or: [{ businessName: regex }, { fullName: regex }],
-      isDisabled: { $ne: true },
-    })
+    const candidates = await User.find(userFilter)
       .select("_id businessName fullName businessType subscription isPremium manualPremium")
       .limit(30)
       .lean();
@@ -136,7 +140,7 @@ router.get("/joinable-companies", async (req, res) => {
 
     const companies = await Company.find({ owner: { $in: businessUserIds } })
       .select("_id owner")
-      .limit(8)
+      .limit(limit)
       .lean();
 
     const userMap = {};
@@ -153,7 +157,7 @@ router.get("/joinable-companies", async (req, res) => {
         };
       })
       .filter(Boolean)
-      .slice(0, 8);
+      .slice(0, limit);
 
     return res.json({ companies: results });
   } catch (err) {

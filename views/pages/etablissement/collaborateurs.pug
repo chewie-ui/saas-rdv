@@ -1,0 +1,258 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet", href="/css/layouts/auth.css")
+    link(rel="stylesheet", href="/css/layouts/informations.css")
+    link(rel="stylesheet", href="/css/layouts/client-dashboard.css")
+    link(rel="stylesheet", href="/css/layouts/etablissements.css")
+
+block content
+    a.etab-back-link(href="/etablissement/mes-etablissements" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted,#6b7280);text-decoration:none;margin-bottom:16px")
+        svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+            path(d="M19 12H5M12 19l-7-7 7-7")
+        | Retour à mes établissements
+
+    .dash-header
+        .dash-header__left
+            h1= company.name
+            span.dash-header__sub
+                if collaboratorsLimit !== null
+                    = `${collaborators.length} / ${collaboratorsLimit} collaborateur(s) — forfait ${currentPlan}`
+                else
+                    = `${collaborators.length} collaborateur(s) — forfait ${currentPlan}`
+        .dash-header__cta
+            if !atCollaboratorsLimit
+                button.sm-btn.sm-btn--primary#inviteBtn(type="button")
+                    svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                        path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                    span Inviter un collaborateur
+
+    if collaboratorsLimit === 0
+        .estab-limit-banner
+            span Votre forfait actuel ne permet pas d'ajouter de collaborateurs.
+            a(href="/subscription") Passer à un forfait supérieur →
+    else if atCollaboratorsLimit
+        .estab-limit-banner
+            span Vous avez atteint la limite de collaborateurs de votre forfait.
+            a(href="/subscription") Passer à un forfait supérieur →
+
+    .info-card
+        .info-card__header
+            h3 Patron
+        .collab-row
+            img.collab-row__avatar(src=user.profilePicture || '/images/no-user.webp' alt=user.fullName)
+            .collab-row__info
+                div.collab-row__name= user.fullName
+                div.collab-row__meta= user.email
+            span.estab-badge.estab-badge--active Propriétaire
+
+    .info-card
+        .info-card__header
+            h3 Collaborateurs
+        if !collaborators.length
+            .dash-empty-reviews
+                p Aucun collaborateur pour le moment.
+        else
+            each c in collaborators
+                .collab-row(class=c.isActive ? '' : 'collab-row--inactive' data-id=c.id)
+                    img.collab-row__avatar(src=c.profilePicture alt=c.fullName)
+                    .collab-row__info
+                        div.collab-row__name= c.fullName + (c.isActive ? '' : ' (désactivé)')
+                        div.collab-row__meta= c.email + ' · Membre depuis le ' + new Date(c.acceptedAt).toLocaleDateString('fr-FR')
+                    .collab-row__actions
+                        select.collab-role-select.js-role-select(data-id=c.id)
+                            option(value="staff" selected=c.role === 'staff') Staff
+                            option(value="manager" selected=c.role === 'manager') Manager
+                        button.sm-btn.sm-btn--ghost.js-toggle-active(type="button" data-id=c.id data-active=c.isActive ? '1' : '0')
+                            span= c.isActive ? 'Désactiver' : 'Réactiver'
+                        button.sm-btn.sm-btn--danger.js-remove-collab(type="button" data-id=c.id data-name=c.fullName)
+                            span Retirer
+
+    if pendingRequests && pendingRequests.length
+        .info-card
+            .info-card__header
+                h3 Demandes en attente
+                p.info-card__desc= pendingRequests.length + ' demande(s) à approuver.'
+            each r in pendingRequests
+                .collab-row(data-id=r.id)
+                    img.collab-row__avatar(src=r.profilePicture alt=r.fullName)
+                    .collab-row__info
+                        div.collab-row__name= r.fullName
+                        div.collab-row__meta= r.email
+                    .collab-row__actions
+                        button.sm-btn.sm-btn--primary.js-respond-request(type="button" data-id=r.id data-decision="accepted")
+                            span Accepter
+                        button.sm-btn.sm-btn--ghost.js-respond-request(type="button" data-id=r.id data-decision="rejected")
+                            span Refuser
+
+    p.etab-error#collabError(style="display:none")
+
+    //- ── Modale invitation ────────────────────────────────────────────────────
+    .cancel-modal-overlay#inviteModalOverlay(style="display:none")
+        .cancel-modal.invite-modal#inviteModal
+            .cancel-modal__icon.cancel-modal__icon--accent
+                svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
+                    path(d="M720-400v-120H600v-80h120v-120h80v120h120v80H800v120h-80ZM240-440q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM0-200v-50q0-37 19-65t52-44q49-25 100-37t69-12q12 0 28 1.5t29 3.5q-7 39-1 76.5t22 71.5q-50 1-91 16t-67 32q-19 11-31 28.5T0-200Z")
+            h3.cancel-modal__title Inviter un collaborateur
+            p.invite-modal__sub La personne doit déjà avoir un compte BranShee — elle aura immédiatement accès à cet établissement.
+
+            .auth-field
+                label.auth-label Email du collaborateur
+                input.auth-input#inviteEmailInput(type="email" placeholder="prenom@exemple.com" autocomplete="off")
+
+            .auth-field
+                label.auth-label Rôle
+                input(type="hidden" id="inviteRoleInput" value="staff")
+                .role-picker
+                    button.role-card.is-selected(type="button" data-role="staff")
+                        span.role-card__name Staff
+                        span.role-card__desc Accès limité au quotidien
+                    button.role-card(type="button" data-role="manager")
+                        span.role-card__name Manager
+                        span.role-card__desc Accès large à l'établissement
+
+            p.etab-error#inviteModalError(style="display:none")
+            .cancel-modal__actions
+                button.sm-btn.sm-btn--primary#inviteModalConfirm(type="button") Envoyer l'invitation
+                button.sm-btn.sm-btn--ghost#inviteModalClose(type="button") Annuler
+
+    //- ── Modale retrait collaborateur ─────────────────────────────────────────
+    .cancel-modal-overlay#removeModalOverlay(style="display:none")
+        .cancel-modal#removeModal
+            h3.cancel-modal__title Retirer ce collaborateur ?
+            .cancel-modal__info#removeModalInfo
+            .cancel-modal__actions
+                button.sm-btn.sm-btn--danger#removeModalConfirm(type="button") Oui, retirer
+                button.sm-btn.sm-btn--ghost#removeModalClose(type="button") Annuler
+
+block scripts
+    script.
+        (function () {
+            var companyId = !{JSON.stringify(company.id)};
+            var errorEl = document.getElementById('collabError');
+
+            function showError(msg) {
+                errorEl.textContent = msg;
+                errorEl.style.display = 'block';
+                setTimeout(function () { errorEl.style.display = 'none'; }, 5000);
+            }
+
+            // ── Inviter ──────────────────────────────────────────────────────
+            var inviteOverlay   = document.getElementById('inviteModalOverlay');
+            var inviteBtn       = document.getElementById('inviteBtn');
+            var inviteEmailInput = document.getElementById('inviteEmailInput');
+            var inviteRoleInput  = document.getElementById('inviteRoleInput');
+            var roleCards        = document.querySelectorAll('.role-card');
+
+            function resetInviteModal() {
+                inviteEmailInput.value = '';
+                inviteRoleInput.value = 'staff';
+                roleCards.forEach(function (c) { c.classList.toggle('is-selected', c.dataset.role === 'staff'); });
+                document.getElementById('inviteModalError').style.display = 'none';
+            }
+
+            roleCards.forEach(function (card) {
+                card.addEventListener('click', function () {
+                    roleCards.forEach(function (c) { c.classList.remove('is-selected'); });
+                    card.classList.add('is-selected');
+                    inviteRoleInput.value = card.dataset.role;
+                });
+            });
+
+            if (inviteBtn) inviteBtn.addEventListener('click', function () { resetInviteModal(); inviteOverlay.style.display = 'flex'; });
+            document.getElementById('inviteModalClose').addEventListener('click', function () { inviteOverlay.style.display = 'none'; });
+
+            document.getElementById('inviteModalConfirm').addEventListener('click', function () {
+                var email = document.getElementById('inviteEmailInput').value.trim();
+                var role = document.getElementById('inviteRoleInput').value;
+                var errEl = document.getElementById('inviteModalError');
+                if (!email) { errEl.textContent = "Indiquez l'email du collaborateur."; errEl.style.display = 'block'; return; }
+                var btn = this;
+                btn.disabled = true;
+                fetch('/account/establishments/' + companyId + '/collaborateurs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, role: role }),
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        btn.disabled = false;
+                        if (data.success) window.location.reload();
+                        else { errEl.textContent = data.error || 'Erreur.'; errEl.style.display = 'block'; }
+                    })
+                    .catch(function () { btn.disabled = false; errEl.textContent = 'Erreur réseau.'; errEl.style.display = 'block'; });
+            });
+
+            // ── Changer le rôle ──────────────────────────────────────────────
+            document.querySelectorAll('.js-role-select').forEach(function (sel) {
+                sel.addEventListener('change', function () {
+                    fetch('/account/establishments/' + companyId + '/collaborateurs/' + sel.dataset.id + '/role', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ role: sel.value }),
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) { if (!data.success) showError(data.error || 'Erreur.'); })
+                        .catch(function () { showError('Erreur réseau.'); });
+                });
+            });
+
+            // ── Activer / désactiver ─────────────────────────────────────────
+            document.querySelectorAll('.js-toggle-active').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var isActive = btn.dataset.active === '1';
+                    fetch('/account/establishments/' + companyId + '/collaborateurs/' + btn.dataset.id + '/active', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ isActive: !isActive }),
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) { if (data.success) window.location.reload(); else showError(data.error || 'Erreur.'); })
+                        .catch(function () { showError('Erreur réseau.'); });
+                });
+            });
+
+            // ── Retirer (virer) ──────────────────────────────────────────────
+            var removeOverlay = document.getElementById('removeModalOverlay');
+            var removeInfo = document.getElementById('removeModalInfo');
+            var removeConfirmBtn = document.getElementById('removeModalConfirm');
+            var removeTargetId = null;
+
+            document.querySelectorAll('.js-remove-collab').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    removeTargetId = btn.dataset.id;
+                    removeInfo.textContent = 'Vous êtes sur le point de retirer "' + btn.dataset.name + '" de cet établissement.';
+                    removeOverlay.style.display = 'flex';
+                });
+            });
+            document.getElementById('removeModalClose').addEventListener('click', function () {
+                removeOverlay.style.display = 'none';
+                removeTargetId = null;
+            });
+            removeConfirmBtn.addEventListener('click', function () {
+                if (!removeTargetId) return;
+                removeConfirmBtn.disabled = true;
+                fetch('/account/establishments/' + companyId + '/collaborateurs/' + removeTargetId, { method: 'DELETE' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        removeConfirmBtn.disabled = false;
+                        if (data.success) window.location.reload();
+                        else showError(data.error || 'Erreur.');
+                    })
+                    .catch(function () { removeConfirmBtn.disabled = false; showError('Erreur réseau.'); });
+            });
+
+            // ── Répondre à une demande de rejoindre ──────────────────────────
+            document.querySelectorAll('.js-respond-request').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    fetch('/account/establishments/' + companyId + '/join-requests/' + btn.dataset.id, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ decision: btn.dataset.decision }),
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) { if (data.success) window.location.reload(); else showError(data.error || 'Erreur.'); })
+                        .catch(function () { showError('Erreur réseau.'); });
+                });
+            });
+        })();
