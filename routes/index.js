@@ -580,17 +580,12 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
 
   const cs = coach.calendarSettings || {};
 
-  // Stripe Connect réellement opérationnel ?
-  const _stripeActive = company.stripeConnect?.status === "active" && !!(company.stripeConnect?.accountId);
+  // Stripe plateforme BranShee — pas besoin de Stripe Connect côté établissement
+  const _stripeActive = !!(process.env.STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY_LOCAL);
 
   const prepaymentConfig = {
-    // "enabled" ne doit JAMAIS forcer une étape de paiement si Stripe n'est
-    // pas réellement connecté — sinon le client tombe sur une étape de
-    // paiement vide (aucune méthode disponible) et reste bloqué. Filet de
-    // sécurité ici même si le réglage admin est, par erreur, resté coché.
-    enabled:  !!(company.prepayment?.enabled) && _stripeActive,
-    required: !!(company.prepayment?.required) && _stripeActive,
-    // Stripe Connect disponible ?
+    enabled:      !!(company.prepayment?.enabled) && _stripeActive,
+    required:     !!(company.prepayment?.required) && _stripeActive,
     stripeActive: _stripeActive,
     // Autres modes de paiement
     cash:         !!(company.acceptedPayments?.cash),

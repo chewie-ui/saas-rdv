@@ -62,88 +62,20 @@ exports.createBookingPaymentIntent = async (req, res) => {
     const amountCents = toCents(amountEur);
     if (amountCents < 50) return res.status(400).json({ error: "Montant minimum 0.50 €." });
 
-    // ── Récupérer le compte Stripe Connect + plan du coach ────────────────────
-    let connectedAccountId = null;
-    let coachPlan = "basic";
-
-    if (companyId) {
-      try {
-        const comp = await Company.findById(companyId).select("stripeConnect owner").lean();
-        if (comp?.stripeConnect?.status === "active" && comp.stripeConnect.accountId) {
-          connectedAccountId = comp.stripeConnect.accountId;
-        }
-        // Récupérer le plan du propriétaire pour savoir si on prend des frais
-        if (comp?.owner) {
-          const owner = await User.findById(comp.owner).select("isPremium manualPremium subscription").lean();
-          if (owner) {
-            const { getPlan } = require("../utils/planLimits");
-            coachPlan = getPlan(owner);
-          }
-        }
-      } catch (_) {}
-    }
-
-    // En dev : jamais de transfer_data (les comptes test n'ont pas la capacité transfers)
-    const isDevFallback = process.env.NODE_ENV !== "production";
-
-    if (!connectedAccountId && process.env.NODE_ENV === "production") {
-      return res.status(400).json({
-        error: "stripe_not_connected",
-        message: "Cet établissement n'a pas encore connecté Stripe. Choisissez un autre mode de paiement.",
-      });
-    }
-
-    // ── Frais plateforme Branshee (5% — plan gratuit uniquement) ──────────────
-    // Pro et Business → pas de frais
-    const PLATFORM_FEE_PCT = 0.05; // 5%
-    const applicationFee   = !isDevFallback && coachPlan === "basic"
-      ? Math.round(amountCents * PLATFORM_FEE_PCT)
-      : 0;
-
-    // ── Créer le PaymentIntent ────────────────────────────────────────────────
-    // En production avec un compte connecté : transfer_data vers le coach
-    // En dev sans compte connecté : paiement direct (test uniquement)
-    const piParams = {
-      amount:               amountCents,
-      currency:             (currency || "eur").toLowerCase(),
+    // ── Créer le PaymentIntent sur le compte plateforme BranShee ─────────────
+    const pi = await stripe.paymentIntents.create({
+      amount:   amountCents,
+      currency: (currency || "eur").toLowerCase(),
       automatic_payment_methods: { enabled: true, allow_redirects: "never" },
-      description:          serviceName ? `Réservation — ${serviceName}` : "Réservation en ligne",
-      receipt_email:        email.trim().toLowerCase(),
-      ...(connectedAccountId && !isDevFallback && {
-        transfer_data: { destination: connectedAccountId },
-      }),
-      ...(applicationFee > 0 && { application_fee_amount: applicationFee }),
+      description:   serviceName ? `Réservation — ${serviceName}` : "Réservation en ligne",
+      receipt_email: email.trim().toLowerCase(),
       metadata: {
-        companyId:          String(companyId || ""),
-        connectedAccountId: connectedAccountId || "none",
-        coachPlan,
-        platformFee:        applicationFee > 0 ? `${(applicationFee / 100).toFixed(2)}€ (5%)` : "none",
-        serviceName:        serviceName || "",
-        clientEmail:        email.trim().toLowerCase(),
-        clientName:         name || "",
+        companyId:   String(companyId || ""),
+        serviceName: serviceName || "",
+        clientEmail: email.trim().toLowerCase(),
+        clientName:  name || "",
       },
-    };
-
-    console.log("[PaymentIntent] Creating:", { amountCents, isDevFallback, connectedAccountId: connectedAccountId || "none" });
-
-    let pi;
-    try {
-      pi = await stripe.paymentIntents.create(piParams);
-    } catch (stripeErr) {
-      // Si le compte connecté n'a pas encore les capacités (onboarding incomplet),
-      // on retente sans transfer_data pour ne pas bloquer le client
-      const isCapabilityError = stripeErr?.raw?.code === "account_invalid" ||
-        (stripeErr?.message || "").toLowerCase().includes("capabilities") ||
-        (stripeErr?.message || "").toLowerCase().includes("destination account");
-
-      if (isCapabilityError && connectedAccountId) {
-        console.warn("[PaymentIntent] Compte connecté sans capacité transfers — paiement direct (sans transfert)");
-        const { transfer_data: _td, application_fee_amount: _af, ...fallbackParams } = piParams;
-        pi = await stripe.paymentIntents.create(fallbackParams);
-      } else {
-        throw stripeErr;
-      }
-    }
+    });
 
     console.log("[PaymentIntent] Created:", pi.id);
     res.json({ clientSecret: pi.client_secret, paymentIntentId: pi.id });
@@ -163,23 +95,6 @@ exports.createBookingSetupIntent = async (req, res) => {
     const { email, name, companyId } = req.body;
     if (!email) return res.status(400).json({ error: "Email requis." });
 
-    let connectedAccountId = null;
-    if (companyId) {
-      try {
-        const comp = await Company.findById(companyId).select("stripeConnect").lean();
-        if (comp?.stripeConnect?.status === "active" && comp.stripeConnect.accountId) {
-          connectedAccountId = comp.stripeConnect.accountId;
-        }
-      } catch (_) {}
-    }
-
-    if (!connectedAccountId && process.env.NODE_ENV === "production") {
-      return res.status(400).json({
-        error: "stripe_not_connected",
-        message: "Cet établissement n'a pas encore connecté Stripe. Choisissez un autre mode de paiement.",
-      });
-    }
-
     const customer = await stripe.customers.create({
       email: email.trim().toLowerCase(),
       name:  name || undefined,
@@ -190,10 +105,9 @@ exports.createBookingSetupIntent = async (req, res) => {
       payment_method_types: ["card"],
       usage:                "off_session",
       metadata: {
-        companyId:          String(companyId || ""),
-        connectedAccountId: connectedAccountId || "none",
-        clientEmail:        email.trim().toLowerCase(),
-        clientName:         name || "",
+        companyId:   String(companyId || ""),
+        clientEmail: email.trim().toLowerCase(),
+        clientName:  name || "",
       },
     });
 
@@ -241,8 +155,7 @@ exports.markNoShow = async (req, res) => {
           await stripe.refunds.create({
             payment_intent:   booking.payment.stripePaymentIntentId,
             reason:           "requested_by_customer",
-            reverse_transfer: true,
-          });
+                      });
           booking.payment.status = "refunded";
         } catch (stripeErr) {
           console.error("No-show refund error:", stripeErr.message);
@@ -274,15 +187,6 @@ exports.markNoShow = async (req, res) => {
         return res.json({ success: false, error: "Montant trop faible pour être prélevé." });
       }
 
-      let connectedAccountId = null;
-      try {
-        const comp = await Company.findById(booking.company).select("stripeConnect").lean();
-        if (comp?.stripeConnect?.status === "active" && comp.stripeConnect.accountId) {
-          connectedAccountId = comp.stripeConnect.accountId;
-        }
-      } catch (_) {}
-      const isDevFallback = process.env.NODE_ENV !== "production";
-
       try {
         const pi = await stripe.paymentIntents.create({
           amount:         amountCents,
@@ -292,7 +196,6 @@ exports.markNoShow = async (req, res) => {
           off_session:    true,
           confirm:        true,
           description:    `Absence non excusée — ${booking.serviceName || "Réservation"}`,
-          ...(connectedAccountId && !isDevFallback && { transfer_data: { destination: connectedAccountId } }),
         });
 
         booking.payment.status = "penalty";
@@ -342,8 +245,7 @@ exports.reviewCancellationPenalty = async (req, res) => {
         await stripe.refunds.create({
           payment_intent:   booking.payment.stripePaymentIntentId,
           reason:           "requested_by_customer",
-          reverse_transfer: true,
-        });
+                  });
         booking.payment.status = "refunded";
       } catch (stripeErr) {
         console.error("reviewCancellationPenalty refund error:", stripeErr.message);
@@ -1518,12 +1420,6 @@ exports.cancelBooking = async (req, res) => {
       const chargeCents = toCents(feeAmount);
 
       if (pct > 0 && feeAmount > 0 && chargeCents >= 50) {
-        let connectedAccountId = null;
-        if (company?.stripeConnect?.status === "active" && company.stripeConnect.accountId) {
-          connectedAccountId = company.stripeConnect.accountId;
-        }
-        const isDevFallback = process.env.NODE_ENV !== "production";
-
         try {
           const pi = await stripe.paymentIntents.create({
             amount:         chargeCents,
@@ -1533,7 +1429,6 @@ exports.cancelBooking = async (req, res) => {
             off_session:    true,
             confirm:        true,
             description:    `Frais d'annulation — ${canceledBooking.serviceName || "Réservation"}`,
-            ...(connectedAccountId && !isDevFallback && { transfer_data: { destination: connectedAccountId } }),
           });
           await Booking.findByIdAndUpdate(canceledBooking._id, {
             "payment.status": "penalty",
@@ -1562,14 +1457,14 @@ exports.cancelBooking = async (req, res) => {
 
       try {
         if (keptAmount <= 0) {
-          await stripe.refunds.create({ payment_intent: piId, reason: "requested_by_customer", reverse_transfer: true });
+          await stripe.refunds.create({ payment_intent: piId, reason: "requested_by_customer" });
           await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "refunded", "payment.keptAmount": 0 });
           chargeResult = { refunded: true, pct: 100, amount, kept: 0 };
         } else if (refundAmount > 0) {
           // Remboursement partiel : une partie revient au client, le reste à l'admin
           const refundCents = toCents(refundAmount);
           if (refundCents >= 50) {
-            await stripe.refunds.create({ payment_intent: piId, amount: refundCents, reason: "requested_by_customer", reverse_transfer: true });
+            await stripe.refunds.create({ payment_intent: piId, amount: refundCents, reason: "requested_by_customer" });
             await Booking.findByIdAndUpdate(canceledBooking._id, {
               "payment.status":     "partial",
               "payment.keptAmount": keptAmount,
@@ -1577,7 +1472,7 @@ exports.cancelBooking = async (req, res) => {
             chargeResult = { refunded: true, pct: Math.round((refundAmount / amount) * 100), amount: refundAmount, kept: keptAmount };
           } else {
             // Montant du remboursement trop faible (<0,50€) → on rembourse tout pour éviter les frais
-            await stripe.refunds.create({ payment_intent: piId, reason: "requested_by_customer", reverse_transfer: true });
+            await stripe.refunds.create({ payment_intent: piId, reason: "requested_by_customer" });
             await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "refunded", "payment.keptAmount": 0 });
             chargeResult = { refunded: true, pct: 100, amount, kept: 0 };
           }
