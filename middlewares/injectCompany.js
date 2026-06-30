@@ -94,6 +94,16 @@ module.exports = async (req, res, next) => {
     res.locals.currentCompany = currentCompany;
     res.locals.membershipRole = membershipRole;
 
+    // Demandes en attente (badge sidebar "Collaborateurs") — uniquement pour
+    // le patron, les collaborateurs ne gèrent pas les demandes d'adhésion.
+    res.locals.pendingMembershipsCount = 0;
+    if (isOwner && currentCompany) {
+      res.locals.pendingMembershipsCount = await CompanyMembership.countDocuments({
+        company: currentCompany._id,
+        status: "pending",
+      });
+    }
+
     // Système de grades/permissions — le patron a toujours tout ;
     // un collaborateur sans grade assigné (rare, juste après une migration
     // ratée ou un bug) n'a aucun accès plutôt qu'un accès par défaut.

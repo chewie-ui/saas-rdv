@@ -122,10 +122,20 @@ block content
                     .service-dropdown#joinEstabDropdown
 
             #joinEstabConfirmStep(style="display:none")
-                p#joinEstabConfirmText
-                .cancel-modal__actions
-                    button.sm-btn.sm-btn--primary#joinEstabConfirmBtn(type="button") Envoyer la demande
-                    button.sm-btn.sm-btn--ghost#joinEstabConfirmBack(type="button") Retour à la recherche
+                .join-confirm-card
+                    .join-confirm-card__icon
+                        svg(viewBox="0 -960 960 960" height="28" width="28" fill="currentColor")
+                            path(d="M80-120v-720h400v160h400v560H80Zm80-80h80v-80H160v80Zm0-160h80v-80H160v80Zm0-160h80v-80H160v80Zm0-160h80v-80H160v80Zm160 480h80v-80h-80v80Zm0-160h80v-80h-80v80Zm0-160h80v-80h-80v80Zm0-160h80v-80h-80v80Zm160 480h240v-400H480v80h80v80h-80v80h80v80h-80v80Zm160-320v-80h80v80h-80Zm0 160v-80h80v80h-80Z")
+                    .join-confirm-card__body
+                        span.join-confirm-card__label Vous allez rejoindre
+                        strong.join-confirm-card__name#joinEstabConfirmName —
+                .join-confirm-desc Votre demande sera envoyée au propriétaire, qui devra l'approuver avant que vous ayez accès au dashboard.
+                .cancel-modal__actions(style="margin-top:20px")
+                    button.sm-btn.sm-btn--primary#joinEstabConfirmBtn(type="button")
+                        svg(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
+                            path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                        span Envoyer la demande
+                    button.sm-btn.sm-btn--ghost#joinEstabConfirmBack(type="button") ← Retour
 
             p.etab-error#joinEstabModalError(style="display:none")
 
@@ -381,7 +391,7 @@ block scripts
             var joinSearchStep  = document.getElementById('joinEstabSearchStep');
             var joinSearchActions = document.getElementById('joinEstabSearchActions');
             var joinConfirmStep = document.getElementById('joinEstabConfirmStep');
-            var joinConfirmText = document.getElementById('joinEstabConfirmText');
+            var joinConfirmName = document.getElementById('joinEstabConfirmName');
             var joinConfirmBtn  = document.getElementById('joinEstabConfirmBtn');
             var joinConfirmBack = document.getElementById('joinEstabConfirmBack');
             var joinSentStep    = document.getElementById('joinEstabSentStep');
@@ -434,7 +444,7 @@ block scripts
                         e.preventDefault();
                         joinDropdown.style.display = 'none';
                         joinTargetId = c.id;
-                        joinConfirmText.textContent = 'Vous êtes sur le point d\'envoyer une demande pour rejoindre "' + c.name + '". Le propriétaire devra l\'approuver avant que vous ayez accès au dashboard.';
+                        if (joinConfirmName) joinConfirmName.textContent = c.name;
                         joinSearchStep.style.display = 'none';
                         joinSearchActions.style.display = 'none';
                         joinConfirmStep.style.display = 'block';
