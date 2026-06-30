@@ -148,28 +148,21 @@ function cardRequiredByPolicy() {
 }
 
 function needsPaymentStep() {
-  // Only show payment step if the selected service has a price > 0
+  // La politique d'annulation exige toujours une carte en garantie, peu importe le prix
+  if (cardRequiredByPolicy()) return true;
   const price = STATE.service?.price;
   if (price === null || price === undefined || Number(price) <= 0) return false;
-  if (PREPAYMENT.enabled) return true;
-  return cardRequiredByPolicy();
+  return PREPAYMENT.enabled;
 }
 
-// Utilisé pour décider si l'étape "Paiement" doit apparaître dans le stepper
-// — basé sur TOUS les services (pas seulement celui sélectionné), pour que
-// le nombre d'étapes affichées reste IDENTIQUE du tout premier rendu (avant
-// même de choisir un service) jusqu'à la fin du parcours. Sans ça, l'étape
-// "Paiement" apparaissait/disparaissait selon le service choisi, donnant
-// l'impression d'un stepper buggé (5 étapes puis soudain 6).
-// Si le service réellement choisi n'a pas besoin de paiement, le flux
-// continue de sauter cette étape à l'usage (cf. needsPaymentStep() dans
-// goToNextStep) — elle reste juste visible dans la liste, jamais "active".
 function anyServiceNeedsPayment() {
+  // Si la politique exige une carte, l'étape paiement s'affiche toujours dans le stepper
+  if (cardRequiredByPolicy()) return true;
   const hasPayableService = SERVICES.some(
     (s) => s.price !== null && s.price !== undefined && Number(s.price) > 0
   );
   if (!hasPayableService) return false;
-  return PREPAYMENT.enabled || cardRequiredByPolicy();
+  return PREPAYMENT.enabled;
 }
 
 function buildSteps() {

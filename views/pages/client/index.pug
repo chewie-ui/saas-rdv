@@ -477,7 +477,7 @@ block scripts
             city:        (coach && coach.location && coach.location.city)        ? coach.location.city        : '',
             serviceType: (coach && coach.location && coach.location.serviceType) ? coach.location.serviceType : 'sur_place'
         }
-    if prepaymentConfig && prepaymentConfig.enabled && prepaymentConfig.stripeActive && stripePublishableKey
+    if prepaymentConfig && prepaymentConfig.stripeActive && stripePublishableKey && (prepaymentConfig.enabled || (prepaymentConfig.cancellationRule && prepaymentConfig.cancellationRule !== 'free'))
         script(src="https://js.stripe.com/v3/")
     -
         // Textes personnalisés du parcours de réservation — JSON.stringify
