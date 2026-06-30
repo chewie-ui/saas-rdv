@@ -75,15 +75,13 @@ block content
                         //- pour le rare visiteur qui cherchait en fait à réserver chez
                         //- quelqu'un plutôt qu'à créer son propre compte pro.
                         .pro-actions
-                            a.sm-btn.sm-btn--primary(href="/register?plan=pro&billing=monthly")= t.hero.btn_1
-                        //- Disclosure honnête à l'endroit même où ça compte : le bouton
-                        //- ci-dessus mène à l'essai Pro, qui demande une carte (débitée
-                        //- seulement après le mois gratuit) — on ne prétend plus le
-                        //- contraire ("Sans carte bancaire" affiché juste à côté d'un bouton
-                        //- qui en demande une, c'est le genre de chose qui casse la confiance
-                        //- au pire moment : juste avant de payer).
-                        if pl.hero.card_note
-                            p.pro-hero__card-note= pl.hero.card_note
+                            a.sm-btn.sm-btn--primary(href="/register?plan=pro&billing=monthly") Essai Pro gratuit 1 mois →
+                            a.sm-btn.sm-btn--ghost(href="/register") Commencer gratuitement
+                        p.pro-hero__card-note
+                            | Essai Pro : carte requise, débitée seulement après le 1er mois.&nbsp;
+                            | Plan Starter&nbsp;
+                            a(href="/register" style="color:inherit;text-decoration:underline") sans carte
+                            |  aussi disponible.
                         a.pro-hero__alt-link(href="/search")
                             svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="13" height="13")
                                 path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z")

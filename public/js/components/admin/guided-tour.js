@@ -375,6 +375,59 @@
       },
     ],
 
+    // ── Assistance : politique d'annulation ───────────────────────────────
+    cancellationPolicy: [
+      {
+        page: "/settings",
+        find: function () { return $(".cp-grid"); },
+        title: "Politique d'annulation",
+        text: "Cette section vous permet de définir ce qui se passe quand un client annule à la dernière minute ou ne se présente pas. Trois options s'offrent à vous — choisissez celle qui correspond à votre façon de travailler.",
+        placement: "top",
+      },
+      {
+        page: "/settings",
+        find: function () { return $(".cp-grid .cp-card"); },
+        title: "Option 1 — Annulation libre",
+        text: "L'annulation est toujours gratuite pour le client, quelle que soit la date à laquelle il annule. C'est l'option par défaut — aucune carte bancaire n'est demandée lors de la réservation.",
+        placement: "top",
+      },
+      {
+        page: "/settings",
+        find: function () {
+          var cards = document.querySelectorAll(".cp-grid .cp-card");
+          return cards[1] || null;
+        },
+        title: "Option 2 — 50 % retenu si annulation < 24h",
+        text: "Si le client annule moins de 24 heures avant son rendez-vous, vous conservez 50 % du montant. Au-delà de 24h, l'annulation reste entièrement gratuite. Idéal pour réduire les annulations de dernière minute sans être trop strict.",
+        placement: "top",
+      },
+      {
+        page: "/settings",
+        find: function () {
+          var cards = document.querySelectorAll(".cp-grid .cp-card");
+          return cards[2] || null;
+        },
+        title: "Option 3 — 100 % retenu si annulation < 12h",
+        text: "La politique la plus protectrice : si le client annule dans les 12h, vous gardez 100 % du montant. Entre 12h et 24h : 50 %. Au-delà : annulation gratuite. Recommandée si chaque absence vous coûte réellement (local loué, fournitures, etc.).",
+        placement: "top",
+      },
+      {
+        page: "/settings",
+        find: function () { return $(".cp-grid"); },
+        title: "Sélectionnez votre règle",
+        text: "Cliquez sur la carte de votre choix — elle est enregistrée automatiquement, sans bouton « Sauvegarder ». Vous pouvez changer de règle à tout moment depuis cette page.",
+        placement: "top",
+      },
+      {
+        page: "/settings",
+        find: function () { return $("#prepayEnabled"); },
+        title: "Activez la garantie carte (recommandé)",
+        text: "Pour que votre politique s'applique vraiment, activez aussi « Paiement en ligne » juste au-dessus. La carte de votre client sera enregistrée à 0 € lors de la réservation — aucun débit immédiat. Elle ne sera prélevée qu'en cas d'absence ou d'annulation trop tardive, directement depuis la fiche du rendez-vous.",
+        placement: "bottom",
+        isLast: true,
+      },
+    ],
+
     // ── Assistance : créer un dossier client ──────────────────────────────
     clientDossier: [
       {
