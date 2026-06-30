@@ -257,6 +257,8 @@ block content
                                 )
                                     img.appt-pill__photo(src=appointment.employeePhoto alt="" title=appointment.employeeName)
                                     span.appt-pill__name= appointment.name + ' ' + (appointment.surname || '')
+                                    if employeeFilter === 'all' && appointment.employeeName
+                                        span.appt-pill__emp= appointment.employeeName.split(' ')[0]
                                     span.appt-pill__time= appointment.startHour
 
     //- ── Appointment popup (Google Calendar style) ──

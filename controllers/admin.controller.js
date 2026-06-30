@@ -209,8 +209,8 @@ exports.appointment = async (req, res) => {
 
     // Populated employee (may be null)
     const emp = appointment.employee;
-    const empName  = emp ? `${emp.firstName} ${emp.lastName}`.trim() : (appointment.employeeName || "");
-    const empPhoto = emp ? emp.profilePicture : "/images/no-user.webp";
+    const empName  = emp ? (emp.fullName || `${emp.firstName || ""} ${emp.lastName || ""}`.trim() || "") : (appointment.employeeName || "");
+    const empPhoto = emp ? (emp.profilePicture || "/images/no-user.webp") : "/images/no-user.webp";
 
     return {
       _id: appointment._id,

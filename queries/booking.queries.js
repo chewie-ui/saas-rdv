@@ -19,6 +19,6 @@ exports.GetAllAppointments = async (companyId, employeeFilter) => {
   }
 
   return await Booking.find(query)
-    .populate("employee", "firstName lastName profilePicture")
+    .populate("employee", "fullName profilePicture")
     .sort({ date: 1, startTime: 1 });
 };
