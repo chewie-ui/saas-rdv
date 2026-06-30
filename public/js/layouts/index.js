@@ -1888,17 +1888,19 @@ function renderPaymentPane() {
       ${PREPAYMENT.qrCodeNote ? `<div class="bk-iban-note">${PREPAYMENT.qrCodeNote}</div>` : ""}
     </div>` : "";
 
-  // La carte est aussi requise en garantie si l'utilisateur choisit de payer
-  // sur place mais que la politique d'annulation de l'établissement exige
-  // une carte enregistrée (frais en cas d'annulation tardive / absence).
-  const cardForGuarantee = STATE.paymentMethod === "on_site" && policyRequiresCard;
+  // La carte est toujours requise en garantie dès que la politique est active,
+  // quelle que soit la méthode de paiement choisie (espèces, virement, PayPal…).
+  const cardForGuarantee = policyRequiresCard;
 
   // ── Stripe card block ───────────────────────────────────────────────────────
+  const cardBlockLabel = STATE.paymentMethod === "online"
+    ? "Informations de carte"
+    : "Carte bancaire — garantie d'annulation (0 € prélevé maintenant)";
   const stripeBlock = (STATE.paymentMethod === "online" || cardForGuarantee) ? `
     <div id="bkCardWrap">
       <div class="bk-card-label">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-        Informations de carte
+        ${cardBlockLabel}
       </div>
       <div id="bkStripeCard" class="bk-stripe-card-el"></div>
       <div id="bkCardError" class="bk-card-error" style="display:none"></div>
@@ -1996,9 +1998,9 @@ function renderPaymentPane() {
 }
 
 function selectPayMethod(method) {
-  // La carte reste nécessaire si on passe en "sur place" mais que la politique
-  // d'annulation exige une carte en garantie (cardRequiredByPolicy).
-  const keepCard = method === "online" || (method === "on_site" && cardRequiredByPolicy());
+  // La carte reste toujours nécessaire si la politique d'annulation l'exige,
+  // quel que soit le mode de paiement choisi (virement, PayPal, espèces…).
+  const keepCard = method === "online" || cardRequiredByPolicy();
   if (!keepCard) {
     STATE.stripePaymentIntentId = null;
     STATE.stripeSetupIntentId   = null;
@@ -2058,14 +2060,8 @@ function mountStripeCard() {
 
 /* ── Payment submit (called when "Confirmer et payer" is clicked) ─────────── */
 async function submitBookingWithPayment() {
-  // Bank transfer or paypal → just confirm booking, no card needed
-  if (STATE.paymentMethod === "bank_transfer" || STATE.paymentMethod === "paypal") {
-    submitBooking();
-    return;
-  }
-
-  // "Payer sur place" sans politique d'annulation exigeant une carte → rien à faire
-  if (STATE.paymentMethod === "on_site" && !cardRequiredByPolicy()) {
+  // Aucune carte nécessaire : paiement non-online ET politique libre → soumettre direct
+  if (STATE.paymentMethod !== "online" && !cardRequiredByPolicy()) {
     submitBooking();
     return;
   }

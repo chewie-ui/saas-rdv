@@ -580,8 +580,10 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
 
   const cs = coach.calendarSettings || {};
 
-  // Stripe plateforme BranShee — pas besoin de Stripe Connect côté établissement
-  const _stripeActive = !!(process.env.STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY_LOCAL);
+  // Stripe plateforme BranShee — actif dès que la clé publiable est disponible
+  const _spk = _routeEnv.stripePublishableKey || process.env.STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY_LOCAL || "";
+  const _stripeActive = !!_spk;
+  console.log("[booking page] stripeActive:", _stripeActive, "| spk:", _spk ? _spk.slice(0,12) : "VIDE", "| cancellationRule:", company.cancellationPolicy?.rule, "| prepayEnabled:", company.prepayment?.enabled);
 
   const prepaymentConfig = {
     enabled:      !!(company.prepayment?.enabled) && _stripeActive,
@@ -635,7 +637,7 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
     amenityOptions: AMENITY_OPTIONS,
     badgeOptions: BADGE_OPTIONS,
     prepaymentConfig,
-    stripePublishableKey: _routeEnv.stripePublishableKey || process.env.STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLISHABLE_KEY_LOCAL || "",
+    stripePublishableKey: _spk,
     visitorIsAdmin,
     alwaysSticky: true,
     clientAuth: true,
