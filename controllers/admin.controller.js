@@ -617,10 +617,36 @@ exports.createAdminBooking = async (req, res) => {
     }
 
     let employeeName = "";
+    const team = await getBookableTeam(currentCompany);
     if (employeeId) {
-      const team = await getBookableTeam(currentCompany);
       const emp = team.find((m) => m.id === String(employeeId));
       if (emp) employeeName = `${emp.firstName} ${emp.lastName}`.trim();
+    } else if (team.length >= 1) {
+      // Plusieurs employés : auto-assigner au premier disponible sur ce créneau
+      const [h, m] = startTime.split(":").map(Number);
+      const startMin = h * 60 + m;
+      const endMin = startMin + actualDuration;
+      const Booking = require("../db/models/book.model");
+      const dayBookings = await Booking.find({
+        company: currentCompany,
+        date: new Date(date),
+        status: { $ne: "canceled" },
+        $or: [{ employee: { $in: team.map((x) => x.id) } }, { employee: null }],
+      }).select("startTime slotTime employee").lean();
+      const busyIds = new Set();
+      dayBookings.forEach((b) => {
+        const [bh, bm] = b.startTime.split(":").map(Number);
+        const bs = bh * 60 + bm, be = bs + (b.slotTime || actualDuration);
+        if (startMin < be && endMin > bs) {
+          if (b.employee == null) team.forEach((x) => busyIds.add(x.id));
+          else busyIds.add(String(b.employee));
+        }
+      });
+      const free = team.find((x) => !busyIds.has(x.id));
+      if (free) {
+        employeeId = free.id;
+        employeeName = `${free.firstName} ${free.lastName}`.trim();
+      }
     }
 
     const [hours, minutes] = startTime.split(":").map(Number);
