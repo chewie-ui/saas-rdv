@@ -47,7 +47,7 @@ exports.establishmentsPage = async (req, res) => {
   const [companies, totalBookings] = await Promise.all([
     Company.find(query)
       .populate("owner", "fullName email isPremium manualPremium subscription")
-      .select("name slug businessType createdAt isPaused photo")
+      .select("name slug businessType createdAt isPaused photo description")
       .sort("-createdAt")
       .lean(),
     Booking.countDocuments({}),
@@ -143,6 +143,59 @@ exports.setPlan = async (req, res) => {
     res.json({ success: true, plan });
   } catch (err) {
     console.error("setPlan error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Gestion plan par établissement ──────────────────────────────────────────
+// Le plan vit sur le User (owner). Changer le plan d'un établissement =
+// changer le plan de son propriétaire (qui peut posséder plusieurs établissements,
+// mais le plan s'applique à toute l'activité du compte).
+exports.setPlanForCompany = async (req, res) => {
+  try {
+    const company = await Company.findById(req.params.companyId).select("owner").lean();
+    if (!company) return res.status(404).json({ error: "Établissement introuvable." });
+
+    const { plan } = req.body; // "free" | "pro" | "business"
+    const validPlans = ["free", "pro", "business"];
+    if (!validPlans.includes(plan)) return res.status(400).json({ error: "Plan invalide." });
+
+    const isFree = plan === "free";
+    const update = {
+      manualPremium: !isFree,
+      isPremium: !isFree,
+      manualPremiumExpiry: null,
+      "subscription.plan": isFree ? "basic" : plan,
+      "subscription.status": isFree ? "inactive" : "active",
+    };
+    const userId = String(company.owner);
+    await User.findByIdAndUpdate(userId, update);
+    const { enforcePlanLimits } = require("./account.controller");
+    enforcePlanLimits(userId, isFree ? "basic" : plan).catch(() => {});
+    res.json({ success: true, plan });
+  } catch (err) {
+    console.error("setPlanForCompany error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Modifier les infos d'un établissement (nom, métier, photo) ───────────────
+// multer + processSingleImage appliqués AVANT dans la route — ici on lit juste
+// req.file.filename (déjà converti en JPEG sur disque) si présent.
+exports.updateCompanyInfo = async (req, res) => {
+  try {
+    const company = await Company.findById(req.params.companyId).select("_id").lean();
+    if (!company) return res.status(404).json({ error: "Établissement introuvable." });
+
+    const update = {};
+    if (req.body.name !== undefined) update.name = String(req.body.name).trim().slice(0, 120);
+    if (req.body.businessType !== undefined) update.businessType = String(req.body.businessType).trim().slice(0, 80);
+    if (req.file && req.file.filename) update.photo = `/uploads/profiles/${req.file.filename}`;
+
+    await Company.findByIdAndUpdate(company._id, update);
+    res.json({ success: true, update });
+  } catch (err) {
+    console.error("updateCompanyInfo error:", err);
     res.status(500).json({ error: "Erreur serveur." });
   }
 };

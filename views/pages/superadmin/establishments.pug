@@ -23,19 +23,43 @@ html(lang="fr")
             .est-table tbody tr { border-bottom: 1px solid #1f1f1f; transition: background .12s; }
             .est-table tbody tr:last-child { border-bottom: none; }
             .est-table tbody tr:hover { background: #1f1f1f; }
-            .est-table td { padding: 13px 18px; font-size: 13px; color: #ccc; vertical-align: middle; }
+            .est-table td { padding: 12px 18px; font-size: 13px; color: #ccc; vertical-align: middle; }
             .est-name { font-weight: 600; color: #fff; display: flex; align-items: center; gap: 10px; }
             .est-avatar { width: 32px; height: 32px; border-radius: 8px; background: #2a2a2a; object-fit: cover; flex-shrink: 0; }
             .est-avatar--placeholder { display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #555; width: 32px; height: 32px; border-radius: 8px; background: #222; border: 1px solid #2a2a2a; flex-shrink: 0; }
             .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 3px 8px; border-radius: 5px; }
             .badge--green { color: #22c55e; background: rgba(34,197,94,.08); border: 1px solid rgba(34,197,94,.2); }
-            .badge--yellow { color: #facc15; background: rgba(250,204,21,.08); border: 1px solid rgba(250,204,21,.2); }
-            .badge--gray { color: #555; background: #1a1a1a; border: 1px solid #2a2a2a; }
             .badge--red { color: #f87171; background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.2); }
             .link-btn { font-size: 12px; color: #555; text-decoration: none; padding: 5px 10px; border: 1px solid #2a2a2a; border-radius: 7px; transition: color .15s, border-color .15s; white-space: nowrap; }
             .link-btn:hover { color: #fff; border-color: #444; }
             .owner-email { font-size: 11px; color: #555; margin-top: 2px; }
             .empty-state { text-align: center; padding: 60px 24px; color: #444; font-size: 14px; }
+            /* Plan select */
+            .plan-select { appearance: none; background: #1f1f1f; border: 1.5px solid #2a2a2a; border-radius: 8px; color: #ccc; font-size: 12px; font-weight: 600; padding: 5px 28px 5px 10px; cursor: pointer; outline: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23555' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; transition: border-color .15s; }
+            .plan-select:focus { border-color: #444; }
+            .plan-select[data-plan="free"] { color: #555; }
+            .plan-select[data-plan="pro"] { color: #facc15; border-color: rgba(250,204,21,.3); }
+            .plan-select[data-plan="business"] { color: #a78bfa; border-color: rgba(167,139,250,.3); }
+            .plan-select[data-plan="basic"] { color: #555; }
+            /* Edit btn */
+            .edit-btn { background: none; border: 1px solid #2a2a2a; border-radius: 7px; color: #555; padding: 5px 9px; cursor: pointer; transition: color .15s, border-color .15s; display: inline-flex; align-items: center; }
+            .edit-btn:hover { color: #fff; border-color: #444; }
+            /* Modal */
+            .sa-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(3px); }
+            .sa-modal { background: #111; border: 1px solid #2a2a2a; border-radius: 18px; padding: 28px; width: 420px; max-width: 95vw; }
+            .sa-modal__title { font-size: 16px; font-weight: 700; color: #fff; margin: 0 0 20px; }
+            .sa-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+            .sa-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #555; }
+            .sa-input { background: #1a1a1a; border: 1.5px solid #2a2a2a; border-radius: 10px; color: #fff; font-size: 14px; padding: 9px 13px; outline: none; width: 100%; box-sizing: border-box; }
+            .sa-input:focus { border-color: #444; }
+            .sa-photo-preview { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; border: 1px solid #2a2a2a; background: #1a1a1a; }
+            .sa-photo-row { display: flex; align-items: center; gap: 12px; }
+            .sa-modal__actions { display: flex; gap: 8px; margin-top: 20px; }
+            .sa-btn { flex: 1; padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: opacity .15s; }
+            .sa-btn--primary { background: #fff; color: #111; }
+            .sa-btn--ghost { background: #1a1a1a; border: 1px solid #2a2a2a; color: #888; }
+            .sa-btn:disabled { opacity: .5; cursor: default; }
+            .sa-error { font-size: 12px; color: #f87171; margin-top: 8px; min-height: 16px; }
     body
         - var saPage = 'establishments'
         include ../../includes/sa-nav
@@ -79,21 +103,24 @@ html(lang="fr")
                         th Établissement
                         th Propriétaire
                         th Métier
+                        th Plan
                         th RDV
                         th Statut
                         th Inscrit le
                         th Actions
                 tbody
                     each c in companies
-                        tr
+                        - var ownerPlan = (c.owner && c.owner.subscription && c.owner.subscription.plan) ? c.owner.subscription.plan : 'basic'
+                        - var displayPlan = ownerPlan === 'basic' ? 'free' : ownerPlan
+                        tr(data-company-id=c._id)
                             td
                                 .est-name
                                     if c.photo
-                                        img.est-avatar(src=c.photo alt=c.name)
+                                        img.est-avatar(src=c.photo alt=c.name class="est-row-photo")
                                     else
-                                        .est-avatar--placeholder= (c.name || '?')[0].toUpperCase()
+                                        .est-avatar--placeholder.est-row-photo= (c.name || '?')[0].toUpperCase()
                                     div
-                                        div= c.name || '—'
+                                        div.est-row-name= c.name || '—'
                                         div(style="font-size:11px;color:#555;margin-top:2px") /#{c.slug || '—'}
                             td
                                 if c.owner
@@ -101,7 +128,13 @@ html(lang="fr")
                                     .owner-email= c.owner.email || ''
                                 else
                                     span(style="color:#444") —
-                            td(style="color:#888;font-size:12px")= c.businessType || '—'
+                            td(style="color:#888;font-size:12px")
+                                span.est-row-type= c.businessType || '—'
+                            td
+                                select.plan-select(data-plan=displayPlan data-company-id=String(c._id))
+                                    option(value="free" selected=displayPlan==='free') Free
+                                    option(value="pro" selected=displayPlan==='pro') Pro
+                                    option(value="business" selected=displayPlan==='business') Business
                             td(style="font-weight:600;color:#fff")= c.bookingCount.toLocaleString('fr-FR')
                             td
                                 if c.isPaused
@@ -109,5 +142,159 @@ html(lang="fr")
                                 else
                                     span.badge.badge--green Actif
                             td(style="color:#666;font-size:12px")= c.createdAt ? new Date(c.createdAt).toLocaleDateString('fr-FR') : '—'
-                            td
-                                a.link-btn(href='/' + c.slug target="_blank") Voir page
+                            td(style="display:flex;gap:6px;align-items:center")
+                                a.link-btn(href='/' + c.slug target="_blank") Voir
+                                button.edit-btn(
+                                    type="button"
+                                    title="Modifier"
+                                    data-id=String(c._id)
+                                    data-name=c.name || ''
+                                    data-type=c.businessType || ''
+                                    data-photo=c.photo || ''
+                                )
+                                    svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
+                                        path(d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z")
+
+    //- ── Modale édition établissement ────────────────────────────────────────
+    .sa-modal-overlay#editEstabOverlay(style="display:none")
+        .sa-modal
+            h3.sa-modal__title Modifier l'établissement
+            .sa-field
+                label.sa-label Nom
+                input.sa-input#editEstabName(type="text" placeholder="Nom de l'établissement")
+            .sa-field
+                label.sa-label Métier / type d'activité
+                input.sa-input#editEstabType(type="text" placeholder="Ex. Coiffeur, Kiné...")
+            .sa-field
+                label.sa-label Photo
+                .sa-photo-row
+                    img.sa-photo-preview#editEstabPhotoPreview(src="/images/no-user.webp" alt="")
+                    div(style="flex:1")
+                        input(type="file" accept="image/*" id="editEstabPhotoFile" style="display:none")
+                        button(type="button" onclick="document.getElementById('editEstabPhotoFile').click()" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:12px;padding:7px 12px;cursor:pointer;") Choisir une image
+                        div(style="font-size:11px;color:#444;margin-top:4px") JPG, PNG, WEBP — 60 Mo max
+            p.sa-error#editEstabError
+            .sa-modal__actions
+                button.sa-btn.sa-btn--primary#editEstabSave(type="button") Enregistrer
+                button.sa-btn.sa-btn--ghost#editEstabCancel(type="button") Annuler
+
+    script.
+        (function () {
+            // ── Plan select ───────────────────────────────────────────────────
+            document.querySelectorAll('.plan-select').forEach(function (sel) {
+                sel.addEventListener('change', function () {
+                    var plan = sel.value;
+                    var cid  = sel.dataset.companyId;
+                    sel.disabled = true;
+                    fetch('/superadmin/establishments/' + cid + '/plan', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ plan: plan }),
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (d) {
+                            sel.disabled = false;
+                            if (d.success) {
+                                sel.dataset.plan = plan;
+                                sel.setAttribute('data-plan', plan);
+                            } else {
+                                alert(d.error || 'Erreur');
+                                sel.value = sel.dataset.plan; // revert
+                            }
+                        })
+                        .catch(function () {
+                            sel.disabled = false;
+                            sel.value = sel.dataset.plan;
+                        });
+                });
+            });
+
+            // ── Edit modal ────────────────────────────────────────────────────
+            var overlay   = document.getElementById('editEstabOverlay');
+            var nameInput = document.getElementById('editEstabName');
+            var typeInput = document.getElementById('editEstabType');
+            var photoPreview = document.getElementById('editEstabPhotoPreview');
+            var photoFile = document.getElementById('editEstabPhotoFile');
+            var saveBtn   = document.getElementById('editEstabSave');
+            var cancelBtn = document.getElementById('editEstabCancel');
+            var errorEl   = document.getElementById('editEstabError');
+            var currentId = null;
+            var currentRow = null;
+
+            photoFile.addEventListener('change', function () {
+                var file = photoFile.files[0];
+                if (!file) return;
+                var reader = new FileReader();
+                reader.onload = function (e) { photoPreview.src = e.target.result; };
+                reader.readAsDataURL(file);
+            });
+
+            document.querySelectorAll('.edit-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    currentId  = btn.dataset.id;
+                    currentRow = btn.closest('tr');
+                    nameInput.value = btn.dataset.name || '';
+                    typeInput.value = btn.dataset.type || '';
+                    photoPreview.src = btn.dataset.photo || '/images/no-user.webp';
+                    photoFile.value  = '';
+                    errorEl.textContent = '';
+                    overlay.style.display = 'flex';
+                });
+            });
+
+            function closeModal() {
+                overlay.style.display = 'none';
+                currentId = null;
+                currentRow = null;
+            }
+
+            cancelBtn.addEventListener('click', closeModal);
+            overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+
+            saveBtn.addEventListener('click', function () {
+                if (!currentId) return;
+                errorEl.textContent = '';
+                saveBtn.disabled = true;
+
+                var fd = new FormData();
+                fd.append('name', nameInput.value.trim());
+                fd.append('businessType', typeInput.value.trim());
+                if (photoFile.files[0]) fd.append('photo', photoFile.files[0]);
+
+                fetch('/superadmin/establishments/' + currentId + '/info', {
+                    method: 'PATCH',
+                    body: fd,
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        saveBtn.disabled = false;
+                        if (!d.success) {
+                            errorEl.textContent = d.error || 'Erreur.';
+                            return;
+                        }
+                        // Mettre à jour la ligne sans rechargement
+                        if (currentRow) {
+                            var nameEl = currentRow.querySelector('.est-row-name');
+                            var typeEl = currentRow.querySelector('.est-row-type');
+                            var photoEl = currentRow.querySelector('.est-row-photo');
+                            if (nameEl && d.update.name !== undefined) nameEl.textContent = d.update.name || '—';
+                            if (typeEl && d.update.businessType !== undefined) typeEl.textContent = d.update.businessType || '—';
+                            if (photoEl && d.update.photo) {
+                                if (photoEl.tagName === 'IMG') photoEl.src = d.update.photo;
+                            }
+                            // Mettre à jour le data-* du bouton edit
+                            var editBtn = currentRow.querySelector('.edit-btn');
+                            if (editBtn) {
+                                if (d.update.name !== undefined) editBtn.dataset.name = d.update.name || '';
+                                if (d.update.businessType !== undefined) editBtn.dataset.type = d.update.businessType || '';
+                                if (d.update.photo) editBtn.dataset.photo = d.update.photo;
+                            }
+                        }
+                        closeModal();
+                    })
+                    .catch(function () {
+                        saveBtn.disabled = false;
+                        errorEl.textContent = 'Erreur réseau.';
+                    });
+            });
+        })();
