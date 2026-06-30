@@ -192,8 +192,8 @@ exports.createUser = async (req, res) => {
         return res.redirect(dest);
       }
       // Pas de plan en attente → onboarding de bienvenue
-      if (isAjax) return res.json({ success: true, redirect: "/welcome" });
-      return res.redirect("/welcome");
+      if (isAjax) return res.json({ success: true, redirect: "/welcome?gads_conversion=1" });
+      return res.redirect("/welcome?gads_conversion=1");
     });
   } catch (err) {
     console.error(err);
