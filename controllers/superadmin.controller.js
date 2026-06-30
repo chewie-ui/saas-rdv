@@ -37,6 +37,30 @@ exports.logout = (req, res) => {
   res.redirect("/superadmin/login");
 };
 
+exports.establishmentsPage = async (req, res) => {
+  const { search } = req.query;
+  let query = {};
+  if (search) {
+    const regex = { $regex: search, $options: "i" };
+    query = { $or: [{ name: regex }, { slug: regex }, { businessType: regex }] };
+  }
+  const [companies, totalBookings] = await Promise.all([
+    Company.find(query)
+      .populate("owner", "fullName email isPremium manualPremium subscription")
+      .select("name slug businessType createdAt isPaused photo")
+      .sort("-createdAt")
+      .lean(),
+    Booking.countDocuments({}),
+  ]);
+  // Ajouter le nb de RDV par company
+  const bookingCounts = await Booking.aggregate([
+    { $group: { _id: "$company", count: { $sum: 1 } } },
+  ]);
+  const countMap = new Map(bookingCounts.map((b) => [String(b._id), b.count]));
+  companies.forEach((c) => { c.bookingCount = countMap.get(String(c._id)) || 0; });
+  res.render("superadmin/establishments", { companies, search: search || "", totalBookings });
+};
+
 exports.usersPage = async (req, res) => {
   const { search } = req.query;
   let query = {};

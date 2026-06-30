@@ -10,6 +10,7 @@ router.get("/superadmin/login", ctrl.loginPage);
 router.post("/superadmin/login", ctrl.login);
 router.get("/superadmin/logout", ctrl.logout);
 router.get("/superadmin", isSuperAdmin, ctrl.usersPage);
+router.get("/superadmin/establishments", isSuperAdmin, ctrl.establishmentsPage);
 router.patch("/superadmin/toggle-premium/:userId", isSuperAdmin, ctrl.toggleManualPremium);
 router.patch("/superadmin/set-plan/:userId", isSuperAdmin, ctrl.setPlan);
 router.patch("/superadmin/set-trial/:userId", isSuperAdmin, ctrl.setTrialDuration);
