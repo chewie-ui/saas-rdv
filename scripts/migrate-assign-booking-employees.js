@@ -6,16 +6,19 @@
  * Idempotent : seuls les bookings avec employee === null sont touchés.
  * Usage : node scripts/migrate-assign-booking-employees.js
  */
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 const mongoose = require("mongoose");
-const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
+
+const MONGO_URI = process.env.MONGO_URI_SERVER || process.env.MONGO_URI || process.env.DB_URI;
+if (!MONGO_URI) { console.error("❌ Aucune URI MongoDB trouvée (MONGO_URI_SERVER / MONGO_URI / DB_URI)"); process.exit(1); }
 
 const Company      = require("../db/models/company/company.model");
 const Booking      = require("../db/models/book.model");
 const CompanyMembership = require("../db/models/company/companyMembership.model");
 const User         = require("../db/models/user.model");
 
-mongoose.connect(env.db).then(async () => {
+mongoose.connect(MONGO_URI).then(async () => {
   console.log("✅ Connecté à MongoDB");
 
   // Tous les bookings sans employé (non annulés de préférence, mais on traite tous)
