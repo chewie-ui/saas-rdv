@@ -2156,22 +2156,9 @@ exports.savePrepaymentSettings = async (req, res) => {
             qrCodeEnabled, qrCodeNote } = req.body;
     const companyId = res.locals.currentCompany._id;
 
-    // Le paiement en ligne ne peut JAMAIS être activé sans un compte Stripe
-    // réellement connecté — sinon le client tombe sur une étape de paiement
-    // vide côté réservation (aucune méthode disponible), bloqué. On refuse
-    // l'activation tant que l'onboarding Stripe n'est pas terminé.
-    const stripeConnect = res.locals.currentCompany.stripeConnect || {};
-    const stripeReady = stripeConnect.status === "active" && !!stripeConnect.accountId;
-    if (enabled && !stripeReady) {
-      return res.status(400).json({
-        error: "stripe_not_connected",
-        message: "Connectez d'abord votre compte Stripe (bouton « Continuer la configuration ») avant d'activer le paiement en ligne.",
-      });
-    }
-
     await Company.findByIdAndUpdate(companyId, {
-      "prepayment.enabled":  !!enabled && stripeReady,
-      "prepayment.required": !!required && stripeReady,
+      "prepayment.enabled":  !!enabled,
+      "prepayment.required": !!required,
       // Modes de paiement acceptés
       "acceptedPayments.cash":                  !!cash,
       "acceptedPayments.cardOnSite":            !!cardOnSite,
