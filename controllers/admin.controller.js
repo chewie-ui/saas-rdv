@@ -1501,6 +1501,7 @@ exports.historyEditRow = async (req, res) => {
       results,
       services,
       employees,
+      payoutInfo: res.locals.currentCompany?.payoutInfo || null,
     });
   } catch (err) {
     console.error(err);
@@ -2280,6 +2281,9 @@ exports.initiateStripeConnect = async (req, res) => {
     if ((msg || "").toLowerCase().includes("managing losses") || (msg || "").toLowerCase().includes("responsibilities of managing")) {
       return res.redirect("/settings?stripeConnectError=losses_liability");
     }
+    if ((msg || "").toLowerCase().includes("platform profile") || (msg || "").toLowerCase().includes("complete your platform")) {
+      return res.redirect("/settings?stripeConnectError=platform_incomplete");
+    }
     return res.redirect(`/settings?stripeConnectError=${encodeURIComponent(code)}&stripeMsg=${encodeURIComponent(msg.substring(0, 120))}`);
   }
 };
@@ -2341,6 +2345,28 @@ exports.stripeConnectRefresh = async (req, res) => {
 };
 
 /** Déconnecte le compte Stripe Connect (supprime la liaison en DB) */
+exports.savePayoutInfo = async (req, res) => {
+  try {
+    const { method, iban, bic, paypalEmail, other } = req.body;
+    const allowed = ["bank_transfer", "paypal", "cash", "other"];
+    if (!method || !allowed.includes(method)) {
+      return res.status(400).json({ error: "Moyen de paiement invalide." });
+    }
+    const company = res.locals.currentCompany;
+    await Company.findByIdAndUpdate(company._id, {
+      "payoutInfo.method":      method,
+      "payoutInfo.iban":        iban        || "",
+      "payoutInfo.bic":         bic         || "",
+      "payoutInfo.paypalEmail": paypalEmail || "",
+      "payoutInfo.other":       other       || "",
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("savePayoutInfo error:", err);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
 exports.disconnectStripeConnect = async (req, res) => {
   try {
     const { hasPermission } = require("../utils/permissions");

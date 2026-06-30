@@ -183,6 +183,15 @@ const companySchema = schema(
       accountEmail: { type: String, default: "" },
     },
 
+    // ── Moyen préféré de l'admin pour recevoir ses reversements BranShee ──────
+    payoutInfo: {
+      method:      { type: String, enum: ["bank_transfer", "paypal", "cash", "other", ""], default: "" },
+      iban:        { type: String, default: "" },
+      bic:         { type: String, default: "" },
+      paypalEmail: { type: String, default: "" },
+      other:       { type: String, default: "" },
+    },
+
     // ── Modes de paiement acceptés (affichés + proposés au client) ────────────
     acceptedPayments: {
       cash:       { type: Boolean, default: false },   // espèces sur place

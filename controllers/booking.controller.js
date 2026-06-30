@@ -1380,17 +1380,45 @@ exports.getDaysOff = async (req, res) => {
     .lean();
 
   const specificEmp = employeeId && employeeId !== "null" && employeeId !== "";
-  if (specificEmp && company?.scheduleMode === "perEmployee") {
-    let individualSchedule;
-    if (String(company.owner) === String(employeeId)) {
-      individualSchedule = company.ownerEmployeeProfile?.schedule;
+
+  if (company?.scheduleMode === "perEmployee") {
+    const CompanyMembership = require("../db/models/company/companyMembership.model");
+
+    if (specificEmp) {
+      // Employé sélectionné → son horaire individuel
+      let individualSchedule;
+      if (String(company.owner) === String(employeeId)) {
+        individualSchedule = company.ownerEmployeeProfile?.schedule;
+      } else {
+        const membership = await CompanyMembership.findOne({ company: COMPANY_ID, user: employeeId }).select("schedule").lean();
+        individualSchedule = membership?.schedule;
+      }
+      if (individualSchedule && individualSchedule.length > 0) {
+        return res.json({ result: { schedule: individualSchedule } });
+      }
     } else {
-      const CompanyMembership = require("../db/models/company/companyMembership.model");
-      const membership = await CompanyMembership.findOne({ company: COMPANY_ID, user: employeeId }).select("schedule").lean();
-      individualSchedule = membership?.schedule;
-    }
-    if (individualSchedule && individualSchedule.length > 0) {
-      return res.json({ result: { schedule: individualSchedule } });
+      // "Pas de préférence" → union : un jour est grisé seulement si TOUS les employés l'ont en dayOff
+      const memberships = await CompanyMembership.find({ company: COMPANY_ID, isEmployee: true, status: "accepted" }).select("schedule").lean();
+
+      const allSchedules = [];
+      // Patron
+      const ownerSched = company.ownerEmployeeProfile?.schedule;
+      allSchedules.push(ownerSched && ownerSched.length > 0 ? ownerSched : company.schedule || []);
+      // Collaborateurs employés
+      for (const mem of memberships) {
+        allSchedules.push(mem.schedule && mem.schedule.length > 0 ? mem.schedule : company.schedule || []);
+      }
+
+      if (allSchedules.length > 0 && company.schedule && company.schedule.length > 0) {
+        const unionSchedule = company.schedule.map(day => {
+          const allOff = allSchedules.every(sched => {
+            const d = sched.find(s => s.weekdayIndex === day.weekdayIndex);
+            return !d || d.dayOff;
+          });
+          return { ...day, dayOff: allOff };
+        });
+        return res.json({ result: { schedule: unionSchedule } });
+      }
     }
   }
 

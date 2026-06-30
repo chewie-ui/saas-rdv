@@ -209,4 +209,6 @@ router.get("/settings/stripe-connect/refresh",  adminController.stripeConnectRef
 router.post("/settings/stripe-connect/manual",  isVerified, requirePermission("billing.manage"), adminController.saveStripeAccountManual);
 router.delete("/settings/stripe-connect",       isVerified, requirePermission("billing.manage"), adminController.disconnectStripeConnect);
 
+router.patch("/api/company/payout-info", isVerified, adminController.savePayoutInfo);
+
 module.exports = router;

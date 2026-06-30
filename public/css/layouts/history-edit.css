@@ -438,6 +438,79 @@
 }
 
 /* ================================================================
+   Bloc reversement BranShee
+   ================================================================ */
+.payout-block {
+  margin-top: 14px;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+.payout-block__msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba(34, 197, 94, 0.07);
+  border-bottom: 1px solid var(--border-light, #e5e7eb);
+  color: #15803d;
+}
+.payout-block__msg svg { flex-shrink: 0; margin-top: 2px; }
+.payout-block__msg strong { display: block; font-weight: 600; margin-bottom: 2px; }
+.payout-block__msg span { opacity: .85; font-size: 12px; line-height: 1.5; }
+
+.payout-block__method {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.payout-block__method-label {
+  font-weight: 600;
+  color: var(--text-primary, #111);
+  margin: 0;
+}
+
+.payout-block__method-display {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-secondary, #555);
+}
+.payout-block__method-detail { opacity: .75; }
+.payout-block__edit-link {
+  margin-left: auto;
+  color: var(--accent, #1da95b);
+  font-weight: 600;
+  font-size: 12px;
+  text-decoration: none;
+}
+.payout-block__edit-link:hover { text-decoration: underline; }
+
+.payout-block__no-method {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.payout-block__no-method svg { flex-shrink: 0; }
+
+.payout-block__form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+.payout-block__form-detail { display: flex; flex-direction: column; gap: 6px; }
+.payout-block__form-actions { display: flex; gap: 8px; margin-top: 4px; }
+
+/* ================================================================
    Service info chips
    ================================================================ */
 .svc-select-row {
