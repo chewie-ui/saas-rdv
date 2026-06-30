@@ -1,5 +1,6 @@
 const Company = require("../db/models/company/company.model");
 const DaysOff = require("../db/models/company/daysOff.model");
+const CompanyMembership = require("../db/models/company/companyMembership.model");
 
 exports.companyInfos = async (req, res) => {
   const { companyId } = req.params;
@@ -270,6 +271,41 @@ exports.updateBookingLeadTime = async (req, res) => {
 
     await Company.findByIdAndUpdate(res.locals.currentCompany._id, { $set: update });
     return res.json({ success: true, ...update });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: "Server error" });
+  }
+};
+
+// ── Horaire commun pour tous les employés VS horaire propre à chacun ───────
+// Au tout premier passage en "perEmployee", chaque employé dont le schedule
+// individuel est encore vide reçoit une COPIE de l'horaire commun actuel
+// (cf. plan grades/permissions) — ensuite modifiable indépendamment. Un
+// retour à "shared" ne supprime jamais les horaires individuels (juste
+// dormants, cf. risques du plan).
+exports.updateScheduleMode = async (req, res) => {
+  try {
+    const companyId = res.locals.currentCompany._id;
+    const mode = req.body.scheduleMode === "perEmployee" ? "perEmployee" : "shared";
+
+    const company = await Company.findById(companyId).select("schedule ownerEmployeeProfile").lean();
+    if (!company) return res.status(404).json({ success: false, error: "Établissement introuvable." });
+
+    if (mode === "perEmployee") {
+      if (!company.ownerEmployeeProfile?.schedule?.length) {
+        await Company.updateOne(
+          { _id: companyId },
+          { $set: { "ownerEmployeeProfile.schedule": company.schedule || [] } }
+        );
+      }
+      await CompanyMembership.updateMany(
+        { company: companyId, isEmployee: true, schedule: { $size: 0 } },
+        { $set: { schedule: company.schedule || [] } }
+      );
+    }
+
+    await Company.updateOne({ _id: companyId }, { $set: { scheduleMode: mode } });
+    return res.json({ success: true, scheduleMode: mode });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ success: false, error: "Server error" });

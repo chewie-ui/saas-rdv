@@ -10,130 +10,192 @@ aside.sidebar#sidebar
                 svg(viewBox="0 -960 960 960" height="20" width="20" fill="currentColor")
                     path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
 
-        //- ── Établissement actif + switcher (si plusieurs) ──────────
+        //- ── Établissement actif + switcher ──────────────────────────
         if currentCompany
-            .sb-estab#sidebarEstab(class=myCompanies && myCompanies.length > 1 ? 'sb-estab--switchable' : '')
-                button.sb-estab__current(type="button" disabled=!(myCompanies && myCompanies.length > 1))
-                    span.sb-estab__name= currentCompany.name || user.businessName || 'Établissement'
-                    if myCompanies && myCompanies.length > 1
-                        svg.sb-estab__caret(viewBox="0 0 24 24" height="14" width="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
-                            polyline(points="6 9 12 15 18 9")
-                if myCompanies && myCompanies.length > 1
-                    .sb-estab__panel
+            - const estabName = currentCompany.name || user.businessName || 'Établissement'
+            - const estabInitial = estabName.charAt(0).toUpperCase()
+            .sb-estab.sb-estab--switchable#sidebarEstab
+                button.sb-estab__current(type="button")
+                    .sb-estab__avatar= estabInitial
+                    span.sb-estab__name= estabName
+                    svg.sb-estab__caret(viewBox="0 0 24 24" height="12" width="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                        polyline(points="6 9 12 15 18 9")
+                .sb-estab__panel
+                    .sb-estab__panel-head
+                        .sb-estab__panel-avatar= estabInitial
+                        span.sb-estab__panel-name= estabName
+                    if myCompanies && myCompanies.length > 0
+                        .sb-estab__sep
                         each c in myCompanies
-                            button.sb-estab__opt(type="button" class=String(c.id) === String(currentCompany._id) ? 'is-active' : '' data-id=c.id)
-                                span.sb-estab__opt-name= c.name
-                                if !c.isOwner
-                                    span.sb-estab__opt-tag Collaborateur
-                                if String(c.id) === String(currentCompany._id)
-                                    svg(viewBox="0 0 24 24" height="14" width="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                            - const cInitial = (c.name || 'E').charAt(0).toUpperCase()
+                            - const isCurrent = String(c.id) === String(currentCompany._id)
+                            button.sb-estab__opt(type="button" class=isCurrent ? 'is-active' : '' data-id=c.id)
+                                .sb-estab__opt-avatar(class=isCurrent ? 'is-active' : '')= cInitial
+                                .sb-estab__opt-info
+                                    span.sb-estab__opt-name= c.name
+                                    if !c.isOwner
+                                        span.sb-estab__opt-tag Collaborateur
+                                if isCurrent
+                                    svg(viewBox="0 0 24 24" height="13" width="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
                                         polyline(points="20 6 9 17 4 12")
+                    .sb-estab__sep
+                    a.sb-estab__back(href="/espace-client")
+                        svg(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
+                            path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Z")
+                        span Mon espace client
 
         //- ── Navigation ───────────────────────────────────────────
         nav.sb-nav
 
-            //- Tout ce qui suit suppose un établissement existant (cf.
-            //- middlewares/injectCompany.js) — sans ça chaque lien redirige
-            //- silencieusement vers "/", ce qui donnait l'impression d'un
-            //- menu "mort" à un compte client/undecided qui vient juste de
-            //- créer/rejoindre un établissement (cf. plan d'unification).
             if currentCompany
-                //- ── 1. Au quotidien : ce qu'on consulte tous les jours ──
-                .sb-section
-                    p.sb-section__hd= t.sidebar.title_1
-                    a.sb-link(href="/appointment" class=pageName === 'Appointment' ? 'active' : '')
-                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                            path(d="M200-640h560v-80H200v80Zm0 0v-80 80Zm0 560q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v227q-19-9-39-15t-41-9v-43H200v400h252q7 22 16.5 42T491-80H200Zm378.5-18.5Q520-157 520-240t58.5-141.5Q637-440 720-440t141.5 58.5Q920-323 920-240T861.5-98.5Q803-40 720-40T578.5-98.5ZM787-145l28-28-75-75v-112h-40v128l87 87Z")
-                        span= t.sidebar.a_2
-                    a.sb-link(href="/history" class=pageName === 'History' ? 'active' : '')
-                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                            path(d="M480-120q-138 0-240.5-91.5T122-440h82q14 104 92.5 172T480-200q117 0 198.5-81.5T760-480q0-117-81.5-198.5T480-760q-69 0-129 32t-101 88h110v80H120v-240h80v94q51-64 124.5-99T480-840q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-480q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-120Zm112-192L440-464v-216h80v184l128 128-56 56Z")
-                        span= t.sidebar.a_7
-                    a.sb-link(href="/clients" class=pageName === 'Clients' ? 'active' : '')
-                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                            path(d="M480-481q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Zm80-80h480v-14q0-11-5.5-20T700-287q-64-31-117-42.5T480-340q-50 0-103.5 11.5T260-287q-9 5-14.5 14t-5.5 20v14Zm240-320q-33 0-56.5-23.5T400-640q0-33 23.5-56.5T480-720q33 0 56.5 23.5T560-640q0 33-23.5 56.5T480-560Zm0-80Zm0 400Z")
-                        span Dossiers #{clientTermPlural || 'clients'}
-
-                //- ── 2. Mon activité : ce que je propose, mes créneaux ──
-                .sb-section
-                    p.sb-section__hd Mon activité
-                    a.sb-link(href="/services" class=pageName === 'Services' ? 'active' : '')
-                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                            path(d="M160-120q-33 0-56.5-23.5T80-200v-440q0-33 23.5-56.5T160-720h160v-80q0-33 23.5-56.5T400-880h160q33 0 56.5 23.5T640-800v80h160q33 0 56.5 23.5T880-640v440q0 33-23.5 56.5T800-120H160Zm0-80h640v-440H160v440Zm80-80h200v-120H240v120Zm280 0h200v-120H520v120ZM240-400h200v-120H240v120Zm280 0h200v-120H520v120ZM400-720h160v-80H400v80ZM160-200v-440 440Z")
-                        span= t.sidebar.a_8
-                    if !adminFeatures || adminFeatures.group_sessions !== false
-                        a.sb-link(href="/group-sessions" class=pageName === 'GroupSessions' ? 'active' : '')
+                //- ── 1. Au quotidien ──────────────────────────────────
+                .sb-section(data-section="daily")
+                    button.sb-section__hd(type="button")
+                        .sb-section__hd-inner
+                            svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T800-80H200Zm0-80h600v-400H200v400Zm0-480h600v-80H200v80Z")
+                            span= t.sidebar.title_1
+                        svg.sb-section__chevron(viewBox="0 0 24 24" height="12" width="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                            polyline(points="6 9 12 15 18 9")
+                    .sb-section__links
+                        a.sb-link(href="/appointment" class=pageName === 'Appointment' ? 'active' : '')
                             svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M480-120 200-272v-240L40-600l440-240 440 240v320h-80v-276l-80 44v240L480-120Zm0-332 274-148-274-148-274 148 274 148Zm0 240 200-108v-153l-200 108-200-108v153l200 108Z")
-                            span Cours collectifs
-                    a.sb-link(href=(grade === 'staff' ? '#' : '/availability') class=[pageName === 'Availability' ? 'active' : '', grade === 'staff' ? 'sb-link--disabled' : ''].filter(Boolean).join(' '))
-                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                            path(d="m612-292 56-56-148-148v-184h-80v216l172 172ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400Zm0 320q133 0 226.5-93.5T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160Z")
-                        span= t.sidebar.a_3
-                    a.sb-link(href="/customize-calendar" class=pageName === 'Customize' ? 'active' : '')
-                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                            path(d="M400-80q-33 0-56.5-23.5T320-160v-40H160q-33 0-56.5-23.5T80-280v-480q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v480q0 33-23.5 56.5T800-200H640v40q0 33-23.5 56.5T560-80H400Zm-240-280h640v-400H160v400Zm0 0v-400 400Z")
-                        span= t.sidebar.a_customize
-                    a.sb-link(href="/forms" class=pageName === t.sidebar.a_9 ? 'active' : '')
-                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                            path(d="M348.5-291.5Q360-303 360-320t-11.5-28.5Q337-360 320-360t-28.5 11.5Q280-337 280-320t11.5 28.5Q303-280 320-280t28.5-11.5Zm0-160Q360-463 360-480t-11.5-28.5Q337-520 320-520t-28.5 11.5Q280-497 280-480t11.5 28.5Q303-440 320-440t28.5-11.5Zm0-160Q360-623 360-640t-11.5-28.5Q337-680 320-680t-28.5 11.5Q280-657 280-640t11.5 28.5Q303-600 320-600t28.5-11.5ZM440-280h240v-80H440v80Zm0-160h240v-80H440v80Zm0-160h240v-80H440v80ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z")
-                        span= t.sidebar.a_9
-
-                //- ── 3. Équipe : qui travaille avec moi ──
-                .sb-section
-                    p.sb-section__hd Équipe
-                    a.sb-link(href="/employees" class=pageName === 'Employees' ? 'active' : '')
-                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                            path(d="M40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm720 0v-120q0-44-24.5-84.5T666-434q51 6 96 20.5t84 35.5q36 20 55 44.5t19 53.5v120H760ZM360-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113T360-480Zm400-160q0 66-47 113t-113 47q-11 0-28-2.5t-28-5.5q27-32 41.5-71t14.5-81q0-42-14.5-81T544-792q14-5 28-6.5t28-1.5q66 0 113 47t47 113Z")
-                        span= t.sidebar.a_employees
-                    if membershipRole === 'owner' && currentCompany
-                        a.sb-link(href=`/etablissement/${currentCompany._id}/collaborateurs` class=pageName === 'Collaborateurs' ? 'active' : '')
+                                path(d="M200-640h560v-80H200v80Zm0 0v-80 80Zm0 560q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v227q-19-9-39-15t-41-9v-43H200v400h252q7 22 16.5 42T491-80H200Zm378.5-18.5Q520-157 520-240t58.5-141.5Q637-440 720-440t141.5 58.5Q920-323 920-240T861.5-98.5Q803-40 720-40T578.5-98.5ZM787-145l28-28-75-75v-112h-40v128l87 87Z")
+                            span= t.sidebar.a_2
+                        a.sb-link(href="/history" class=pageName === 'History' ? 'active' : '')
                             svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M0-240v-86q0-36 19-67t52-49q57-30 119-46t130-16q68 0 130 16t119 46q33 18 52 49t19 67v86H0Zm640 0v-86q0-36-19.5-67.5T568-441q44 6 89.5 22.5T720-385q24 14 38 35.5t14 49.5v60h-132Zm-440-80h280v-6q0-15-9-26.5t-23-19.5q-44-24-91-36t-97-12q-50 0-97 12t-91 36q-14 8-23 19.5t-9 26.5v6Zm140-200q-50 0-85-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35Zm320-40q-18 0-33-3t-29-8q14-21 21.5-46t7.5-53q0-28-7.5-53T568-758q14-5 29-8t33-3q50 0 85 35t35 85q0 50-35 85t-85 35Z")
-                            span Collaborateurs
-                    if membershipRole !== 'staff'
-                        a.sb-link(href="/logs" class=pageName === 'Logs' ? 'active' : '')
+                                path(d="M480-120q-138 0-240.5-91.5T122-440h82q14 104 92.5 172T480-200q117 0 198.5-81.5T760-480q0-117-81.5-198.5T480-760q-69 0-129 32t-101 88h110v80H120v-240h80v94q51-64 124.5-99T480-840q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-480q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-120Zm112-192L440-464v-216h80v184l128 128-56 56Z")
+                            span= t.sidebar.a_7
+                        a.sb-link(href="/clients" class=pageName === 'Clients' ? 'active' : '')
                             svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z")
-                            span Logs
+                                path(d="M480-481q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Zm80-80h480v-14q0-11-5.5-20T700-287q-64-31-117-42.5T480-340q-50 0-103.5 11.5T260-287q-9 5-14.5 14t-5.5 20v14Zm240-320q-33 0-56.5-23.5T400-640q0-33 23.5-56.5T480-720q33 0 56.5 23.5T560-640q0 33-23.5 56.5T480-560Zm0-80Zm0 400Z")
+                            span Dossiers #{clientTermPlural || 'clients'}
 
-                //- ── 4. Compte : facturation, espace perso, aide ──
-                .sb-section
-                    p.sb-section__hd Compte
-                    a.sb-link(href="/subscription" class=pageName === 'Subscription' ? 'active' : '')
-                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                            path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm0-80h640v-480H160v480Zm40-40h400L400-680H200v400Zm320-320h240v-80H520v80ZM160-240v-480 480Z")
-                        span= t.sidebar.a_1
-                    a.sb-link(href="/espace-client" class=pageName === 'ClientDashboard' ? 'active' : '')
-                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                            path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Z")
-                        span Mon espace client
-                    a.sb-link(href="/parrainage" class=pageName === 'Parrainage' ? 'active' : '')
-                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                            path(d="M500-482q29-32 44.5-73t15.5-85q0-44-15.5-85T500-798q60 8 100 53t40 105q0 60-40 105t-100 53Zm220 322v-120q0-36-16-68.5T662-406q51 18 94.5 46.5T800-286v126h-80Zm80-280v-80h-80v-80h80v-80h80v80h80v80h-80v80h-80Zm-480-40q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM0-160v-112q0-34 17.5-62.5T64-378q62-31 126-46.5T320-440q66 0 130 15.5T576-378q29 15 46.5 43.5T640-272v112H0Zm320-320q33 0 56.5-23.5T400-560q0-33-23.5-56.5T320-640q-33 0-56.5 23.5T240-560q0 33 23.5 56.5T320-480ZM80-240h480v-32q0-11-5.5-20T540-306q-54-27-109-40.5T320-360q-56 0-111 13.5T100-306q-9 5-14.5 14T80-272v32Zm240-320Zm0 320Z")
-                        span Parrainage
-                    a.sb-link(href="/support" class=pageName === 'Support' ? 'active' : '')
-                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                            path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z")
-                        span Aide & Support
+                //- ── 2. Mon activité ──────────────────────────────────
+                - const canSeeServices = !!(permissions && (permissions.services.view || permissions.services.manage))
+                - const canSeeGroupSessions = !!(permissions && (permissions.groupSessions.view || permissions.groupSessions.manage))
+                - const canSeeCustomize = !!(permissions && permissions.customization.manage)
+                - const canSeeForms = !!(permissions && permissions.forms.manage)
+                .sb-section(data-section="activity")
+                    button.sb-section__hd(type="button")
+                        .sb-section__hd-inner
+                            svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                path(d="M160-120q-33 0-56.5-23.5T80-200v-440q0-33 23.5-56.5T160-720h160v-80q0-33 23.5-56.5T400-880h160q33 0 56.5 23.5T640-800v80h160q33 0 56.5 23.5T880-640v440q0 33-23.5 56.5T800-120H160Zm0-80h640v-440H160v440Zm240-520h160v-80H400v80ZM160-200v-440 440Z")
+                            span Mon activité
+                        svg.sb-section__chevron(viewBox="0 0 24 24" height="12" width="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                            polyline(points="6 9 12 15 18 9")
+                    .sb-section__links
+                        if canSeeServices
+                            a.sb-link(href="/services" class=pageName === 'Services' ? 'active' : '')
+                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                    path(d="M160-120q-33 0-56.5-23.5T80-200v-440q0-33 23.5-56.5T160-720h160v-80q0-33 23.5-56.5T400-880h160q33 0 56.5 23.5T640-800v80h160q33 0 56.5 23.5T880-640v440q0 33-23.5 56.5T800-120H160Zm0-80h640v-440H160v440Zm80-80h200v-120H240v120Zm280 0h200v-120H520v120ZM240-400h200v-120H240v120Zm280 0h200v-120H520v120ZM400-720h160v-80H400v80ZM160-200v-440 440Z")
+                                span= t.sidebar.a_8
+                        if canSeeGroupSessions && (!adminFeatures || adminFeatures.group_sessions !== false)
+                            a.sb-link(href="/group-sessions" class=pageName === 'GroupSessions' ? 'active' : '')
+                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                    path(d="M480-120 200-272v-240L40-600l440-240 440 240v320h-80v-276l-80 44v240L480-120Zm0-332 274-148-274-148-274 148 274 148Zm0 240 200-108v-153l-200 108-200-108v153l200 108Z")
+                                span Cours collectifs
+                        - const hasAvailAccess = permissions && (permissions.availability.manageShared || permissions.availability.manageOwnSchedule || permissions.availability.manageOthersSchedule || permissions.availability.manageOwnTimeOff || permissions.availability.manageOthersTimeOff)
+                        a.sb-link(href=(hasAvailAccess ? '/availability' : '#') class=[pageName === 'Availability' ? 'active' : '', !hasAvailAccess ? 'sb-link--disabled' : ''].filter(Boolean).join(' '))
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="m612-292 56-56-148-148v-184h-80v216l172 172ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400Zm0 320q133 0 226.5-93.5T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160Z")
+                            span= t.sidebar.a_3
+                        if canSeeCustomize
+                            a.sb-link(href="/customize-calendar" class=pageName === 'Customize' ? 'active' : '')
+                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                    path(d="M400-80q-33 0-56.5-23.5T320-160v-40H160q-33 0-56.5-23.5T80-280v-480q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v480q0 33-23.5 56.5T800-200H640v40q0 33-23.5 56.5T560-80H400Zm-240-280h640v-400H160v400Zm0 0v-400 400Z")
+                                span= t.sidebar.a_customize
+                        if canSeeForms
+                            a.sb-link(href="/forms" class=pageName === t.sidebar.a_9 ? 'active' : '')
+                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                    path(d="M348.5-291.5Q360-303 360-320t-11.5-28.5Q337-360 320-360t-28.5 11.5Q280-337 280-320t11.5 28.5Q303-280 320-280t28.5-11.5Zm0-160Q360-463 360-480t-11.5-28.5Q337-520 320-520t-28.5 11.5Q280-497 280-480t11.5 28.5Q303-440 320-440t28.5-11.5Zm0-160Q360-623 360-640t-11.5-28.5Q337-680 320-680t-28.5 11.5Q280-657 280-640t11.5 28.5Q303-600 320-600t28.5-11.5ZM440-280h240v-80H440v80Zm0-160h240v-80H440v80Zm0-160h240v-80H440v80ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z")
+                                span= t.sidebar.a_9
 
-            .sb-section
-                p.sb-section__hd= t.sidebar.title_3
-                a.sb-link(href="/settings" class=pageName === 'Settings' ? 'active' : '')
-                    svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                        path(d="M480-340q33 0 56.5-23.5T560-420q0-33-23.5-56.5T480-500q-33 0-56.5 23.5T400-420q0 33 23.5 56.5T480-340ZM160-120q-33 0-56.5-23.5T80-200v-440q0-33 23.5-56.5T160-720h160v-80q0-33 23.5-56.5T400-880h160q33 0 56.5 23.5T640-800v80h160q33 0 56.5 23.5T880-640v440q0 33-23.5 56.5T800-120H160Zm0-80h640v-440H160v440Zm240-520h160v-80H400v80ZM160-200v-440 440Z")
-                    span= t.sidebar.a_4
-                if currentCompany
-                    a.sb-link.sb-link--ext(href=`/${currentCompany.slug || currentCompany._id}` target="_blank")
+                //- ── 3. Équipe ────────────────────────────────────────
+                - const canSeeCollaborators = !!(currentCompany && permissions && permissions.collaborators.view)
+                - const canSeeLogs = !!(permissions && permissions.logs.view)
+                - const canSeeGrades = !!(currentCompany && permissions && permissions.grades && (permissions.grades.view || permissions.grades.manage))
+                if canSeeCollaborators || canSeeLogs || canSeeGrades
+                    .sb-section(data-section="team")
+                        button.sb-section__hd(type="button")
+                            .sb-section__hd-inner
+                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm720 0v-112q0-51-26-95.5T657-441q51 7 101 22.5T852-376q29 15 43.5 44t14.5 60v112H760ZM360-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Zm400-160q0 66-47 113t-113 47q-11 0-28-2.5t-28-5.5q27-32 41.5-71t14.5-81q0-42-14.5-81T544-792q14-5 28-6.5t28-1.5q66 0 113 47t47 113ZM120-240h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm240-320q33 0 56.5-23.5T440-640q0-33-23.5-56.5T360-720q-33 0-56.5 23.5T280-640q0 33 23.5 56.5T360-560Zm0 320Zm0-400Z")
+                                span Équipe
+                            svg.sb-section__chevron(viewBox="0 0 24 24" height="12" width="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                                polyline(points="6 9 12 15 18 9")
+                        .sb-section__links
+                            if canSeeCollaborators
+                                a.sb-link(href=`/etablissement/${currentCompany._id}/collaborateurs` class=pageName === 'Collaborateurs' ? 'active' : '')
+                                    svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                        path(d="M0-240v-86q0-36 19-67t52-49q57-30 119-46t130-16q68 0 130 16t119 46q33 18 52 49t19 67v86H0Zm640 0v-86q0-36-19.5-67.5T568-441q44 6 89.5 22.5T720-385q24 14 38 35.5t14 49.5v60h-132Zm-440-80h280v-6q0-15-9-26.5t-23-19.5q-44-24-91-36t-97-12q-50 0-97 12t-91 36q-14 8-23 19.5t-9 26.5v6Zm140-200q-50 0-85-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35Zm320-40q-18 0-33-3t-29-8q14-21 21.5-46t7.5-53q0-28-7.5-53T568-758q14-5 29-8t33-3q50 0 85 35t35 85q0 50-35 85t-85 35Z")
+                                    span Collaborateurs
+                            if canSeeGrades
+                                a.sb-link(href=`/etablissement/${currentCompany._id}/grades` class=pageName === 'Grades' ? 'active' : '')
+                                    svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                        path(d="M480-80q-139-35-229.5-159.5T160-516v-244l320-120 320 120v244Q720-291 629-167T480-80Zm-40-200 198-198-57-57-141 141-57-57-56 56 113 115Z")
+                                    span Grades
+                            if canSeeLogs
+                                a.sb-link(href="/logs" class=pageName === 'Logs' ? 'active' : '')
+                                    svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                        path(d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z")
+                                    span Logs
+
+                //- ── 4. Compte ────────────────────────────────────────
+                .sb-section(data-section="compte")
+                    button.sb-section__hd(type="button")
+                        .sb-section__hd-inner
+                            svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Z")
+                            span Compte
+                        svg.sb-section__chevron(viewBox="0 0 24 24" height="12" width="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                            polyline(points="6 9 12 15 18 9")
+                    .sb-section__links
+                        if permissions && permissions.billing.manage
+                            a.sb-link(href="/subscription" class=pageName === 'Subscription' ? 'active' : '')
+                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                    path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm0-80h640v-480H160v480Zm40-40h400L400-680H200v400Zm320-320h240v-80H520v80ZM160-240v-480 480Z")
+                                span= t.sidebar.a_1
+                        a.sb-link(href="/espace-client" class=pageName === 'ClientDashboard' ? 'active' : '')
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Z")
+                            span Mon espace client
+                        a.sb-link(href="/parrainage" class=pageName === 'Parrainage' ? 'active' : '')
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M500-482q29-32 44.5-73t15.5-85q0-44-15.5-85T500-798q60 8 100 53t40 105q0 60-40 105t-100 53Zm220 322v-120q0-36-16-68.5T662-406q51 18 94.5 46.5T800-286v126h-80Zm80-280v-80h-80v-80h80v-80h80v80h80v80h-80v80h-80Zm-480-40q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM0-160v-112q0-34 17.5-62.5T64-378q62-31 126-46.5T320-440q66 0 130 15.5T576-378q29 15 46.5 43.5T640-272v112H0Zm320-320q33 0 56.5-23.5T400-560q0-33-23.5-56.5T320-640q-33 0-56.5 23.5T240-560q0 33 23.5 56.5T320-480ZM80-240h480v-32q0-11-5.5-20T540-306q-54-27-109-40.5T320-360q-56 0-111 13.5T100-306q-9 5-14.5 14T80-272v32Zm240-320Zm0 320Z")
+                            span Parrainage
+                        a.sb-link(href="/support" class=pageName === 'Support' ? 'active' : '')
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z")
+                            span Aide & Support
+
+            //- ── 5. Paramètres ────────────────────────────────────────
+            .sb-section(data-section="settings")
+                button.sb-section__hd(type="button")
+                    .sb-section__hd-inner
+                        svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                            path(d="m370-80-16-128q-13-5-24.5-12T307-235l-119 50L78-375l103-78q-1-7-1-13.5v-27q0-6.5 1-13.5L78-585l110-190 119 50q11-8 23-15t24-12l16-128h220l16 128q13 5 24.5 12t22.5 15l119-50 110 190-103 78q1 7 1 13.5v27q0 6.5-2 13.5l103 78-110 190-118-50q-11 8-23 15t-24 12L590-80H370Zm70-80h79l14-106q31-8 57.5-23.5T639-327l99 41 39-68-86-65q5-14 7-29.5t2-31.5q0-16-2-31.5t-7-29.5l86-65-39-68-99 42q-22-23-48.5-38.5T533-694l-13-106h-79l-14 106q-31 8-57.5 23.5T321-633l-99-41-39 68 86 64q-5 15-7 30t-2 32q0 16 2 31t7 30l-86 65 39 68 99-42q22 23 48.5 38.5T427-266l13 106Zm42-180q58 0 99-41t41-99q0-58-41-99t-99-41q-59 0-99.5 41T342-480q0 58 40.5 99t99.5 41Zm-2-140Z")
+                        span= t.sidebar.title_3
+                    svg.sb-section__chevron(viewBox="0 0 24 24" height="12" width="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                        polyline(points="6 9 12 15 18 9")
+                .sb-section__links
+                    - const canSeeSettings = !currentCompany || !!(permissions && (permissions.settings.manage || permissions.billing.manage || permissions.establishment.manage))
+                    if canSeeSettings
+                        a.sb-link(href="/settings" class=pageName === 'Settings' ? 'active' : '')
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M480-340q33 0 56.5-23.5T560-420q0-33-23.5-56.5T480-500q-33 0-56.5 23.5T400-420q0 33 23.5 56.5T480-340ZM160-120q-33 0-56.5-23.5T80-200v-440q0-33 23.5-56.5T160-720h160v-80q0-33 23.5-56.5T400-880h160q33 0 56.5 23.5T640-800v80h160q33 0 56.5 23.5T880-640v440q0 33-23.5 56.5T800-120H160Zm0-80h640v-440H160v440Zm240-520h160v-80H400v80ZM160-200v-440 440Z")
+                            span= t.sidebar.a_4
+                    if currentCompany
+                        a.sb-link.sb-link--ext(href=`/${currentCompany.slug || currentCompany._id}` target="_blank")
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M320-320h480v-400H320v400Zm0 80q-33 0-56.5-23.5T240-320v-480q0-33 23.5-56.5T320-880h480q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H320ZM160-80q-33 0-56.5-23.5T80-160v-560h80v560h560v80H160Zm160-720v480-480Z")
+                            span= t.sidebar.a_5
+                            svg.sb-ext-icon(viewBox="0 -960 960 960" height="12" width="12" fill="currentColor")
+                                path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z")
+                    a.sb-link(href="/logout")
                         svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                            path(d="M320-320h480v-400H320v400Zm0 80q-33 0-56.5-23.5T240-320v-480q0-33 23.5-56.5T320-880h480q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H320ZM160-80q-33 0-56.5-23.5T80-160v-560h80v560h560v80H160Zm160-720v480-480Z")
-                        span= t.sidebar.a_5
-                        svg.sb-ext-icon(viewBox="0 -960 960 960" height="12" width="12" fill="currentColor")
-                            path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z")
-                a.sb-link(href="/logout")
-                    svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                        path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z")
-                    span= t.sidebar.a_6
+                            path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z")
+                        span= t.sidebar.a_6
 
         //- ── Footer: language + user profile ─────────────────────
         .sb-foot
@@ -181,3 +243,33 @@ aside.sidebar#sidebar
                                 | Pro
                     else
                         span.sb-user__plan Free
+
+    script.
+        (function () {
+            var STORAGE_KEY = 'sb_sections_v1';
+            var saved = {};
+            try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch (e) {}
+
+            document.querySelectorAll('.sb-section[data-section]').forEach(function (section) {
+                var key = section.dataset.section;
+                var hd = section.querySelector('.sb-section__hd');
+                var links = section.querySelector('.sb-section__links');
+                if (!hd || !links) return;
+
+                // Never collapse the section that holds the active link
+                var hasActive = !!links.querySelector('.sb-link.active');
+                if (hasActive) section.classList.add('has-active');
+
+                // Default: all sections collapsed except the one with the active link
+                // saved[key] === false means user explicitly opened it (override default)
+                if (!hasActive && saved[key] !== false) {
+                    section.classList.add('is-collapsed');
+                }
+
+                hd.addEventListener('click', function () {
+                    var collapsed = section.classList.toggle('is-collapsed');
+                    saved[key] = collapsed;
+                    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch (e) {}
+                });
+            });
+        })();

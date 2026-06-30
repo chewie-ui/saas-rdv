@@ -18,6 +18,28 @@ block content
             //- ── LEFT: main column ───────────────────────────────────
             .avail-main
 
+                //- Horaire commun VS horaire individuel par employé (cf. système
+                //- de grades/permissions) — gardé par availability.manageShared.
+                if permissions.availability.manageShared
+                    .avail-card.avail-schedule-mode-card
+                        .avail-card__hd
+                            span.avail-card__title Horaires
+                        .avail-schedule-mode
+                            label.avail-schedule-mode__option(class=scheduleMode === 'shared' ? 'is-active' : 'is-muted')
+                                input#scheduleModeShared(type="radio" name="scheduleMode" value="shared" checked=scheduleMode === 'shared')
+                                span Horaire commun pour tous
+                            label.avail-schedule-mode__option(class=scheduleMode === 'perEmployee' ? 'is-active' : 'is-muted')
+                                input#scheduleModePerEmployee(type="radio" name="scheduleMode" value="perEmployee" checked=scheduleMode === 'perEmployee')
+                                span Horaire individuel par employé
+
+                if scheduleMode === 'perEmployee' && employees && employees.length > 1 && (permissions.availability.manageShared || permissions.availability.manageOthersSchedule)
+                    .avail-card.avail-employee-picker-card
+                        .avail-card__hd
+                            span.avail-card__title Horaire de
+                        select#availEmployeeSelect.avail-employee-select
+                            each emp in employees
+                                option(value=emp.id selected=selectedEmployeeId === emp.id)= (emp.firstName + ' ' + emp.lastName).trim()
+
                 //- Weekly schedule card
                 .avail-card
                     .avail-card__hd
@@ -32,6 +54,7 @@ block content
                                         type="checkbox"
                                         data-weekday-index=day.weekdayIndex
                                         data-company=currentCompany._id
+                                        data-employee-id=selectedEmployeeId
                                         checked=!day.dayOff
                                     )
                                     span.avail-switch__track
@@ -139,7 +162,7 @@ block content
                                     .avail-doff-emps
                                         if day.employees && day.employees.length > 0
                                             each emp in day.employees
-                                                span.emp-chip= emp.firstName + ' ' + emp.lastName
+                                                span.emp-chip= emp.fullName
                                         else
                                             span.emp-chip.emp-chip--all Tous
                                     .day-card__footer
@@ -377,3 +400,27 @@ block scripts
         window.__daysOffCount = !{(daysOff && daysOff.dates) ? daysOff.dates.length : 0};
     script(src="js/components/admin/availability.admin.js" type="module")
     script(src="js/templates/calendar.js" type="module")
+    script.
+        (function () {
+            var radios = document.querySelectorAll('input[name="scheduleMode"]');
+            radios.forEach(function (radio) {
+                radio.addEventListener('change', function () {
+                    if (!radio.checked) return;
+                    fetch('/company/schedule-mode', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ scheduleMode: radio.value }),
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function () { window.location.reload(); });
+                });
+            });
+            var empSelect = document.getElementById('availEmployeeSelect');
+            if (empSelect) {
+                empSelect.addEventListener('change', function () {
+                    var url = new URL(window.location.href);
+                    url.searchParams.set('employeeId', empSelect.value);
+                    window.location.href = url.toString();
+                });
+            }
+        })();

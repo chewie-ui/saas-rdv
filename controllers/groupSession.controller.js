@@ -1,6 +1,6 @@
 const Booking  = require("../db/models/book.model");
 const Service  = require("../db/models/company/service.model");
-const Employee = require("../db/models/company/employee.model");
+const { getBookableTeam } = require("../utils/bookableTeam");
 const { getLimit } = require("../utils/planLimits");
 const { nextAvailableColor } = require("../utils/serviceColors");
 
@@ -51,12 +51,10 @@ exports.listGroupSessions = async (req, res) => {
     // que tout service "group" orphelin créé sans planning depuis la page
     // Services générique — il devient ainsi complétable depuis cette page.
     Service.find({ company: currentCompany._id, type: "group" })
-      .populate("employees", "firstName lastName profilePicture")
+      .populate("employees", "fullName profilePicture")
       .sort("-createdAt")
       .lean(),
-    Employee.find({ company: currentCompany._id, active: true })
-      .select("firstName lastName profilePicture")
-      .lean(),
+    getBookableTeam(currentCompany._id),
     Booking.aggregate([
       {
         $match: {
@@ -96,7 +94,7 @@ exports.listGroupSessions = async (req, res) => {
     ]),
   ]);
 
-  const maxServices = getLimit("services", req.user);
+  const maxServices = getLimit("services", res.locals.billingUser);
 
   res.render("admin/group-sessions", {
     pageName: "GroupSessions",
@@ -143,7 +141,7 @@ exports.getSessionParticipants = async (req, res) => {
 exports.createCourse = async (req, res) => {
   try {
     const companyId = res.locals.currentCompany._id;
-    const maxServices = getLimit("services", req.user);
+    const maxServices = getLimit("services", res.locals.billingUser);
 
     if (maxServices === 0) {
       return res.status(403).json({ error: "plan_limit", message: "Votre plan ne permet pas de créer des cours." });
@@ -200,7 +198,7 @@ exports.createCourse = async (req, res) => {
       location: (location || "").trim(),
     });
 
-    const populated = await Service.findById(course._id).populate("employees", "firstName lastName profilePicture").lean();
+    const populated = await Service.findById(course._id).populate("employees", "fullName profilePicture").lean();
     res.json({ success: true, course: populated });
   } catch (err) {
     console.error("createCourse error:", err);
@@ -260,7 +258,7 @@ exports.updateCourse = async (req, res) => {
       { _id: id, company: res.locals.currentCompany._id, type: "group" },
       update,
       { new: true }
-    ).populate("employees", "firstName lastName profilePicture");
+    ).populate("employees", "fullName profilePicture");
 
     if (!course) return res.status(404).json({ error: "Cours non trouvé." });
     res.json({ success: true, course });

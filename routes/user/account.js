@@ -108,6 +108,10 @@ router.patch("/join-requests/:requestId", isAuth, injectCompany, accountControll
 
 // ── Multi-établissements (cf. "Gérer mes établissements") ─────────────────────
 const establishmentController = require("../../controllers/establishment.controller");
+const { requirePermissionForParamCompany } = require("../../utils/permissions");
+const requireEstablishmentManage = requirePermissionForParamCompany("establishment.manage");
+const requireEstablishmentDelete = requirePermissionForParamCompany("establishment.delete");
+const requireCollaboratorsManage = requirePermissionForParamCompany("collaborators.manage");
 
 // Upload de la photo PENDANT la création (l'établissement n'existe pas encore
 // donc on ne peut pas la rattacher à un id) — renvoie juste le chemin, à
@@ -123,22 +127,38 @@ router.post(
   },
 );
 router.post("/establishments", isAuth, establishmentController.createEstablishment);
-router.patch("/establishments/:id", isAuth, establishmentController.updateEstablishment);
+router.patch("/establishments/:id", isAuth, requireEstablishmentManage, establishmentController.updateEstablishment);
 router.patch(
   "/establishments/:id/photo",
   isAuth,
+  requireEstablishmentManage,
   upload.single("photo"),
   processSingleImage("photo"),
   establishmentController.updateEstablishmentPhoto,
 );
-router.patch("/establishments/:id/pause", isAuth, establishmentController.togglePauseEstablishment);
-router.delete("/establishments/:id", isAuth, establishmentController.deleteEstablishment);
+router.patch("/establishments/:id/pause", isAuth, requireEstablishmentManage, establishmentController.togglePauseEstablishment);
+router.delete("/establishments/:id", isAuth, requireEstablishmentDelete, establishmentController.deleteEstablishment);
 
-router.post("/establishments/:id/collaborateurs", isAuth, establishmentController.inviteCollaborator);
-router.patch("/establishments/:id/collaborateurs/:membershipId/role", isAuth, establishmentController.updateCollaboratorRole);
-router.patch("/establishments/:id/collaborateurs/:membershipId/active", isAuth, establishmentController.toggleCollaboratorActive);
-router.delete("/establishments/:id/collaborateurs/:membershipId", isAuth, establishmentController.removeCollaborator);
-router.patch("/establishments/:id/join-requests/:membershipId", isAuth, establishmentController.respondJoinRequestForCompany);
+router.post("/establishments/:id/collaborateurs", isAuth, requireCollaboratorsManage, establishmentController.inviteCollaborator);
+router.patch("/establishments/:id/collaborateurs/:membershipId/grade", isAuth, requireCollaboratorsManage, establishmentController.updateCollaboratorGrade);
+router.patch("/establishments/:id/collaborateurs/:membershipId/time-off-permission", isAuth, requireCollaboratorsManage, establishmentController.updateCollaboratorTimeOffPermission);
+router.patch("/establishments/:id/collaborateurs/:membershipId/active", isAuth, requireCollaboratorsManage, establishmentController.toggleCollaboratorActive);
+router.delete("/establishments/:id/collaborateurs/:membershipId", isAuth, requireCollaboratorsManage, establishmentController.removeCollaborator);
+router.patch("/establishments/:id/join-requests/:membershipId", isAuth, requireCollaboratorsManage, establishmentController.respondJoinRequestForCompany);
+// Pas de requireCollaboratorsManage ici : le contrôleur autorise toujours
+// l'auto-édition de son propre profil, et vérifie collaborators.manage
+// lui-même pour modifier le profil de quelqu'un d'autre (cf. controller).
+router.patch("/establishments/:id/collaborateurs/:membershipId/employee-profile", isAuth, establishmentController.updateCollaboratorEmployeeProfile);
+router.patch("/establishments/:id/owner-employee-profile", isAuth, requireCollaboratorsManage, establishmentController.updateOwnerEmployeeProfile);
+
+// ── Grades/permissions ───────────────────────────────────────────────────────
+const gradeController = require("../../controllers/grade.controller");
+const requireGradesView   = requirePermissionForParamCompany("grades.view");
+const requireGradesManage = requirePermissionForParamCompany("grades.manage");
+router.get("/establishments/:id/grades", isAuth, requireGradesView, gradeController.listGrades);
+router.post("/establishments/:id/grades", isAuth, requireGradesManage, gradeController.createGrade);
+router.patch("/establishments/:id/grades/:gradeId", isAuth, requireGradesManage, gradeController.updateGrade);
+router.delete("/establishments/:id/grades/:gradeId", isAuth, requireGradesManage, gradeController.deleteGrade);
 
 // ── Choisir l'établissement actif (utilisateur avec plusieurs établissements
 // possédés, ou membre de plusieurs équipes) — cf. middlewares/injectCompany.js

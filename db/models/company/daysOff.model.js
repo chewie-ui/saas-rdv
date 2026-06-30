@@ -18,7 +18,8 @@ const daysOffSchema = new schema({
       workingHours: [{ start: String, end: String }],
       dayOff: Boolean,
       // [] = applies to ALL employees; [id1, id2] = specific employees only
-      employees: [{ type: schema.Types.ObjectId, ref: "Employee" }],
+      // (cf. utils/bookableTeam.js — référence un User, jamais un Employee).
+      employees: [{ type: schema.Types.ObjectId, ref: "User" }],
     },
   ],
 });

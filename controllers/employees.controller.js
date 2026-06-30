@@ -21,7 +21,7 @@ exports.employeesPage = async (req, res) => {
   const employees = await Employee.find({ company: res.locals.currentCompany._id })
     .sort({ active: -1, createdAt: 1 })  // actifs en premier, puis par date de création
     .lean();
-  const maxEmployees = getLimit("employees", req.user);
+  const maxEmployees = getLimit("employees", res.locals.billingUser);
   const activeCount  = employees.filter(e => e.active).length;
   res.render("admin/employees", {
     pageName: "Employees",
@@ -35,7 +35,7 @@ exports.employeesPage = async (req, res) => {
 exports.createEmployee = async (req, res) => {
   try {
     const companyId = res.locals.currentCompany._id;
-    const maxEmployees = getLimit("employees", req.user);
+    const maxEmployees = getLimit("employees", res.locals.billingUser);
 
     if (maxEmployees === 0) {
       return res.status(403).json({ error: "plan_limit", message: "Votre plan ne permet pas d'ajouter des employés." });

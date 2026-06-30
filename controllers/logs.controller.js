@@ -24,15 +24,10 @@ const ACTION_LABELS = {
 };
 
 // ── Page "Logs" : historique des actions sur l'établissement ─────────────────
-// Visible par le propriétaire et les managers — pas par les "staff" (cf.
-// CompanyMembership.role) puisque c'est avant tout un outil de supervision
-// pour le patron sur ce que fait son équipe.
+// Visible par le propriétaire et tout grade avec logs.view (cf. routes/admin.js
+// — déjà gardé par requirePermission("logs.view"), pas de check ici).
 exports.logsInit = async (req, res) => {
   try {
-    if (res.locals.membershipRole === "staff") {
-      return res.redirect("/appointment");
-    }
-
     const page = parseInt(req.query.page) || 1;
     const limit = 25;
     const skip = (page - 1) * limit;

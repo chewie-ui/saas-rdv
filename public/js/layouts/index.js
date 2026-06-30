@@ -61,6 +61,41 @@ function showLimitReachedModal() {
   modal.querySelector("#bkLimitModalClose").addEventListener("click", close);
 }
 
+/* ── Popup générique d'erreur de réservation (remplace les alert() natifs
+   moches — créneau pris entre-temps, session complète, erreur réseau...).
+   Réutilise le même style que showLimitReachedModal() ci-dessus. ────────── */
+function showBookingErrorModal(title, text) {
+  let modal = document.getElementById("bkErrorModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "bkErrorModal";
+    modal.className = "bk-limit-modal";
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div class="bk-limit-modal__backdrop"></div>
+    <div class="bk-limit-modal__card">
+      <div class="bk-limit-modal__icon">
+        <svg xmlns="http://www.w3.org/2000/svg" height="28px" viewBox="0 -960 960 960" width="28px" fill="currentColor">
+          <path d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/>
+        </svg>
+      </div>
+      <h3 class="bk-limit-modal__title">${title}</h3>
+      <p class="bk-limit-modal__text">${text}</p>
+      <button type="button" class="bk-limit-modal__btn" id="bkErrorModalClose">J'ai compris</button>
+    </div>
+  `;
+  modal.classList.add("is-open");
+  document.body.style.overflow = "hidden";
+
+  function close() {
+    modal.classList.remove("is-open");
+    document.body.style.overflow = "";
+  }
+  modal.querySelector(".bk-limit-modal__backdrop").addEventListener("click", close);
+  modal.querySelector("#bkErrorModalClose").addEventListener("click", close);
+}
+
 /* ── Stripe instances (lazy) ─────────────────────────────────────────────── */
 let _stripe      = null;   // Stripe.js instance
 let _cardElement = null;   // CardElement mounted in the payment step
@@ -141,7 +176,7 @@ function buildSteps() {
   const steps = [];
   if (questionStepNeeded()) steps.push({ id: "question", label: "Profil" });
   if (SERVICES.length > 0)  steps.push({ id: "service",  label: "Service" });
-  if (EMPLOYEES.length > 0 || hasAnyServiceEmployees()) steps.push({ id: "employee", label: "Avec" });
+  if (EMPLOYEES.length > 1 || hasAnyServiceEmployees()) steps.push({ id: "employee", label: "Avec" });
   steps.push({ id: "time",    label: "Créneau" });
   steps.push({ id: "details", label: "Détails" });
   if (anyServiceNeedsPayment()) steps.push({ id: "payment",  label: "Paiement" });
@@ -150,7 +185,7 @@ function buildSteps() {
 }
 
 function hasAnyServiceEmployees() {
-  return SERVICES.some(s => s.employees && s.employees.length > 0);
+  return SERVICES.some(s => s.employees && s.employees.length > 1);
 }
 
 let STEPS    = buildSteps();
@@ -164,12 +199,12 @@ function recomputeSteps() {
   const svcEmployees = STATE.service
     ? (SERVICES.find(s => s._id === STATE.service.id)?.employees || [])
     : [];
-  const globalEmps = EMPLOYEES.length > 0;
+  // "Choix" effectif = liste spécifique au service si elle existe, sinon
+  // l'équipe globale — on n'affiche l'étape que s'il y a un VRAI choix (2+).
+  const effectiveLen = svcEmployees.length > 0 ? svcEmployees.length : EMPLOYEES.length;
 
-  // Show "Avec" if: the service has assigned employees OR the company has any
-  // employees at all (fallback: show all company employees when service has none).
   // Les sessions collectives ne dépendent pas d'un employé en particulier.
-  const showEmployeeStep = STATE.service?.type !== "group" && (svcEmployees.length > 0 || globalEmps);
+  const showEmployeeStep = STATE.service?.type !== "group" && effectiveLen > 1;
 
   const steps = [];
   if (questionStepNeeded()) steps.push({ id: "question", label: "Profil" });
@@ -437,10 +472,9 @@ function bindSvcCards(container) {
       STATE.date     = null;
       STATE.time     = null;
       recomputeSteps();
-      const svcHasEmps    = (svc.employees || []).length > 0;
-      const globalHasEmps = EMPLOYEES.length > 0;
+      const effectiveLen = (svc.employees || []).length > 0 ? svc.employees.length : EMPLOYEES.length;
       // Les sessions collectives ne sont pas liées à un employé en particulier.
-      if (svc.type !== "group" && (svcHasEmps || globalHasEmps)) goToStep("employee");
+      if (svc.type !== "group" && effectiveLen > 1) goToStep("employee");
       else goToStep("time");
     };
   });
@@ -655,7 +689,7 @@ function renderEmployeePane() {
         const pic = e.profilePicture && e.profilePicture !== "/images/no-user.webp"
           ? `<img src="${escHtml(e.profilePicture)}" alt="${escHtml(fullName)}">`
           : `<span>${escHtml(initials.toUpperCase())}</span>`;
-        const role = e.age ? `<div class="bk-emp__role">${e.age} ans</div>` : "";
+        const role = e.role ? `<div class="bk-emp__role">${escHtml(e.role)}</div>` : "";
         const infoBtn = e.description
           ? `<button class="bk-emp__info-btn" type="button" data-emp-name="${escHtml(fullName)}" data-emp-desc="${escHtml(e.description).replace(/\n/g, '&#10;')}" aria-label="À propos" tabindex="-1">
               <svg width="13" height="13" viewBox="0 -960 960 960" fill="currentColor"><path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
@@ -2218,13 +2252,19 @@ async function submitBooking() {
     if (!data.success) {
       if (nextBtn) { nextBtn.disabled = false; nextBtn.textContent = "Confirmer la réservation"; }
       if (data.error === "no_employee_available") {
-        alert("Ce créneau n'est plus disponible. Veuillez en choisir un autre.");
+        showBookingErrorModal(
+          "Créneau déjà réservé",
+          "Ce créneau vient d'être réservé par quelqu'un d'autre entre-temps. Merci de choisir un autre horaire."
+        );
         goToStep("time");
         _currentSlots = [];
         STATE.date = null;
         STATE.time = null;
       } else if (data.error === "session_full") {
-        alert(data.message || "Cette session est complète, merci de choisir un autre horaire.");
+        showBookingErrorModal(
+          "Session complète",
+          data.message || "Cette session est complète, merci de choisir un autre horaire."
+        );
         goToStep("time");
         _currentSlots = [];
         STATE.date = null;
@@ -2233,7 +2273,7 @@ async function submitBooking() {
         showLimitReachedModal();
         goToStep("service");
       } else {
-        alert("Une erreur est survenue. Veuillez réessayer.");
+        showBookingErrorModal("Erreur", "Une erreur est survenue. Veuillez réessayer.");
       }
       return;
     }
@@ -2244,7 +2284,7 @@ async function submitBooking() {
   } catch (err) {
     console.error(err);
     if (nextBtn) { nextBtn.disabled = false; nextBtn.textContent = "Confirmer la réservation"; }
-    alert("Erreur réseau. Veuillez réessayer.");
+    showBookingErrorModal("Erreur réseau", "Une erreur réseau est survenue. Veuillez réessayer.");
   }
 }
 

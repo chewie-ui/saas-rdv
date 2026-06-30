@@ -612,6 +612,11 @@ setInterval(updateTimeline, 60000);
       setCompact(section.classList.contains("is-compact"));
     }, 150);
   });
+
+  // Exposé pour le refresh silencieux (cf. initSilentRefresh plus bas) — qui
+  // remplace seulement les colonnes de RDV puis doit recalculer leur
+  // position top/height, sans dupliquer cette logique de mesure des lignes.
+  window.__bkRecalcApptPositions = applyApptHeights;
 })();
 
 // ── Clic-glisser pour créer un RDV (façon Google Calendar) ─────────────────
@@ -793,6 +798,7 @@ setInterval(updateTimeline, 60000);
 
   gridSection.querySelectorAll(".cell.day").forEach((cell) => {
     cell.addEventListener("mousedown", (e) => {
+      if (!window.__canManageAppointments) return;
       if (e.button !== 0) return; // clic gauche uniquement
       cancelDrag(); // au cas où un glisser précédent serait resté coincé
       const iso = cell.dataset.iso;
@@ -811,5 +817,70 @@ setInterval(updateTimeline, 60000);
       document.addEventListener("mouseup", onMouseUp);
       e.preventDefault();
     });
+  });
+})();
+
+// ── Refresh silencieux (toutes les ~45s) ────────────────────────────────────
+// Pour qu'un nouveau RDV pris par un client s'affiche côté admin sans qu'il
+// ait à rafraîchir la page. On ne touche JAMAIS toute la page (la grille de
+// cellules, ses listeners de clic-glisser, le mini-calendrier... restent
+// intouchés) — on remplace uniquement le contenu de chaque colonne de RDV
+// (.day-events-col), puis on redemande à initCalendarDensity de repositionner
+// les pills (cf. window.__bkRecalcApptPositions ci-dessus). Sans effet en vue
+// "mois" (structure différente, pas couverte) ni si l'admin a une modale/
+// popup ouverte ou tape dans un champ — pour ne jamais l'interrompre.
+(function initSilentRefresh() {
+  const section = document.getElementById("calendarSection");
+  if (!section || section.classList.contains("u-hidden-month")) return;
+
+  const REFRESH_MS = 45000;
+  let inFlight = false;
+
+  function isUserBusy() {
+    if (document.getElementById("newApptOverlay")?.classList.contains("show")) return true;
+    if (document.getElementById("blockApptOverlay")?.classList.contains("show")) return true;
+    if (document.getElementById("apptPopup")?.classList.contains("open")) return true;
+    const active = document.activeElement;
+    if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return true;
+    return false;
+  }
+
+  async function silentRefresh() {
+    if (inFlight || document.hidden || isUserBusy()) return;
+    inFlight = true;
+    try {
+      const res = await fetch(window.location.href, { headers: { "X-Silent-Refresh": "1" } });
+      if (!res.ok) return;
+      const html = await res.text();
+      // Ne jamais appliquer un résultat arrivé pendant que l'admin a, entre-
+      // temps, ouvert une modale ou cliqué sur un RDV.
+      if (isUserBusy()) return;
+
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const newCols = doc.querySelectorAll(".day-events-col");
+      if (!newCols.length) return;
+
+      newCols.forEach((newCol) => {
+        const iso = newCol.dataset.iso;
+        const oldCol = section.querySelector(`.day-events-col[data-iso="${iso}"]`);
+        if (oldCol) oldCol.replaceWith(newCol);
+      });
+
+      if (typeof window.__bkRecalcApptPositions === "function") {
+        window.__bkRecalcApptPositions();
+      }
+    } catch (e) {
+      // Silencieux — on retentera au prochain cycle, jamais d'erreur visible
+      // pour une simple actualisation en arrière-plan.
+    } finally {
+      inFlight = false;
+    }
+  }
+
+  setInterval(silentRefresh, REFRESH_MS);
+  // Revenir sur l'onglet après un moment → vérifier tout de suite plutôt
+  // que d'attendre le prochain cycle de 45s.
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) silentRefresh();
   });
 })();

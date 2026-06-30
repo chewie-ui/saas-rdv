@@ -37,7 +37,7 @@ function sanitizeDurationMax(baseDuration, raw) {
 exports.servicesPage = async (req, res) => {
   const [services, companyDoc] = await Promise.all([
     Service.find({ company: res.locals.currentCompany._id })
-      .populate("employees", "firstName lastName profilePicture")
+      .populate("employees", "fullName profilePicture")
       .sort("order")
       .lean(),
     Company.findById(res.locals.currentCompany._id).select("bookingQuestion").lean(),
@@ -60,7 +60,7 @@ exports.servicesPage = async (req, res) => {
     }
   }
 
-  const maxServices = getLimit("services", req.user);
+  const maxServices = getLimit("services", res.locals.billingUser);
   const cs = (req.user.calendarSettings) || {};
   const categories  = cs.categories || [];
   const bookingCategoryStyle = cs.bookingCategoryStyle || "pills";
@@ -105,7 +105,7 @@ exports.getServices = async (req, res) => {
     if (publicOnly === "1") query.active = true;
 
     const services = await Service.find(query)
-      .populate("employees", "firstName lastName profilePicture")
+      .populate("employees", "fullName profilePicture")
       .sort("order")
       .lean();
     res.json({ success: true, services });
@@ -118,7 +118,7 @@ exports.getServices = async (req, res) => {
 exports.createService = async (req, res) => {
   try {
     const companyId = res.locals.currentCompany._id;
-    const maxServices = getLimit("services", req.user);
+    const maxServices = getLimit("services", res.locals.billingUser);
 
     if (maxServices === 0) {
       return res.status(403).json({ error: "plan_limit", message: "Votre plan ne permet pas de créer des services." });
@@ -227,7 +227,7 @@ exports.updateService = async (req, res) => {
       { _id: id, company: res.locals.currentCompany._id },
       update,
       { new: true }
-    ).populate("employees", "firstName lastName profilePicture");
+    ).populate("employees", "fullName profilePicture");
 
     if (!service) return res.status(404).json({ error: "Service non trouvé." });
     logActivity({
@@ -300,7 +300,7 @@ exports.setServiceEmployees = async (req, res) => {
       { _id: id, company: res.locals.currentCompany._id },
       { employees: employees || [] },
       { new: true }
-    ).populate("employees", "firstName lastName profilePicture");
+    ).populate("employees", "fullName profilePicture");
     if (!service) return res.status(404).json({ error: "Service non trouvé." });
     res.json({ success: true, service });
   } catch (err) {
@@ -311,11 +311,8 @@ exports.setServiceEmployees = async (req, res) => {
 // ── API : liste des employés de la company (pour la sélection dans un service) ─
 exports.getCompanyEmployees = async (req, res) => {
   try {
-    const Employee = require("../db/models/company/employee.model");
-    const employees = await Employee.find({
-      company: res.locals.currentCompany._id,
-      active: true,
-    }).lean();
+    const { getBookableTeam } = require("../utils/bookableTeam");
+    const employees = await getBookableTeam(res.locals.currentCompany._id);
     res.json({ success: true, employees });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur" });

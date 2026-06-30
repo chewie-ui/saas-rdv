@@ -50,6 +50,53 @@ const companySchema = schema(
       default: null,
     },
 
+    // ── Profil "employé" public du propriétaire (cf. fusion Employé/
+    // Collaborateur) — le patron n'a pas de CompanyMembership pour sa
+    // propre société, donc son profil bookable vit ici. isEmployee par
+    // défaut à true : dans un établissement solo (aucun collaborateur),
+    // c'est lui l'unique personne bookable.
+    ownerEmployeeProfile: {
+      isEmployee:   { type: Boolean, default: true },
+      displayName:  { type: String, default: "" },
+      displayPhoto: { type: String, default: "" },
+      description:  { type: String, default: "" },
+      showRole:     { type: Boolean, default: false },
+      customInfo: [
+        {
+          label: { type: String, default: "" },
+          value: { type: String, default: "" },
+        },
+      ],
+      // Horaire individuel du patron — même rôle que CompanyMembership.schedule
+      // pour les collaborateurs (cf. scheduleMode ci-dessous). Vide = retombe
+      // sur le schedule commun.
+      schedule: {
+        type: [
+          {
+            weekdayIndex: { type: Number, required: true, min: 0, max: 6 },
+            dayOff: { type: Boolean, default: false },
+            workingHours: { type: [{ start: String, end: String }], default: [] },
+          },
+        ],
+        default: [],
+      },
+    },
+
+    // "shared"     = tous les employés bookables suivent le même `schedule`
+    //                ci-dessous (comportement historique).
+    // "perEmployee" = chaque employé (CompanyMembership.schedule ou
+    //                ownerEmployeeProfile.schedule pour le patron) a son
+    //                propre horaire hebdomadaire ; `schedule` ci-dessous
+    //                reste le réglage "commun" éditable par
+    //                availability.manageShared et sert de filet par défaut
+    //                pour tout employé dont le schedule individuel est
+    //                encore vide.
+    scheduleMode: {
+      type: String,
+      enum: ["shared", "perEmployee"],
+      default: "shared",
+    },
+
     slug: {
       type: String,
       unique: true,

@@ -136,9 +136,12 @@ const bookingSchema = new schema(
       type: String,
       default: "",
     },
+    // Référence un User (l'identité bookable, patron ou collaborateur — cf.
+    // utils/bookableTeam.js et la fusion Employé/Collaborateur), plus jamais
+    // un Employee séparé.
     employee: {
       type: schema.Types.ObjectId,
-      ref: "Employee",
+      ref: "User",
       default: null,
     },
     employeeName: {

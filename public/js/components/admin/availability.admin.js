@@ -224,6 +224,7 @@ document.addEventListener("click", async (event) => {
     const switcherInput = row.querySelector(".input-weekday");
     const weekdayIndex = switcherInput.getAttribute("data-weekday-index");
     const companyId = switcherInput.getAttribute("data-company");
+    const employeeId = switcherInput.getAttribute("data-employee-id");
     const timeSlots = row.querySelectorAll(".time-slot");
 
     const workingHours = [];
@@ -255,6 +256,7 @@ document.addEventListener("click", async (event) => {
         companyId,
         weekdayIndex,
         workingHours: check.sorted,
+        employeeId,
       }),
     });
 
@@ -338,6 +340,7 @@ inputsWeekday.forEach((input) => {
   input.addEventListener("click", async () => {
     const weekdayIndex = input.getAttribute("data-weekday-index");
     const companyId = input.getAttribute("data-company");
+    const employeeId = input.getAttribute("data-employee-id");
     const dayOff = !input.checked;
 
     const res = await fetch("/toggle-day", {
@@ -347,6 +350,7 @@ inputsWeekday.forEach((input) => {
         companyId,
         weekdayIndex,
         dayOff,
+        employeeId,
       }),
     });
     const data = await res.json();
@@ -483,6 +487,7 @@ if (rowOptions) {
       const switcherInput = row.querySelector(".input-weekday");
       const weekdayIndex = switcherInput?.getAttribute("data-weekday-index");
       const companyId = switcherInput?.getAttribute("data-company");
+      const employeeId = switcherInput?.getAttribute("data-employee-id");
 
       if (weekdayIndex != null && companyId) {
         const timeSlots = row.querySelectorAll(".time-slot");
@@ -496,7 +501,7 @@ if (rowOptions) {
         await fetch("/edit-availability", {
           headers: { "Content-Type": "application/json" },
           method: "POST",
-          body: JSON.stringify({ companyId, weekdayIndex, workingHours }),
+          body: JSON.stringify({ companyId, weekdayIndex, workingHours, employeeId }),
         });
       }
     }

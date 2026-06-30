@@ -6,6 +6,7 @@ block links
     link(rel="stylesheet" href="/css/components/admin/group-sessions.admin.css")
 
 block content
+    - const canManageGS = !!(permissions && permissions.groupSessions && permissions.groupSessions.manage)
     .gs-page
         .gs-page__header
             .gs-page__header-left
@@ -14,10 +15,11 @@ block content
             .gs-page__header-right
                 if maxServices > 0
                     span.gs-counter #{courses.length} / #{maxServices}
-                button.sm-btn.sm-btn--primary#addCourseBtn(disabled=(maxServices === 0))
-                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                        path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
-                    span= t.group_sessions.new_course_btn
+                if canManageGS
+                    button.sm-btn.sm-btn--primary#addCourseBtn(disabled=(maxServices === 0))
+                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                            path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                        span= t.group_sessions.new_course_btn
 
         if courses.length === 0
             .gs-empty
@@ -48,6 +50,7 @@ block content
                             h3.gs-course-card__name
                                 span.gs-course-card__dot(style=`background:${course.color || '#16a34a'}`)
                                 = course.name
+                            if canManageGS
                             label.sa-toggle(title=(course.active ? t.group_sessions.deactivate_tooltip : t.group_sessions.activate_tooltip))
                                 input.toggle-course-active(type="checkbox" checked=course.active data-id=String(course._id))
                                 .sa-toggle__track
@@ -84,17 +87,18 @@ block content
                                 each emp in course.employees
                                     .emp-chip
                                         img(src=emp.profilePicture alt="")
-                                        span= emp.firstName + ' ' + emp.lastName
+                                        span= emp.fullName
                             else
                                 .gs-course-card__emp-none
                                     svg(xmlns="http://www.w3.org/2000/svg" height="13px" viewBox="0 -960 960 960" width="13px" fill="currentColor")
                                         path(d="M480-481q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Z")
                                     = t.group_sessions.blocks_everyone
-                        .gs-course-card__actions
-                            button.sm-btn.sm-btn--ghost.edit-course-btn(data-id=String(course._id))= t.group_sessions.edit_btn
-                            button.gs-course-card__delete.delete-course-btn(data-id=String(course._id) data-name=course.name title=t.group_sessions.delete_tooltip)
-                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                    path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+                        if canManageGS
+                            .gs-course-card__actions
+                                button.sm-btn.sm-btn--ghost.edit-course-btn(data-id=String(course._id))= t.group_sessions.edit_btn
+                                button.gs-course-card__delete.delete-course-btn(data-id=String(course._id) data-name=course.name title=t.group_sessions.delete_tooltip)
+                                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                                        path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
 
         .gs-divider
         .gs-page__header

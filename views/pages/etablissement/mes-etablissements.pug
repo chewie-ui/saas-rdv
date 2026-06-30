@@ -16,6 +16,10 @@ block content
                 else
                     = `${establishments.length} établissement(s) — forfait ${currentPlan}`
         .dash-header__cta
+            button.sm-btn.sm-btn--ghost#joinEstabBtn(type="button")
+                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                    path(d="M600-400q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29ZM80-240v-50q0-29 16-54t44-37q34-16 70.5-24.5T280-414q43 0 79 8.5t70 24.5q28 12 44.5 37t16.5 54v50H80Zm520 0v-42q0-32-15.5-58.5T538-385q23-7 47-11t55-4q47 0 89 13.5t68 36.5q26 16 41 38.5t15 51.5v60H600Zm-320-95q47 0 79 16.5t32 35.5v23H120v-23q0-19 32-35.5t128-16.5ZM280-480q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29Z")
+                span Rejoindre un établissement
             if atCompanyLimit
                 a.sm-btn.sm-btn--ghost(href="/subscription")
                     span Passer à un forfait supérieur
@@ -40,14 +44,15 @@ block content
                     else
                         span.estab-badge.estab-badge--active Actif
                 .estab-card__actions
-                    a.sm-btn.sm-btn--ghost(href=`/etablissement/${estab.id}/collaborateurs`)
-                        span Collaborateurs
                     button.sm-btn.sm-btn--ghost.js-edit-estab(type="button" data-id=estab.id data-name=estab.name data-type=estab.businessType data-photo=estab.photo)
                         span Modifier
                     button.sm-btn.sm-btn--ghost.js-switch-estab(type="button" data-id=estab.id)
-                        span Gérer
-                    button.sm-btn.sm-btn--ghost.js-pause-estab(type="button" data-id=estab.id data-paused=estab.isPaused ? '1' : '0')
-                        span= estab.isPaused ? 'Réactiver' : 'Désactiver'
+                        span Accéder
+                    label.estab-active-toggle(title=estab.isPaused ? 'Réactiver' : 'Mettre en pause')
+                        input.js-pause-estab(type="checkbox" checked=!estab.isPaused data-id=estab.id data-paused=estab.isPaused ? '1' : '0')
+                        span.estab-active-toggle__track
+                            span.estab-active-toggle__thumb
+                        span.estab-active-toggle__label= estab.isPaused ? 'Inactif' : 'Actif'
                     button.sm-btn.sm-btn--danger.js-delete-estab(type="button" data-id=estab.id data-name=estab.name)
                         span Supprimer
 
@@ -78,7 +83,60 @@ block content
                                 span.estab-card__since Membre depuis le #{new Date(m.acceptedAt).toLocaleDateString('fr-FR')}
                         .estab-card__actions
                             button.sm-btn.sm-btn--ghost.js-switch-estab(type="button" data-id=m.id)
-                                span Gérer
+                                span Accéder
+
+    if pendingRequests && pendingRequests.length
+        .dash-section(style="margin-top:2.5rem")
+            .dash-section__title
+                h2 Demandes en attente
+            .estab-grid
+                each r in pendingRequests
+                    .estab-card
+                        .estab-card__body(style="padding:16px")
+                            .estab-card__top
+                                span.estab-card__name= r.name
+                            span.estab-badge.estab-badge--pending En attente d'approbation
+
+    if rejectedRequests && rejectedRequests.length
+        .dash-section(style="margin-top:2.5rem")
+            .dash-section__title
+                h2 Demandes refusées
+            .estab-grid
+                each r in rejectedRequests
+                    .estab-card
+                        .estab-card__body(style="padding:16px")
+                            .estab-card__top
+                                span.estab-card__name= r.name
+                            span.estab-badge.estab-badge--rejected Refusée
+
+    //- ── Modale rejoindre un établissement ───────────────────────────────────
+    .cancel-modal-overlay#joinEstabModalOverlay(style="display:none")
+        .cancel-modal.estab-modal#joinEstabModal
+            h3.cancel-modal__title#joinEstabModalTitle Rejoindre un établissement
+
+            .auth-field#joinEstabSearchStep
+                p.dash-header__sub(style="margin:-2px 0 14px") Seuls les établissements en plan Business apparaissent dans la recherche.
+                label.auth-label Nom de l'établissement
+                .service-select-wrapper
+                    input.auth-input.service-input#joinEstabInput(type="text" placeholder="Tapez pour rechercher..." autocomplete="off")
+                    .service-dropdown#joinEstabDropdown
+
+            #joinEstabConfirmStep(style="display:none")
+                p#joinEstabConfirmText
+                .cancel-modal__actions
+                    button.sm-btn.sm-btn--primary#joinEstabConfirmBtn(type="button") Envoyer la demande
+                    button.sm-btn.sm-btn--ghost#joinEstabConfirmBack(type="button") Retour à la recherche
+
+            p.etab-error#joinEstabModalError(style="display:none")
+
+            #joinEstabSentStep(style="display:none;text-align:center;padding:12px 0")
+                svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor" style="color:var(--accent,#16a34a)")
+                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                p(style="font-weight:600;margin:10px 0 4px") Demande envoyée
+                p.dash-header__sub Le propriétaire doit approuver votre demande.
+
+            .cancel-modal__actions#joinEstabSearchActions
+                button.sm-btn.sm-btn--ghost#joinEstabModalClose(type="button") Fermer
 
     //- ── Modale créer/modifier ────────────────────────────────────────────────
     .cancel-modal-overlay#estabModalOverlay(style="display:none")
@@ -143,18 +201,22 @@ block scripts
             });
 
             // ── Pause / réactiver ────────────────────────────────────────────
-            document.querySelectorAll('.js-pause-estab').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    var id = btn.dataset.id;
-                    var isPaused = btn.dataset.paused === '1';
+            document.querySelectorAll('.js-pause-estab').forEach(function (cb) {
+                cb.addEventListener('change', function () {
+                    var id = cb.dataset.id;
+                    var isPaused = !cb.checked;
+                    cb.disabled = true;
                     fetch('/account/establishments/' + id + '/pause', {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ isPaused: !isPaused }),
+                        body: JSON.stringify({ isPaused: isPaused }),
                     })
                         .then(function (r) { return r.json(); })
-                        .then(function (data) { if (data.success) window.location.reload(); })
-                        .catch(function () {});
+                        .then(function (data) {
+                            if (data.success) window.location.reload();
+                            else cb.disabled = false;
+                        })
+                        .catch(function () { cb.disabled = false; });
                 });
             });
 
@@ -309,6 +371,126 @@ block scripts
                         confirmBtn.disabled = false;
                         errorEl.textContent = 'Erreur réseau.';
                         errorEl.style.display = 'block';
+                    });
+            });
+
+            // ── Rejoindre un établissement ───────────────────────────────────
+            var joinBtn         = document.getElementById('joinEstabBtn');
+            var joinOverlay     = document.getElementById('joinEstabModalOverlay');
+            var joinCloseBtn    = document.getElementById('joinEstabModalClose');
+            var joinSearchStep  = document.getElementById('joinEstabSearchStep');
+            var joinSearchActions = document.getElementById('joinEstabSearchActions');
+            var joinConfirmStep = document.getElementById('joinEstabConfirmStep');
+            var joinConfirmText = document.getElementById('joinEstabConfirmText');
+            var joinConfirmBtn  = document.getElementById('joinEstabConfirmBtn');
+            var joinConfirmBack = document.getElementById('joinEstabConfirmBack');
+            var joinSentStep    = document.getElementById('joinEstabSentStep');
+            var joinInput       = document.getElementById('joinEstabInput');
+            var joinDropdown    = document.getElementById('joinEstabDropdown');
+            var joinErrorEl     = document.getElementById('joinEstabModalError');
+            var joinTimer       = null;
+            var joinTargetId    = null;
+
+            function joinShowError(msg) {
+                joinErrorEl.textContent = msg;
+                joinErrorEl.style.display = 'block';
+            }
+            function resetJoinModal() {
+                joinInput.value = '';
+                joinDropdown.style.display = 'none';
+                joinErrorEl.style.display = 'none';
+                joinSearchStep.style.display = '';
+                joinSearchActions.style.display = '';
+                joinConfirmStep.style.display = 'none';
+                joinSentStep.style.display = 'none';
+                joinTargetId = null;
+            }
+
+            if (joinBtn) {
+                joinBtn.addEventListener('click', function () {
+                    resetJoinModal();
+                    joinOverlay.style.display = 'flex';
+                    joinInput.focus();
+                });
+            }
+            joinCloseBtn.addEventListener('click', function () { joinOverlay.style.display = 'none'; });
+
+            function renderJoinList(companies) {
+                joinDropdown.innerHTML = '';
+                if (!companies.length) {
+                    var empty = document.createElement('div');
+                    empty.className = 'service-dropdown__item';
+                    empty.style.color = '#9ca3af';
+                    empty.textContent = 'Aucun établissement Business trouvé.';
+                    joinDropdown.appendChild(empty);
+                    joinDropdown.style.display = 'block';
+                    return;
+                }
+                companies.forEach(function (c) {
+                    var div = document.createElement('div');
+                    div.className = 'service-dropdown__item';
+                    div.textContent = c.name + (c.businessType ? ' — ' + c.businessType : '');
+                    div.addEventListener('mousedown', function (e) {
+                        e.preventDefault();
+                        joinDropdown.style.display = 'none';
+                        joinTargetId = c.id;
+                        joinConfirmText.textContent = 'Vous êtes sur le point d\'envoyer une demande pour rejoindre "' + c.name + '". Le propriétaire devra l\'approuver avant que vous ayez accès au dashboard.';
+                        joinSearchStep.style.display = 'none';
+                        joinSearchActions.style.display = 'none';
+                        joinConfirmStep.style.display = 'block';
+                    });
+                    joinDropdown.appendChild(div);
+                });
+                joinDropdown.style.display = 'block';
+            }
+
+            joinInput.addEventListener('input', function () {
+                clearTimeout(joinTimer);
+                var q = joinInput.value.trim();
+                if (q.length < 2) { joinDropdown.style.display = 'none'; return; }
+                joinTimer = setTimeout(function () {
+                    fetch('/api/joinable-companies?q=' + encodeURIComponent(q))
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) { renderJoinList(data.companies || []); })
+                        .catch(function () { joinDropdown.style.display = 'none'; });
+                }, 300);
+            });
+            joinInput.addEventListener('blur', function () {
+                setTimeout(function () { joinDropdown.style.display = 'none'; }, 160);
+            });
+
+            joinConfirmBack.addEventListener('click', function () {
+                joinConfirmStep.style.display = 'none';
+                joinSearchStep.style.display = '';
+                joinSearchActions.style.display = '';
+                joinTargetId = null;
+            });
+
+            joinConfirmBtn.addEventListener('click', function () {
+                if (!joinTargetId) return;
+                joinConfirmBtn.disabled = true;
+                fetch('/account/join-company', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ companyId: joinTargetId }),
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        joinConfirmBtn.disabled = false;
+                        if (data.success) {
+                            joinConfirmStep.style.display = 'none';
+                            joinSentStep.style.display = 'block';
+                            setTimeout(function () { window.location.reload(); }, 1400);
+                        } else {
+                            joinConfirmStep.style.display = 'none';
+                            joinSearchStep.style.display = '';
+                            joinSearchActions.style.display = '';
+                            joinShowError(data.error || "Erreur lors de l'envoi de la demande.");
+                        }
+                    })
+                    .catch(function () {
+                        joinConfirmBtn.disabled = false;
+                        joinShowError('Erreur réseau.');
                     });
             });
         })();

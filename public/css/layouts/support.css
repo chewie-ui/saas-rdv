@@ -209,10 +209,12 @@
 }
 
 .guide-tour-card {
+  position: relative;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 18px 18px 16px;
   background: var(--surface-card, #fff);
   border: 1.5px solid var(--border-light);
   border-radius: var(--radius-md, 12px);
@@ -224,24 +226,37 @@
 
 .guide-tour-card:hover {
   border-color: var(--accent);
-  box-shadow: 0 4px 16px rgba(22, 163, 74, .1);
-  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(22, 163, 74, .12);
+  transform: translateY(-2px);
 }
 
 .guide-tour-card__icon {
-  font-size: 24px;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: var(--accent-soft);
+  font-size: 22px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, var(--accent-soft), var(--surface, #f3f4f6));
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px var(--accent-border, rgba(22,163,74,.15));
 }
 
-.guide-tour-card__body { flex: 1; min-width: 0; }
-.guide-tour-card__body h4 { font-size: 14px; font-weight: 700; color: var(--ink); margin: 0 0 2px; }
+.guide-tour-card__body { width: 100%; min-width: 0; }
+.guide-tour-card__body h4 { font-size: 14px; font-weight: 700; color: var(--ink); margin: 0 0 3px; }
 .guide-tour-card__body p { font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.4; }
 
-.guide-tour-card__arrow { color: var(--border-medium); flex-shrink: 0; }
+.guide-tour-card__arrow {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  color: var(--border-medium);
+  flex-shrink: 0;
+  transition: transform .15s, color .15s;
+}
+
+.guide-tour-card:hover .guide-tour-card__arrow {
+  color: var(--accent);
+  transform: translateX(2px);
+}

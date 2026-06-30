@@ -60,12 +60,10 @@ block content
                     else
                         p.info-card__desc Vous n'avez pas encore d'établissement — créez le vôtre, ou rejoignez une équipe existante (plan Business).
                     .info-card__actions
-                        a.sm-btn.sm-btn--primary(href="/etablissement/creer")
-                            span Créer mon établissement
-                        a.sm-btn.sm-btn--ghost(href="/etablissement/rejoindre")
-                            span Rejoindre un établissement
+                        a.sm-btn.sm-btn--primary(href="/etablissement/mes-etablissements")
+                            span Gérer mes établissements
             else if membershipRole !== 'owner'
-                p.info-card__desc Vous faites partie de l'équipe de cet établissement#{membershipRole ? ' en tant que ' + (membershipRole === 'manager' ? 'manager' : 'collaborateur') : ''}.
+                p.info-card__desc Vous faites partie de l'équipe de cet établissement#{membershipRole ? ' en tant que ' + membershipRole : ''}.
             else if currentCompany.isPaused
                 p.info-card__desc(style="color:#b45309")
                     | Votre établissement est en pause — il n'apparaît plus dans les résultats de recherche et votre page de réservation est masquée aux visiteurs. Votre abonnement continue normalement.
@@ -84,8 +82,10 @@ block content
             p#establishmentStatus(style="display:none;font-size:13px;color:var(--accent);margin-top:10px")
             p#establishmentError(style="display:none;font-size:13px;color:#dc2626;margin-top:10px")
 
-        //- ── Demandes pour rejoindre votre équipe (propriétaire uniquement) ──
-        if membershipRole === 'owner' && pendingJoinRequests && pendingJoinRequests.length
+        //- ── Demandes pour rejoindre votre équipe (propriétaire ou délégué
+        //- collaborators.manage — cf. settingsInit qui calcule déjà la liste
+        //- en conséquence, ce check ne fait que matcher le même critère) ──
+        if permissions && permissions.collaborators.manage && pendingJoinRequests && pendingJoinRequests.length
             .info-card#joinRequestsCard
                 .info-card__header
                     h3 Demandes pour rejoindre votre équipe
@@ -814,8 +814,8 @@ block scripts
     script(src='/js/templates/edit-email.js')
     script.
         // ── Votre établissement (pause / reprendre / demandes reçues) ───────────
-        // Créer/rejoindre un établissement vivent désormais sur des pages dédiées
-        // (/etablissement/creer, /etablissement/rejoindre) — cf. plan d'unification.
+        // Créer/rejoindre un établissement se font désormais depuis /etablissement/
+        // mes-etablissements (cf. plan d'unification + multi-établissements).
         (function () {
             var pauseBtn  = document.getElementById('pauseCompanyBtn');
             var resumeBtn = document.getElementById('resumeCompanyBtn');

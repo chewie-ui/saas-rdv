@@ -3,6 +3,7 @@ const Stripe = require("stripe");
 const getServices = require("../utils/services");
 const { getLimit, atLeast } = require("../utils/planLimits");
 const { getCoursesForDate, courseRangesFor } = require("../utils/recurringCourses");
+const { getBookableTeam } = require("../utils/bookableTeam");
 
 const stripe = new Stripe(env.stripeSecretKey);
 
@@ -25,17 +26,15 @@ const htmlTemplate = pug.renderFile(path.join(__dirname, "../views/templates/ema
 exports.book = async (req, res) => {
   const { bookId } = req.params;
 
-  const Employee = require("../db/models/company/employee.model");
-
   const [client, company, activeEmployees] = await Promise.all([
     Booking.findById(bookId)
-      .populate("employee", "firstName lastName profilePicture")
+      .populate("employee", "fullName profilePicture")
       .populate("clientRef", "fullName profilePicture email phone"),
     Company.findOne(
       { _id: res.locals.currentCompany._id, "employees.user": req.user._id },
       { "employees.$": 1 },
     ).lean(),
-    Employee.find({ company: res.locals.currentCompany._id, active: true }).lean(),
+    getBookableTeam(res.locals.currentCompany._id),
   ]);
 
   const grade = company?.employees[0]?.grade;
@@ -177,12 +176,11 @@ exports.appointment = async (req, res) => {
   // Employee filter from query param
   const employeeFilter = req.query.employee || "all";
 
-  const Employee = require("../db/models/company/employee.model");
   const Service = require("../db/models/company/service.model");
   const [apps, rowTime, employees, daysOffDoc, services, allServicesForColor] = await Promise.all([
     GetAllAppointments(currentCompany, employeeFilter),
     Company.findById(currentCompany).select("slotTime schedule").lean(),
-    Employee.find({ company: currentCompany, active: true }).lean(),
+    getBookableTeam(currentCompany),
     DaysOff.findOne({ company: currentCompany }).lean(),
     Service.find({ company: currentCompany, active: true }).select("_id name duration price employees color").lean(),
     // Filet de secours pour les anciens RDV créés avant qu'on fige la couleur
@@ -516,7 +514,7 @@ exports.appointment = async (req, res) => {
 // publique, cf. booking.controller.js#getBooking : on ne bloque que si TOUS
 // les employés sont occupés). Partagé entre createAdminBooking et
 // createAdminBlock (absences). Retourne un message d'erreur ou null. ───────
-async function checkBookingConflict({ Booking, Employee, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, actualDuration }) {
+async function checkBookingConflict({ Booking, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, actualDuration }) {
   const baseConflictQuery = { company: currentCompany, date: new Date(date), status: { $ne: "canceled" } };
   function overlapsRange(b) {
     const [bh, bm] = b.startTime.split(":").map(Number);
@@ -536,28 +534,21 @@ async function checkBookingConflict({ Booking, Employee, currentCompany, date, s
     return null;
   }
 
-  const activeEmployees = await Employee.find({ company: currentCompany, active: true }).select("_id").lean();
+  // Aucun employé précisé — bloqué seulement quand TOUTE l'équipe bookable
+  // est occupée. Se réduit naturellement au cas solo (équipe d'1 = le
+  // patron) et au cas "personne n'est bookable" (équipe vide → .every() sur
+  // un tableau vide vaut toujours true, donc tout est bloqué) sans branche à part.
+  const team = await getBookableTeam(currentCompany);
 
-  if (activeEmployees.length === 0) {
-    const overlapping = await Booking.find(baseConflictQuery).select("startTime slotTime").lean();
-    if (overlapping.some(overlapsRange)) return "Un rendez-vous existe déjà sur ce créneau.";
-
-    const coursesForThisDate = await getCoursesForDate(currentCompany, date);
-    const courseConflict = courseRangesFor(coursesForThisDate, null)
-      .some(([rs, re]) => startTimeInMinutes < re && endTimeInMinutes > rs);
-    if (courseConflict) return "Un cours collectif est déjà prévu sur ce créneau.";
-    return null;
-  }
-
-  const empBookings = await Booking.find({
+  const teamBookings = await Booking.find({
     ...baseConflictQuery,
-    employee: { $in: activeEmployees.map((e) => e._id) },
+    employee: { $in: team.map((m) => m.id) },
   }).select("startTime slotTime employee").lean();
 
   const coursesForThisDate = await getCoursesForDate(currentCompany, date);
   const busyByEmployee = new Map();
-  activeEmployees.forEach((e) => busyByEmployee.set(String(e._id), courseRangesFor(coursesForThisDate, String(e._id))));
-  empBookings.forEach((b) => {
+  team.forEach((m) => busyByEmployee.set(m.id, courseRangesFor(coursesForThisDate, m.id)));
+  teamBookings.forEach((b) => {
     const empId = String(b.employee);
     if (!busyByEmployee.has(empId)) return;
     const [bh, bm] = b.startTime.split(":").map(Number);
@@ -565,8 +556,8 @@ async function checkBookingConflict({ Booking, Employee, currentCompany, date, s
     busyByEmployee.get(empId).push([bStart, bStart + (b.slotTime || actualDuration)]);
   });
 
-  const allBusy = activeEmployees.every((e) => {
-    const ranges = busyByEmployee.get(String(e._id)) || [];
+  const allBusy = team.every((m) => {
+    const ranges = busyByEmployee.get(m.id) || [];
     return ranges.some(([rs, re]) => startTimeInMinutes < re && endTimeInMinutes > rs);
   });
   return allBusy ? "Tous les employés sont déjà occupés sur ce créneau." : null;
@@ -590,7 +581,6 @@ exports.createAdminBooking = async (req, res) => {
     }
 
     const Service = require("../db/models/company/service.model");
-    const Employee = require("../db/models/company/employee.model");
     const Booking = require("../db/models/book.model");
     const pug = require("pug");
     const path = require("path");
@@ -618,7 +608,8 @@ exports.createAdminBooking = async (req, res) => {
 
     let employeeName = "";
     if (employeeId) {
-      const emp = await Employee.findOne({ _id: employeeId, company: currentCompany }).select("firstName lastName").lean();
+      const team = await getBookableTeam(currentCompany);
+      const emp = team.find((m) => m.id === String(employeeId));
       if (emp) employeeName = `${emp.firstName} ${emp.lastName}`.trim();
     }
 
@@ -628,7 +619,7 @@ exports.createAdminBooking = async (req, res) => {
     const endTime = `${String(Math.floor(endTimeInMinutes / 60)).padStart(2, "0")}:${String(endTimeInMinutes % 60).padStart(2, "0")}`;
 
     const conflictMessage = await checkBookingConflict({
-      Booking, Employee, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, actualDuration,
+      Booking, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, actualDuration,
     });
     if (conflictMessage) {
       return res.json({ success: false, error: "conflict", message: conflictMessage });
@@ -738,7 +729,6 @@ exports.createAdminBlock = async (req, res) => {
       return res.json({ success: false, error: "missing_fields", message: "Date et horaires requis." });
     }
 
-    const Employee = require("../db/models/company/employee.model");
     const Booking = require("../db/models/book.model");
 
     const [sh, sm] = startTime.split(":").map(Number);
@@ -752,12 +742,13 @@ exports.createAdminBlock = async (req, res) => {
 
     let employeeName = "";
     if (employeeId) {
-      const emp = await Employee.findOne({ _id: employeeId, company: currentCompany }).select("firstName lastName").lean();
+      const team = await getBookableTeam(currentCompany);
+      const emp = team.find((m) => m.id === String(employeeId));
       if (emp) employeeName = `${emp.firstName} ${emp.lastName}`.trim();
     }
 
     const conflictMessage = await checkBookingConflict({
-      Booking, Employee, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, actualDuration,
+      Booking, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, actualDuration,
     });
     if (conflictMessage) {
       return res.json({ success: false, error: "conflict", message: conflictMessage });
@@ -822,7 +813,7 @@ async function getSlotConfig(companyId) {
 
 async function getDaysOff(companyId) {
   const doc = await DaysOff.findOne({ company: companyId })
-    .populate("dates.employees", "firstName lastName")
+    .populate("dates.employees", "fullName")
     .lean();
 
   if (!doc) return { dates: [] };
@@ -842,19 +833,66 @@ exports.availability = async (req, res) => {
     return res.redirect("/register");
   }
   const Service  = require("../db/models/company/service.model");
-  const Employee = require("../db/models/company/employee.model");
-  const [daysOff, currentSlotTime, slotConfig, serviceCount, activeEmployees, smartGroupingDoc] = await Promise.all([
+  const [daysOff, currentSlotTime, slotConfig, serviceCount, activeEmployees, companyDoc] = await Promise.all([
     getDaysOff(currentCompany),
     getSlotTime(currentCompany),
     getSlotConfig(currentCompany),
     Service.countDocuments({ company: currentCompany, active: true }),
-    Employee.find({ company: currentCompany._id, active: true }).select("firstName lastName").lean(),
-    Company.findById(currentCompany._id).select("smartGrouping minBookingLeadTime").lean(),
+    getBookableTeam(currentCompany._id),
+    Company.findById(currentCompany._id).select("smartGrouping minBookingLeadTime scheduleMode owner ownerEmployeeProfile.schedule").lean(),
   ]);
-  const availFeatures = getLimit("availability", req.user);
+  const availFeatures = getLimit("availability", res.locals.billingUser);
+
+  // ── Horaire individuel (cf. plan grades/permissions) ───────────────────────
+  // En mode "perEmployee", l'horaire affiché/édité dans la carte hebdomadaire
+  // existante devient celui de l'employé sélectionné (`?employeeId=`) au lieu
+  // du Company.schedule commun — on substitue juste `currentCompany.schedule`
+  // pour cette requête, le reste du template (et son JS) ne change pas.
+  const scheduleMode = companyDoc?.scheduleMode === "perEmployee" ? "perEmployee" : "shared";
+  let selectedEmployeeId = scheduleMode === "perEmployee" ? (req.query.employeeId || "shared") : "shared";
+  let renderedCompany = currentCompany;
+
+  // Self-service : un employé qui n'a pas le droit de gérer l'horaire des
+  // autres (ni l'horaire commun) ne peut voir/éditer QUE le sien — jamais le
+  // sélecteur ni le toggle "horaire commun" (cf. plan, "page auto-scopée").
+  const canManageShared = !!res.locals.permissions?.availability?.manageShared;
+  const canManageOthersSchedule = !!res.locals.permissions?.availability?.manageOthersSchedule;
+  if (scheduleMode === "perEmployee" && !canManageShared && !canManageOthersSchedule) {
+    selectedEmployeeId = String(req.user._id);
+  }
+
+  if (scheduleMode === "perEmployee" && selectedEmployeeId !== "shared") {
+    let individualSchedule;
+    if (String(companyDoc.owner) === String(selectedEmployeeId)) {
+      individualSchedule = companyDoc.ownerEmployeeProfile?.schedule;
+    } else {
+      const membership = await CompanyMembership.findOne({ company: currentCompany._id, user: selectedEmployeeId })
+        .select("schedule").lean();
+      individualSchedule = membership?.schedule;
+    }
+    // Pas encore configuré → retombe sur le commun (cf. plan, "vide = pas
+    // configuré"), mais reste affiché/édité comme étant CET employé (le
+    // premier edit le copiera implicitement dans son propre schedule via
+    // editAvailabilty/toggleDay ci-dessus, qui ciblent déjà schedule.$ —
+    // si le tableau est vide il n'y a rien à $ matcher : on initialise donc
+    // ici si besoin).
+    if (!individualSchedule || individualSchedule.length === 0) {
+      individualSchedule = currentCompany.schedule;
+      if (String(companyDoc.owner) === String(selectedEmployeeId)) {
+        await Company.updateOne({ _id: currentCompany._id }, { $set: { "ownerEmployeeProfile.schedule": individualSchedule } });
+      } else {
+        await CompanyMembership.updateOne({ company: currentCompany._id, user: selectedEmployeeId }, { $set: { schedule: individualSchedule } });
+      }
+    }
+    renderedCompany = Object.assign({}, currentCompany, { schedule: individualSchedule });
+  }
+
   res.render("admin/availability", {
     daysOff,
     employees: activeEmployees,
+    currentCompany: renderedCompany,
+    scheduleMode,
+    selectedEmployeeId,
     pageName: "Availability",
     title: res.locals.t.titles.avail,
     timeSlot: [10, 15, 20, 25, 30, 45, 60, 90, 120, 180],
@@ -866,8 +904,8 @@ exports.availability = async (req, res) => {
     slotInterval: slotConfig.slotInterval,
     hasServices: serviceCount > 0,
     availFeatures,
-    smartGrouping: Object.assign({ enabled: false, windowHours: 3, weekdays: [] }, smartGroupingDoc?.smartGrouping || {}),
-    minBookingLeadTime: smartGroupingDoc?.minBookingLeadTime || { enabled: false, minutes: 60 },
+    smartGrouping: Object.assign({ enabled: false, windowHours: 3, weekdays: [] }, companyDoc?.smartGrouping || {}),
+    minBookingLeadTime: companyDoc?.minBookingLeadTime || { enabled: false, minutes: 60 },
   });
 };
 
@@ -884,43 +922,82 @@ function generateHours(step = 60) {
   return hours;
 }
 
-exports.toggleDay = async (req, res) => {
-  const { weekdayIndex, companyId, dayOff } = req.body;
+// Quand `employeeId` est fourni (et différent de "shared") ET que la company
+// est en mode "perEmployee", l'édition cible le `schedule` individuel de cet
+// employé (Company.ownerEmployeeProfile.schedule pour le patron,
+// CompanyMembership.schedule sinon) au lieu du Company.schedule commun —
+// cf. plan grades/permissions, horaires individuels.
+async function resolveScheduleUpdateTarget(companyId, employeeId) {
+  if (!employeeId || employeeId === "shared") return null;
+  const company = await Company.findById(companyId).select("owner scheduleMode").lean();
+  if (!company || company.scheduleMode !== "perEmployee") return null;
+  if (String(company.owner) === String(employeeId)) return { kind: "owner" };
+  return { kind: "membership", companyId, employeeId };
+}
 
-  await Company.updateOne(
-    {
-      _id: companyId,
-      "schedule.weekdayIndex": weekdayIndex,
-    },
-    {
-      $set: {
-        "schedule.$.dayOff": dayOff,
-        // "schedule.$.workingHours": workingHours,
+exports.toggleDay = async (req, res) => {
+  const { weekdayIndex, companyId, dayOff, employeeId } = req.body;
+
+  const target = await resolveScheduleUpdateTarget(companyId, employeeId);
+  if (target?.kind === "owner") {
+    await Company.updateOne(
+      { _id: companyId, "ownerEmployeeProfile.schedule.weekdayIndex": weekdayIndex },
+      { $set: { "ownerEmployeeProfile.schedule.$.dayOff": dayOff } }
+    );
+  } else if (target?.kind === "membership") {
+    await CompanyMembership.updateOne(
+      { company: target.companyId, user: target.employeeId, "schedule.weekdayIndex": weekdayIndex },
+      { $set: { "schedule.$.dayOff": dayOff } }
+    );
+  } else {
+    await Company.updateOne(
+      {
+        _id: companyId,
+        "schedule.weekdayIndex": weekdayIndex,
       },
-    },
-  );
+      {
+        $set: {
+          "schedule.$.dayOff": dayOff,
+          // "schedule.$.workingHours": workingHours,
+        },
+      },
+    );
+  }
 
   res.json({ success: true });
 };
 
 exports.editAvailabilty = async (req, res) => {
-  const { weekdayIndex, companyId, workingHours } = req.body;
+  const { weekdayIndex, companyId, workingHours, employeeId } = req.body;
 
   if (!workingHours || workingHours.length === 0) {
     return res.json({ success: false, message: "No working hours provided" });
   }
 
-  await Company.updateOne(
-    {
-      _id: companyId,
-      "schedule.weekdayIndex": Number(weekdayIndex),
-    },
-    {
-      $set: {
-        "schedule.$.workingHours": workingHours,
+  const target = await resolveScheduleUpdateTarget(companyId, employeeId);
+  if (target?.kind === "owner") {
+    await Company.updateOne(
+      { _id: companyId, "ownerEmployeeProfile.schedule.weekdayIndex": Number(weekdayIndex) },
+      { $set: { "ownerEmployeeProfile.schedule.$.workingHours": workingHours } }
+    );
+  } else if (target?.kind === "membership") {
+    await CompanyMembership.updateOne(
+      { company: target.companyId, user: target.employeeId, "schedule.weekdayIndex": Number(weekdayIndex) },
+      { $set: { "schedule.$.workingHours": workingHours } }
+    );
+  } else {
+    await Company.updateOne(
+      {
+        _id: companyId,
+        "schedule.weekdayIndex": Number(weekdayIndex),
       },
-    },
-  );
+      {
+        $set: {
+          "schedule.$.workingHours": workingHours,
+        },
+      },
+    );
+  }
 
   res.json({ success: true });
 };
@@ -941,7 +1018,7 @@ exports.editSlotTime = async (req, res) => {
 };
 
 exports.deleteBooking = async (req, res) => {
-  if (!atLeast(req.user, "pro")) {
+  if (!atLeast(res.locals.billingUser, "pro")) {
     return res.status(403).json({ error: "plan_limit", message: "Nécessite un abonnement Pro ou Business." });
   }
   const { bookId } = req.params;
@@ -976,7 +1053,7 @@ exports.deleteBooking = async (req, res) => {
 };
 
 exports.restoreBooking = async (req, res) => {
-  if (!atLeast(req.user, "pro")) {
+  if (!atLeast(res.locals.billingUser, "pro")) {
     return res.status(403).json({ error: "plan_limit", message: "Nécessite un abonnement Pro ou Business." });
   }
   try {
@@ -1026,7 +1103,7 @@ exports.restoreBooking = async (req, res) => {
 };
 
 exports.cancelBooking = async (req, res) => {
-  if (!atLeast(req.user, "pro")) {
+  if (!atLeast(res.locals.billingUser, "pro")) {
     return res.status(403).json({ error: "plan_limit", message: "Nécessite un abonnement Pro ou Business." });
   }
   const { id } = req.params;
@@ -1175,14 +1252,13 @@ exports.updateBookingEmployee = async (req, res) => {
     const { bookId } = req.params;
     const { employeeId } = req.body;
 
-    const Employee = require("../db/models/company/employee.model");
     let updateFields = {};
 
     if (employeeId) {
-      const emp = await Employee.findById(employeeId).lean();
+      const emp = await User.findById(employeeId).select("fullName").lean();
       if (!emp) return res.json({ success: false, error: "Employé introuvable." });
       updateFields.employee     = emp._id;
-      updateFields.employeeName = `${emp.firstName} ${emp.lastName}`.trim();
+      updateFields.employeeName = (emp.fullName || "").trim();
     } else {
       updateFields.employee     = null;
       updateFields.employeeName = "";
@@ -1216,8 +1292,8 @@ exports.getWeekData = async (req, res) => {
 exports.informationsPage = async (req, res) => {
   const email = req.user.email;
   const maskEmail = email.replace(/^(..)(.*)(?=@)/, "$1...");
-  const canUseSocial    = getLimit("socialLinks", req.user);
-  const canUseCustomUrl = require("../utils/planLimits").LIMITS.customUrl.hasFeature(req.user);
+  const canUseSocial    = getLimit("socialLinks", res.locals.billingUser);
+  const canUseCustomUrl = require("../utils/planLimits").LIMITS.customUrl.hasFeature(res.locals.billingUser);
   const cs = req.user.calendarSettings || {};
 
   // ── Stripe : cartes & factures ──────────────────────────────────────────
@@ -1397,10 +1473,9 @@ exports.historyEditRow = async (req, res) => {
     let employees = [];
     if (results && results.company) {
       const Service  = require("../db/models/company/service.model");
-      const Employee = require("../db/models/company/employee.model");
       [services, employees] = await Promise.all([
         Service.find({ company: results.company, active: true }).select("_id name duration price").lean(),
-        Employee.find({ company: results.company, active: true }).select("_id firstName lastName").lean(),
+        getBookableTeam(results.company),
       ]);
     }
 
@@ -1436,8 +1511,8 @@ exports.settingsInit = async (req, res) => {
 
   const email     = req.user.email;
   const maskEmail = email.replace(/^(..)(.*)(?=@)/, "$1...");
-  const canUseSocial    = getLimit("socialLinks", req.user);
-  const canUseCustomUrl = require("../utils/planLimits").LIMITS.customUrl.hasFeature(req.user);
+  const canUseSocial    = getLimit("socialLinks", res.locals.billingUser);
+  const canUseCustomUrl = require("../utils/planLimits").LIMITS.customUrl.hasFeature(res.locals.billingUser);
   const cs = req.user.calendarSettings || {};
 
   // ── Stripe : cartes & factures ──────────────────────────────────────────
@@ -1503,9 +1578,10 @@ exports.settingsInit = async (req, res) => {
     }
   }
 
-  // Côté propriétaire : demandes en attente pour SON établissement (Business uniquement)
+  // Côté propriétaire (ou délégué collaborators.manage) : demandes en attente
+  // pour cet établissement (Business uniquement)
   let pendingJoinRequests = [];
-  if (res.locals.currentCompany && res.locals.membershipRole === "owner") {
+  if (res.locals.currentCompany && res.locals.permissions?.collaborators?.manage) {
     const requests = await CompanyMembership.find({ company: res.locals.currentCompany._id, status: "pending" })
       .populate("user", "fullName email profilePicture")
       .lean();
@@ -1587,6 +1663,17 @@ exports.historyEditRowPatch = async (req, res) => {
     if (date) updateFields.date = new Date(date);
     if (startTime) updateFields.startTime = startTime;
     if (endTime) updateFields.endTime = endTime;
+    // Le calendrier admin (GetAllAppointments) positionne et dimensionne les
+    // créneaux à partir de `slotTime` (durée en minutes), pas de `endTime` —
+    // sans ce recalcul, changer l'heure de fin (ou le service, qui ajuste
+    // l'heure de fin côté client) laissait l'ancienne durée affichée partout
+    // ailleurs que sur cette page d'édition.
+    if (startTime && endTime) {
+      const [sh, sm] = startTime.split(":").map(Number);
+      const [eh, em] = endTime.split(":").map(Number);
+      const computedDuration = (eh * 60 + em) - (sh * 60 + sm);
+      if (computedDuration > 0) updateFields.slotTime = computedDuration;
+    }
     if (status && ["confirmed", "canceled"].includes(status)) {
       updateFields.status = status;
     }
@@ -1906,7 +1993,7 @@ exports.formsIndex = async (req, res) => {
   try {
     const companyId = res.locals.currentCompany._id;
     const form = await Form.findOne({ company: companyId }).lean();
-    const maxQuestions = getLimit("formQuestions", req.user);
+    const maxQuestions = getLimit("formQuestions", res.locals.billingUser);
 
     // Plan Basic (maxQuestions === 0) : on affiche quand même un aperçu
     // (verrouillé) de la fonctionnalité avec des questions de démonstration,
@@ -1962,7 +2049,7 @@ exports.saveForm = async (req, res) => {
     const { active, questions } = req.body;
 
     // Enforce plan limit server-side
-    const maxQuestions = getLimit("formQuestions", req.user);
+    const maxQuestions = getLimit("formQuestions", res.locals.billingUser);
     if (maxQuestions === 0) {
       return res.json({ success: false, error: "plan_limit", message: "Votre plan ne permet pas d'utiliser le formulaire." });
     }
@@ -1983,8 +2070,8 @@ exports.saveForm = async (req, res) => {
 
 exports.customizeCalendarPage = async (req, res) => {
   const cs = req.user.calendarSettings || {};
-  const canUseSocial    = getLimit("socialLinks", req.user);
-  const canUseCustomUrl = require("../utils/planLimits").LIMITS.customUrl.hasFeature(req.user);
+  const canUseSocial    = getLimit("socialLinks", res.locals.billingUser);
+  const canUseCustomUrl = require("../utils/planLimits").LIMITS.customUrl.hasFeature(res.locals.billingUser);
   const defaultOrder    = ['about', 'location', 'hours', 'gallery', 'reviews'];
   const sectionOrder    = cs.sectionOrder && cs.sectionOrder.length ? cs.sectionOrder : defaultOrder;
   return res.render("admin/customize", {
@@ -2131,7 +2218,8 @@ exports.saveCancellationPolicy = async (req, res) => {
  */
 exports.initiateStripeConnect = async (req, res) => {
   try {
-    if (res.locals.membershipRole !== "owner") {
+    const { hasPermission } = require("../utils/permissions");
+    if (!hasPermission(res, "billing.manage")) {
       return res.redirect("/settings?stripeConnectError=owner_only");
     }
     const baseUrl   = env.appBaseUrl || "https://www.branshee.com";
@@ -2237,8 +2325,9 @@ exports.stripeConnectRefresh = async (req, res) => {
 /** Déconnecte le compte Stripe Connect (supprime la liaison en DB) */
 exports.disconnectStripeConnect = async (req, res) => {
   try {
-    if (res.locals.membershipRole !== "owner") {
-      return res.status(403).json({ error: "Seul le propriétaire peut faire ça." });
+    const { hasPermission } = require("../utils/permissions");
+    if (!hasPermission(res, "billing.manage")) {
+      return res.status(403).json({ error: "Vous n'avez pas la permission d'effectuer cette action." });
     }
     const company = res.locals.currentCompany;
     await Company.findByIdAndUpdate(company._id, {

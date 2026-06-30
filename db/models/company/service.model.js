@@ -64,10 +64,12 @@ const serviceSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    // Référence des User (cf. utils/bookableTeam.js et la fusion Employé/
+    // Collaborateur) — plus jamais un Employee séparé.
     employees: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Employee",
+        ref: "User",
       },
     ],
     // Planning récurrent fixe — transforme un service "group" en véritable

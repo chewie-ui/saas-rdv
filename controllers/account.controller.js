@@ -27,7 +27,7 @@ const PLAN_LIMITS = {
  */
 exports.enforcePlanLimits = async (userId, planName) => {
   try {
-    const Employee = require("../db/models/company/employee.model");
+    const CompanyMembership = require("../db/models/company/companyMembership.model");
     const Service  = require("../db/models/company/service.model");
     const Form     = require("../db/models/form.model");
     const Company  = require("../db/models/company/company.model");
@@ -38,17 +38,18 @@ exports.enforcePlanLimits = async (userId, planName) => {
 
     const companyId = user.company;
 
-    // ── Employés ─────────────────────────────────────────────────────────────
+    // ── Employés (= collaborateurs affichés comme employé bookable, le
+    // patron n'est jamais compté contre cette limite) ─────────────────────────
     if (limits.employees === 0) {
-      // Free/Basic : désactiver tous les employés
-      await Employee.updateMany({ company: companyId }, { active: false });
+      // Free/Basic : désactiver l'affichage "employé" de tous les collaborateurs
+      await CompanyMembership.updateMany({ company: companyId }, { isEmployee: false });
     } else {
-      // Garder les N premiers actifs (triés par date de création), désactiver le reste
-      const allActive = await Employee.find({ company: companyId, active: true })
+      // Garder les N premiers (triés par date d'activation), désactiver le reste
+      const allEmployees = await CompanyMembership.find({ company: companyId, isEmployee: true })
         .sort({ createdAt: 1 }).lean();
-      if (allActive.length > limits.employees) {
-        const toDisable = allActive.slice(limits.employees).map(e => e._id);
-        await Employee.updateMany({ _id: { $in: toDisable } }, { active: false });
+      if (allEmployees.length > limits.employees) {
+        const toDisable = allEmployees.slice(limits.employees).map(m => m._id);
+        await CompanyMembership.updateMany({ _id: { $in: toDisable } }, { isEmployee: false });
       }
     }
 
@@ -1484,8 +1485,9 @@ exports.pauseCompany = async (req, res) => {
     if (!res.locals.currentCompany) {
       return res.status(400).json({ error: "Aucun établissement à mettre en pause." });
     }
-    if (res.locals.membershipRole !== "owner") {
-      return res.status(403).json({ error: "Seul le propriétaire peut faire ça." });
+    const { hasPermission } = require("../utils/permissions");
+    if (!hasPermission(res, "establishment.manage")) {
+      return res.status(403).json({ error: "Vous n'avez pas la permission d'effectuer cette action." });
     }
     // accountIntent reste "pro" : il a toujours un établissement, juste en
     // pause — il doit garder accès à son dashboard pour le reprendre.
@@ -1502,8 +1504,9 @@ exports.resumeCompany = async (req, res) => {
     if (!res.locals.currentCompany) {
       return res.status(400).json({ error: "Aucun établissement à reprendre." });
     }
-    if (res.locals.membershipRole !== "owner") {
-      return res.status(403).json({ error: "Seul le propriétaire peut faire ça." });
+    const { hasPermission } = require("../utils/permissions");
+    if (!hasPermission(res, "establishment.manage")) {
+      return res.status(403).json({ error: "Vous n'avez pas la permission d'effectuer cette action." });
     }
     await Company.findByIdAndUpdate(res.locals.currentCompany._id, { isPaused: false });
     return res.json({ success: true });
@@ -1550,7 +1553,8 @@ exports.requestJoinCompany = async (req, res) => {
 exports.respondJoinRequest = async (req, res) => {
   try {
     const CompanyMembership = require("../db/models/company/companyMembership.model");
-    if (!res.locals.currentCompany || res.locals.membershipRole !== "owner") {
+    const { hasPermission } = require("../utils/permissions");
+    if (!res.locals.currentCompany || !hasPermission(res, "collaborators.manage")) {
       return res.status(403).json({ error: "Accès refusé." });
     }
     const { requestId } = req.params;
@@ -1565,6 +1569,23 @@ exports.respondJoinRequest = async (req, res) => {
       return res.status(404).json({ error: "Demande introuvable." });
     }
     membership.status = decision;
+    if (decision === "accepted") {
+      membership.acceptedAt = new Date();
+      if (!membership.grade) {
+        const CompanyGrade = require("../db/models/company/companyGrade.model");
+        const { DEFAULT_GRADE_TEMPLATES } = require("../utils/permissions");
+        let staffGrade = await CompanyGrade.findOne({ company: res.locals.currentCompany._id, name: "Staff" });
+        if (!staffGrade) {
+          staffGrade = await CompanyGrade.create({
+            company: res.locals.currentCompany._id,
+            name: "Staff",
+            isBuiltIn: true,
+            permissions: DEFAULT_GRADE_TEMPLATES.Staff,
+          });
+        }
+        membership.grade = staffGrade._id;
+      }
+    }
     await membership.save();
 
     return res.json({ success: true, decision });

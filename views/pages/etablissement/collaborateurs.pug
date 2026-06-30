@@ -21,7 +21,7 @@ block content
                 else
                     = `${collaborators.length} collaborateur(s) — forfait ${currentPlan}`
         .dash-header__cta
-            if !atCollaboratorsLimit
+            if permissions.collaborators.manage && !atCollaboratorsLimit
                 button.sm-btn.sm-btn--primary#inviteBtn(type="button")
                     svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                         path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
@@ -36,39 +36,77 @@ block content
             span Vous avez atteint la limite de collaborateurs de votre forfait.
             a(href="/subscription") Passer à un forfait supérieur →
 
+    if permissions.grades && (permissions.grades.view || permissions.grades.manage)
+        .info-card
+            .info-card__header
+                h3 Grades & permissions
+                p.info-card__desc Configurez les niveaux d'accès de chaque grade pour votre équipe.
+            a.sm-btn.sm-btn--ghost(href=`/etablissement/${company.id}/grades` style="align-self:flex-start") Gérer les grades →
+
     .info-card
         .info-card__header
             h3 Patron
-        .collab-row
-            img.collab-row__avatar(src=user.profilePicture || '/images/no-user.webp' alt=user.fullName)
+            p.info-card__desc Affichez (ou non) le patron comme prestataire sur la page de réservation publique.
+        .collab-row(data-owner="1")
+            img.collab-row__avatar(src=ownerUser.profilePicture || '/images/no-user.webp' alt=ownerUser.fullName)
             .collab-row__info
-                div.collab-row__name= user.fullName
-                div.collab-row__meta= user.email
+                div.collab-row__name= ownerUser.fullName
+                div.collab-row__meta= ownerUser.email
             span.estab-badge.estab-badge--active Propriétaire
+            - const viewerIsOwner = String(ownerUser._id) === String(user._id)
+            if permissions.collaborators.manage || viewerIsOwner
+                .collab-row__actions
+                    if permissions.collaborators.manage
+                        label.estab-active-toggle.js-employee-toggle(title="Afficher comme employé bookable" data-owner="1")
+                            input.js-employee-toggle-input(type="checkbox" checked=ownerProfile.isEmployee data-owner="1")
+                            span.estab-active-toggle__track
+                                span.estab-active-toggle__thumb
+                            span.estab-active-toggle__label= ownerProfile.isEmployee ? 'Employé' : 'Masqué'
+                    button.sm-btn.sm-btn--ghost.js-edit-employee-profile(type="button" data-owner="1" data-profile=JSON.stringify(ownerProfile) data-name=ownerUser.fullName data-default-photo=(ownerUser.profilePicture || '/images/no-user.webp'))
+                        span Modifier le profil
 
     .info-card
         .info-card__header
             h3 Collaborateurs
+            p.info-card__desc Affichez (ou non) chaque collaborateur comme prestataire sur la page de réservation publique.
         if !collaborators.length
             .dash-empty-reviews
                 p Aucun collaborateur pour le moment.
         else
             each c in collaborators
+                - const isSelf = c.userId === String(user._id)
                 .collab-row(class=c.isActive ? '' : 'collab-row--inactive' data-id=c.id)
-                    img.collab-row__avatar(src=c.profilePicture alt=c.fullName)
+                    img.collab-row__avatar(src=(c.displayPhoto || c.profilePicture) alt=(c.displayName || c.fullName))
                     .collab-row__info
-                        div.collab-row__name= c.fullName + (c.isActive ? '' : ' (désactivé)')
+                        div.collab-row__name= (c.displayName || c.fullName) + (c.isActive ? '' : ' (désactivé)')
                         div.collab-row__meta= c.email + ' · Membre depuis le ' + new Date(c.acceptedAt).toLocaleDateString('fr-FR')
                     .collab-row__actions
-                        select.collab-role-select.js-role-select(data-id=c.id)
-                            option(value="staff" selected=c.role === 'staff') Staff
-                            option(value="manager" selected=c.role === 'manager') Manager
-                        button.sm-btn.sm-btn--ghost.js-toggle-active(type="button" data-id=c.id data-active=c.isActive ? '1' : '0')
-                            span= c.isActive ? 'Désactiver' : 'Réactiver'
-                        button.sm-btn.sm-btn--danger.js-remove-collab(type="button" data-id=c.id data-name=c.fullName)
-                            span Retirer
+                        if permissions.collaborators.manage
+                            select.collab-role-select.js-grade-select(data-id=c.id)
+                                each g in grades
+                                    option(value=g.id selected=c.gradeId === g.id)= g.name
+                            select.collab-role-select.js-timeoff-select(data-id=c.id title="Peut poser ses propres congés")
+                                option(value="" selected=c.canManageOwnTimeOff === null)= 'Congés : hérite du grade (' + (c.canManageOwnTimeOffEffective ? 'autorisé' : 'refusé') + ')'
+                                option(value="true" selected=c.canManageOwnTimeOff === true) Congés : autorisé
+                                option(value="false" selected=c.canManageOwnTimeOff === false) Congés : refusé
+                            label.estab-active-toggle.js-employee-toggle(title="Afficher comme employé bookable" data-id=c.id)
+                                input.js-employee-toggle-input(type="checkbox" checked=c.isEmployee data-id=c.id)
+                                span.estab-active-toggle__track
+                                    span.estab-active-toggle__thumb
+                                span.estab-active-toggle__label= c.isEmployee ? 'Employé' : 'Masqué'
+                        else
+                            span.estab-badge= c.gradeName
+                            span.estab-badge(class=c.isEmployee ? 'estab-badge--active' : '')= c.isEmployee ? 'Employé' : 'Masqué'
+                        if permissions.collaborators.manage || isSelf
+                            button.sm-btn.sm-btn--ghost.js-edit-employee-profile(type="button" data-id=c.id data-profile=JSON.stringify({isEmployee: c.isEmployee, displayName: c.displayName, displayPhoto: c.displayPhoto, description: c.description, showRole: c.showRole, customInfo: c.customInfo}) data-name=c.fullName data-default-photo=c.profilePicture)
+                                span Modifier le profil
+                        if permissions.collaborators.manage
+                            button.sm-btn.sm-btn--ghost.js-toggle-active(type="button" data-id=c.id data-active=c.isActive ? '1' : '0')
+                                span= c.isActive ? 'Désactiver' : 'Réactiver'
+                            button.sm-btn.sm-btn--danger.js-remove-collab(type="button" data-id=c.id data-name=c.fullName)
+                                span Retirer
 
-    if pendingRequests && pendingRequests.length
+    if permissions.collaborators.manage && pendingRequests && pendingRequests.length
         .info-card
             .info-card__header
                 h3 Demandes en attente
@@ -101,15 +139,10 @@ block content
                 input.auth-input#inviteEmailInput(type="email" placeholder="prenom@exemple.com" autocomplete="off")
 
             .auth-field
-                label.auth-label Rôle
-                input(type="hidden" id="inviteRoleInput" value="staff")
-                .role-picker
-                    button.role-card.is-selected(type="button" data-role="staff")
-                        span.role-card__name Staff
-                        span.role-card__desc Accès limité au quotidien
-                    button.role-card(type="button" data-role="manager")
-                        span.role-card__name Manager
-                        span.role-card__desc Accès large à l'établissement
+                label.auth-label Grade
+                select.auth-input#inviteGradeInput
+                    each g in grades
+                        option(value=g.id selected=g.isBuiltIn && g.name === 'Staff')= g.name
 
             p.etab-error#inviteModalError(style="display:none")
             .cancel-modal__actions
@@ -124,6 +157,41 @@ block content
             .cancel-modal__actions
                 button.sm-btn.sm-btn--danger#removeModalConfirm(type="button") Oui, retirer
                 button.sm-btn.sm-btn--ghost#removeModalClose(type="button") Annuler
+
+    //- ── Modale profil employé public (patron ou collaborateur) ──────────────
+    .cancel-modal-overlay#empProfileOverlay(style="display:none")
+        .cancel-modal.emp-profile-modal#empProfileModal
+            h3.cancel-modal__title#empProfileTitle Profil employé
+
+            .emp-profile-photo-row
+                img#empProfilePhotoPreview.emp-profile-photo-row__img(src="/images/no-user.webp" alt="")
+                .emp-profile-photo-row__actions
+                    input#empProfilePhotoInput(type="file" accept="image/*" style="display:none")
+                    button.sm-btn.sm-btn--ghost#empProfilePhotoBtn(type="button") Changer la photo
+
+            .auth-field
+                label.auth-label Nom affiché
+                input.auth-input#empProfileNameInput(type="text" placeholder="Laisser vide pour utiliser le nom du compte")
+
+            .auth-field
+                label.auth-label Description
+                textarea.auth-input#empProfileDescInput(rows="3" placeholder="Quelques mots à propos de cette personne...")
+
+            .auth-field.emp-profile-checkbox-field
+                label.emp-profile-checkbox
+                    input#empProfileShowRoleInput(type="checkbox")
+                    span Afficher le rôle (ex. "Manager") sur la page publique
+
+            .auth-field
+                label.auth-label Informations complémentaires
+                #empProfileCustomInfoList.emp-profile-custom-list
+                button.sm-btn.sm-btn--ghost#empProfileAddInfoBtn(type="button") + Ajouter une information
+
+            p.etab-error#empProfileError(style="display:none")
+            .cancel-modal__actions
+                button.sm-btn.sm-btn--primary#empProfileSave(type="button") Enregistrer
+                button.sm-btn.sm-btn--ghost#empProfileClose(type="button") Annuler
+
 
 block scripts
     script.
@@ -141,30 +209,19 @@ block scripts
             var inviteOverlay   = document.getElementById('inviteModalOverlay');
             var inviteBtn       = document.getElementById('inviteBtn');
             var inviteEmailInput = document.getElementById('inviteEmailInput');
-            var inviteRoleInput  = document.getElementById('inviteRoleInput');
-            var roleCards        = document.querySelectorAll('.role-card');
+            var inviteGradeInput = document.getElementById('inviteGradeInput');
 
             function resetInviteModal() {
                 inviteEmailInput.value = '';
-                inviteRoleInput.value = 'staff';
-                roleCards.forEach(function (c) { c.classList.toggle('is-selected', c.dataset.role === 'staff'); });
                 document.getElementById('inviteModalError').style.display = 'none';
             }
-
-            roleCards.forEach(function (card) {
-                card.addEventListener('click', function () {
-                    roleCards.forEach(function (c) { c.classList.remove('is-selected'); });
-                    card.classList.add('is-selected');
-                    inviteRoleInput.value = card.dataset.role;
-                });
-            });
 
             if (inviteBtn) inviteBtn.addEventListener('click', function () { resetInviteModal(); inviteOverlay.style.display = 'flex'; });
             document.getElementById('inviteModalClose').addEventListener('click', function () { inviteOverlay.style.display = 'none'; });
 
             document.getElementById('inviteModalConfirm').addEventListener('click', function () {
                 var email = document.getElementById('inviteEmailInput').value.trim();
-                var role = document.getElementById('inviteRoleInput').value;
+                var gradeId = inviteGradeInput.value;
                 var errEl = document.getElementById('inviteModalError');
                 if (!email) { errEl.textContent = "Indiquez l'email du collaborateur."; errEl.style.display = 'block'; return; }
                 var btn = this;
@@ -172,7 +229,7 @@ block scripts
                 fetch('/account/establishments/' + companyId + '/collaborateurs', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email, role: role }),
+                    body: JSON.stringify({ email: email, gradeId: gradeId }),
                 })
                     .then(function (r) { return r.json(); })
                     .then(function (data) {
@@ -183,16 +240,31 @@ block scripts
                     .catch(function () { btn.disabled = false; errEl.textContent = 'Erreur réseau.'; errEl.style.display = 'block'; });
             });
 
-            // ── Changer le rôle ──────────────────────────────────────────────
-            document.querySelectorAll('.js-role-select').forEach(function (sel) {
+            // ── Changer le grade ───────────────────────────────────────────────
+            document.querySelectorAll('.js-grade-select').forEach(function (sel) {
                 sel.addEventListener('change', function () {
-                    fetch('/account/establishments/' + companyId + '/collaborateurs/' + sel.dataset.id + '/role', {
+                    fetch('/account/establishments/' + companyId + '/collaborateurs/' + sel.dataset.id + '/grade', {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ role: sel.value }),
+                        body: JSON.stringify({ gradeId: sel.value }),
                     })
                         .then(function (r) { return r.json(); })
                         .then(function (data) { if (!data.success) showError(data.error || 'Erreur.'); })
+                        .catch(function () { showError('Erreur réseau.'); });
+                });
+            });
+
+            // ── Override individuel "peut poser ses propres congés" ──────────
+            document.querySelectorAll('.js-timeoff-select').forEach(function (sel) {
+                sel.addEventListener('change', function () {
+                    var value = sel.value === '' ? null : sel.value === 'true';
+                    fetch('/account/establishments/' + companyId + '/collaborateurs/' + sel.dataset.id + '/time-off-permission', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ canManageOwnTimeOff: value }),
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) { if (!data.success) showError(data.error || 'Erreur.'); else window.location.reload(); })
                         .catch(function () { showError('Erreur réseau.'); });
                 });
             });
@@ -240,6 +312,134 @@ block scripts
                         else showError(data.error || 'Erreur.');
                     })
                     .catch(function () { removeConfirmBtn.disabled = false; showError('Erreur réseau.'); });
+            });
+
+            // ── Toggle "Afficher comme employé" ───────────────────────────────
+            function employeeProfileUrl(el) {
+                return el.dataset.owner === '1'
+                    ? '/account/establishments/' + companyId + '/owner-employee-profile'
+                    : '/account/establishments/' + companyId + '/collaborateurs/' + el.dataset.id + '/employee-profile';
+            }
+
+            document.querySelectorAll('.js-employee-toggle-input').forEach(function (input) {
+                input.addEventListener('change', function () {
+                    var label = input.closest('.js-employee-toggle');
+                    var labelSpan = label.querySelector('.estab-active-toggle__label');
+                    fetch(employeeProfileUrl(input), {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ isEmployee: input.checked }),
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            if (data.success) labelSpan.textContent = input.checked ? 'Employé' : 'Masqué';
+                            else { input.checked = !input.checked; showError(data.error || 'Erreur.'); }
+                        })
+                        .catch(function () { input.checked = !input.checked; showError('Erreur réseau.'); });
+                });
+            });
+
+            // ── Modale profil employé (nom, photo, description, rôle, infos) ──
+            var empOverlay      = document.getElementById('empProfileOverlay');
+            var empTitle        = document.getElementById('empProfileTitle');
+            var empPhotoPreview = document.getElementById('empProfilePhotoPreview');
+            empPhotoPreview.addEventListener('error', function () {
+                if (empPhotoPreview.src.indexOf('no-user.webp') === -1) empPhotoPreview.src = '/images/no-user.webp';
+            });
+            var empPhotoInput   = document.getElementById('empProfilePhotoInput');
+            var empPhotoBtn     = document.getElementById('empProfilePhotoBtn');
+            var empNameInput    = document.getElementById('empProfileNameInput');
+            var empDescInput    = document.getElementById('empProfileDescInput');
+            var empShowRoleInput = document.getElementById('empProfileShowRoleInput');
+            var empCustomList   = document.getElementById('empProfileCustomInfoList');
+            var empAddInfoBtn   = document.getElementById('empProfileAddInfoBtn');
+            var empSaveBtn      = document.getElementById('empProfileSave');
+            var empError        = document.getElementById('empProfileError');
+            var empTarget       = null; // { isOwner, id, defaultPhoto }
+            var empUploadedPhoto = null; // chemin de la nouvelle photo, si changée
+
+            function empCustomRow(label, value) {
+                var row = document.createElement('div');
+                row.className = 'emp-profile-custom-row';
+                row.innerHTML =
+                    '<input type="text" class="auth-input js-custom-label" placeholder="Ex. Expérience" value="' + (label || '').replace(/"/g, '&quot;') + '">' +
+                    '<input type="text" class="auth-input js-custom-value" placeholder="Ex. 10 ans" value="' + (value || '').replace(/"/g, '&quot;') + '">' +
+                    '<button type="button" class="sm-btn sm-btn--ghost js-custom-remove">&times;</button>';
+                row.querySelector('.js-custom-remove').addEventListener('click', function () { row.remove(); });
+                return row;
+            }
+
+            empAddInfoBtn.addEventListener('click', function () { empCustomList.appendChild(empCustomRow('', '')); });
+
+            empPhotoBtn.addEventListener('click', function () { empPhotoInput.click(); });
+            empPhotoInput.addEventListener('change', function () {
+                var file = empPhotoInput.files[0];
+                if (!file) return;
+                empPhotoPreview.src = URL.createObjectURL(file);
+                var fd = new FormData();
+                fd.append('photo', file);
+                empPhotoBtn.disabled = true;
+                fetch('/account/establishments/photo-temp', { method: 'POST', body: fd })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        empPhotoBtn.disabled = false;
+                        if (data.success) empUploadedPhoto = data.path;
+                        else { empError.textContent = data.error || "Erreur lors de l'envoi de la photo."; empError.style.display = 'block'; }
+                    })
+                    .catch(function () { empPhotoBtn.disabled = false; empError.textContent = 'Erreur réseau.'; empError.style.display = 'block'; });
+            });
+
+            document.querySelectorAll('.js-edit-employee-profile').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var profile = JSON.parse(btn.dataset.profile || '{}');
+                    empTarget = { isOwner: btn.dataset.owner === '1', id: btn.dataset.id, defaultPhoto: btn.dataset.defaultPhoto };
+                    empUploadedPhoto = null;
+                    empTitle.textContent = 'Profil employé — ' + btn.dataset.name;
+                    empNameInput.value = profile.displayName || '';
+                    empNameInput.placeholder = btn.dataset.name;
+                    empDescInput.value = profile.description || '';
+                    empShowRoleInput.checked = !!profile.showRole;
+                    empPhotoPreview.src = profile.displayPhoto || btn.dataset.defaultPhoto || '/images/no-user.webp';
+                    empCustomList.innerHTML = '';
+                    (profile.customInfo || []).forEach(function (i) { empCustomList.appendChild(empCustomRow(i.label, i.value)); });
+                    empError.style.display = 'none';
+                    empOverlay.style.display = 'flex';
+                });
+            });
+
+            document.getElementById('empProfileClose').addEventListener('click', function () { empOverlay.style.display = 'none'; });
+
+            empSaveBtn.addEventListener('click', function () {
+                if (!empTarget) return;
+                var customInfo = Array.from(empCustomList.querySelectorAll('.emp-profile-custom-row')).map(function (row) {
+                    return { label: row.querySelector('.js-custom-label').value.trim(), value: row.querySelector('.js-custom-value').value.trim() };
+                }).filter(function (i) { return i.label || i.value; });
+
+                var payload = {
+                    displayName: empNameInput.value.trim(),
+                    description: empDescInput.value.trim(),
+                    showRole: empShowRoleInput.checked,
+                    customInfo: customInfo,
+                };
+                if (empUploadedPhoto) payload.displayPhoto = empUploadedPhoto;
+
+                var url = empTarget.isOwner
+                    ? '/account/establishments/' + companyId + '/owner-employee-profile'
+                    : '/account/establishments/' + companyId + '/collaborateurs/' + empTarget.id + '/employee-profile';
+
+                empSaveBtn.disabled = true;
+                fetch(url, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        empSaveBtn.disabled = false;
+                        if (data.success) window.location.reload();
+                        else { empError.textContent = data.error || 'Erreur.'; empError.style.display = 'block'; }
+                    })
+                    .catch(function () { empSaveBtn.disabled = false; empError.textContent = 'Erreur réseau.'; empError.style.display = 'block'; });
             });
 
             // ── Répondre à une demande de rejoindre ──────────────────────────

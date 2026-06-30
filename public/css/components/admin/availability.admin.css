@@ -1706,3 +1706,53 @@
   from { opacity: 0; transform: translateX(-50%) translateY(10px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+/* ── Horaire commun / individuel par employé (cf. grades/permissions) ── */
+.avail-schedule-mode {
+  display: flex;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.avail-schedule-mode__option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink, #12171b);
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--border-light);
+  transition: border-color 0.12s, background 0.12s, opacity 0.12s;
+}
+
+.avail-schedule-mode__option input { accent-color: var(--accent, #1a7a4a); }
+
+/* Mode actif bien mis en évidence ; l'autre grisé/atténué pour qu'il soit
+   évident lequel s'applique réellement (cf. demande "entoure/grise"). */
+.avail-schedule-mode__option.is-active {
+  border-color: var(--accent, #1a7a4a);
+  background: var(--accent-glow, rgba(26, 122, 74, 0.08));
+  font-weight: 700;
+}
+
+.avail-schedule-mode__option.is-muted {
+  opacity: 0.5;
+}
+
+.avail-schedule-mode__option.is-muted:hover {
+  opacity: 0.85;
+  border-color: var(--accent, #1a7a4a);
+}
+
+.avail-employee-select {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1.5px solid var(--border-light);
+  font: 600 0.84rem var(--font-primary);
+  color: var(--ink, #12171b);
+  background: var(--color-white);
+}

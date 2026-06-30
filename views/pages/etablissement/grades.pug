@@ -1,0 +1,369 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet", href="/css/layouts/auth.css")
+    link(rel="stylesheet", href="/css/layouts/etablissements.css")
+
+block content
+    a.etab-back-link(href=`/etablissement/${company.id}/collaborateurs` style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted,#6b7280);text-decoration:none;margin-bottom:20px")
+        svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+            path(d="M19 12H5M12 19l-7-7 7-7")
+        | Retour aux collaborateurs
+
+    .grades-page
+        //- ── Colonne gauche : liste des grades ───────────────────────
+        .grades-page__sidebar
+            .grades-page__sidebar-hd
+                h1.grades-page__title Grades
+                if permissions.grades.manage
+                    button.sm-btn.sm-btn--primary#createGradeBtn(type="button")
+                        svg(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
+                            path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                        span Créer
+
+            if !grades.length
+                p.grades-page__empty Aucun grade. Créez-en un pour définir les accès de votre équipe.
+            else
+                .grades-page__list
+                    each g in grades
+                        div.grades-page__item(role="button" tabindex="0" data-id=g.id data-name=g.name data-permissions=JSON.stringify(g.permissions))
+                            .grades-page__item-avatar= g.name ? g.name[0].toUpperCase() : '?'
+                            .grades-page__item-info
+                                span.grades-page__item-name= g.name
+                                span.grades-page__item-meta= g.memberCount + (g.memberCount === 1 ? ' collaborateur' : ' collaborateurs')
+                            if g.isBuiltIn
+                                span.estab-badge.estab-badge--role Défaut
+                            if permissions.grades.manage
+                                button.grades-page__item-delete.js-delete-grade(type="button" data-id=g.id data-name=g.name title="Supprimer")
+                                    svg(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
+                                        path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+
+        //- ── Colonne droite : éditeur ────────────────────────────────
+        .grades-page__editor
+            .grades-page__editor-empty#gradeEditorEmpty
+                svg(viewBox="0 -960 960 960" height="48" width="48" fill="currentColor" style="color:var(--border-light,#e2e0db)")
+                    path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Z")
+                p Sélectionnez un grade à modifier,
+                    br
+                    | ou créez-en un nouveau.
+
+            .grades-page__editor-form#gradeEditorForm(style="display:none")
+                .grades-page__editor-form-hd
+                    h2.grades-page__editor-title#gradeEditorTitle Nouveau grade
+                    .auth-field(style="margin:0")
+                        label.auth-label Nom du grade
+                        input.auth-input#gradeNameInput(type="text" placeholder="Ex. Réceptionniste")
+
+                .grade-modal__body#gradePermissionsList
+                    each group in permissionGroups
+                        .grade-perm-group
+                            .grade-perm-group__hd
+                                span.grade-perm-group__title= group.title
+                                button.grade-perm-group__check-all(type="button" data-group=group.zones.join(',')) Tout activer
+                            .grade-perm-group__zones
+                                each zoneKey in group.zones
+                                    - const zone = permissionSchema[zoneKey]
+                                    - const zoneKeysList = Object.keys(zone.keys)
+                                    - const hasView = zoneKeysList.indexOf('view') >= 0
+                                    - const manageKeys = zoneKeysList.filter(function(k){ return k !== 'view' })
+                                    - const showOpts = manageKeys.length > 1 || (hasView && manageKeys.length > 0)
+                                    .grade-perm-zone-card(data-zone=zoneKey)
+                                        .grade-perm-zone-card__hd
+                                            .grade-perm-zone-card__info
+                                                span.grade-perm-zone-card__name= zone.label
+                                                if zone.description
+                                                    span.grade-perm-zone-card__desc= zone.description
+                                            .grade-perm-level-pills
+                                                button.grade-perm-level-btn.is-active(type="button" data-level="none") Aucun accès
+                                                if hasView
+                                                    button.grade-perm-level-btn(type="button" data-level="view") Voir
+                                                if manageKeys.length > 0
+                                                    button.grade-perm-level-btn(type="button" data-level="manage")= hasView ? 'Gérer' : (manageKeys.length === 1 ? 'Accès' : 'Personnaliser')
+                                        if hasView
+                                            input(type="checkbox" data-zone=zoneKey data-key="view" style="display:none" tabindex="-1")
+                                        if !showOpts
+                                            each key in manageKeys
+                                                input(type="checkbox" data-zone=zoneKey data-key=key style="display:none" tabindex="-1")
+                                        if showOpts
+                                            .grade-perm-zone-card__manage-opts(style="display:none")
+                                                each key in manageKeys
+                                                    - const keyLabel = zone.keys[key]
+                                                    label.grade-perm-toggle
+                                                        span.grade-perm-toggle__label= keyLabel
+                                                        .grade-perm-toggle__switch
+                                                            input(type="checkbox" data-zone=zoneKey data-key=key)
+                                                            span.grade-perm-toggle__track
+                                                                span.grade-perm-toggle__thumb
+
+                .grades-page__editor-foot
+                    p.etab-error#gradeError(style="display:none")
+                    .grades-page__editor-actions
+                        button.sm-btn.sm-btn--primary#gradeSaveBtn(type="button") Enregistrer
+                        button.sm-btn.sm-btn--ghost#gradeCancelBtn(type="button") Annuler
+
+    //- ── Modale suppression de grade ─────────────────────────────────────────
+    .cancel-modal-overlay#deleteGradeOverlay(style="display:none")
+        .cancel-modal#deleteGradeModal
+            h3.cancel-modal__title Supprimer ce grade ?
+            .cancel-modal__info#deleteGradeInfo
+            .auth-field#deleteGradeReassignField(style="display:none")
+                label.auth-label Réassigner les collaborateurs concernés à
+                select.auth-input#deleteGradeReassignSelect
+                    each g in grades
+                        option(value=g.id)= g.name
+            p.etab-error#deleteGradeError(style="display:none")
+            .cancel-modal__actions
+                button.sm-btn.sm-btn--danger#deleteGradeConfirm(type="button") Oui, supprimer
+                button.sm-btn.sm-btn--ghost#deleteGradeClose(type="button") Annuler
+
+block scripts
+    script.
+        (function () {
+            var companyId   = !{JSON.stringify(company.id)};
+            var canManage   = !{JSON.stringify(!!(permissions && permissions.grades && permissions.grades.manage))};
+            var editingId   = null;
+
+            // ── Helpers niveau zone (copiés de collaborateurs.pug) ────────
+            function computeZoneLevel(zoneCard) {
+                var viewInput    = zoneCard.querySelector('input[data-key="view"]');
+                var manageInputs = Array.from(zoneCard.querySelectorAll('input[type="checkbox"]'))
+                    .filter(function(i) { return i.dataset.key !== 'view'; });
+                var viewChecked  = viewInput && viewInput.checked;
+                var anyManage    = manageInputs.some(function(i) { return i.checked; });
+                if (viewChecked && anyManage) return 'manage';
+                if (viewChecked)              return 'view';
+                if (anyManage)                return 'manage';
+                return 'none';
+            }
+
+            function setZoneLevel(zoneCard, level) {
+                var viewInput    = zoneCard.querySelector('input[data-key="view"]');
+                var manageInputs = Array.from(zoneCard.querySelectorAll('input[type="checkbox"]'))
+                    .filter(function(i) { return i.dataset.key !== 'view'; });
+                var optsEl = zoneCard.querySelector('.grade-perm-zone-card__manage-opts');
+                zoneCard.querySelectorAll('.grade-perm-level-btn').forEach(function(btn) {
+                    btn.classList.toggle('is-active', btn.dataset.level === level);
+                });
+                if (level === 'none') {
+                    if (viewInput) viewInput.checked = false;
+                    manageInputs.forEach(function(i) { i.checked = false; });
+                    if (optsEl) optsEl.style.display = 'none';
+                } else if (level === 'view') {
+                    if (viewInput) viewInput.checked = true;
+                    manageInputs.forEach(function(i) { i.checked = false; });
+                    if (optsEl) optsEl.style.display = 'none';
+                } else if (level === 'manage') {
+                    if (viewInput) viewInput.checked = true;
+                    if (optsEl) {
+                        optsEl.style.display = '';
+                        var anyChecked = manageInputs.some(function(i) { return i.checked; });
+                        if (!anyChecked) manageInputs.forEach(function(i) { i.checked = true; });
+                    } else {
+                        manageInputs.forEach(function(i) { i.checked = true; });
+                    }
+                }
+            }
+
+            function getZoneMaxLevel(zoneCard) {
+                if (zoneCard.querySelector('[data-level="manage"]')) return 'manage';
+                if (zoneCard.querySelector('[data-level="view"]'))   return 'view';
+                return 'none';
+            }
+
+            function updateGroupCheckAllLabel(groupEl) {
+                var btn = groupEl && groupEl.querySelector('.grade-perm-group__check-all');
+                if (!btn) return;
+                var zones = btn.dataset.group.split(',');
+                var allMax = zones.every(function(z) {
+                    var card = groupEl.querySelector('.grade-perm-zone-card[data-zone="' + z + '"]');
+                    return !card || computeZoneLevel(card) === getZoneMaxLevel(card);
+                });
+                btn.textContent = allMax ? 'Tout désactiver' : 'Tout activer';
+            }
+
+            // ── Level pills ───────────────────────────────────────────────
+            document.querySelectorAll('#gradePermissionsList .grade-perm-zone-card').forEach(function(zoneCard) {
+                zoneCard.querySelectorAll('.grade-perm-level-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        if (!canManage) return;
+                        setZoneLevel(zoneCard, btn.dataset.level);
+                        updateGroupCheckAllLabel(zoneCard.closest('.grade-perm-group'));
+                    });
+                });
+            });
+
+            document.querySelectorAll('.grade-perm-group__check-all').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    if (!canManage) return;
+                    var groupEl = btn.closest('.grade-perm-group');
+                    var zones   = btn.dataset.group.split(',');
+                    var allMax  = zones.every(function(z) {
+                        var card = groupEl.querySelector('.grade-perm-zone-card[data-zone="' + z + '"]');
+                        return !card || computeZoneLevel(card) === getZoneMaxLevel(card);
+                    });
+                    zones.forEach(function(z) {
+                        var card = groupEl.querySelector('.grade-perm-zone-card[data-zone="' + z + '"]');
+                        if (card) setZoneLevel(card, allMax ? 'none' : getZoneMaxLevel(card));
+                    });
+                    updateGroupCheckAllLabel(groupEl);
+                });
+            });
+
+            function setGradeCheckboxes(permissions) {
+                document.querySelectorAll('#gradePermissionsList input[type="checkbox"]').forEach(function(cb) {
+                    var zone = cb.dataset.zone, key = cb.dataset.key;
+                    cb.checked = !!(permissions && permissions[zone] && permissions[zone][key]);
+                });
+                document.querySelectorAll('#gradePermissionsList .grade-perm-zone-card').forEach(function(zoneCard) {
+                    var level  = computeZoneLevel(zoneCard);
+                    var optsEl = zoneCard.querySelector('.grade-perm-zone-card__manage-opts');
+                    zoneCard.querySelectorAll('.grade-perm-level-btn').forEach(function(btn) {
+                        btn.classList.toggle('is-active', btn.dataset.level === level);
+                    });
+                    if (optsEl) optsEl.style.display = (level === 'manage') ? '' : 'none';
+                });
+                document.querySelectorAll('.grade-perm-group').forEach(function(g) { updateGroupCheckAllLabel(g); });
+            }
+
+            // Désactiver le picker si l'utilisateur n'a que grades.view
+            if (!canManage) {
+                document.querySelectorAll('#gradePermissionsList .grade-perm-level-btn').forEach(function(btn) {
+                    btn.style.pointerEvents = 'none';
+                    btn.style.opacity = '0.85';
+                });
+                document.querySelectorAll('#gradePermissionsList .grade-perm-toggle').forEach(function(lbl) {
+                    lbl.style.pointerEvents = 'none';
+                });
+                document.querySelectorAll('.grade-perm-group__check-all').forEach(function(btn) {
+                    btn.style.display = 'none';
+                });
+            }
+
+            // ── Liste des grades : sélection ─────────────────────────────
+            var editorEmpty = document.getElementById('gradeEditorEmpty');
+            var editorForm  = document.getElementById('gradeEditorForm');
+            var editorTitle = document.getElementById('gradeEditorTitle');
+            var gradeNameInput = document.getElementById('gradeNameInput');
+            var gradeError  = document.getElementById('gradeError');
+            var gradeSaveBtn   = document.getElementById('gradeSaveBtn');
+            var gradeCancelBtn = document.getElementById('gradeCancelBtn');
+
+            function showEditor(id, name, permissions) {
+                editingId = id || null;
+                editorTitle.textContent = id ? 'Modifier le grade — ' + name : 'Nouveau grade';
+                gradeNameInput.value = name || '';
+                setGradeCheckboxes(permissions || null);
+                gradeError.style.display = 'none';
+                editorEmpty.style.display = 'none';
+                editorForm.style.display  = '';
+                // Marquer l'item actif dans la liste
+                document.querySelectorAll('.grades-page__item').forEach(function(item) {
+                    item.classList.toggle('is-active', item.dataset.id === id);
+                });
+                // Afficher les boutons save/cancel selon la permission
+                if (gradeSaveBtn) gradeSaveBtn.style.display = canManage ? '' : 'none';
+                gradeNameInput.readOnly = !canManage;
+            }
+
+            function hideEditor() {
+                editingId = null;
+                editorEmpty.style.display = '';
+                editorForm.style.display  = 'none';
+                document.querySelectorAll('.grades-page__item').forEach(function(item) {
+                    item.classList.remove('is-active');
+                });
+            }
+
+            document.querySelectorAll('.grades-page__item').forEach(function(item) {
+                item.addEventListener('click', function(e) {
+                    // Ignorer si clic sur le bouton supprimer
+                    if (e.target.closest('.grades-page__item-delete')) return;
+                    showEditor(item.dataset.id, item.dataset.name, JSON.parse(item.dataset.permissions || '{}'));
+                });
+            });
+
+            if (gradeCancelBtn) gradeCancelBtn.addEventListener('click', hideEditor);
+
+            if (document.getElementById('createGradeBtn')) {
+                document.getElementById('createGradeBtn').addEventListener('click', function() {
+                    showEditor(null, '', null);
+                });
+            }
+
+            // ── Sauvegarder ───────────────────────────────────────────────
+            if (gradeSaveBtn) gradeSaveBtn.addEventListener('click', function() {
+                var name = gradeNameInput.value.trim();
+                if (!name) { gradeError.textContent = 'Le nom du grade est requis.'; gradeError.style.display = 'block'; return; }
+
+                var perms = {};
+                document.querySelectorAll('#gradePermissionsList input[type="checkbox"]').forEach(function(cb) {
+                    var zone = cb.dataset.zone, key = cb.dataset.key;
+                    perms[zone] = perms[zone] || {};
+                    perms[zone][key] = cb.checked;
+                });
+
+                var url    = editingId ? '/account/establishments/' + companyId + '/grades/' + editingId : '/account/establishments/' + companyId + '/grades';
+                var method = editingId ? 'PATCH' : 'POST';
+
+                gradeSaveBtn.disabled = true;
+                fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, permissions: perms }) })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        gradeSaveBtn.disabled = false;
+                        if (data.success) window.location.reload();
+                        else { gradeError.textContent = data.error || 'Erreur.'; gradeError.style.display = 'block'; }
+                    })
+                    .catch(function() { gradeSaveBtn.disabled = false; gradeError.textContent = 'Erreur réseau.'; gradeError.style.display = 'block'; });
+            });
+
+            // ── Supprimer ─────────────────────────────────────────────────
+            var deleteOverlay   = document.getElementById('deleteGradeOverlay');
+            var deleteInfo      = document.getElementById('deleteGradeInfo');
+            var deleteField     = document.getElementById('deleteGradeReassignField');
+            var deleteSelect    = document.getElementById('deleteGradeReassignSelect');
+            var deleteError     = document.getElementById('deleteGradeError');
+            var deleteConfirmBtn = document.getElementById('deleteGradeConfirm');
+            var deleteTargetId  = null;
+
+            document.querySelectorAll('.js-delete-grade').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    deleteTargetId = btn.dataset.id;
+                    deleteInfo.textContent = 'Vous êtes sur le point de supprimer le grade "' + btn.dataset.name + '".';
+                    deleteField.style.display = 'none';
+                    deleteError.style.display = 'none';
+                    Array.from(deleteSelect.options).forEach(function(opt) {
+                        opt.style.display = opt.value === deleteTargetId ? 'none' : '';
+                    });
+                    deleteOverlay.style.display = 'flex';
+                });
+            });
+
+            document.getElementById('deleteGradeClose').addEventListener('click', function() {
+                deleteOverlay.style.display = 'none';
+                deleteTargetId = null;
+            });
+
+            deleteConfirmBtn.addEventListener('click', function() {
+                if (!deleteTargetId) return;
+                deleteConfirmBtn.disabled = true;
+                fetch('/account/establishments/' + companyId + '/grades/' + deleteTargetId, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reassignToGradeId: deleteField.style.display === 'block' ? deleteSelect.value : null }),
+                })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        deleteConfirmBtn.disabled = false;
+                        if (data.success) { window.location.reload(); return; }
+                        if (data.error === 'grade_in_use') {
+                            deleteInfo.textContent = data.message;
+                            deleteField.style.display = 'block';
+                        } else {
+                            deleteError.textContent = data.error || 'Erreur.';
+                            deleteError.style.display = 'block';
+                        }
+                    })
+                    .catch(function() { deleteConfirmBtn.disabled = false; deleteError.textContent = 'Erreur réseau.'; deleteError.style.display = 'block'; });
+            });
+        })();

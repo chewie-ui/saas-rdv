@@ -1,7 +1,6 @@
 const Booking  = require("../db/models/book.model");
 const User     = require("../db/models/user.model");
 const Company  = require("../db/models/company/company.model");
-const Employee = require("../db/models/company/employee.model");
 const Service  = require("../db/models/company/service.model");
 const { addEventToCalendar, deleteEventFromCalendar, getBusyIntervals } = require("../utils/googleCalendarSync");
 const DaysOff  = require("../db/models/company/daysOff.model");
@@ -12,6 +11,7 @@ const { getLimit, atLeast } = require("../utils/planLimits");
 const { sendEmail } = require("../utils/mailer");
 const { isFeatureEnabled } = require("../middlewares/featureFlag");
 const { getCoursesForDate, courseRangesFor } = require("../utils/recurringCourses");
+const { getBookableTeam } = require("../utils/bookableTeam");
 const { log } = require("console");
 
 const Stripe = require("stripe");
@@ -530,44 +530,78 @@ exports.createBooking = async (req, res) => {
       employeeName = "";
     }
 
-    // ── Auto-assign an available employee when none was explicitly chosen ──
-    if (!isGroup && !employeeId) {
-      const activeEmployees = await Employee.find({ company, active: true }).lean();
+    // ── Anti double-booking — revalidé côté serveur dans tous les cas ───────
+    // Le frontend ne propose déjà que des créneaux libres, mais on ne fait
+    // jamais confiance uniquement à l'UI pour une règle métier (même
+    // principe que minBookingLeadTime plus haut). Couvre les 3 cas : un
+    // employé précis a été choisi, aucun employé n'a été précisé (auto-
+    // assignation parmi les employés actifs), ou l'établissement n'a aucun
+    // employé enregistré (solo) — les trois chemins étaient auparavant
+    // traités différemment et seul le 2e vérifiait vraiment les conflits,
+    // ce qui permettait deux réservations qui se chevauchent dès qu'un
+    // employé précis était sélectionné ou qu'il n'y avait aucun employé.
+    if (!isGroup) {
+      function overlapsRange(b) {
+        const [bh, bm] = b.startTime.split(":").map(Number);
+        const bStart = bh * 60 + bm;
+        const bEnd = bStart + (b.slotTime || actualDuration);
+        return startTimeInMinutes < bEnd && endTimeInMinutes > bStart;
+      }
 
-      if (activeEmployees.length > 0) {
-        // Find employees already booked at an overlapping slot on that date
+      if (employeeId) {
+        // Employé précis choisi par le client — vérifier que CET employé
+        // est bien libre (RDV existant ou cours collectif).
         const overlapping = await Booking.find({
           company,
           date: new Date(date),
           status: { $ne: "canceled" },
-          employee: { $in: activeEmployees.map((e) => e._id) },
+          employee: employeeId,
+        }).select("startTime slotTime").lean();
+        if (overlapping.some(overlapsRange)) {
+          return res.json({ success: false, error: "no_employee_available" });
+        }
+        const coursesForThisDate = await getCoursesForDate(company, date);
+        const courseConflict = courseRangesFor(coursesForThisDate, employeeId)
+          .some(([rs, re]) => startTimeInMinutes < re && endTimeInMinutes > rs);
+        if (courseConflict) {
+          return res.json({ success: false, error: "no_employee_available" });
+        }
+      } else {
+        const team = await getBookableTeam(company);
+
+        if (team.length === 0) {
+          // Personne n'est marqué bookable (patron désactivé, aucun
+          // collaborateur "employé") — aucune réservation possible.
+          return res.json({ success: false, error: "no_employee_available" });
+        }
+
+        // Aucun employé précisé — auto-assigner le premier qui est libre.
+        const overlapping = await Booking.find({
+          company,
+          date: new Date(date),
+          status: { $ne: "canceled" },
+          employee: { $in: team.map((m) => m.id) },
         }).select("employee startTime slotTime").lean();
 
         const busyIds = new Set();
         overlapping.forEach((b) => {
-          const [bh, bm] = b.startTime.split(":").map(Number);
-          const bStart = bh * 60 + bm;
-          const bEnd   = bStart + (b.slotTime || actualDuration);
-          // Overlap: our window [startMin, endMin) intersects [bStart, bEnd)
-          if (startTimeInMinutes < bEnd && endTimeInMinutes > bStart) {
-            busyIds.add(String(b.employee));
-          }
+          if (overlapsRange(b)) busyIds.add(String(b.employee));
         });
 
         // Un employé en cours collectif à ce moment-là n'est pas disponible
         // pour un autre service, même sans RDV individuel enregistré.
         const coursesForThisDate = await getCoursesForDate(company, date);
-        activeEmployees.forEach((e) => {
-          const blocked = courseRangesFor(coursesForThisDate, String(e._id))
+        team.forEach((m) => {
+          const blocked = courseRangesFor(coursesForThisDate, m.id)
             .some(([rs, re]) => startTimeInMinutes < re && endTimeInMinutes > rs);
-          if (blocked) busyIds.add(String(e._id));
+          if (blocked) busyIds.add(m.id);
         });
 
-        const free = activeEmployees.find((e) => !busyIds.has(String(e._id)));
+        const free = team.find((m) => !busyIds.has(m.id));
         if (!free) {
           return res.json({ success: false, error: "no_employee_available" });
         }
-        employeeId   = String(free._id);
+        employeeId   = free.id;
         employeeName = `${free.firstName} ${free.lastName}`;
       }
     }
@@ -913,10 +947,10 @@ exports.getBooking = async (req, res) => {
   const nowMinutes = isToday ? now.getHours() * 60 + now.getMinutes() : -1;
 
   // Get company config so we can compute slot granularity / buffer / mode.
-  const [companyDoc, activeEmployeeCount] = await Promise.all([
+  const [companyDoc, team] = await Promise.all([
     Company.findById(companyId).select("slotTime bufferTime bufferBefore bufferAfter slotMode slotInterval owner smartGrouping minBookingLeadTime").lean(),
-    // Only count employees when no specific one is filtered
-    specificEmployee ? Promise.resolve(0) : Employee.countDocuments({ company: companyId, active: true }),
+    // Inutile quand un employé précis est filtré.
+    specificEmployee ? Promise.resolve([]) : getBookableTeam(companyId),
   ]);
 
   // ── Délai minimum de réservation ──────────────────────────────────────────
@@ -1095,23 +1129,13 @@ exports.getBooking = async (req, res) => {
     return res.json({ bookedTimes: Array.from(blockedSet), recommendedTimes: computeRecommendedTimes(bookings, blockedSet) });
   }
 
-  // ── Case 2: no employees on this company → 1 booking blocks the slot ─────
-  if (activeEmployeeCount === 0) {
-    const bookings = await Booking.find(baseQuery).select("startTime slotTime").lean();
-    const blockedSet = new Set();
-    blockedFromRanges(blockedSet, buildOccupiedRanges(bookings));
-    blockedFromRanges(blockedSet, googleRanges);
-    blockedFromRanges(blockedSet, courseRangesFor(coursesToday, null));
-    blockPastSlots(blockedSet);
-    return res.json({ bookedTimes: Array.from(blockedSet), recommendedTimes: computeRecommendedTimes(bookings, blockedSet) });
-  }
-
-  // ── Case 3: company has employees, no filter → block slot only when ALL are busy ──
-  const activeEmployees = await Employee.find({ company: companyId, active: true }).select("_id").lean();
-
+  // ── Case 2: no filter → block slot only when EVERY bookable membre is busy.
+  // Réduit naturellement au cas "solo" (équipe d'1 seule personne = le
+  // patron) et au cas "personne n'est bookable" (équipe vide → tout bloqué,
+  // .every() sur un tableau vide retourne toujours true) sans branche à part.
   const bookings = await Booking.find({
     ...baseQuery,
-    employee: { $in: activeEmployees.map((e) => e._id) },
+    employee: { $in: team.map((m) => m.id) },
   }).select("startTime slotTime employee").lean();
 
   // Group bookings per employee, then build their occupied ranges — pré-rempli
@@ -1119,7 +1143,7 @@ exports.getBooking = async (req, res) => {
   // sans employé assigné se retrouve dans la liste de TOUS, donc bloque la
   // disponibilité générale même sans filtre employé précis).
   const rangesByEmployee = new Map(); // employeeId string → ranges[]
-  activeEmployees.forEach((e) => rangesByEmployee.set(String(e._id), courseRangesFor(coursesToday, String(e._id))));
+  team.forEach((m) => rangesByEmployee.set(m.id, courseRangesFor(coursesToday, m.id)));
   bookings.forEach((b) => {
     const empId = String(b.employee);
     const ranges = buildOccupiedRanges([b]);
@@ -1128,12 +1152,12 @@ exports.getBooking = async (req, res) => {
     }
   });
 
-  // Block a candidate slot only when EVERY active employee has an overlapping
-  // occupied range at that time.
+  // Block a candidate slot only when EVERY active team member has an
+  // overlapping occupied range at that time.
   const blockedSet = new Set();
   for (let t = 0; t < 24 * 60; t += step) {
-    const allBusy = activeEmployees.every((e) => {
-      const ranges = rangesByEmployee.get(String(e._id)) || [];
+    const allBusy = team.every((m) => {
+      const ranges = rangesByEmployee.get(m.id) || [];
       return ranges.some(([rs, re]) => rangesOverlap(t, t + newDuration, rs, re));
     });
     if (allBusy) blockedSet.add(minutesToTimeStr(t));
@@ -1228,7 +1252,7 @@ exports.getSchedule = async (req, res) => {
 
   // 1. Récupérer la config de base (pour le slotTime et les horaires par défaut)
   const company = await Company.findById(COMPANY_ID)
-    .select("schedule slotTime slotMode slotInterval")
+    .select("schedule slotTime slotMode slotInterval scheduleMode owner ownerEmployeeProfile.schedule")
     .lean();
 
   // 2. CHERCHER UNE EXCEPTION (DaysOff) — filtrée par employé si précisé
@@ -1236,7 +1260,25 @@ exports.getSchedule = async (req, res) => {
   const specificEmp   = employeeId && employeeId !== "null" && employeeId !== "";
 
   const exceptionsDoc = await DaysOff.findOne({ company: COMPANY_ID });
-  let target = company.schedule.find((d) => d.weekdayIndex === jsWeekdayIndex);
+
+  // ── Horaire individuel (cf. plan grades/permissions) ───────────────────────
+  // Si un employé précis est choisi et que la company est en mode
+  // "perEmployee", la grille de créneaux se base sur SON horaire (avec repli
+  // sur le commun si pas encore configuré) au lieu du Company.schedule.
+  let baseSchedule = company.schedule;
+  if (specificEmp && company.scheduleMode === "perEmployee") {
+    let individualSchedule;
+    if (String(company.owner) === String(employeeId)) {
+      individualSchedule = company.ownerEmployeeProfile?.schedule;
+    } else {
+      const CompanyMembership = require("../db/models/company/companyMembership.model");
+      const membership = await CompanyMembership.findOne({ company: COMPANY_ID, user: employeeId }).select("schedule").lean();
+      individualSchedule = membership?.schedule;
+    }
+    if (individualSchedule && individualSchedule.length > 0) baseSchedule = individualSchedule;
+  }
+
+  let target = baseSchedule.find((d) => d.weekdayIndex === jsWeekdayIndex);
 
   if (exceptionsDoc && exceptionsDoc.dates) {
     // Trouver une exception pertinente pour cet employé (ou pour tous si pas d'employé)

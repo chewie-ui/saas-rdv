@@ -1,12 +1,50 @@
 const User = require("../db/models/user.model");
 const Company = require("../db/models/company/company.model");
 const CompanyMembership = require("../db/models/company/companyMembership.model");
+const CompanyGrade = require("../db/models/company/companyGrade.model");
 const { getPlan, getLimit } = require("../utils/planLimits");
 const getServices = require("../utils/services");
 const { logActivity } = require("../utils/activityLog");
 
+// Grade par défaut assigné à un nouveau collaborateur (invitation ou demande
+// acceptée) quand aucun grade n'est explicitement choisi — créé par la
+// migration pour toute company existante ; pour une company toute neuve,
+// créé à la volée ici si besoin (cf. ensureDefaultGrade).
+async function ensureDefaultGrade(companyId) {
+  const { DEFAULT_GRADE_TEMPLATES } = require("../utils/permissions");
+  let grade = await CompanyGrade.findOne({ company: companyId, name: "Staff" });
+  if (!grade) {
+    grade = await CompanyGrade.create({
+      company: companyId,
+      name: "Staff",
+      isBuiltIn: true,
+      permissions: DEFAULT_GRADE_TEMPLATES.Staff,
+    });
+  }
+  return grade;
+}
+
+// Crée les grades "Manager"/"Staff" pour une company qui n'en a encore
+// aucun (établissement créé avant le système de grades, ou tout neuf) —
+// cf. scripts/migrate-seed-grades.js pour l'équivalent en masse.
+async function ensureBuiltInGrades(companyId) {
+  const existingCount = await CompanyGrade.countDocuments({ company: companyId });
+  if (existingCount > 0) return;
+  const { DEFAULT_GRADE_TEMPLATES } = require("../utils/permissions");
+  for (const name of Object.keys(DEFAULT_GRADE_TEMPLATES)) {
+    await CompanyGrade.create({
+      company: companyId,
+      name,
+      isBuiltIn: true,
+      permissions: DEFAULT_GRADE_TEMPLATES[name],
+    });
+  }
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+// Owner-only strict — réservé aux actions qui ne doivent JAMAIS être
+// déléguées même via un grade (cf. controllers/grade.controller.js).
 async function loadOwnedCompanyOr403(req, res) {
   const company = await Company.findOne({
     _id: req.params.id,
@@ -16,6 +54,33 @@ async function loadOwnedCompanyOr403(req, res) {
   if (!company) {
     res.status(404).json({ error: "Établissement introuvable." });
     return null;
+  }
+  return company;
+}
+
+// Owner OU collaborateur accepté+actif de cette company — la vraie
+// autorisation fine (quelle permission précise est requise) est déjà
+// vérifiée par `requirePermission()` au niveau de la route ; ce loader ne
+// fait que confirmer que l'utilisateur a un lien quelconque avec cette
+// company avant de la charger (cf. système de grades/permissions).
+async function loadAccessibleCompanyOr403(req, res) {
+  const company = await Company.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+  if (!company) {
+    res.status(404).json({ error: "Établissement introuvable." });
+    return null;
+  }
+  const isOwner = String(company.owner) === String(req.user._id);
+  if (!isOwner) {
+    const membership = await CompanyMembership.findOne({
+      company: company._id,
+      user: req.user._id,
+      status: "accepted",
+      isActive: { $ne: false },
+    }).lean();
+    if (!membership) {
+      res.status(403).json({ error: "Accès refusé." });
+      return null;
+    }
   }
   return company;
 }
@@ -41,28 +106,43 @@ exports.listMyEstablishments = async (req, res) => {
 
   const memberships = await CompanyMembership.find({
     user: owner._id,
-    status: "accepted",
+    status: { $in: ["accepted", "pending", "rejected"] },
   })
     .populate({ path: "company", populate: { path: "owner", select: "businessName fullName" } })
+    .populate("grade", "name")
     .lean();
 
   const companiesLimit = getLimit("companies", owner);
   const ownedFormatted = owned.map((c) => formatCompanyForList(c, owner));
-  const memberOf = memberships
-    .filter((m) => m.company && !m.company.isDeleted)
+
+  function companyLabel(m) {
+    return (m.company && (m.company.name || (m.company.owner && (m.company.owner.businessName || m.company.owner.fullName)))) || "Établissement sans nom";
+  }
+
+  const live = memberships.filter((m) => m.company && !m.company.isDeleted);
+  const memberOf = live
+    .filter((m) => m.status === "accepted")
     .map((m) => ({
       id: String(m.company._id),
-      name: m.company.name || (m.company.owner && (m.company.owner.businessName || m.company.owner.fullName)) || "Établissement sans nom",
-      role: m.role,
+      name: companyLabel(m),
+      role: m.grade?.name || "",
       isActive: m.isActive !== false,
       acceptedAt: m.acceptedAt,
     }));
+  const pendingRequests = live
+    .filter((m) => m.status === "pending")
+    .map((m) => ({ id: String(m._id), name: companyLabel(m), requestedAt: m.createdAt }));
+  const rejectedRequests = live
+    .filter((m) => m.status === "rejected")
+    .map((m) => ({ id: String(m._id), name: companyLabel(m), requestedAt: m.createdAt }));
 
   return res.render("etablissement/mes-etablissements", {
     title: "Mes établissements — BranShee",
     pageName: "Mes établissements",
     establishments: ownedFormatted,
     memberOf,
+    pendingRequests,
+    rejectedRequests,
     companiesLimit: companiesLimit === Infinity ? null : companiesLimit,
     companiesCount: owned.length,
     atCompanyLimit: owned.length >= companiesLimit,
@@ -136,7 +216,7 @@ exports.createEstablishment = async (req, res) => {
 // ── Modifier nom / type d'activité ───────────────────────────────────────────
 exports.updateEstablishment = async (req, res) => {
   try {
-    const company = await loadOwnedCompanyOr403(req, res);
+    const company = await loadAccessibleCompanyOr403(req, res);
     if (!company) return;
 
     const update = {};
@@ -165,7 +245,7 @@ exports.updateEstablishment = async (req, res) => {
 // ── Photo de l'établissement ──────────────────────────────────────────────────
 exports.updateEstablishmentPhoto = async (req, res) => {
   try {
-    const company = await loadOwnedCompanyOr403(req, res);
+    const company = await loadAccessibleCompanyOr403(req, res);
     if (!company) return;
     if (!req.file) return res.status(400).json({ error: "Aucune image reçue." });
 
@@ -181,7 +261,7 @@ exports.updateEstablishmentPhoto = async (req, res) => {
 // ── Mettre en pause / réactiver ──────────────────────────────────────────────
 exports.togglePauseEstablishment = async (req, res) => {
   try {
-    const company = await loadOwnedCompanyOr403(req, res);
+    const company = await loadAccessibleCompanyOr403(req, res);
     if (!company) return;
 
     const isPaused = !!req.body.isPaused;
@@ -205,7 +285,7 @@ exports.togglePauseEstablishment = async (req, res) => {
 // ── Supprimer (suppression douce) ────────────────────────────────────────────
 exports.deleteEstablishment = async (req, res) => {
   try {
-    const company = await loadOwnedCompanyOr403(req, res);
+    const company = await loadAccessibleCompanyOr403(req, res);
     if (!company) return;
 
     await Company.findByIdAndUpdate(company._id, { isDeleted: true, deletedAt: new Date(), isPaused: true });
@@ -223,32 +303,24 @@ exports.deleteEstablishment = async (req, res) => {
   }
 };
 
-// ── Page : créer un établissement (réutilise le formulaire "register-style") ─
-exports.renderCreatePage = async (req, res) => {
-  const owner = req.user;
-  const ownedCount = await Company.countDocuments({ owner: owner._id, isDeleted: { $ne: true } });
-  const limit = getLimit("companies", owner);
-  if (ownedCount >= limit) {
-    return res.redirect("/etablissement/mes-etablissements");
-  }
-  return res.render("etablissement/creer", {
-    title: "Créer votre établissement — BranShee",
-    services: getServices(res.locals.lang),
-    isAdditional: ownedCount > 0,
-  });
-};
-
 // ── Middleware : ouvrir la page collaborateurs d'un établissement le bascule
 // automatiquement en établissement "actif" pour le reste du dashboard admin
 // (cohérent avec le bouton "Gérer" de la liste — cf. switchActiveCompany) ────
 exports.setActiveCompanyForCollabPage = async (req, res, next) => {
   try {
-    const company = await Company.findOne({
-      _id: req.params.id,
-      owner: req.user._id,
-      isDeleted: { $ne: true },
-    }).lean();
+    const company = await Company.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).lean();
     if (!company) return res.redirect("/etablissement/mes-etablissements");
+
+    const isOwner = String(company.owner) === String(req.user._id);
+    if (!isOwner) {
+      const membership = await CompanyMembership.findOne({
+        company: company._id,
+        user: req.user._id,
+        status: "accepted",
+        isActive: { $ne: false },
+      }).lean();
+      if (!membership) return res.redirect("/etablissement/mes-etablissements");
+    }
 
     req.session.activeCompanyId = String(company._id);
     next();
@@ -263,23 +335,54 @@ exports.renderCollaboratorsPage = async (req, res) => {
   const company = res.locals.currentCompany;
   if (!company) return res.redirect("/etablissement/mes-etablissements");
 
-  const owner = req.user;
-  const memberships = await CompanyMembership.find({ company: company._id })
-    .populate("user", "fullName email profilePicture")
-    .sort({ createdAt: 1 })
-    .lean();
+  await ensureBuiltInGrades(company._id);
+
+  // Le "patron" affiché sur cette page est toujours le OWNER de l'établissement
+  // (carte "Patron", limites de plan) — JAMAIS req.user, qui n'est que la
+  // personne connectée : un collaborateur consultant cette page ne doit pas
+  // voir sa propre identité/plan affichés comme si c'était lui le patron.
+  const owner = String(company.owner) === String(req.user._id)
+    ? req.user
+    : await User.findById(company.owner).lean();
+  const { resolveCanManageOwnTimeOff } = require("../utils/permissions");
+  const [memberships, grades] = await Promise.all([
+    CompanyMembership.find({ company: company._id })
+      .populate("user", "fullName email profilePicture")
+      .populate("grade")
+      .sort({ createdAt: 1 })
+      .lean(),
+    CompanyGrade.find({ company: company._id }).sort({ createdAt: 1 }).lean(),
+  ]);
 
   const accepted = memberships
     .filter((m) => m.status === "accepted" && m.user)
     .map((m) => ({
       id: String(m._id),
+      userId: String(m.user._id),
       fullName: m.user.fullName,
       email: m.user.email,
       profilePicture: m.user.profilePicture || "/images/no-user.webp",
-      role: m.role || "staff",
+      gradeId: m.grade ? String(m.grade._id) : "",
+      gradeName: m.grade?.name || "(aucun grade)",
+      canManageOwnTimeOff: m.canManageOwnTimeOff, // null = hérite du grade
+      canManageOwnTimeOffEffective: resolveCanManageOwnTimeOff({ isOwner: false, grade: m.grade, membershipOverride: m.canManageOwnTimeOff }),
       isActive: m.isActive !== false,
       acceptedAt: m.acceptedAt || m.createdAt,
+      isEmployee: !!m.isEmployee,
+      displayName: m.displayName || "",
+      displayPhoto: m.displayPhoto || "",
+      description: m.description || "",
+      showRole: !!m.showRole,
+      customInfo: m.customInfo || [],
     }));
+
+  const gradesFormatted = grades.map((g) => ({
+    id: String(g._id),
+    name: g.name,
+    isBuiltIn: !!g.isBuiltIn,
+    permissions: g.permissions,
+    memberCount: accepted.filter((m) => m.gradeId === String(g._id)).length,
+  }));
 
   const pendingRequests = memberships
     .filter((m) => m.status === "pending" && m.user)
@@ -293,22 +396,179 @@ exports.renderCollaboratorsPage = async (req, res) => {
 
   const collaboratorsLimit = getLimit("collaborators", owner);
 
+  const ownerProfile = company.ownerEmployeeProfile || {};
+  const { PERMISSION_SCHEMA, PERMISSION_GROUPS } = require("../utils/permissions");
+
   return res.render("etablissement/collaborateurs", {
     title: "Collaborateurs — BranShee",
     pageName: "Collaborateurs",
     company: formatCompanyForList(company, owner),
+    ownerUser: owner,
     collaborators: accepted,
+    grades: gradesFormatted,
+    permissionSchema: PERMISSION_SCHEMA,
+    permissionGroups: PERMISSION_GROUPS,
     pendingRequests,
     collaboratorsLimit: collaboratorsLimit === Infinity ? null : collaboratorsLimit,
     atCollaboratorsLimit: accepted.length >= collaboratorsLimit,
     currentPlan: getPlan(owner),
+    ownerProfile: {
+      isEmployee: ownerProfile.isEmployee !== false,
+      displayName: ownerProfile.displayName || "",
+      displayPhoto: ownerProfile.displayPhoto || "",
+      description: ownerProfile.description || "",
+      showRole: !!ownerProfile.showRole,
+      customInfo: ownerProfile.customInfo || [],
+    },
   });
+};
+
+// ── Page dédiée : gestion des grades ────────────────────────────────────────
+exports.renderGradesPage = async (req, res) => {
+  const company = res.locals.currentCompany;
+  if (!company) return res.redirect("/etablissement/mes-etablissements");
+
+  await ensureBuiltInGrades(company._id);
+
+  const owner = String(company.owner) === String(req.user._id)
+    ? req.user
+    : await User.findById(company.owner).lean();
+
+  const [memberships, grades] = await Promise.all([
+    require("../db/models/company/companyMembership.model")
+      .find({ company: company._id, status: "accepted" }).lean(),
+    CompanyGrade.find({ company: company._id }).sort({ createdAt: 1 }).lean(),
+  ]);
+
+  const gradesFormatted = grades.map((g) => ({
+    id: String(g._id),
+    name: g.name,
+    isBuiltIn: !!g.isBuiltIn,
+    permissions: g.permissions,
+    memberCount: memberships.filter((m) => String(m.grade) === String(g._id)).length,
+  }));
+
+  const { PERMISSION_SCHEMA, PERMISSION_GROUPS } = require("../utils/permissions");
+
+  return res.render("etablissement/grades", {
+    title: "Grades — BranShee",
+    pageName: "Grades",
+    company: { id: String(company._id), name: company.name || "Établissement" },
+    grades: gradesFormatted,
+    permissionSchema: PERMISSION_SCHEMA,
+    permissionGroups: PERMISSION_GROUPS,
+  });
+};
+
+// ── Profil employé public — collaborateur ou patron (cf. fusion Employé/
+// Collaborateur) : displayName/displayPhoto sont des surcharges optionnelles,
+// customInfo une liste libre label/valeur (ex. "Expérience : 10 ans"). ──────
+const MAX_CUSTOM_INFO = 10;
+const MAX_FIELD_LENGTH = 200;
+
+function sanitizeEmployeeProfileBody(body) {
+  const update = {};
+  if (body.isEmployee !== undefined) update.isEmployee = !!body.isEmployee;
+  if (body.displayName !== undefined) update.displayName = String(body.displayName).trim().slice(0, MAX_FIELD_LENGTH);
+  if (body.displayPhoto !== undefined) update.displayPhoto = String(body.displayPhoto).trim().slice(0, 500);
+  if (body.description !== undefined) update.description = String(body.description).trim().slice(0, 1000);
+  if (body.showRole !== undefined) update.showRole = !!body.showRole;
+  if (body.customInfo !== undefined) {
+    const raw = Array.isArray(body.customInfo) ? body.customInfo : [];
+    update.customInfo = raw
+      .filter((i) => i && (i.label || i.value))
+      .slice(0, MAX_CUSTOM_INFO)
+      .map((i) => ({
+        label: String(i.label || "").trim().slice(0, 60),
+        value: String(i.value || "").trim().slice(0, MAX_FIELD_LENGTH),
+      }));
+  }
+  return update;
+}
+
+// ── Mettre à jour le profil employé public d'un collaborateur ────────────────
+// Droit d'office (peu importe le grade) : un collaborateur peut toujours
+// modifier SON PROPRE profil d'affichage (nom, photo, description, infos) —
+// cf. demande "le collab X doit pouvoir juste modifier son profil". Modifier
+// le profil d'un AUTRE collaborateur, ou se rendre soi-même visible/masqué
+// (isEmployee, qui affecte la page de réservation publique), reste réservé
+// à collaborators.manage.
+exports.updateCollaboratorEmployeeProfile = async (req, res) => {
+  try {
+    const company = await loadAccessibleCompanyOr403(req, res);
+    if (!company) return;
+
+    const membership = await CompanyMembership.findOne({ _id: req.params.membershipId, company: company._id, status: "accepted" });
+    if (!membership) return res.status(404).json({ error: "Collaborateur introuvable." });
+
+    const { getPermissionsForCompanyAndUser } = require("../utils/permissions");
+    const isOwnProfile = String(membership.user) === String(req.user._id);
+    const permissions = await getPermissionsForCompanyAndUser(company._id, req.user._id);
+    const canManageCollaborators = !!permissions?.collaborators.manage;
+
+    if (!isOwnProfile && !canManageCollaborators) {
+      return res.status(403).json({ error: "forbidden", message: "Vous n'avez pas la permission d'effectuer cette action." });
+    }
+
+    const update = sanitizeEmployeeProfileBody(req.body || {});
+    if (!canManageCollaborators) delete update.isEmployee;
+
+    Object.assign(membership, update);
+    await membership.save();
+    await membership.populate("user", "fullName");
+
+    return res.json({
+      success: true,
+      profile: {
+        isEmployee: !!membership.isEmployee,
+        displayName: membership.displayName || "",
+        displayPhoto: membership.displayPhoto || "",
+        description: membership.description || "",
+        showRole: !!membership.showRole,
+        customInfo: membership.customInfo || [],
+      },
+    });
+  } catch (err) {
+    console.error("updateCollaboratorEmployeeProfile error:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Mettre à jour le profil employé public du patron (= owner, qui n'a pas
+// de CompanyMembership pour son propre établissement) ───────────────────────
+exports.updateOwnerEmployeeProfile = async (req, res) => {
+  try {
+    const company = await loadAccessibleCompanyOr403(req, res);
+    if (!company) return;
+
+    const update = sanitizeEmployeeProfileBody(req.body || {});
+    const setOps = {};
+    Object.keys(update).forEach((k) => { setOps[`ownerEmployeeProfile.${k}`] = update[k]; });
+
+    const updated = await Company.findByIdAndUpdate(company._id, { $set: setOps }, { new: true }).lean();
+    const profile = updated.ownerEmployeeProfile || {};
+
+    return res.json({
+      success: true,
+      profile: {
+        isEmployee: profile.isEmployee !== false,
+        displayName: profile.displayName || "",
+        displayPhoto: profile.displayPhoto || "",
+        description: profile.description || "",
+        showRole: !!profile.showRole,
+        customInfo: profile.customInfo || [],
+      },
+    });
+  } catch (err) {
+    console.error("updateOwnerEmployeeProfile error:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
 };
 
 // ── Inviter un collaborateur par email ───────────────────────────────────────
 exports.inviteCollaborator = async (req, res) => {
   try {
-    const company = await loadOwnedCompanyOr403(req, res);
+    const company = await loadAccessibleCompanyOr403(req, res);
     if (!company) return;
 
     const owner = req.user;
@@ -337,7 +597,11 @@ exports.inviteCollaborator = async (req, res) => {
       return res.status(400).json({ error: "Vous êtes déjà le propriétaire de cet établissement." });
     }
 
-    const role = req.body.role === "manager" ? "manager" : "staff";
+    let grade = null;
+    if (req.body.gradeId) {
+      grade = await CompanyGrade.findOne({ _id: req.body.gradeId, company: company._id });
+    }
+    if (!grade) grade = await ensureDefaultGrade(company._id);
 
     const existing = await CompanyMembership.findOne({ company: company._id, user: target._id });
     if (existing && existing.status === "accepted" && existing.isActive !== false) {
@@ -346,7 +610,7 @@ exports.inviteCollaborator = async (req, res) => {
 
     await CompanyMembership.findOneAndUpdate(
       { company: company._id, user: target._id },
-      { status: "accepted", role, isActive: true, acceptedAt: new Date() },
+      { status: "accepted", grade: grade._id, isActive: true, acceptedAt: new Date() },
       { upsert: true }
     );
 
@@ -355,7 +619,7 @@ exports.inviteCollaborator = async (req, res) => {
       user: owner,
       role: "owner",
       action: "collaborator.invite",
-      description: `a ajouté "${target.fullName}" comme collaborateur (${role === "manager" ? "manager" : "staff"})`,
+      description: `a ajouté "${target.fullName}" comme collaborateur (${grade.name})`,
     });
 
     return res.json({ success: true });
@@ -365,16 +629,20 @@ exports.inviteCollaborator = async (req, res) => {
   }
 };
 
-// ── Changer le rôle d'un collaborateur ───────────────────────────────────────
-exports.updateCollaboratorRole = async (req, res) => {
+// ── Changer le grade d'un collaborateur (assigne un grade EXISTANT — la
+// création/édition des grades eux-mêmes reste owner-only via
+// controllers/grade.controller.js, jamais déléguée) ──────────────────────────
+exports.updateCollaboratorGrade = async (req, res) => {
   try {
-    const company = await loadOwnedCompanyOr403(req, res);
+    const company = await loadAccessibleCompanyOr403(req, res);
     if (!company) return;
 
-    const role = req.body.role === "manager" ? "manager" : "staff";
+    const grade = await CompanyGrade.findOne({ _id: req.body.gradeId, company: company._id });
+    if (!grade) return res.status(400).json({ error: "Grade introuvable." });
+
     const membership = await CompanyMembership.findOneAndUpdate(
       { _id: req.params.membershipId, company: company._id, status: "accepted" },
-      { role },
+      { grade: grade._id },
       { new: true }
     ).populate("user", "fullName");
     if (!membership) return res.status(404).json({ error: "Collaborateur introuvable." });
@@ -384,12 +652,37 @@ exports.updateCollaboratorRole = async (req, res) => {
       user: req.user,
       role: "owner",
       action: "collaborator.role",
-      description: `a changé le rôle de "${membership.user?.fullName || "un collaborateur"}" en ${role === "manager" ? "manager" : "staff"}`,
+      description: `a changé le grade de "${membership.user?.fullName || "un collaborateur"}" en ${grade.name}`,
     });
 
-    return res.json({ success: true, role: membership.role });
+    return res.json({ success: true, gradeId: String(grade._id), gradeName: grade.name });
   } catch (err) {
-    console.error("updateCollaboratorRole error:", err.message);
+    console.error("updateCollaboratorGrade error:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Override individuel : autoriser/interdire à CE collaborateur de poser
+// ses propres congés, indépendamment de son grade ────────────────────────────
+exports.updateCollaboratorTimeOffPermission = async (req, res) => {
+  try {
+    const company = await loadAccessibleCompanyOr403(req, res);
+    if (!company) return;
+
+    // null = retour à l'héritage du grade ; true/false = override explicite.
+    const raw = req.body.canManageOwnTimeOff;
+    const value = raw === null || raw === undefined ? null : !!raw;
+
+    const membership = await CompanyMembership.findOneAndUpdate(
+      { _id: req.params.membershipId, company: company._id, status: "accepted" },
+      { canManageOwnTimeOff: value },
+      { new: true }
+    );
+    if (!membership) return res.status(404).json({ error: "Collaborateur introuvable." });
+
+    return res.json({ success: true, canManageOwnTimeOff: membership.canManageOwnTimeOff });
+  } catch (err) {
+    console.error("updateCollaboratorTimeOffPermission error:", err.message);
     return res.status(500).json({ error: "Erreur serveur." });
   }
 };
@@ -397,7 +690,7 @@ exports.updateCollaboratorRole = async (req, res) => {
 // ── Activer / désactiver l'accès d'un collaborateur ──────────────────────────
 exports.toggleCollaboratorActive = async (req, res) => {
   try {
-    const company = await loadOwnedCompanyOr403(req, res);
+    const company = await loadAccessibleCompanyOr403(req, res);
     if (!company) return;
 
     const isActive = !!req.body.isActive;
@@ -428,7 +721,7 @@ exports.toggleCollaboratorActive = async (req, res) => {
 // ── Retirer un collaborateur (virer) ─────────────────────────────────────────
 exports.removeCollaborator = async (req, res) => {
   try {
-    const company = await loadOwnedCompanyOr403(req, res);
+    const company = await loadAccessibleCompanyOr403(req, res);
     if (!company) return;
 
     const removed = await CompanyMembership.findOneAndDelete({ _id: req.params.membershipId, company: company._id })
@@ -453,7 +746,7 @@ exports.removeCollaborator = async (req, res) => {
 // ── Répondre à une demande pour rejoindre (scoping multi-établissements) ─────
 exports.respondJoinRequestForCompany = async (req, res) => {
   try {
-    const company = await loadOwnedCompanyOr403(req, res);
+    const company = await loadAccessibleCompanyOr403(req, res);
     if (!company) return;
 
     const decision = req.body.decision === "accepted" ? "accepted" : "rejected";
@@ -467,7 +760,7 @@ exports.respondJoinRequestForCompany = async (req, res) => {
     membership.status = decision;
     if (decision === "accepted") {
       membership.acceptedAt = new Date();
-      if (!membership.role) membership.role = "staff";
+      if (!membership.grade) membership.grade = (await ensureDefaultGrade(company._id))._id;
     }
     await membership.save();
 

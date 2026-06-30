@@ -31,6 +31,24 @@ function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// ── Sérialisation publique d'un membre de getBookableTeam() (page de
+// réservation + sélecteur d'employé par service). ──────────────────────────
+function serializeTeamMember(m) {
+  // m.role = "owner" pour le patron, sinon le nom du grade (cf.
+  // utils/bookableTeam.js) — affiché tel quel, le patron choisit le libellé
+  // de ses grades donc pas besoin de mapping fixe ici.
+  const roleLabel = m.role === "owner" ? "Responsable" : m.role || "";
+  return {
+    _id: String(m.id),
+    firstName: m.firstName || "",
+    lastName: m.lastName || "",
+    profilePicture: m.photo || "/images/no-user.webp",
+    description: m.description || "",
+    role: m.showRole ? roleLabel : "",
+    customInfo: (m.customInfo || []).filter((i) => i.label && i.value),
+  };
+}
+
 /* ── Catégories dynamiques depuis la base ────────────────────────────────── */
 // Ne compte que les utilisateurs ayant RÉELLEMENT un établissement créé (et
 // non désactivé) — sinon une inscription jamais terminée (pas de Company,
@@ -367,7 +385,6 @@ const isAuth = require("../middlewares/isAuth");
 const isClientOrUserAuth = require("../middlewares/isClientOrUserAuth");
 
 router.get("/etablissement/mes-etablissements", isClientOrUserAuth, establishmentController.listMyEstablishments);
-router.get("/etablissement/creer", isClientOrUserAuth, establishmentController.renderCreatePage);
 // Page admin (sidebar.pug) — bascule l'établissement actif puis réutilise
 // injectCompany pour avoir tous les locals attendus par le layout admin.
 router.get(
@@ -375,16 +392,20 @@ router.get(
   isAuth,
   establishmentController.setActiveCompanyForCollabPage,
   require("../middlewares/injectCompany"),
+  // La page est accessible à tous les membres de l'établissement (droit
+  // d'office : voir le patron + la liste). setActiveCompanyForCollabPage a
+  // déjà vérifié que l'utilisateur est bien owner ou membre actif.
   establishmentController.renderCollaboratorsPage,
 );
 
-router.get("/etablissement/rejoindre", isAuth, async (req, res) => {
-  const existing = await Companies.findOne({ owner: req.user._id }).lean();
-  if (existing) return res.redirect("/settings");
-  res.render("etablissement/rejoindre", {
-    title: "Rejoindre un établissement — BranShee",
-  });
-});
+router.get(
+  "/etablissement/:id/grades",
+  isAuth,
+  establishmentController.setActiveCompanyForCollabPage,
+  require("../middlewares/injectCompany"),
+  require("../utils/permissions").requirePermission("grades.view"),
+  establishmentController.renderGradesPage,
+);
 
 const AMENITY_OPTIONS = {
   cleanliness: [
@@ -444,11 +465,13 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
   }
 
   const Service = require("../db/models/company/service.model");
-  const Employee = require("../db/models/company/employee.model");
+  const { getBookableTeam } = require("../utils/bookableTeam");
 
-  const services = await Service.find({ company: company._id, active: true }).populate("employees", "firstName lastName profilePicture age description").sort("order").lean();
+  const services = await Service.find({ company: company._id, active: true }).populate("employees", "fullName profilePicture").sort("order").lean();
 
-  const activeEmployees = await Employee.find({ company: company._id, active: true }).lean();
+  const team = await getBookableTeam(company._id);
+  const teamById = new Map(team.map((m) => [m.id, m]));
+  const activeEmployees = team;
 
   // Pre-serialize services to avoid Pug interpolation issues with nested braces
   const servicesJson = JSON.stringify(
@@ -469,32 +492,15 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
         type: s.type || "individual",
         capacity: s.capacity || null,
         location: s.location || "",
-        employees: (s.employees || []).map(function (e) {
-          return {
-            _id: String(e._id),
-            firstName: e.firstName || "",
-            lastName: e.lastName || "",
-            profilePicture: e.profilePicture || "/images/no-user.webp",
-            age: e.age || null,
-            description: e.description || "",
-          };
-        }),
+        employees: (s.employees || [])
+          .map(function (e) { return teamById.get(String(e._id)); })
+          .filter(Boolean)
+          .map(serializeTeamMember),
       };
     }),
   );
 
-  const employeesJson = JSON.stringify(
-    activeEmployees.map(function (e) {
-      return {
-        _id: String(e._id),
-        firstName: e.firstName || "",
-        lastName: e.lastName || "",
-        profilePicture: e.profilePicture || "/images/no-user.webp",
-        age: e.age || null,
-        description: e.description || "",
-      };
-    }),
-  );
+  const employeesJson = JSON.stringify(activeEmployees.map(serializeTeamMember));
 
   // ── Is the business open today? ─────────────────────────────────────────
   let isOpenToday = false;
