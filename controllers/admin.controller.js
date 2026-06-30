@@ -947,30 +947,32 @@ async function resolveScheduleUpdateTarget(companyId, employeeId) {
 
 exports.toggleDay = async (req, res) => {
   const { weekdayIndex, companyId, dayOff, employeeId } = req.body;
+  const wdIndex = Number(weekdayIndex);
 
   const target = await resolveScheduleUpdateTarget(companyId, employeeId);
   if (target?.kind === "owner") {
     await Company.updateOne(
-      { _id: companyId, "ownerEmployeeProfile.schedule.weekdayIndex": weekdayIndex },
+      { _id: companyId, "ownerEmployeeProfile.schedule.weekdayIndex": wdIndex },
       { $set: { "ownerEmployeeProfile.schedule.$.dayOff": dayOff } }
     );
   } else if (target?.kind === "membership") {
+    // Initialise le schedule individuel depuis le commun si vide (lazy copy)
+    const mem = await CompanyMembership.findOne({ company: target.companyId, user: target.employeeId }).select("schedule").lean();
+    if (!mem?.schedule?.length) {
+      const co = await Company.findById(target.companyId).select("schedule").lean();
+      await CompanyMembership.updateOne(
+        { company: target.companyId, user: target.employeeId },
+        { $set: { schedule: co?.schedule || [] } }
+      );
+    }
     await CompanyMembership.updateOne(
-      { company: target.companyId, user: target.employeeId, "schedule.weekdayIndex": weekdayIndex },
+      { company: target.companyId, user: target.employeeId, "schedule.weekdayIndex": wdIndex },
       { $set: { "schedule.$.dayOff": dayOff } }
     );
   } else {
     await Company.updateOne(
-      {
-        _id: companyId,
-        "schedule.weekdayIndex": weekdayIndex,
-      },
-      {
-        $set: {
-          "schedule.$.dayOff": dayOff,
-          // "schedule.$.workingHours": workingHours,
-        },
-      },
+      { _id: companyId, "schedule.weekdayIndex": wdIndex },
+      { $set: { "schedule.$.dayOff": dayOff } }
     );
   }
 
@@ -979,6 +981,7 @@ exports.toggleDay = async (req, res) => {
 
 exports.editAvailabilty = async (req, res) => {
   const { weekdayIndex, companyId, workingHours, employeeId } = req.body;
+  const wdIndex = Number(weekdayIndex);
 
   if (!workingHours || workingHours.length === 0) {
     return res.json({ success: false, message: "No working hours provided" });
@@ -987,25 +990,27 @@ exports.editAvailabilty = async (req, res) => {
   const target = await resolveScheduleUpdateTarget(companyId, employeeId);
   if (target?.kind === "owner") {
     await Company.updateOne(
-      { _id: companyId, "ownerEmployeeProfile.schedule.weekdayIndex": Number(weekdayIndex) },
+      { _id: companyId, "ownerEmployeeProfile.schedule.weekdayIndex": wdIndex },
       { $set: { "ownerEmployeeProfile.schedule.$.workingHours": workingHours } }
     );
   } else if (target?.kind === "membership") {
+    // Initialise le schedule individuel depuis le commun si vide (lazy copy)
+    const mem = await CompanyMembership.findOne({ company: target.companyId, user: target.employeeId }).select("schedule").lean();
+    if (!mem?.schedule?.length) {
+      const co = await Company.findById(target.companyId).select("schedule").lean();
+      await CompanyMembership.updateOne(
+        { company: target.companyId, user: target.employeeId },
+        { $set: { schedule: co?.schedule || [] } }
+      );
+    }
     await CompanyMembership.updateOne(
-      { company: target.companyId, user: target.employeeId, "schedule.weekdayIndex": Number(weekdayIndex) },
+      { company: target.companyId, user: target.employeeId, "schedule.weekdayIndex": wdIndex },
       { $set: { "schedule.$.workingHours": workingHours } }
     );
   } else {
     await Company.updateOne(
-      {
-        _id: companyId,
-        "schedule.weekdayIndex": Number(weekdayIndex),
-      },
-      {
-        $set: {
-          "schedule.$.workingHours": workingHours,
-        },
-      },
+      { _id: companyId, "schedule.weekdayIndex": wdIndex },
+      { $set: { "schedule.$.workingHours": workingHours } }
     );
   }
 

@@ -705,14 +705,12 @@ body.bk-embed #bkCart .bk-cart {
   background: var(--bk-surface);
   border: 1px solid var(--bk-border);
   border-radius: var(--bk-r-lg);
-  padding: 16px 18px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
   cursor: pointer;
   transition: all 0.15s;
   position: relative;
-  overflow: visible;
+  overflow: hidden;
   box-shadow: var(--bk-shadow-xs);
 }
 
@@ -724,8 +722,30 @@ body.bk-embed #bkCart .bk-cart {
 
 .bk-svc.is-selected {
   border: 2px solid var(--bk-accent);
-  padding: 15px 17px;
   background: linear-gradient(180deg, var(--bk-accent-soft) 0%, var(--bk-surface) 70%);
+}
+
+/* Content row (left name/dur + right price/check) */
+.bk-svc__body {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding: 16px 18px;
+}
+.bk-svc.is-selected .bk-svc__body { padding: 15px 17px; }
+
+/* Optional service image banner */
+.bk-svc__img {
+  width: 100%;
+  height: 110px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.bk-svc__img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .bk-svc__name {

@@ -4,6 +4,10 @@ const User = require("../db/models/user.model");
 const { getLimit } = require("../utils/planLimits");
 const { nextAvailableColor } = require("../utils/serviceColors");
 const { logActivity } = require("../utils/activityLog");
+const fs = require("fs");
+const path = require("path");
+
+const UPLOADS_DIR = path.join(__dirname, "..", "public", "uploads", "profiles");
 
 // ── Frais d'annulation/no-show personnalisés (par service) ────────────────────
 function sanitizeCancellationFee(raw) {
@@ -303,6 +307,49 @@ exports.setServiceEmployees = async (req, res) => {
     ).populate("employees", "fullName profilePicture");
     if (!service) return res.status(404).json({ error: "Service non trouvé." });
     res.json({ success: true, service });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+// ── API : image d'un service ──────────────────────────────────────────────────
+exports.updateServiceImage = async (req, res) => {
+  try {
+    if (!req.file || !req.file.filename) {
+      return res.status(400).json({ error: "Aucune image reçue." });
+    }
+    const service = await Service.findOne({ _id: req.params.id, company: res.locals.currentCompany._id }).select("image").lean();
+    if (!service) return res.status(404).json({ error: "Service non trouvé." });
+
+    // Supprimer l'ancienne image si elle existe
+    if (service.image) {
+      const oldPath = path.join(UPLOADS_DIR, service.image);
+      fs.unlink(oldPath, () => {});
+    }
+
+    const updated = await Service.findByIdAndUpdate(
+      req.params.id,
+      { image: req.file.filename },
+      { new: true }
+    ).lean();
+    res.json({ success: true, image: updated.image });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+exports.deleteServiceImage = async (req, res) => {
+  try {
+    const service = await Service.findOne({ _id: req.params.id, company: res.locals.currentCompany._id }).select("image").lean();
+    if (!service) return res.status(404).json({ error: "Service non trouvé." });
+
+    if (service.image) {
+      const filePath = path.join(UPLOADS_DIR, service.image);
+      fs.unlink(filePath, () => {});
+    }
+    await Service.findByIdAndUpdate(req.params.id, { image: "" });
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur" });
   }

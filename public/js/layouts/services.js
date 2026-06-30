@@ -30,6 +30,58 @@ document.addEventListener("DOMContentLoaded", () => {
   const servicesList       = document.getElementById("servicesList");
   const svcCounter         = document.getElementById("svcCounter");
 
+  // ── Image service ──────────────────────────────────────────────────────────
+  const svcImgUpload      = document.getElementById("svcImgUpload");
+  const svcImgInput       = document.getElementById("svcImgInput");
+  const svcImgPreview     = document.getElementById("svcImgPreview");
+  const svcImgPlaceholder = document.getElementById("svcImgPlaceholder");
+  const svcImgRemoveBtn   = document.getElementById("svcImgRemove");
+  let _pendingImgFile   = null;
+  let _pendingImgRemove = false;
+
+  function setImgPreview(src) {
+    if (src) {
+      svcImgPreview.src = src;
+      svcImgPreview.style.display = "block";
+      svcImgPlaceholder.style.display = "none";
+      svcImgRemoveBtn.style.display = "inline-flex";
+    } else {
+      svcImgPreview.src = "";
+      svcImgPreview.style.display = "none";
+      svcImgPlaceholder.style.display = "flex";
+      svcImgRemoveBtn.style.display = "none";
+    }
+  }
+
+  function resetImgState(currentImage) {
+    _pendingImgFile = null;
+    _pendingImgRemove = false;
+    setImgPreview(currentImage ? `/uploads/profiles/${currentImage}` : "");
+  }
+
+  if (svcImgUpload) {
+    svcImgUpload.addEventListener("click", (e) => {
+      if (e.target === svcImgRemoveBtn || svcImgRemoveBtn.contains(e.target)) return;
+      svcImgInput.click();
+    });
+    svcImgInput.addEventListener("change", () => {
+      const file = svcImgInput.files[0];
+      if (!file) return;
+      _pendingImgFile = file;
+      _pendingImgRemove = false;
+      const reader = new FileReader();
+      reader.onload = (ev) => setImgPreview(ev.target.result);
+      reader.readAsDataURL(file);
+    });
+    svcImgRemoveBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      _pendingImgRemove = true;
+      _pendingImgFile = null;
+      svcImgInput.value = "";
+      setImgPreview("");
+    });
+  }
+
   const bqEnabled          = document.getElementById("bqEnabled");
   const bqRow              = document.getElementById("bqRow");
   const bqQuestionInput    = document.getElementById("bqQuestionInput");
@@ -422,6 +474,7 @@ document.addEventListener("DOMContentLoaded", () => {
     buildCategorySelect("");
     showNewCategorySection(false);
     setAnswerVisibility("all");
+    resetImgState("");
     serviceModalTitle.textContent = "Nouveau service";
     saveServiceBtn.querySelector("span").textContent = "Enregistrer";
   }
@@ -511,6 +564,19 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       if (data.success) {
         if (!id) { currentCount++; }
+        const savedId = id || (data.service && String(data.service._id));
+        // Upload/suppression image si besoin
+        if (savedId) {
+          if (_pendingImgRemove) {
+            try { await fetch(`/api/services/${savedId}/image`, { method: "DELETE" }); } catch (_) {}
+          } else if (_pendingImgFile) {
+            try {
+              const fd = new FormData();
+              fd.append("image", _pendingImgFile);
+              await fetch(`/api/services/${savedId}/image`, { method: "PATCH", body: fd });
+            } catch (_) {}
+          }
+        }
         location.reload();
       } else {
         alert(data.message || data.error || "Erreur lors de l'enregistrement.");
@@ -549,6 +615,7 @@ document.addEventListener("DOMContentLoaded", () => {
       buildCategorySelect(card.dataset.category || "");
       showNewCategorySection(false);
       setAnswerVisibility(card.dataset.answerVisibility || "all");
+      resetImgState(card.dataset.image || "");
       serviceModalTitle.textContent = "Modifier le service";
       openModal(serviceModal, serviceModalOverlay);
       serviceModalName.focus();

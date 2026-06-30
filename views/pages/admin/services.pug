@@ -118,7 +118,7 @@ block content
                 -
                     var _catObj = svc.category ? categories.find(function(c){ return c.name === svc.category; }) : null
                     var _catIcon = _catObj && _catObj.icon ? _catObj.icon : ''
-                .service-card(data-id=String(svc._id) data-category=svc.category || '' data-type=(svc.type || 'individual') data-capacity=(svc.capacity || '') data-color=(svc.color || '') data-fee-enabled=(svc.cancellationFee && svc.cancellationFee.enabled ? '1' : '0') data-fee-type=(svc.cancellationFee && svc.cancellationFee.type || 'percent') data-fee-value=(svc.cancellationFee && svc.cancellationFee.value !== null && svc.cancellationFee.value !== undefined ? svc.cancellationFee.value : '') data-answer-visibility=(svc.answerVisibility || 'all') data-duration-max=(svc.durationMax || '') class=(!svc.active ? 'service-card--inactive' : ''))
+                .service-card(data-id=String(svc._id) data-category=svc.category || '' data-type=(svc.type || 'individual') data-capacity=(svc.capacity || '') data-color=(svc.color || '') data-fee-enabled=(svc.cancellationFee && svc.cancellationFee.enabled ? '1' : '0') data-fee-type=(svc.cancellationFee && svc.cancellationFee.type || 'percent') data-fee-value=(svc.cancellationFee && svc.cancellationFee.value !== null && svc.cancellationFee.value !== undefined ? svc.cancellationFee.value : '') data-answer-visibility=(svc.answerVisibility || 'all') data-duration-max=(svc.durationMax || '') data-image=(svc.image || '') class=(!svc.active ? 'service-card--inactive' : ''))
                     .service-card__header
                         .service-card__name-row
                             h3.service-card__name
@@ -286,6 +286,17 @@ block content
             .service-modal__cols
                 //- ── Colonne gauche : identité du service ────────────────────
                 .service-modal__col
+                    //- Image optionnelle
+                    .field
+                        label Image du service #[span.xs-comment  (optionnel)]
+                        .svc-img-upload#svcImgUpload
+                            img.svc-img-upload__preview#svcImgPreview(src="" alt="" style="display:none")
+                            .svc-img-upload__placeholder#svcImgPlaceholder
+                                svg(viewBox="0 -960 960 960" height="28" width="28" fill="currentColor" style="opacity:.35")
+                                    path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-800v560q0 33-23.5 56.5T800-120H200Zm0-80h560v-560H200v560Zm40-80h480L570-480 450-320l-90-120-120 160Zm-40 80v-560 560Z")
+                                p Cliquez pour ajouter une image
+                            input.svc-img-upload__input#svcImgInput(type="file" accept="image/*" style="display:none")
+                            button.svc-img-upload__remove#svcImgRemove(type="button" style="display:none") × Supprimer
                     .field
                         label= t.services.service_name
                         input.input#serviceModalName(placeholder="Ex: Coupe simple, Massage détente...")

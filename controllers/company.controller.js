@@ -298,8 +298,9 @@ exports.updateScheduleMode = async (req, res) => {
           { $set: { "ownerEmployeeProfile.schedule": company.schedule || [] } }
         );
       }
+      // Initialise tous les membres (schedule vide OU champ absent)
       await CompanyMembership.updateMany(
-        { company: companyId, isEmployee: true, schedule: { $size: 0 } },
+        { company: companyId, isEmployee: true, $or: [{ schedule: { $size: 0 } }, { schedule: { $exists: false } }] },
         { $set: { schedule: company.schedule || [] } }
       );
     }

@@ -3,6 +3,8 @@ const ctrl = require("../controllers/services.controller");
 const isAuth = require("../middlewares/isAuth");
 const injectCompany = require("../middlewares/injectCompany");
 const { requirePermission } = require("../utils/permissions");
+const upload = require("../config/multer");
+const { processSingleImage } = require("../middlewares/processImageUpload");
 
 const guard = [isAuth, injectCompany];
 const guardView = [...guard, requirePermission("services.view")];
@@ -20,6 +22,8 @@ router.patch("/api/services/:id", ...guardManage, ctrl.updateService);
 router.patch("/api/services/:id/toggle", ...guardManage, ctrl.toggleService);
 router.delete("/api/services/:id", ...guardManage, ctrl.deleteService);
 router.patch("/api/services/:id/employees", ...guardManage, ctrl.setServiceEmployees);
+router.patch("/api/services/:id/image", ...guardManage, upload.single("image"), processSingleImage("service"), ctrl.updateServiceImage);
+router.delete("/api/services/:id/image", ...guardManage, ctrl.deleteServiceImage);
 
 // API publique (client booking)
 router.get("/api/services", ctrl.getServices);

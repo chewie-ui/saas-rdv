@@ -64,6 +64,11 @@ const serviceSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    // Image illustrative (nom de fichier dans /public/uploads/profiles/) — optionnelle
+    image: {
+      type: String,
+      default: "",
+    },
     // Référence des User (cf. utils/bookableTeam.js et la fusion Employé/
     // Collaborateur) — plus jamais un Employee séparé.
     employees: [
