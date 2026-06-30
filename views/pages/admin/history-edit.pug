@@ -248,10 +248,64 @@ block content
                                 else
                                     span= t.hist_edit.noshow_free
 
-                        //- ── Bloc reversement BranShee (raison non valable) ──────────
-                        if results.noShow && results.noShowReason === "invalid"
+                        //- ── Helpers pour le statut de paiement ─────────────────────
+                        -
+                            var payStatus = results.payment && results.payment.status
+                            var payAmt    = (results.payment && results.payment.amount) || 0
+                            var keptAmt   = (results.payment && results.payment.keptAmount) || 0
+                            var penaltyAmt2 = (results.payment && (results.payment.penaltyAmount || results.payment.amount)) || 0
+                            var isNoShowCharged = results.noShow && results.noShowReason === 'invalid' && (payStatus === 'penalty' || payStatus === 'paid')
+                            var isCancelPenaltyKept = results.status === 'canceled' && payStatus === 'penalty' && results.payment && results.payment.cancellationReviewDecision === 'kept'
+                            var isCancelPartial = results.status === 'canceled' && payStatus === 'partial' && keptAmt > 0
+                            var isCancelFullKept = results.status === 'canceled' && payStatus === 'paid' && keptAmt > 0
+                            var payoutAmt = isNoShowCharged ? penaltyAmt2 : (isCancelPenaltyKept ? penaltyAmt2 : keptAmt)
+                            var showPayoutBlock = isNoShowCharged || isCancelPenaltyKept || isCancelPartial || isCancelFullKept
+                            var showChargeFailed = payStatus === 'failed'
+                            var showNoCard = results.noShow && results.noShowReason === 'invalid' && (payStatus === 'none' || payStatus === 'authorized') && !showChargeFailed
+
+                        //- ── Bloc : prélèvement échoué / pas de carte ───────────────
+                        if showChargeFailed || showNoCard
+                            .charge-failed-block
+                                .charge-failed-block__hd
+                                    svg(width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round")
+                                        circle(cx="12" cy="12" r="10")
+                                        line(x1="12" y1="8" x2="12" y2="12")
+                                        line(x1="12" y1="16" x2="12.01" y2="16")
+                                    if showChargeFailed
+                                        div
+                                            strong Le prélèvement a échoué
+                                            span La carte du client a été refusée ou n'est plus disponible. Voici vos options pour récupérer la somme due :
+                                    else
+                                        div
+                                            strong Aucun moyen de paiement enregistré
+                                            span Ce client n'avait pas de carte bancaire enregistrée. Vous pouvez tenter un recouvrement à l'amiable ou légal :
+                                .charge-failed-block__options
+                                    .charge-failed-option
+                                        span.charge-failed-option__num 1
+                                        div
+                                            strong Rappel amiable
+                                            span Contactez le client directement (email, téléphone) et proposez un règlement par virement, espèces ou PayPal.
+                                    .charge-failed-option
+                                        span.charge-failed-option__num 2
+                                        div
+                                            strong Mise en demeure
+                                            span Envoyez un courrier recommandé avec AR demandant le règlement sous 8 jours. Ce document est indispensable avant toute action judiciaire.
+                                    .charge-failed-option
+                                        span.charge-failed-option__num 3
+                                        div
+                                            strong Procédure simplifiée en ligne
+                                            span Pour les petits montants, la procédure de recouvrement simplifiée est gratuite et rapide.
+                                            a.charge-failed-option__link(href="https://www.service-public.fr/particuliers/vosdroits/F1746" target="_blank" rel="noopener")
+                                                | service-public.fr →
+                                    .charge-failed-option
+                                        span.charge-failed-option__num 4
+                                        div
+                                            strong Injonction de payer
+                                            span Pour les montants plus importants, votre tribunal judiciaire peut ordonner le paiement sans audience contradictoire.
+
+                        //- ── Bloc reversement BranShee (raison non valable OU annulation payée) ──
+                        if showPayoutBlock
                             -
-                                var noShowAmt = (results.payment && results.payment.amount) ? results.payment.amount : 0
                                 var pi = payoutInfo || {}
                                 var piMethod = pi.method || ''
                             .payout-block
@@ -259,11 +313,19 @@ block content
                                     svg(width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
                                         polyline(points="20 6 9 17 4 12")
                                     div
-                                        strong BranShee a enregistré la pénalité
-                                        if noShowAmt > 0
-                                            span Vous recevrez #{noShowAmt} € dans les prochains jours sur votre moyen de paiement préféré.
+                                        if isNoShowCharged
+                                            strong BranShee a enregistré la pénalité d'absence
+                                        else if isCancelPenaltyKept
+                                            strong BranShee a confirmé la retenue des frais d'annulation
+                                        else if isCancelPartial
+                                            strong #{payAmt - keptAmt} € remboursés au client automatiquement
                                         else
-                                            span Vous recevrez le montant de la prestation dans les prochains jours sur votre moyen de paiement préféré.
+                                            strong Pénalité 100% — le client ne sera pas remboursé
+                                        if payoutAmt > 0
+                                            if isCancelPartial
+                                                span Vous recevrez #{keptAmt} € (votre part retenue) dans les prochains jours.
+                                            else
+                                                span Vous recevrez #{payoutAmt} € dans les prochains jours sur votre moyen de paiement préféré.
                                 .payout-block__method
                                     p.payout-block__method-label Moyen de paiement préféré pour recevoir l'argent
                                     if piMethod === 'bank_transfer'

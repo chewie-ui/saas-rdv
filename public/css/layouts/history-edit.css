@@ -453,6 +453,68 @@
 }
 
 /* ================================================================
+   Bloc prélèvement échoué / pas de carte
+   ================================================================ */
+.charge-failed-block {
+  margin-top: 14px;
+  border: 1px solid #fca5a5;
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 13px;
+  background: #fff8f8;
+}
+.charge-failed-block__hd {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fef2f2;
+  border-bottom: 1px solid #fca5a5;
+  color: #b91c1c;
+}
+.charge-failed-block__hd svg { flex-shrink: 0; margin-top: 2px; }
+.charge-failed-block__hd strong { display: block; font-weight: 600; margin-bottom: 2px; }
+.charge-failed-block__hd span { opacity: .8; font-size: 12px; line-height: 1.5; }
+.charge-failed-block__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.charge-failed-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #fee2e2;
+}
+.charge-failed-option:last-child { border-bottom: none; }
+.charge-failed-option__num {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+.charge-failed-option strong { display: block; font-weight: 600; font-size: 12.5px; margin-bottom: 1px; color: #7f1d1d; }
+.charge-failed-option span  { font-size: 12px; color: #991b1b; line-height: 1.5; }
+.charge-failed-option__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11.5px;
+  color: #1d4ed8;
+  text-decoration: underline;
+  margin-top: 3px;
+}
+
+/* ================================================================
    Bloc reversement BranShee
    ================================================================ */
 .payout-block {

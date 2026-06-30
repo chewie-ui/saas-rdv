@@ -41,10 +41,16 @@ block content
                                 option(value=emp.id selected=selectedEmployeeId === emp.id)= (emp.firstName + ' ' + emp.lastName).trim()
 
                 //- Weekly schedule card
-                .avail-card
+                .avail-card(class=!canEditSchedule ? 'avail-card--readonly' : '')
                     .avail-card__hd
                         span.avail-card__title= t.avail.t1
                         span.avail-tz= t.avail.timezone_note
+                    if !canEditSchedule
+                        .avail-readonly-notice
+                            svg(width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+                                rect(x="3" y="11" width="18" height="11" rx="2" ry="2")
+                                path(d="M7 11V7a5 5 0 0 1 10 0v4")
+                            span Vous n'avez pas la permission de modifier cet horaire.
                     if scheduleMode === 'shared'
                         .avail-shared-notice
                             svg(width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
@@ -65,13 +71,14 @@ block content
                         each day in sortedSchedule
                             .avail-day-row.row-weekday(class=day.dayOff ? 'day-off' : '')
                                 //- Toggle
-                                label.avail-switch
+                                label.avail-switch(class=!canEditSchedule ? 'avail-switch--disabled' : '')
                                     input.input-weekday(
                                         type="checkbox"
                                         data-weekday-index=day.weekdayIndex
                                         data-company=currentCompany._id
                                         data-employee-id=selectedEmployeeId
                                         checked=!day.dayOff
+                                        disabled=!canEditSchedule
                                     )
                                     span.avail-switch__track
                                         span.avail-switch__thumb
@@ -99,7 +106,7 @@ block content
                                                     .panel-availability
                                                         each hour in hours
                                                             .hour= hour
-                                                if index > 0
+                                                if index > 0 && canEditSchedule
                                                     button.avail-del-slot.delete-time-slot(type="button" data-id=slot._id title="Remove")
                                                         svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
                                                             path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
@@ -119,7 +126,7 @@ block content
 
                                 //- Actions
                                 .avail-day-actions
-                                    if !day.dayOff
+                                    if !day.dayOff && canEditSchedule
                                         if availFeatures && availFeatures.ranges
                                             button.avail-range-btn.option-add-plage(type="button")
                                                 svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")

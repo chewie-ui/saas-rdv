@@ -1563,20 +1563,29 @@ exports.cancelBooking = async (req, res) => {
       try {
         if (keptAmount <= 0) {
           await stripe.refunds.create({ payment_intent: piId, reason: "requested_by_customer", reverse_transfer: true });
-          await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "refunded" });
-          chargeResult = { refunded: true, pct: 100, amount };
+          await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "refunded", "payment.keptAmount": 0 });
+          chargeResult = { refunded: true, pct: 100, amount, kept: 0 };
         } else if (refundAmount > 0) {
+          // Remboursement partiel : une partie revient au client, le reste à l'admin
           const refundCents = toCents(refundAmount);
           if (refundCents >= 50) {
             await stripe.refunds.create({ payment_intent: piId, amount: refundCents, reason: "requested_by_customer", reverse_transfer: true });
-            await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "partial" });
+            await Booking.findByIdAndUpdate(canceledBooking._id, {
+              "payment.status":     "partial",
+              "payment.keptAmount": keptAmount,
+            });
             chargeResult = { refunded: true, pct: Math.round((refundAmount / amount) * 100), amount: refundAmount, kept: keptAmount };
           } else {
-            await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "refunded" });
-            chargeResult = { refunded: true, pct: 100, amount };
+            // Montant du remboursement trop faible (<0,50€) → on rembourse tout pour éviter les frais
+            await stripe.refunds.create({ payment_intent: piId, reason: "requested_by_customer", reverse_transfer: true });
+            await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.status": "refunded", "payment.keptAmount": 0 });
+            chargeResult = { refunded: true, pct: 100, amount, kept: 0 };
           }
+        } else {
+          // keptAmount >= amount (pénalité 100%) : rien à rembourser, l'établissement garde tout
+          await Booking.findByIdAndUpdate(canceledBooking._id, { "payment.keptAmount": keptAmount });
+          chargeResult = { refunded: false, pct: 0, kept: keptAmount };
         }
-        // keptAmount >= amount (pénalité 100%) : rien à rembourser, l'établissement garde tout
       } catch (stripeErr) {
         console.error("Refund error:", stripeErr.message);
       }

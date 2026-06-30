@@ -177,6 +177,10 @@ const bookingSchema = new schema(
       //   kept      = raison non valable, l'établissement garde les frais
       cancellationReviewDecision: { type: String, enum: ["", "refunded", "kept"], default: "" },
       cancellationReviewedAt:     { type: Date, default: null },
+      // Montant conservé par l'établissement (pénalité retenue) — alimenté
+      // lors d'un remboursement partiel (status "partial") ou d'une pénalité
+      // 100% sur booking "paid". BranShee reverse ce montant à l'admin.
+      keptAmount:  { type: Number, default: 0 },
       cardLast4: { type: String, default: "" },
       cardBrand: { type: String, default: "" },
     },

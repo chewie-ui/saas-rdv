@@ -859,7 +859,7 @@ exports.availability = async (req, res) => {
   // du Company.schedule commun — on substitue juste `currentCompany.schedule`
   // pour cette requête, le reste du template (et son JS) ne change pas.
   const scheduleMode = companyDoc?.scheduleMode === "perEmployee" ? "perEmployee" : "shared";
-  let selectedEmployeeId = scheduleMode === "perEmployee" ? (req.query.employeeId || "shared") : "shared";
+  let selectedEmployeeId = scheduleMode === "perEmployee" ? (req.query.employeeId || String(req.user._id)) : "shared";
   let renderedCompany = currentCompany;
 
   // Self-service : un employé qui n'a pas le droit de gérer l'horaire des
@@ -897,12 +897,26 @@ exports.availability = async (req, res) => {
     renderedCompany = Object.assign({}, currentCompany, { schedule: individualSchedule });
   }
 
+  const canManageOwnSchedule = !!res.locals.permissions?.availability?.manageOwnSchedule;
+  const isOwnEmployee = selectedEmployeeId === String(req.user._id);
+  let canEditSchedule;
+  if (scheduleMode === "shared") {
+    canEditSchedule = canManageShared;
+  } else if (selectedEmployeeId === "shared") {
+    canEditSchedule = canManageShared;
+  } else if (isOwnEmployee) {
+    canEditSchedule = canManageOwnSchedule || canManageOthersSchedule;
+  } else {
+    canEditSchedule = canManageOthersSchedule;
+  }
+
   res.render("admin/availability", {
     daysOff,
     employees: activeEmployees,
     currentCompany: renderedCompany,
     scheduleMode,
     selectedEmployeeId,
+    canEditSchedule,
     pageName: "Availability",
     title: res.locals.t.titles.avail,
     timeSlot: [10, 15, 20, 25, 30, 45, 60, 90, 120, 180],

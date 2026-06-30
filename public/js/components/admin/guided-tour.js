@@ -278,6 +278,153 @@
         isLast: true,
       },
     ],
+
+    // ── Assistance : inviter un collaborateur ─────────────────────────────
+    collaborators: [
+      {
+        page: function () { return "/etablissement/" + (window.__companyId || "") + "/collaborateurs"; },
+        find: function () { return $("#inviteBtn"); },
+        title: "Invitez un collaborateur",
+        text: "Cliquez ici pour inviter un membre de votre équipe. La personne doit déjà avoir un compte BranShee — elle aura immédiatement accès à votre espace.",
+        placement: "bottom",
+        advanceOnEvent: "click",
+        advanceDelay: 200,
+      },
+      {
+        page: function () { return "/etablissement/" + (window.__companyId || "") + "/collaborateurs"; },
+        preStep: function () {
+          var overlay = $("#inviteModalOverlay");
+          if (overlay && overlay.style.display === "none") { var btn = $("#inviteBtn"); if (btn) btn.click(); }
+        },
+        find: function () { return $("#inviteEmailInput"); },
+        title: "Adresse email",
+        text: "Entrez l'adresse email du collaborateur à inviter — il doit déjà avoir un compte BranShee.",
+        placement: "bottom",
+      },
+      {
+        page: function () { return "/etablissement/" + (window.__companyId || "") + "/collaborateurs"; },
+        preStep: function () {
+          var overlay = $("#inviteModalOverlay");
+          if (overlay && overlay.style.display === "none") { var btn = $("#inviteBtn"); if (btn) btn.click(); }
+        },
+        find: function () { return $("#inviteGradeInput"); },
+        title: "Choisissez son grade",
+        text: "Sélectionnez le grade à assigner — il définit les fonctionnalités auxquelles ce collaborateur aura accès. Vous pouvez le modifier à tout moment.",
+        placement: "bottom",
+      },
+      {
+        page: function () { return "/etablissement/" + (window.__companyId || "") + "/collaborateurs"; },
+        preStep: function () {
+          var overlay = $("#inviteModalOverlay");
+          if (overlay && overlay.style.display === "none") { var btn = $("#inviteBtn"); if (btn) btn.click(); }
+        },
+        find: function () { return $("#inviteModalConfirm"); },
+        title: "Envoyez l'invitation",
+        text: "Cliquez ici pour envoyer l'invitation. Le collaborateur aura immédiatement accès à votre espace avec les droits du grade choisi.",
+        placement: "top",
+        advanceOnEvent: "click",
+        advanceDelay: 300,
+        isLast: true,
+      },
+    ],
+
+    // ── Assistance : créer un questionnaire ───────────────────────────────
+    questionnaire: [
+      {
+        page: "/forms",
+        find: function () { return $("#addQuestionBtn"); },
+        title: "Créez votre questionnaire",
+        text: "Cliquez ici pour ajouter une question à votre formulaire de réservation — vos clients y répondront avant de confirmer leur rendez-vous.",
+        placement: "top",
+        advanceOnEvent: "click",
+        advanceDelay: 200,
+      },
+      {
+        page: "/forms",
+        preStep: ensureModalOpen("#modalOverlay", "#addQuestionBtn"),
+        find: function () { return $("#questionLabelInput"); },
+        title: "Libellé de la question",
+        text: "Tapez votre question ici, par exemple « Avez-vous des allergies ? » ou « Quel est votre objectif principal ? ».",
+        placement: "bottom",
+      },
+      {
+        page: "/forms",
+        preStep: ensureModalOpen("#modalOverlay", "#addQuestionBtn"),
+        find: function () { return $(".forms-type-selector"); },
+        title: "Type de réponse",
+        text: "Choisissez comment le client doit répondre : texte libre, oui/non, ou choix multiple. Sélectionnez le type qui correspond le mieux à votre question.",
+        placement: "bottom",
+      },
+      {
+        page: "/forms",
+        preStep: ensureModalOpen("#modalOverlay", "#addQuestionBtn"),
+        find: function () { return $("#confirmModalBtn"); },
+        title: "Confirmez la question",
+        text: "Cliquez ici pour ajouter la question à votre formulaire. Vous pouvez en ajouter plusieurs et les réordonner par glisser-déposer.",
+        placement: "top",
+        advanceOnEvent: "click",
+        advanceDelay: 300,
+      },
+      {
+        page: "/forms",
+        find: function () { return $("#saveFormBtn"); },
+        title: "Sauvegardez le formulaire",
+        text: "Cliquez ici pour enregistrer votre formulaire. Activez-le ensuite depuis le bouton en haut à droite pour qu'il soit présenté à vos clients lors de la réservation.",
+        placement: "bottom",
+        isLast: true,
+      },
+    ],
+
+    // ── Assistance : créer un dossier client ──────────────────────────────
+    clientDossier: [
+      {
+        page: "/clients",
+        find: function () { return $("#clientsSearchInput"); },
+        title: "Retrouvez un client",
+        text: "Tapez le nom, l'email ou le téléphone d'un client pour le retrouver rapidement. Tous les clients ayant réservé apparaissent ici avec leur historique.",
+        placement: "bottom",
+      },
+      {
+        page: "/clients",
+        find: function () { return $(".client-card"); },
+        title: "Ouvrez un dossier client",
+        text: "Cliquez sur un client pour accéder à son dossier complet — ses rendez-vous passés et à venir, ses informations de contact, et les notes que vous avez prises sur lui.",
+        placement: "bottom",
+        advanceOnEvent: "click",
+        advanceDelay: 400,
+      },
+      {
+        page: "/clients",
+        pageMatch: function (path) { return /^\/clients\/.+/.test(path); },
+        find: function () { return $("#addEntryBtn"); },
+        title: "Ajoutez une note",
+        text: "Cliquez ici pour ajouter une note après la séance — observations, suivi, prochain objectif... Ces notes sont privées, visibles uniquement par vous et vos collaborateurs.",
+        placement: "bottom",
+        advanceOnEvent: "click",
+        advanceDelay: 200,
+      },
+      {
+        page: "/clients",
+        pageMatch: function (path) { return /^\/clients\/.+/.test(path); },
+        preStep: ensureModalOpen("#entryModal", "#addEntryBtn"),
+        find: function () { return $("#entryModalNote"); },
+        title: "Rédigez votre note",
+        text: "Écrivez votre observation ou compte-rendu ici. Vous pouvez aussi ajouter une tâche à faire au prochain rendez-vous dans le champ en dessous.",
+        placement: "top",
+      },
+      {
+        page: "/clients",
+        pageMatch: function (path) { return /^\/clients\/.+/.test(path); },
+        preStep: ensureModalOpen("#entryModal", "#addEntryBtn"),
+        find: function () { return $("#saveEntryBtn"); },
+        title: "Enregistrez la note",
+        text: "Cliquez ici pour sauvegarder. La note apparaîtra dans la chronologie du dossier, horodatée automatiquement.",
+        placement: "top",
+        advanceOnEvent: "click",
+        advanceDelay: 300,
+        isLast: true,
+      },
+    ],
   };
 
   // ── Fonctionnalités verrouillées par le plan ──────────────────────────────
@@ -418,9 +565,11 @@
     if (index >= steps.length) { stopTour(); return; }
     var step = steps[index];
 
-    if (location.pathname !== step.page) {
+    var stepPage = typeof step.page === "function" ? step.page() : step.page;
+    var onRightPage = step.pageMatch ? step.pageMatch(location.pathname) : location.pathname === stepPage;
+    if (!onRightPage) {
       setStepIndex(index);
-      location.href = step.page;
+      location.href = stepPage;
       return;
     }
 
@@ -462,8 +611,17 @@
         textEl.textContent = step.text;
         nextBtn.textContent = step.isLast ? "Terminer la visite" : "Suivant →";
         nextBtn.addEventListener("click", function () {
-          if (step.isLast) stopTour();
-          else goToStep(index + 1);
+          if (step.isLast) { stopTour(); return; }
+          if (state.target && step.advanceOnEvent) {
+            if (state.advanceHandler && state._evtName) {
+              state.target.removeEventListener(state._evtName, state.advanceHandler);
+              state.advanceHandler = null;
+            }
+            state.target.click();
+            setTimeout(function () { goToStep(index + 1); }, step.advanceDelay || 200);
+          } else {
+            goToStep(index + 1);
+          }
         });
       }, 260);
 
@@ -500,7 +658,9 @@
     var steps = currentSteps();
     var step = steps[idx];
     if (!step) { stopTour(); return; }
-    if (location.pathname !== step.page) return; // l'utilisateur navigue librement — on n'impose rien
+    var stepPage2 = typeof step.page === "function" ? step.page() : step.page;
+    var onPage2 = step.pageMatch ? step.pageMatch(location.pathname) : location.pathname === stepPage2;
+    if (!onPage2) return; // l'utilisateur navigue librement — on n'impose rien
     showStep(idx);
   });
 })();

@@ -492,6 +492,7 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
         type: s.type || "individual",
         capacity: s.capacity || null,
         location: s.location || "",
+        image: s.image || "",
         employees: (s.employees || [])
           .map(function (e) { return teamById.get(String(e._id)); })
           .filter(Boolean)

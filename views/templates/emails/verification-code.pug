@@ -36,11 +36,13 @@ div(style="margin:0;padding:0;background-color:#f4f7f5;font-family:-apple-system
                   td(style="padding:32px 40px;text-align:center;")
                     p(style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.65;")= _body
 
-                    //- Code block
-                    table(cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto 28px;")
+                    //- Code block — individual digit boxes
+                    - var _digits = String(code).split('')
+                    table(cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto 28px;border-collapse:separate;border-spacing:6px 0;")
                       tr
-                        td(style="background:#f8faf9;border:2px solid #1a7a4a;border-radius:12px;padding:18px 36px;text-align:center;")
-                          span(style="font-size:36px;font-weight:800;color:#1a7a4a;letter-spacing:10px;font-family:'Courier New',monospace;")= code
+                        each d in _digits
+                          td(style="width:54px;height:66px;background:#f0faf5;border:2px solid #1a7a4a;border-radius:12px;text-align:center;vertical-align:middle;")
+                            span(style="display:block;font-size:32px;font-weight:800;color:#1a7a4a;font-family:-apple-system,BlinkMacSystemFont,'Courier New',Courier,monospace;line-height:66px;")= d
 
                     p(style="margin:0;font-size:13px;color:#9ca3af;line-height:1.6;") Ne partagez jamais ce code. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.
 
