@@ -804,7 +804,7 @@ async function loadCalendarData() {
   const empParam = empId ? `?employeeId=${empId}` : "";
 
   const [daysOffRes, disabledRes, bookingsRes, infoRes] = await Promise.all([
-    fetch("/get-days-off", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ COMPANY_ID }) }),
+    fetch("/get-days-off", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ COMPANY_ID, employeeId: empId || null }) }),
     fetch(`/get-disabled-days/${COMPANY_ID}${empParam}`),
     fetch(`/get-booking/${COMPANY_ID}`),
     fetch(`/company/get-infos/${COMPANY_ID}`),

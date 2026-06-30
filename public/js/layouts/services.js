@@ -501,12 +501,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  [closeServiceModal, cancelServiceModal, serviceModalOverlay].forEach((el) => {
-    el.addEventListener("click", (e) => {
-      if (e.target !== el) return;
+  [closeServiceModal, cancelServiceModal].forEach((el) => {
+    if (el) el.addEventListener("click", () => closeModal(serviceModal, serviceModalOverlay));
+  });
+  if (serviceModalOverlay) {
+    serviceModalOverlay.addEventListener("click", (e) => {
+      if (e.target !== serviceModalOverlay) return;
       closeModal(serviceModal, serviceModalOverlay);
     });
-  });
+  }
 
   // ── Sauvegarder (créer ou modifier) ──────────────────────────────────────
   saveServiceBtn.addEventListener("click", async () => {

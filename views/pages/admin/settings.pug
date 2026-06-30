@@ -443,6 +443,17 @@ block content
                             line(x1="12" y1="8" x2="12" y2="12")
                             line(x1="12" y1="16" x2="12.01" y2="16")
                         = t.settings.sc_incomplete_banner
+                else if stripeConnectError === 'losses_liability'
+                    .sc-error-banner(style="margin-bottom:16px;background:#fef9ec;border-color:#f59e0b;color:#92400e;display:flex;flex-direction:column;gap:8px")
+                        div(style="display:flex;align-items:center;gap:8px")
+                            svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+                                circle(cx="12" cy="12" r="10")
+                                line(x1="12" y1="8" x2="12" y2="12")
+                                line(x1="12" y1="16" x2="12.01" y2="16")
+                            strong Une étape est requise sur votre tableau de bord Stripe
+                        p(style="margin:0;font-size:13px;line-height:1.5") Stripe vous demande d'accepter vos responsabilités en tant que plateforme avant de pouvoir connecter des comptes. Cliquez sur le bouton ci-dessous, puis revenez ici pour réessayer.
+                        a(href="https://dashboard.stripe.com/settings/connect" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:#635bff;color:white;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;width:fit-content")
+                            | Configurer sur Stripe →
                 else if stripeConnectError
                     .sc-error-banner(style="margin-bottom:16px")
                         svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")

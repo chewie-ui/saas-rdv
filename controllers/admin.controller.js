@@ -2277,6 +2277,9 @@ exports.initiateStripeConnect = async (req, res) => {
     const code = err?.type || err?.code || "init";
     const msg  = err?.message || "";
     console.error("initiateStripeConnect (Express) error:", code, msg, err);
+    if ((msg || "").toLowerCase().includes("managing losses") || (msg || "").toLowerCase().includes("responsibilities of managing")) {
+      return res.redirect("/settings?stripeConnectError=losses_liability");
+    }
     return res.redirect(`/settings?stripeConnectError=${encodeURIComponent(code)}&stripeMsg=${encodeURIComponent(msg.substring(0, 120))}`);
   }
 };

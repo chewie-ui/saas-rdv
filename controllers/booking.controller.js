@@ -1374,10 +1374,27 @@ exports.getSchedule = async (req, res) => {
 // - Saturday no schedule
 
 exports.getDaysOff = async (req, res) => {
-  const { COMPANY_ID } = req.body;
-  const result = await Company.findById(COMPANY_ID).select("schedule");
+  const { COMPANY_ID, employeeId } = req.body;
+  const company = await Company.findById(COMPANY_ID)
+    .select("schedule scheduleMode owner ownerEmployeeProfile.schedule")
+    .lean();
 
-  return res.json({ result });
+  const specificEmp = employeeId && employeeId !== "null" && employeeId !== "";
+  if (specificEmp && company?.scheduleMode === "perEmployee") {
+    let individualSchedule;
+    if (String(company.owner) === String(employeeId)) {
+      individualSchedule = company.ownerEmployeeProfile?.schedule;
+    } else {
+      const CompanyMembership = require("../db/models/company/companyMembership.model");
+      const membership = await CompanyMembership.findOne({ company: COMPANY_ID, user: employeeId }).select("schedule").lean();
+      individualSchedule = membership?.schedule;
+    }
+    if (individualSchedule && individualSchedule.length > 0) {
+      return res.json({ result: { schedule: individualSchedule } });
+    }
+  }
+
+  return res.json({ result: company });
 };
 
 exports.getDisabledDays = async (req, res) => {
