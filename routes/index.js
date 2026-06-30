@@ -362,15 +362,9 @@ router.get("/manage-business", (req, res) => {
   res.redirect(301, "/");
 });
 
-// ── Landing page dédiée Google Ads ──────────────────────────────────────────
+// ── Ancienne landing page Google Ads → redirige vers la page principale ─────
 router.get("/pro", (req, res) => {
-  res.render("client/lp-pro", {
-    title: "Agenda en ligne gratuit pour professionnels — BranShee",
-    metaDescription: "Créez votre agenda en ligne en 5 minutes. Vos clients réservent 24h/24 sans vous appeler. 1 mois offert, sans carte bancaire.",
-    canonical: "https://www.branshee.com/pro",
-    becomeCoach: true,
-    services: getServices(res.locals.lang),
-  });
+  res.redirect(301, "/");
 });
 
 // Le choix pro/client se fait désormais dans le formulaire d'inscription
