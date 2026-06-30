@@ -550,12 +550,13 @@ exports.createBooking = async (req, res) => {
 
       if (employeeId) {
         // Employé précis choisi par le client — vérifier que CET employé
-        // est bien libre (RDV existant ou cours collectif).
+        // est bien libre. On inclut aussi les RDV sans employé assigné
+        // (employee: null) car ils bloquent toute l'équipe.
         const overlapping = await Booking.find({
           company,
           date: new Date(date),
           status: { $ne: "canceled" },
-          employee: employeeId,
+          $or: [{ employee: employeeId }, { employee: null }],
         }).select("startTime slotTime").lean();
         if (overlapping.some(overlapsRange)) {
           return res.json({ success: false, error: "no_employee_available" });
@@ -576,16 +577,25 @@ exports.createBooking = async (req, res) => {
         }
 
         // Aucun employé précisé — auto-assigner le premier qui est libre.
+        // On inclut les RDV sans employé (null) qui bloquent toute l'équipe.
         const overlapping = await Booking.find({
           company,
           date: new Date(date),
           status: { $ne: "canceled" },
-          employee: { $in: team.map((m) => m.id) },
+          $or: [
+            { employee: { $in: team.map((m) => m.id) } },
+            { employee: null },
+          ],
         }).select("employee startTime slotTime").lean();
 
         const busyIds = new Set();
         overlapping.forEach((b) => {
-          if (overlapsRange(b)) busyIds.add(String(b.employee));
+          if (!overlapsRange(b)) return;
+          if (b.employee == null) {
+            team.forEach((m) => busyIds.add(m.id));
+          } else {
+            busyIds.add(String(b.employee));
+          }
         });
 
         // Un employé en cours collectif à ce moment-là n'est pas disponible
@@ -1120,7 +1130,8 @@ exports.getBooking = async (req, res) => {
 
   // ── Case 1: specific employee selected → block only their slots ──────────
   if (specificEmployee) {
-    const bookings = await Booking.find({ ...baseQuery, employee: employeeId }).select("startTime slotTime").lean();
+    // Include employee: null bookings (admin-created, no assignment) — they block everyone.
+    const bookings = await Booking.find({ ...baseQuery, $or: [{ employee: employeeId }, { employee: null }] }).select("startTime slotTime").lean();
     const blockedSet = new Set();
     blockedFromRanges(blockedSet, buildOccupiedRanges(bookings));
     blockedFromRanges(blockedSet, googleRanges);
@@ -1133,22 +1144,30 @@ exports.getBooking = async (req, res) => {
   // Réduit naturellement au cas "solo" (équipe d'1 seule personne = le
   // patron) et au cas "personne n'est bookable" (équipe vide → tout bloqué,
   // .every() sur un tableau vide retourne toujours true) sans branche à part.
+  // On inclut les RDV employee:null (créés admin sans assignation) qui
+  // occupent TOUS les membres, donc font basculer "allBusy" à true.
   const bookings = await Booking.find({
     ...baseQuery,
-    employee: { $in: team.map((m) => m.id) },
+    $or: [
+      { employee: { $in: team.map((m) => m.id) } },
+      { employee: null },
+    ],
   }).select("startTime slotTime employee").lean();
 
   // Group bookings per employee, then build their occupied ranges — pré-rempli
-  // avec les cours collectifs qui occupent chaque employé ce jour-là (un cours
-  // sans employé assigné se retrouve dans la liste de TOUS, donc bloque la
-  // disponibilité générale même sans filtre employé précis).
+  // avec les cours collectifs qui occupent chaque employé ce jour-là.
   const rangesByEmployee = new Map(); // employeeId string → ranges[]
   team.forEach((m) => rangesByEmployee.set(m.id, courseRangesFor(coursesToday, m.id)));
   bookings.forEach((b) => {
-    const empId = String(b.employee);
     const ranges = buildOccupiedRanges([b]);
-    if (rangesByEmployee.has(empId)) {
-      rangesByEmployee.get(empId).push(...ranges);
+    if (b.employee == null) {
+      // RDV sans employé assigné → bloque TOUTE l'équipe
+      team.forEach((m) => rangesByEmployee.get(m.id).push(...ranges));
+    } else {
+      const empId = String(b.employee);
+      if (rangesByEmployee.has(empId)) {
+        rangesByEmployee.get(empId).push(...ranges);
+      }
     }
   });
 

@@ -524,7 +524,8 @@ async function checkBookingConflict({ Booking, currentCompany, date, startTimeIn
   }
 
   if (employeeId) {
-    const overlapping = await Booking.find({ ...baseConflictQuery, employee: employeeId }).select("startTime slotTime").lean();
+    // Include employee:null bookings (admin-created, no assignment) — they block everyone.
+    const overlapping = await Booking.find({ ...baseConflictQuery, $or: [{ employee: employeeId }, { employee: null }] }).select("startTime slotTime").lean();
     if (overlapping.some(overlapsRange)) return "Cet employé a déjà un rendez-vous sur ce créneau.";
 
     const coursesForThisDate = await getCoursesForDate(currentCompany, date);
@@ -542,18 +543,27 @@ async function checkBookingConflict({ Booking, currentCompany, date, startTimeIn
 
   const teamBookings = await Booking.find({
     ...baseConflictQuery,
-    employee: { $in: team.map((m) => m.id) },
+    $or: [
+      { employee: { $in: team.map((m) => m.id) } },
+      { employee: null },
+    ],
   }).select("startTime slotTime employee").lean();
 
   const coursesForThisDate = await getCoursesForDate(currentCompany, date);
   const busyByEmployee = new Map();
   team.forEach((m) => busyByEmployee.set(m.id, courseRangesFor(coursesForThisDate, m.id)));
   teamBookings.forEach((b) => {
-    const empId = String(b.employee);
-    if (!busyByEmployee.has(empId)) return;
     const [bh, bm] = b.startTime.split(":").map(Number);
     const bStart = bh * 60 + bm;
-    busyByEmployee.get(empId).push([bStart, bStart + (b.slotTime || actualDuration)]);
+    const range = [bStart, bStart + (b.slotTime || actualDuration)];
+    if (b.employee == null) {
+      // RDV sans employé → bloque toute l'équipe
+      team.forEach((m) => busyByEmployee.get(m.id).push(range));
+    } else {
+      const empId = String(b.employee);
+      if (!busyByEmployee.has(empId)) return;
+      busyByEmployee.get(empId).push(range);
+    }
   });
 
   const allBusy = team.every((m) => {

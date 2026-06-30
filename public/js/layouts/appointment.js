@@ -285,7 +285,9 @@ setInterval(updateTimeline, 60000);
     dateInput.value = "";
     startPicker.set("");
     if (serviceSel) serviceSel.value = "";
-    if (employeeSel) employeeSel.value = "";
+    // Ne réinitialise que si le select a une option vide (mode multi-employés).
+    // En mode 1 seul employé, le select est caché avec une seule option pré-sélectionnée.
+    if (employeeSel && employeeSel.querySelector('option[value=""]')) employeeSel.value = "";
     nameInput.value = "";
     surnameInput.value = "";
     emailInput.value = "";

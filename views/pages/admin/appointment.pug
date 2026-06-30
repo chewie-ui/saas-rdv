@@ -336,7 +336,7 @@ block content
                                 each svc in services
                                     option(value=String(svc._id) data-duration=svc.duration)= svc.name.length > 40 ? svc.name.slice(0, 40) + '…' : svc.name
 
-                if employees && employees.length > 0
+                if employees && employees.length > 1
                     .edit-fields-row
                         .field-container.flex.col
                             label Employé
@@ -345,6 +345,9 @@ block content
                                 each emp in employees
                                     - var empLabel = emp.firstName + ' ' + emp.lastName
                                     option(value=String(emp._id))= empLabel.length > 40 ? empLabel.slice(0, 40) + '…' : empLabel
+                else if employees && employees.length === 1
+                    select#newApptEmployee(style="display:none")
+                        option(value=String(employees[0]._id) selected)
 
                 .edit-fields-row.two-col
                     .field-container.flex.col
