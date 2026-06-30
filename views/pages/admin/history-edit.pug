@@ -227,6 +227,15 @@ block content
                                 .pay-info-item
                                     span.pay-info-label= t.hist_edit.payment_date_label
                                     span.pay-info-value= new Date(pay.paidAt).toLocaleString(lang)
+                            if pay.cardLast4
+                                .pay-info-item
+                                    span.pay-info-label Carte du client
+                                    span.pay-info-value.pay-card-chip
+                                        svg(width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+                                            rect(x="1" y="4" width="22" height="16" rx="2" ry="2")
+                                            line(x1="1" y1="10" x2="23" y2="10")
+                                        | #{pay.cardBrand ? (pay.cardBrand.charAt(0).toUpperCase() + pay.cardBrand.slice(1)) : 'Carte'}
+                                        span.pay-card-mask  •••• #{pay.cardLast4}
 
                         if results.noShow
                             .pay-noshow-row(class=results.noShowReason === "invalid" ? "pay-noshow-row--charged" : "pay-noshow-row--free")

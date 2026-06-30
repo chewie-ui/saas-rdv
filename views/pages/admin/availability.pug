@@ -45,6 +45,22 @@ block content
                     .avail-card__hd
                         span.avail-card__title= t.avail.t1
                         span.avail-tz= t.avail.timezone_note
+                    if scheduleMode === 'shared'
+                        .avail-shared-notice
+                            svg(width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
+                                circle(cx="12" cy="12" r="10")
+                                line(x1="12" y1="8" x2="12" y2="12")
+                                line(x1="12" y1="16" x2="12.01" y2="16")
+                            div
+                                strong Horaire commun à tous les collaborateurs
+                                if permissions.availability.manageShared
+                                    span Pour définir un horaire différent par employé, passez en mode&nbsp;
+                                    strong Horaire individuel par employé
+                                    span &nbsp;ci-dessus.
+                                else
+                                    span L'établissement est en mode horaire commun. Demandez à votre patron de passer en&nbsp;
+                                    strong Horaire individuel par employé
+                                    span &nbsp;pour pouvoir personnaliser votre propre horaire.
                     .avail-rows.body-weekly-hour
                         each day in sortedSchedule
                             .avail-day-row.row-weekday(class=day.dayOff ? 'day-off' : '')

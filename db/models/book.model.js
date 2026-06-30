@@ -177,6 +177,8 @@ const bookingSchema = new schema(
       //   kept      = raison non valable, l'établissement garde les frais
       cancellationReviewDecision: { type: String, enum: ["", "refunded", "kept"], default: "" },
       cancellationReviewedAt:     { type: Date, default: null },
+      cardLast4: { type: String, default: "" },
+      cardBrand: { type: String, default: "" },
     },
   },
   { timestamps: true },

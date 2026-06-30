@@ -624,11 +624,19 @@ exports.createBooking = async (req, res) => {
       try {
         const si = await stripe.setupIntents.retrieve(stripeSetupIntentId);
         if (si.status === "succeeded") {
+          let cardLast4 = "", cardBrand = "";
+          try {
+            const pm = await stripe.paymentMethods.retrieve(si.payment_method);
+            cardLast4 = pm.card?.last4 || "";
+            cardBrand = pm.card?.brand || "";
+          } catch (_) {}
           paymentExtra = {
             status:                "authorized",
             stripeSetupIntentId:   si.id,
             stripeCustomerId:      si.customer || "",
             stripePaymentMethodId: si.payment_method || "",
+            cardLast4,
+            cardBrand,
           };
         }
       } catch (siErr) {
