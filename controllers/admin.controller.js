@@ -2176,6 +2176,9 @@ exports.saveNotificationSettings = async (req, res) => {
 
 exports.savePrepaymentSettings = async (req, res) => {
   try {
+    if (!atLeast(res.locals.billingUser, "pro")) {
+      return res.status(403).json({ error: "Fonctionnalité réservée au plan Pro." });
+    }
     const { enabled, required, cash, cardOnSite,
             bankTransferEnabled, iban, bic, bankName, bankNote,
             paypalEnabled, paypalMe,
@@ -2237,6 +2240,9 @@ exports.deletePaymentQrCode = async (req, res) => {
 // ── Politique d'annulation ────────────────────────────────────────────────────
 exports.saveCancellationPolicy = async (req, res) => {
   try {
+    if (!atLeast(res.locals.billingUser, "pro")) {
+      return res.status(403).json({ error: "Fonctionnalité réservée au plan Pro." });
+    }
     const { rule } = req.body;
     const validRules = ["free", "half_24h", "full_12h"];
     if (!validRules.includes(rule)) return res.status(400).json({ error: "Règle invalide." });

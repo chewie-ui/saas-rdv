@@ -14,7 +14,7 @@ block content
         a.dossier-back#dossierBackLink(href="/clients")
             svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                 path(d="M400-80 0-480l400-400 56 56-344 344 344 344-56 56Z")
-            span Tous les #{clientTermPlural || 'clients'}
+            span= t.dossier.back_link || ('Tous les ' + (clientTermPlural || 'clients'))
 
         .dossier-header
             .dossier-header__id
@@ -23,7 +23,7 @@ block content
                     h2
                         = client.fullName
                         if dossier.blocked
-                            span.dossier-blocked-badge Bloqué
+                            span.dossier-blocked-badge= t.dossier.blocked_badge
                     .dossier-header__contact
                         span
                             svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
@@ -37,46 +37,46 @@ block content
             .dossier-header__stats
                 .dossier-stat
                     .dossier-stat__n= confirmedCount
-                    .dossier-stat__l Rendez-vous
+                    .dossier-stat__l= t.dossier.stat_appointments
                 if lastVisit
                     .dossier-stat
                         .dossier-stat__n= new Date(lastVisit.date).toLocaleDateString('fr-FR')
-                        .dossier-stat__l Dernière visite
+                        .dossier-stat__l= t.dossier.stat_last_visit
                 if nextVisit
                     .dossier-stat.dossier-stat--next
                         .dossier-stat__n= new Date(nextVisit.date).toLocaleDateString('fr-FR')
-                        .dossier-stat__l Prochain RDV
+                        .dossier-stat__l= t.dossier.stat_next_appt
             .dossier-header__actions
                 if canManageClients
                     if dossier.blocked
                         button.sm-btn.sm-btn--ghost#unblockClientBtn(type="button")
                             svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                                 path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm-99-184 99-99 99 99 56-57-99-98 99-98-56-57-99 99-99-99-57 57 99 98-99 98 57 57Z")
-                            span Débloquer ce #{clientTerm || 'client'}
+                            span= t.dossier.btn_unblock || ('Débloquer ce ' + (clientTerm || 'client'))
                     else
                         button.sm-btn.sm-btn--danger#blockClientBtn(type="button")
                             svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                                 path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80ZM240-275q54-42 117-65.5T480-364q66 0 129 23.5T726-275q41-49 57.5-103T800-480q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 60 16.5 113.5T240-275Zm240-125q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Z")
-                            span Bloquer ce #{clientTerm || 'client'}
+                            span= t.dossier.btn_block || ('Bloquer ce ' + (clientTerm || 'client'))
 
         .dossier-layout
             //- ── Colonne principale : chronologie des notes ──────────────────
             .dossier-main
                 .dossier-main__header
-                    h3 Suivi du #{clientTerm || 'client'}
+                    h3= t.dossier.section_follow_up || ('Suivi du ' + (clientTerm || 'client'))
                     if canManageClients
                         button.sm-btn.sm-btn--primary#addEntryBtn
                             svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                                 path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
-                            span Nouvelle note
+                            span= t.dossier.btn_new_note
 
                 #timelineList.dossier-timeline
                     if entries.length === 0
                         .dossier-timeline__empty
                             svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor")
                                 path(d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z")
-                            p Aucune note encore pour ce #{clientTerm || 'client'}.
-                            p.dossier-timeline__empty-sub Ajoutez la première — constat initial, soin réalisé, objectif fixé...
+                            p= (t.dossier.empty_notes || 'Aucune note encore pour ce') + ' ' + (clientTerm || 'client') + '.'
+                            p.dossier-timeline__empty-sub= t.dossier.empty_notes_hint
                     each entry in entries
                         .timeline-entry(data-id=String(entry._id) data-note=entry.note data-todo=entry.todo data-date=new Date(entry.date).toISOString().slice(0,10))
                             .timeline-entry__rail
@@ -98,23 +98,23 @@ block content
                                         svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
                                             path(d="M482-160q-134 0-228-93t-94-227v-7l-64 64-56-56 160-160 160 160-56 56-64-64v7q0 100 70.5 170T482-240q26 0 51-6t49-18l60 60q-38 22-78 33t-82 11Zm278-149L600-469l56-56 64 64v-7q0-100-70.5-170T478-708q-26 0-51 6t-49 18l-60-60q38-22 78-33t82-11q134 0 228 93t94 227v7l64-64 56 56-160 160Z")
                                         span
-                                            strong À faire la prochaine fois :&nbsp;
+                                            strong= t.dossier.todo_label + ' '
                                             = entry.todo
 
             //- ── Colonne latérale : infos générales + historique RDV ─────────
             .dossier-side
                 .section__container.dossier-general
-                    h3 Informations générales
-                    p.xs-comment Antécédents, allergies, objectifs... tout ce qui reste valable d'une visite à l'autre.
+                    h3= t.dossier.section_general_info
+                    p.xs-comment= t.dossier.general_info_hint
                     textarea.textarea#generalInfoInput(rows=6 placeholder="Ex: Douleur lombaire chronique depuis 2022, allergie au latex...")= dossier.generalInfo
                     .dossier-general__footer
-                        button.sm-btn.sm-btn--primary#saveGeneralBtn(disabled) Enregistrer
+                        button.sm-btn.sm-btn--primary#saveGeneralBtn(disabled)= t.dossier.btn_save
                         span#generalSaveStatus.dossier-general__status
 
                 .section__container.dossier-history
-                    h3 Historique des rendez-vous
+                    h3= t.dossier.section_history
                     if bookings.length === 0
-                        p.xs-comment Aucun rendez-vous trouvé.
+                        p.xs-comment= t.dossier.no_bookings
                     else
                         ul.booking-mini-list
                             each b in bookings.slice(0, 10)
@@ -124,38 +124,38 @@ block content
                                     span.booking-mini-item__service= b.serviceName || 'Rendez-vous'
                                     span.booking-mini-item__price= (b.payment && b.payment.amount) ? `${b.payment.amount}€` : '—'
                                     select.booking-mini-item__payment(data-id=String(b._id) title="Moyen de paiement de cette séance")
-                                        option(value="none" selected=(pm === 'none')) Moyen ?
-                                        option(value="cash" selected=(pm === 'cash')) Espèces
-                                        option(value="on_site" selected=(pm === 'on_site')) Carte sur place
-                                        option(value="bank_transfer" selected=(pm === 'bank_transfer')) Virement
-                                        option(value="paypal" selected=(pm === 'paypal')) PayPal
-                                        option(value="online" selected=(pm === 'online')) Payé en ligne
-                                    span.booking-mini-item__status(class=`booking-mini-item__status--${b.status}`)= b.status === 'canceled' ? 'Annulé' : 'Confirmé'
+                                        option(value="none" selected=(pm === 'none'))= t.dossier.payment_method_placeholder
+                                        option(value="cash" selected=(pm === 'cash'))= t.dossier.pay_cash
+                                        option(value="on_site" selected=(pm === 'on_site'))= t.dossier.pay_card_on_site
+                                        option(value="bank_transfer" selected=(pm === 'bank_transfer'))= t.dossier.pay_bank_transfer
+                                        option(value="paypal" selected=(pm === 'paypal'))= t.dossier.pay_paypal
+                                        option(value="online" selected=(pm === 'online'))= t.dossier.pay_online
+                                    span.booking-mini-item__status(class=`booking-mini-item__status--${b.status}`)= b.status === 'canceled' ? t.dossier.status_canceled : t.dossier.status_confirmed
 
     //- ── Modal : Nouvelle / Modifier une note ─────────────────────────────────
     .modal-overlay#entryModalOverlay
     .service-modal#entryModal
         .service-modal__header
-            h3#entryModalTitle Nouvelle note
+            h3#entryModalTitle= t.dossier.modal_new_note_title
             button.modal-close#closeEntryModal
                 svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
                     path(d="m336-280-56-56 144-144-144-143 56-56 144 144 143-144 56 56-144 143 144 144-56 56-143-144-144 144Z")
         .service-modal__body
             input(type="hidden" id="entryModalId")
             .field
-                label Date
+                label= t.dossier.modal_field_date
                 input.input#entryModalDate(type="date")
             .field
-                label Constat / ce qui a été fait
+                label= t.dossier.modal_field_note
                 textarea.textarea#entryModalNote(rows=4 placeholder="Ex: Douleur à l'épaule droite, mobilité réduite. Massage + étirements ciblés.")
             .field
                 label
-                    | À faire au prochain rendez-vous
-                    span.auth-label-opt &nbsp;(optionnel)
+                    = t.dossier.modal_field_todo
+                    span.auth-label-opt &nbsp;(#{t.dossier.modal_field_optional})
                 textarea.textarea#entryModalTodo(rows=2 placeholder="Ex: Continuer le renforcement, revoir la posture assise.")
         .service-modal__footer
-            button.sm-btn.sm-btn--ghost#cancelEntryModal Annuler
-            button.sm-btn.sm-btn--primary#saveEntryBtn Enregistrer
+            button.sm-btn.sm-btn--ghost#cancelEntryModal= t.dossier.btn_cancel
+            button.sm-btn.sm-btn--primary#saveEntryBtn= t.dossier.btn_save_entry
 
     script.
         window.__dossierId = !{JSON.stringify(String(dossier._id))};

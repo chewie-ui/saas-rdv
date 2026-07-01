@@ -467,12 +467,12 @@ block content
 
             //- Plan gate
             if !isPro
-                .cz-reminder-gate
-                    svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
-                        path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
-                    h3 Fonctionnalité Pro & Business
-                    p Les rappels automatiques sont disponibles à partir du plan Pro.
-                    a.sm-btn.sm-btn--primary(href="/subscription") Passer au Pro →
+                .plan-gate
+                    span.plan-gate__lock 🔒
+                    .plan-gate__body
+                        strong.plan-gate__title Rappels automatiques
+                        span.plan-gate__sub Disponible uniquement dans les plans Pro & Business.
+                    a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
 
             else
                 .info-card
@@ -1153,18 +1153,6 @@ block scripts
             border-bottom-color: var(--primary, #22c55e);
             font-weight: 600;
         }
-        /* ── Rappels ── */
-        .cz-reminder-gate {
-            text-align: center;
-            padding: 48px 24px;
-            background: var(--surface-card);
-            border: 1.5px solid var(--border-light);
-            border-radius: 16px;
-            color: var(--text-secondary);
-        }
-        .cz-reminder-gate svg { color: var(--text-muted); margin-bottom: 12px; }
-        .cz-reminder-gate h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0 0 8px; }
-        .cz-reminder-gate p  { margin: 0 0 20px; font-size: 14px; }
         .cz-reminder-header-icon {
             display: flex;
             align-items: center;

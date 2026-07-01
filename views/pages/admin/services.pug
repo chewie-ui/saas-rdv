@@ -11,7 +11,7 @@ block content
                 h2= t.services.title
                 p.services-page__subtitle= t.services.subtitle
             .services-page__header-right
-                if maxServices > 0
+                if maxServices > 0 && isFinite(maxServices)
                     span.services-counter#svcCounter(class=(services.length >= maxServices ? 'services-counter--full' : '')) #{services.length} / #{maxServices}
                 if canManageSvc
                     if services.length > 0 && maxServices > 0
@@ -31,28 +31,25 @@ block content
         //- ── Plan limit banner ────────────────────────────────────
         - var svcAtLimit = maxServices > 0 && services.length >= maxServices
         if currentPlan === 'basic' && maxServices > 0
-            .plan-limit-banner.plan-limit-banner--upgrade#serviceLimitBanner(style=!svcAtLimit ? 'display:none' : '')
-                svg.plan-limit-banner__icon(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                    path(d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z")
-                .plan-limit-banner__text
-                    strong Limite gratuit atteinte — #{maxServices}/#{maxServices} services
-                    span Passez au plan Pro pour créer jusqu'à 10 services, personnaliser votre page et bien plus.
-                a.btn-upgrade-pro(href="/subscription") Passer au Pro →
+            .plan-gate#serviceLimitBanner(style=!svcAtLimit ? 'display:none' : '')
+                span.plan-gate__lock 🔒
+                .plan-gate__body
+                    strong.plan-gate__title Limite atteinte — #{maxServices}/#{maxServices} services
+                    span.plan-gate__sub Disponible uniquement dans les plans Pro & Business.
+                a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
         else if currentPlan === 'pro' && maxServices > 0
-            .plan-limit-banner.plan-limit-banner--upgrade#serviceLimitBanner(style=!svcAtLimit ? 'display:none' : '')
-                svg.plan-limit-banner__icon(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                    path(d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z")
-                .plan-limit-banner__text
-                    strong Limite Pro atteinte — #{maxServices}/#{maxServices} services
-                    span Passez au plan Business pour créer jusqu'à 50 services et développer votre activité.
-                a.btn-upgrade-business(href="/subscription") Passer au Business →
+            .plan-gate#serviceLimitBanner(style=!svcAtLimit ? 'display:none' : '')
+                span.plan-gate__lock 🔒
+                .plan-gate__body
+                    strong.plan-gate__title Limite Pro atteinte — #{maxServices}/#{maxServices} services
+                    span.plan-gate__sub Disponible uniquement dans le plan Business.
+                a.btn-upgrade-business.plan-gate__cta(href="/subscription") Passer au Business →
         else if currentPlan === 'business' && maxServices > 0
-            .plan-limit-banner.plan-limit-banner--max#serviceLimitBanner(style=!svcAtLimit ? 'display:none' : '')
-                svg.plan-limit-banner__icon(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                    path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z")
-                .plan-limit-banner__text
-                    strong Limite maximale atteinte
-                    span Vous avez atteint la limite de #{maxServices} services de votre plan Business.
+            .plan-gate#serviceLimitBanner(style=!svcAtLimit ? 'display:none' : '')
+                span.plan-gate__lock 🔒
+                .plan-gate__body
+                    strong.plan-gate__title Limite maximale atteinte — #{maxServices}/#{maxServices} services
+                    span.plan-gate__sub Vous avez atteint la limite de votre plan Business.
 
         if services.length === 0
             .services-empty
@@ -60,17 +57,19 @@ block content
                     path(d="M160-120q-33 0-56.5-23.5T80-200v-560q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v560q0 33-23.5 56.5T800-120H160Zm0-80h640v-560H160v560Zm80-80h480v-80H240v80Zm0-160h480v-80H240v80Zm0-160h480v-80H240v80Z")
                 p= t.services.empty
                 if maxServices === 0
-                    .plan-lock-hint
-                        svg(xmlns="http://www.w3.org/2000/svg" height="13px" viewBox="0 -960 960 960" width="13px" fill="currentColor")
-                            path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
-                        span Disponible à partir du plan Pro
-                        a.btn-upgrade-pro(href="/subscription") Passer au Pro
-                else
-                    .plan-lock-hint
-                        svg(xmlns="http://www.w3.org/2000/svg" height="13px" viewBox="0 -960 960 960" width="13px" fill="currentColor")
-                            path(d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z")
-                        span Limite gratuit : #{maxServices}/#{maxServices} services
-                        a.btn-upgrade-pro(href="/subscription") Passer au Pro
+                    .plan-gate
+                        span.plan-gate__lock 🔒
+                        .plan-gate__body
+                            strong.plan-gate__title Services
+                            span.plan-gate__sub Disponible uniquement dans les plans Pro & Business.
+                        a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
+                else if svcAtLimit
+                    .plan-gate
+                        span.plan-gate__lock 🔒
+                        .plan-gate__body
+                            strong.plan-gate__title Limite gratuit atteinte — #{services.length}/#{maxServices} services
+                            span.plan-gate__sub Passez au plan Pro pour créer jusqu'à 20 services.
+                        a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
 
         //- ── Passerelle vers "Cours collectifs" — un service ici reste un
         //- rendez-vous individuel classique. Pour un atelier/cours à plusieurs
@@ -83,8 +82,8 @@ block content
                     svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
                         path(d="M480-120 200-272v-240L40-600l440-240 440 240v320h-80v-276l-80 44v240L480-120Zm0-332 274-148-274-148-274 148 274 148Zm0 240 200-108v-153l-200 108-200-108v153l200 108Z")
                 .svc-gs-banner__text
-                    strong Vous proposez plutôt un atelier ou cours collectif ?
-                    span Plusieurs participants, une ou plusieurs dates, un nombre de places max — gérez ça dans "Cours collectifs".
+                    strong= t.services.gs_banner_title
+                    span= t.services.gs_banner_sub
                 svg.svc-gs-banner__arrow(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                     path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
 
@@ -94,23 +93,23 @@ block content
                 .bq-card__title-row
                     svg.bq-card__icon(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                         path(d="M478-240q21 0 35.5-14.5T528-290q0-21-14.5-35.5T478-340q-21 0-35.5 14.5T428-290q0 21 14.5 35.5T478-240Zm-36-154h74q0-33 7.5-52t42.5-52q26-26 41-49.5t15-56.5q0-56-41-86t-97-30q-57 0-92.5 30T342-618l66 26q5-18 22.5-39t53.5-21q32 0 48 17.5t16 38.5q0 20-12 37.5T506-526q-44 39-54 59t-10 73Zm38 314q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Z")
-                    span.bq-card__title Question avant le choix du service
+                    span.bq-card__title= t.services.bq_title
                 label.sa-toggle
                     input#bqEnabled(type="checkbox" checked=(bookingQuestion && bookingQuestion.enabled))
                     .sa-toggle__track
             p.bq-card__sub
-                | Posez une question à vos #{clientTermPlural || 'clients'} avant qu'ils choisissent une prestation (ex : "Est-ce la première fois que vous nous consultez ?"). Sur chaque service, vous pourrez ensuite choisir s'il ne doit s'afficher que pour une des deux réponses — par défaut il reste proposé dans tous les cas.
+                | !{t.services.bq_card_sub.replace('{clientTermPlural}', clientTermPlural || 'clients')}
             - var bq = bookingQuestion || {}
             #bqRow(style=(bq.enabled ? '' : 'display:none'))
                 .field
-                    label Votre question
+                    label= t.services.bq_question_label
                     input.input#bqQuestionInput(type="text" maxlength="200" placeholder="Ex: Est-ce la première fois que vous nous consultez ?" value=bq.question)
                 .field-row
                     .field
-                        label Libellé réponse "nouveau"
+                        label= t.services.bq_new_label
                         input.input#bqNewLabelInput(type="text" maxlength="80" placeholder="Ex: Oui, je suis nouveau" value=bq.newLabel)
                     .field
-                        label Libellé réponse "déjà venu"
+                        label= t.services.bq_existing_label
                         input.input#bqExistingLabelInput(type="text" maxlength="80" placeholder="Ex: Non, j'ai déjà consulté" value=bq.existingLabel)
 
         .services-list#servicesList
@@ -142,7 +141,7 @@ block content
                                     span.badge.badge--fee
                                         = svc.cancellationFee.type === 'amount' ? `Annulation: ${svc.cancellationFee.value}€` : `Annulation: ${svc.cancellationFee.value}%`
                                 if svc.answerVisibility && svc.answerVisibility !== 'all'
-                                    span.badge.badge--category(title="Visible uniquement pour cette réponse à la question préalable")
+                                    span.badge.badge--category(title=t.services.visibility_hint)
                                         = svc.answerVisibility === 'new' ? ((bookingQuestion && bookingQuestion.newLabel) || 'Nouveau') : ((bookingQuestion && bookingQuestion.existingLabel) || 'Déjà venu')
                         .service-card__actions
                             if canManageSvc
@@ -152,7 +151,7 @@ block content
                                 button.btn.btn--icon.edit-service-btn(data-id=String(svc._id) title=t.services.modal_edit)
                                     svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                                         path(d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z")
-                                button.btn.btn--icon.btn--danger.delete-service-btn(data-id=String(svc._id) title="Supprimer")
+                                button.btn.btn--icon.btn--danger.delete-service-btn(data-id=String(svc._id) title=t.services.delete)
                                     svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                                         path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-272h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
                     hr.service-card__divider
@@ -190,11 +189,11 @@ block content
                     .emp-invite__title= t.services.add_btn || 'Ajouter un service'
                     if maxServices === 0
                         .emp-invite__upgrade
-                            a.btn-upgrade-pro(href="/subscription") Passer au Pro
+                            a.btn-upgrade-pro(href="/subscription")= t.services.upgrade_cta
                     else if services.length >= maxServices
-                        p.emp-invite__desc Limite atteinte. Passez à un plan supérieur pour en ajouter.
+                        p.emp-invite__desc= t.services.limit_reached_desc
                     else
-                        p.emp-invite__desc Ajoutez un nouveau service proposé à vos clients.
+                        p.emp-invite__desc= t.services.invite_desc
 
     //- ── Panneau : Gérer les catégories ──────────────────────────────────────
     if categories && categories.length > 0
@@ -203,23 +202,23 @@ block content
                 .cat-manage-panel__title
                     svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                         path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640v400q0 33-23.5 56.5T800-160H160Z")
-                    span Catégories & affichage
-                span.cat-manage-panel__hint Glissez ou utilisez ↑↓ pour réordonner
+                    span= t.services.categories_title
+                span.cat-manage-panel__hint= t.services.categories_hint
 
             //- Style picker
             .cat-style-picker
                 button.cat-style-opt#styleOptPills(type="button" data-style="pills")
                     svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                         path(d="M280-400q-83 0-141.5-58.5T80-600q0-83 58.5-141.5T280-800h400q83 0 141.5 58.5T880-600q0 83-58.5 141.5T680-400H280Z")
-                    span Pills
+                    span= t.services.style_pills
                 button.cat-style-opt#styleOptAccordion(type="button" data-style="accordion")
                     svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                         path(d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z")
-                    span Accordéon
+                    span= t.services.style_accordion
                 button.cat-style-opt#styleOptGrid(type="button" data-style="grid")
                     svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                         path(d="M120-120v-240h240v240H120Zm0-360v-240h240v240H120Zm360 360v-240h240v240H480Zm0-360v-240h240v240H480Zm360 360v-240h240v240H840Zm0-360v-240h240v240H840Z")
-                    span Sections
+                    span= t.services.style_sections
 
             //- Category list (reorderable)
             ul.cat-order-list#catOrderList
@@ -232,16 +231,16 @@ block content
                             span.cat-order-item__icon= cat.icon
                         span.cat-order-item__name= cat.name
                         .cat-order-item__btns
-                            button.cat-order-btn(type="button" data-dir="up" title="Remonter")
+                            button.cat-order-btn(type="button" data-dir="up" title=t.services.cat_btn_up)
                                 svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                     path(d="m296-345-56-56 240-240 240 240-56 56-184-184-184 184Z")
-                            button.cat-order-btn(type="button" data-dir="down" title="Descendre")
+                            button.cat-order-btn(type="button" data-dir="down" title=t.services.cat_btn_down)
                                 svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                     path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
-                            button.cat-order-btn.cat-edit-btn(type="button" title="Modifier")
+                            button.cat-order-btn.cat-edit-btn(type="button" title=t.services.cat_btn_edit)
                                 svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                     path(d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z")
-                            button.cat-order-btn.cat-delete-btn(type="button" title="Supprimer")
+                            button.cat-order-btn.cat-delete-btn(type="button" title=t.services.cat_btn_delete)
                                 svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                     path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-272h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
 
@@ -249,32 +248,32 @@ block content
                 button.sm-btn.sm-btn--primary#saveCatSettingsBtn(type="button")
                     svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                         path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                    span Enregistrer
+                    span= t.services.save
                 span.cat-manage-panel__status#catSaveStatus
 
     //- ── Modal : Modifier une catégorie ─────────────────────────────────────
     .modal-overlay#editCatModalOverlay
     .service-modal#editCatModal
         .service-modal__header
-            h2.service-modal__title Modifier la catégorie
+            h2.service-modal__title= t.services.edit_category_title
             button.service-modal__close#closeEditCatModal(type="button")
                 svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
                     path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
         .service-modal__body
             input(type="hidden" id="editCatOldName")
             .form-group
-                label(for="editCatName") Nom de la catégorie
+                label(for="editCatName")= t.services.new_category_name
                 input.form-input#editCatName(type="text" placeholder="Ex: Coiffure" autocomplete="off")
             .form-group
-                label Icône
+                label= t.services.cat_icon_label
                 input(type="hidden" id="editCatIconInput")
                 .cat-icon-picker#editCatIconPicker
         .service-modal__footer
-            button.sm-btn.sm-btn--ghost#cancelEditCatModal(type="button") Annuler
+            button.sm-btn.sm-btn--ghost#cancelEditCatModal(type="button")= t.services.cancel
             button.sm-btn.sm-btn--primary#saveEditCatBtn(type="button")
                 svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                     path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                span Enregistrer
+                span= t.services.save
 
     //- ── Modal : Créer / Modifier un service ──────────────────────────────────
     .modal-overlay#serviceModalOverlay
@@ -291,15 +290,15 @@ block content
                 .service-modal__col
                     //- Image optionnelle
                     .field
-                        label Image du service #[span.xs-comment  (optionnel)]
+                        label Image du service #[span.xs-comment= t.services.img_optional]
                         .svc-img-upload#svcImgUpload
                             img.svc-img-upload__preview#svcImgPreview(src="" alt="" style="display:none")
                             .svc-img-upload__placeholder#svcImgPlaceholder
                                 svg(viewBox="0 -960 960 960" height="28" width="28" fill="currentColor" style="opacity:.35")
                                     path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-800v560q0 33-23.5 56.5T800-120H200Zm0-80h560v-560H200v560Zm40-80h480L570-480 450-320l-90-120-120 160Zm-40 80v-560 560Z")
-                                p Cliquez pour ajouter une image
+                                p= t.services.img_click
                             input.svc-img-upload__input#svcImgInput(type="file" accept="image/*" style="display:none")
-                            button.svc-img-upload__remove#svcImgRemove(type="button" style="display:none") × Supprimer
+                            button.svc-img-upload__remove#svcImgRemove(type="button" style="display:none")= t.services.img_remove
                     .field
                         label= t.services.service_name
                         input.input#serviceModalName(placeholder="Ex: Coupe simple, Massage détente...")
@@ -327,41 +326,43 @@ block content
                             input.input#serviceModalDuration(type="number" min="5" step="5" placeholder="30")
                     .field
                         label.svc-fee-label
-                            span Durée approximative #[span.xs-comment  (ex: 30 à 40 min)]
+                            span= t.services.duration_range_label
+                                |  
+                                span.xs-comment= t.services.duration_range_hint
                             label.sa-toggle
                                 input#serviceModalDurationRangeEnabled(type="checkbox")
                                 .sa-toggle__track
                         #svcDurationMaxRow(style="display:none")
-                            label Jusqu'à
+                            label= t.services.duration_max_label
                             input.input#serviceModalDurationMax(type="number" min="5" step="5" placeholder="Ex: 40")
                     .field
-                        label Couleur (calendrier)
+                        label= t.services.color_label
                         input(type="hidden" id="serviceModalColor")
                         .svc-color-picker#svcColorPicker
 
                 //- ── Colonne droite : réservation & frais ─────────────────────
                 .service-modal__col
                     .field#svcAnswerVisibilityField(style=((bookingQuestion && bookingQuestion.enabled) ? '' : 'display:none'))
-                        label Afficher ce service pour
+                        label= t.services.answer_visibility_label
                         .svc-answer-options#svcAnswerOptions
-                            button.svc-answer-opt.is-active(type="button" data-value="all") Tous
-                            button.svc-answer-opt(type="button" data-value="new")= (bookingQuestion && bookingQuestion.newLabel) || "Nouveau"
-                            button.svc-answer-opt(type="button" data-value="existing")= (bookingQuestion && bookingQuestion.existingLabel) || "Déjà venu"
+                            button.svc-answer-opt.is-active(type="button" data-value="all")= t.services.answer_all
+                            button.svc-answer-opt(type="button" data-value="new")= (bookingQuestion && bookingQuestion.newLabel) || t.services.answer_opt_new_default
+                            button.svc-answer-opt(type="button" data-value="existing")= (bookingQuestion && bookingQuestion.existingLabel) || t.services.answer_opt_existing_default
                     .field
                         label.svc-fee-label
-                            span Frais d'annulation personnalisés pour ce service
+                            span= t.services.fee_label
                             label.sa-toggle
                                 input#serviceModalFeeEnabled(type="checkbox")
                                 .sa-toggle__track
-                        p.xs-comment Remplace la politique d'annulation globale pour ce service uniquement (annulation tardive ou absence non excusée).
+                        p.xs-comment= t.services.fee_desc
                         #svcFeeFields(style="display:none")
                             .svc-fee-type-options#svcFeeTypeOptions
                                 button.svc-type-option.is-active(type="button" data-fee-type="percent")
                                     span.svc-type-option__title %
-                                    span.svc-type-option__desc Pourcentage du prix
+                                    span.svc-type-option__desc= t.services.fee_percent_desc
                                 button.svc-type-option(type="button" data-fee-type="amount")
                                     span.svc-type-option__title €
-                                    span.svc-type-option__desc Montant fixe
+                                    span.svc-type-option__desc= t.services.fee_amount_desc
                             .field
                                 input.input#serviceModalFeeValue(type="number" min="0" step="0.5" placeholder="Ex: 30")
         .service-modal__footer

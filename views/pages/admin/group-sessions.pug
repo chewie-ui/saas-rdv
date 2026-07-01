@@ -13,7 +13,7 @@ block content
                 h2= t.group_sessions.title
                 p.gs-page__subtitle= t.group_sessions.subtitle
             .gs-page__header-right
-                if maxServices > 0
+                if maxServices > 0 && isFinite(maxServices)
                     span.gs-counter #{courses.length} / #{maxServices}
                 if canManageGS
                     button.sm-btn.sm-btn--primary#addCourseBtn(disabled=(maxServices === 0))

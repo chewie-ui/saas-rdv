@@ -107,6 +107,47 @@
   }
 }
 
+/* ===== Plan gate — unified lock card for Pro/Business-only features ===== */
+.plan-gate {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--surface-card, #fff);
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+}
+.plan-gate__lock {
+  font-size: 22px;
+  flex-shrink: 0;
+  line-height: 1;
+  user-select: none;
+}
+.plan-gate__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.plan-gate__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+}
+.plan-gate__sub {
+  font-size: 13px;
+  color: var(--text-muted, #6b7280);
+}
+.plan-gate__cta {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+[data-theme="dark"] .plan-gate {
+  background: var(--surface-card);
+  border-color: var(--border);
+}
+
 /* ===== Upgrade buttons (used in plan lock hints/banners) ===== */
 .btn-upgrade-pro,
 .btn-upgrade-business {

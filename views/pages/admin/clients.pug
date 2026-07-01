@@ -8,8 +8,8 @@ block content
     .clients-page
         .clients-page__header
             .clients-page__header-left
-                h2 Dossiers #{clientTermPlural || 'clients'}
-                p.clients-page__subtitle Gardez un historique de chaque #{clientTerm || 'client'} : constats, soins effectués, suivi d'une visite à l'autre.
+                h2 #{t.clients.page_title} #{clientTermPlural || 'clients'}
+                p.clients-page__subtitle #{t.clients.subtitle_pre} #{clientTerm || 'client'} #{t.clients.subtitle_post}
             .clients-page__header-right
                 span.clients-counter#clientsCounter #{clients.length} #{clients.length === 1 ? (clientTerm || 'client') : (clientTermPlural || 'clients')}
                 a.sm-btn.sm-btn--ghost.clients-blocked-btn(href=(onlyBlocked ? "/clients" : "/clients?blocked=1") class=(onlyBlocked ? 'is-active' : ''))
@@ -20,7 +20,7 @@ block content
         form.clients-search#clientsSearchForm(method="GET" action="/clients")
             svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                 path(d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z")
-            input.clients-search__input#clientsSearchInput(type="text" name="search" placeholder=`Rechercher un ${clientTerm || 'client'} par nom, email ou téléphone...` value=search autocomplete="off")
+            input.clients-search__input#clientsSearchInput(type="text" name="search" placeholder=`${t.clients.search_pre} ${clientTerm || 'client'} ${t.clients.search_post}` value=search autocomplete="off")
             if search
                 a.clients-search__clear(href="/clients") ✕
 
@@ -29,9 +29,9 @@ block content
                 svg(xmlns="http://www.w3.org/2000/svg" height="48px" viewBox="0 -960 960 960" width="48px" fill="currentColor")
                     path(d="M480-481q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Z")
                 if search
-                    p Aucun #{clientTerm || 'client'} ne correspond à « #{search} ».
+                    p #{t.clients.empty_search_pre} #{clientTerm || 'client'} #{t.clients.empty_search_mid} « #{search} ».
                 else
-                    p Dès qu'un #{clientTerm || 'client'} aura réservé un rendez-vous, il apparaîtra ici pour que vous puissiez créer son dossier.
+                    p #{t.clients.empty_hint_pre} #{clientTerm || 'client'} #{t.clients.empty_hint_post}
 
         //- Message "aucun résultat" pour le filtrage instantané côté client
         //- (le filtrage serveur ci-dessus gère le 1er chargement / lien partagé).
@@ -50,11 +50,11 @@ block content
                     .client-card__top
                         .client-card__avatar= initials
                         if c.blocked
-                            span.client-card__badge.client-card__badge--blocked Bloqué
+                            span.client-card__badge.client-card__badge--blocked= t.clients.badge_blocked
                         else if c.entriesCount > 0
                             span.client-card__badge #{c.entriesCount} note#{c.entriesCount === 1 ? '' : 's'}
                         else
-                            span.client-card__badge.client-card__badge--empty Aucune note
+                            span.client-card__badge.client-card__badge--empty= t.clients.badge_no_notes
                     .client-card__name= c.fullName
                     .client-card__detail
                         svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
@@ -67,11 +67,11 @@ block content
                             span= c.phone
                     .client-card__visits
                         span.client-card__visit
-                            strong Dernière visite
+                            strong= t.clients.last_visit
                             |  #{c.lastVisit ? new Date(c.lastVisit).toLocaleDateString('fr-FR') : '—'}
                         span.client-card__visit(class=c.nextVisit ? 'client-card__visit--next' : 'client-card__visit--none')
-                            strong Prochain RDV
-                            |  #{c.nextVisit ? new Date(c.nextVisit).toLocaleDateString('fr-FR') : 'Aucun'}
+                            strong= t.clients.next_appt
+                            |  #{c.nextVisit ? new Date(c.nextVisit).toLocaleDateString('fr-FR') : t.clients.no_next_appt}
 
     script.
         (function() {
