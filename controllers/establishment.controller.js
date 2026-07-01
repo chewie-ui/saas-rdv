@@ -129,9 +129,14 @@ exports.listMyEstablishments = async (req, res) => {
       isActive: m.isActive !== false,
       acceptedAt: m.acceptedAt,
     }));
+  // Demandes envoyées par le collaborateur, en attente d'approbation du patron
   const pendingRequests = live
-    .filter((m) => m.status === "pending")
+    .filter((m) => m.status === "pending" && !m.invitedByOwner)
     .map((m) => ({ id: String(m._id), name: companyLabel(m), requestedAt: m.createdAt }));
+  // Invitations reçues du patron, en attente d'acceptation par le collaborateur
+  const pendingInvitations = live
+    .filter((m) => m.status === "pending" && m.invitedByOwner)
+    .map((m) => ({ id: String(m._id), name: companyLabel(m), invitedAt: m.createdAt }));
   const rejectedRequests = live
     .filter((m) => m.status === "rejected")
     .map((m) => ({ id: String(m._id), name: companyLabel(m), requestedAt: m.createdAt }));
@@ -142,6 +147,7 @@ exports.listMyEstablishments = async (req, res) => {
     establishments: ownedFormatted,
     memberOf,
     pendingRequests,
+    pendingInvitations,
     rejectedRequests,
     companiesLimit: companiesLimit === Infinity ? null : companiesLimit,
     companiesCount: owned.length,
@@ -384,14 +390,27 @@ exports.renderCollaboratorsPage = async (req, res) => {
     memberCount: accepted.filter((m) => m.gradeId === String(g._id)).length,
   }));
 
+  // Demandes reçues : collaborateur a demandé à rejoindre, le patron approuve
   const pendingRequests = memberships
-    .filter((m) => m.status === "pending" && m.user)
+    .filter((m) => m.status === "pending" && m.user && !m.invitedByOwner)
     .map((m) => ({
       id: String(m._id),
       fullName: m.user.fullName,
       email: m.user.email,
       profilePicture: m.user.profilePicture || "/images/no-user.webp",
       requestedAt: m.createdAt,
+    }));
+
+  // Invitations envoyées : patron a invité, en attente d'acceptation du collaborateur
+  const pendingInvitations = memberships
+    .filter((m) => m.status === "pending" && m.user && m.invitedByOwner)
+    .map((m) => ({
+      id: String(m._id),
+      fullName: m.user.fullName,
+      email: m.user.email,
+      profilePicture: m.user.profilePicture || "/images/no-user.webp",
+      gradeName: m.grade?.name || "",
+      invitedAt: m.createdAt,
     }));
 
   const collaboratorsLimit = getLimit("collaborators", owner);
@@ -409,6 +428,7 @@ exports.renderCollaboratorsPage = async (req, res) => {
     permissionSchema: PERMISSION_SCHEMA,
     permissionGroups: PERMISSION_GROUPS,
     pendingRequests,
+    pendingInvitations,
     collaboratorsLimit: collaboratorsLimit === Infinity ? null : collaboratorsLimit,
     atCollaboratorsLimit: accepted.length >= collaboratorsLimit,
     currentPlan: getPlan(owner),
@@ -607,10 +627,13 @@ exports.inviteCollaborator = async (req, res) => {
     if (existing && existing.status === "accepted" && existing.isActive !== false) {
       return res.status(400).json({ error: "Cette personne est déjà collaboratrice de cet établissement." });
     }
+    if (existing && existing.status === "pending" && existing.invitedByOwner) {
+      return res.status(400).json({ error: "Une invitation est déjà en attente pour cette personne." });
+    }
 
     await CompanyMembership.findOneAndUpdate(
       { company: company._id, user: target._id },
-      { status: "accepted", grade: grade._id, isActive: true, acceptedAt: new Date() },
+      { status: "pending", grade: grade._id, invitedByOwner: true },
       { upsert: true }
     );
 
@@ -619,7 +642,7 @@ exports.inviteCollaborator = async (req, res) => {
       user: owner,
       role: "owner",
       action: "collaborator.invite",
-      description: `a ajouté "${target.fullName}" comme collaborateur (${grade.name})`,
+      description: `a invité "${target.fullName}" comme collaborateur (${grade.name}) — en attente d'acceptation`,
     });
 
     return res.json({ success: true });

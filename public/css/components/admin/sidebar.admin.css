@@ -268,8 +268,9 @@
 
 .sb-estab__opt svg { flex-shrink: 0; color: var(--accent); }
 
-/* Back / espace client link */
-.sb-estab__back {
+/* Back / espace client link + add establishment */
+.sb-estab__back,
+.sb-estab__add {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -289,7 +290,18 @@
   color: var(--text-primary);
 }
 
+.sb-estab__add {
+  color: var(--accent, #16a34a);
+  font-weight: 600;
+}
+
+.sb-estab__add:hover {
+  background: #f0fdf4;
+  color: var(--accent, #16a34a);
+}
+
 .sb-estab__back svg { flex-shrink: 0; fill: currentColor; opacity: 0.6; }
+.sb-estab__add svg { flex-shrink: 0; fill: currentColor; }
 
 .sb-estab__sep {
   height: 1px;
@@ -1136,7 +1148,8 @@
 }
 
 [data-theme="dark"] .sb-estab__opt:hover,
-[data-theme="dark"] .sb-estab__back:hover {
+[data-theme="dark"] .sb-estab__back:hover,
+[data-theme="dark"] .sb-estab__add:hover {
   background: rgba(255,255,255,0.06);
 }
 

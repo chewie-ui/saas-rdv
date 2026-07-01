@@ -85,6 +85,20 @@ block content
                             button.sm-btn.sm-btn--ghost.js-switch-estab(type="button" data-id=m.id)
                                 span Accéder
 
+    if pendingInvitations && pendingInvitations.length
+        .dash-section(style="margin-top:2.5rem")
+            .dash-section__title
+                h2 Invitations reçues
+            .estab-invitation-list
+                each inv in pendingInvitations
+                    .estab-invitation-row(data-id=inv.id)
+                        .estab-invitation-row__info
+                            span.estab-invitation-row__name= inv.name
+                            span.estab-invitation-row__sub Un établissement vous a invité à rejoindre son équipe.
+                        .estab-invitation-row__actions
+                            button.sm-btn.sm-btn--primary.js-accept-invitation(type="button" data-id=inv.id) Accepter
+                            button.sm-btn.sm-btn--ghost.js-refuse-invitation(type="button" data-id=inv.id) Refuser
+
     if pendingRequests && pendingRequests.length
         .dash-section(style="margin-top:2.5rem")
             .dash-section__title
@@ -474,6 +488,26 @@ block scripts
                 joinSearchStep.style.display = '';
                 joinSearchActions.style.display = '';
                 joinTargetId = null;
+            });
+
+            // ── Invitations reçues (accept / refuse) ────────────────────────
+            document.querySelectorAll('.js-accept-invitation, .js-refuse-invitation').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var id = btn.dataset.id;
+                    var decision = btn.classList.contains('js-accept-invitation') ? 'accepted' : 'rejected';
+                    btn.disabled = true;
+                    fetch('/account/invitations/' + id, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ decision: decision }),
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            if (data.success) window.location.reload();
+                            else { btn.disabled = false; alert(data.error || 'Erreur.'); }
+                        })
+                        .catch(function () { btn.disabled = false; });
+                });
             });
 
             joinConfirmBtn.addEventListener('click', function () {

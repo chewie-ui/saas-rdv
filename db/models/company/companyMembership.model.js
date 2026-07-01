@@ -12,6 +12,10 @@ const companyMembershipSchema = schema(
     user:    { type: schema.Types.ObjectId, ref: "User",    required: true },
     status:  { type: String, enum: ["pending", "accepted", "rejected"], default: "pending" },
 
+    // true = invitation envoyée par le patron (collaborateur doit accepter/refuser)
+    // false = demande envoyée par le collaborateur (patron doit approuver)
+    invitedByOwner: { type: Boolean, default: false },
+
     // Grade du collaborateur au sein de l'établissement (cf. système de
     // grades/permissions — db/models/company/companyGrade.model.js) — le
     // "patron" reste toujours Company.owner (jamais une ligne ici, accès

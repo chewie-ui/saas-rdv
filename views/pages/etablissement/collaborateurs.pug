@@ -106,6 +106,22 @@ block content
                             button.sm-btn.sm-btn--danger.js-remove-collab(type="button" data-id=c.id data-name=c.fullName)
                                 span Retirer
 
+    if permissions.collaborators.manage && pendingInvitations && pendingInvitations.length
+        .info-card
+            .info-card__header
+                h3 Invitations envoyées
+                p.info-card__desc= pendingInvitations.length + ' invitation(s) en attente d\'acceptation.'
+            each inv in pendingInvitations
+                .collab-row(data-id=inv.id)
+                    img.collab-row__avatar(src="/images/no-user.webp" alt=inv.fullName)
+                    .collab-row__info
+                        div.collab-row__name= inv.fullName
+                        div.collab-row__meta= inv.email + (inv.gradeName ? ' · ' + inv.gradeName : '')
+                    .collab-row__actions
+                        span.estab-badge.estab-badge--pending En attente
+                        button.sm-btn.sm-btn--ghost.js-cancel-invitation(type="button" data-id=inv.id data-name=inv.fullName)
+                            span Annuler
+
     if permissions.collaborators.manage && pendingRequests && pendingRequests.length
         .info-card
             .info-card__header
@@ -132,7 +148,7 @@ block content
                 svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
                     path(d="M720-400v-120H600v-80h120v-120h80v120h120v80H800v120h-80ZM240-440q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM0-200v-50q0-37 19-65t52-44q49-25 100-37t69-12q12 0 28 1.5t29 3.5q-7 39-1 76.5t22 71.5q-50 1-91 16t-67 32q-19 11-31 28.5T0-200Z")
             h3.cancel-modal__title Inviter un collaborateur
-            p.invite-modal__sub La personne doit déjà avoir un compte BranShee — elle aura immédiatement accès à cet établissement.
+            p.invite-modal__sub La personne doit déjà avoir un compte BranShee. Elle recevra une invitation et devra l'accepter avant d'avoir accès.
 
             .auth-field
                 label.auth-label Email du collaborateur
@@ -453,6 +469,21 @@ block scripts
                         .then(function (r) { return r.json(); })
                         .then(function (data) { if (data.success) window.location.reload(); else showError(data.error || 'Erreur.'); })
                         .catch(function () { showError('Erreur réseau.'); });
+                });
+            });
+
+            // ── Annuler une invitation envoyée ───────────────────────────────
+            document.querySelectorAll('.js-cancel-invitation').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    if (!confirm('Annuler l\'invitation envoyée à "' + btn.dataset.name + '" ?')) return;
+                    btn.disabled = true;
+                    fetch('/account/establishments/' + companyId + '/collaborateurs/' + btn.dataset.id, { method: 'DELETE' })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            if (data.success) window.location.reload();
+                            else { btn.disabled = false; showError(data.error || 'Erreur.'); }
+                        })
+                        .catch(function () { btn.disabled = false; showError('Erreur réseau.'); });
                 });
             });
         })();

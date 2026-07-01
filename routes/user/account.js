@@ -105,6 +105,7 @@ router.patch("/company-pause", isAuth, injectCompany, accountController.pauseCom
 router.patch("/company-resume", isAuth, injectCompany, accountController.resumeCompany);
 router.post("/join-company", isAuth, accountController.requestJoinCompany);
 router.patch("/join-requests/:requestId", isAuth, injectCompany, accountController.respondJoinRequest);
+router.patch("/invitations/:membershipId", isAuth, accountController.respondToInvitation);
 
 // ── Multi-établissements (cf. "Gérer mes établissements") ─────────────────────
 const establishmentController = require("../../controllers/establishment.controller");

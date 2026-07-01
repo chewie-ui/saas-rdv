@@ -1549,6 +1549,37 @@ exports.requestJoinCompany = async (req, res) => {
   }
 };
 
+// ── Réponse du collaborateur à une invitation envoyée par le patron ───────────
+exports.respondToInvitation = async (req, res) => {
+  try {
+    const CompanyMembership = require("../db/models/company/companyMembership.model");
+    const { membershipId } = req.params;
+    const decision = req.body.decision; // "accepted" | "rejected"
+    if (!["accepted", "rejected"].includes(decision)) {
+      return res.status(400).json({ error: "Décision invalide." });
+    }
+    const membership = await CompanyMembership.findOne({
+      _id: membershipId,
+      user: req.user._id,
+      status: "pending",
+      invitedByOwner: true,
+    });
+    if (!membership) {
+      return res.status(404).json({ error: "Invitation introuvable." });
+    }
+    membership.status = decision;
+    if (decision === "accepted") {
+      membership.acceptedAt = new Date();
+      membership.isActive = true;
+    }
+    await membership.save();
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("respondToInvitation error:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
 // ── Approbation côté propriétaire ─────────────────────────────────────────────
 exports.respondJoinRequest = async (req, res) => {
   try {
