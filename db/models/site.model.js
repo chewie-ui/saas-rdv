@@ -2,7 +2,7 @@ const { Schema, model } = require("mongoose");
 
 const SectionSchema = new Schema({
   id:      { type: String, required: true },
-  type:    { type: String, enum: ["hero","services","booking","about","gallery","testimonials","faq","contact"], required: true },
+  type:    { type: String, enum: ["hero","services","booking","about","gallery","testimonials","faq","contact","stats","cta"], required: true },
   enabled: { type: Boolean, default: true },
   order:   { type: Number, default: 0 },
   data:    { type: Schema.Types.Mixed, default: {} },

@@ -79,14 +79,16 @@ html(lang="fr")
           var d = section.data || {}
           var hasBg = !!(d.bgImage)
           var heroLayout = d.heroLayout || 'full'
+          var heroTextAlign = d.textAlign || 'center'
+          var overlayOp = d.overlayOpacity !== undefined ? parseInt(d.overlayOpacity) : 48
         section.s-hero(id=section.id class=`s-hero--${heroLayout}`)
           if heroLayout !== 'minimal'
             if hasBg
               .s-hero__bg(style=`background-image:url('${d.bgImage}')`)
             else
               .s-hero__bg.s-hero__bg--gradient
-            .s-hero__overlay
-          .s-hero__content
+            .s-hero__overlay(style=`background:rgba(0,0,0,${(overlayOp/100).toFixed(2)})`)
+          .s-hero__content(class=heroTextAlign === 'left' ? 's-hero__content--left' : '')
             h1.s-hero__title= d.title || 'Votre établissement'
             if d.subtitle
               p.s-hero__subtitle= d.subtitle
@@ -151,13 +153,17 @@ html(lang="fr")
         -
           var d = section.data || {}
           var hasImg = !!(d.image)
+          var aboutLayout = d.layout || 'default'
+          var aboutClass = !hasImg ? 's-about__inner--no-img' : (aboutLayout === 'reverse' ? 's-about__inner--reverse' : aboutLayout === 'centered' ? 's-about__inner--centered' : '')
         section.s-about(id=section.id)
           .site-container
-            .s-about__inner(class=!hasImg ? 's-about__inner--no-img' : '')
+            .s-about__inner(class=aboutClass)
               if hasImg
                 .s-about__img-wrap
                   img.s-about__img(src=d.image alt=d.title || 'À propos' loading="lazy")
               .s-about__text
+                if d.subtitle
+                  p.s-about__subtitle= d.subtitle
                 h2.s-section-title= d.title || 'À propos de nous'
                 p.s-about__body= d.text || ''
 
@@ -166,13 +172,14 @@ html(lang="fr")
         -
           var d = section.data || {}
           var imgs = (d.images || []).filter(function(i){ return i && i.url; })
+          var galCols = d.columns || '3'
         if imgs.length || isPreview
           section.s-gallery(id=section.id)
             .site-container
               .s-section-header
                 h2.s-section-title= d.title || 'Notre galerie'
               if imgs.length
-                .s-gallery__grid
+                .s-gallery__grid(class=galCols !== '3' ? 's-gallery__grid--' + galCols : '')
                   each img in imgs
                     .s-gallery__item(onclick=`openLightbox('${img.url}','${(img.caption||'').replace(/'/g,"\\'")}')`)
                       img.s-gallery__img(src=img.url alt=img.caption || '' loading="lazy")
@@ -227,6 +234,40 @@ html(lang="fr")
                         p= fitem.answer
               else
                 .s-faq__empty Ajoutez des questions dans l'éditeur.
+
+      //- STATS
+      else if section.type === 'stats'
+        -
+          var d = section.data || {}
+          var sitems = (d.items || []).filter(function(i){ return i && (i.number || i.label); })
+        if sitems.length || isPreview
+          section.s-stats(id=section.id)
+            .site-container
+              .s-section-header
+                h2.s-section-title= d.title || 'Nos chiffres clés'
+              if sitems.length
+                .s-stats__grid
+                  each si in sitems
+                    .s-stat-item
+                      if si.icon
+                        span.s-stat-item__icon= si.icon
+                      p.s-stat-item__number= si.number || '0'
+                      p.s-stat-item__label= si.label || ''
+              else
+                .s-stats__empty Ajoutez vos chiffres clés dans l'éditeur.
+
+      //- CTA BANNER
+      else if section.type === 'cta'
+        -
+          var d = section.data || {}
+          var ctaBg = d.bg || 'primary'
+        section.s-cta-banner(id=section.id class='s-cta-banner--' + ctaBg)
+          .s-cta-banner__inner
+            h2.s-cta-banner__title= d.title || 'Prêt à réserver ?'
+            if d.text
+              p.s-cta-banner__text= d.text
+            if d.buttonText
+              a.s-cta-banner__btn(href=d.buttonUrl || '#booking')= d.buttonText
 
       //- CONTACT
       else if section.type === 'contact'
