@@ -111,7 +111,26 @@ aside.sidebar#sidebar
                                     path(d="M348.5-291.5Q360-303 360-320t-11.5-28.5Q337-360 320-360t-28.5 11.5Q280-337 280-320t11.5 28.5Q303-280 320-280t28.5-11.5Zm0-160Q360-463 360-480t-11.5-28.5Q337-520 320-520t-28.5 11.5Q280-497 280-480t11.5 28.5Q303-440 320-440t28.5-11.5Zm0-160Q360-623 360-640t-11.5-28.5Q337-680 320-680t-28.5 11.5Q280-657 280-640t11.5 28.5Q303-600 320-600t28.5-11.5ZM440-280h240v-80H440v80Zm0-160h240v-80H440v80Zm0-160h240v-80H440v80ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z")
                                 span= t.sidebar.a_9
 
-                //- ── 3. Équipe ────────────────────────────────────────
+                //- ── 3. Communication ─────────────────────────────────
+                .sb-section(data-section="communication")
+                    button.sb-section__hd(type="button")
+                        .sb-section__hd-inner
+                            svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-800h560q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T800-120H200Zm0-80h560v-560H200v560Zm40-80h480L570-480 450-320l-90-120-120 160Zm0-400h480v-80H240v80Zm0 0v-80 80Z")
+                            span Communication
+                        svg.sb-section__chevron(viewBox="0 0 24 24" height="12" width="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                            polyline(points="6 9 12 15 18 9")
+                    .sb-section__links
+                        a.sb-link(href="/mon-site" class=pageName === 'MonSite' ? 'active' : '')
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M200-160q-33 0-56.5-23.5T120-240v-480q0-33 23.5-56.5T200-800h560q33 0 56.5 23.5T840-720v480q0 33-23.5 56.5T800-160H200Zm0-80h560v-400H200v400Zm80-40h400v-80H280v80Zm0-160h400v-80H280v80Zm-80-200v-80 80Z")
+                            span Mon site web
+                        a.sb-link(href="/parrainage" class=pageName === 'Parrainage' ? 'active' : '')
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M160-80q-33 0-56.5-23.5T80-160v-440q0-33 23.5-56.5T160-680h200v-120q0-33 23.5-56.5T440-880h80q33 0 56.5 23.5T600-800v120h200q33 0 56.5 23.5T880-600v440q0 33-23.5 56.5T800-80H160Zm0-80h640v-440H600q0 33-23.5 56.5T520-520h-80q-33 0-56.5-23.5T360-600H160v440Zm200-40h240v-40q0-50-35-85t-85-35q-50 0-85 35t-35 85v40ZM440-600h80v-200h-80v200Zm80 160Z")
+                            span Parrainage
+
+                //- ── 4. Équipe ────────────────────────────────────────
                 - const canSeeCollaborators = !!(currentCompany && permissions && permissions.collaborators.view)
                 - const canSeeLogs = !!(permissions && permissions.logs.view)
                 - const canSeeGrades = !!(currentCompany && permissions && permissions.grades && (permissions.grades.view || permissions.grades.manage))

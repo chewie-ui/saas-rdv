@@ -8,6 +8,7 @@ include ../../templates/edit-email.pug
 block links
     link(rel="stylesheet", href="/css/layouts/informations.css")
     link(rel="stylesheet", href="/css/layouts/settings.css")
+    link(rel="stylesheet", href="/css/components/admin/availability.admin.css")
     link(rel="stylesheet", href="/css/templates/dialog.css")
     link(rel="stylesheet", href="/css/templates/change-password.css")
     link(rel="stylesheet", href="/css/templates/edit-email.css")
@@ -22,9 +23,8 @@ block content
         .settings-tabs
             button.settings-tab.is-active(type="button" data-target="stg-profil") Profil
             button.settings-tab(type="button" data-target="stg-securite") Sécurité
-            button.settings-tab(type="button" data-target="stg-plan") Plan
+            button.settings-tab(type="button" data-target="stg-plan") Plan & Facturation
             if currentCompany
-                button.settings-tab(type="button" data-target="stg-facturation") Facturation
                 button.settings-tab(type="button" data-target="stg-paiements") Paiements
             button.settings-tab(type="button" data-target="stg-preferences") Préférences
 
@@ -73,7 +73,21 @@ block content
                     .stg-row__label
                         | Téléphone
                     .stg-row__field
-                        input#phone.input(value=user.phone name="phone" placeholder=t.profile.phone)
+                        .phone-input-group
+                            select.phone-prefix#phonePrefix
+                                option(value="+32") 🇧🇪 +32
+                                option(value="+33") 🇫🇷 +33
+                                option(value="+352") 🇱🇺 +352
+                                option(value="+31") 🇳🇱 +31
+                                option(value="+49") 🇩🇪 +49
+                                option(value="+44") 🇬🇧 +44
+                                option(value="+34") 🇪🇸 +34
+                                option(value="+39") 🇮🇹 +39
+                                option(value="+41") 🇨🇭 +41
+                                option(value="+212") 🇲🇦 +212
+                                option(value="+1") 🇺🇸 +1
+                            input#phoneLocal.input(type="tel" placeholder="456 12 34 56" autocomplete="off" inputmode="numeric")
+                            input#phone(type="hidden" name="phone")
 
                 //- Actions
                 .stg-row.stg-row--actions
@@ -154,6 +168,7 @@ block content
                                 .twofa-status.twofa-status--on
                                     svg(width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round")
                                         path(d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z")
+                                        polyline(points="9 12 11 14 15 10")
                                     span= t.settings.tfa_on
                                 .twofa-disable
                                     p.twofa-hint= t.settings.tfa_disable_hint
@@ -167,7 +182,8 @@ block content
                             else
                                 .twofa-status.twofa-status--off
                                     svg(width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round")
-                                        path(d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z")
+                                        rect(x="3" y="11" width="18" height="11" rx="2" ry="2")
+                                        path(d="M7 11V7a5 5 0 0 1 10 0v4")
                                     span= t.settings.tfa_off
                                 .twofa-setup#twoFASetup
                                     .twofa-step#step1
@@ -198,8 +214,8 @@ block content
         #stg-plan.settings-section
 
             .settings-section__head
-                h2.settings-section__title Plan
-                p.settings-section__desc Votre abonnement BranShee actuel.
+                h2.settings-section__title Plan & Facturation
+                p.settings-section__desc Votre abonnement et vos informations de facturation.
 
             if currentCompany
                 .stg-card
@@ -244,15 +260,6 @@ block content
                                 p.estab-no-company__desc La gestion du plan est disponible une fois votre établissement créé.
                                 a.sm-btn.sm-btn--primary(href="/etablissement/mes-etablissements")
                                     span Créer un établissement
-
-        //- ══════════════════════════════════════════════════════════════
-        //- SECTION — Facturation
-        //- ══════════════════════════════════════════════════════════════
-        #stg-facturation.settings-section
-
-            .settings-section__head
-                h2.settings-section__title Facturation
-                p.settings-section__desc Moyens de paiement et historique de vos factures.
 
             if currentCompany
                 //- Cartes Stripe
@@ -349,17 +356,19 @@ block content
                         p.stg-card__title= t.settings.pm_modes_title
                         p.stg-card__desc= t.settings.pm_modes_desc
                     .stg-card__body
+                        -
+                            var prepayOn  = !!(currentCompany && currentCompany.prepayment && currentCompany.prepayment.enabled)
+                            var prepayReq = !!(currentCompany && currentCompany.prepayment && currentCompany.prepayment.required)
                         if !isPro
-                            .plan-gate
-                                span.plan-gate__lock 🔒
-                                .plan-gate__body
-                                    strong.plan-gate__title Modes de paiement
-                                    span.plan-gate__sub Disponible uniquement dans les plans Pro & Business.
-                                a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
-                        else
-                            -
-                                var prepayOn  = !!(currentCompany && currentCompany.prepayment && currentCompany.prepayment.enabled)
-                                var prepayReq = !!(currentCompany && currentCompany.prepayment && currentCompany.prepayment.required)
+                            .avail-upsell(style="margin-bottom:16px")
+                                .avail-upsell__icon
+                                    svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                        path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
+                                .avail-upsell__body
+                                    strong.avail-upsell__title Modes de paiement
+                                    span.avail-upsell__sub Passez au Pro pour activer et configurer vos modes de paiement.
+                                    a.avail-upsell__cta(href="/subscription")= t.avail.upgrade_cta
+                        div(class=(!isPro ? 'stg-locked-content' : ''))
                             .pm-methods-grid
                                 .pm-method-expandable(class=(prepayOn ? 'is-open' : ''))
                                     label.pm-method-row.pm-method-row--top
@@ -486,16 +495,18 @@ block content
                         p.stg-card__title= t.settings.cp_title
                         p.stg-card__desc= t.settings.cp_desc
                     .stg-card__body
+                        -
+                            var cancelRule = (currentCompany && currentCompany.cancellationPolicy && currentCompany.cancellationPolicy.rule) || 'free'
                         if !isPro
-                            .plan-gate
-                                span.plan-gate__lock 🔒
-                                .plan-gate__body
-                                    strong.plan-gate__title Politique d'annulation
-                                    span.plan-gate__sub Disponible uniquement dans les plans Pro & Business.
-                                a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
-                        else
-                            -
-                                var cancelRule = (currentCompany && currentCompany.cancellationPolicy && currentCompany.cancellationPolicy.rule) || 'free'
+                            .avail-upsell(style="margin-bottom:16px")
+                                .avail-upsell__icon
+                                    svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                        path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
+                                .avail-upsell__body
+                                    strong.avail-upsell__title Politique d'annulation
+                                    span.avail-upsell__sub Passez au Pro pour définir votre politique d'annulation.
+                                    a.avail-upsell__cta(href="/subscription")= t.avail.upgrade_cta
+                        div(class=(!isPro ? 'stg-locked-content' : ''))
                             .cp-grid
                                 label.cp-card(class=(cancelRule === 'free' ? 'is-selected' : ''))
                                     input(type="radio" name="cancelRule" value="free" checked=(cancelRule === 'free'))
@@ -746,4 +757,61 @@ block scripts
             });
             var hash = location.hash.replace('#','');
             if (hash && document.getElementById(hash)) activate(hash);
+        })();
+
+        // ── Phone prefix picker ───────────────────────────────────────────────
+        (function () {
+            var prefixes = ['+32','+33','+352','+31','+49','+44','+34','+39','+41','+212','+1'];
+            var prefixSel = document.getElementById('phonePrefix');
+            var phoneLocal = document.getElementById('phoneLocal');
+            var phoneHidden = document.getElementById('phone');
+            if (!prefixSel || !phoneLocal || !phoneHidden) return;
+
+            // Parse stored phone to detect prefix
+            var stored = !{JSON.stringify(user.phone || '')};
+            var detected = '+32';
+            var localPart = stored;
+            for (var i = 0; i < prefixes.length; i++) {
+                if (stored.startsWith(prefixes[i])) {
+                    detected = prefixes[i];
+                    localPart = stored.slice(prefixes[i].length).trim();
+                    break;
+                }
+            }
+            prefixSel.value = detected;
+            phoneLocal.value = localPart.replace(/[^\d]/g, '');
+            phoneHidden.value = stored || '';
+
+            function sync() {
+                var local = phoneLocal.value.replace(/[^\d\s\-]/g, '').trim();
+                phoneHidden.value = local ? prefixSel.value + local : '';
+                // Trigger saveChanges enable
+                var saveBtn = document.getElementById('saveChanges');
+                if (saveBtn) saveBtn.disabled = false;
+            }
+            // Strip any non-digit character immediately as user types
+            phoneLocal.addEventListener('input', function() {
+                var pos = this.selectionStart;
+                var cleaned = this.value.replace(/[^\d]/g, '');
+                if (this.value !== cleaned) {
+                    this.value = cleaned;
+                    try { this.setSelectionRange(pos - 1, pos - 1); } catch(e) {}
+                }
+                this.style.borderColor = '';
+                this.title = '';
+                sync();
+            });
+            prefixSel.addEventListener('change', sync);
+
+            // Validate on blur: must be digits/spaces/dashes, 6-15 chars
+            phoneLocal.addEventListener('blur', function() {
+                var v = phoneLocal.value.replace(/[\s\-]/g, '');
+                if (v && !/^\d{6,15}$/.test(v)) {
+                    phoneLocal.style.borderColor = '#ef4444';
+                    phoneLocal.title = 'Numéro invalide — chiffres uniquement, 6 à 15 caractères';
+                } else {
+                    phoneLocal.style.borderColor = '';
+                    phoneLocal.title = '';
+                }
+            });
         })();

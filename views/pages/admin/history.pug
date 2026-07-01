@@ -2,49 +2,12 @@ extends ../../layouts/admin
 
 block links
     link(rel="stylesheet", href="/css/layouts/history.css")
+    link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0")
 
 block content
     .hist-page
 
-        //- ── Filter bar ──────────────────────────────────────────────
-        .hist-filters
-            .hist-search
-                svg.hist-search__icon(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor")
-                    path(d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z")
-                input#searchClient.hist-search__input(
-                    type="text"
-                    placeholder=t.hist_page.search
-                    autocomplete="off"
-                )
-                button#clearSearch.hist-search__clear(type="button" style="display:none" title=t.hist_page.clear_search)
-                    svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14")
-                        line(x1="18" y1="6" x2="6" y2="18")
-                        line(x1="6" y1="6" x2="18" y2="18")
-
-            .hist-selects
-                select.hist-select#statusFilter
-                    option(value="all")= t.hist_page.all_status || 'All status'
-                    option(value="confirmed")= t.hist_page.status_confirmed || 'Confirmed'
-                    option(value="completed")= t.hist_page.status_completed || 'Completed'
-                    option(value="canceled")= t.hist_page.status_canceled || 'Cancelled'
-                    option(value="no-show")= t.hist_page.status_noshow || 'No-show'
-
-                select.hist-select#dateFilter
-                    option(value="30")= t.hist_page.last_30 || 'Last 30 days'
-                    option(value="7")= t.hist_page.last_7 || 'Last 7 days'
-                    option(value="90")= t.hist_page.last_90 || 'Last 90 days'
-                    option(value="all")= t.hist_page.all_time || 'All time'
-
-                if employees && employees.length
-                    select.hist-select#empFilterHist
-                        option(value="all")= t.hist_page.all_employees || 'All employees'
-                        each emp in employees
-                            option(value=String(emp._id)) #{emp.firstName} #{emp.lastName}
-                else
-                    select.hist-select#empFilterHist
-                        option(value="all")= t.hist_page.all_employees || 'All employees'
-
-        //- ── Bannière plan gratuit : rétention 7 jours ───────────────
+        //- ── Free plan banner ────────────────────────────────────
         if currentPlan === 'basic'
             .hist-free-banner
                 svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
@@ -54,83 +17,155 @@ block content
                 span  puis supprimé automatiquement.
                 a(href="/subscription") Passer au Pro pour un historique illimité →
 
-        //- ── Desktop table ───────────────────────────────────────────
-        .hist-table-wrap
-            table.hist-table#histTable
-                thead
-                    tr
-                        th= t.hist.table.name
-                        th= t.hist.table.service
-                        th= t.hist.table.employee
-                        th= t.hist.table.date
-                        th= t.hist.table.duration
-                        th= t.hist.table.status
-                        th
+        //- ── Main card ───────────────────────────────────────────
+        .hist-card
 
-                tbody
-                    if !history || history.length === 0
-                        tr
-                            td(colspan="7" style="padding:56px 24px;text-align:center;")
-                                .hist-empty
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor" style="opacity:.15;margin-bottom:12px;display:block;margin:0 auto 12px")
-                                        path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
-                                    p(style="font-size:14px;font-weight:600;color:var(--text-secondary);margin:0 0 4px")= t.hist_page.empty_title
-                                    p(style="font-size:13px;color:var(--text-muted);margin:0")= t.hist_page.empty_subtitle
-                    each h in history
-                        - var initials = (h.name||'').charAt(0).toUpperCase() + (h.surname||'').charAt(0).toUpperCase()
-                        - var colorIdx = (((h.name||'A').charCodeAt(0) + (h.surname||'A').charCodeAt(0)) % 8)
-                        - var d = h.date ? new Date(h.date) : null
-                        - var dateStr = d ? d.toLocaleDateString(lang, { month: 'short', day: 'numeric' }) + ', ' + (h.startTime||'') : '-'
-                        - var statusKey = (h.status || 'confirmed').toLowerCase()
-                        - var pillClass = statusKey === 'canceled' || statusKey === 'cancelled' ? 'cancelled' : statusKey === 'no-show' ? 'no-show' : statusKey === 'completed' ? 'completed' : 'confirmed'
-                        - var statusLabel = pillClass === 'confirmed' ? (t.hist_page.status_confirmed||'Confirmed') : pillClass === 'cancelled' ? (t.hist_page.status_canceled||'Cancelled') : pillClass === 'completed' ? (t.hist_page.status_completed||'Completed') : (t.hist_page.status_noshow||'No-show')
-                        tr.hist-row(
-                            data-id=h._id
-                            data-status=statusKey
-                            data-employee=(h.employeeId ? String(h.employeeId) : '')
-                            data-date=(h.date ? h.date.toISOString().slice(0,10) : '')
+            //- Card header: title + count + filters
+            .hist-card__top
+                .hist-card__title-group
+                    h2.hist-card__title= t.hist_page.title || 'Historique'
+                    span.hist-count-badge #{totalBookings} #{t.hist_page.appointments || 'rendez-vous'}
+                .hist-card__filters
+                    .hist-search
+                        span.hist-search__icon.material-symbols-outlined search
+                        input#searchClient.hist-search__input(
+                            type="text"
+                            placeholder=t.hist_page.search
+                            autocomplete="off"
                         )
-                            td.hist-td.hist-td--client
-                                .hist-avatar(class=`av-${colorIdx}`)= initials
-                                span.hist-name= (h.name||'') + ' ' + (h.surname||'')
-                            td.hist-td= h.serviceName || '-'
-                            td.hist-td= h.employeeName || '-'
-                            td.hist-td.hist-td--mono= dateStr
-                            td.hist-td= h.slotTime ? h.slotTime + ' min' : '-'
-                            td.hist-td
-                                span(class=`pill pill--${pillClass}`)
-                                    span.pill__dot
-                                    = statusLabel
-                            td.hist-td.hist-td--action
-                                a.hist-open-btn(href=`/history/edit/${h._id}`)
-                                    = t.hist_page.view
-                                    svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13")
-                                        path(d="M5 12h14M13 6l6 6-6 6")
+                        button#clearSearch.hist-search__clear(type="button" style="display:none" title=t.hist_page.clear_search)
+                            span.material-symbols-outlined close
+                    .hist-selects
+                        select.hist-select#statusFilter
+                            option(value="all")= t.hist_page.all_status || 'Tous les statuts'
+                            option(value="confirmed")= t.hist_page.status_confirmed || 'Confirmé'
+                            option(value="completed")= t.hist_page.status_completed || 'Terminé'
+                            option(value="canceled")= t.hist_page.status_canceled || 'Annulé'
+                            option(value="no-show")= t.hist_page.status_noshow || 'No-show'
+                        select.hist-select#dateFilter
+                            option(value="30")= t.hist_page.last_30 || '30 derniers jours'
+                            option(value="7")= t.hist_page.last_7 || '7 derniers jours'
+                            option(value="90")= t.hist_page.last_90 || '90 derniers jours'
+                            option(value="all")= t.hist_page.all_time || 'Tout'
+                        if employees && employees.length
+                            select.hist-select#empFilterHist
+                                option(value="all")= t.hist_page.all_employees || 'Tous les employés'
+                                each emp in employees
+                                    option(value=String(emp._id)) #{emp.firstName} #{emp.lastName}
+                        else
+                            select.hist-select#empFilterHist
+                                option(value="all")= t.hist_page.all_employees || 'Tous les employés'
 
-            //- Pagination
-            .hist-pagination
-                span.hist-pag-info Page #{currentPage} / #{totalPages}
-                .hist-pag-btns
-                    if currentPage > 1
-                        a.hist-pag-btn(href=`/history?page=${currentPage - 1}`)
-                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
-                    else
-                        span.hist-pag-btn.disabled
-                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
-                    if currentPage < totalPages
-                        a.hist-pag-btn(href=`/history?page=${currentPage + 1}`)
-                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
-                    else
-                        span.hist-pag-btn.disabled
-                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+            //- ── Desktop table ───────────────────────────────────
+            .hist-table-wrap
+                table.hist-table#histTable
+                    thead
+                        tr
+                            th.hist-th--check
+                                input#checkAll(type="checkbox" title="Tout sélectionner")
+                            th= t.hist.table.name
+                            th= t.hist.table.service
+                            th= t.hist.table.employee
+                            th= t.hist.table.date
+                            th= t.hist.table.duration
+                            th= t.hist.table.status
+                            th
 
-        //- ── Mobile cards ────────────────────────────────────────────
+                    tbody
+                        if !history || history.length === 0
+                            tr
+                                td(colspan="8")
+                                    .hist-empty
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor" style="opacity:.12;display:block;margin:0 auto 12px")
+                                            path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
+                                        p.hist-empty__title= t.hist_page.empty_title
+                                        p.hist-empty__sub= t.hist_page.empty_subtitle
+                        each h in history
+                            - var initials = (h.name||'').charAt(0).toUpperCase() + (h.surname||'').charAt(0).toUpperCase()
+                            - var colorIdx = (((h.name||'A').charCodeAt(0) + (h.surname||'A').charCodeAt(0)) % 8)
+                            - var d = h.date ? new Date(h.date) : null
+                            - var dateStr = d ? d.toLocaleDateString(lang, { month: 'short', day: 'numeric' }) + ', ' + (h.startTime||'') : '-'
+                            - var statusKey = (h.status || 'confirmed').toLowerCase()
+                            - var pillClass = statusKey === 'canceled' || statusKey === 'cancelled' ? 'cancelled' : statusKey === 'no-show' ? 'no-show' : statusKey === 'completed' ? 'completed' : 'confirmed'
+                            - var statusLabel = pillClass === 'confirmed' ? (t.hist_page.status_confirmed||'Confirmé') : pillClass === 'cancelled' ? (t.hist_page.status_canceled||'Annulé') : pillClass === 'completed' ? (t.hist_page.status_completed||'Terminé') : (t.hist_page.status_noshow||'No-show')
+                            tr.hist-row(
+                                data-id=h._id
+                                data-status=statusKey
+                                data-employee=(h.employeeId ? String(h.employeeId) : '')
+                                data-date=(h.date ? h.date.toISOString().slice(0,10) : '')
+                            )
+                                td.hist-td.hist-td--check
+                                    input(type="checkbox" data-id=h._id)
+                                - var fullClientName = ((h.name||'') + ' ' + (h.surname||'')).trim()
+                                td.hist-td.hist-td--client(title=fullClientName)
+                                    .hist-avatar(class=`av-${colorIdx}`)= initials
+                                    span.hist-name= fullClientName
+                                td.hist-td(title=h.serviceName || '')= h.serviceName || '-'
+                                td.hist-td(title=h.employeeName || '')= h.employeeName || '-'
+                                td.hist-td= dateStr
+                                td.hist-td= h.slotTime ? h.slotTime + ' min' : '-'
+                                td.hist-td
+                                    span(class=`pill pill--${pillClass}`)
+                                        span.pill__dot
+                                        = statusLabel
+                                td.hist-td.hist-td--action
+                                    .hist-row-actions
+                                        a.hist-action-btn(href=`/history/edit/${h._id}` title=(t.hist_page.view||'Voir'))
+                                            span.material-symbols-outlined edit
+                                        button.hist-action-btn.hist-action-btn--danger(type="button" data-del-id=h._id title=(t.hist.del||'Supprimer'))
+                                            span.material-symbols-outlined delete
+
+            //- ── Pagination ───────────────────────────────────────
+            if totalPages > 0
+                .hist-pagination
+                    span.hist-pag-info
+                        | Page #{currentPage} / #{totalPages}
+                    .hist-pag-center
+                        //- Prev
+                        if currentPage > 1
+                            a.hist-pag-btn(href=`/history?page=${currentPage - 1}` title="Précédent")
+                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                        else
+                            span.hist-pag-btn.disabled
+                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+
+                        //- Page numbers
+                        - var startPg = Math.max(1, currentPage - 2)
+                        - var endPg   = Math.min(totalPages, currentPage + 2)
+
+                        if startPg > 1
+                            a.hist-pag-btn(href="/history?page=1") 1
+                        if startPg > 2
+                            span.hist-pag-dots …
+
+                        - for (var pg = startPg; pg <= endPg; pg++)
+                            if pg === currentPage
+                                span.hist-pag-btn.is-active= pg
+                            else
+                                a.hist-pag-btn(href=`/history?page=${pg}`)= pg
+
+                        if endPg < totalPages - 1
+                            span.hist-pag-dots …
+                        if endPg < totalPages
+                            a.hist-pag-btn(href=`/history?page=${totalPages}`)= totalPages
+
+                        //- Next
+                        if currentPage < totalPages
+                            a.hist-pag-btn(href=`/history?page=${currentPage + 1}` title="Suivant")
+                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                        else
+                            span.hist-pag-btn.disabled
+                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+
+                    span.hist-pag-info #{totalBookings} au total
+
+        //- ── Mobile cards ─────────────────────────────────────────
         if !history || history.length === 0
-            .hist-empty-mobile.mobile-only(style="text-align:center;padding:48px 24px;")
+            .mobile-only(style="text-align:center;padding:48px 24px;")
                 p(style="font-size:14px;font-weight:600;color:var(--text-secondary);margin:0 0 4px")= t.hist_page.empty_title
                 p(style="font-size:13px;color:var(--text-muted);margin:0")= t.hist_page.empty_subtitle_mobile
         .hist-cards.mobile-only
@@ -141,9 +176,9 @@ block content
                 - var dateStr2 = d2 ? d2.toLocaleDateString(lang, { month: 'short', day: 'numeric' }) + ', ' + (h.startTime||'') : '-'
                 - var sk2 = (h.status||'confirmed').toLowerCase()
                 - var pk2 = sk2 === 'canceled' || sk2 === 'cancelled' ? 'cancelled' : sk2 === 'no-show' ? 'no-show' : sk2 === 'completed' ? 'completed' : 'confirmed'
-                - var sl2 = pk2 === 'confirmed' ? (t.hist_page.status_confirmed||'Confirmed') : pk2 === 'cancelled' ? (t.hist_page.status_canceled||'Cancelled') : pk2 === 'completed' ? (t.hist_page.status_completed||'Completed') : (t.hist_page.status_noshow||'No-show')
-                .hist-card(data-id=h._id data-status=sk2)
-                    .hist-card__top
+                - var sl2 = pk2 === 'confirmed' ? (t.hist_page.status_confirmed||'Confirmé') : pk2 === 'cancelled' ? (t.hist_page.status_canceled||'Annulé') : pk2 === 'completed' ? (t.hist_page.status_completed||'Terminé') : (t.hist_page.status_noshow||'No-show')
+                .hist-card-mobile(data-id=h._id data-status=sk2)
+                    .hist-card__top-row
                         .hist-card__client
                             .hist-avatar(class=`av-${colorIdx2}`)= initials
                             span.hist-card__name= (h.name||'') + ' ' + (h.surname||'')
@@ -172,27 +207,28 @@ block content
                             svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13")
                                 path(d="M5 12h14M13 6l6 6-6 6")
 
-            .hist-pagination
-                span.hist-pag-info Page #{currentPage} / #{totalPages}
-                .hist-pag-btns
-                    if currentPage > 1
-                        a.hist-pag-btn(href=`/history?page=${currentPage - 1}`)
-                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
-                    else
-                        span.hist-pag-btn.disabled
-                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
-                    if currentPage < totalPages
-                        a.hist-pag-btn(href=`/history?page=${currentPage + 1}`)
-                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
-                    else
-                        span.hist-pag-btn.disabled
-                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+            if totalPages > 1
+                .hist-pagination
+                    span.hist-pag-info Page #{currentPage} / #{totalPages}
+                    .hist-pag-center
+                        if currentPage > 1
+                            a.hist-pag-btn(href=`/history?page=${currentPage - 1}`)
+                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                        else
+                            span.hist-pag-btn.disabled
+                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                        if currentPage < totalPages
+                            a.hist-pag-btn(href=`/history?page=${currentPage + 1}`)
+                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                        else
+                            span.hist-pag-btn.disabled
+                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                    path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
 
-        //- ── Actions panel (kept for delete via JS) ──────────────────
+        //- ── Context menu (kept for compatibility) ────────────────
         .history__actions-panel
             .history__actions-row.show
                 .row__icon.flex-c

@@ -4,14 +4,17 @@ import { initDialog } from "../templates/dialog.js";
 let idTransfer;
 
 document.addEventListener("click", async (event) => {
-  const rowDelete = event.target.closest(".history__actions-row.delete");
-  const rowEdit   = event.target.closest(".history__actions-row.edit");
-  const rowShow   = event.target.closest(".history__actions-row.show");
+  const rowDelete  = event.target.closest(".history__actions-row.delete");
+  const rowEdit    = event.target.closest(".history__actions-row.edit");
+  const rowShow    = event.target.closest(".history__actions-row.show");
+  const inlineDelete = event.target.closest(".hist-action-btn--danger");
 
   if (rowEdit)  { location.href = `/history/edit/${idTransfer}`; return; }
   if (rowShow)  { location.href = `/appointement/${idTransfer}`; return; }
 
-  if (rowDelete) {
+  const deleteId = inlineDelete ? inlineDelete.dataset.delId : (rowDelete ? idTransfer : null);
+
+  if (deleteId) {
     const tmp = templateDialog.content.cloneNode(true);
     tmp.querySelector("h2").textContent          = window.__t.delete_confirm_title;
     tmp.querySelector(".dialog__p").textContent  = window.__t.delete_confirm_desc;
@@ -19,9 +22,10 @@ document.addEventListener("click", async (event) => {
     tmp.querySelector(".dialog__btn2").innerHTML = `<span>${window.__t.confirm_delete}</span>`;
     document.querySelector("body").appendChild(tmp);
 
-    const isTrue = await initDialog("/history", "DELETE", { id: idTransfer });
+    const isTrue = await initDialog("/history", "DELETE", { id: deleteId });
     if (isTrue) {
-      document.querySelector(`tr[data-id="${idTransfer}"]`)?.remove();
+      document.querySelector(`tr[data-id="${deleteId}"]`)?.remove();
+      document.querySelector(`.hist-card-mobile[data-id="${deleteId}"]`)?.remove();
     }
     return;
   }
@@ -31,6 +35,25 @@ document.addEventListener("click", async (event) => {
     history__actionsPanel.style.display = "none";
   }
 });
+
+/* ── Select-all checkbox ───────────────────────────────────── */
+const checkAll = document.getElementById("checkAll");
+if (checkAll) {
+  checkAll.addEventListener("change", () => {
+    document.querySelectorAll(".hist-row input[type='checkbox']").forEach((cb) => {
+      cb.checked = checkAll.checked;
+    });
+  });
+  // Sync header checkbox when individual rows change
+  document.addEventListener("change", (e) => {
+    if (e.target.matches(".hist-row input[type='checkbox']")) {
+      const all  = document.querySelectorAll(".hist-row input[type='checkbox']");
+      const checked = document.querySelectorAll(".hist-row input[type='checkbox']:checked");
+      checkAll.checked = all.length > 0 && checked.length === all.length;
+      checkAll.indeterminate = checked.length > 0 && checked.length < all.length;
+    }
+  });
+}
 
 /* ── Search (server-side) ──────────────────────────────────── */
 const searchClient = document.getElementById("searchClient");
@@ -89,7 +112,7 @@ function renderData(appointments) {
   if (!tbody) return;
 
   if (!appointments || appointments.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">${(window.__t && window.__t.no_client_found) || "No results found"}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:48px 24px;color:var(--text-muted)">${(window.__t && window.__t.no_client_found) || "No results found"}</td></tr>`;
     return;
   }
 
@@ -104,14 +127,17 @@ function renderData(appointments) {
     const dur      = h.slotTime ? `${h.slotTime} min` : "-";
 
     return `
-      <tr class="hist-row" data-id="${h._id}" data-status="${sk}" data-employee="${h.employeeId||""}">
-        <td class="hist-td hist-td--client">
+      <tr class="hist-row" data-id="${h._id}" data-status="${sk}" data-employee="${h.employeeId||""}" data-date="${h.date ? new Date(h.date).toISOString().slice(0,10) : ""}">
+        <td class="hist-td hist-td--check">
+          <input type="checkbox" data-id="${h._id}">
+        </td>
+        <td class="hist-td hist-td--client" title="${h.name||""} ${h.surname||""}">
           <div class="hist-avatar av-${idx}">${initials}</div>
           <span class="hist-name">${h.name||""} ${h.surname||""}</span>
         </td>
-        <td class="hist-td">${h.serviceName||"-"}</td>
-        <td class="hist-td">${h.employeeName||"-"}</td>
-        <td class="hist-td hist-td--mono">${dateStr}</td>
+        <td class="hist-td" title="${h.serviceName||""}">${h.serviceName||"-"}</td>
+        <td class="hist-td" title="${h.employeeName||""}">${h.employeeName||"-"}</td>
+        <td class="hist-td">${dateStr}</td>
         <td class="hist-td">${dur}</td>
         <td class="hist-td">
           <span class="pill pill--${pc}">
@@ -119,12 +145,14 @@ function renderData(appointments) {
           </span>
         </td>
         <td class="hist-td hist-td--action">
-          <a class="hist-open-btn" href="/history/edit/${h._id}">
-            Open
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
-              <path d="M5 12h14M13 6l6 6-6 6"/>
-            </svg>
-          </a>
+          <div class="hist-row-actions">
+            <a class="hist-action-btn" href="/history/edit/${h._id}" title="Voir">
+              <span class="material-symbols-outlined">edit</span>
+            </a>
+            <button class="hist-action-btn hist-action-btn--danger" type="button" data-del-id="${h._id}" title="Supprimer">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
         </td>
       </tr>`;
   }).join("");
@@ -163,7 +191,7 @@ function applyClientFilters() {
   } else if (visibleCount === 0 && tbody) {
     const tr = document.createElement("tr");
     tr.id = "histNoResults";
-    tr.innerHTML = `<td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted)">${(window.__t && window.__t.no_client_found) || "No results found"}</td>`;
+    tr.innerHTML = `<td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted)">${(window.__t && window.__t.no_client_found) || "No results found"}</td>`;
     tbody.appendChild(tr);
   }
 

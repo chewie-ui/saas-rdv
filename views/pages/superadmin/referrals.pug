@@ -91,6 +91,6 @@ html(lang="fr")
                                 .ref-filleul
                                     .ref-filleul__name= f.fullName
                                     .ref-filleul__email= f.email
-                                    span.ref-filleul__badge(class=f.isPremium ? 'paying' : 'free')
-                                        = f.isPremium ? '💳 Payant' : 'Gratuit'
+                                    span.ref-filleul__badge(class=f.referralPaidCounted ? 'paying' : 'free')
+                                        = f.referralPaidCounted ? '💳 Payant' : 'Gratuit'
                                     .ref-filleul__date= new Date(f.createdAt).toLocaleDateString('fr-FR')

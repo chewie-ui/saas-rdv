@@ -25,7 +25,29 @@ html(lang="fr")
         script.
             (function(){try{var t=localStorage.getItem('branshee-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
         block links
+    if isImpersonating
+        style.
+            body { padding-top: 44px !important; }
+            .impersonation-bar { position:fixed;top:0;left:0;right:0;z-index:99999;background:#f97316;color:#fff;padding:0 18px;height:44px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;box-shadow:0 2px 12px rgba(0,0,0,.18);gap:12px; }
+            .impersonation-bar__left { display:flex;align-items:center;gap:8px; }
+            .impersonation-bar__exit { display:inline-flex;align-items:center;padding:5px 13px;border-radius:7px;border:1.5px solid rgba(255,255,255,.5);color:#fff;font-size:12px;font-weight:700;text-decoration:none;transition:background .15s;white-space:nowrap; }
+            .impersonation-bar__exit:hover { background:rgba(255,255,255,.15); }
+            body { outline:3px solid #f97316;outline-offset:-3px; }
+
     body
+        if isImpersonating
+            .impersonation-bar
+                .impersonation-bar__left
+                    if isImpersonating.mode === 'supervised'
+                        span 👁
+                        span Supervision active — Compte de&nbsp;
+                        strong= isImpersonating.userEmail
+                    else
+                        span 🔒
+                        span Accès discret — Compte de&nbsp;
+                        strong= isImpersonating.userEmail
+                a.impersonation-bar__exit(href="/superadmin/exit-impersonation") Quitter ✕
+
         div.layout
             include ../common/sidebar
             .main
@@ -223,6 +245,40 @@ html(lang="fr")
                 });
                 socket.on('support:newMessage', function() { window.__refreshSupportBadge(); });
                 document.dispatchEvent(new Event('support:socketReady'));
+
+                // ── Supervision : demande de l'admin ────────────────────────────
+                socket.on('supervision:request', function(data) {
+                    var modal = document.getElementById('__supervisionModal');
+                    if (!modal) return;
+                    modal.__token = data.token;
+                    modal.style.display = 'flex';
+                });
+                // ── Supervision : admin connecté → reload pour que la barre server-rendered s'affiche ──
+                socket.on('supervision:started', function() {
+                    window.location.reload();
+                });
+                // ── Admin en supervision : rejoindre la room superadmin ──────────
+                if (!{JSON.stringify(!!(isImpersonating && isImpersonating.mode === 'supervised'))}) {
+                    socket.emit('support:joinAdmin');
+                    socket.on('supervision:closed-by-user', function() {
+                        window.location.href = '/superadmin/exit-impersonation';
+                    });
+                }
+                // ── Supervision : terminée par l'admin ──────────────────────────
+                socket.on('supervision:ended', function() {
+                    var bar = document.getElementById('__supervisionBar');
+                    if (bar) {
+                        bar.innerHTML = '<span style="margin-right:8px">✅</span><span>La supervision est terminée.</span>';
+                        setTimeout(function() { window.location.reload(); }, 2000);
+                    } else {
+                        // Affiche une notif brève si la barre n'est pas visible
+                        var notif = document.createElement('div');
+                        notif.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:99999;background:#1f2937;color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2)';
+                        notif.textContent = '✅ La supervision est terminée.';
+                        document.body.appendChild(notif);
+                        setTimeout(function() { notif.remove(); }, 3000);
+                    }
+                });
             } catch (e) {}
 
             // ── Widget de chat flottant ──────────────────────────────────────────
@@ -387,6 +443,71 @@ html(lang="fr")
             })();
         
         block scripts
+
+        //- ── Modal supervision (demande de l'admin) ─────────────────────────────
+        #__supervisionModal(style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99998;align-items:center;justify-content:center;padding:16px;")
+            div(style="background:#fff;border-radius:18px;padding:28px;max-width:400px;width:100%;box-shadow:0 24px 48px rgba(0,0,0,.22);")
+                div(style="display:flex;align-items:center;gap:10px;margin-bottom:16px")
+                    div(style="width:42px;height:42px;border-radius:50%;background:#fff7ed;border:1px solid #fed7aa;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0") 👁
+                    div
+                        p(style="font-size:15px;font-weight:700;color:#111;margin:0") Demande de supervision
+                        p(style="font-size:12px;color:#6b7280;margin:0") BranShee Admin
+                p(style="font-size:13.5px;color:#374151;line-height:1.55;margin:0 0 20px") Un administrateur BranShee demande l'accès à votre compte pour vous assister. Vous pouvez accepter ou refuser cette demande.
+                div(style="display:flex;gap:8px")
+                    button#__supervisionAccept(type="button" style="flex:1;padding:10px;border-radius:10px;border:none;background:#f97316;color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit") ✓ Autoriser
+                    button#__supervisionDecline(type="button" style="flex:1;padding:10px;border-radius:10px;border:1px solid #e5e7eb;background:#f9fafb;color:#4b5563;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit") ✕ Refuser
+
+        //- ── Barre de supervision active (server-rendered côté client uniquement) ──
+        //- isImpersonating = côté admin qui supervise → ne pas afficher la barre client
+        if isBeingSupervised && !isImpersonating
+            #__supervisionBar(style="position:fixed;bottom:0;left:0;right:0;z-index:99997;background:#f97316;color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;font-weight:600;box-shadow:0 -2px 12px rgba(0,0,0,.15);")
+                span 👁&nbsp; Un administrateur BranShee consulte actuellement votre compte et procède à des modifications.
+                button#__supervisionCloseBtn(type="button" style="background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.5);color:#fff;font-size:12px;font-weight:700;padding:5px 13px;border-radius:7px;cursor:pointer;white-space:nowrap;font-family:inherit;") Fermer la supervision ✕
+        else if !isImpersonating
+            #__supervisionBar(style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99997;background:#f97316;color:#fff;padding:10px 20px;align-items:center;justify-content:space-between;gap:12px;font-size:13px;font-weight:600;box-shadow:0 -2px 12px rgba(0,0,0,.15);")
+
+        script.
+            // ── Fermeture de supervision par l'utilisateur ──────────────────────
+            (function() {
+                var closeBtn = document.getElementById('__supervisionCloseBtn');
+                if (!closeBtn) return;
+                closeBtn.addEventListener('click', function() {
+                    closeBtn.disabled = true;
+                    closeBtn.textContent = '⏳…';
+                    fetch('/api/supervision/close', { method: 'POST' })
+                        .then(function() {
+                            var bar = document.getElementById('__supervisionBar');
+                            if (bar) bar.innerHTML = '<span>✅ Supervision fermée.</span>';
+                            setTimeout(function() { window.location.reload(); }, 1500);
+                        })
+                        .catch(function() { closeBtn.disabled = false; closeBtn.textContent = 'Fermer la supervision ✕'; });
+                });
+            })();
+
+        script.
+            // ── Supervision modal interactions ──────────────────────────────────
+            (function() {
+                var modal   = document.getElementById('__supervisionModal');
+                var acceptBtn = document.getElementById('__supervisionAccept');
+                var declineBtn = document.getElementById('__supervisionDecline');
+                if (!modal || !acceptBtn || !declineBtn) return;
+
+                function respond(action) {
+                    var token = modal.__token;
+                    if (!token) return;
+                    modal.style.display = 'none';
+                    acceptBtn.disabled = declineBtn.disabled = true;
+                    fetch('/api/supervision/respond', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: token, action: action }),
+                    }).catch(function() {});
+                    acceptBtn.disabled = declineBtn.disabled = false;
+                }
+
+                acceptBtn.addEventListener('click', function() { respond('accept'); });
+                declineBtn.addEventListener('click', function() { respond('decline'); });
+            })();
 
         script.
             const COMPANY_ID = !{company ? `"${company._id}"` : "null"};

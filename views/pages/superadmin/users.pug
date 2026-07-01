@@ -362,6 +362,8 @@ html(lang="fr")
             }
             .delete-user-btn:hover { background: rgba(248,113,113,0.2); border-color: #f87171; }
             .delete-user-btn:disabled { opacity: 0.6; cursor: default; }
+            .imp-btn { font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 7px; border: 1px solid #2a2a2a; cursor: pointer; transition: all .15s; white-space: nowrap; background: none; color: #555; }
+            .imp-btn:hover { background: #1f1f1f; color: #fff; border-color: #444; }
 
             .empty-state {
                 text-align: center;
@@ -506,7 +508,12 @@ html(lang="fr")
                                     )
                                     span.acc-toggle__track
                                     span.acc-toggle__label= u.isDisabled ? 'Désactivé' : 'Actif'
-                            td
+                            td(style="display:flex;gap:6px;align-items:center;flex-wrap:wrap")
+                                button.imp-btn(
+                                    type="button"
+                                    data-user-id=String(u._id)
+                                    title="Accéder au compte admin de cet utilisateur"
+                                ) 🔒 Accès
                                 button.delete-user-btn(
                                     type="button"
                                     data-user-id=String(u._id)
@@ -694,4 +701,16 @@ html(lang="fr")
                         });
                     }
                 }
+            });
+
+            // ── Impersonation (accès discret) ─────────────────────────────────
+            document.querySelectorAll('.imp-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var userId = btn.dataset.userId;
+                    var form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/superadmin/impersonate/' + userId;
+                    document.body.appendChild(form);
+                    form.submit();
+                });
             });

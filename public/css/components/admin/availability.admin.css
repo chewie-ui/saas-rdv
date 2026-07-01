@@ -755,6 +755,106 @@
   gap: 12px;
 }
 
+/* ── Add day-off placeholder card ───────────────────────────── */
+.avail-doff-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 2px dashed var(--border-medium, #d1d5db);
+  border-radius: 16px;
+  padding: 28px 16px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, color 0.18s;
+  text-align: center;
+  min-height: 120px;
+  color: var(--text-muted, #9ca3af);
+  width: 100%;
+}
+.avail-doff-add:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  color: var(--accent);
+}
+.avail-doff-add__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--surface, #f9fafb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.avail-doff-add:hover .avail-doff-add__icon {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.avail-doff-add__label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── Inline upsell card (replaces .plan-gate in narrow contexts) */
+.avail-upsell {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--color-white));
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 12px;
+}
+.avail-upsell__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.avail-upsell__body {
+  flex: 1;
+  min-width: 0;
+}
+.avail-upsell__title {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink, #0c0d0e);
+  margin-bottom: 3px;
+}
+.avail-upsell__sub {
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted, #6b7280);
+}
+.avail-upsell__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 4px 12px;
+  background: var(--color-white);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 20px;
+  transition: background 0.15s, transform 0.12s;
+}
+.avail-upsell__cta:hover {
+  background: color-mix(in srgb, var(--accent) 8%, var(--color-white));
+  transform: translateY(-1px);
+}
+
 /* ── Day-off card ───────────────────────────────────────────── */
 .avail-doff-card {
   background: var(--color-white);

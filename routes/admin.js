@@ -183,6 +183,14 @@ router.post("/support/chat/rate", isAuth, adminController.rateSupportChat);
 router.get("/parrainage", isVerified, adminController.parrainage);
 router.post("/parrainage/claim", isVerified, adminController.parrainageClaim);
 
+// ── Site builder ──────────────────────────────────────────────────────────────
+const siteCtrl = require("../controllers/site.controller");
+router.get("/mon-site", isVerified, injectCompany, siteCtrl.editorPage);
+router.post("/mon-site/save", isVerified, injectCompany, siteCtrl.save);
+router.post("/mon-site/publish", isVerified, injectCompany, siteCtrl.togglePublish);
+router.get("/mon-site/preview", isVerified, injectCompany, siteCtrl.previewSite);
+router.post("/mon-site/upload-image", isVerified, injectCompany, ...siteCtrl.uploadImage);
+
 // ── Ordre des sections ────────────────────────────────────────────────────────
 router.patch("/account/section-order", isVerified, adminController.saveSectionOrder);
 

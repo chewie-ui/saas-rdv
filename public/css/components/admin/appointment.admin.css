@@ -745,13 +745,14 @@
   opacity: 0.95;
 }
 
-/* Time */
+/* Time — always render first so it's never clipped by a long name */
 .appt-pill__time {
   font-size: 11px;
-  opacity: 0.8;
+  opacity: 0.85;
   white-space: nowrap;
   flex-shrink: 0;
-  font-weight: 500;
+  font-weight: 600;
+  order: -1;
 }
 
 /* ── Summary pill (4+ bookings) ────────────────────────── */

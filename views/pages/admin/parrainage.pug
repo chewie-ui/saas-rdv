@@ -10,6 +10,13 @@ block content
             h2= t.referral.title
             p.info-page__subtitle= t.referral.subtitle
 
+        //- ── Bannière règle ──────────────────────────────────────────────────
+        .parrainage-rule-banner
+            .parrainage-rule-banner__icon 🎁
+            .parrainage-rule-banner__body
+                strong.parrainage-rule-banner__title 3 filleuls payants = 2 mois offerts
+                span.parrainage-rule-banner__sub Chaque tranche de 3 filleuls qui souscrivent un abonnement Pro vous offre 2 mois gratuits, appliqués directement sur votre abonnement.
+
         //- ── Comment ça marche ───────────────────────────────────────────────
         .info-card
             .info-card__header
@@ -21,7 +28,7 @@ block content
                 .parrainage-how__step
                     .parrainage-how__step__num 2
                     .parrainage-how__step__text= t.referral.step2
-                .parrainage-how__step
+                .parrainage-how__step.parrainage-how__step--accent
                     .parrainage-how__step__num 3
                     .parrainage-how__step__text= t.referral.step3
 
@@ -95,7 +102,7 @@ block content
                                 td= f.email || '—'
                                 td= dateStr
                                 td
-                                    if f.isPremium
+                                    if f.referralPaidCounted
                                         span.parrainage-badge.parrainage-badge--paying= t.referral.status_paying
                                     else
                                         span.parrainage-badge.parrainage-badge--free= t.referral.status_free
@@ -106,7 +113,7 @@ block content
         -
             var totalPaying = (referral && referral.totalPaying) || 0;
             var creditMonths = (referral && referral.creditMonths) || 0;
-            var claimable = Math.max(0, Math.floor(totalPaying / 2) - creditMonths);
+            var claimable = Math.max(0, Math.floor(totalPaying / 3) * 2 - creditMonths);
             var claimableMonthsText = (claimable > 1 ? t.referral.claimable_many : t.referral.claimable_one).replace('{n}', claimable);
             var claimBtnText = claimable > 1 ? t.referral.claim_btn_many.replace('{n}', claimable) : t.referral.claim_btn_one.replace('{n}', claimable);
 

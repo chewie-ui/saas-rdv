@@ -44,6 +44,13 @@ html(lang="fr")
             /* Edit btn */
             .edit-btn { background: none; border: 1px solid #2a2a2a; border-radius: 7px; color: #555; padding: 5px 9px; cursor: pointer; transition: color .15s, border-color .15s; display: inline-flex; align-items: center; }
             .edit-btn:hover { color: #fff; border-color: #444; }
+            /* Impersonation btns */
+            .imp-btn { font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 6px; border: 1px solid #2a2a2a; cursor: pointer; transition: all .15s; white-space: nowrap; }
+            .imp-btn--discrete { background: none; color: #555; }
+            .imp-btn--discrete:hover { background: #1f1f1f; color: #fff; border-color: #444; }
+            .imp-btn--supervision { background: none; color: #555; }
+            .imp-btn--supervision:hover { background: rgba(249,115,22,.1); color: #f97316; border-color: rgba(249,115,22,.4); }
+            .imp-btn:disabled { opacity: .45; cursor: not-allowed; }
             /* Modal */
             .sa-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(3px); }
             .sa-modal { background: #111; border: 1px solid #2a2a2a; border-radius: 18px; padding: 28px; width: 420px; max-width: 95vw; }
@@ -142,8 +149,19 @@ html(lang="fr")
                                 else
                                     span.badge.badge--green Actif
                             td(style="color:#666;font-size:12px")= c.createdAt ? new Date(c.createdAt).toLocaleDateString('fr-FR') : '—'
-                            td(style="display:flex;gap:6px;align-items:center")
+                            td(style="display:flex;gap:6px;align-items:center;flex-wrap:wrap")
                                 a.link-btn(href='/' + c.slug target="_blank") Voir
+                                if c.owner
+                                    button.imp-btn.imp-btn--discrete(
+                                        type="button"
+                                        title="Accès discret — sans consentement"
+                                        data-user-id=String(c.owner._id)
+                                    ) 🔒 Accès
+                                    button.imp-btn.imp-btn--supervision(
+                                        type="button"
+                                        title="Demander la supervision — l'utilisateur doit accepter"
+                                        data-user-id=String(c.owner._id)
+                                    ) 👁 Supervision
                                 button.edit-btn(
                                     type="button"
                                     title="Modifier"
@@ -296,5 +314,79 @@ html(lang="fr")
                         saveBtn.disabled = false;
                         errorEl.textContent = 'Erreur réseau.';
                     });
+            });
+        })();
+
+        // ── Impersonation (accès discret) ─────────────────────────────────────
+        document.querySelectorAll('.imp-btn--discrete').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var userId = btn.dataset.userId;
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/superadmin/impersonate/' + userId;
+                document.body.appendChild(form);
+                form.submit();
+            });
+        });
+
+        // ── Supervision (avec consentement) ──────────────────────────────────
+        (function() {
+            var socket = io();
+            socket.emit('support:joinAdmin');
+            var pendingToken = null;
+            var pendingBtn = null;
+
+            document.querySelectorAll('.imp-btn--supervision').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var userId = btn.dataset.userId;
+                    btn.disabled = true;
+                    btn.textContent = '⏳ En attente…';
+                    pendingBtn = btn;
+
+                    fetch('/superadmin/supervision-request/' + userId, { method: 'POST' })
+                        .then(function(r) { return r.json(); })
+                        .then(function(d) {
+                            if (!d.success) {
+                                alert(d.error || 'Erreur');
+                                btn.disabled = false;
+                                btn.textContent = '👁 Supervision';
+                                return;
+                            }
+                            pendingToken = d.token;
+                            btn.textContent = '⏳ Attente réponse…';
+                        })
+                        .catch(function() {
+                            alert('Erreur réseau');
+                            btn.disabled = false;
+                            btn.textContent = '👁 Supervision';
+                        });
+                });
+            });
+
+            socket.on('supervision:accepted', function(data) {
+                if (data.token !== pendingToken) return;
+                if (pendingBtn) { pendingBtn.disabled = false; pendingBtn.textContent = '👁 Supervision'; }
+                pendingToken = null; pendingBtn = null;
+                var form = document.createElement('form');
+                form.method = 'GET';
+                form.action = '/superadmin/impersonate-supervised/' + data.token;
+                document.body.appendChild(form);
+                form.submit();
+            });
+
+            socket.on('supervision:declined', function(data) {
+                if (data.token !== pendingToken) return;
+                if (pendingBtn) { pendingBtn.disabled = false; pendingBtn.textContent = '👁 Supervision'; }
+                pendingToken = null; pendingBtn = null;
+                alert('❌ L\'utilisateur a refusé la supervision.');
+            });
+
+            socket.on('supervision:closed-by-user', function(data) {
+                // L'utilisateur a fermé la supervision — quitter immédiatement
+                var form = document.createElement('form');
+                form.method = 'GET';
+                form.action = '/superadmin/exit-impersonation';
+                document.body.appendChild(form);
+                form.submit();
             });
         })();

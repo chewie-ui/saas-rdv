@@ -1,0 +1,1136 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet" href="/css/layouts/mon-site.css")
+
+block content
+    -
+        var S = site
+        var theme = S.theme || {}
+        var siteFullUrl = 'https://www.branshee.com/s/' + S.slug
+        var sectionIcons = {
+            hero: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+            services: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+            booking: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+            about: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+            gallery: '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
+            testimonials: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+            faq: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+            contact: '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>'
+        }
+        var sectionLabels = {
+            hero: 'Bandeau principal', services: 'Prestations', booking: 'Prise de RDV',
+            about: 'À propos', gallery: 'Galerie', testimonials: 'Avis clients',
+            faq: 'FAQ', contact: 'Contact'
+        }
+
+    .ms-editor
+
+        //- ── LEFT PANEL ──────────────────────────────────────────────────
+        .ms-panel
+
+            .ms-panel__top
+                .ms-panel__title Mon site web
+                .ms-tabs
+                    button.ms-tab.active(type="button" data-tab="sections") Sections
+                    button.ms-tab(type="button" data-tab="design") Design
+                    button.ms-tab(type="button" data-tab="settings") Paramètres
+
+            .ms-publish-strip
+                .ms-publish-strip__status
+                    .ms-dot(id="publishDot" class=S.isPublished ? 'ms-dot--live' : '')
+                    span#publishLabel= S.isPublished ? 'En ligne' : 'Hors ligne'
+                span.ms-save-indicator(id="saveIndicator")
+                button.ms-publish-btn(
+                    type="button"
+                    id="publishBtn"
+                    class=S.isPublished ? 'ms-publish-btn--unpublish' : ''
+                )= S.isPublished ? 'Désactiver' : 'Publier'
+
+            .ms-panel__body
+
+                //- ── TAB SECTIONS ──────────────────────────────────────────
+                .ms-pane.active(data-pane="sections")
+                    .ms-sections-list(id="sectionsList")
+                        each section in S.sections.sort((a,b) => a.order - b.order)
+                            .ms-section-item(data-id=section.id class=!section.enabled ? 'is-disabled' : '')
+                                .ms-section-item__hd
+                                    .ms-drag-handle(draggable="true" title="Glisser pour réordonner")
+                                        svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round")
+                                            line(x1="4" y1="8" x2="20" y2="8")
+                                            line(x1="4" y1="14" x2="20" y2="14")
+                                            line(x1="4" y1="20" x2="20" y2="20")
+                                    .ms-section-item__icon
+                                        svg(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")!= sectionIcons[section.type] || sectionIcons.contact
+                                    span.ms-section-item__name= sectionLabels[section.type] || section.type
+                                    .ms-section-item__actions
+                                        button.ms-icon-btn.ms-section-up(type="button" title="Monter")
+                                            svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                                                polyline(points="18 15 12 9 6 15")
+                                        button.ms-icon-btn.ms-section-down(type="button" title="Descendre")
+                                            svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                                                polyline(points="6 9 12 15 18 9")
+                                        button.ms-toggle-btn(type="button" class=section.enabled ? 'on' : '' title="Afficher/masquer")
+                                        button.ms-icon-btn.ms-section-edit(type="button" title="Modifier")
+                                            svg(viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                                path(d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z")
+
+                                //- Form for each section type
+                                .ms-section-form(data-form=section.id)
+                                    if section.type === 'hero'
+                                        .ms-field
+                                            label.ms-label Titre principal
+                                            input.ms-input(type="text" data-field="title" value=section.data.title || '' placeholder="Votre titre ici...")
+                                        .ms-field
+                                            label.ms-label Sous-titre
+                                            textarea.ms-input.ms-input--textarea(data-field="subtitle" placeholder="Un texte accrocheur...")= section.data.subtitle || ''
+                                        .ms-field
+                                            label.ms-label Texte du bouton CTA
+                                            input.ms-input(type="text" data-field="ctaText" value=section.data.ctaText || 'Prendre rendez-vous' placeholder="Ex: Réserver maintenant")
+                                        .ms-field
+                                            label.ms-label Style du bandeau
+                                            .ms-layout-btns
+                                                each ly in [['full','Plein écran'],['compact','Compact'],['minimal','Minimaliste']]
+                                                    button.ms-layout-btn(type="button" data-layout=ly[0] class=(section.data.heroLayout || 'full') === ly[0] ? 'active' : '')= ly[1]
+                                        .ms-field
+                                            label.ms-label Image de fond
+                                            .ms-url-row
+                                                input.ms-input(type="url" data-field="bgImage" value=section.data.bgImage || '' placeholder="https://...")
+                                                label.ms-img-upload-btn(title="Uploader une image")
+                                                    input(type="file" accept="image/*" data-field-upload="bgImage" data-section-id=section.id style="display:none")
+                                                    svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                                        path(d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4")
+                                                        polyline(points="17 8 12 3 7 8")
+                                                        line(x1="12" y1="3" x2="12" y2="15")
+                                            p.ms-hint Laissez vide pour utiliser le dégradé par défaut.
+
+                                    else if section.type === 'services'
+                                        .ms-field
+                                            label.ms-label Titre de la section
+                                            input.ms-input(type="text" data-field="title" value=section.data.title || 'Nos prestations' placeholder="Titre...")
+                                        .ms-field
+                                            label.ms-label Sous-titre
+                                            input.ms-input(type="text" data-field="subtitle" value=section.data.subtitle || '' placeholder="Description courte...")
+                                        p.ms-hint Les prestations affichées proviennent de votre catalogue de services. Gérez-les dans
+                                            a(href="/services" style="color:var(--accent)") &nbsp;Services&nbsp;↗
+
+                                    else if section.type === 'booking'
+                                        .ms-field
+                                            label.ms-label Titre de la section
+                                            input.ms-input(type="text" data-field="title" value=section.data.title || 'Réservez en ligne' placeholder="Titre...")
+                                        .ms-field
+                                            label.ms-label Sous-titre
+                                            input.ms-input(type="text" data-field="subtitle" value=section.data.subtitle || '' placeholder="Description courte...")
+                                        p.ms-hint(style="margin-top:4px") La prise de RDV utilise votre calendrier BranShee — disponibilités et confirmations en temps réel.
+
+                                    else if section.type === 'about'
+                                        .ms-field
+                                            label.ms-label Titre
+                                            input.ms-input(type="text" data-field="title" value=section.data.title || 'À propos de nous' placeholder="Titre...")
+                                        .ms-field
+                                            label.ms-label Texte de présentation
+                                            textarea.ms-input.ms-input--textarea(data-field="text" rows="5" placeholder="Présentez votre établissement...")= section.data.text || ''
+                                        .ms-field
+                                            label.ms-label Photo
+                                            .ms-url-row
+                                                input.ms-input(type="url" data-field="image" value=section.data.image || '' placeholder="https://...")
+                                                label.ms-img-upload-btn(title="Uploader")
+                                                    input(type="file" accept="image/*" data-field-upload="image" data-section-id=section.id style="display:none")
+                                                    svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                                        path(d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4")
+                                                        polyline(points="17 8 12 3 7 8")
+                                                        line(x1="12" y1="3" x2="12" y2="15")
+                                            p.ms-hint Optionnel — s'affiche à côté du texte.
+
+                                    else if section.type === 'contact'
+                                        .ms-field
+                                            label.ms-label Titre
+                                            input.ms-input(type="text" data-field="title" value=section.data.title || 'Nous trouver' placeholder="Titre...")
+                                        .ms-field
+                                            label.ms-label Téléphone
+                                            input.ms-input(type="tel" data-field="phone" value=section.data.phone || '' placeholder="06 00 00 00 00")
+                                        .ms-field
+                                            label.ms-label Email
+                                            input.ms-input(type="email" data-field="email" value=section.data.email || '' placeholder="contact@example.com")
+                                        .ms-field
+                                            label.ms-label Adresse
+                                            input.ms-input(type="text" data-field="address" value=section.data.address || '' placeholder="123 rue de la Paix, Paris")
+
+                                    else if section.type === 'gallery'
+                                        .ms-field
+                                            label.ms-label Titre de la section
+                                            input.ms-input(type="text" data-field="title" value=section.data.title || 'Notre galerie' placeholder="Titre...")
+                                        .ms-items-list(data-section-id=section.id data-items-type="gallery" data-items-key="images")
+                                        .ms-add-item-row
+                                            label.ms-add-upload-btn
+                                                input(type="file" accept="image/*" data-add-upload=section.id data-items-type="gallery" style="display:none")
+                                                svg(viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                                    path(d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4")
+                                                    polyline(points="17 8 12 3 7 8")
+                                                    line(x1="12" y1="3" x2="12" y2="15")
+                                                |  Uploader
+                                            button.ms-add-url-btn(type="button" data-add-url=section.id data-items-type="gallery") + Via URL
+
+                                    else if section.type === 'testimonials'
+                                        .ms-field
+                                            label.ms-label Titre de la section
+                                            input.ms-input(type="text" data-field="title" value=section.data.title || 'Avis clients' placeholder="Titre...")
+                                        .ms-items-list(data-section-id=section.id data-items-type="testimonials" data-items-key="items")
+                                        .ms-add-item-row
+                                            button.ms-add-url-btn(type="button" data-add-item=section.id data-items-type="testimonials") + Ajouter un avis
+
+                                    else if section.type === 'faq'
+                                        .ms-field
+                                            label.ms-label Titre de la section
+                                            input.ms-input(type="text" data-field="title" value=section.data.title || 'FAQ' placeholder="Titre...")
+                                        .ms-items-list(data-section-id=section.id data-items-type="faq" data-items-key="items")
+                                        .ms-add-item-row
+                                            button.ms-add-url-btn(type="button" data-add-item=section.id data-items-type="faq") + Ajouter une question
+
+                                    else
+                                        .ms-field
+                                            label.ms-label Titre de la section
+                                            input.ms-input(type="text" data-field="title" value=(section.data && section.data.title) || '' placeholder="Titre...")
+
+                    .ms-add-section
+                        button.ms-add-section__btn(type="button" id="addSectionBtn")
+                            svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                                line(x1="12" y1="5" x2="12" y2="19")
+                                line(x1="5" y1="12" x2="19" y2="12")
+                            | Ajouter une section
+
+                //- ── TAB DESIGN ────────────────────────────────────────────
+                .ms-pane(data-pane="design")
+
+                    .ms-design-section
+                        .ms-design-section__title Templates
+                        .ms-template-grid
+                            each tpl in [['violet','Violet','#6c47d0','#ffffff'],['minimal','Minimaliste','#0f0f1a','#ffffff'],['elegant','Élégant','#c8973a','#0f0c07'],['nature','Nature','#2d7a4f','#f7faf7'],['ocean','Océan','#0ea5e9','#f0f9ff']]
+                                button.ms-template-card(type="button" data-template=tpl[0])
+                                    .ms-template-card__preview(style=`background:${tpl[3]}`)
+                                        .ms-template-card__accent(style=`background:${tpl[2]}`)
+                                        .ms-template-card__lines
+                                            span(style=`background:${tpl[2]}`)
+                                            span(style=`background:${tpl[2]};opacity:.35`)
+                                    span.ms-template-card__name= tpl[1]
+
+                    .ms-design-section
+                        .ms-design-section__title Couleurs
+                        .ms-color-row
+                            span.ms-color-label Couleur principale
+                            .ms-color-swatch
+                                .ms-color-preview(id="prevPrimary" style=`background:${theme.primaryColor || '#6c47d0'}`)
+                                input(type="color" id="colorPrimary" value=theme.primaryColor || '#6c47d0')
+                            input.ms-color-hex(type="text" id="hexPrimary" value=theme.primaryColor || '#6c47d0' maxlength="7")
+                        .ms-color-row
+                            span.ms-color-label Fond de page
+                            .ms-color-swatch
+                                .ms-color-preview(id="prevBg" style=`background:${theme.bgColor || '#ffffff'}`)
+                                input(type="color" id="colorBg" value=theme.bgColor || '#ffffff')
+                            input.ms-color-hex(type="text" id="hexBg" value=theme.bgColor || '#ffffff' maxlength="7")
+                        .ms-color-row
+                            span.ms-color-label Couleur du texte
+                            .ms-color-swatch
+                                .ms-color-preview(id="prevText" style=`background:${theme.textColor || '#0f0f1a'}`)
+                                input(type="color" id="colorText" value=theme.textColor || '#0f0f1a')
+                            input.ms-color-hex(type="text" id="hexText" value=theme.textColor || '#0f0f1a' maxlength="7")
+
+                    .ms-design-section
+                        .ms-design-section__title Typographie
+                        .ms-field
+                            label.ms-label Police
+                            select.ms-select(id="fontFamily")
+                                each font in ['Inter', 'Poppins', 'Montserrat', 'Playfair Display', 'Lora', 'Raleway', 'DM Sans']
+                                    option(value=font selected=((theme.fontFamily || 'Inter') === font))= font
+
+                    .ms-design-section
+                        .ms-design-section__title Coins
+                        .ms-roundness-btns
+                            button.ms-roundness-btn(type="button" data-roundness="sharp" class=(theme.roundness || 'soft') === 'sharp' ? 'active' : '')
+                                .ms-roundness-preview(style="border-radius:2px")
+                                span Carré
+                            button.ms-roundness-btn(type="button" data-roundness="soft" class=(theme.roundness || 'soft') === 'soft' ? 'active' : '')
+                                .ms-roundness-preview(style="border-radius:8px")
+                                span Doux
+                            button.ms-roundness-btn(type="button" data-roundness="pill" class=(theme.roundness || 'soft') === 'pill' ? 'active' : '')
+                                .ms-roundness-preview(style="border-radius:20px")
+                                span Arrondi
+
+                    .ms-design-section
+                        .ms-design-section__title Logo
+                        .ms-field
+                            label.ms-label Logo
+                            .ms-url-row
+                                input#logoUrl.ms-input(type="url" placeholder="https://..." value=S.logoUrl || '')
+                                label.ms-img-upload-btn(title="Uploader le logo")
+                                    input#logoFileInput(type="file" accept="image/*" style="display:none")
+                                    svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                        path(d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4")
+                                        polyline(points="17 8 12 3 7 8")
+                                        line(x1="12" y1="3" x2="12" y2="15")
+                            p.ms-hint Affiché dans la navigation. Laissez vide pour utiliser le nom de votre établissement.
+
+                //- ── TAB SETTINGS ──────────────────────────────────────────
+                .ms-pane(data-pane="settings")
+
+                    .ms-settings-section
+                        .ms-settings-section__title URL du site
+                        .ms-slug-row
+                            span.ms-slug-prefix branshee.com/s/
+                            input#slugInput.ms-slug-input(type="text" value=S.slug maxlength="50" placeholder="mon-site")
+                        button.ms-copy-link(type="button" id="copyLinkBtn")
+                            svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                rect(x="9" y="9" width="13" height="13" rx="2" ry="2")
+                                path(d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1")
+                            span#copyLinkText Copier le lien
+                        if S.isPublished
+                            a.ms-open-link(href=siteFullUrl target="_blank" rel="noopener")
+                                svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                    path(d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6")
+                                    polyline(points="15 3 21 3 21 9")
+                                    line(x1="10" y1="14" x2="21" y2="3")
+                                | Voir le site en ligne
+
+                    .ms-settings-section
+                        .ms-settings-section__title
+                            | Visites
+                            span.ms-visit-count(title="Nombre total de visites")
+                                svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px")
+                                    path(d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z")
+                                    circle(cx="12" cy="12" r="3")
+                                | #{visitCount} vue#{visitCount > 1 ? 's' : ''}
+
+                    .ms-settings-section
+                        .ms-settings-section__title Réseaux sociaux
+                        p.ms-hint(style="margin-bottom:12px") Ces liens apparaissent dans le pied de page de votre site.
+                        .ms-field
+                            label.ms-label Instagram
+                            input.ms-input(type="url" id="socialInstagram" placeholder="https://instagram.com/votre-compte" value=(S.social && S.social.instagram) || '')
+                        .ms-field
+                            label.ms-label Facebook
+                            input.ms-input(type="url" id="socialFacebook" placeholder="https://facebook.com/votre-page" value=(S.social && S.social.facebook) || '')
+                        .ms-field
+                            label.ms-label TikTok
+                            input.ms-input(type="url" id="socialTiktok" placeholder="https://tiktok.com/@votre-compte" value=(S.social && S.social.tiktok) || '')
+                        .ms-field
+                            label.ms-label WhatsApp
+                            input.ms-input(type="tel" id="socialWhatsapp" placeholder="+33 6 00 00 00 00" value=(S.social && S.social.whatsapp) || '')
+                            p.ms-hint Numéro avec indicatif pays (ex: +33612345678)
+                        .ms-field
+                            label.ms-label LinkedIn
+                            input.ms-input(type="url" id="socialLinkedin" placeholder="https://linkedin.com/company/votre-page" value=(S.social && S.social.linkedin) || '')
+                        .ms-field
+                            label.ms-label YouTube
+                            input.ms-input(type="url" id="socialYoutube" placeholder="https://youtube.com/@votre-chaine" value=(S.social && S.social.youtube) || '')
+
+                    .ms-settings-section
+                        .ms-settings-section__title Domaine personnalisé
+                        .ms-field
+                            label.ms-label Votre domaine
+                            input#customDomainInput.ms-input(type="text" placeholder="monsite.com" value=S.customDomain || '')
+                            p.ms-hint Pointez votre domaine vers nos serveurs pour qu'il redirige vers votre site BranShee.
+                        if S.customDomain
+                            .ms-dns-info
+                                .ms-dns-row
+                                    span.ms-dns-label Type
+                                    span.ms-dns-value CNAME
+                                .ms-dns-row
+                                    span.ms-dns-label Nom
+                                    span.ms-dns-value= S.customDomain
+                                .ms-dns-row
+                                    span.ms-dns-label Valeur
+                                    span.ms-dns-value branshee.com
+                                p.ms-hint(style="color:var(--warning);margin-top:8px") ⏳ Propagation DNS : 24-48h après configuration chez votre hébergeur.
+
+                    .ms-settings-section
+                        .ms-settings-section__title SEO
+                        .ms-field
+                            label.ms-label Titre de la page
+                            input#seoTitle.ms-input(type="text" placeholder="Mon salon — Réservez en ligne" value=(S.seo && S.seo.title) || '' maxlength="70")
+                            p.ms-hint Affiché dans l'onglet du navigateur et Google.
+                        .ms-field
+                            label.ms-label Description
+                            textarea#seoDesc.ms-input.ms-input--textarea(placeholder="Décrivez votre établissement en 1-2 phrases..." rows="3")= (S.seo && S.seo.description) || ''
+                            p.ms-hint Apparaît sous votre lien dans les résultats Google.
+
+        //- ── RIGHT PANEL — PREVIEW ──────────────────────────────────
+        .ms-preview
+            .ms-preview__bar
+                span.ms-preview__label Aperçu
+                button.ms-device-btn.active(type="button" data-device="desktop" title="Bureau")
+                    svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                        rect(x="2" y="3" width="20" height="14" rx="2" ry="2")
+                        line(x1="8" y1="21" x2="16" y2="21")
+                        line(x1="12" y1="17" x2="12" y2="21")
+                button.ms-device-btn(type="button" data-device="mobile" title="Mobile")
+                    svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                        rect(x="5" y="2" width="14" height="20" rx="2" ry="2")
+                        circle(cx="12" cy="18" r="1" fill="currentColor" stroke="none")
+                button.ms-preview__refresh(type="button" id="refreshPreview" title="Rafraîchir l'aperçu")
+                    svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                        polyline(points="23 4 23 10 17 10")
+                        path(d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10")
+            .ms-preview__frame-wrap(id="frameWrap")
+                iframe.ms-preview__frame(id="previewFrame" src=previewUrl title="Aperçu du site")
+
+    //- ── Add section modal ────────────────────────────────────────────
+    .ms-modal-overlay(id="addModal")
+        .ms-modal
+            .ms-modal__hd
+                span.ms-modal__title Ajouter une section
+                button.ms-modal__close(type="button" id="closeModal") ✕
+            .ms-block-grid
+                each block in [['hero','Bandeau hero','Titre accrocheur + image + bouton CTA'],['services','Prestations','Vos services avec prix et durée'],['booking','Réservation','Widget de prise de RDV en ligne'],['about','À propos','Présentez votre établissement'],['contact','Contact','Téléphone, email, adresse'],['gallery','Galerie','Photos de votre établissement'],['testimonials','Avis clients','Témoignages de vos clients'],['faq','FAQ','Questions fréquentes en accordéon']]
+                    .ms-block-card(data-add-type=block[0])
+                        .ms-block-card__icon
+                            svg(viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")!= sectionIcons[block[0]]
+                        span.ms-block-card__name= block[1]
+                        span.ms-block-card__desc= block[2]
+
+    script.
+        var __site = !{JSON.stringify(site)};
+        var __previewUrl = '/mon-site/preview';
+        var __saveUrl = '/mon-site/save';
+        var __publishUrl = '/mon-site/publish';
+
+        // ── State ────────────────────────────────────────────────────────
+        var state = JSON.parse(JSON.stringify(__site));
+        var saveTimer = null;
+        var isDirty = false;
+
+        // ── Helpers ──────────────────────────────────────────────────────
+        function getSectionById(id) {
+            return state.sections.find(function(s){ return s.id === id; });
+        }
+        function indicatorState(s) {
+            var el = document.getElementById('saveIndicator');
+            if (!el) return;
+            el.className = 'ms-save-indicator ' + s;
+            el.textContent = s === 'saving' ? 'Sauvegarde...' : s === 'saved' ? '✓ Sauvegardé' : '';
+        }
+        function markDirty() {
+            isDirty = true;
+            indicatorState('');
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(doSave, 1400);
+        }
+
+        // ── Helpers ──────────────────────────────────────────────────────
+        function escHtml(s) {
+            return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+        function uploadSvgHtml() {
+            return '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+        }
+
+        function createItemRow(type, data) {
+            var row = document.createElement('div');
+            row.className = 'ms-item-row';
+            var d = data || {};
+            if (type === 'gallery') {
+                var hasUrl = !!d.url;
+                row.innerHTML =
+                  '<div class="ms-item-preview">' +
+                    '<img class="ms-item-thumb" src="' + escHtml(d.url||'') + '" alt="" loading="lazy"' + (!hasUrl?' style="display:none"':'') + '>' +
+                    '<div class="ms-item-no-img"' + (hasUrl?' style="display:none"':'') + '>📷</div>' +
+                  '</div>' +
+                  '<div class="ms-item-main">' +
+                    '<div class="ms-url-row">' +
+                      '<input class="ms-input ms-input--sm" type="url" data-item-key="url" value="' + escHtml(d.url||'') + '" placeholder="https://...">' +
+                      '<label class="ms-img-upload-btn" title="Uploader">' +
+                        '<input type="file" accept="image/*" data-upload-img-field="1" style="display:none">' +
+                        uploadSvgHtml() +
+                      '</label>' +
+                    '</div>' +
+                    '<input class="ms-input ms-input--sm" type="text" data-item-key="caption" value="' + escHtml(d.caption||'') + '" placeholder="Légende (optionnel)" style="margin-top:4px">' +
+                  '</div>' +
+                  '<button class="ms-remove-item" type="button" data-remove="1" title="Supprimer">✕</button>';
+            } else if (type === 'testimonials') {
+                var rating = d.rating || 5;
+                var stars = '';
+                for (var i=1;i<=5;i++) { stars += '<button class="ms-star'+(i<=rating?' on':'')+'" type="button" data-rating="'+i+'">★</button>'; }
+                row.innerHTML =
+                  '<div class="ms-item-main">' +
+                    '<input class="ms-input ms-input--sm" type="text" data-item-key="name" value="' + escHtml(d.name||'') + '" placeholder="Nom du client">' +
+                    '<div class="ms-rating-row">' + stars + '</div>' +
+                    '<textarea class="ms-input ms-input--textarea ms-input--sm" data-item-key="text" rows="2" placeholder="Témoignage...">' + escHtml(d.text||'') + '</textarea>' +
+                  '</div>' +
+                  '<button class="ms-remove-item" type="button" data-remove="1">✕</button>';
+            } else if (type === 'faq') {
+                row.innerHTML =
+                  '<div class="ms-item-main">' +
+                    '<input class="ms-input ms-input--sm" type="text" data-item-key="question" value="' + escHtml(d.question||'') + '" placeholder="Question...">' +
+                    '<textarea class="ms-input ms-input--textarea ms-input--sm" data-item-key="answer" rows="2" placeholder="Réponse..." style="margin-top:4px">' + escHtml(d.answer||'') + '</textarea>' +
+                  '</div>' +
+                  '<button class="ms-remove-item" type="button" data-remove="1">✕</button>';
+            }
+            return row;
+        }
+
+        function renderItemsList(form, sectionId) {
+            var s = getSectionById(sectionId);
+            if (!s) return;
+            var list = form.querySelector('.ms-items-list');
+            if (!list) return;
+            var type = list.dataset.itemsType;
+            var key = list.dataset.itemsKey;
+            var items = (s.data && s.data[key]) || [];
+            list.innerHTML = '';
+            items.forEach(function(item) { list.appendChild(createItemRow(type, item)); });
+        }
+
+        function syncItemsToState() {
+            document.querySelectorAll('.ms-items-list').forEach(function(list) {
+                var sectionId = list.dataset.sectionId;
+                var key = list.dataset.itemsKey;
+                var type = list.dataset.itemsType;
+                var s = getSectionById(sectionId);
+                if (!s) return;
+                var items = [];
+                list.querySelectorAll('.ms-item-row').forEach(function(row) {
+                    var item = {};
+                    row.querySelectorAll('[data-item-key]').forEach(function(inp) {
+                        item[inp.dataset.itemKey] = inp.value;
+                    });
+                    if (type === 'testimonials') {
+                        var lastOn = Array.from(row.querySelectorAll('.ms-star.on')).pop();
+                        item.rating = lastOn ? parseInt(lastOn.dataset.rating) : 5;
+                    }
+                    items.push(item);
+                });
+                s.data[key] = items;
+            });
+        }
+
+        function uploadFile(file, callback) {
+            var fd = new FormData();
+            fd.append('image', file);
+            fetch('/mon-site/upload-image', { method: 'POST', body: fd })
+                .then(function(r){ return r.json(); })
+                .then(function(d){ callback(null, d); })
+                .catch(function(e){ callback(e, null); });
+        }
+        function refreshPreview() {
+            var fr = document.getElementById('previewFrame');
+            if (fr) fr.src = __previewUrl + '?t=' + Date.now();
+        }
+
+        // ── Save ─────────────────────────────────────────────────────────
+        async function doSave() {
+            if (!isDirty) return;
+            syncItemsToState();
+            isDirty = false;
+            indicatorState('saving');
+            try {
+                var r = await fetch(__saveUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sections: state.sections,
+                        theme: state.theme,
+                        seo: state.seo,
+                        logoUrl: state.logoUrl,
+                        slug: state.slug,
+                        customDomain: state.customDomain || '',
+                        social: state.social || {},
+                    })
+                });
+                var d = await r.json();
+                if (d.success) {
+                    state.slug = d.slug;
+                    indicatorState('saved');
+                    refreshPreview();
+                } else {
+                    indicatorState('');
+                    alert(d.error || 'Erreur lors de la sauvegarde.');
+                }
+            } catch(e) {
+                indicatorState('');
+                console.error('[ms] save error:', e);
+            }
+        }
+
+        // ── Tabs ─────────────────────────────────────────────────────────
+        document.querySelectorAll('.ms-tab').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.ms-tab').forEach(function(b){ b.classList.remove('active'); });
+                document.querySelectorAll('.ms-pane').forEach(function(p){ p.classList.remove('active'); });
+                btn.classList.add('active');
+                var pane = document.querySelector('[data-pane="' + btn.dataset.tab + '"]');
+                if (pane) pane.classList.add('active');
+            });
+        });
+
+        // ── Section list interactions ────────────────────────────────────
+        document.getElementById('sectionsList').addEventListener('click', function(e) {
+            var item = e.target.closest('.ms-section-item');
+            if (!item) return;
+            var id = item.dataset.id;
+
+            // Edit toggle
+            if (e.target.closest('.ms-section-edit')) {
+                var form = item.querySelector('.ms-section-form');
+                var isOpen = form.classList.contains('open');
+                document.querySelectorAll('.ms-section-form').forEach(function(f){ f.classList.remove('open'); });
+                if (!isOpen) {
+                    form.classList.add('open');
+                    renderItemsList(form, id);
+                }
+                return;
+            }
+            // Toggle on/off
+            if (e.target.closest('.ms-toggle-btn')) {
+                var s = getSectionById(id);
+                if (!s) return;
+                s.enabled = !s.enabled;
+                var btn = e.target.closest('.ms-toggle-btn');
+                btn.classList.toggle('on', s.enabled);
+                item.classList.toggle('is-disabled', !s.enabled);
+                markDirty();
+                return;
+            }
+            // Up
+            if (e.target.closest('.ms-section-up')) {
+                moveSection(id, -1);
+                return;
+            }
+            // Down
+            if (e.target.closest('.ms-section-down')) {
+                moveSection(id, 1);
+                return;
+            }
+            // Hero layout toggle
+            if (e.target.closest('.ms-layout-btn')) {
+                var layoutBtn = e.target.closest('.ms-layout-btn');
+                var layoutForm = layoutBtn.closest('.ms-section-form');
+                var layoutSid = layoutForm && layoutForm.dataset.form;
+                var layoutSec = getSectionById(layoutSid);
+                if (layoutSec) {
+                    layoutSec.data.heroLayout = layoutBtn.dataset.layout;
+                    layoutForm.querySelectorAll('.ms-layout-btn').forEach(function(b) {
+                        b.classList.toggle('active', b.dataset.layout === layoutBtn.dataset.layout);
+                    });
+                    markDirty();
+                }
+                return;
+            }
+            // Remove array item
+            if (e.target.closest('[data-remove]')) {
+                var removeRow = e.target.closest('.ms-item-row');
+                if (!removeRow) return;
+                var itemsList = removeRow.closest('.ms-items-list');
+                if (itemsList) {
+                    var s2 = getSectionById(itemsList.dataset.sectionId);
+                    var key2 = itemsList.dataset.itemsKey;
+                    if (s2 && s2.data && s2.data[key2]) {
+                        var rows2 = Array.from(itemsList.querySelectorAll('.ms-item-row'));
+                        var rIdx = rows2.indexOf(removeRow);
+                        if (rIdx !== -1) s2.data[key2].splice(rIdx, 1);
+                    }
+                }
+                removeRow.remove();
+                markDirty();
+                return;
+            }
+            // Add gallery item via URL
+            if (e.target.closest('[data-add-url]')) {
+                var addUrlBtn = e.target.closest('[data-add-url]');
+                var addSid = addUrlBtn.dataset.addUrl;
+                var s3 = getSectionById(addSid);
+                if (!s3) return;
+                if (!s3.data.images) s3.data.images = [];
+                var newImg = { url: '', caption: '' };
+                s3.data.images.push(newImg);
+                var l3 = document.querySelector('.ms-items-list[data-section-id="' + addSid + '"]');
+                if (l3) l3.appendChild(createItemRow('gallery', newImg));
+                markDirty();
+                return;
+            }
+            // Add testimonial or FAQ item
+            if (e.target.closest('[data-add-item]')) {
+                var addItemBtn = e.target.closest('[data-add-item]');
+                var addSid2 = addItemBtn.dataset.addItem;
+                var itype = addItemBtn.dataset.itemsType;
+                var s4 = getSectionById(addSid2);
+                if (!s4) return;
+                if (!s4.data.items) s4.data.items = [];
+                var newItem = itype === 'testimonials' ? { name: '', text: '', rating: 5 } : { question: '', answer: '' };
+                s4.data.items.push(newItem);
+                var l4 = document.querySelector('.ms-items-list[data-section-id="' + addSid2 + '"]');
+                if (l4) l4.appendChild(createItemRow(itype, newItem));
+                markDirty();
+                return;
+            }
+            // Star rating for testimonials
+            if (e.target.closest('.ms-star')) {
+                var starBtn = e.target.closest('.ms-star');
+                var newRating = parseInt(starBtn.dataset.rating) || 5;
+                var starRow = starBtn.closest('.ms-item-row');
+                var starList = starRow && starRow.closest('.ms-items-list');
+                if (!starList) return;
+                var s5 = getSectionById(starList.dataset.sectionId);
+                var starRows = Array.from(starList.querySelectorAll('.ms-item-row'));
+                var starIdx = starRows.indexOf(starRow);
+                if (s5 && s5.data && s5.data.items && s5.data.items[starIdx]) {
+                    s5.data.items[starIdx].rating = newRating;
+                }
+                starRow.querySelectorAll('.ms-star').forEach(function(b) {
+                    b.classList.toggle('on', parseInt(b.dataset.rating) <= newRating);
+                });
+                markDirty();
+                return;
+            }
+        });
+
+        // Input changes within a section form
+        document.getElementById('sectionsList').addEventListener('input', function(e) {
+            var form = e.target.closest('.ms-section-form');
+            if (!form) return;
+            var id = form.dataset.form;
+            var s = getSectionById(id);
+            if (!s) return;
+            // Array item field
+            var itemKey = e.target.dataset.itemKey;
+            if (itemKey) {
+                var row = e.target.closest('.ms-item-row');
+                var iList = row && row.closest('.ms-items-list');
+                if (!iList) return;
+                var iKey = iList.dataset.itemsKey;
+                var iType = iList.dataset.itemsType;
+                var rows = Array.from(iList.querySelectorAll('.ms-item-row'));
+                var idx = rows.indexOf(row);
+                if (idx === -1) return;
+                if (!s.data[iKey]) s.data[iKey] = [];
+                if (!s.data[iKey][idx]) s.data[iKey][idx] = {};
+                s.data[iKey][idx][itemKey] = e.target.value;
+                // Live-update gallery thumb
+                if (iType === 'gallery' && itemKey === 'url') {
+                    var thumb = row.querySelector('.ms-item-thumb');
+                    var noImg = row.querySelector('.ms-item-no-img');
+                    if (thumb) { thumb.src = e.target.value; thumb.style.display = e.target.value ? '' : 'none'; }
+                    if (noImg) noImg.style.display = e.target.value ? 'none' : '';
+                }
+                markDirty();
+                return;
+            }
+            var field = e.target.dataset.field;
+            if (!field) return;
+            s.data[field] = e.target.value;
+            markDirty();
+        });
+
+        // ── File uploads inside section forms ────────────────────────────
+        document.getElementById('sectionsList').addEventListener('change', function(e) {
+            if (e.target.type !== 'file' || !e.target.files[0]) return;
+            var file = e.target.files[0];
+            // Field-level upload (hero bgImage, about image)
+            var fieldUpload = e.target.dataset.fieldUpload;
+            if (fieldUpload) {
+                var fSid = e.target.dataset.sectionId;
+                var lbl = e.target.parentElement;
+                lbl.classList.add('is-uploading');
+                uploadFile(file, function(err, d) {
+                    lbl.classList.remove('is-uploading');
+                    if (!err && d && d.success) {
+                        var fs = getSectionById(fSid);
+                        if (fs) fs.data[fieldUpload] = d.url;
+                        var frm = document.querySelector('[data-form="' + fSid + '"]');
+                        if (frm) { var inp = frm.querySelector('[data-field="' + fieldUpload + '"]'); if (inp) inp.value = d.url; }
+                        markDirty();
+                    } else { alert((d&&d.error)||'Erreur lors de l\'upload'); }
+                    e.target.value = '';
+                });
+                return;
+            }
+            // Add new gallery item via upload
+            var addUpload = e.target.dataset.addUpload;
+            if (addUpload) {
+                var uploadLbl = e.target.closest('label');
+                if (uploadLbl) uploadLbl.classList.add('is-uploading');
+                uploadFile(file, function(err, d) {
+                    if (uploadLbl) uploadLbl.classList.remove('is-uploading');
+                    if (!err && d && d.success) {
+                        var gs = getSectionById(addUpload);
+                        if (!gs) return;
+                        if (!gs.data.images) gs.data.images = [];
+                        var ni = { url: d.url, caption: '' };
+                        gs.data.images.push(ni);
+                        var gl = document.querySelector('.ms-items-list[data-section-id="' + addUpload + '"]');
+                        if (gl) gl.appendChild(createItemRow('gallery', ni));
+                        markDirty();
+                    } else { alert((d&&d.error)||'Erreur lors de l\'upload'); }
+                    e.target.value = '';
+                });
+                return;
+            }
+            // Upload into existing gallery item URL field
+            if (e.target.dataset.uploadImgField) {
+                var itemRow = e.target.closest('.ms-item-row');
+                var uLbl = e.target.parentElement;
+                uLbl.classList.add('is-uploading');
+                uploadFile(file, function(err, d) {
+                    uLbl.classList.remove('is-uploading');
+                    if (!err && d && d.success && itemRow) {
+                        var urlInp = itemRow.querySelector('[data-item-key="url"]');
+                        if (urlInp) { urlInp.value = d.url; urlInp.dispatchEvent(new Event('input', { bubbles: true })); }
+                    } else { alert((d&&d.error)||'Erreur lors de l\'upload'); }
+                    e.target.value = '';
+                });
+                return;
+            }
+        });
+
+        // ── Drag & drop section reordering ───────────────────────────────
+        var dragSrc = null;
+        var slEl = document.getElementById('sectionsList');
+        slEl.addEventListener('dragstart', function(e) {
+            if (!e.target.closest('.ms-drag-handle')) return;
+            dragSrc = e.target.closest('.ms-section-item');
+            if (!dragSrc) return;
+            dragSrc.classList.add('is-dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', dragSrc.dataset.id);
+        });
+        slEl.addEventListener('dragover', function(e) {
+            if (!dragSrc) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            var over = e.target.closest('.ms-section-item');
+            slEl.querySelectorAll('.ms-section-item').forEach(function(i){ i.classList.remove('drag-before','drag-after'); });
+            if (over && over !== dragSrc) {
+                var rect = over.getBoundingClientRect();
+                over.classList.add(e.clientY < rect.top + rect.height / 2 ? 'drag-before' : 'drag-after');
+            }
+        });
+        slEl.addEventListener('dragleave', function(e) {
+            if (!e.relatedTarget || !slEl.contains(e.relatedTarget)) {
+                slEl.querySelectorAll('.ms-section-item').forEach(function(i){ i.classList.remove('drag-before','drag-after'); });
+            }
+        });
+        slEl.addEventListener('drop', function(e) {
+            e.preventDefault();
+            slEl.querySelectorAll('.ms-section-item').forEach(function(i){ i.classList.remove('drag-before','drag-after'); });
+            if (!dragSrc) return;
+            var over = e.target.closest('.ms-section-item');
+            if (!over || over === dragSrc) { dragSrc.classList.remove('is-dragging'); dragSrc = null; return; }
+            var rect = over.getBoundingClientRect();
+            if (e.clientY < rect.top + rect.height / 2) slEl.insertBefore(dragSrc, over);
+            else slEl.insertBefore(dragSrc, over.nextSibling);
+            dragSrc.classList.remove('is-dragging');
+            dragSrc = null;
+            Array.from(slEl.querySelectorAll('.ms-section-item')).forEach(function(el, i) {
+                var sv = getSectionById(el.dataset.id);
+                if (sv) sv.order = i;
+            });
+            state.sections.sort(function(a,b){ return a.order - b.order; });
+            markDirty();
+        });
+        slEl.addEventListener('dragend', function() {
+            slEl.querySelectorAll('.ms-section-item').forEach(function(i){ i.classList.remove('is-dragging','drag-before','drag-after'); });
+            dragSrc = null;
+        });
+
+        function moveSection(id, dir) {
+            var list = state.sections.slice().sort(function(a,b){ return a.order - b.order; });
+            var idx = list.findIndex(function(s){ return s.id === id; });
+            var target = idx + dir;
+            if (target < 0 || target >= list.length) return;
+            var tmp = list[idx].order;
+            list[idx].order = list[target].order;
+            list[target].order = tmp;
+            state.sections = list.sort(function(a,b){ return a.order - b.order; });
+            // Re-render list
+            rebuildSectionList();
+            markDirty();
+        }
+
+        function rebuildSectionList() {
+            var container = document.getElementById('sectionsList');
+            var sorted = state.sections.slice().sort(function(a,b){ return a.order - b.order; });
+            // Preserve open forms
+            var openId = null;
+            var openForm = container.querySelector('.ms-section-form.open');
+            if (openForm) openId = openForm.dataset.form;
+            // Move DOM nodes in correct order
+            sorted.forEach(function(s, i) {
+                var el = container.querySelector('[data-id="' + s.id + '"]');
+                if (el) container.appendChild(el);
+                // Re-sync toggle state
+                var btn = el && el.querySelector('.ms-toggle-btn');
+                if (btn) btn.classList.toggle('on', s.enabled);
+                if (el) el.classList.toggle('is-disabled', !s.enabled);
+            });
+            if (openId) {
+                var f = container.querySelector('[data-form="' + openId + '"]');
+                if (f) f.classList.add('open');
+            }
+        }
+
+        // ── Design — colors ───────────────────────────────────────────────
+        function wireColorPair(pickerId, hexId, prevId, stateKey) {
+            var picker = document.getElementById(pickerId);
+            var hex = document.getElementById(hexId);
+            var prev = document.getElementById(prevId);
+            if (!picker || !hex || !prev) return;
+            picker.addEventListener('input', function() {
+                hex.value = picker.value;
+                prev.style.background = picker.value;
+                state.theme[stateKey] = picker.value;
+                markDirty();
+            });
+            hex.addEventListener('input', function() {
+                var v = hex.value.trim();
+                if (/^\x23[0-9a-fA-F]{6}$/.test(v)) {
+                    picker.value = v;
+                    prev.style.background = v;
+                    state.theme[stateKey] = v;
+                    markDirty();
+                }
+            });
+        }
+        wireColorPair('colorPrimary','hexPrimary','prevPrimary','primaryColor');
+        wireColorPair('colorBg','hexBg','prevBg','bgColor');
+        wireColorPair('colorText','hexText','prevText','textColor');
+
+        // Font
+        var fontSel = document.getElementById('fontFamily');
+        if (fontSel) fontSel.addEventListener('change', function() {
+            state.theme.fontFamily = fontSel.value;
+            markDirty();
+        });
+
+        // ── Templates ─────────────────────────────────────────────────────────
+        var templatePresets = {
+            violet:  { primaryColor: '#6c47d0', bgColor: '#ffffff', textColor: '#0f0f1a', fontFamily: 'Inter', roundness: 'soft' },
+            minimal: { primaryColor: '#0f0f1a', bgColor: '#ffffff', textColor: '#0f0f1a', fontFamily: 'DM Sans', roundness: 'sharp' },
+            elegant: { primaryColor: '#c8973a', bgColor: '#0f0c07', textColor: '#f5f0e8', fontFamily: 'Playfair Display', roundness: 'sharp' },
+            nature:  { primaryColor: '#2d7a4f', bgColor: '#f7faf7', textColor: '#1a2e1a', fontFamily: 'Lora', roundness: 'soft' },
+            ocean:   { primaryColor: '#0ea5e9', bgColor: '#f0f9ff', textColor: '#0c1a2e', fontFamily: 'Raleway', roundness: 'pill' },
+        };
+        function applyColorToUI(pickerId, hexId, prevId, value) {
+            var p = document.getElementById(pickerId);
+            var h = document.getElementById(hexId);
+            var v = document.getElementById(prevId);
+            if (p) p.value = value;
+            if (h) h.value = value;
+            if (v) v.style.background = value;
+        }
+        document.querySelectorAll('.ms-template-card').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var tpl = templatePresets[btn.dataset.template];
+                if (!tpl) return;
+                Object.assign(state.theme, tpl);
+                applyColorToUI('colorPrimary','hexPrimary','prevPrimary', tpl.primaryColor);
+                applyColorToUI('colorBg','hexBg','prevBg', tpl.bgColor);
+                applyColorToUI('colorText','hexText','prevText', tpl.textColor);
+                var fontSel = document.getElementById('fontFamily');
+                if (fontSel) fontSel.value = tpl.fontFamily;
+                document.querySelectorAll('.ms-roundness-btn').forEach(function(b) {
+                    b.classList.toggle('active', b.dataset.roundness === tpl.roundness);
+                });
+                document.querySelectorAll('.ms-template-card').forEach(function(b){ b.classList.remove('active'); });
+                btn.classList.add('active');
+                markDirty();
+            });
+        });
+
+        // Roundness
+        document.querySelectorAll('.ms-roundness-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.ms-roundness-btn').forEach(function(b){ b.classList.remove('active'); });
+                btn.classList.add('active');
+                state.theme.roundness = btn.dataset.roundness;
+                markDirty();
+            });
+        });
+
+        // Logo
+        var logoInput = document.getElementById('logoUrl');
+        if (logoInput) logoInput.addEventListener('input', function() {
+            state.logoUrl = logoInput.value;
+            markDirty();
+        });
+        var logoFileInput = document.getElementById('logoFileInput');
+        if (logoFileInput) logoFileInput.addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            var lbl = logoFileInput.parentElement;
+            lbl.classList.add('is-uploading');
+            uploadFile(file, function(err, d) {
+                lbl.classList.remove('is-uploading');
+                if (!err && d && d.success) {
+                    state.logoUrl = d.url;
+                    if (logoInput) logoInput.value = d.url;
+                    markDirty();
+                } else { alert((d&&d.error)||'Erreur lors de l\'upload'); }
+                e.target.value = '';
+            });
+        });
+
+        // ── Settings ─────────────────────────────────────────────────────
+        var slugInput = document.getElementById('slugInput');
+        if (slugInput) slugInput.addEventListener('input', function() {
+            state.slug = slugInput.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+            slugInput.value = state.slug;
+            markDirty();
+        });
+
+        var seoTitle = document.getElementById('seoTitle');
+        var seoDesc = document.getElementById('seoDesc');
+        function initSeo() {
+            if (!state.seo) state.seo = {};
+        }
+        if (seoTitle) seoTitle.addEventListener('input', function() { initSeo(); state.seo.title = seoTitle.value; markDirty(); });
+        if (seoDesc) seoDesc.addEventListener('input', function() { initSeo(); state.seo.description = seoDesc.value; markDirty(); });
+
+        // Custom domain
+        var customDomainInput = document.getElementById('customDomainInput');
+        if (customDomainInput) customDomainInput.addEventListener('input', function() {
+            state.customDomain = customDomainInput.value.trim().toLowerCase().replace(/^https?:\/\//,'').replace(/\/.*$/,'');
+            customDomainInput.value = state.customDomain;
+            markDirty();
+        });
+
+        // Social links
+        if (!state.social) state.social = {};
+        var _socialKeys = ['instagram','facebook','tiktok','whatsapp','linkedin','youtube'];
+        _socialKeys.forEach(function(key) {
+            var el = document.getElementById('social' + key.charAt(0).toUpperCase() + key.slice(1));
+            if (el) el.addEventListener('input', function() {
+                if (!state.social) state.social = {};
+                state.social[key] = el.value.trim();
+                markDirty();
+            });
+        });
+
+        // Copy link
+        var copyBtn = document.getElementById('copyLinkBtn');
+        var copyText = document.getElementById('copyLinkText');
+        if (copyBtn) copyBtn.addEventListener('click', function() {
+            var url = 'https://www.branshee.com/s/' + (state.slug || '');
+            navigator.clipboard.writeText(url).then(function() {
+                if (copyText) copyText.textContent = '✓ Copié !';
+                setTimeout(function() { if (copyText) copyText.textContent = 'Copier le lien'; }, 2000);
+            });
+        });
+
+        // ── Publish ──────────────────────────────────────────────────────
+        var publishBtn = document.getElementById('publishBtn');
+        var publishDot = document.getElementById('publishDot');
+        var publishLabel = document.getElementById('publishLabel');
+        if (publishBtn) publishBtn.addEventListener('click', async function() {
+            publishBtn.disabled = true;
+            try {
+                var r = await fetch(__publishUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                var d = await r.json();
+                if (d.success) {
+                    var live = d.isPublished;
+                    publishDot.classList.toggle('ms-dot--live', live);
+                    publishLabel.textContent = live ? 'En ligne' : 'Hors ligne';
+                    publishBtn.textContent = live ? 'Désactiver' : 'Publier';
+                    publishBtn.classList.toggle('ms-publish-btn--unpublish', live);
+                    // Update open-link button
+                    var settingsPane = document.querySelector('[data-pane="settings"]');
+                    if (settingsPane) {
+                        var existing = settingsPane.querySelector('.ms-open-link');
+                        if (live && !existing) {
+                            var a = document.createElement('a');
+                            a.className = 'ms-open-link';
+                            a.href = 'https://www.branshee.com/s/' + state.slug;
+                            a.target = '_blank';
+                            a.rel = 'noopener';
+                            a.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Voir le site en ligne';
+                            settingsPane.querySelector('.ms-settings-section').appendChild(a);
+                        } else if (!live && existing) {
+                            existing.remove();
+                        }
+                    }
+                }
+            } catch(e) { console.error(e); }
+            publishBtn.disabled = false;
+        });
+
+        // ── Device toggle ────────────────────────────────────────────────
+        document.querySelectorAll('.ms-device-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.ms-device-btn').forEach(function(b){ b.classList.remove('active'); });
+                btn.classList.add('active');
+                var frame = document.getElementById('previewFrame');
+                var wrap = document.getElementById('frameWrap');
+                if (!frame || !wrap) return;
+                if (btn.dataset.device === 'mobile') {
+                    frame.classList.add('mobile');
+                    wrap.classList.add('mobile-view');
+                } else {
+                    frame.classList.remove('mobile');
+                    wrap.classList.remove('mobile-view');
+                }
+            });
+        });
+
+        // Manual refresh
+        document.getElementById('refreshPreview').addEventListener('click', function() {
+            if (isDirty) doSave(); else refreshPreview();
+        });
+
+        // ── Add section modal ────────────────────────────────────────────
+        var modal = document.getElementById('addModal');
+        document.getElementById('addSectionBtn').addEventListener('click', function() {
+            modal.classList.add('open');
+        });
+        document.getElementById('closeModal').addEventListener('click', function() {
+            modal.classList.remove('open');
+        });
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) modal.classList.remove('open');
+        });
+        modal.querySelectorAll('.ms-block-card').forEach(function(card) {
+            card.addEventListener('click', function() {
+                var type = card.dataset.addType;
+                addSection(type);
+                modal.classList.remove('open');
+            });
+        });
+
+        function addSection(type) {
+            var id = type + '-' + Date.now();
+            var maxOrder = state.sections.reduce(function(m, s){ return Math.max(m, s.order); }, -1);
+            var labels = { hero: 'Bandeau principal', services: 'Prestations', booking: 'Prise de RDV', about: 'À propos', contact: 'Contact', gallery: 'Galerie', testimonials: 'Avis clients', faq: 'FAQ' };
+            var defaultData = { hero: { title: 'Nouveau bandeau', subtitle: '', ctaText: 'Prendre rendez-vous', bgImage: '' }, services: { title: 'Nos prestations', subtitle: '' }, booking: { title: 'Réservez en ligne', subtitle: '' }, about: { title: 'À propos', text: '', image: '' }, contact: { title: 'Nous trouver', phone: '', email: '', address: '' }, gallery: { title: 'Notre galerie', images: [] }, testimonials: { title: 'Avis clients', items: [] }, faq: { title: 'FAQ', items: [] } };
+            var icons = {
+                hero: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+                services: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+                booking: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+                about: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+                gallery: '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
+                testimonials: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+                faq: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+                contact: '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>'
+            };
+            var data = defaultData[type] || {};
+            state.sections.push({ id: id, type: type, enabled: true, order: maxOrder + 1, data: data });
+            var title = data.title || '';
+            // Build form content based on type
+            var formInner = '<div class="ms-field"><label class="ms-label">Titre de la section</label><input class="ms-input" type="text" data-field="title" value="' + escHtml(title) + '" placeholder="Titre..."></div>';
+            if (type === 'gallery') {
+                formInner += '<div class="ms-items-list" data-section-id="' + id + '" data-items-type="gallery" data-items-key="images"></div>' +
+                  '<div class="ms-add-item-row">' +
+                  '<label class="ms-add-upload-btn"><input type="file" accept="image/*" data-add-upload="' + id + '" data-items-type="gallery" style="display:none">' + uploadSvgHtml() + '&nbsp;Uploader</label>' +
+                  '<button class="ms-add-url-btn" type="button" data-add-url="' + id + '" data-items-type="gallery">+ Via URL</button>' +
+                  '</div>';
+            } else if (type === 'testimonials') {
+                formInner += '<div class="ms-items-list" data-section-id="' + id + '" data-items-type="testimonials" data-items-key="items"></div>' +
+                  '<div class="ms-add-item-row"><button class="ms-add-url-btn" type="button" data-add-item="' + id + '" data-items-type="testimonials">+ Ajouter un avis</button></div>';
+            } else if (type === 'faq') {
+                formInner += '<div class="ms-items-list" data-section-id="' + id + '" data-items-type="faq" data-items-key="items"></div>' +
+                  '<div class="ms-add-item-row"><button class="ms-add-url-btn" type="button" data-add-item="' + id + '" data-items-type="faq">+ Ajouter une question</button></div>';
+            }
+            var dragH = '<div class="ms-drag-handle" draggable="true" title="Glisser pour réordonner"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="14" x2="20" y2="14"/><line x1="4" y1="20" x2="20" y2="20"/></svg></div>';
+            var list = document.getElementById('sectionsList');
+            var div = document.createElement('div');
+            div.className = 'ms-section-item';
+            div.dataset.id = id;
+            div.innerHTML = '<div class="ms-section-item__hd">' + dragH + '<div class="ms-section-item__icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (icons[type] || icons.contact) + '</svg></div><span class="ms-section-item__name">' + (labels[type] || type) + '</span><div class="ms-section-item__actions"><button class="ms-icon-btn ms-section-up" type="button" title="Monter"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button><button class="ms-icon-btn ms-section-down" type="button" title="Descendre"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><button class="ms-toggle-btn on" type="button" title="Afficher/masquer"></button><button class="ms-icon-btn ms-section-edit" type="button" title="Modifier"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button></div></div><div class="ms-section-form" data-form="' + id + '">' + formInner + '</div>';
+            list.appendChild(div);
+            markDirty();
+        }

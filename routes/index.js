@@ -437,6 +437,11 @@ const BADGE_OPTIONS = [
   'Carte acceptée',
 ];
 
+// ── Site builder public pages ─────────────────────────────────────────────────
+const siteCtrl = require("../controllers/site.controller");
+router.get("/s/:slug", siteCtrl.publicSite);
+router.post("/s/:slug/contact", siteCtrl.contactForm);
+
 router.get("/:company", requireFeatureActive("booking_page"), async (req, res) => {
   const company = await getCompanyIfExist(req.params.company);
 

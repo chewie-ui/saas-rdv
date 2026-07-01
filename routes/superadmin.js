@@ -52,6 +52,19 @@ router.post("/superadmin/access-links", isSuperAdmin, ctrl.createAccessLink);
 router.patch("/superadmin/access-links/:id/toggle", isSuperAdmin, ctrl.toggleAccessLink);
 router.delete("/superadmin/access-links/:id", isSuperAdmin, ctrl.deleteAccessLink);
 
+// Impersonation (accès discret)
+router.post("/superadmin/impersonate/:userId", isSuperAdmin, ctrl.impersonate);
+router.get("/superadmin/exit-impersonation", ctrl.exitImpersonation);
+
+// Supervision (avec consentement utilisateur)
+router.post("/superadmin/supervision-request/:userId", isSuperAdmin, ctrl.supervisionRequest);
+router.get("/superadmin/impersonate-supervised/:token", isSuperAdmin, ctrl.supervisionImpersonate);
+
+// Réponse de l'utilisateur (pas de guard isSuperAdmin — c'est l'user qui répond)
+router.post("/api/supervision/respond", ctrl.supervisionRespond);
+// Fermeture de la supervision par l'utilisateur
+router.post("/api/supervision/close", ctrl.supervisionClose);
+
 // Toggle account status (actif / désactivé)
 router.patch("/superadmin/toggle-account/:userId", isSuperAdmin, ctrl.toggleAccountStatus);
 

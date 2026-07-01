@@ -6,6 +6,7 @@ const { getLimit } = require("../utils/planLimits");
 const { getAdminFeaturesFlags } = require("./featureFlag");
 const { clientWord } = require("../utils/terminology");
 const { resolvePermissions, resolveCanManageOwnTimeOff } = require("../utils/permissions");
+const { activeSupervisions } = require("../utils/supervisionState");
 
 module.exports = async (req, res, next) => {
   try {
@@ -93,6 +94,8 @@ module.exports = async (req, res, next) => {
     // Ces variables seront accessibles direct dans tes fichiers .pug
     res.locals.currentCompany = currentCompany;
     res.locals.membershipRole = membershipRole;
+    res.locals.isImpersonating = (req.session && req.session.isImpersonating) || null;
+    res.locals.isBeingSupervised = activeSupervisions.has(String(req.user._id));
 
     // Demandes en attente (badge sidebar "Collaborateurs") — uniquement pour
     // le patron, les collaborateurs ne gèrent pas les demandes d'adhésion.

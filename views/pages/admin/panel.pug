@@ -1,111 +1,135 @@
 extends ../../layouts/admin
 
 block links
-    link(rel="stylesheet", href="/css/components/admin/panel.admin.css")
+    link(rel="stylesheet" href="/css/components/admin/panel.admin.css")
 
 block content
-    -
-        var companyName = currentCompany && currentCompany.name ? currentCompany.name : 'Studio'
-        var companyInitials = companyName.split(' ').slice(0,2).map(function(w){return w[0]}).join('').toUpperCase() || 'BS'
-        var dashStats = [
-            { label: 'Revenue',      value: '€3 412', delta: '+12%', period: 'vs. last week', pts: '6,18 18,14 30,16 42,10 54,12 66,6 78,8 90,4' },
-            { label: 'Bookings',     value: '47',     delta: '+8%',  period: 'this week',     pts: '6,16 18,14 30,18 42,12 54,8 66,10 78,6 90,4' },
-            { label: 'Show-up rate', value: '96%',    delta: '+2pt', period: '30-day',        pts: '6,14 18,16 30,12 42,14 54,10 66,8 78,10 90,6' },
-            { label: 'New clients',  value: '11',     delta: '+3',   period: 'this week',     pts: '6,18 18,12 30,14 42,8 54,12 66,6 78,8 90,4' }
-        ]
-        var activityFeed = [
-            { type: 'New booking',   sub: 'Tanya Kim · Wed Jun 21 13:00',  when: '2m',  kind: 'accent' },
-            { type: 'Cancelled',     sub: 'Pierre M. cancelled Tue 14:30', when: '12m', kind: 'danger' },
-            { type: 'Review (5★)',   sub: '"Amazing!" — Camille D.',       when: '1h',  kind: 'warning' },
-            { type: 'Reminder sent', sub: '12 SMS reminders for tomorrow', when: '2h',  kind: 'muted' },
-            { type: 'New client',    sub: 'Iris V. created an account',    when: '3h',  kind: 'muted' }
-        ]
 
-    //- ── Greeting card ──────────────────────────────────────────
+    //- ── Greeting ───────────────────────────────────────────────────────────
     .dash-greeting
-        .dash-greeting__avatar= companyInitials
-        .dash-greeting__text
-            .dash-greeting__hello Good morning, #{companyName} ☀️
-            .dash-greeting__sub Today's overview — stay on top of your day!
+        .dash-greeting__left
+            .dash-greeting__avatar= initials
+            .dash-greeting__text
+                .dash-greeting__hello #{greeting}, #{companyName} 👋
+                .dash-greeting__sub
+                    | #{todayStr}
+                    if nextAppt
+                        span.dash-greeting__next  · Prochain RDV à #{nextAppt.startTime}
         .dash-greeting__btns
-            button.sm-btn.sm-btn--ghost Today's view
+            a.sm-btn.sm-btn--ghost(href="/appointment") Voir le calendrier
             a.sm-btn.sm-btn--primary(href="/appointment/new")
-                svg(xmlns="http://www.w3.org/2000/svg" height="14" viewBox="0 -960 960 960" width="14" fill="currentColor")
+                svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
                     path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
-                span Quick book
+                span Nouveau RDV
 
-    //- ── Stats grid ─────────────────────────────────────────────
+    //- ── Stat cards ─────────────────────────────────────────────────────────
     .dash-stats
-        each s in dashStats
+        each s in stats
             .dash-stat-card
-                .dash-stat-card__label= s.label
+                .dash-stat-card__top
+                    .dash-stat-card__icon(style=`color:${s.color};background:${s.color}18`)
+                        svg(viewBox="0 -960 960 960" width="18" height="18" fill="currentColor")
+                            path(d=s.icon)
+                    .dash-stat-card__label= s.label
                 .dash-stat-card__value= s.value
                 .dash-stat-card__row
-                    span.pill.pill--confirmed.pill--sm= s.delta
+                    if s.delta
+                        span.dash-delta(class=s.delta.positive ? 'dash-delta--up' : 'dash-delta--down')= s.delta.label
                     span.dash-stat-period= s.period
-                svg.dash-sparkline(viewBox="0 0 100 24" width="100%" height="24" aria-hidden="true")
-                    polyline(fill="none" stroke="var(--accent)" stroke-width="1.6" points=s.pts)
-                    polyline(fill="var(--accent)" opacity="0.08" stroke="none" points=`6,24 ${s.pts} 90,24`)
+                svg.dash-sparkline(viewBox="0 0 96 24" width="100%" height="28" preserveAspectRatio="none" aria-hidden="true")
+                    polyline(fill="none" stroke=s.color stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points=s.pts)
+                    polygon(fill=s.color opacity="0.08" points=s.fillPts)
 
-    //- ── Main two-column grid ────────────────────────────────────
+    //- ── Main grid ──────────────────────────────────────────────────────────
     .dash-grid
 
-        //- Today's appointments
-        .section__container.dash-appts
-            .section__container-header
-                .section__container-header__name
-                    svg(xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 -960 960 960" width="18" fill="currentColor")
-                        path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
-                    h3 Today's appointments
-                .dash-appts__filter
-                    span.pill.pill--default All staff ▾
-            .dash-appts__body
-                if appointments && appointments.length
-                    each appt in appointments
-                        .dash-appt-row
-                            .dash-appt-row__time= appt.time
-                            .dash-appt-row__info
-                                .dash-appt-row__name= appt.clientName || appt.displayDate || 'Client'
-                                .dash-appt-row__svc= appt.serviceName || '—'
-                            span.pill(class=appt.status === 'pending' ? 'pill--no-show' : 'pill--confirmed')
-                                span.pill__dot
-                                | #{appt.status === 'pending' ? 'Pending' : 'Confirmed'}
-                            a.sm-btn.sm-btn--ghost(href=`/appointment/${appt._id}`) Open →
-                else
-                    -
-                        var sampleAppts = [
-                            { time: '09:00', name: 'Sara Mehmet',     svc: 'Cut & blow-dry · 60 min',  status: 'confirmed' },
-                            { time: '10:30', name: 'Benjamin Garcia', svc: 'Color refresh · 90 min',   status: 'confirmed' },
-                            { time: '13:00', name: 'Tanya Kim',       svc: 'Curly cut consult · 75 min', status: 'pending' },
-                            { time: '14:30', name: 'Joachim Lefèvre', svc: 'Cut · 45 min',             status: 'confirmed' },
-                            { time: '16:30', name: 'Ana Reyes',       svc: 'Highlights · 120 min',     status: 'confirmed' }
-                        ]
-                    each appt in sampleAppts
-                        .dash-appt-row
-                            .dash-appt-row__time= appt.time
-                            .dash-appt-row__info
-                                .dash-appt-row__name= appt.name
-                                .dash-appt-row__svc= appt.svc
-                            span.pill(class=appt.status === 'pending' ? 'pill--no-show' : 'pill--confirmed')
-                                span.pill__dot
-                                | #{appt.status === 'pending' ? 'Pending' : 'Confirmed'}
-                            a.sm-btn.sm-btn--ghost(href="#") Open →
+        //- Left column
+        .dash-col
 
-        //- Latest activity
-        .section__container.dash-activity
-            .section__container-header
-                .section__container-header__name
-                    svg(xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 -960 960 960" width="18" fill="currentColor")
-                        path(d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z")
-                    h3 Latest activity
-                a.more(href="#") View all
-            .dash-activity__body
-                each act in activityFeed
-                    .dash-act-row
-                        .dash-act-row__dot(class=`dash-act-dot--${act.kind}`)
-                        .dash-act-row__body
-                            .dash-act-row__title= act.type
-                            .dash-act-row__sub= act.sub
-                        .dash-act-row__when= act.when
+            //- Today's appointments
+            .dash-card
+                .dash-card__hd
+                    .dash-card__hd-left
+                        svg(viewBox="0 -960 960 960" height="17" width="17" fill="currentColor")
+                            path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T800-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
+                        h3 RDV aujourd'hui
+                    a.dash-card__more(href="/appointment") Calendrier →
+                .dash-card__body
+                    if todayAppts && todayAppts.length
+                        each a in todayAppts
+                            .dash-appt-row
+                                .dash-appt-row__time= a.startTime
+                                .dash-appt-avatar= a.initials
+                                .dash-appt-row__info
+                                    .dash-appt-row__name= a.clientName
+                                    .dash-appt-row__svc= a.serviceName || '—'
+                                span.dash-status-pill(class=a.status === 'confirmed' ? 'dash-status-pill--confirmed' : 'dash-status-pill--canceled')
+                                    = a.status === 'confirmed' ? 'Confirmé' : 'Annulé'
+                                a.sm-btn.sm-btn--ghost.sm-btn--xs(href=`/history/edit/${a._id}`) Ouvrir
+                    else
+                        .dash-empty
+                            svg(viewBox="0 -960 960 960" height="32" width="32" fill="currentColor" style="opacity:.25;margin-bottom:8px")
+                                path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T800-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
+                            | Aucun rendez-vous aujourd'hui
 
-block scripts
+            //- Upcoming this week
+            if upcomingAppts && upcomingAppts.length
+                .dash-card
+                    .dash-card__hd
+                        .dash-card__hd-left
+                            svg(viewBox="0 -960 960 960" height="17" width="17" fill="currentColor")
+                                path(d="m612-292 56-56-148-148v-184h-80v216l172 172ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                            h3 Prochains rendez-vous
+                        a.dash-card__more(href="/appointment") Voir tout →
+                    .dash-card__body
+                        each a in upcomingAppts
+                            .dash-upcoming-row
+                                .dash-upcoming-row__date= a.dateStr
+                                .dash-upcoming-row__time= a.startTime
+                                .dash-upcoming-row__name= a.clientName
+                                .dash-upcoming-row__svc= a.serviceName || '—'
+
+        //- Right column
+        .dash-col
+
+            //- Recent bookings
+            .dash-card
+                .dash-card__hd
+                    .dash-card__hd-left
+                        svg(viewBox="0 -960 960 960" height="17" width="17" fill="currentColor")
+                            path(d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Z")
+                        h3 Dernières réservations
+                    a.dash-card__more(href="/history") Historique →
+                .dash-card__body
+                    if recentBookings && recentBookings.length
+                        each b in recentBookings
+                            .dash-recent-row
+                                .dash-recent-row__info
+                                    span.dash-recent-row__name= b.clientName
+                                    span.dash-recent-row__date= b.dateStr
+                                .dash-recent-row__svc= b.serviceName || '—'
+                                span.dash-status-pill(class=b.status === 'confirmed' ? 'dash-status-pill--confirmed' : 'dash-status-pill--canceled')
+                                    = b.status === 'confirmed' ? '✓' : '✕'
+                    else
+                        .dash-empty Aucune réservation récente
+
+            //- Activity feed
+            .dash-card
+                .dash-card__hd
+                    .dash-card__hd-left
+                        svg(viewBox="0 -960 960 960" height="17" width="17" fill="currentColor")
+                            path(d="M320-280q17 0 28.5-11.5T360-320v-160q0-17-11.5-28.5T320-520q-17 0-28.5 11.5T280-480v160q0 17 11.5 28.5T320-280Zm160 0q17 0 28.5-11.5T520-320v-320q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640v320q0 17 11.5 28.5T480-280Zm160 0q17 0 28.5-11.5T680-320v-80q0-17-11.5-28.5T640-440q-17 0-28.5 11.5T600-400v80q0 17 11.5 28.5T640-280ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T800-120H200Z")
+                        h3 Activité récente
+                    a.dash-card__more(href="/logs") Voir les logs →
+                .dash-card__body
+                    if recentLogs && recentLogs.length
+                        each l in recentLogs
+                            .dash-act-row
+                                .dash-act-row__dot(class=`dash-act-dot--${l.actionColor}`)
+                                .dash-act-row__body
+                                    .dash-act-row__title= l.description
+                                    if l.userName
+                                        .dash-act-row__sub= l.userName
+                                .dash-act-row__when= l.ago
+                    else
+                        .dash-empty Aucune activité enregistrée

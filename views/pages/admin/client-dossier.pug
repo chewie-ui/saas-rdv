@@ -75,7 +75,7 @@ block content
                         .dossier-timeline__empty
                             svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor")
                                 path(d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z")
-                            p= (t.dossier.empty_notes || 'Aucune note encore pour ce') + ' ' + (clientTerm || 'client') + '.'
+                            p= t.dossier.empty_notes || ('Aucune note encore pour ce ' + (clientTerm || 'client') + '.')
                             p.dossier-timeline__empty-sub= t.dossier.empty_notes_hint
                     each entry in entries
                         .timeline-entry(data-id=String(entry._id) data-note=entry.note data-todo=entry.todo data-date=new Date(entry.date).toISOString().slice(0,10))

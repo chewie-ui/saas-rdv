@@ -387,7 +387,7 @@ exports.referralsPage = async (req, res) => {
   // Enrichir avec les filleuls
   const referrersWithFilleuls = await Promise.all(users.map(async (u) => {
     const filleuls = await User.find({ referredBy: u._id })
-      .select("fullName email isPremium subscription createdAt")
+      .select("fullName email isPremium subscription createdAt referralPaidCounted")
       .lean();
     return { ...u, filleuls };
   }));
@@ -1024,5 +1024,139 @@ exports.deleteFaq = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Impersonation & Supervision ───────────────────────────────────────────────
+// In-memory store: token → { userId, expiresAt, accepted }
+const pendingSupervisions = new Map();
+const { activeSupervisions } = require("../utils/supervisionState");
+
+exports.impersonate = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).send("Utilisateur introuvable");
+
+    req.logIn(user, (err) => {
+      if (err) return res.status(500).send(err.message);
+      req.session.superadminBackup = true;
+      req.session.isImpersonating = {
+        mode: "discrete",
+        userId: String(user._id),
+        userEmail: user.email,
+        since: new Date().toISOString(),
+      };
+      res.redirect("/panel");
+    });
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+};
+
+exports.exitImpersonation = (req, res) => {
+  const impersonating = req.session.isImpersonating;
+  req.logout((err) => {
+    if (err) console.error("logout error:", err);
+    // Si supervision active : notifier l'utilisateur et nettoyer l'état
+    if (impersonating && impersonating.mode === "supervised" && impersonating.userId) {
+      activeSupervisions.delete(impersonating.userId);
+      req.app.get("io").to(`user:${impersonating.userId}`).emit("supervision:ended");
+    }
+    req.session.isSuperAdmin = true;
+    req.session.superadminBackup = null;
+    req.session.isImpersonating = null;
+    req.session.save((saveErr) => {
+      if (saveErr) console.error("session save error:", saveErr);
+      res.redirect("/superadmin/establishments");
+    });
+  });
+};
+
+exports.supervisionRequest = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select("email").lean();
+    if (!user) return res.status(404).json({ error: "Utilisateur introuvable" });
+
+    const token = crypto.randomBytes(24).toString("hex");
+    pendingSupervisions.set(token, {
+      userId,
+      expiresAt: Date.now() + 5 * 60 * 1000,
+      accepted: false,
+    });
+    setTimeout(() => pendingSupervisions.delete(token), 5 * 60 * 1000);
+
+    const io = req.app.get("io");
+    io.to(`user:${userId}`).emit("supervision:request", { token, adminName: "BranShee Admin" });
+
+    res.json({ success: true, token });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.supervisionRespond = async (req, res) => {
+  try {
+    const { token, action } = req.body;
+    const pending = pendingSupervisions.get(token);
+    if (!pending || Date.now() > pending.expiresAt) {
+      return res.json({ success: false, error: "Token expiré ou invalide" });
+    }
+
+    const io = req.app.get("io");
+    if (action === "accept") {
+      pending.accepted = true;
+      io.to("superadmin").emit("supervision:accepted", { token, userId: pending.userId });
+    } else {
+      pendingSupervisions.delete(token);
+      io.to("superadmin").emit("supervision:declined", { token });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.supervisionImpersonate = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const pending = pendingSupervisions.get(token);
+    if (!pending || !pending.accepted || Date.now() > pending.expiresAt) {
+      return res.status(403).send("Token invalide ou expiré");
+    }
+    pendingSupervisions.delete(token);
+
+    const user = await User.findById(pending.userId);
+    if (!user) return res.status(404).send("Utilisateur introuvable");
+
+    req.logIn(user, (err) => {
+      if (err) return res.status(500).send(err.message);
+      const userId = String(user._id);
+      req.session.superadminBackup = true;
+      req.session.isImpersonating = {
+        mode: "supervised",
+        userId,
+        userEmail: user.email,
+        since: new Date().toISOString(),
+      };
+      activeSupervisions.set(userId, { since: new Date().toISOString() });
+      req.app.get("io").to(`user:${userId}`).emit("supervision:started");
+      res.redirect("/panel");
+    });
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+};
+
+exports.supervisionClose = async (req, res) => {
+  try {
+    const userId = req.user ? String(req.user._id) : null;
+    if (!userId) return res.status(401).json({ error: "Non authentifié" });
+    activeSupervisions.delete(userId);
+    req.app.get("io").to("superadmin").emit("supervision:closed-by-user", { userId });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };

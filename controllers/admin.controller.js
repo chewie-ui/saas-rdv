@@ -12,10 +12,194 @@ const { sendEmail } = require("../utils/mailer");
 const { isFeatureEnabled } = require("../middlewares/featureFlag");
 
 exports.panel = async (req, res) => {
-  res.render("admin/panel", {
-    pageName: "Dashboard",
-    appointments: req.appointments,
-  });
+  try {
+    const companyId = res.locals.currentCompany._id;
+    const now = new Date();
+    const hour = now.getHours();
+    const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
+
+    // ── Bornes temporelles ────────────────────────────────────────────────────
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd   = new Date(todayStart.getTime() + 86400000);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const weekStart  = new Date(todayStart);
+    weekStart.setDate(todayStart.getDate() - ((todayStart.getDay() || 7) - 1));
+    const last7Start = new Date(todayStart);
+    last7Start.setDate(todayStart.getDate() - 6);
+
+    const base = { company: companyId, isBlock: { $ne: true } };
+
+    // ── Requêtes parallèles ───────────────────────────────────────────────────
+    const [
+      rdvMois, rdvMoisPrev,
+      cancelMois, cancelMoisPrev,
+      dailyCounts,
+      todayAppts,
+      upcomingAppts,
+      recentLogs,
+      recentBookings,
+    ] = await Promise.all([
+      // RDV confirmés ce mois
+      Booking.countDocuments({ ...base, status: "confirmed", date: { $gte: monthStart } }),
+      Booking.countDocuments({ ...base, status: "confirmed", date: { $gte: lastMonthStart, $lt: monthStart } }),
+      // Annulations ce mois
+      Booking.countDocuments({ ...base, status: "canceled", date: { $gte: monthStart } }),
+      Booking.countDocuments({ ...base, status: "canceled", date: { $gte: lastMonthStart, $lt: monthStart } }),
+      // Sparkline : RDV par jour sur 7 jours
+      Booking.aggregate([
+        { $match: { ...base, status: "confirmed", date: { $gte: last7Start } } },
+        { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$date", timezone: "Europe/Paris" } }, n: { $sum: 1 } } },
+        { $sort: { _id: 1 } },
+      ]),
+      // Aujourd'hui
+      Booking.find({ ...base, date: { $gte: todayStart, $lt: todayEnd } })
+        .sort({ startTime: 1 })
+        .populate("clientRef", "fullName email profilePicture")
+        .lean(),
+      // Prochains (hors aujourd'hui)
+      Booking.find({ ...base, status: "confirmed", date: { $gte: todayEnd } })
+        .sort({ date: 1, startTime: 1 })
+        .limit(5)
+        .populate("clientRef", "fullName email")
+        .lean(),
+      // Dernières activités
+      require("../db/models/activityLog.model").find({ company: companyId })
+        .sort({ createdAt: -1 })
+        .limit(7)
+        .lean(),
+      // Derniers RDV créés
+      Booking.find({ ...base })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate("clientRef", "fullName email")
+        .lean(),
+    ]);
+
+    // ── Clients uniques ce mois ───────────────────────────────────────────────
+    const [clientsThisMonth, clientsLastMonth] = await Promise.all([
+      Booking.distinct("clientRef", { ...base, status: "confirmed", date: { $gte: monthStart }, clientRef: { $ne: null } }),
+      Booking.distinct("clientRef", { ...base, status: "confirmed", date: { $gte: lastMonthStart, $lt: monthStart }, clientRef: { $ne: null } }),
+    ]);
+
+    // ── Sparkline helper ──────────────────────────────────────────────────────
+    function sparkPoints(counts) {
+      const vals = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(todayStart);
+        d.setDate(d.getDate() - i);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+        const found = counts.find((c) => c._id === key);
+        vals.push(found ? found.n : 0);
+      }
+      const max = Math.max(...vals, 1);
+      const pts = vals.map((v, i) => {
+        const x = 6 + Math.round(i * 84 / 6);
+        const y = 20 - Math.round((v / max) * 16);
+        return `${x},${y}`;
+      });
+      return { pts: pts.join(" "), fillPts: `6,24 ${pts.join(" ")} 90,24` };
+    }
+
+    function pctDelta(cur, prev) {
+      if (prev === 0 && cur === 0) return null;
+      if (prev === 0) return { label: "Nouveau", positive: true };
+      const p = Math.round(((cur - prev) / prev) * 100);
+      return { label: `${p >= 0 ? "+" : ""}${p}%`, positive: p >= 0 };
+    }
+
+    const spark = sparkPoints(dailyCounts);
+
+    const stats = [
+      {
+        key: "rdv", label: "RDV ce mois", icon: "M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T800-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z",
+        value: rdvMois, delta: pctDelta(rdvMois, rdvMoisPrev),
+        period: "vs mois dernier", pts: spark.pts, fillPts: spark.fillPts,
+        color: "var(--accent)",
+      },
+      {
+        key: "cancel", label: "Annulations", icon: "M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q54 0 104-17.5t92-50.5L228-676q-33 42-50.5 92T160-480q0 134 93 227t227 93Zm252-124q33-42 50.5-92T800-480q0-134-93-227t-227-93q-54 0-104 17.5T284-732l448 448Z",
+        value: cancelMois, delta: pctDelta(cancelMois, cancelMoisPrev),
+        period: "vs mois dernier", pts: spark.pts, fillPts: spark.fillPts,
+        color: "var(--danger)",
+      },
+      {
+        key: "clients", label: "Clients actifs", icon: "M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Z",
+        value: clientsThisMonth.length, delta: pctDelta(clientsThisMonth.length, clientsLastMonth.length),
+        period: "vs mois dernier", pts: spark.pts, fillPts: spark.fillPts,
+        color: "#059669",
+      },
+      {
+        key: "today", label: "RDV aujourd'hui", icon: "M580-240q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29ZM200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T800-80H200Zm0-80h560v-400H200v400Z",
+        value: todayAppts.filter(a => a.status === "confirmed").length,
+        delta: null,
+        period: "confirmés", pts: spark.pts, fillPts: spark.fillPts,
+        color: "#d97706",
+      },
+    ];
+
+    // ── Enrichissement des RDV aujourd'hui ────────────────────────────────────
+    const todayEnriched = todayAppts.map((a) => {
+      const clientName = a.clientRef?.fullName || `${a.name || ""} ${a.surname || ""}`.trim() || "Client";
+      const initials = clientName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
+      return { ...a, clientName, initials };
+    });
+
+    const upcomingEnriched = upcomingAppts.map((a) => {
+      const clientName = a.clientRef?.fullName || `${a.name || ""} ${a.surname || ""}`.trim() || "Client";
+      const dateStr = new Date(a.date).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+      return { ...a, clientName, dateStr };
+    });
+
+    const recentEnriched = recentBookings.map((a) => {
+      const clientName = a.clientRef?.fullName || `${a.name || ""} ${a.surname || ""}`.trim() || "Client";
+      const dateStr = new Date(a.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+      return { ...a, clientName, dateStr };
+    });
+
+    const logsEnriched = recentLogs.map((l) => {
+      const ago = (() => {
+        const diff = Date.now() - new Date(l.createdAt).getTime();
+        if (diff < 60000) return "À l'instant";
+        if (diff < 3600000) return `${Math.floor(diff / 60000)} min`;
+        if (diff < 86400000) return `${Math.floor(diff / 3600000)} h`;
+        return `${Math.floor(diff / 86400000)} j`;
+      })();
+      const actionColor = l.action.includes("delete") || l.action.includes("cancel") ? "danger"
+        : l.action.includes("create") || l.action.includes("add") ? "accent"
+        : "muted";
+      return { ...l, ago, actionColor };
+    });
+
+    const companyName = res.locals.currentCompany.name || req.user.businessName || "Établissement";
+    const initials = companyName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "BS";
+    const nextAppt = todayEnriched.find((a) => a.status === "confirmed" && a.startTime >= `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`);
+
+    res.render("admin/panel", {
+      pageName: "Dashboard",
+      title: "Dashboard — BranShee",
+      greeting,
+      companyName,
+      initials,
+      stats,
+      todayAppts: todayEnriched,
+      upcomingAppts: upcomingEnriched,
+      recentBookings: recentEnriched,
+      recentLogs: logsEnriched,
+      nextAppt,
+      todayStr: now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }),
+    });
+  } catch (err) {
+    console.error("[panel]", err);
+    res.render("admin/panel", {
+      pageName: "Dashboard",
+      title: "Dashboard — BranShee",
+      greeting: "Bonjour", companyName: "Studio", initials: "BS",
+      stats: [], todayAppts: [], upcomingAppts: [], recentBookings: [], recentLogs: [],
+      nextAppt: null,
+      todayStr: new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }),
+    });
+  }
 };
 
 const Booking = require("../db/models/book.model");
@@ -1464,7 +1648,7 @@ exports.historyInit = async (req, res) => {
     const now = new Date();
     const query = {
       company: res.locals.currentCompany._id,
-      // date: { $lt: now },
+      isBlock: { $ne: true },
     };
 
     const history = await Booking.find(query).sort({ date: -1, startTime: 1 }).skip(skip).limit(limit).populate("user");
@@ -2549,7 +2733,7 @@ exports.rateSupportChat = async (req, res) => {
 
 exports.parrainage = async (req, res) => {
   const filleuls = await User.find({ referredBy: req.user._id })
-    .select("fullName email isPremium subscription createdAt")
+    .select("fullName email isPremium subscription createdAt referralPaidCounted")
     .lean();
   const referralCode = req.user.referralCode || "";
   const referral = req.user.referral || { totalInvited: 0, totalPaying: 0, creditMonths: 0 };
@@ -2571,7 +2755,7 @@ exports.parrainageClaim = async (req, res) => {
     const referral = user.referral || {};
     const totalPaying = referral.totalPaying || 0;
     const creditMonths = referral.creditMonths || 0;
-    const claimable = Math.floor(totalPaying / 2) - creditMonths;
+    const claimable = Math.floor(totalPaying / 3) * 2 - creditMonths;
     if (claimable <= 0) {
       return res.status(400).json({ error: "Aucun crédit à réclamer pour le moment." });
     }

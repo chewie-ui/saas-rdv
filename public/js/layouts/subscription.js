@@ -597,6 +597,20 @@ if (getProPlan)      getProPlan.onclick      = () => handlePlanPurchaseClick("pr
 if (getProPlanAlert) getProPlanAlert.onclick = () => handlePlanPurchaseClick("pro");
 if (getBusinessPlan) getBusinessPlan.onclick = () => handlePlanPurchaseClick("business");
 
+// ── Strip "Essayer Pro gratuitement" — auto-applies BETA promo then checkout ──
+const getProPlanStrip = document.getElementById("getProPlanStrip");
+if (getProPlanStrip) {
+  getProPlanStrip.onclick = async () => {
+    if (promoCodeInput) {
+      promoCodeInput.value = "BETA";
+      const promoSection = document.getElementById("promoCodeSection");
+      promoSection?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      await validatePromo();
+    }
+    handlePlanPurchaseClick("pro");
+  };
+}
+
 // ── Boutons d'offre dynamiques (.js-offer-btn) ──────────────────────────────
 // data-plan  : "pro" | "business"
 // data-code  : code promo à copier dans le presse-papiers

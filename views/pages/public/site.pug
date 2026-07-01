@@ -1,0 +1,401 @@
+-
+  var _theme = site.theme || {}
+  var _sections = (site.sections || []).filter(function(s){ return s.enabled; }).sort(function(a,b){ return a.order - b.order; })
+  var primaryColor = _theme.primaryColor || '#6c47d0'
+  var bgColor = _theme.bgColor || '#ffffff'
+  var textColor = _theme.textColor || '#0f0f1a'
+  var fontFamily = _theme.fontFamily || 'Inter'
+  var roundnessMap = { sharp: '4px', soft: '12px', pill: '24px' }
+  var radius = roundnessMap[_theme.roundness] || '12px'
+  var seoTitle = (site.seo && site.seo.title) ? site.seo.title : (company.name || 'Notre établissement')
+  var seoDesc = (site.seo && site.seo.description) ? site.seo.description : 'Réservez votre rendez-vous en ligne.'
+  var gFont = fontFamily.replace(/ /g, '+')
+  var softColor = 'rgba(' + parseInt(primaryColor.slice(1,3),16) + ',' + parseInt(primaryColor.slice(3,5),16) + ',' + parseInt(primaryColor.slice(5,7),16) + ',.09)'
+  var navSections = _sections.filter(function(s){ return ['services','booking','about','contact'].includes(s.type); })
+
+doctype html
+html(lang="fr")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1")
+    title= seoTitle
+    meta(name="description" content=seoDesc)
+    if isPreview
+      meta(name="robots" content="noindex, nofollow")
+    else
+      meta(name="robots" content="index, follow")
+    link(rel="icon" href="/images/icon.svg" type="image/svg+xml")
+    link(rel="preconnect" href="https://fonts.googleapis.com")
+    link(rel="preconnect" href="https://fonts.gstatic.com" crossorigin)
+    link(rel="stylesheet" href=`https://fonts.googleapis.com/css2?family=${gFont}:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap`)
+    link(rel="stylesheet" href="/css/public/site.css")
+    style.
+      :root {
+        --sp: !{primaryColor};
+        --sp-bg: !{bgColor};
+        --sp-text: !{textColor};
+        --sp-radius: !{radius};
+        --sp-font: '!{fontFamily}', -apple-system, BlinkMacSystemFont, sans-serif;
+        --sp-soft: !{softColor};
+        --sp-border: color-mix(in srgb, !{primaryColor} 20%, #e0e0e0);
+        --sp-dark: #0f0f1a;
+        --sp-muted: #6b7280;
+        --sp-surface: #f8f9fb;
+        --sp-nav-h: 68px;
+      }
+
+  body(class=isPreview ? 'is-preview' : '')
+    if isPreview
+      .site-preview-bar
+        span 👁 Mode aperçu —
+        a(href="/mon-site") Retour à l'éditeur
+
+    //- ── Navigation ────────────────────────────────────────────────────────
+    nav.site-nav(id="site-nav")
+      .site-nav__inner
+        a.site-nav__logo(href="#top")
+          if site.logoUrl
+            img(src=site.logoUrl alt=company.name height="36")
+          else
+            span.site-nav__name= company.name || 'Mon établissement'
+        .site-nav__links
+          each s in navSections
+            -
+              var labels = { services: 'Services', booking: 'Réserver', about: 'À propos', contact: 'Contact' }
+              var label = (s.data && s.data.title) ? s.data.title : (labels[s.type] || s.type)
+            a.site-nav__link(href=`#${s.id}`)= label
+        a.site-nav__cta(href="#booking") Prendre rendez-vous
+        button.site-nav__burger(type="button" aria-label="Menu" id="navBurger")
+          span
+          span
+          span
+
+    //- ── Sections ──────────────────────────────────────────────────────────
+    each section in _sections
+
+      //- HERO
+      if section.type === 'hero'
+        -
+          var d = section.data || {}
+          var hasBg = !!(d.bgImage)
+          var heroLayout = d.heroLayout || 'full'
+        section.s-hero(id=section.id class=`s-hero--${heroLayout}`)
+          if heroLayout !== 'minimal'
+            if hasBg
+              .s-hero__bg(style=`background-image:url('${d.bgImage}')`)
+            else
+              .s-hero__bg.s-hero__bg--gradient
+            .s-hero__overlay
+          .s-hero__content
+            h1.s-hero__title= d.title || 'Votre établissement'
+            if d.subtitle
+              p.s-hero__subtitle= d.subtitle
+            .s-hero__actions
+              a.s-hero__cta(href="#booking")= d.ctaText || 'Prendre rendez-vous'
+              if heroLayout !== 'minimal'
+                a.s-hero__secondary(href="#about") En savoir plus
+
+      //- SERVICES
+      else if section.type === 'services'
+        -
+          var d = section.data || {}
+          var items = services || []
+        section.s-services(id=section.id)
+          .site-container
+            .s-section-header
+              h2.s-section-title= d.title || 'Nos prestations'
+              if d.subtitle
+                p.s-section-sub= d.subtitle
+            if items.length
+              .s-services__grid
+                each item in items
+                  .s-service-card
+                    if item.image
+                      img.s-service-card__img(src=item.image alt=item.name loading="lazy")
+                    else
+                      .s-service-card__placeholder
+                        svg(viewBox="0 -960 960 960" width="36" height="36" fill="currentColor")
+                          path(d="M420-80v-200l-92 92-56-56 172-172 172 172-56 56-92-92v200h-48ZM160-440v-48l280-160 280 160v48H160Zm280-60ZM200-520v-200h80v154l200-114 200 114v-154h80v200L440-374 200-520Zm80 0v-56l160-90 160 90v56L440-576 280-520Z")
+                    .s-service-card__body
+                      h3.s-service-card__name= item.name || ''
+                      if item.description
+                        p.s-service-card__desc= item.description
+                      .s-service-card__meta
+                        if item.price
+                          span.s-service-card__price= item.price + ' €'
+                        if item.duration
+                          span.s-service-card__duration= item.duration + ' min'
+            else
+              .s-services__empty Aucun service disponible pour le moment.
+
+      //- BOOKING
+      else if section.type === 'booking'
+        -
+          var d = section.data || {}
+        section.s-booking(id=section.id)
+          .site-container
+            .s-section-header
+              h2.s-section-title= d.title || 'Réservez en ligne'
+              if d.subtitle
+                p.s-section-sub= d.subtitle
+            .s-booking__frame-wrap
+              iframe.s-booking__frame(
+                src=`/${companySlug}?embedded=1`
+                title="Prise de rendez-vous"
+                loading="lazy"
+                allowfullscreen
+              )
+
+      //- ABOUT
+      else if section.type === 'about'
+        -
+          var d = section.data || {}
+          var hasImg = !!(d.image)
+        section.s-about(id=section.id)
+          .site-container
+            .s-about__inner(class=!hasImg ? 's-about__inner--no-img' : '')
+              if hasImg
+                .s-about__img-wrap
+                  img.s-about__img(src=d.image alt=d.title || 'À propos' loading="lazy")
+              .s-about__text
+                h2.s-section-title= d.title || 'À propos de nous'
+                p.s-about__body= d.text || ''
+
+      //- GALLERY
+      else if section.type === 'gallery'
+        -
+          var d = section.data || {}
+          var imgs = (d.images || []).filter(function(i){ return i && i.url; })
+        if imgs.length || isPreview
+          section.s-gallery(id=section.id)
+            .site-container
+              .s-section-header
+                h2.s-section-title= d.title || 'Notre galerie'
+              if imgs.length
+                .s-gallery__grid
+                  each img in imgs
+                    .s-gallery__item(onclick=`openLightbox('${img.url}','${(img.caption||'').replace(/'/g,"\\'")}')`)
+                      img.s-gallery__img(src=img.url alt=img.caption || '' loading="lazy")
+                      if img.caption
+                        .s-gallery__caption= img.caption
+              else
+                .s-gallery__empty.s-gallery__empty--preview Ajoutez des photos dans l'éditeur.
+
+      //- TESTIMONIALS
+      else if section.type === 'testimonials'
+        -
+          var d = section.data || {}
+          var titems = d.items || []
+        if titems.length || isPreview
+          section.s-testimonials(id=section.id)
+            .site-container
+              .s-section-header
+                h2.s-section-title= d.title || 'Avis clients'
+              if titems.length
+                .s-testimonials__grid
+                  each t in titems
+                    -
+                      var trating = t.rating || 5
+                    .s-testimonial-card
+                      .s-testimonial-card__stars
+                        each star in [1,2,3,4,5]
+                          span(class=star <= trating ? 's-star--on' : 's-star--off') ★
+                      p.s-testimonial-card__text= '"' + (t.text || '') + '"'
+                      .s-testimonial-card__author= t.name || 'Client'
+              else
+                .s-testimonials__empty Ajoutez des avis clients dans l'éditeur.
+
+      //- FAQ
+      else if section.type === 'faq'
+        -
+          var d = section.data || {}
+          var fitems = d.items || []
+        if fitems.length || isPreview
+          section.s-faq(id=section.id)
+            .site-container
+              .s-section-header
+                h2.s-section-title= d.title || 'FAQ'
+              if fitems.length
+                .s-faq__list
+                  each fitem in fitems
+                    .s-faq__item
+                      button.s-faq__q(type="button")
+                        span= fitem.question
+                        svg.s-faq__arrow(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
+                          polyline(points="6 9 12 15 18 9")
+                      .s-faq__a
+                        p= fitem.answer
+              else
+                .s-faq__empty Ajoutez des questions dans l'éditeur.
+
+      //- CONTACT
+      else if section.type === 'contact'
+        -
+          var d = section.data || {}
+        section.s-contact(id=section.id)
+          .site-container
+            .s-section-header
+              h2.s-section-title(style="color:#fff")= d.title || 'Nous contacter'
+            .s-contact__body
+              .s-contact__grid
+                if d.phone
+                  .s-contact__item
+                    .s-contact__icon
+                      svg(viewBox="0 -960 960 960" width="20" height="20" fill="currentColor")
+                        path(d="M798-120q-125 0-247-54.5T329-329Q225-433 170.5-555T116-802q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T382-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12Z")
+                    .s-contact__detail
+                      span.s-contact__label Téléphone
+                      a.s-contact__value(href=`tel:${d.phone}`)= d.phone
+                if d.email
+                  .s-contact__item
+                    .s-contact__icon
+                      svg(viewBox="0 -960 960 960" width="20" height="20" fill="currentColor")
+                        path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280L160-640v400h640v-400L480-440Zm0-80 320-200H160l320 200ZM160-640v-80 480-400Z")
+                    .s-contact__detail
+                      span.s-contact__label Email
+                      a.s-contact__value(href=`mailto:${d.email}`)= d.email
+                if d.address
+                  .s-contact__item
+                    .s-contact__icon
+                      svg(viewBox="0 -960 960 960" width="20" height="20" fill="currentColor")
+                        path(d="M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 294q122-112 181-203.5T720-552q0-109-69.5-178.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186Zm0 106Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 100-79.5 217.5T480-80Zm0-480Z")
+                    .s-contact__detail
+                      span.s-contact__label Adresse
+                      span.s-contact__value= d.address
+              .s-cf-wrap
+                h3.s-cf-title Envoyer un message
+                form.s-cf-form(data-slug=site.slug)
+                  .s-cf-row
+                    .s-cf-field
+                      label.s-cf-label Nom
+                      input.s-cf-input(type="text" name="name" placeholder="Votre nom" required)
+                    .s-cf-field
+                      label.s-cf-label Email
+                      input.s-cf-input(type="email" name="email" placeholder="votre@email.com" required)
+                  .s-cf-field
+                    label.s-cf-label Message
+                    textarea.s-cf-input.s-cf-textarea(name="message" rows="4" placeholder="Votre message..." required)
+                  button.s-cf-submit(type="submit") Envoyer
+                  .s-cf-feedback.s-cf-feedback--ok(style="display:none") ✓ Message envoyé, nous vous répondrons rapidement !
+                  .s-cf-feedback.s-cf-feedback--err(style="display:none") Une erreur est survenue. Veuillez réessayer.
+
+    //- ── Lightbox ──────────────────────────────────────────────────────────
+    #sp-lightbox.sp-lightbox(onclick="closeLightbox(event)")
+      span.sp-lightbox__close(onclick="document.getElementById('sp-lightbox').classList.remove('open')") ✕
+      img.sp-lightbox__img(id="spLightImg" src="" alt="")
+      p.sp-lightbox__cap(id="spLightCap")
+
+    //- ── Footer ────────────────────────────────────────────────────────────
+    -
+      var _soc = site.social || {}
+      var _hasSocial = _soc.instagram || _soc.facebook || _soc.tiktok || _soc.whatsapp || _soc.linkedin || _soc.youtube
+    footer.site-footer
+      .site-container
+        .site-footer__inner
+          .site-footer__brand
+            span.site-footer__name= company.name || 'Mon établissement'
+            span.site-footer__copy © #{new Date().getFullYear()} — Tous droits réservés
+          if _hasSocial
+            .site-footer__social
+              if _soc.instagram
+                a.s-soc(href=_soc.instagram target="_blank" rel="noopener noreferrer" title="Instagram")
+                  svg(viewBox="0 0 24 24" width="20" height="20" fill="currentColor")
+                    path(d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z")
+              if _soc.facebook
+                a.s-soc(href=_soc.facebook target="_blank" rel="noopener noreferrer" title="Facebook")
+                  svg(viewBox="0 0 24 24" width="20" height="20" fill="currentColor")
+                    path(d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z")
+              if _soc.tiktok
+                a.s-soc(href=_soc.tiktok target="_blank" rel="noopener noreferrer" title="TikTok")
+                  svg(viewBox="0 0 24 24" width="20" height="20" fill="currentColor")
+                    path(d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z")
+              if _soc.whatsapp
+                a.s-soc(href=`https://wa.me/${_soc.whatsapp.replace(/\D/g,'')}` target="_blank" rel="noopener noreferrer" title="WhatsApp")
+                  svg(viewBox="0 0 24 24" width="20" height="20" fill="currentColor")
+                    path(d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z")
+              if _soc.linkedin
+                a.s-soc(href=_soc.linkedin target="_blank" rel="noopener noreferrer" title="LinkedIn")
+                  svg(viewBox="0 0 24 24" width="20" height="20" fill="currentColor")
+                    path(d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z")
+              if _soc.youtube
+                a.s-soc(href=_soc.youtube target="_blank" rel="noopener noreferrer" title="YouTube")
+                  svg(viewBox="0 0 24 24" width="20" height="20" fill="currentColor")
+                    path(d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z")
+          a.site-footer__powered(href="https://www.branshee.com" target="_blank" rel="noopener noreferrer")
+            | Propulsé par&nbsp;
+            strong BranShee
+
+    script.
+      var nav = document.getElementById('site-nav');
+      window.addEventListener('scroll', function() {
+        nav.classList.toggle('scrolled', window.scrollY > 60);
+      }, { passive: true });
+      // Init scrolled if not at top
+      if (window.scrollY > 60) nav.classList.add('scrolled');
+      // Mobile burger
+      var burger = document.getElementById('navBurger');
+      var navLinks = document.querySelector('.site-nav__links');
+      if (burger && navLinks) {
+        burger.addEventListener('click', function() {
+          navLinks.classList.toggle('open');
+        });
+        // Close on link click
+        navLinks.querySelectorAll('a').forEach(function(a) {
+          a.addEventListener('click', function() { navLinks.classList.remove('open'); });
+        });
+      }
+      // Auto-resize booking iframe
+      window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'branshee:height') {
+          var fr = document.querySelector('.s-booking__frame');
+          if (fr) fr.style.height = (e.data.height + 40) + 'px';
+        }
+      });
+      // Lightbox
+      function openLightbox(src, cap) {
+        var lb = document.getElementById('sp-lightbox');
+        document.getElementById('spLightImg').src = src;
+        document.getElementById('spLightCap').textContent = cap || '';
+        lb.classList.add('open');
+      }
+      function closeLightbox(e) {
+        if (e.target.id === 'sp-lightbox') document.getElementById('sp-lightbox').classList.remove('open');
+      }
+      // FAQ accordion
+      document.querySelectorAll('.s-faq__q').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var item = btn.closest('.s-faq__item');
+          var wasOpen = item.classList.contains('open');
+          document.querySelectorAll('.s-faq__item.open').forEach(function(i){ i.classList.remove('open'); });
+          if (!wasOpen) item.classList.add('open');
+        });
+      });
+      // Contact form
+      document.querySelectorAll('.s-cf-form').forEach(function(form) {
+        form.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          var btn = form.querySelector('.s-cf-submit');
+          var ok  = form.querySelector('.s-cf-feedback--ok');
+          var err = form.querySelector('.s-cf-feedback--err');
+          ok.style.display = 'none';
+          err.style.display = 'none';
+          btn.disabled = true;
+          btn.textContent = 'Envoi…';
+          try {
+            var r = await fetch('/s/' + form.dataset.slug + '/contact', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: form.querySelector('[name="name"]').value,
+                email: form.querySelector('[name="email"]').value,
+                message: form.querySelector('[name="message"]').value,
+              })
+            });
+            var data = await r.json();
+            if (data.success) { form.reset(); ok.style.display = ''; }
+            else err.style.display = '';
+          } catch(ex) { err.style.display = ''; }
+          btn.disabled = false;
+          btn.textContent = 'Envoyer';
+        });
+      });

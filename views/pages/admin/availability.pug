@@ -194,13 +194,21 @@ block content
                                                 path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
                                             span= t.avail.add_schedule
 
+                        button.avail-doff-add(type="button" onclick="document.getElementById('addDaysOffBtn').click()")
+                            .avail-doff-add__icon
+                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                    path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                            span.avail-doff-add__label= t.avail.add_dayoff_btn
+
                     if !availFeatures || !availFeatures.ranges
-                        .plan-gate
-                            span.plan-gate__lock 🔒
-                            .plan-gate__body
-                                strong.plan-gate__title Congés multiples
-                                span.plan-gate__sub Disponible uniquement dans les plans Pro & Business.
-                            a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
+                        .avail-upsell
+                            .avail-upsell__icon
+                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                    path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
+                            .avail-upsell__body
+                                strong.avail-upsell__title= t.avail.upsell_ranges_title
+                                span.avail-upsell__sub= t.avail.upsell_ranges_sub
+                                a.avail-upsell__cta(href="/subscription")= t.avail.upgrade_cta
 
                 //- Regroupement des rendez-vous ("smart grouping")
                 .avail-card.sg-card
@@ -305,12 +313,14 @@ block content
                                 span= t.avail.slot_managed_hint
                                 button.slot-reenable-btn(type="button")= t.avail.slot_reenable
                     if !availFeatures || !availFeatures.slotDuration
-                        .plan-gate
-                            span.plan-gate__lock 🔒
-                            .plan-gate__body
-                                strong.plan-gate__title Durée des créneaux personnalisée
-                                span.plan-gate__sub Disponible uniquement dans les plans Pro & Business.
-                            a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
+                        .avail-upsell
+                            .avail-upsell__icon
+                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                    path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
+                            .avail-upsell__body
+                                strong.avail-upsell__title= t.avail.upsell_slot_title
+                                span.avail-upsell__sub= t.avail.upsell_slot_sub
+                                a.avail-upsell__cta(href="/subscription")= t.avail.upgrade_cta
 
                 //- Buffer between bookings
                 if !adminFeatures || adminFeatures.buffer_time !== false
