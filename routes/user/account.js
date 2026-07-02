@@ -50,6 +50,7 @@ router.patch(
   processSingleImage("businessPicture"),
   accountController.editBusinessPicture,
 );
+router.delete("/business-picture", accountController.deleteBusinessPicture);
 
 router.post("/send-delete-code", isAuth, accountController.sendDeleteCode);
 router.delete("/delete-account", isAuth, accountController.deleteAccount);

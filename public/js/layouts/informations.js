@@ -66,13 +66,73 @@ if (uploadBusinessBtn && businessFileInput) {
         fieldName: "businessPicture",
         file,
       });
-      if (data.path && previewImg) previewImg.src = data.path;
+      if (data.path && previewImg) {
+        previewImg.src = data.path;
+        // Si c'était un placeholder, l'img a été swappée — on récupère le nouveau nœud
+        const freshPreview = document.querySelector(".biz-photo-preview");
+        if (freshPreview) freshPreview.classList.remove("biz-photo-preview--empty");
+      }
+      updateBizDeleteBtn(true);
+      updateBizIncompleteBanner();
     } catch (err) {
       // L'erreur est déjà affichée à l'écran par BkImageUpload.
     } finally {
       businessFileInput.value = "";
     }
   };
+}
+
+// ── Supprimer photo établissement ─────────────────────────────────────────────
+function updateBizDeleteBtn(hasPic) {
+  const btn = document.getElementById("deleteBusinessPicBtn");
+  if (btn) btn.style.display = hasPic ? "" : "none";
+}
+
+function updateBizIncompleteBanner() {
+  const banner = document.getElementById("bizIncompleteBanner");
+  const preview = document.querySelector(".biz-photo-preview");
+  const nameInput = document.getElementById("businessNameInput");
+
+  const picEl = document.getElementById("businessPicPreview");
+  const hasPic = picEl && picEl.tagName === "IMG" && !!picEl.src;
+  const hasName = !!(nameInput?.value || "").trim();
+
+  if (banner) banner.style.display = hasPic && hasName ? "none" : "";
+  if (preview) preview.classList.toggle("biz-photo-preview--empty", !hasPic);
+  if (nameInput) nameInput.classList.toggle("input--warn", !hasName);
+}
+
+const deleteBusinessPicBtn = document.getElementById("deleteBusinessPicBtn");
+if (deleteBusinessPicBtn) {
+  deleteBusinessPicBtn.addEventListener("click", async () => {
+    deleteBusinessPicBtn.disabled = true;
+    try {
+      const res = await fetch("/account/business-picture", { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        const wrapper = document.getElementById("businessPicPreview");
+        if (wrapper) {
+          const placeholder = document.createElement("div");
+          placeholder.id = "businessPicPreview";
+          placeholder.className = "biz-photo-placeholder";
+          placeholder.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor"><path d="M160-120q-33 0-56.5-23.5T80-200v-480q0-33 23.5-56.5T160-760h126l74-80h240l74 80h126q33 0 56.5 23.5T880-680v480q0 33-23.5 56.5T800-120H160Zm0-80h640v-480H160v480Zm320-80q-58 0-99-41t-41-99q0-58 41-99t99-41q58 0 99 41t41 99q0 58-41 99t-99 41Zm0-80q25 0 42.5-17.5T540-420q0-25-17.5-42.5T480-480q-25 0-42.5 17.5T420-420q0 25 17.5 42.5T480-360Z"/></svg>`;
+          wrapper.replaceWith(placeholder);
+        }
+        updateBizDeleteBtn(false);
+        updateBizIncompleteBanner();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      deleteBusinessPicBtn.disabled = false;
+    }
+  });
+}
+
+// Mettre à jour la bannière quand l'utilisateur tape le nom
+const bizNameInput = document.getElementById("businessNameInput");
+if (bizNameInput) {
+  bizNameInput.addEventListener("input", updateBizIncompleteBanner);
 }
 
 const saveChanges = document.getElementById("saveChanges");

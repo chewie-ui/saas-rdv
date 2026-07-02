@@ -739,6 +739,17 @@ exports.editBusinessPicture = async (req, res) => {
   }
 };
 
+// Supprimer photo établissement
+exports.deleteBusinessPicture = async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.user._id, { $unset: { businessPicture: "" } });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.json({ success: false });
+  }
+};
+
 exports.sendDeleteCode = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("email");
