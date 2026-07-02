@@ -206,7 +206,7 @@ block content
     //- ── Top bar ────────────────────────────────────────────────────────────
     header.bk-top
         a.bk-brand(href="/")
-            .bk-brand__mark B
+            img.bk-brand__mark(src="/images/icon.svg" alt="" width="28" height="28")
             span.bk-brand__name BranShee
         .bk-top__right
             if visitorIsAdmin
@@ -579,7 +579,10 @@ block scripts
             badge.href = _embedBizUrl + '?utm_source=embed&utm_medium=iframe';
             badge.target = '_blank';
             badge.rel = 'noopener';
-            badge.innerHTML = '<span class="bk-embed-badge__mark">B</span><span>Ouvrir dans un nouvel onglet ↗</span>';
+            //- URL absolue : ce badge est injecté dans l'iframe du widget sur
+            //- un site TIERS, donc "/images/icon.svg" relatif pointerait vers
+            //- le domaine de l'hébergeur au lieu de branshee.com.
+            badge.innerHTML = '<img class="bk-embed-badge__mark" src="https://www.branshee.com/images/icon.svg" alt="" width="18" height="18"><span>Ouvrir dans un nouvel onglet ↗</span>';
             document.body.appendChild(badge);
 
             // ── Titre personnalisé au-dessus du calendrier ──
