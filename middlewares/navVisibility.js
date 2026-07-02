@@ -45,9 +45,12 @@ module.exports = async function navVisibility(req, res, next) {
 
             // Une section (titre + liens) dont tous les liens ont été retirés
             // ci-dessus ne doit plus afficher son titre tout seul.
-            html = html.replace(/<div class="sb-section">[\s\S]*?<\/div>/g, (block) => {
-              return /\bsb-link\b/.test(block) ? block : "";
-            });
+            // On cible <div class="sb-section" data-section="..."> en incluant les attributs,
+            // puis on vérifie que .sb-section__links contient encore au moins un sb-link.
+            html = html.replace(
+              /<div class="sb-section"[^>]*>[\s\S]*?<div class="sb-section__links">[\s\S]*?<\/div>\s*<\/div>/g,
+              (block) => (/\bsb-link\b/.test(block) ? block : "")
+            );
           }
         }
       } catch (e) {
