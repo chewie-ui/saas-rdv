@@ -47,13 +47,13 @@
                             a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/espace-client")
                                 span= t.header.my_space
                             //- Visiteur déjà connecté en tant que client → proposer de créer un compte pro
-                            a.sm-btn.sm-btn--primary(href="/register?plan=pro&billing=monthly")
+                            //- (vers /register : le libellé promet "gratuit", donc plan Starter sans carte)
+                            a.sm-btn.sm-btn--primary(href="/register")
                                 span= t.header.register
                         else
                             a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/login")
                                 span= t.header.client_account
-                            //- Visiteur anonyme → inscription directe avec 1 mois offert
-                            a.sm-btn.sm-btn--primary(href="/register?plan=pro&billing=monthly")
+                            a.sm-btn.sm-btn--primary(href="/register")
                                 span= t.header.register
 
             //- Séparateur desktop
@@ -67,7 +67,7 @@
             //- Sélecteur de langue
             .header__lang#headerLang
                 button.lang-trigger(type="button" aria-label="Langue")
-                    img.lang-trigger__flag(src=(lang === 'fr' ? '/images/fr.webp' : lang === 'nl' ? '/images/nl.jpg' : lang === 'es' ? '/images/es.jpg' : lang === 'it' ? '/images/it.png' : lang === 'de' ? '/images/de.png' : "/images/en.jpg") alt="flag")
+                    img.lang-trigger__flag(src=(lang === 'fr' ? '/images/fr.webp' : lang === 'nl' ? '/images/nl.jpg' : lang === 'es' ? '/images/es.jpg' : lang === 'it' ? '/images/it.png' : lang === 'de' ? '/images/de.png' : "/images/en.jpg") alt="" aria-hidden="true" width="18" height="18")
                     span.lang-trigger__code= lang === 'fr' ? 'FR' : lang === 'nl' ? 'NL' : lang === 'es' ? 'ES' : lang === 'it' ? 'IT' : lang === 'de' ? 'DE' : 'EN'
                     svg.lang-trigger__chevron(viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
                         polyline(points="6 9 12 15 18 9")
@@ -113,11 +113,16 @@
                     a.sm-btn.sm-btn--primary(href="/etablissement/mes-etablissements")
                         span= t.header.start_establishment
             else
+                //- L'inscription est TOUJOURS le bouton primaire pour un
+                //- visiteur anonyme (le trafic Ads est surtout mobile) — et
+                //- un bouton libellé "Commencer gratuitement" doit mener au
+                //- plan gratuit sans carte (/register), jamais au flux Pro
+                //- avec carte requise.
                 if becomeCoach
-                    a.sm-btn.sm-btn--primary(href="/login")
-                        span= t.header.login
-                    a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/register")
+                    a.sm-btn.sm-btn--primary(href="/register")
                         span= t.header.register
+                    a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/login")
+                        span= t.header.login
                 else if clientAuth
                     if clientUser
                         a.sm-btn.sm-btn--primary(href="/espace-client")
@@ -125,21 +130,21 @@
                         a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/logout")
                             span= t.header.logout
                     else
-                        a.sm-btn.sm-btn--primary(href="/login")
-                            span= t.header.login
-                        a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/register?intent=client")
+                        a.sm-btn.sm-btn--primary(href="/register?intent=client")
                             span= t.header.register
+                        a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/login")
+                            span= t.header.login
                 else
                     if clientUser
-                        a.sm-btn.sm-btn--primary(href="/espace-client")
+                        a.sm-btn.sm-btn--primary(href="/register")
+                            span= t.header.register
+                        a.sm-btn.sm-btn--ghost(href="/espace-client")
                             span= t.header.my_space
-                        a.sm-btn.sm-btn--ghost(href="/register?plan=pro&billing=monthly")
-                            span= t.header.register
                     else
-                        a.sm-btn.sm-btn--primary(href="/login")
-                            span= t.header.client_account
-                        a.sm-btn.sm-btn--ghost(href="/register?plan=pro&billing=monthly")
+                        a.sm-btn.sm-btn--primary(href="/register")
                             span= t.header.register
+                        a.sm-btn.sm-btn--ghost(href="/login")
+                            span= t.header.client_account
 
         .header__panel-bottom
             //- Langue dans le panel

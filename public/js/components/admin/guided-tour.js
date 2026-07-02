@@ -37,6 +37,16 @@
     };
   }
 
+  function ensureOverlayOpen(overlaySel, triggerSel) {
+    return function () {
+      var overlay = $(overlaySel);
+      if (overlay && overlay.style.display !== "flex") {
+        var btn = $(triggerSel);
+        if (btn) btn.click();
+      }
+    };
+  }
+
   var TOURS = {
     // ── Visite d'accueil (depuis /welcome) ────────────────────────────────
     onboarding: [
@@ -283,19 +293,18 @@
     collaborators: [
       {
         page: function () { return "/etablissement/" + (window.__companyId || "") + "/collaborateurs"; },
+        pageMatch: function (path) { return /\/etablissement\/[^/]+\/collaborateurs/.test(path); },
         find: function () { return $("#inviteBtn"); },
         title: "Invitez un collaborateur",
         text: "Cliquez ici pour inviter un membre de votre équipe. La personne doit déjà avoir un compte BranShee — elle aura immédiatement accès à votre espace.",
         placement: "bottom",
         advanceOnEvent: "click",
-        advanceDelay: 200,
+        advanceDelay: 400,
       },
       {
         page: function () { return "/etablissement/" + (window.__companyId || "") + "/collaborateurs"; },
-        preStep: function () {
-          var overlay = $("#inviteModalOverlay");
-          if (overlay && overlay.style.display === "none") { var btn = $("#inviteBtn"); if (btn) btn.click(); }
-        },
+        pageMatch: function (path) { return /\/etablissement\/[^/]+\/collaborateurs/.test(path); },
+        preStep: ensureOverlayOpen("#inviteModalOverlay", "#inviteBtn"),
         find: function () { return $("#inviteEmailInput"); },
         title: "Adresse email",
         text: "Entrez l'adresse email du collaborateur à inviter — il doit déjà avoir un compte BranShee.",
@@ -303,10 +312,8 @@
       },
       {
         page: function () { return "/etablissement/" + (window.__companyId || "") + "/collaborateurs"; },
-        preStep: function () {
-          var overlay = $("#inviteModalOverlay");
-          if (overlay && overlay.style.display === "none") { var btn = $("#inviteBtn"); if (btn) btn.click(); }
-        },
+        pageMatch: function (path) { return /\/etablissement\/[^/]+\/collaborateurs/.test(path); },
+        preStep: ensureOverlayOpen("#inviteModalOverlay", "#inviteBtn"),
         find: function () { return $("#inviteGradeInput"); },
         title: "Choisissez son grade",
         text: "Sélectionnez le grade à assigner — il définit les fonctionnalités auxquelles ce collaborateur aura accès. Vous pouvez le modifier à tout moment.",
@@ -314,16 +321,12 @@
       },
       {
         page: function () { return "/etablissement/" + (window.__companyId || "") + "/collaborateurs"; },
-        preStep: function () {
-          var overlay = $("#inviteModalOverlay");
-          if (overlay && overlay.style.display === "none") { var btn = $("#inviteBtn"); if (btn) btn.click(); }
-        },
+        pageMatch: function (path) { return /\/etablissement\/[^/]+\/collaborateurs/.test(path); },
+        preStep: ensureOverlayOpen("#inviteModalOverlay", "#inviteBtn"),
         find: function () { return $("#inviteModalConfirm"); },
         title: "Envoyez l'invitation",
         text: "Cliquez ici pour envoyer l'invitation. Le collaborateur aura immédiatement accès à votre espace avec les droits du grade choisi.",
         placement: "top",
-        advanceOnEvent: "click",
-        advanceDelay: 300,
         isLast: true,
       },
     ],
@@ -379,6 +382,10 @@
     cancellationPolicy: [
       {
         page: "/settings",
+        preStep: function () {
+          var tab = document.querySelector('.settings-tab[data-target="stg-paiements"]');
+          if (tab && !tab.classList.contains("is-active")) tab.click();
+        },
         find: function () { return $(".cp-grid"); },
         title: "Politique d'annulation",
         text: "Cette section vous permet de définir ce qui se passe quand un client annule à la dernière minute ou ne se présente pas. Trois options s'offrent à vous — choisissez celle qui correspond à votre façon de travailler.",
@@ -386,6 +393,10 @@
       },
       {
         page: "/settings",
+        preStep: function () {
+          var tab = document.querySelector('.settings-tab[data-target="stg-paiements"]');
+          if (tab && !tab.classList.contains("is-active")) tab.click();
+        },
         find: function () { return $(".cp-grid .cp-card"); },
         title: "Option 1 — Annulation libre",
         text: "L'annulation est toujours gratuite pour le client, quelle que soit la date à laquelle il annule. C'est l'option par défaut — aucune carte bancaire n'est demandée lors de la réservation.",
@@ -393,6 +404,10 @@
       },
       {
         page: "/settings",
+        preStep: function () {
+          var tab = document.querySelector('.settings-tab[data-target="stg-paiements"]');
+          if (tab && !tab.classList.contains("is-active")) tab.click();
+        },
         find: function () {
           var cards = document.querySelectorAll(".cp-grid .cp-card");
           return cards[1] || null;
@@ -403,6 +418,10 @@
       },
       {
         page: "/settings",
+        preStep: function () {
+          var tab = document.querySelector('.settings-tab[data-target="stg-paiements"]');
+          if (tab && !tab.classList.contains("is-active")) tab.click();
+        },
         find: function () {
           var cards = document.querySelectorAll(".cp-grid .cp-card");
           return cards[2] || null;
@@ -413,6 +432,10 @@
       },
       {
         page: "/settings",
+        preStep: function () {
+          var tab = document.querySelector('.settings-tab[data-target="stg-paiements"]');
+          if (tab && !tab.classList.contains("is-active")) tab.click();
+        },
         find: function () { return $(".cp-grid"); },
         title: "Sélectionnez votre règle",
         text: "Cliquez sur la carte de votre choix — elle est enregistrée automatiquement, sans bouton « Sauvegarder ». Vous pouvez changer de règle à tout moment depuis cette page.",
@@ -420,6 +443,10 @@
       },
       {
         page: "/settings",
+        preStep: function () {
+          var tab = document.querySelector('.settings-tab[data-target="stg-paiements"]');
+          if (tab && !tab.classList.contains("is-active")) tab.click();
+        },
         find: function () { return $("#prepayEnabled"); },
         title: "Activez la garantie carte (recommandé)",
         text: "Pour que votre politique s'applique vraiment, activez aussi « Paiement en ligne » juste au-dessus. La carte de votre client sera enregistrée à 0 € lors de la réservation — aucun débit immédiat. Elle ne sera prélevée qu'en cas d'absence ou d'annulation trop tardive, directement depuis la fiche du rendez-vous.",

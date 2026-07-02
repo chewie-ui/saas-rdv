@@ -1,46 +1,54 @@
 extends ../../layouts/index
 
-block jsonld
-    script(type="application/ld+json").
-        {
-          "@context": "https://schema.org",
-          "@type": "WebPage",
-          "name": "BranShee — Gérez votre activité et recevez des réservations en ligne",
-          "url": "#{canonical || 'https://www.branshee.com/'}",
-          "description": "Créez votre page professionnelle sur BranShee et recevez des réservations en ligne 24h/24. Gérez vos rendez-vous, employés et services facilement.",
-          "isPartOf": {
-            "@type": "WebSite",
+//- Homepage pro — page de conversion (trafic Ads + SEO).
+//- Tout le contenu vit dans t.pro_landing (locales/*.json) ; les prix affichés
+//- dans la copy (19 €, 15 €/39 € annuel) doivent rester synchronisés avec
+//- t.subscription si les tarifs changent un jour.
+
+//- "append" (et non "block jsonld") : on garde les schémas WebSite +
+//- Organization du layout — la home est LA page où ils comptent pour Google.
+block append jsonld
+    -
+        //- .replace(< → <) : si une traduction contient un jour "</script>",
+        //- le JSON-LD inline casserait silencieusement tout le HTML de la home.
+        var _ldSafe = function (obj) { return JSON.stringify(obj).replace(/</g, "\\u003c"); };
+        var _pageLd = {
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": t.pro_landing.meta_title || "BranShee",
+            "url": canonical || "https://www.branshee.com/",
+            "description": t.pro_landing.meta_desc || "",
+            "inLanguage": lang || "fr",
+            "isPartOf": { "@type": "WebSite", "name": "BranShee", "url": "https://www.branshee.com" }
+        };
+        var _faqLd = {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": (t.pro_landing.faq.items || []).map(function (it) {
+                return { "@type": "Question", "name": it.q, "acceptedAnswer": { "@type": "Answer", "text": it.a } };
+            })
+        };
+        var _appLd = {
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
             "name": "BranShee",
-            "url": "https://www.branshee.com"
-          }
-        }
-    script(type="application/ld+json").
-        {
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          "mainEntity": [
-            {
-              "@type": "Question",
-              "name": "Comment créer un agenda en ligne pour mon activité avec BranShee ?",
-              "acceptedAnswer": { "@type": "Answer", "text": "Inscrivez-vous gratuitement sur BranShee, créez votre page professionnelle, configurez vos services, horaires et disponibilités. Partagez ensuite votre lien de réservation avec vos clients. Votre agenda en ligne est prêt en moins de 5 minutes." }
-            },
-            {
-              "@type": "Question",
-              "name": "BranShee est-il gratuit pour les professionnels ?",
-              "acceptedAnswer": { "@type": "Answer", "text": "Oui, BranShee propose une formule gratuite pour commencer, sans carte bancaire. Des offres premium avec plus de fonctionnalités sont disponibles, avec un mois d'essai offert et possibilité d'annuler à tout moment." }
-            },
-            {
-              "@type": "Question",
-              "name": "Comment mes clients peuvent-ils prendre rendez-vous ?",
-              "acceptedAnswer": { "@type": "Answer", "text": "Vos clients réservent directement en ligne 24h/24 via votre page de réservation personnalisée, sans avoir besoin de vous appeler ni de créer de compte." }
-            },
-            {
-              "@type": "Question",
-              "name": "BranShee est-il une bonne alternative à Calendly ou Planity ?",
-              "acceptedAnswer": { "@type": "Answer", "text": "Oui. BranShee est une alternative française à Calendly, Planity ou SimplyBook spécialement conçue pour les indépendants et petites équipes. Il propose un calendrier de réservation en ligne, la gestion des employés, les paiements et les rappels automatiques." }
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "url": "https://www.branshee.com",
+            "description": t.pro_landing.meta_desc || "",
+            "inLanguage": lang || "fr",
+            "featureList": (t.pro_landing.included.items || []).map(function (it) { return it.title; }),
+            "offers": {
+                "@type": "AggregateOffer",
+                "lowPrice": "0",
+                "highPrice": "49",
+                "priceCurrency": "EUR",
+                "offerCount": "3"
             }
-          ]
-        }
+        };
+    script(type="application/ld+json")!= _ldSafe(_pageLd)
+    script(type="application/ld+json")!= _ldSafe(_faqLd)
+    script(type="application/ld+json")!= _ldSafe(_appLd)
 
 block links
     link(rel="stylesheet", href="/css/layouts/landing-page.css")
@@ -51,13 +59,12 @@ block content
     .pro-lp
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- HERO
+        //- 1. HERO — prix dans le titre, zéro friction
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         section.pro-hero
             .container
                 .pro-hero__inner
 
-                    //- Left — headline + CTA
                     .pro-hero__left
                         .pro-badge
                             span.pro-badge__dot
@@ -66,31 +73,15 @@ block content
                             = pl.hero.title_1
                             br
                             em= pl.hero.title_2
-                        p.pro-sub= t.hero.description
-                        //- Un seul bouton bien visible — la page cible des PROFESSIONNELS
-                        //- pour du trafic Google Ads payant : un 2ème bouton de même poids
-                        //- ("Prendre rendez-vous" → /search, pensé pour des CLIENTS) divisait
-                        //- l'attention et envoyait une partie des clics vers le mauvais
-                        //- public. Le lien reste disponible mais en simple texte discret,
-                        //- pour le rare visiteur qui cherchait en fait à réserver chez
-                        //- quelqu'un plutôt qu'à créer son propre compte pro.
+                        p.pro-sub= pl.hero.sub
                         .pro-actions
-                            a.sm-btn.sm-btn--primary(href="/register?plan=pro&billing=monthly") Essai Pro gratuit 1 mois →
-                            a.sm-btn.sm-btn--ghost(href="/register") Commencer gratuitement
-                        p.pro-hero__card-note
-                            | Essai Pro : carte requise, débitée seulement après le 1er mois.&nbsp;
-                            | Plan Starter&nbsp;
-                            a(href="/register" style="color:inherit;text-decoration:underline") sans carte
-                            |  aussi disponible.
-                        a.pro-hero__alt-link(href="/search")
-                            svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="13" height="13")
-                                path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z")
-                            = pl.hero.cta_booking || 'Prendre rendez-vous'
-
+                            a.sm-btn.sm-btn--primary(href="/register")= pl.hero.cta_free
+                            a.sm-btn.sm-btn--ghost(href="/register?plan=pro&billing=monthly")= pl.hero.cta_pro
+                        p.pro-hero__card-note= pl.hero.card_note
                         .pro-pricing-note
-                            span Gratuit pour commencer ·&nbsp;
-                            strong Pro à 19€/mois&nbsp;
-                            span après essai · Sans engagement
+                            span= pl.hero.price_anchor_pre + ' '
+                            strong= pl.hero.price_anchor_strong
+                            span= ' ' + pl.hero.price_anchor_post
                         .pro-micro
                             span
                                 svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
@@ -111,9 +102,15 @@ block content
                                     if cat.key !== 'all'
                                         span.lp__cat= cat.label
 
-                    //- Right — product mockup (UI démo, non traduit)
+                        a.pro-hero__alt-link(href="/search")
+                            svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="13" height="13")
+                                path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z")
+                            = pl.hero.alt_link
+
+                    //- Mockup calendrier (UI démo, non traduit sauf pastilles)
                     .pro-hero__right
                         .pro-mock
+                            .pro-mock__price-pill= pl.hero.mock_pill
                             .pro-mock__bar
                                 span.dot-r
                                 span.dot-y
@@ -164,6 +161,11 @@ block content
                                 .pro-mock__slot
                                     .pro-mock__event.pro-mock__event--blue Iris V.
 
+                            .pro-mock__toast
+                                svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="12" height="12")
+                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                span= pl.hero.mock_toast
+
                             .pro-mock__notif
                                 .pro-mock__notif-head
                                     .pro-mock__notif-av BG
@@ -196,7 +198,8 @@ block content
                                                 | Il y a 2 min
                                 .pro-mock__notif-body
                                     strong Benjamin G.
-                                    |
+                                    //- Un "|" vide ne produit AUCUN espace en Pug
+                                    = " "
                                     if lang === 'en'
                                         | booked Color refresh
                                     else if lang === 'de'
@@ -210,21 +213,28 @@ block content
                                     else
                                         | a réservé Soin colorant
                                 .pro-mock__notif-pills
-                                    .pro-mock__pill Mar 19 · 10:30
+                                    //- Cohérent avec la grille : Benjamin est le mercredi 19 à 11:00
+                                    .pro-mock__pill Mer 19 · 11:00
                                     .pro-mock__pill.pro-mock__pill--green 90 €
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- TRUST STRIP — supprimé
+        //- 2. COMPARAISON — « Faites le calcul »
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- Ce bandeau ne contenait plus qu'une seule phrase isolée dans un
-        //- grand espace vide ("il manque un truc la non ? car y a juste une
-        //- phrase, retire-la je pense pour le moment"). La section
-        //- `.pro-stats` juste en dessous porte déjà le même message implicite
-        //- (chiffres-clés mis en avant), donc on retire purement et
-        //- simplement cette phrase orpheline plutôt que de la laisser flotter.
+        section.pro-compare
+            .container
+                h2.pro-h2.pro-compare__title= pl.compare.title
+                .pro-compare__grid
+                    each card, ci in pl.compare.cards
+                        .pro-compare-card(class=ci === 2 ? 'pro-compare-card--win' : '')
+                            h3.pro-compare-card__name= card.name
+                            .pro-compare-card__price= card.price
+                            p.pro-compare-card__desc= card.desc
+                p.pro-compare__conclusion= pl.compare.conclusion
+                .pro-compare__actions
+                    a.pro-compare__link(href="#tarifs")= pl.compare.cta
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- STATS
+        //- 3. STATS — 4 chiffres honnêtes (produit, pas clients)
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         section.pro-stats
             .container
@@ -236,58 +246,103 @@ block content
                             .pro-stat__s= stat.s
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- FEATURES — 6 boxes
+        //- 4. LA PILE D'OUTILS REMPLACÉE
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        section.pro-features
+        section.pro-stack
             .container
                 .pro-sec-hd
-                    .pro-pill= pl.features.pill
                     h2.pro-h2
-                        = pl.features.title
+                        = pl.stack.title
                         br
-                        em= pl.features.title_em
-                    p.pro-desc= pl.features.desc
-                .pro-features__grid
-                    each item, idx in t.features.items
-                        .pro-feat
-                            .pro-feat__icon
-                                != item.icon
-                            .pro-feat__tag= pl.features.tags[idx]
-                            h3.pro-feat__title= item.title
-                            p.pro-feat__desc= item.description
+                        em= pl.stack.title_em
+                    p.pro-desc= pl.stack.intro
+                .pro-stack__grid
+                    each item in pl.stack.items
+                        .pro-stack-card
+                            .pro-stack-card__old= item.old
+                            p.pro-stack-card__new= item.now
+                .pro-stack__final
+                    .pro-stack__final-mark B
+                    .pro-stack__final-body
+                        .pro-stack__final-name BranShee
+                        p.pro-stack__final-desc= pl.stack.final_desc
+                    a.sm-btn.sm-btn--soft(href="/register")= pl.stack.cta
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- FUNCTIONALITIES — alternating rows
+        //- 5. FONCTIONNALITÉS — 3 rangées alternées
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         section.pro-funcs
             .container
-                each row, index in t.functionalities.rows
+                .pro-sec-hd
+                    .pro-pill= pl.funcs_hd.pill
+                    h2.pro-h2
+                        = pl.funcs_hd.title + ' '
+                        em= pl.funcs_hd.title_em
+                each row, index in pl.funcs
                     .pro-func(class=index % 2 !== 0 ? 'pro-func--flip' : '')
                         .pro-func__text
-                            .pro-func__tag= pl.func_tags[index]
+                            .pro-func__tag= row.tag
                             h3.pro-func__title= row.title
-                            p.pro-func__desc= row.description
+                            p.pro-func__desc= row.desc
                             ul.pro-func__bullets
                                 each item in row.items
                                     li= item
+                            if row.roi
+                                .pro-func__roi
+                                    svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="16" height="16")
+                                        path(d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z")
+                                    span= row.roi
                             .pro-func__actions
-                                a.sm-btn.sm-btn--primary(href="/register?plan=pro&billing=monthly")= row.btn_2
+                                a.sm-btn.sm-btn--primary(href=row.cta_href)= row.cta
                         .pro-func__visual
-                            img.pro-func__img(src=row.image alt=row.title)
+                            img.pro-func__img(src=row.image alt=row.title loading="lazy" width="560" height="420")
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- HOW IT WORKS
+        //- 6. TOUT EST INCLUS — grille de 12
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.pro-features.pro-features--included
+            .container
+                .pro-sec-hd
+                    .pro-pill= pl.included.pill
+                    h2.pro-h2
+                        = pl.included.title + ' '
+                        em= pl.included.title_em
+                    p.pro-desc= pl.included.intro
+                -
+                    var _ico = [
+                        "M200-640h560v-80H200v80Zm0 0v-80 80Zm0 560q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v227q-19-9-39-15t-41-9v-43H200v400h252q7 22 16.5 42T491-80H200Zm378.5-18.5Q520-157 520-240t58.5-141.5Q637-440 720-440t141.5 58.5Q920-323 920-240T861.5-98.5Q803-40 720-40T578.5-98.5ZM787-145l28-28-75-75v-112h-40v128l87 87Z",
+                        "M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z",
+                        "M480-481q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Zm80-80h480v-14q0-11-5.5-20T700-287q-64-31-117-42.5T480-340q-50 0-103.5 11.5T260-287q-9 5-14.5 14t-5.5 20v14Zm240-320q-33 0-56.5-23.5T400-640q0-33 23.5-56.5T480-720q33 0 56.5 23.5T560-640q0 33-23.5 56.5T480-560Zm0-80Zm0 400Z",
+                        "M160-120q-33 0-56.5-23.5T80-200v-440q0-33 23.5-56.5T160-720h160v-80q0-33 23.5-56.5T400-880h160q33 0 56.5 23.5T640-800v80h160q33 0 56.5 23.5T880-640v440q0 33-23.5 56.5T800-120H160Zm0-80h640v-440H160v440Zm80-80h200v-120H240v120Zm280 0h200v-120H520v120ZM240-400h200v-120H240v120Zm280 0h200v-120H520v120ZM400-720h160v-80H400v80ZM160-200v-440 440Z",
+                        "M480-120 200-272v-240L40-600l440-240 440 240v320h-80v-276l-80 44v240L480-120Zm0-332 274-148-274-148-274 148 274 148Zm0 240 200-108v-153l-200 108-200-108v153l200 108Z",
+                        "m612-292 56-56-148-148v-184h-80v216l172 172ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400Zm0 320q133 0 226.5-93.5T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160Z",
+                        "M880-720v480q0 33-23.5 56.5T800-160H160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720ZM160-640h640v-80H160v80Zm0 160v240h640v-240H160Zm0 240v-480 480Z",
+                        "M400-80q-33 0-56.5-23.5T320-160v-40H160q-33 0-56.5-23.5T80-280v-480q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v480q0 33-23.5 56.5T800-200H640v40q0 33-23.5 56.5T560-80H400Zm-240-280h640v-400H160v400Zm0 0v-400 400Z",
+                        "M320-240 80-480l240-240 57 57-184 184 183 183-56 56Zm320 0-57-57 184-184-183-183 56-56 240 240-240 240Z",
+                        "M200-160q-33 0-56.5-23.5T120-240v-480q0-33 23.5-56.5T200-800h560q33 0 56.5 23.5T840-720v480q0 33-23.5 56.5T760-160H200Zm0-80h560v-400H200v400Zm80-40h400v-80H280v80Zm0-160h400v-80H280v80Zm-80-200v-80 80Z",
+                        "M348.5-291.5Q360-303 360-320t-11.5-28.5Q337-360 320-360t-28.5 11.5Q280-337 280-320t11.5 28.5Q303-280 320-280t28.5-11.5Zm0-160Q360-463 360-480t-11.5-28.5Q337-520 320-520t-28.5 11.5Q280-497 280-480t11.5 28.5Q303-440 320-440t28.5-11.5Zm0-160Q360-623 360-640t-11.5-28.5Q337-680 320-680t-28.5 11.5Q280-657 280-640t11.5 28.5Q303-600 320-600t28.5-11.5ZM440-280h240v-80H440v80Zm0-160h240v-80H440v80Zm0-160h240v-80H440v80ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z",
+                        "M480-80q-139-35-229.5-159.5T160-516v-244l320-120 320 120v244Q720-291 629-167T480-80Zm-40-200 198-198-57-57-141 141-57-57-56 56 113 115Z"
+                    ];
+                .pro-features__grid
+                    each item, idx in pl.included.items
+                        .pro-feat
+                            .pro-feat__icon
+                                svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960")
+                                    path(d=_ico[idx])
+                            h3.pro-feat__title= item.title
+                            p.pro-feat__desc= item.desc
+                p.pro-features__more= pl.included.more
+
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- 7. COMMENT ÇA MARCHE — 3 étapes
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         section.pro-hiw#hiw
             .container
                 .pro-sec-hd
                     .pro-pill= pl.hiw.pill
                     h2.pro-h2
-                        //- " + ' '" garantit un espace entre les deux segments —
-                        //- un simple "|" vide ne produit pas d'espace en Pug, ce
-                        //- qui collait "En ligne en" et "moins de 10 min." (titre
-                        //- et <em> de tailles visuellement différentes mais aussi
-                        //- mal séparés : "En ligne enmoins de 10 min.").
+                        //- " + ' '" garantit l'espace entre les deux segments
+                        //- (un "|" vide ne produit pas d'espace en Pug).
                         = pl.hiw.title + ' '
                         em= pl.hiw.title_em
                 .pro-hiw__steps
@@ -296,110 +351,143 @@ block content
                             .pro-step__n= idx + 1
                             h3.pro-step__title= step.title
                             p.pro-step__desc= step.desc
+                .pro-hiw__cta
+                    a.sm-btn.sm-btn--primary(href="/register")= pl.hiw.cta
+                    p.pro-hiw__cta-note= pl.hiw.note
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- TESTIMONIALS
+        //- 8. TRANSPARENCE — lettre + changelog vivant + garanties
+        //-    (remplace les témoignages : pas de faux avis, de la preuve)
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        if pl.tests.items && pl.tests.items.length > 0
-            section.pro-tests
-                .container
-                    .pro-sec-hd
-                        .pro-pill= pl.tests.pill
-                        h2.pro-h2
-                            = pl.tests.title
-                            |
-                            em= pl.tests.title_em
-                    .pro-tests__grid
-                        each item, idx in pl.tests.items
-                            .pro-test
-                                .pro-test__stars
-                                    - for(var i=0;i<5;i++)
-                                        svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="13" height="13")
-                                            path(d="m233-80 65-281L80-550l288-25 112-265 112 265 288 25-218 189 65 281-247-149L233-80Z")
-                                p.pro-test__quote "#{item.q}"
-                                .pro-test__author
-                                    .pro-test__av(class="pro-test__av--" + (idx + 1))= item.n.split(' ').map(function(w){return w[0]}).join('')
-                                    div
-                                        .pro-test__name= item.n
-                                        .pro-test__role= item.r
-
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- PRICING — vrais tarifs affichés ici (pas besoin d'un compte pour
-        //- les voir : "Voir les plans" renvoyait avant vers /subscription,
-        //- une page admin qui exige d'être connecté → un visiteur Ads tombait
-        //- sur un mur de connexion au lieu des prix qu'il venait chercher).
-        //- Mêmes données que la page d'abonnement (t.subscription.*), donc
-        //- toujours synchronisé avec les vrais tarifs/fonctionnalités.
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        section.pro-pricing#pricing
+        section.pro-honest
             .container
                 .pro-sec-hd
-                    .pro-pill= pl.pricing.label
+                    .pro-pill= pl.honest.pill
+                    h2.pro-h2
+                        = pl.honest.title + ' '
+                        em= pl.honest.title_em
+                .pro-honest__cols
+                    .pro-honest__letter
+                        .pro-honest__mark B
+                        p= pl.honest.letter_1
+                        p= pl.honest.letter_2
+                        .pro-honest__sign= pl.honest.letter_sign
+                    .pro-honest__log
+                        .pro-honest__log-title
+                            svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="16" height="16")
+                                path(d="m422-232 207-248H469l29-227-185 267h139l-30 208ZM320-80l40-280H160l360-520h80l-40 320h240L400-80h-80Zm151-390Z")
+                            = pl.honest.changelog_title
+                        each entry in pl.honest.changelog
+                            .pro-honest__entry
+                                .pro-honest__entry-dot
+                                .pro-honest__entry-body
+                                    .pro-honest__entry-head
+                                        strong= entry.title
+                                        if entry.badge
+                                            span.pro-honest__badge= entry.badge
+                                    p= entry.desc
+                .pro-honest__guarantees
+                    each g in pl.honest.guarantees
+                        .pro-honest__g
+                            svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="18" height="18")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                            div
+                                .pro-honest__g-title= g.title
+                                p.pro-honest__g-desc= g.desc
+
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- 9. TARIFS — 3 plans réels (#tarifs)
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.pro-pricing#tarifs
+            .container
+                .pro-sec-hd
+                    .pro-pill= pl.pricing.pill
                     h2.pro-h2= pl.pricing.title
                     p.pro-desc= pl.pricing.desc
 
                 .pro-plans
                     .pro-plan
                         h3.pro-plan__name= t.subscription.plan_1
-                        p.pro-plan__desc= t.subscription.plan_1_desc
+                        p.pro-plan__desc= pl.pricing.plan_1_tagline
                         .pro-plan__price
                             span.pro-plan__price-n= t.subscription.price_1
-                            span.pro-plan__price-s &nbsp;#{t.subscription.price_1_sub}
+                        .pro-plan__price-hint= pl.pricing.plan_1_price_sub
                         ul.pro-plan__features
-                            each feature in t.subscription.plan_1_features
+                            each feature in pl.pricing.plan_1_features
                                 li
                                     svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
                                         path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
                                     span= feature
-                        a.sm-btn.sm-btn--soft.pro-plan__cta(href="/register")= pl.pricing.cta_2
+                        a.sm-btn.sm-btn--soft.pro-plan__cta(href="/register")= pl.pricing.plan_1_cta
+                        p.pro-plan__note= pl.pricing.plan_1_note
 
                     .pro-plan.pro-plan--featured
-                        .pro-plan__badge= t.sub_extra.popular || 'Le plus populaire'
+                        .pro-plan__badge= pl.pricing.popular
                         h3.pro-plan__name= t.subscription.plan_2
-                        p.pro-plan__desc= t.subscription.plan_2_desc
+                        p.pro-plan__desc= pl.pricing.plan_2_tagline
                         .pro-plan__price
                             span.pro-plan__price-n= t.subscription.price_2
                             span.pro-plan__price-s= t.subscription.price_2_sub
+                        .pro-plan__price-hint= pl.pricing.plan_2_price_hint
                         ul.pro-plan__features
-                            each feature, fi in t.subscription.plan_2_features
-                                if fi < 5
-                                    li
-                                        svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
-                                            path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                                        span= feature
-                        a.sm-btn.sm-btn--primary.pro-plan__cta(href="/register?plan=pro&billing=monthly")= pl.pricing.cta_2
+                            each feature in pl.pricing.plan_2_features
+                                li
+                                    svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
+                                        path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                    span= feature
+                        a.sm-btn.sm-btn--primary.pro-plan__cta(href="/register?plan=pro&billing=monthly")= pl.pricing.plan_2_cta
+                        p.pro-plan__note= pl.pricing.plan_2_note
 
                     .pro-plan
                         h3.pro-plan__name= t.subscription.plan_3
-                        p.pro-plan__desc= t.subscription.plan_3_desc
+                        p.pro-plan__desc= pl.pricing.plan_3_tagline
                         .pro-plan__price
                             span.pro-plan__price-n= t.subscription.price_3
                             span.pro-plan__price-s= t.subscription.price_3_sub
+                        .pro-plan__price-hint= pl.pricing.plan_3_price_hint
                         ul.pro-plan__features
-                            each feature, fi in t.subscription.plan_3_features
-                                if fi < 5
-                                    li
-                                        svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
-                                            path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                                        span= feature
-                        a.sm-btn.sm-btn--soft.pro-plan__cta(href="/register?plan=business&billing=monthly")= pl.pricing.cta_2
+                            each feature in pl.pricing.plan_3_features
+                                li
+                                    svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
+                                        path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                    span= feature
+                        a.sm-btn.sm-btn--soft.pro-plan__cta(href="/register?plan=business&billing=monthly")= pl.pricing.plan_3_cta
 
                 p.pro-pricing__note
                     svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
                         path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
-                    | Paiement sécurisé par Stripe
+                    = pl.pricing.note
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- FAQ
+        //- 10. MÉTIERS — longue traîne SEO
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.pro-jobs
+            .container
+                .pro-sec-hd
+                    .pro-pill= pl.jobs.pill
+                    h2.pro-h2
+                        = pl.jobs.title + ' '
+                        em= pl.jobs.title_em
+                .pro-jobs__grid
+                    each job in pl.jobs.items
+                        .pro-job
+                            h3.pro-job__name= job.name
+                            p.pro-job__desc= job.desc
+                p.pro-jobs__closing= pl.jobs.closing
+                .pro-jobs__actions
+                    a.sm-btn.sm-btn--primary(href="/register")= pl.jobs.cta
+
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- 11. FAQ — 10 questions anti-objections
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         section.pro-faq.faq.padding-d
             .container
                 .faq__container
                     .faq__title
-                        h2= t.faq.title
-                        p= t.faq.description
+                        h2= pl.faq.title
+                        p= pl.faq.sub
                     .faq__body
-                        each item, idx in t.faq.items
+                        each item, idx in pl.faq.items
                             .faq__question(class=idx === 0 ? 'open' : '')
                                 .faq__answer-container
                                     .faq__answer= item.q
@@ -410,7 +498,7 @@ block content
                                 .faq__response= item.a
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- FINAL CTA
+        //- 12. CTA FINAL — renversement du risque
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         section.pro-cta
             .container
@@ -423,8 +511,9 @@ block content
                     span= pl.cta.title_em
                 p.pro-cta__sub= pl.cta.desc
                 .pro-cta__actions
-                    a.sm-btn.sm-btn--primary(href="/register?plan=pro&billing=monthly")= pl.cta.btn_1
-                    a.sm-btn.sm-btn--ghost(href="/contact")= pl.cta.btn_2
+                    a.sm-btn.sm-btn--primary(href="/register")= pl.cta.btn_1
+                    a.sm-btn.sm-btn--ghost(href="/register?plan=pro&billing=monthly")= pl.cta.btn_2
+                a.pro-cta__contact(href="/contact")= pl.cta.contact
 
 block scripts
     script(src="/js/layouts/landing-page.js" type="module")

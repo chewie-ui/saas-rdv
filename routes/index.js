@@ -201,9 +201,12 @@ router.get("/sitemap.xml", async (req, res) => {
 // "Prendre rendez-vous" sur la home renvoie vers cette page de recherche pour
 // les visiteurs qui cherchent un professionnel plutôt qu'à en devenir un.
 router.get("/", requireFeatureActive("home"), (req, res) => {
+  // title/meta dans les locales (pro_landing.meta_*) : le <title> suit la
+  // langue du visiteur au lieu de rester figé en français pour les 6 langues.
+  const pl = (res.locals.t && res.locals.t.pro_landing) || {};
   res.render("client/manage-business", {
-    title: `BranShee — Agenda en ligne gratuit | Prise de rendez-vous pour professionnels`,
-    metaDescription: "BranShee : créez votre agenda en ligne gratuit en 5 minutes et recevez des réservations 24h/24 sans appel téléphonique. Logiciel de prise de rendez-vous pour coiffeurs, coaches, thérapeutes et indépendants. 1 mois offert, sans carte bancaire.",
+    title: pl.meta_title || "Agenda en ligne gratuit & prise de rendez-vous 24h/24 | BranShee",
+    metaDescription: pl.meta_desc || "Agenda en ligne gratuit : réservations 24h/24, rappels anti no-show, 0 % de commission, widget pour votre site. Pro à 19 €/mois, 1 mois offert.",
     canonical: "https://www.branshee.com/",
     becomeCoach: true,
   });

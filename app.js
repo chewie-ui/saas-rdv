@@ -231,7 +231,9 @@ app.use((req, res, next) => {
   const translations = JSON.parse(fs.readFileSync(filePath, "utf-8"));
 
   res.locals.t = translations;
-  res.locals.lang = lang;
+  // safeLang (pas le cookie brut) : un cookie user_lang invalide donnait un
+  // attribut html lang="<valeur arbitraire>" sur toutes les pages.
+  res.locals.lang = safeLang;
 
   next();
 });

@@ -220,7 +220,7 @@ html(lang="fr")
         script(src="/socket.io/socket.io.js")
         script.
             window.__userId = !{user ? JSON.stringify(String(user._id)) : 'null'};
-            window.__companyId = !{company ? JSON.stringify(String(company._id)) : 'null'};
+            window.__companyId = !{(company || currentCompany) ? JSON.stringify(String((company || currentCompany)._id)) : 'null'};
 
             // ── Badge "non lu" (uniquement sur le bouton du widget flottant) ─────
             (function() {
@@ -510,7 +510,7 @@ html(lang="fr")
             })();
 
         script.
-            const COMPANY_ID = !{company ? `"${company._id}"` : "null"};
+            const COMPANY_ID = !{(company || currentCompany) ? `"${(company || currentCompany)._id}"` : "null"};
             window.__t = !{JSON.stringify(t.js)};
             (function() {
                 var btn = document.getElementById('shareCalendarBtn');

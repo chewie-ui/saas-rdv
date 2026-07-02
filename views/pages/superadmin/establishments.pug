@@ -119,15 +119,17 @@ html(lang="fr")
                     each c in companies
                         - var ownerPlan = (c.owner && c.owner.subscription && c.owner.subscription.plan) ? c.owner.subscription.plan : 'basic'
                         - var displayPlan = ownerPlan === 'basic' ? 'free' : ownerPlan
+                        - var estabName = c.name || (c.owner && c.owner.businessName) || ''
+                        - var estabPhoto = c.photo || (c.owner && c.owner.businessPicture) || ''
                         tr(data-company-id=c._id)
                             td
                                 .est-name
-                                    if c.photo
-                                        img.est-avatar(src=c.photo alt=c.name class="est-row-photo")
+                                    if estabPhoto
+                                        img.est-avatar(src=estabPhoto alt=estabName class="est-row-photo")
                                     else
-                                        .est-avatar--placeholder.est-row-photo= (c.name || '?')[0].toUpperCase()
+                                        .est-avatar--placeholder.est-row-photo= (estabName || '?')[0].toUpperCase()
                                     div
-                                        div.est-row-name= c.name || '—'
+                                        div.est-row-name= estabName || '—'
                                         div(style="font-size:11px;color:#555;margin-top:2px") /#{c.slug || '—'}
                             td
                                 if c.owner

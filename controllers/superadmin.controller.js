@@ -46,7 +46,7 @@ exports.establishmentsPage = async (req, res) => {
   }
   const [companies, totalBookings] = await Promise.all([
     Company.find(query)
-      .populate("owner", "fullName email isPremium manualPremium subscription")
+      .populate("owner", "fullName email isPremium manualPremium subscription businessName businessPicture")
       .select("name slug businessType createdAt isPaused photo description")
       .sort("-createdAt")
       .lean(),
