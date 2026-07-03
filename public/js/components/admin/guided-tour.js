@@ -606,14 +606,28 @@
     ring.style.cssText = "top:" + top + "px;left:" + left + "px;width:" + (right - left) + "px;height:" + (bottom - top) + "px;";
 
     var tip = root.querySelector(".bk-tour-tip");
+    tip.style.transform = "";
     var placement = state.placement || "bottom";
-    var tipTop, tipLeft;
     var tipW = 300;
-    if (placement === "bottom") { tipTop = bottom + 14; tipLeft = Math.min(vw - tipW - 16, Math.max(16, left)); }
-    else if (placement === "top") { tipTop = top - 14; tipLeft = Math.min(vw - tipW - 16, Math.max(16, left)); tip.style.transform = "translateY(-100%)"; }
-    else if (placement === "right") { tipTop = top; tipLeft = right + 14; }
-    else { tipTop = top; tipLeft = Math.max(16, left - tipW - 14); }
-    if (placement !== "top") tip.style.transform = "";
+    var tipH = (tip.offsetHeight > 0 ? tip.offsetHeight : 220);
+    var tipTop, tipLeft;
+    if (placement === "bottom") {
+      tipTop = bottom + 14;
+      tipLeft = Math.min(vw - tipW - 16, Math.max(16, left));
+      if (tipTop + tipH > vh - 8) { tipTop = top - 14 - tipH; }
+    } else if (placement === "top") {
+      tipTop = top - 14 - tipH;
+      tipLeft = Math.min(vw - tipW - 16, Math.max(16, left));
+      if (tipTop < 8) { tipTop = bottom + 14; }
+    } else if (placement === "right") {
+      tipTop = top;
+      tipLeft = right + 14;
+    } else {
+      tipTop = top;
+      tipLeft = Math.max(16, left - tipW - 14);
+    }
+    tipTop = Math.max(8, Math.min(vh - tipH - 8, tipTop));
+    tipLeft = Math.max(8, Math.min(vw - tipW - 8, tipLeft));
     tip.style.top = tipTop + "px";
     tip.style.left = tipLeft + "px";
   }
