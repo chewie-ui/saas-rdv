@@ -13,8 +13,9 @@ window.confirmModal = function (title, desc) {
         #__confirmModal .cm{background:#fff;border-radius:20px;max-width:420px;width:100%;box-shadow:0 24px 48px -8px rgba(0,0,0,.22);display:flex;flex-direction:column;overflow:hidden;animation:__cmSlideIn .18s cubic-bezier(.34,1.4,.64,1)}
         #__confirmModal .cm__head{padding:24px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
         #__confirmModal .cm__icon-wrap{width:44px;height:44px;border-radius:50%;background:#fef2f2;border:1px solid #fecaca;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-        #__confirmModal .cm__icon-wrap svg{stroke:#dc2626}
+        #__confirmModal .cm__icon-wrap .material-symbols-outlined{font-size:22px;color:#dc2626}
         #__confirmModal .cm__close{background:none;border:none;cursor:pointer;color:#9ca3af;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;flex-shrink:0;padding:0}
+        #__confirmModal .cm__close .material-symbols-outlined{font-size:18px}
         #__confirmModal .cm__close:hover{background:#f3f4f6;color:#111}
         #__confirmModal .cm__body{padding:16px 24px 0;display:flex;flex-direction:column;gap:6px}
         #__confirmModal .cm__title{font-size:17px;font-weight:700;color:#111;margin:0}
@@ -24,13 +25,14 @@ window.confirmModal = function (title, desc) {
         #__confirmModal .cm__cancel:hover{background:#e9eaec}
         #__confirmModal .cm__confirm{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 20px;border-radius:10px;font-size:13.5px;font-weight:700;background:#dc2626;border:none;color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 1px 3px rgba(220,38,38,.3);transition:background .15s}
         #__confirmModal .cm__confirm:hover{background:#b91c1c}
+        #__confirmModal .cm__confirm .material-symbols-outlined{font-size:16px}
       </style>
       <div class="cm">
         <div class="cm__head">
           <div class="cm__icon-wrap">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M9 6V4h6v2"></path></svg>
+            <span class="material-symbols-outlined">delete</span>
           </div>
-          <button class="cm__close" aria-label="Fermer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <button class="cm__close" aria-label="Fermer"><span class="material-symbols-outlined">close</span></button>
         </div>
         <div class="cm__body">
           <p class="cm__title"></p>
@@ -38,7 +40,7 @@ window.confirmModal = function (title, desc) {
         </div>
         <div class="cm__actions">
           <button class="cm__cancel">Annuler</button>
-          <button class="cm__confirm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>Supprimer</button>
+          <button class="cm__confirm"><span class="material-symbols-outlined">delete</span>Supprimer</button>
         </div>
       </div>`;
 

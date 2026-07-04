@@ -27,7 +27,14 @@
 .hist-free-banner a:hover { text-decoration: underline; }
 
 /* ── Main card ───────────────────────────────────────────────── */
+/* Colonne flex bornée à la hauteur d'écran dispo (--hist-card-max-h, calculée
+   en JS — cf. history.js) : seul .hist-table-wrap défile en interne si besoin,
+   .hist-card__top et .hist-pagination restent toujours visibles sans avoir à
+   scroller toute la page. */
 .hist-card {
+  display: flex;
+  flex-direction: column;
+  max-height: var(--hist-card-max-h, none);
   background: var(--color-white);
   border: 1px solid var(--border-light);
   border-radius: 16px;
@@ -44,6 +51,7 @@
   gap: 12px;
   flex-wrap: wrap;
   border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
 }
 
 .hist-card__title-group {
@@ -153,7 +161,12 @@
 .hist-select:focus, .hist-select:hover { border-color: var(--accent); outline: none; }
 
 /* ── Table ───────────────────────────────────────────────────── */
-.hist-table-wrap { overflow-x: auto; }
+.hist-table-wrap {
+  overflow-x: auto;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
 
 .hist-table {
   width: 100%;
@@ -165,6 +178,9 @@
 .hist-table thead tr {
   border-bottom: 1px solid var(--border-light);
   background: var(--surface, #f9fafb);
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .hist-table thead th {
@@ -335,6 +351,7 @@
   border-top: 1px solid var(--border-light);
   gap: 12px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .hist-pag-info {
@@ -539,6 +556,7 @@
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 819px) {
+  .hist-card { max-height: none; }
   .hist-table-wrap,
   .hist-card > .hist-pagination { display: none; }
 

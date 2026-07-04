@@ -13,11 +13,12 @@ const SiteSchema = new Schema({
   slug:        { type: String, unique: true, lowercase: true, trim: true, sparse: true },
   isPublished: { type: Boolean, default: false },
   theme: {
-    primaryColor: { type: String, default: "#6c47d0" },
-    bgColor:      { type: String, default: "#ffffff" },
-    textColor:    { type: String, default: "#0f0f1a" },
-    fontFamily:   { type: String, default: "Inter" },
-    roundness:    { type: String, default: "soft" },
+    primaryColor:  { type: String, default: "#6c47d0" },
+    bgColor:       { type: String, default: "#ffffff" },
+    textColor:     { type: String, default: "#0f0f1a" },
+    fontFamily:    { type: String, default: "Inter" },
+    roundness:     { type: String, default: "soft" },
+    siteTemplate:  { type: String, default: "1" },
   },
   seo: {
     title:       { type: String, default: "" },

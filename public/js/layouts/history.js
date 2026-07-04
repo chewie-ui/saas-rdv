@@ -568,3 +568,70 @@ document.getElementById("conflictForce")?.addEventListener("click", async () => 
   // Init display
   renderCalendar();
 })();
+
+/* ── Table height & lignes/page adaptées à l'écran ─────────────────────
+   Le tableau ne doit jamais forcer un scroll de toute la page : .hist-card
+   est borné à la hauteur dispo sous la nav (--hist-card-max-h) pour que la
+   pagination reste toujours visible. En plus, au premier chargement "propre"
+   (sans ?limit= dans l'URL), on mesure combien de lignes tiennent réellement
+   et on redemande la page au serveur avec ce nombre — pour éviter le scroll
+   interne dans la plupart des cas plutôt que juste le tolérer. */
+(function adaptHistoryTableHeight() {
+  const page = document.querySelector(".hist-page");
+  const card = document.querySelector(".hist-card");
+  const tableWrap = card ? card.querySelector(".hist-table-wrap") : null;
+  if (!page || !card || !tableWrap) return;
+
+  const MIN_ROWS = 5;
+  const MAX_ROWS = 50;
+
+  function applyMaxHeight() {
+    if (window.innerWidth <= 819) {
+      card.style.removeProperty("--hist-card-max-h");
+      return null;
+    }
+    const top = card.getBoundingClientRect().top;
+    const bottomMargin = 24; // marge basse de .main-wrapper
+    const available = Math.max(window.innerHeight - top - bottomMargin, 240);
+    card.style.setProperty("--hist-card-max-h", `${available}px`);
+    return available;
+  }
+
+  const available = applyMaxHeight();
+  window.addEventListener("resize", applyMaxHeight, { passive: true });
+
+  if (available == null) return;
+
+  const url = new URL(location.href);
+  if (url.searchParams.has("limit")) return; // déjà ajusté (lien de pagination ou reload)
+
+  const totalBookings = parseInt(page.dataset.totalBookings, 10) || 0;
+  const currentLimit = parseInt(page.dataset.currentLimit, 10) || 13;
+  if (totalBookings <= MIN_ROWS) return;
+
+  const cardTopEl = card.querySelector(".hist-card__top");
+  const headerRow = tableWrap.querySelector("thead tr");
+  const sampleRow = tableWrap.querySelector("tbody tr.hist-row");
+  const paginationEl = card.querySelector(":scope > .hist-pagination");
+  if (!headerRow || !sampleRow) return;
+
+  // `available` couvre toute la carte (filtres + tableau + pagination) — il
+  // faut retirer la barre de filtres (.hist-card__top) en plus de l'en-tête
+  // du tableau et de la pagination pour obtenir l'espace réel dispo pour
+  // les lignes, sinon on surestime et la dernière ligne déborde.
+  const cardTopH = cardTopEl ? cardTopEl.getBoundingClientRect().height : 0;
+  const headerH = headerRow.getBoundingClientRect().height;
+  const rowH = sampleRow.getBoundingClientRect().height;
+  const paginationH = paginationEl ? paginationEl.getBoundingClientRect().height : 0;
+  if (!rowH) return;
+
+  const bodyAvailable = available - cardTopH - headerH - paginationH;
+  const idealRows = Math.min(MAX_ROWS, Math.max(MIN_ROWS, Math.floor(bodyAvailable / rowH)));
+
+  // Écart minime (arrondis) : pas la peine de recharger la page pour ça.
+  if (Math.abs(idealRows - currentLimit) >= 2) {
+    url.searchParams.set("limit", idealRows);
+    url.searchParams.set("page", "1");
+    location.replace(url.toString());
+  }
+})();

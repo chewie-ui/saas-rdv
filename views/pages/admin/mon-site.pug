@@ -9,16 +9,16 @@ block content
         var theme = S.theme || {}
         var siteFullUrl = 'https://www.branshee.com/s/' + S.slug
         var sectionIcons = {
-            hero: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
-            services: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
-            booking: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
-            about: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
-            gallery: '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
-            testimonials: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
-            faq: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
-            contact: '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
-            stats: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
-            cta: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.6 3.5 2 2 0 0 1 3.58 1.18h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>'
+            hero: 'home',
+            services: 'list_alt',
+            booking: 'calendar_month',
+            about: 'person',
+            gallery: 'photo_library',
+            testimonials: 'star',
+            faq: 'help',
+            contact: 'mail',
+            stats: 'bar_chart',
+            cta: 'campaign'
         }
         var sectionLabels = {
             hero: 'Bandeau principal', services: 'Prestations', booking: 'Prise de RDV',
@@ -34,20 +34,31 @@ block content
             .ms-panel__top
                 .ms-panel__title Mon site web
                 .ms-tabs
-                    button.ms-tab.active(type="button" data-tab="sections") Sections
-                    button.ms-tab(type="button" data-tab="design") Design
-                    button.ms-tab(type="button" data-tab="settings") Paramètres
+                    button.ms-tab.active(type="button" data-tab="sections")
+                        span.material-symbols-outlined view_agenda
+                        | Sections
+                    button.ms-tab(type="button" data-tab="design")
+                        span.material-symbols-outlined palette
+                        | Design
+                    button.ms-tab(type="button" data-tab="settings")
+                        span.material-symbols-outlined settings
+                        | Paramètres
 
             .ms-publish-strip
-                .ms-publish-strip__status
-                    .ms-dot(id="publishDot" class=S.isPublished ? 'ms-dot--live' : '')
-                    span#publishLabel= S.isPublished ? 'En ligne' : 'Hors ligne'
-                span.ms-save-indicator(id="saveIndicator")
-                button.ms-publish-btn(
-                    type="button"
-                    id="publishBtn"
-                    class=S.isPublished ? 'ms-publish-btn--unpublish' : ''
-                )= S.isPublished ? 'Désactiver' : 'Publier'
+                .ms-publish-strip__row1
+                    .ms-publish-strip__status
+                        .ms-dot(id="publishDot" class=S.isPublished ? 'ms-dot--live' : '')
+                        span#publishLabel= S.isPublished ? 'En ligne' : 'Hors ligne'
+                    span.ms-save-indicator(id="saveIndicator")
+                .ms-publish-strip__row2
+                    a.sm-btn.sm-btn--ghost.sm-btn--full(id="viewSiteBtn" href=siteUrl target="_blank" rel="noopener" class=S.isPublished ? '' : 'ms-view-btn--disabled' title=S.isPublished ? 'Voir le site' : 'Publiez d\'abord le site')
+                        span.material-symbols-outlined visibility
+                        | Voir le site
+                    button.sm-btn.sm-btn--full(
+                        type="button"
+                        id="publishBtn"
+                        class=S.isPublished ? 'sm-btn--danger' : 'sm-btn--primary'
+                    )= S.isPublished ? 'Désactiver' : 'Publier'
 
             .ms-panel__body
 
@@ -58,27 +69,49 @@ block content
                             .ms-section-item(data-id=section.id class=!section.enabled ? 'is-disabled' : '')
                                 .ms-section-item__hd
                                     .ms-drag-handle(draggable="true" title="Glisser pour réordonner")
-                                        svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round")
-                                            line(x1="4" y1="8" x2="20" y2="8")
-                                            line(x1="4" y1="14" x2="20" y2="14")
-                                            line(x1="4" y1="20" x2="20" y2="20")
+                                        span.material-symbols-outlined drag_indicator
                                     .ms-section-item__icon
-                                        svg(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")!= sectionIcons[section.type] || sectionIcons.contact
-                                    span.ms-section-item__name= sectionLabels[section.type] || section.type
+                                        span.material-symbols-outlined= sectionIcons[section.type] || sectionIcons.contact
+                                    span.ms-section-item__name(title=sectionLabels[section.type] || section.type)= sectionLabels[section.type] || section.type
                                     .ms-section-item__actions
-                                        button.ms-icon-btn.ms-section-up(type="button" title="Monter")
-                                            svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
-                                                polyline(points="18 15 12 9 6 15")
-                                        button.ms-icon-btn.ms-section-down(type="button" title="Descendre")
-                                            svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
-                                                polyline(points="6 9 12 15 18 9")
                                         button.ms-toggle-btn(type="button" class=section.enabled ? 'on' : '' title="Afficher/masquer")
-                                        button.ms-icon-btn.ms-section-edit(type="button" title="Modifier")
-                                            svg(viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                                path(d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z")
+                                        .ms-section-menu-wrap
+                                            button.ms-icon-btn.ms-section-menu-btn(type="button" title="Plus d'options")
+                                                span.material-symbols-outlined more_vert
+                                            .ms-section-menu
+                                                button.ms-section-menu__item.ms-section-edit(type="button")
+                                                    span.material-symbols-outlined edit
+                                                    | Modifier
+                                                button.ms-section-menu__item.ms-section-duplicate(type="button")
+                                                    span.material-symbols-outlined content_copy
+                                                    | Dupliquer
+                                                button.ms-section-menu__item.ms-section-menu__item--danger.ms-section-delete(type="button")
+                                                    span.material-symbols-outlined delete
+                                                    | Supprimer
 
                                 //- Form for each section type
                                 .ms-section-form(data-form=section.id)
+                                    .ms-style-row
+                                        .ms-field.ms-field--color
+                                            label.ms-label Fond
+                                            .ms-color-field-wrap
+                                                input.ms-color-input(type="color" data-field="bgColor" value=section.data.bgColor || '#ffffff')
+                                                button.ms-color-reset(type="button" data-reset-field="bgColor" title="Réinitialiser")
+                                                    span.material-symbols-outlined close
+                                        .ms-field.ms-field--color
+                                            label.ms-label Texte
+                                            .ms-color-field-wrap
+                                                input.ms-color-input(type="color" data-field="textColor" value=section.data.textColor || '#000000')
+                                                button.ms-color-reset(type="button" data-reset-field="textColor" title="Réinitialiser")
+                                                    span.material-symbols-outlined close
+                                    .ms-field
+                                        label.ms-label Image de fond (recouvre toute la section)
+                                        .ms-url-row
+                                            input.ms-input(type="url" data-field="sectionBgImage" value=section.data.sectionBgImage || '' placeholder="https://...")
+                                            label.ms-img-upload-btn(title="Uploader")
+                                                input(type="file" accept="image/*" data-field-upload="sectionBgImage" data-section-id=section.id style="display:none")
+                                                span.material-symbols-outlined upload
+                                        p.ms-hint Optionnel — laissez vide pour garder le fond par défaut de cette section.
                                     if section.type === 'hero'
                                         .ms-field
                                             label.ms-label Titre principal
@@ -105,10 +138,7 @@ block content
                                                 input.ms-input(type="url" data-field="bgImage" value=section.data.bgImage || '' placeholder="https://...")
                                                 label.ms-img-upload-btn(title="Uploader une image")
                                                     input(type="file" accept="image/*" data-field-upload="bgImage" data-section-id=section.id style="display:none")
-                                                    svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                                        path(d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4")
-                                                        polyline(points="17 8 12 3 7 8")
-                                                        line(x1="12" y1="3" x2="12" y2="15")
+                                                    span.material-symbols-outlined upload
                                             p.ms-hint Laissez vide pour utiliser le dégradé par défaut.
                                         .ms-field
                                             label.ms-label Assombrissement de l'image
@@ -134,6 +164,12 @@ block content
                                         .ms-field
                                             label.ms-label Sous-titre
                                             input.ms-input(type="text" data-field="subtitle" value=section.data.subtitle || '' placeholder="Description courte...")
+                                        .ms-field
+                                            label.ms-label Affichage du widget
+                                            .ms-layout-btns(data-field="embedMode")
+                                                button.ms-layout-btn(type="button" data-layout="full" class=(section.data.embedMode || 'full') === 'full' ? 'active' : '') Complet
+                                                button.ms-layout-btn(type="button" data-layout="compact" class=(section.data.embedMode || 'full') === 'compact' ? 'active' : '') Calendrier seul
+                                            p.ms-hint "Calendrier seul" retire le profil, les horaires, la galerie et les avis pour ne garder que les étapes de réservation — utile pour réduire le défilement.
                                         p.ms-hint(style="margin-top:4px") La prise de RDV utilise votre calendrier BranShee — disponibilités et confirmations en temps réel.
 
                                     else if section.type === 'about'
@@ -145,7 +181,23 @@ block content
                                             input.ms-input(type="text" data-field="subtitle" value=section.data.subtitle || '' placeholder="Ex : Notre histoire, Qui sommes-nous...")
                                         .ms-field
                                             label.ms-label Texte de présentation
-                                            textarea.ms-input.ms-input--textarea(data-field="text" rows="5" placeholder="Présentez votre établissement...")= section.data.text || ''
+                                            .ms-rte-wrap
+                                                .ms-rte-toolbar
+                                                    button.ms-rte-btn(type="button" data-cmd="h2" title="Grand titre") H2
+                                                    button.ms-rte-btn(type="button" data-cmd="h3" title="Petit titre") H3
+                                                    .ms-rte-sep
+                                                    button.ms-rte-btn(type="button" data-cmd="bold" title="Gras") B
+                                                    button.ms-rte-btn(type="button" data-cmd="italic" title="Italique") I
+                                                    button.ms-rte-btn(type="button" data-cmd="underline" title="Souligné") U
+                                                    .ms-rte-sep
+                                                    button.ms-rte-btn(type="button" data-cmd="mark" title="Surligner") ✦
+                                                    .ms-rte-sep
+                                                    button.ms-rte-btn(type="button" data-cmd="insertUnorderedList" title="Liste à puces") ≡
+                                                    button.ms-rte-btn(type="button" data-cmd="insertOrderedList" title="Liste numérotée") 1.
+                                                    .ms-rte-sep
+                                                    button.ms-rte-btn(type="button" data-cmd="img" title="Insérer une image") 🖼
+                                                    button.ms-rte-btn(type="button" data-cmd="removeFormat" title="Effacer la mise en forme" style="margin-left:auto;font-weight:400;opacity:.6") ✕
+                                                div.ms-rte(contenteditable="true" data-field="text" data-rte="1" data-placeholder="Présentez votre établissement...")!= section.data.text || ''
                                         .ms-field
                                             label.ms-label Disposition de l'image
                                             .ms-layout-btns(data-field="layout")
@@ -158,11 +210,13 @@ block content
                                                 input.ms-input(type="url" data-field="image" value=section.data.image || '' placeholder="https://...")
                                                 label.ms-img-upload-btn(title="Uploader")
                                                     input(type="file" accept="image/*" data-field-upload="image" data-section-id=section.id style="display:none")
-                                                    svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                                        path(d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4")
-                                                        polyline(points="17 8 12 3 7 8")
-                                                        line(x1="12" y1="3" x2="12" y2="15")
+                                                    span.material-symbols-outlined upload
                                             p.ms-hint Optionnel — s'affiche à côté du texte.
+                                        p.ms-hint(style="margin:10px 0 6px;font-weight:600;color:var(--ink)") Engagements / Valeurs
+                                        p.ms-hint(style="margin-bottom:8px") Ajoutez 2–4 points clés avec icône, titre et description.
+                                        .ms-items-list(data-section-id=section.id data-items-type="values" data-items-key="values")
+                                        .ms-add-item-row
+                                            button.ms-add-url-btn(type="button" data-add-item=section.id data-items-type="values") + Ajouter une valeur
 
                                     else if section.type === 'contact'
                                         .ms-field
@@ -191,10 +245,7 @@ block content
                                         .ms-add-item-row
                                             label.ms-add-upload-btn
                                                 input(type="file" accept="image/*" data-add-upload=section.id data-items-type="gallery" style="display:none")
-                                                svg(viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                                    path(d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4")
-                                                    polyline(points="17 8 12 3 7 8")
-                                                    line(x1="12" y1="3" x2="12" y2="15")
+                                                span.material-symbols-outlined upload
                                                 |  Uploader
                                             button.ms-add-url-btn(type="button" data-add-url=section.id data-items-type="gallery") + Via URL
 
@@ -202,9 +253,16 @@ block content
                                         .ms-field
                                             label.ms-label Titre de la section
                                             input.ms-input(type="text" data-field="title" value=section.data.title || 'Avis clients' placeholder="Titre...")
-                                        .ms-items-list(data-section-id=section.id data-items-type="testimonials" data-items-key="items")
-                                        .ms-add-item-row
-                                            button.ms-add-url-btn(type="button" data-add-item=section.id data-items-type="testimonials") + Ajouter un avis
+                                        .ms-field
+                                            label.ms-label Source des avis
+                                            .ms-layout-btns(data-field="source")
+                                                button.ms-layout-btn(type="button" data-layout="manual" class=(section.data.source || 'manual') === 'manual' ? 'active' : '') Témoignages personnalisés
+                                                button.ms-layout-btn(type="button" data-layout="branshee" class=section.data.source === 'branshee' ? 'active' : '') Avis BranShee
+                                            p.ms-hint "Avis BranShee" affiche automatiquement les vrais avis clients de votre établissement (notés lors d'une réservation) et propose un lien pour en laisser un — connexion à un compte BranShee requise.
+                                        if section.data.source !== 'branshee'
+                                            .ms-items-list(data-section-id=section.id data-items-type="testimonials" data-items-key="items")
+                                            .ms-add-item-row
+                                                button.ms-add-url-btn(type="button" data-add-item=section.id data-items-type="testimonials") + Ajouter un avis
 
                                     else if section.type === 'faq'
                                         .ms-field
@@ -249,13 +307,39 @@ block content
 
                     .ms-add-section
                         button.ms-add-section__btn(type="button" id="addSectionBtn")
-                            svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
-                                line(x1="12" y1="5" x2="12" y2="19")
-                                line(x1="5" y1="12" x2="19" y2="12")
+                            span.material-symbols-outlined add
                             | Ajouter une section
 
                 //- ── TAB DESIGN ────────────────────────────────────────────
                 .ms-pane(data-pane="design")
+
+                    .ms-design-section
+                        .ms-design-section__title Mise en page
+                        .ms-layout-tpl-grid
+                            button.ms-layout-tpl-card(type="button" data-layout-tpl="1" class=(S.theme.siteTemplate || '1') === '1' ? 'active' : '')
+                                .ms-layout-tpl-card__check
+                                    span.material-symbols-outlined check
+                                .ms-layout-tpl-card__thumb
+                                    .ms-layout-tpl-card__nav(style="background:rgba(0,0,0,.7)")
+                                    .ms-layout-tpl-card__hero(style="background:linear-gradient(135deg,#1a0533,#6c47d0);flex:1.8")
+                                    .ms-layout-tpl-card__sections
+                                        .ms-layout-tpl-card__sec(style="background:#f3f4f6")
+                                        .ms-layout-tpl-card__sec(style="background:#fff")
+                                span.ms-layout-tpl-card__name
+                                    | Moderne
+                                    .ms-layout-tpl-card__spinner
+                            button.ms-layout-tpl-card(type="button" data-layout-tpl="2" class=(S.theme.siteTemplate || '1') === '2' ? 'active' : '')
+                                .ms-layout-tpl-card__check
+                                    span.material-symbols-outlined check
+                                .ms-layout-tpl-card__thumb
+                                    .ms-layout-tpl-card__nav(style="background:#0a0a14")
+                                    .ms-layout-tpl-card__hero(style="background:#08080f;flex:1.8;border-left:3px solid #6c47d0")
+                                    .ms-layout-tpl-card__sections
+                                        .ms-layout-tpl-card__sec(style="background:#fff")
+                                        .ms-layout-tpl-card__sec(style="background:#0d0d1e")
+                                span.ms-layout-tpl-card__name
+                                    | Sombre
+                                    .ms-layout-tpl-card__spinner
 
                     .ms-design-section
                         .ms-design-section__title Templates
@@ -267,7 +351,9 @@ block content
                                         .ms-template-card__lines
                                             span(style=`background:${tpl[2]}`)
                                             span(style=`background:${tpl[2]};opacity:.35`)
-                                    span.ms-template-card__name= tpl[1]
+                                    span.ms-template-card__name
+                                        | #{tpl[1]}
+                                        .ms-template-card__spinner
 
                     .ms-design-section
                         .ms-design-section__title Couleurs
@@ -319,10 +405,7 @@ block content
                                 input#logoUrl.ms-input(type="url" placeholder="https://..." value=S.logoUrl || '')
                                 label.ms-img-upload-btn(title="Uploader le logo")
                                     input#logoFileInput(type="file" accept="image/*" style="display:none")
-                                    svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                        path(d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4")
-                                        polyline(points="17 8 12 3 7 8")
-                                        line(x1="12" y1="3" x2="12" y2="15")
+                                    span.material-symbols-outlined upload
                             p.ms-hint Affiché dans la navigation. Laissez vide pour utiliser le nom de votre établissement.
 
                 //- ── TAB SETTINGS ──────────────────────────────────────────
@@ -334,25 +417,18 @@ block content
                             span.ms-slug-prefix branshee.com/s/
                             input#slugInput.ms-slug-input(type="text" value=S.slug maxlength="50" placeholder="mon-site")
                         button.ms-copy-link(type="button" id="copyLinkBtn")
-                            svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                rect(x="9" y="9" width="13" height="13" rx="2" ry="2")
-                                path(d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1")
+                            span.material-symbols-outlined content_copy
                             span#copyLinkText Copier le lien
                         if S.isPublished
                             a.ms-open-link(href=siteFullUrl target="_blank" rel="noopener")
-                                svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                    path(d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6")
-                                    polyline(points="15 3 21 3 21 9")
-                                    line(x1="10" y1="14" x2="21" y2="3")
+                                span.material-symbols-outlined open_in_new
                                 | Voir le site en ligne
 
                     .ms-settings-section
                         .ms-settings-section__title
                             | Visites
                             span.ms-visit-count(title="Nombre total de visites")
-                                svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px")
-                                    path(d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z")
-                                    circle(cx="12" cy="12" r="3")
+                                span.material-symbols-outlined(style="margin-right:5px;opacity:.6;font-size:16px") visibility
                                 | #{visitCount} vue#{visitCount > 1 ? 's' : ''}
 
                     .ms-settings-section
@@ -413,20 +489,15 @@ block content
             .ms-preview__bar
                 span.ms-preview__label Aperçu
                 button.ms-device-btn.active(type="button" data-device="desktop" title="Bureau")
-                    svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                        rect(x="2" y="3" width="20" height="14" rx="2" ry="2")
-                        line(x1="8" y1="21" x2="16" y2="21")
-                        line(x1="12" y1="17" x2="12" y2="21")
+                    span.material-symbols-outlined desktop_windows
                 button.ms-device-btn(type="button" data-device="mobile" title="Mobile")
-                    svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                        rect(x="5" y="2" width="14" height="20" rx="2" ry="2")
-                        circle(cx="12" cy="18" r="1" fill="currentColor" stroke="none")
+                    span.material-symbols-outlined smartphone
                 button.ms-preview__refresh(type="button" id="refreshPreview" title="Rafraîchir l'aperçu")
-                    svg(viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                        polyline(points="23 4 23 10 17 10")
-                        path(d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10")
+                    span.material-symbols-outlined refresh
             .ms-preview__frame-wrap(id="frameWrap")
                 iframe.ms-preview__frame(id="previewFrame" src=previewUrl title="Aperçu du site")
+                .ms-preview__loading(id="previewLoading")
+                    .ms-preview__spinner
 
     //- ── Add section modal ────────────────────────────────────────────
     .ms-modal-overlay(id="addModal")
@@ -435,18 +506,190 @@ block content
                 span.ms-modal__title Ajouter une section
                 button.ms-modal__close(type="button" id="closeModal") ✕
             .ms-block-grid
-                each block in [['hero','Bandeau hero','Titre accrocheur + image + bouton CTA'],['services','Prestations','Vos services avec prix et durée'],['booking','Réservation','Widget de prise de RDV en ligne'],['about','À propos','Présentez votre établissement'],['contact','Contact','Téléphone, email et formulaire'],['gallery','Galerie','Photos de votre établissement'],['testimonials','Avis clients','Témoignages de vos clients'],['faq','FAQ','Questions fréquentes en accordéon'],['stats','Chiffres clés','Vos chiffres et performances'],['cta','Bannière CTA','Appel à l\'action pleine largeur']]
-                    .ms-block-card(data-add-type=block[0])
-                        .ms-block-card__icon
-                            svg(viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")!= sectionIcons[block[0]]
-                        span.ms-block-card__name= block[1]
-                        span.ms-block-card__desc= block[2]
+                //- HERO
+                .ms-block-card(data-add-type="hero")
+                    .ms-block-card__preview
+                        .bpv.bpv--hero
+                            .bpv__hero-overlay
+                            .bpv__bar(style="width:62%;height:5px")
+                            .bpv__bar(style="width:42%;height:2px;margin-top:2px;opacity:.6")
+                            .bpv__btn-sm
+                    .ms-block-card__info
+                        span.ms-block-card__name Bandeau hero
+                        span.ms-block-card__desc Titre + image de fond + CTA
+                //- SERVICES
+                .ms-block-card(data-add-type="services")
+                    .ms-block-card__preview
+                        .bpv.bpv--services
+                            .bpv__svc-card
+                                .bpv__svc-top
+                                .bpv__svc-line
+                                .bpv__svc-line(style="width:65%")
+                            .bpv__svc-card
+                                .bpv__svc-top
+                                .bpv__svc-line
+                                .bpv__svc-line(style="width:50%")
+                            .bpv__svc-card
+                                .bpv__svc-top
+                                .bpv__svc-line
+                                .bpv__svc-line(style="width:75%")
+                    .ms-block-card__info
+                        span.ms-block-card__name Prestations
+                        span.ms-block-card__desc Catalogue avec prix & durée
+                //- BOOKING
+                .ms-block-card(data-add-type="booking")
+                    .ms-block-card__preview
+                        .bpv.bpv--booking
+                            .bpv__cal-header
+                                .bpv__cal-month
+                            .bpv__cal-row
+                                .bpv__cal-day
+                                .bpv__cal-day
+                                .bpv__cal-day.is-active
+                                .bpv__cal-day
+                                .bpv__cal-day
+                                .bpv__cal-day
+                                .bpv__cal-day
+                            .bpv__cal-row
+                                .bpv__cal-day
+                                .bpv__cal-day.is-active
+                                .bpv__cal-day
+                                .bpv__cal-day
+                                .bpv__cal-day
+                                .bpv__cal-day
+                                .bpv__cal-day
+                            .bpv__cal-cta
+                    .ms-block-card__info
+                        span.ms-block-card__name Réservation
+                        span.ms-block-card__desc Widget de prise de RDV
+                //- ABOUT
+                .ms-block-card(data-add-type="about")
+                    .ms-block-card__preview
+                        .bpv.bpv--about
+                            .bpv__about-text
+                                .bpv__about-tag
+                                .bpv__about-title
+                                .bpv__about-line
+                                .bpv__about-line(style="width:80%")
+                                .bpv__about-line(style="width:90%")
+                                .bpv__about-line(style="width:60%")
+                            .bpv__about-img
+                    .ms-block-card__info
+                        span.ms-block-card__name À propos
+                        span.ms-block-card__desc Histoire & engagements
+                //- GALLERY
+                .ms-block-card(data-add-type="gallery")
+                    .ms-block-card__preview
+                        .bpv.bpv--gallery
+                            .bpv__photo.p1
+                            .bpv__photo.p2
+                            .bpv__photo.p3
+                            .bpv__photo.p4
+                            .bpv__photo.p5
+                            .bpv__photo.p6
+                    .ms-block-card__info
+                        span.ms-block-card__name Galerie
+                        span.ms-block-card__desc Photos de l'établissement
+                //- TESTIMONIALS
+                .ms-block-card(data-add-type="testimonials")
+                    .ms-block-card__preview
+                        .bpv.bpv--testimonials
+                            .bpv__testi-card
+                                .bpv__stars
+                                    - for(var _i=0;_i<5;_i++)
+                                        .bpv__star
+                                .bpv__testi-line
+                                .bpv__testi-line(style="width:70%")
+                                .bpv__testi-author
+                            .bpv__testi-card
+                                .bpv__stars
+                                    - for(var _i=0;_i<5;_i++)
+                                        .bpv__star
+                                .bpv__testi-line(style="width:80%")
+                                .bpv__testi-author
+                    .ms-block-card__info
+                        span.ms-block-card__name Avis clients
+                        span.ms-block-card__desc Témoignages & étoiles
+                //- FAQ
+                .ms-block-card(data-add-type="faq")
+                    .ms-block-card__preview
+                        .bpv.bpv--faq
+                            .bpv__faq-row.is-open
+                                .bpv__faq-q
+                                .bpv__faq-arrow.is-open
+                                .bpv__faq-a
+                            .bpv__faq-row
+                                .bpv__faq-q
+                                .bpv__faq-arrow
+                            .bpv__faq-row
+                                .bpv__faq-q
+                                .bpv__faq-arrow
+                    .ms-block-card__info
+                        span.ms-block-card__name FAQ
+                        span.ms-block-card__desc Questions en accordéon
+                //- STATS
+                .ms-block-card(data-add-type="stats")
+                    .ms-block-card__preview
+                        .bpv.bpv--stats
+                            .bpv__stat-card
+                                .bpv__stat-num
+                                .bpv__stat-lbl
+                            .bpv__stat-card
+                                .bpv__stat-num(style="width:55%")
+                                .bpv__stat-lbl
+                            .bpv__stat-card
+                                .bpv__stat-num(style="width:45%")
+                                .bpv__stat-lbl
+                    .ms-block-card__info
+                        span.ms-block-card__name Chiffres clés
+                        span.ms-block-card__desc Vos performances
+                //- CTA
+                .ms-block-card(data-add-type="cta")
+                    .ms-block-card__preview
+                        .bpv.bpv--cta
+                            .bpv__bar(style="width:68%;height:5px")
+                            .bpv__bar(style="width:48%;height:2px;opacity:.7;margin-top:2px")
+                            .bpv__btn-sm
+                    .ms-block-card__info
+                        span.ms-block-card__name Bannière CTA
+                        span.ms-block-card__desc Appel à l'action pleine largeur
+                //- CONTACT
+                .ms-block-card(data-add-type="contact")
+                    .ms-block-card__preview
+                        .bpv.bpv--contact
+                            .bpv__ct-row
+                                .bpv__ct-field
+                                .bpv__ct-field
+                            .bpv__ct-textarea
+                            .bpv__ct-submit
+                    .ms-block-card__info
+                        span.ms-block-card__name Contact
+                        span.ms-block-card__desc Téléphone & formulaire
+
+    //- ── Delete section confirm modal ─────────────────────────────
+    .ms-modal-overlay(id="deleteModal")
+        .ms-modal.ms-modal--sm
+            .ms-modal__hd
+                span.ms-modal__title Supprimer cette section ?
+                button.ms-modal__close(type="button" id="closeDeleteModal") ✕
+            .ms-modal__body
+                p.ms-hint(id="deleteModalText") Cette action est définitive. La section sera retirée de votre site.
+                .ms-modal__actions
+                    button.ms-modal__btn.ms-modal__btn--cancel(type="button" id="cancelDeleteBtn") Annuler
+                    button.ms-modal__btn.ms-modal__btn--danger(type="button" id="confirmDeleteBtn") Supprimer
 
     script.
         var __site = !{JSON.stringify(site)};
         var __previewUrl = '/mon-site/preview';
         var __saveUrl = '/mon-site/save';
         var __publishUrl = '/mon-site/publish';
+
+        // Ré-attache les modales directement à <body> : évite tout bug de
+        // position:fixed cassée par un ancêtre (overflow/transform) du layout admin.
+        ['addModal', 'deleteModal'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) document.body.appendChild(el);
+        });
 
         // ── State ────────────────────────────────────────────────────────
         var state = JSON.parse(JSON.stringify(__site));
@@ -461,13 +704,13 @@ block content
             var el = document.getElementById('saveIndicator');
             if (!el) return;
             el.className = 'ms-save-indicator ' + s;
-            el.textContent = s === 'saving' ? 'Sauvegarde...' : s === 'saved' ? '✓ Sauvegardé' : '';
+            el.textContent = s === 'pending' ? '● Modifié' : s === 'saving' ? 'Sauvegarde...' : s === 'saved' ? '✓ Sauvegardé' : '';
         }
-        function markDirty() {
+        function markDirty(fast) {
             isDirty = true;
-            indicatorState('');
+            indicatorState('pending');
             clearTimeout(saveTimer);
-            saveTimer = setTimeout(doSave, 1400);
+            saveTimer = setTimeout(doSave, fast ? 150 : 1400);
         }
 
         // ── Helpers ──────────────────────────────────────────────────────
@@ -475,7 +718,7 @@ block content
             return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         }
         function uploadSvgHtml() {
-            return '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+            return '<span class="material-symbols-outlined">upload</span>';
         }
 
         function createItemRow(type, data) {
@@ -528,6 +771,16 @@ block content
                     '</div>' +
                   '</div>' +
                   '<button class="ms-remove-item" type="button" data-remove="1" style="align-self:flex-start">✕</button>';
+            } else if (type === 'values') {
+                row.innerHTML =
+                  '<div class="ms-item-main" style="display:flex;gap:6px;align-items:flex-start">' +
+                    '<input class="ms-input ms-input--sm" type="text" data-item-key="icon" value="' + escHtml(d.icon||'') + '" placeholder="✅" style="width:48px;flex-shrink:0;font-size:18px;text-align:center">' +
+                    '<div style="flex:1;display:flex;flex-direction:column;gap:4px">' +
+                      '<input class="ms-input ms-input--sm" type="text" data-item-key="title" value="' + escHtml(d.title||'') + '" placeholder="Titre de la valeur">' +
+                      '<input class="ms-input ms-input--sm" type="text" data-item-key="desc" value="' + escHtml(d.desc||'') + '" placeholder="Description courte (optionnel)">' +
+                    '</div>' +
+                  '</div>' +
+                  '<button class="ms-remove-item" type="button" data-remove="1" style="align-self:flex-start">✕</button>';
             }
             return row;
         }
@@ -577,7 +830,14 @@ block content
         }
         function refreshPreview() {
             var fr = document.getElementById('previewFrame');
-            if (fr) fr.src = __previewUrl + '?t=' + Date.now();
+            var loading = document.getElementById('previewLoading');
+            if (!fr) return;
+            if (loading) loading.classList.add('is-active');
+            fr.addEventListener('load', function onLoad() {
+                fr.removeEventListener('load', onLoad);
+                if (loading) loading.classList.remove('is-active');
+            });
+            fr.src = __previewUrl + '?t=' + Date.now();
         }
 
         // ── Save ─────────────────────────────────────────────────────────
@@ -626,6 +886,19 @@ block content
             });
         });
 
+        // Close any open section options menu on outside click, scroll or resize
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.ms-section-menu-wrap')) return;
+            document.querySelectorAll('.ms-section-menu-wrap.open').forEach(function(w){ w.classList.remove('open'); });
+        });
+        var msPanelBody = document.querySelector('.ms-panel__body');
+        if (msPanelBody) msPanelBody.addEventListener('scroll', function() {
+            document.querySelectorAll('.ms-section-menu-wrap.open').forEach(function(w){ w.classList.remove('open'); });
+        });
+        window.addEventListener('resize', function() {
+            document.querySelectorAll('.ms-section-menu-wrap.open').forEach(function(w){ w.classList.remove('open'); });
+        });
+
         // ── Section list interactions ────────────────────────────────────
         document.getElementById('sectionsList').addEventListener('click', function(e) {
             var item = e.target.closest('.ms-section-item');
@@ -634,6 +907,7 @@ block content
 
             // Edit toggle
             if (e.target.closest('.ms-section-edit')) {
+                document.querySelectorAll('.ms-section-menu-wrap.open').forEach(function(w){ w.classList.remove('open'); });
                 var form = item.querySelector('.ms-section-form');
                 var isOpen = form.classList.contains('open');
                 document.querySelectorAll('.ms-section-form').forEach(function(f){ f.classList.remove('open'); });
@@ -651,17 +925,49 @@ block content
                 var btn = e.target.closest('.ms-toggle-btn');
                 btn.classList.toggle('on', s.enabled);
                 item.classList.toggle('is-disabled', !s.enabled);
-                markDirty();
+                markDirty(true);
                 return;
             }
-            // Up
-            if (e.target.closest('.ms-section-up')) {
-                moveSection(id, -1);
+            // Options menu (⋮)
+            if (e.target.closest('.ms-section-menu-btn')) {
+                var menuBtn = e.target.closest('.ms-section-menu-btn');
+                var menuWrap = e.target.closest('.ms-section-menu-wrap');
+                var wasOpen = menuWrap.classList.contains('open');
+                document.querySelectorAll('.ms-section-menu-wrap.open').forEach(function(w){ w.classList.remove('open'); });
+                if (!wasOpen) {
+                    menuWrap.classList.add('open');
+                    var menuEl = menuWrap.querySelector('.ms-section-menu');
+                    var btnRect = menuBtn.getBoundingClientRect();
+                    var menuW = menuEl.offsetWidth || 160;
+                    var left = Math.min(btnRect.right - menuW, window.innerWidth - menuW - 8);
+                    menuEl.style.top = (btnRect.bottom + 4) + 'px';
+                    menuEl.style.left = Math.max(8, left) + 'px';
+                }
                 return;
             }
-            // Down
-            if (e.target.closest('.ms-section-down')) {
-                moveSection(id, 1);
+            // Delete
+            if (e.target.closest('.ms-section-delete')) {
+                document.querySelectorAll('.ms-section-menu-wrap.open').forEach(function(w){ w.classList.remove('open'); });
+                openDeleteModal(id);
+                return;
+            }
+            // Duplicate
+            if (e.target.closest('.ms-section-duplicate')) {
+                document.querySelectorAll('.ms-section-menu-wrap.open').forEach(function(w){ w.classList.remove('open'); });
+                duplicateSection(id);
+                return;
+            }
+            // Reset color field
+            if (e.target.closest('.ms-color-reset')) {
+                var resetBtn = e.target.closest('.ms-color-reset');
+                var resetField = resetBtn.dataset.resetField;
+                var resetSec = getSectionById(id);
+                if (resetSec && resetField) {
+                    delete resetSec.data[resetField];
+                    var resetInput = resetBtn.parentElement.querySelector('.ms-color-input');
+                    if (resetInput) resetInput.value = resetField === 'textColor' ? '#000000' : '#ffffff';
+                    markDirty(true);
+                }
                 return;
             }
             // Layout/radio button group (generic — reads data-field from .ms-layout-btns container)
@@ -723,7 +1029,7 @@ block content
                 var s4 = getSectionById(addSid2);
                 if (!s4) return;
                 if (!s4.data.items) s4.data.items = [];
-                var newItem = itype === 'testimonials' ? { name: '', text: '', rating: 5 } : itype === 'stats' ? { icon: '', number: '', label: '' } : { question: '', answer: '' };
+                var newItem = itype === 'testimonials' ? { name: '', text: '', rating: 5 } : itype === 'stats' ? { icon: '', number: '', label: '' } : itype === 'values' ? { icon: '', title: '', desc: '' } : { question: '', answer: '' };
                 s4.data.items.push(newItem);
                 var l4 = document.querySelector('.ms-items-list[data-section-id="' + addSid2 + '"]');
                 if (l4) l4.appendChild(createItemRow(itype, newItem));
@@ -788,6 +1094,56 @@ block content
             markDirty();
         });
 
+        // ── Rich Text Editor — input ──────────────────────────────────────
+        document.getElementById('sectionsList').addEventListener('input', function(e) {
+            var el = e.target;
+            if (!el.dataset.rte || !el.dataset.field) return;
+            var form = el.closest('[data-form]');
+            if (!form) return;
+            var s = getSectionById(form.dataset.form);
+            if (!s) return;
+            s.data[el.dataset.field] = el.innerHTML;
+            markDirty();
+        });
+
+        // ── Rich Text Editor — toolbar ────────────────────────────────────
+        document.getElementById('sectionsList').addEventListener('mousedown', function(e) {
+            var btn = e.target.closest('[data-cmd]');
+            if (!btn) return;
+            e.preventDefault(); // keep focus in RTE
+            var cmd = btn.dataset.cmd;
+            var wrap = btn.closest('.ms-rte-wrap');
+            if (!wrap) return;
+            var rte = wrap.querySelector('[data-rte]');
+            if (!rte) return;
+            rte.focus();
+            if (cmd === 'h2') {
+                document.execCommand('formatBlock', false, 'H2');
+            } else if (cmd === 'h3') {
+                document.execCommand('formatBlock', false, 'H3');
+            } else if (cmd === 'mark') {
+                var sel = window.getSelection();
+                if (sel && sel.rangeCount && !sel.isCollapsed) {
+                    var range = sel.getRangeAt(0);
+                    var mark = document.createElement('mark');
+                    try { range.surroundContents(mark); } catch(ex) { document.execCommand('insertHTML', false, '<mark>' + sel.toString() + '</mark>'); }
+                    sel.removeAllRanges();
+                }
+            } else if (cmd === 'img') {
+                var imgUrl = prompt('URL de l\'image :');
+                if (imgUrl) document.execCommand('insertImage', false, imgUrl);
+            } else {
+                document.execCommand(cmd, false, null);
+            }
+            // Sync to state after toolbar action
+            setTimeout(function() {
+                var form = rte.closest('[data-form]');
+                if (!form) return;
+                var s = getSectionById(form.dataset.form);
+                if (s) { s.data[rte.dataset.field] = rte.innerHTML; markDirty(); }
+            }, 0);
+        });
+
         // ── File uploads inside section forms ────────────────────────────
         document.getElementById('sectionsList').addEventListener('change', function(e) {
             if (e.target.type !== 'file' || !e.target.files[0]) return;
@@ -849,9 +1205,29 @@ block content
             }
         });
 
-        // ── Drag & drop section reordering ───────────────────────────────
+        // ── Drag & drop section reordering (live animated) ───────────────
         var dragSrc = null;
         var slEl = document.getElementById('sectionsList');
+
+        function animateReorder(moveFn) {
+            var items = Array.from(slEl.querySelectorAll('.ms-section-item')).filter(function(it){ return it !== dragSrc; });
+            var firstRects = items.map(function(it){ return it.getBoundingClientRect(); });
+            moveFn();
+            items.forEach(function(it, i) {
+                var first = firstRects[i];
+                var last = it.getBoundingClientRect();
+                var deltaY = first.top - last.top;
+                if (deltaY) {
+                    it.style.transition = 'none';
+                    it.style.transform = 'translateY(' + deltaY + 'px)';
+                    requestAnimationFrame(function() {
+                        it.style.transition = 'transform 0.22s cubic-bezier(.2,.8,.2,1)';
+                        it.style.transform = '';
+                    });
+                }
+            });
+        }
+
         slEl.addEventListener('dragstart', function(e) {
             if (!e.target.closest('.ms-drag-handle')) return;
             dragSrc = e.target.closest('.ms-section-item');
@@ -865,26 +1241,19 @@ block content
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             var over = e.target.closest('.ms-section-item');
-            slEl.querySelectorAll('.ms-section-item').forEach(function(i){ i.classList.remove('drag-before','drag-after'); });
-            if (over && over !== dragSrc) {
-                var rect = over.getBoundingClientRect();
-                over.classList.add(e.clientY < rect.top + rect.height / 2 ? 'drag-before' : 'drag-after');
-            }
-        });
-        slEl.addEventListener('dragleave', function(e) {
-            if (!e.relatedTarget || !slEl.contains(e.relatedTarget)) {
-                slEl.querySelectorAll('.ms-section-item').forEach(function(i){ i.classList.remove('drag-before','drag-after'); });
-            }
+            if (!over || over === dragSrc) return;
+            var rect = over.getBoundingClientRect();
+            var before = e.clientY < rect.top + rect.height / 2;
+            var target = before ? over : over.nextElementSibling;
+            if (target === dragSrc || dragSrc.nextElementSibling === target) return;
+            animateReorder(function() {
+                if (before) slEl.insertBefore(dragSrc, over);
+                else slEl.insertBefore(dragSrc, over.nextSibling);
+            });
         });
         slEl.addEventListener('drop', function(e) {
             e.preventDefault();
-            slEl.querySelectorAll('.ms-section-item').forEach(function(i){ i.classList.remove('drag-before','drag-after'); });
             if (!dragSrc) return;
-            var over = e.target.closest('.ms-section-item');
-            if (!over || over === dragSrc) { dragSrc.classList.remove('is-dragging'); dragSrc = null; return; }
-            var rect = over.getBoundingClientRect();
-            if (e.clientY < rect.top + rect.height / 2) slEl.insertBefore(dragSrc, over);
-            else slEl.insertBefore(dragSrc, over.nextSibling);
             dragSrc.classList.remove('is-dragging');
             dragSrc = null;
             Array.from(slEl.querySelectorAll('.ms-section-item')).forEach(function(el, i) {
@@ -892,48 +1261,12 @@ block content
                 if (sv) sv.order = i;
             });
             state.sections.sort(function(a,b){ return a.order - b.order; });
-            markDirty();
+            markDirty(true);
         });
         slEl.addEventListener('dragend', function() {
-            slEl.querySelectorAll('.ms-section-item').forEach(function(i){ i.classList.remove('is-dragging','drag-before','drag-after'); });
+            if (dragSrc) dragSrc.classList.remove('is-dragging');
             dragSrc = null;
         });
-
-        function moveSection(id, dir) {
-            var list = state.sections.slice().sort(function(a,b){ return a.order - b.order; });
-            var idx = list.findIndex(function(s){ return s.id === id; });
-            var target = idx + dir;
-            if (target < 0 || target >= list.length) return;
-            var tmp = list[idx].order;
-            list[idx].order = list[target].order;
-            list[target].order = tmp;
-            state.sections = list.sort(function(a,b){ return a.order - b.order; });
-            // Re-render list
-            rebuildSectionList();
-            markDirty();
-        }
-
-        function rebuildSectionList() {
-            var container = document.getElementById('sectionsList');
-            var sorted = state.sections.slice().sort(function(a,b){ return a.order - b.order; });
-            // Preserve open forms
-            var openId = null;
-            var openForm = container.querySelector('.ms-section-form.open');
-            if (openForm) openId = openForm.dataset.form;
-            // Move DOM nodes in correct order
-            sorted.forEach(function(s, i) {
-                var el = container.querySelector('[data-id="' + s.id + '"]');
-                if (el) container.appendChild(el);
-                // Re-sync toggle state
-                var btn = el && el.querySelector('.ms-toggle-btn');
-                if (btn) btn.classList.toggle('on', s.enabled);
-                if (el) el.classList.toggle('is-disabled', !s.enabled);
-            });
-            if (openId) {
-                var f = container.querySelector('[data-form="' + openId + '"]');
-                if (f) f.classList.add('open');
-            }
-        }
 
         // ── Design — colors ───────────────────────────────────────────────
         function wireColorPair(pickerId, hexId, prevId, stateKey) {
@@ -986,6 +1319,7 @@ block content
         }
         document.querySelectorAll('.ms-template-card').forEach(function(btn) {
             btn.addEventListener('click', function() {
+                if (btn.classList.contains('active')) return;
                 var tpl = templatePresets[btn.dataset.template];
                 if (!tpl) return;
                 Object.assign(state.theme, tpl);
@@ -997,9 +1331,16 @@ block content
                 document.querySelectorAll('.ms-roundness-btn').forEach(function(b) {
                     b.classList.toggle('active', b.dataset.roundness === tpl.roundness);
                 });
-                document.querySelectorAll('.ms-template-card').forEach(function(b){ b.classList.remove('active'); });
-                btn.classList.add('active');
-                markDirty();
+                document.querySelectorAll('.ms-template-card').forEach(function(b){ b.classList.remove('active', 'is-switching'); });
+                btn.classList.add('active', 'is-switching');
+                var fr = document.getElementById('previewFrame');
+                if (fr) {
+                    fr.addEventListener('load', function onLoad() {
+                        fr.removeEventListener('load', onLoad);
+                        btn.classList.remove('is-switching');
+                    });
+                }
+                markDirty(true);
             });
         });
 
@@ -1097,7 +1438,13 @@ block content
                     publishDot.classList.toggle('ms-dot--live', live);
                     publishLabel.textContent = live ? 'En ligne' : 'Hors ligne';
                     publishBtn.textContent = live ? 'Désactiver' : 'Publier';
-                    publishBtn.classList.toggle('ms-publish-btn--unpublish', live);
+                    publishBtn.classList.toggle('sm-btn--danger', live);
+                    publishBtn.classList.toggle('sm-btn--primary', !live);
+                    var viewBtn = document.getElementById('viewSiteBtn');
+                    if (viewBtn) {
+                        viewBtn.classList.toggle('ms-view-btn--disabled', !live);
+                        viewBtn.title = live ? 'Voir le site' : 'Publiez d\'abord le site';
+                    }
                     // Update open-link button
                     var settingsPane = document.querySelector('[data-pane="settings"]');
                     if (settingsPane) {
@@ -1108,7 +1455,7 @@ block content
                             a.href = 'https://www.branshee.com/s/' + state.slug;
                             a.target = '_blank';
                             a.rel = 'noopener';
-                            a.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Voir le site en ligne';
+                            a.innerHTML = '<span class="material-symbols-outlined">open_in_new</span> Voir le site en ligne';
                             settingsPane.querySelector('.ms-settings-section').appendChild(a);
                         } else if (!live && existing) {
                             existing.remove();
@@ -1161,28 +1508,104 @@ block content
             });
         });
 
+        // ── Delete section confirm modal ─────────────────────────────────
+        var deleteModal = document.getElementById('deleteModal');
+        var pendingDeleteId = null;
+        function openDeleteModal(id) {
+            var s = getSectionById(id);
+            if (!s) return;
+            pendingDeleteId = id;
+            var name = document.querySelector('.ms-section-item[data-id="' + id + '"] .ms-section-item__name');
+            document.getElementById('deleteModalText').textContent = name
+                ? 'La section « ' + name.textContent + ' » sera définitivement retirée de votre site.'
+                : 'Cette action est définitive. La section sera retirée de votre site.';
+            deleteModal.classList.add('open');
+        }
+        function closeDeleteModal() {
+            deleteModal.classList.remove('open');
+            pendingDeleteId = null;
+        }
+        document.getElementById('closeDeleteModal').addEventListener('click', closeDeleteModal);
+        document.getElementById('cancelDeleteBtn').addEventListener('click', closeDeleteModal);
+        deleteModal.addEventListener('click', function(e) {
+            if (e.target === deleteModal) closeDeleteModal();
+        });
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            if (!pendingDeleteId) return;
+            deleteSection(pendingDeleteId);
+            closeDeleteModal();
+        });
+
+        function deleteSection(id) {
+            var el = document.querySelector('.ms-section-item[data-id="' + id + '"]');
+            state.sections = state.sections.filter(function(s){ return s.id !== id; });
+            if (el) {
+                el.classList.add('is-removing');
+                el.style.maxHeight = el.offsetHeight + 'px';
+                requestAnimationFrame(function() {
+                    el.style.maxHeight = '0px';
+                });
+                el.addEventListener('transitionend', function onEnd(e) {
+                    if (e.propertyName !== 'max-height') return;
+                    el.removeEventListener('transitionend', onEnd);
+                    el.remove();
+                });
+            }
+            markDirty(true);
+        }
+
+        function duplicateSection(id) {
+            var orig = getSectionById(id);
+            var origEl = document.querySelector('.ms-section-item[data-id="' + id + '"]');
+            if (!orig || !origEl) return;
+            var newId = orig.type + '-' + Date.now();
+            var cloned = JSON.parse(JSON.stringify(orig));
+            cloned.id = newId;
+            cloned.order = orig.order + 0.5;
+            state.sections.push(cloned);
+            state.sections.sort(function(a, b){ return a.order - b.order; });
+            state.sections.forEach(function(s, i){ s.order = i; });
+
+            var html = origEl.outerHTML.split('"' + id + '"').join('"' + newId + '"');
+            var tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            var newEl = tmp.firstElementChild;
+            newEl.classList.remove('is-dragging');
+            var newForm = newEl.querySelector('.ms-section-form');
+            if (newForm) newForm.classList.remove('open');
+            origEl.insertAdjacentElement('afterend', newEl);
+            markDirty(true);
+        }
+
         function addSection(type) {
             var id = type + '-' + Date.now();
             var maxOrder = state.sections.reduce(function(m, s){ return Math.max(m, s.order); }, -1);
             var labels = { hero: 'Bandeau principal', services: 'Prestations', booking: 'Prise de RDV', about: 'À propos', contact: 'Contact', gallery: 'Galerie', testimonials: 'Avis clients', faq: 'FAQ', stats: 'Chiffres clés', cta: 'Bannière CTA' };
-            var defaultData = { hero: { title: 'Nouveau bandeau', subtitle: '', ctaText: 'Prendre rendez-vous', bgImage: '' }, services: { title: 'Nos prestations', subtitle: '' }, booking: { title: 'Réservez en ligne', subtitle: '' }, about: { title: 'À propos', text: '', image: '' }, contact: { title: 'Nous trouver', phone: '', email: '', address: '' }, gallery: { title: 'Notre galerie', images: [] }, testimonials: { title: 'Avis clients', items: [] }, faq: { title: 'FAQ', items: [] }, stats: { title: 'Nos chiffres clés', items: [{ icon: '⭐', number: '5+', label: 'Ans d\'expérience' }, { icon: '😊', number: '200+', label: 'Clients satisfaits' }, { icon: '🏆', number: '100%', label: 'Satisfaction' }] }, cta: { title: 'Prêt à réserver ?', text: 'Choisissez votre créneau en quelques clics.', buttonText: 'Prendre rendez-vous', buttonUrl: '#booking', bg: 'primary' } };
+            var defaultData = { hero: { title: 'Nouveau bandeau', subtitle: '', ctaText: 'Prendre rendez-vous', bgImage: '' }, services: { title: 'Nos prestations', subtitle: '' }, booking: { title: 'Réservez en ligne', subtitle: '' }, about: { title: 'À propos', subtitle: '', text: '', image: '', values: [] }, contact: { title: 'Nous trouver', phone: '', email: '', address: '' }, gallery: { title: 'Notre galerie', images: [] }, testimonials: { title: 'Avis clients', items: [] }, faq: { title: 'FAQ', items: [] }, stats: { title: 'Nos chiffres clés', items: [{ icon: '⭐', number: '5+', label: 'Ans d\'expérience' }, { icon: '😊', number: '200+', label: 'Clients satisfaits' }, { icon: '🏆', number: '100%', label: 'Satisfaction' }] }, cta: { title: 'Prêt à réserver ?', text: 'Choisissez votre créneau en quelques clics.', buttonText: 'Prendre rendez-vous', buttonUrl: '#booking', bg: 'primary' } };
             var icons = {
-                hero: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
-                services: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
-                booking: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
-                about: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
-                gallery: '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
-                testimonials: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
-                faq: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
-                contact: '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
-                stats: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
-                cta: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.6 3.5 2 2 0 0 1 3.58 1.18h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>'
+                hero: 'home', services: 'list_alt', booking: 'calendar_month',
+                about: 'person', gallery: 'photo_library', testimonials: 'star',
+                faq: 'help', contact: 'mail', stats: 'bar_chart', cta: 'campaign'
             };
             var data = defaultData[type] || {};
             state.sections.push({ id: id, type: type, enabled: true, order: maxOrder + 1, data: data });
             var title = data.title || '';
             // Build form content based on type
-            var formInner = '<div class="ms-field"><label class="ms-label">Titre de la section</label><input class="ms-input" type="text" data-field="title" value="' + escHtml(title) + '" placeholder="Titre..."></div>';
+            var styleRow = '<div class="ms-style-row">' +
+              '<div class="ms-field ms-field--color"><label class="ms-label">Fond</label><div class="ms-color-field-wrap">' +
+                '<input class="ms-color-input" type="color" data-field="bgColor" value="#ffffff">' +
+                '<button class="ms-color-reset" type="button" data-reset-field="bgColor" title="Réinitialiser"><span class="material-symbols-outlined">close</span></button>' +
+              '</div></div>' +
+              '<div class="ms-field ms-field--color"><label class="ms-label">Texte</label><div class="ms-color-field-wrap">' +
+                '<input class="ms-color-input" type="color" data-field="textColor" value="#000000">' +
+                '<button class="ms-color-reset" type="button" data-reset-field="textColor" title="Réinitialiser"><span class="material-symbols-outlined">close</span></button>' +
+              '</div></div>' +
+            '</div>' +
+            '<div class="ms-field"><label class="ms-label">Image de fond (recouvre toute la section)</label><div class="ms-url-row">' +
+              '<input class="ms-input" type="url" data-field="sectionBgImage" value="" placeholder="https://...">' +
+              '<label class="ms-img-upload-btn" title="Uploader"><input type="file" accept="image/*" data-field-upload="sectionBgImage" data-section-id="' + id + '" style="display:none">' + uploadSvgHtml() + '</label>' +
+            '</div><p class="ms-hint">Optionnel — laissez vide pour garder le fond par défaut de cette section.</p></div>';
+            var formInner = styleRow + '<div class="ms-field"><label class="ms-label">Titre de la section</label><input class="ms-input" type="text" data-field="title" value="' + escHtml(title) + '" placeholder="Titre..."></div>';
             if (type === 'gallery') {
                 formInner += '<div class="ms-items-list" data-section-id="' + id + '" data-items-type="gallery" data-items-key="images"></div>' +
                   '<div class="ms-add-item-row">' +
@@ -1195,6 +1618,29 @@ block content
             } else if (type === 'faq') {
                 formInner += '<div class="ms-items-list" data-section-id="' + id + '" data-items-type="faq" data-items-key="items"></div>' +
                   '<div class="ms-add-item-row"><button class="ms-add-url-btn" type="button" data-add-item="' + id + '" data-items-type="faq">+ Ajouter une question</button></div>';
+            } else if (type === 'about') {
+                formInner +=
+                  '<div class="ms-field"><label class="ms-label">Accroche (sous-titre)</label><input class="ms-input" type="text" data-field="subtitle" value="" placeholder="Ex : Notre histoire..."></div>' +
+                  '<div class="ms-field"><label class="ms-label">Texte de présentation</label>' +
+                  '<div class="ms-rte-wrap">' +
+                    '<div class="ms-rte-toolbar">' +
+                      '<button class="ms-rte-btn" type="button" data-cmd="h2" title="Grand titre">H2</button>' +
+                      '<button class="ms-rte-btn" type="button" data-cmd="h3" title="Petit titre">H3</button>' +
+                      '<span class="ms-rte-sep"></span>' +
+                      '<button class="ms-rte-btn" type="button" data-cmd="bold" title="Gras">B</button>' +
+                      '<button class="ms-rte-btn" type="button" data-cmd="italic" title="Italique">I</button>' +
+                      '<button class="ms-rte-btn" type="button" data-cmd="underline" title="Souligné">U</button>' +
+                      '<span class="ms-rte-sep"></span>' +
+                      '<button class="ms-rte-btn" type="button" data-cmd="mark" title="Surligner">✦</button>' +
+                      '<span class="ms-rte-sep"></span>' +
+                      '<button class="ms-rte-btn" type="button" data-cmd="insertUnorderedList" title="Liste">≡</button>' +
+                      '<button class="ms-rte-btn" type="button" data-cmd="removeFormat" title="Effacer" style="margin-left:auto;font-weight:400;opacity:.6">✕</button>' +
+                    '</div>' +
+                    '<div class="ms-rte" contenteditable="true" data-field="text" data-rte="1" data-placeholder="Présentez votre établissement..."></div>' +
+                  '</div></div>' +
+                  '<p class="ms-hint" style="margin:8px 0 6px;font-weight:600;color:var(--ink)">Engagements / Valeurs</p>' +
+                  '<div class="ms-items-list" data-section-id="' + id + '" data-items-type="values" data-items-key="values"></div>' +
+                  '<div class="ms-add-item-row"><button class="ms-add-url-btn" type="button" data-add-item="' + id + '" data-items-type="values">+ Ajouter une valeur</button></div>';
             } else if (type === 'stats') {
                 var statsItems = data.items || [];
                 formInner += '<div class="ms-items-list" data-section-id="' + id + '" data-items-type="stats" data-items-key="items"></div>' +
@@ -1202,19 +1648,88 @@ block content
             } else if (type === 'cta') {
                 var bgOpts = [['primary','Couleur principale'],['dark','Sombre'],['gradient','Dégradé'],['soft','Doux']];
                 var bgBtns = bgOpts.map(function(b) { return '<button class="ms-layout-btn' + (b[0] === (data.bg||'primary') ? ' active' : '') + '" type="button" data-layout="' + b[0] + '">' + b[1] + '</button>'; }).join('');
-                formInner =
+                formInner = styleRow +
                   '<div class="ms-field"><label class="ms-label">Titre</label><input class="ms-input" type="text" data-field="title" value="' + escHtml(data.title||'Prêt à réserver ?') + '" placeholder="Titre accrocheur..."></div>' +
                   '<div class="ms-field"><label class="ms-label">Texte</label><textarea class="ms-input ms-input--textarea" data-field="text" rows="2" placeholder="Courte description...">' + escHtml(data.text||'') + '</textarea></div>' +
                   '<div class="ms-field"><label class="ms-label">Texte du bouton</label><input class="ms-input" type="text" data-field="buttonText" value="' + escHtml(data.buttonText||'Prendre rendez-vous') + '" placeholder="Ex: Réserver maintenant"></div>' +
                   '<div class="ms-field"><label class="ms-label">Lien du bouton</label><input class="ms-input" type="text" data-field="buttonUrl" value="' + escHtml(data.buttonUrl||'#booking') + '" placeholder="#booking ou https://..."></div>' +
                   '<div class="ms-field"><label class="ms-label">Style du fond</label><div class="ms-layout-btns" data-field="bg">' + bgBtns + '</div></div>';
             }
-            var dragH = '<div class="ms-drag-handle" draggable="true" title="Glisser pour réordonner"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="14" x2="20" y2="14"/><line x1="4" y1="20" x2="20" y2="20"/></svg></div>';
+            var dragH = '<div class="ms-drag-handle" draggable="true" title="Glisser pour réordonner"><span class="material-symbols-outlined">drag_indicator</span></div>';
             var list = document.getElementById('sectionsList');
             var div = document.createElement('div');
             div.className = 'ms-section-item';
             div.dataset.id = id;
-            div.innerHTML = '<div class="ms-section-item__hd">' + dragH + '<div class="ms-section-item__icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (icons[type] || icons.contact) + '</svg></div><span class="ms-section-item__name">' + (labels[type] || type) + '</span><div class="ms-section-item__actions"><button class="ms-icon-btn ms-section-up" type="button" title="Monter"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button><button class="ms-icon-btn ms-section-down" type="button" title="Descendre"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><button class="ms-toggle-btn on" type="button" title="Afficher/masquer"></button><button class="ms-icon-btn ms-section-edit" type="button" title="Modifier"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button></div></div><div class="ms-section-form" data-form="' + id + '">' + formInner + '</div>';
+            div.innerHTML = '<div class="ms-section-item__hd">' + dragH + '<div class="ms-section-item__icon"><span class="material-symbols-outlined">' + (icons[type] || icons.contact) + '</span></div><span class="ms-section-item__name" title="' + escHtml(labels[type] || type) + '">' + (labels[type] || type) + '</span><div class="ms-section-item__actions"><button class="ms-toggle-btn on" type="button" title="Afficher/masquer"></button><div class="ms-section-menu-wrap"><button class="ms-icon-btn ms-section-menu-btn" type="button" title="Plus d\'options"><span class="material-symbols-outlined">more_vert</span></button><div class="ms-section-menu"><button class="ms-section-menu__item ms-section-edit" type="button"><span class="material-symbols-outlined">edit</span>Modifier</button><button class="ms-section-menu__item ms-section-duplicate" type="button"><span class="material-symbols-outlined">content_copy</span>Dupliquer</button><button class="ms-section-menu__item ms-section-menu__item--danger ms-section-delete" type="button"><span class="material-symbols-outlined">delete</span>Supprimer</button></div></div></div></div><div class="ms-section-form" data-form="' + id + '">' + formInner + '</div>';
             list.appendChild(div);
             markDirty();
         }
+
+        // ── Layout template picker ────────────────────────────────────
+        if (!state.theme) state.theme = {};
+        document.querySelectorAll('.ms-layout-tpl-card').forEach(function(card) {
+            card.addEventListener('click', function() {
+                var tpl = card.dataset.layoutTpl;
+                if (!tpl || card.classList.contains('active')) return;
+                state.theme.siteTemplate = tpl;
+                document.querySelectorAll('.ms-layout-tpl-card').forEach(function(b){ b.classList.remove('active', 'is-switching'); });
+                card.classList.add('active', 'is-switching');
+                var fr = document.getElementById('previewFrame');
+                if (fr) {
+                    fr.addEventListener('load', function onLoad() {
+                        fr.removeEventListener('load', onLoad);
+                        card.classList.remove('is-switching');
+                    });
+                }
+                markDirty(true);
+            });
+        });
+
+        // ── Inline edit bridge (postMessage from preview iframe) ──────
+        window.addEventListener('message', function(e) {
+            if (!e.data || e.data.type !== 'bk:edit') return;
+            var s = getSectionById(e.data.sectionId);
+            if (!s) return;
+            s.data[e.data.field] = e.data.value;
+            var form = document.querySelector('[data-form="' + e.data.sectionId + '"]');
+            if (form) {
+                var inp = form.querySelector('[data-field="' + e.data.field + '"]');
+                if (inp) {
+                    if (inp.tagName === 'TEXTAREA') inp.value = e.data.value;
+                    else inp.value = e.data.value;
+                }
+            }
+            markDirty();
+        });
+
+        // Open a section's edit form from a click in the preview iframe
+        window.addEventListener('message', function(e) {
+            if (!e.data || e.data.type !== 'bk:openSection') return;
+            var sid = e.data.sectionId;
+            var item = document.querySelector('.ms-section-item[data-id="' + sid + '"]');
+            var form = document.querySelector('.ms-section-form[data-form="' + sid + '"]');
+            if (!item || !form) return;
+            document.querySelectorAll('.ms-tab').forEach(function(b){ b.classList.remove('active'); });
+            document.querySelectorAll('.ms-pane').forEach(function(p){ p.classList.remove('active'); });
+            document.querySelector('.ms-tab[data-tab="sections"]').classList.add('active');
+            document.querySelector('.ms-pane[data-pane="sections"]').classList.add('active');
+            document.querySelectorAll('.ms-section-form').forEach(function(f){ f.classList.remove('open'); });
+            form.classList.add('open');
+            renderItemsList(form, sid);
+            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+
+        // Per-element color set from the preview iframe (palette icon on hover)
+        window.addEventListener('message', function(e) {
+            if (!e.data || e.data.type !== 'bk:styleElement') return;
+            var s = getSectionById(e.data.sectionId);
+            if (!s) return;
+            if (!s.data.elementStyles) s.data.elementStyles = {};
+            if (e.data.prop === 'reset') {
+                delete s.data.elementStyles[e.data.field];
+            } else {
+                if (!s.data.elementStyles[e.data.field]) s.data.elementStyles[e.data.field] = {};
+                s.data.elementStyles[e.data.field][e.data.prop] = e.data.value;
+            }
+            markDirty(true);
+        });

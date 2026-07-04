@@ -424,26 +424,37 @@
   overflow-y: auto;
 }
 
+/* Deux lignes par rendez-vous : le nom du service a toute la largeur sur sa
+   propre ligne (juste partagée avec le badge de statut, compact) au lieu
+   d'être compressé à côté de la date + prix + select — c'est ce qui le
+   coupait à 1-2 caractères avant. */
 .booking-mini-item {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 4px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 4px;
   border-bottom: 1px solid var(--border-light);
   font-size: 12.5px;
 }
 .booking-mini-item:last-child { border-bottom: none; }
 
+.booking-mini-item__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.booking-mini-item__row--meta { justify-content: space-between; }
+
 .booking-mini-item__date {
   color: var(--text-muted);
   white-space: nowrap;
   flex-shrink: 0;
-  width: 78px;
 }
 .booking-mini-item__service {
   color: var(--text-primary, var(--ink));
-  font-weight: 500;
+  font-weight: 600;
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -457,6 +468,13 @@
   flex-shrink: 0;
 }
 .booking-mini-item__status--canceled { color: #ef4444; }
+
+.booking-mini-item__meta-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 
 .booking-mini-item__price {
   color: var(--text-secondary);

@@ -1642,7 +1642,11 @@ exports.getUserPaymentMethods = async function (user) {
 exports.historyInit = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = 13;
+    const requestedLimit = parseInt(req.query.limit);
+    // Le client mesure la hauteur d'écran dispo et redemande la page avec le
+    // nombre de lignes qui y tient réellement (cf. history.js) — bornes de
+    // sécurité pour éviter un paramètre absurde/abusif.
+    const limit = Number.isFinite(requestedLimit) ? Math.min(50, Math.max(5, requestedLimit)) : 13;
     const skip = (page - 1) * limit;
 
     const now = new Date();
@@ -1663,6 +1667,7 @@ exports.historyInit = async (req, res) => {
       title: res.locals.t.titles.history,
       history,
       currentPage: page,
+      currentLimit: limit,
       totalBookings,
       totalPages,
     });

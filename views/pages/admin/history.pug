@@ -5,7 +5,7 @@ block links
     link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0")
 
 block content
-    .hist-page
+    .hist-page(data-current-limit=currentLimit data-total-bookings=totalBookings)
 
         //- ── Free plan banner ────────────────────────────────────
         if currentPlan === 'basic'
@@ -123,7 +123,7 @@ block content
                     .hist-pag-center
                         //- Prev
                         if currentPage > 1
-                            a.hist-pag-btn(href=`/history?page=${currentPage - 1}` title="Précédent")
+                            a.hist-pag-btn(href=`/history?page=${currentPage - 1}&limit=${currentLimit}` title="Précédent")
                                 svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                     path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
                         else
@@ -136,7 +136,7 @@ block content
                         - var endPg   = Math.min(totalPages, currentPage + 2)
 
                         if startPg > 1
-                            a.hist-pag-btn(href="/history?page=1") 1
+                            a.hist-pag-btn(href=`/history?page=1&limit=${currentLimit}`) 1
                         if startPg > 2
                             span.hist-pag-dots …
 
@@ -144,16 +144,16 @@ block content
                             if pg === currentPage
                                 span.hist-pag-btn.is-active= pg
                             else
-                                a.hist-pag-btn(href=`/history?page=${pg}`)= pg
+                                a.hist-pag-btn(href=`/history?page=${pg}&limit=${currentLimit}`)= pg
 
                         if endPg < totalPages - 1
                             span.hist-pag-dots …
                         if endPg < totalPages
-                            a.hist-pag-btn(href=`/history?page=${totalPages}`)= totalPages
+                            a.hist-pag-btn(href=`/history?page=${totalPages}&limit=${currentLimit}`)= totalPages
 
                         //- Next
                         if currentPage < totalPages
-                            a.hist-pag-btn(href=`/history?page=${currentPage + 1}` title="Suivant")
+                            a.hist-pag-btn(href=`/history?page=${currentPage + 1}&limit=${currentLimit}` title="Suivant")
                                 svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                     path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
                         else
@@ -212,7 +212,7 @@ block content
                     span.hist-pag-info Page #{currentPage} / #{totalPages}
                     .hist-pag-center
                         if currentPage > 1
-                            a.hist-pag-btn(href=`/history?page=${currentPage - 1}`)
+                            a.hist-pag-btn(href=`/history?page=${currentPage - 1}&limit=${currentLimit}`)
                                 svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                     path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
                         else
@@ -220,7 +220,7 @@ block content
                                 svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                     path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
                         if currentPage < totalPages
-                            a.hist-pag-btn(href=`/history?page=${currentPage + 1}`)
+                            a.hist-pag-btn(href=`/history?page=${currentPage + 1}&limit=${currentLimit}`)
                                 svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                     path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
                         else

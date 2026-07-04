@@ -120,17 +120,20 @@ block content
                             each b in bookings.slice(0, 10)
                                 - var pm = (b.payment && b.payment.method) || 'none'
                                 li.booking-mini-item(data-id=String(b._id))
-                                    span.booking-mini-item__date= new Date(b.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
-                                    span.booking-mini-item__service= b.serviceName || 'Rendez-vous'
-                                    span.booking-mini-item__price= (b.payment && b.payment.amount) ? `${b.payment.amount}€` : '—'
-                                    select.booking-mini-item__payment(data-id=String(b._id) title="Moyen de paiement de cette séance")
-                                        option(value="none" selected=(pm === 'none'))= t.dossier.payment_method_placeholder
-                                        option(value="cash" selected=(pm === 'cash'))= t.dossier.pay_cash
-                                        option(value="on_site" selected=(pm === 'on_site'))= t.dossier.pay_card_on_site
-                                        option(value="bank_transfer" selected=(pm === 'bank_transfer'))= t.dossier.pay_bank_transfer
-                                        option(value="paypal" selected=(pm === 'paypal'))= t.dossier.pay_paypal
-                                        option(value="online" selected=(pm === 'online'))= t.dossier.pay_online
-                                    span.booking-mini-item__status(class=`booking-mini-item__status--${b.status}`)= b.status === 'canceled' ? t.dossier.status_canceled : t.dossier.status_confirmed
+                                    .booking-mini-item__row
+                                        span.booking-mini-item__service(title=b.serviceName || 'Rendez-vous')= b.serviceName || 'Rendez-vous'
+                                        span.booking-mini-item__status(class=`booking-mini-item__status--${b.status}`)= b.status === 'canceled' ? t.dossier.status_canceled : t.dossier.status_confirmed
+                                    .booking-mini-item__row.booking-mini-item__row--meta
+                                        span.booking-mini-item__date= new Date(b.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+                                        .booking-mini-item__meta-right
+                                            span.booking-mini-item__price= (b.payment && b.payment.amount) ? `${b.payment.amount}€` : '—'
+                                            select.booking-mini-item__payment(data-id=String(b._id) title="Moyen de paiement de cette séance")
+                                                option(value="none" selected=(pm === 'none'))= t.dossier.payment_method_placeholder
+                                                option(value="cash" selected=(pm === 'cash'))= t.dossier.pay_cash
+                                                option(value="on_site" selected=(pm === 'on_site'))= t.dossier.pay_card_on_site
+                                                option(value="bank_transfer" selected=(pm === 'bank_transfer'))= t.dossier.pay_bank_transfer
+                                                option(value="paypal" selected=(pm === 'paypal'))= t.dossier.pay_paypal
+                                                option(value="online" selected=(pm === 'online'))= t.dossier.pay_online
 
     //- ── Modal : Nouvelle / Modifier une note ─────────────────────────────────
     .modal-overlay#entryModalOverlay

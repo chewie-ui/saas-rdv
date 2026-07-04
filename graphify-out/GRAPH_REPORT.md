@@ -1,16 +1,16 @@
-# Graph Report - saas-rdv  (2026-07-02)
+# Graph Report - saas-rdv  (2026-07-04)
 
 ## Corpus Check
-- 159 files · ~2,232,204 words
+- 159 files · ~2,242,795 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1644 nodes · 2380 edges · 123 communities (106 shown, 17 thin omitted)
+- 1649 nodes · 2389 edges · 124 communities (104 shown, 20 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 17 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `bdf9f527`
+- Built from commit: `a06dca06`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -125,6 +125,7 @@
 - [[_COMMUNITY_Community 110|Community 110]]
 - [[_COMMUNITY_Community 112|Community 112]]
 - [[_COMMUNITY_Community 113|Community 113]]
+- [[_COMMUNITY_Community 123|Community 123]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `$()` - 32 edges
@@ -153,7 +154,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (123 total, 17 thin omitted)
+## Communities (124 total, 20 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.06
@@ -176,8 +177,8 @@ Cohesion: 0.07
 Nodes (31): initAppointmentPopup(), initCalendarHeader(), initDeleteAppointment(), renderSessionRows(), resetForm(), setMode(), setSelectedWeekdays(), applyApptHeights() (+23 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.05
-Nodes (34): Booking, ClientDossier, listClients(), normalizeEmail(), PAYMENT_METHODS, viewClient(), clientDossierSchema, dossierEntrySchema (+26 more)
+Cohesion: 0.14
+Nodes (19): Booking, Client, ClientDossier, COMMIT, countRefs(), env, findReviewCollision(), fs (+11 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.04
@@ -185,11 +186,11 @@ Nodes (34): availability, bufferAfterRange, bufferAfterVal, bufferBeforeRange, b
 
 ### Community 7 - "Community 7"
 Cohesion: 0.05
-Nodes (22): { addEventToCalendar, deleteEventFromCalendar, updateEventInCalendar, getBusyIntervals }, Booking, buildConflictQuery(), Company, CompanyMembership, DaysOff, env, Form (+14 more)
+Nodes (29): { addEventToCalendar, deleteEventFromCalendar, updateEventInCalendar, getBusyIntervals }, availability(), Booking, buildConflictQuery(), Company, CompanyMembership, customizeCalendarPage(), DaysOff (+21 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.05
-Nodes (22): bcrypt, Booking, Client, User, Client, CompanyMembership, Client, Client (+14 more)
+Cohesion: 0.12
+Nodes (4): bcrypt, Booking, Client, User
 
 ### Community 9 - "Community 9"
 Cohesion: 0.06
@@ -220,24 +221,24 @@ Cohesion: 0.07
 Nodes (20): addMinutes(), checkAll, clearSearch, collectPayload(), dateFilter, doSave(), editStatusInput, empFilter (+12 more)
 
 ### Community 16 - "Community 16"
-Cohesion: 0.10
-Nodes (20): Company, createService(), deleteService(), fs, { getLimit }, { logActivity }, { nextAvailableColor }, path (+12 more)
+Cohesion: 0.11
+Nodes (15): Company, createService(), deleteService(), fs, { getLimit }, { logActivity }, { nextAvailableColor }, path (+7 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.15
-Nodes (23): Company, CompanyGrade, CompanyMembership, createEstablishment(), deleteEstablishment(), ensureDefaultGrade(), { getPlan, getLimit }, inviteCollaborator() (+15 more)
+Cohesion: 0.14
+Nodes (24): Company, CompanyGrade, CompanyMembership, deleteEstablishment(), ensureBuiltInGrades(), ensureDefaultGrade(), { getPlan, getLimit }, inviteCollaborator() (+16 more)
 
 ### Community 18 - "Community 18"
 Cohesion: 0.08
 Nodes (25): editAvailabilty(), editSlotTime(), historyDeleteRow(), historyInit(), historySearch(), panel(), resolveScheduleUpdateTarget(), resumeSubscription() (+17 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.09
-Nodes (20): { addEventToCalendar, deleteEventFromCalendar, getBusyIntervals }, Booking, Company, DaysOff, _env, generateRecurringOccurrences(), { getAppointments }, { getBookableTeam } (+12 more)
+Cohesion: 0.07
+Nodes (36): { addEventToCalendar, deleteEventFromCalendar, getBusyIntervals }, Booking, cancelBooking(), Company, createBookingPaymentIntent(), createBookingSetupIntent(), DaysOff, _env (+28 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.13
-Nodes (22): addDaysOff(), Company, companyInfos(), CompanyMembership, DaysOff, deleteTimeSlot(), getDaysOff(), removeDayOff() (+14 more)
+Cohesion: 0.11
+Nodes (25): DaysOff, daysOffSchema, mongoose, addDaysOff(), Company, companyInfos(), CompanyMembership, DaysOff (+17 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.13
@@ -248,18 +249,18 @@ Cohesion: 0.09
 Nodes (19): AMENITY_OPTIONS, BADGE_OPTIONS, Companies, establishmentController, { getCompanyIfExist }, getServices, isAuth, isClientOrUserAuth (+11 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.10
-Nodes (17): checkCodePwd(), loginEventSchema, mongoose, Client, Company, { createOAuthClient }, {
+Cohesion: 0.11
+Nodes (15): logout(), Client, Company, { createOAuthClient }, {
   createUser,
   logout,
   forgotPasswordVerifyCode,
   checkCodePwd,
   newPwd,
-}, crypto (+9 more)
+}, crypto, getServices, { google } (+7 more)
 
 ### Community 24 - "Community 24"
-Cohesion: 0.13
-Nodes (17): Company, defaultSections(), editorPage(), fs, makeSlug(), multerConfig, path, pug (+9 more)
+Cohesion: 0.09
+Nodes (25): Company, defaultSections(), editorPage(), fetchReviews(), fs, makeSlug(), multerConfig, path (+17 more)
 
 ### Community 25 - "Community 25"
 Cohesion: 0.19
@@ -271,31 +272,31 @@ Nodes (12): cards, catBtns, CATEGORY_MAP, countEl, inputLoc, inputName, menuLoc,
 
 ### Community 27 - "Community 27"
 Cohesion: 0.12
-Nodes (17): bcrypt, Client, Company, CompanyMembership, createUser(), crypto, generateReferralCode(), getCompanyIfExist() (+9 more)
+Nodes (17): bcrypt, checkCodePwd(), Client, Company, CompanyMembership, createUser(), crypto, generateReferralCode() (+9 more)
 
 ### Community 28 - "Community 28"
-Cohesion: 0.15
-Nodes (15): cancelBooking(), createBookingPaymentIntent(), createBookingSetupIntent(), getBookingC(), getDaysOff(), getDisabledDays(), getSchedule(), hoursUntil() (+7 more)
+Cohesion: 0.50
+Nodes (3): clientDossierSchema, dossierEntrySchema, mongoose
 
 ### Community 29 - "Community 29"
 Cohesion: 0.15
 Nodes (13): { activeSupervisions }, Booking, { clientWord }, Company, CompanyMembership, { getAdminFeaturesFlags }, { getLimit }, { resolvePermissions, resolveCanManageOwnTimeOff } (+5 more)
 
 ### Community 30 - "Community 30"
-Cohesion: 0.12
-Nodes (15): accountController, establishmentController, gradeController, injectCompany, isAuth, { processSingleImage, processMultipleImages }, requireCollaboratorsManage, requireEstablishmentDelete (+7 more)
+Cohesion: 0.13
+Nodes (14): accountController, establishmentController, gradeController, injectCompany, isAuth, { processSingleImage, processMultipleImages }, requireCollaboratorsManage, requireEstablishmentDelete (+6 more)
 
 ### Community 31 - "Community 31"
 Cohesion: 0.13
 Nodes (14): app, compression, cookieParser, env, express, fs, googleCalendarRoutes, injectSubscription (+6 more)
 
 ### Community 32 - "Community 32"
-Cohesion: 0.17
-Nodes (11): employeeSchema, mongoose, createEmployee(), deleteEmployee(), Employee, employeesPage(), { getLimit }, { logActivity } (+3 more)
+Cohesion: 0.19
+Nodes (10): createEmployee(), deleteEmployee(), Employee, employeesPage(), { getLimit }, { logActivity }, parseAge(), parseDescription() (+2 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.16
-Nodes (10): mongoose, serviceSchema, createBooking(), getBooking(), courseRangesFor(), getCoursesForDate(), Service, weekdayOf() (+2 more)
+Cohesion: 0.15
+Nodes (15): book(), checkBookingConflict(), createAdminBlock(), createAdminBooking(), historyEditRow(), createBooking(), listGroupSessions(), getCompanyEmployees() (+7 more)
 
 ### Community 34 - "Community 34"
 Cohesion: 0.14
@@ -306,8 +307,8 @@ Cohesion: 0.15
 Nodes (12): boolField, companyGradeSchema, mongoose, Company, CompanyGrade, CompanyMembership, { DEFAULT_GRADE_TEMPLATES }, ensureBuiltInGrades() (+4 more)
 
 ### Community 36 - "Community 36"
-Cohesion: 0.19
-Nodes (13): Booking, createCourse(), deleteCourse(), { getBookableTeam }, { getLimit }, getSessionParticipants(), { nextAvailableColor }, sanitizeSessions() (+5 more)
+Cohesion: 0.14
+Nodes (18): Booking, createCourse(), deleteCourse(), { getBookableTeam }, { getLimit }, getSessionParticipants(), { nextAvailableColor }, sanitizeSessions() (+10 more)
 
 ### Community 37 - "Community 37"
 Cohesion: 0.19
@@ -338,44 +339,44 @@ Cohesion: 0.18
 Nodes (8): getDaysOff(), addDay(), daysOffArray, setDays(), getDaysOff(), initCalendar(), monthsArray, weekdaysArray
 
 ### Community 44 - "Community 44"
-Cohesion: 0.17
-Nodes (9): renderAppointments(), env, mongoose, Booking, bookingSchema, crypto, mongoose, Booking (+1 more)
+Cohesion: 0.25
+Nodes (6): env, mongoose, Booking, bookingSchema, crypto, mongoose
 
 ### Community 45 - "Community 45"
 Cohesion: 0.17
 Nodes (12): addFaq(), addSection(), addVideo(), deleteFaq(), deleteSection(), deleteVideo(), getOrCreateSupportContent(), reorderSections() (+4 more)
 
 ### Community 46 - "Community 46"
-Cohesion: 0.17
-Nodes (11): ctrl, guard, guardManage, guardView, injectCompany, isAuth, { processSingleImage }, { requirePermission } (+3 more)
+Cohesion: 0.18
+Nodes (10): ctrl, guard, guardManage, guardView, injectCompany, isAuth, { processSingleImage }, { requirePermission } (+2 more)
 
 ### Community 47 - "Community 47"
-Cohesion: 0.18
-Nodes (9): multer, storage, ctrl, guard, injectCompany, isAuth, { processSingleImage }, router (+1 more)
+Cohesion: 0.12
+Nodes (14): multer, storage, processSingleImage(), ctrl, guard, injectCompany, isAuth, { processSingleImage } (+6 more)
 
 ### Community 48 - "Community 48"
-Cohesion: 0.22
-Nodes (10): cancelBooking(), deleteBooking(), resolveActorRole(), restoreBooking(), saveCancellationPolicy(), savePrepaymentSettings(), sendManualReminder(), atLeast() (+2 more)
+Cohesion: 0.38
+Nodes (7): cancelBooking(), deleteBooking(), resolveActorRole(), restoreBooking(), saveCancellationPolicy(), savePrepaymentSettings(), atLeast()
 
 ### Community 49 - "Community 49"
-Cohesion: 0.29
-Nodes (10): Company, CompanyGrade, CompanyMembership, createGrade(), deleteGrade(), listGrades(), loadCompanyOr404(), { PERMISSION_SCHEMA, PERMISSION_GROUPS, DEFAULT_GRADE_TEMPLATES } (+2 more)
+Cohesion: 0.23
+Nodes (12): Company, CompanyGrade, CompanyMembership, createGrade(), deleteGrade(), listGrades(), loadCompanyOr404(), { PERMISSION_SCHEMA, PERMISSION_GROUPS, DEFAULT_GRADE_TEMPLATES } (+4 more)
 
 ### Community 50 - "Community 50"
 Cohesion: 0.20
 Nodes (9): { getFlagsMap }, { hrefToKey }, cheerio, FR_LOCALE_PATH, fs, hrefToKey(), path, pug (+1 more)
 
 ### Community 51 - "Community 51"
-Cohesion: 0.20
-Nodes (7): Company, companySchema, mongoose, Company, CompanyMembership, env, mongoose
+Cohesion: 0.16
+Nodes (6): Booking, ClientDossier, listClients(), normalizeEmail(), PAYMENT_METHODS, viewClient()
 
 ### Community 52 - "Community 52"
-Cohesion: 0.22
-Nodes (8): editEmailConfirmation(), sendDeleteCode(), forgotPasswordVerifyCode(), contactForm(), { sendEmail }, apiInstance, sendEmail(), SibApiV3Sdk
+Cohesion: 0.20
+Nodes (9): editEmailConfirmation(), sendDeleteCode(), sendManualReminder(), forgotPasswordVerifyCode(), contactForm(), { sendEmail }, apiInstance, sendEmail() (+1 more)
 
 ### Community 53 - "Community 53"
-Cohesion: 0.24
-Nodes (9): book(), checkBookingConflict(), createAdminBlock(), createAdminBooking(), historyEditRow(), getCompanyEmployees(), Company, CompanyMembership (+1 more)
+Cohesion: 0.29
+Nodes (5): Company, companySchema, mongoose, Company, CompanyMembership
 
 ### Community 54 - "Community 54"
 Cohesion: 0.22
@@ -398,12 +399,12 @@ Cohesion: 0.22
 Nodes (9): pauseCompany(), respondJoinRequest(), resumeCompany(), disconnectStripeConnect(), initiateStripeConnect(), requireScheduleEditPermission(), requireSettingsAccess(), requireTimeOffPermission() (+1 more)
 
 ### Community 60 - "Community 60"
-Cohesion: 0.22
-Nodes (9): purchaseAddonCustomUrl(), requestJoinCompany(), ensureBuiltInGrades(), formatCompanyForList(), getServices, listMyEstablishments(), renderCollaboratorsPage(), renderGradesPage() (+1 more)
+Cohesion: 0.15
+Nodes (15): purchaseAddonCustomUrl(), requestJoinCompany(), formsIndex(), informationsPage(), saveForm(), settingsInit(), createEstablishment(), formatCompanyForList() (+7 more)
 
 ### Community 61 - "Community 61"
-Cohesion: 0.22
-Nodes (5): ACTION_LABELS, ActivityLog, activityLogSchema, mongoose, ActivityLog
+Cohesion: 0.29
+Nodes (4): ACTION_LABELS, ActivityLog, activityLogSchema, mongoose
 
 ### Community 62 - "Community 62"
 Cohesion: 0.31
@@ -411,19 +412,19 @@ Nodes (8): convertToFile(), decodeHeic(), DEST_DIR, fs, isHeic(), path, processM
 
 ### Community 63 - "Community 63"
 Cohesion: 0.25
-Nodes (7): EMPTY_PERMISSIONS, getPermissionsForCompanyAndUser(), OWNER_PERMISSIONS, PERMISSION_GROUPS, PERMISSION_SCHEMA, resolveCanManageOwnTimeOff(), resolvePermissions()
+Nodes (7): EMPTY_PERMISSIONS, getPermissionsForCompanyAndUser(), OWNER_PERMISSIONS, requirePermission(), requirePermissionForParamCompany(), resolveCanManageOwnTimeOff(), resolvePermissions()
 
 ### Community 64 - "Community 64"
-Cohesion: 0.25
-Nodes (5): companyMembershipSchema, mongoose, CompanyMembership, env, mongoose
+Cohesion: 0.14
+Nodes (9): companyMembershipSchema, mongoose, CompanyMembership, env, mongoose, Company, CompanyMembership, env (+1 more)
 
 ### Community 65 - "Community 65"
 Cohesion: 0.25
 Nodes (6): bcrypt, passport, User, mongoose, User, userSchema
 
 ### Community 66 - "Community 66"
-Cohesion: 0.25
-Nodes (8): customizeCalendarPage(), formsIndex(), getServices, informationsPage(), saveForm(), settingsInit(), listGroupSessions(), getLimit()
+Cohesion: 0.13
+Nodes (12): Client, Client, { createOAuthClient }, crypto, ctrl, { google }, isClientAuth, isClientOrUserAuth (+4 more)
 
 ### Community 67 - "Community 67"
 Cohesion: 0.25
@@ -436,10 +437,6 @@ Nodes (6): app, http, https, io, reminderScheduler, server
 ### Community 69 - "Community 69"
 Cohesion: 0.48
 Nodes (5): applyTheme(), getCurrentTheme(), setStoredTheme(), toggleTheme(), updateAllToggles()
-
-### Community 71 - "Community 71"
-Cohesion: 0.29
-Nodes (5): processSingleImage(), ctrl, { processSingleImage }, router, upload
 
 ### Community 72 - "Community 72"
 Cohesion: 0.29
@@ -470,12 +467,12 @@ Cohesion: 0.40
 Nodes (3): updateAbout(), ALLOWED_TAGS, sanitizeRichText()
 
 ### Community 79 - "Community 79"
-Cohesion: 0.50
-Nodes (5): appointment(), generateTimeSlots(), getWeekData(), getWeekDays(), GetAllAppointments()
+Cohesion: 0.25
+Nodes (8): appointment(), generateTimeSlots(), getWeekData(), getWeekDays(), renderAppointments(), Booking, GetAllAppointments(), getAppointments()
 
 ### Community 80 - "Community 80"
-Cohesion: 0.40
-Nodes (5): availability(), generateHours(), getDaysOff(), getSlotConfig(), getSlotTime()
+Cohesion: 0.22
+Nodes (6): mongoose, reviewSchema, Client, Company, Review, router
 
 ### Community 81 - "Community 81"
 Cohesion: 0.40
@@ -497,10 +494,6 @@ Nodes (4): fs, langs, path, translations
 Cohesion: 0.40
 Nodes (3): Companies, mongoose, User
 
-### Community 87 - "Community 87"
-Cohesion: 0.50
-Nodes (3): DaysOff, daysOffSchema, mongoose
-
 ### Community 88 - "Community 88"
 Cohesion: 0.50
 Nodes (3): env, session, store
@@ -514,8 +507,8 @@ Cohesion: 0.50
 Nodes (3): accessLinkSchema, mongoose, useSchema
 
 ### Community 91 - "Community 91"
-Cohesion: 0.50
-Nodes (3): { Schema, model }, SectionSchema, SiteSchema
+Cohesion: 0.22
+Nodes (6): Client, CompanyMembership, Client, Client, clientSchema, mongoose
 
 ### Community 92 - "Community 92"
 Cohesion: 0.50
@@ -534,21 +527,21 @@ Cohesion: 0.67
 Nodes (3): parseGmapUrl(), resolveGmapUrl(), setStatus()
 
 ## Knowledge Gaps
-- **716 isolated node(s):** `env`, `express`, `path`, `passport`, `cookieParser` (+711 more)
+- **717 isolated node(s):** `env`, `express`, `path`, `passport`, `cookieParser` (+712 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **17 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **20 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `sendEmail()` connect `Community 52` to `Community 33`, `Community 2`, `Community 38`, `Community 7`, `Community 48`, `Community 19`, `Community 53`, `Community 22`, `Community 24`, `Community 27`, `Community 28`?**
+- **Why does `sendEmail()` connect `Community 52` to `Community 33`, `Community 2`, `Community 38`, `Community 7`, `Community 48`, `Community 19`, `Community 22`, `Community 24`, `Community 27`?**
   _High betweenness centrality (0.013) - this node is a cross-community bridge._
-- **Why does `getLimit()` connect `Community 66` to `Community 32`, `Community 33`, `Community 36`, `Community 7`, `Community 80`, `Community 17`, `Community 16`, `Community 19`, `Community 48`, `Community 60`, `Community 29`?**
-  _High betweenness centrality (0.010) - this node is a cross-community bridge._
-- **Why does `logActivity()` connect `Community 17` to `Community 32`, `Community 7`, `Community 48`, `Community 16`, `Community 61`?**
+- **Why does `getLimit()` connect `Community 60` to `Community 32`, `Community 33`, `Community 36`, `Community 7`, `Community 16`, `Community 17`, `Community 19`, `Community 29`?**
+  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+- **Why does `logActivity()` connect `Community 17` to `Community 32`, `Community 7`, `Community 48`, `Community 16`, `Community 60`?**
   _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **What connects `env`, `express`, `path` to the rest of the system?**
-  _716 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _717 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.05669710806697108 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**

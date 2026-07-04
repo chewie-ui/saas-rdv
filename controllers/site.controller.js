@@ -2,6 +2,7 @@ const Site = require("../db/models/site.model");
 const Service = require("../db/models/company/service.model");
 const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
+const Review = require("../db/models/review.model");
 const multerConfig = require("../config/multer");
 const sharp = require("sharp");
 const fs = require("fs");
@@ -10,6 +11,18 @@ const pug = require("pug");
 const { sendEmail } = require("../utils/mailer");
 
 const SITE_IMG_DIR = path.join(__dirname, "..", "public", "uploads", "site");
+
+async function fetchReviews(companyId) {
+  let reviews = [], avgRating = 0, reviewCount = 0;
+  try {
+    reviews = await Review.find({ company: companyId }).sort({ createdAt: -1 }).limit(50).lean();
+    reviewCount = reviews.length;
+    if (reviewCount > 0) {
+      avgRating = Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviewCount) * 10) / 10;
+    }
+  } catch (_) {}
+  return { reviews, avgRating, reviewCount };
+}
 
 function makeSlug(str) {
   return String(str)
@@ -83,13 +96,39 @@ exports.editorPage = async (req, res) => {
   });
 };
 
+function sanitizeHtml(raw) {
+  if (!raw || typeof raw !== "string") return raw;
+  return raw
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, "")
+    .replace(/\son\w+\s*=\s*[^\s>]*/gi, "")
+    .replace(/href\s*=\s*["']javascript:[^"']*["']/gi, 'href="#"')
+    .replace(/<iframe[\s\S]*?>/gi, "")
+    .replace(/<object[\s\S]*?>/gi, "")
+    .replace(/<embed[\s\S]*?>/gi, "");
+}
+
+function sanitizeSections(sections) {
+  if (!Array.isArray(sections)) return sections;
+  return sections.map(s => {
+    if (s.data && typeof s.data === "object") {
+      const d = { ...s.data };
+      ["text", "subtitle", "title"].forEach(k => {
+        if (typeof d[k] === "string") d[k] = sanitizeHtml(d[k]);
+      });
+      s = { ...s, data: d };
+    }
+    return s;
+  });
+}
+
 exports.save = async (req, res) => {
   try {
     const company = res.locals.currentCompany;
     const { sections, theme, seo, logoUrl, slug, customDomain, social } = req.body;
     const site = await Site.findOne({ company: company._id });
     if (!site) return res.status(404).json({ error: "Site introuvable" });
-    if (sections !== undefined) site.sections = sections;
+    if (sections !== undefined) site.sections = sanitizeSections(sections);
     if (theme) Object.assign(site.theme, theme);
     if (seo) Object.assign(site.seo, seo);
     if (logoUrl !== undefined) site.logoUrl = logoUrl;
@@ -131,7 +170,8 @@ exports.previewSite = async (req, res) => {
   if (!site) return res.status(404).send("<p>Site non créé.</p>");
   const services = await Service.find({ company: company._id, active: true }).sort("order").lean();
   const companySlug = company.slug || String(company._id);
-  res.render("public/site", { site, company, services, companySlug, isPreview: true });
+  const { reviews, avgRating, reviewCount } = await fetchReviews(company._id);
+  res.render("public/site", { site, company, services, companySlug, isPreview: true, reviews, avgRating, reviewCount });
 };
 
 exports.uploadImage = [
@@ -189,7 +229,8 @@ exports.publicSite = async (req, res) => {
     const services = await Service.find({ company: company._id, active: true }).sort("order").lean();
     const companySlug = company.slug || String(company._id);
     Site.findByIdAndUpdate(site._id, { $inc: { visitCount: 1 } }).exec().catch(() => {});
-    res.render("public/site", { site, company, services, companySlug, isPreview: false });
+    const { reviews, avgRating, reviewCount } = await fetchReviews(company._id);
+    res.render("public/site", { site, company, services, companySlug, isPreview: false, reviews, avgRating, reviewCount });
   } catch (err) {
     console.error("[site.publicSite]", err);
     res.status(500).render("client/404");

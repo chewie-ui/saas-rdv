@@ -14,8 +14,9 @@ function showDeleteConfirm({ title = "Supprimer ce rendez-vous ?", desc = "Cette
       #__deleteModal .dm{background:#fff;border-radius:20px;max-width:420px;width:100%;box-shadow:0 24px 48px -8px rgba(0,0,0,.22),0 8px 16px -4px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:0;overflow:hidden;animation:__dslidein .18s cubic-bezier(.34,1.4,.64,1)}
       #__deleteModal .dm__head{padding:24px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
       #__deleteModal .dm__icon-wrap{width:44px;height:44px;border-radius:50%;background:#fef2f2;border:1px solid #fecaca;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-      #__deleteModal .dm__icon-wrap svg{stroke:#dc2626}
+      #__deleteModal .dm__icon-wrap .material-symbols-outlined{font-size:22px;color:#dc2626}
       #__deleteModal .dm__close{background:none;border:none;cursor:pointer;color:#9ca3af;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;flex-shrink:0;padding:0}
+      #__deleteModal .dm__close .material-symbols-outlined{font-size:18px}
       #__deleteModal .dm__close:hover{background:#f3f4f6;color:#111}
       #__deleteModal .dm__body{padding:16px 24px 0;display:flex;flex-direction:column;gap:6px}
       #__deleteModal .dm__title{font-size:17px;font-weight:700;color:#111;letter-spacing:-.01em;margin:0}
@@ -27,21 +28,15 @@ function showDeleteConfirm({ title = "Supprimer ce rendez-vous ?", desc = "Cette
       #__deleteModal .dm__confirm:hover{background:#b91c1c;transform:translateY(-1px)}
       #__deleteModal .dm__confirm:active{transform:translateY(0)}
       #__deleteModal .dm__confirm.loading{opacity:.6;cursor:wait;pointer-events:none}
+      #__deleteModal .dm__confirm .material-symbols-outlined{font-size:16px}
     </style>
     <div class="dm">
       <div class="dm__head">
         <div class="dm__icon-wrap">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-            <path d="M10 11v6M14 11v6"></path>
-            <path d="M9 6V4h6v2"></path>
-          </svg>
+          <span class="material-symbols-outlined">delete</span>
         </div>
         <button class="dm__close" aria-label="Fermer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
+          <span class="material-symbols-outlined">close</span>
         </button>
       </div>
       <div class="dm__body">
@@ -51,10 +46,7 @@ function showDeleteConfirm({ title = "Supprimer ce rendez-vous ?", desc = "Cette
       <div class="dm__actions">
         <button class="dm__cancel">Annuler</button>
         <button class="dm__confirm">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-          </svg>
+          <span class="material-symbols-outlined">delete</span>
           ${confirmLabel}
         </button>
       </div>

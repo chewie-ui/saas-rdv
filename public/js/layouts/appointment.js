@@ -581,7 +581,20 @@ setInterval(updateTimeline, 60000);
       const bodyHeight = fitsWithoutScroll ? Math.max(available - headerH, neededBody) : neededBody;
       const rowH = Math.max(Math.floor(bodyHeight / numRows), MIN_ROW_H);
 
-      section.style.height = `${available}px`;
+      // La hauteur réelle du contenu (numRows * rowH, arrondi par le floor
+      // ci-dessus) est presque toujours < bodyHeight à cause de l'arrondi —
+      // si on fixe `section.style.height` à `available`, cet écart devient
+      // une zone vide en bas sur laquelle on peut quand même scroller
+      // (visible notamment sur Safari/macOS où les arrondis sub-pixel
+      // diffèrent). On borne donc la hauteur du conteneur à la hauteur
+      // réellement occupée par le contenu (+ son padding vertical CSS,
+      // sinon ce padding déborde et recrée le même écart scrollable) quand
+      // tout rentre déjà sans scroll.
+      const sectionStyle = getComputedStyle(section);
+      const verticalPadding = parseFloat(sectionStyle.paddingTop || "0") + parseFloat(sectionStyle.paddingBottom || "0");
+      const actualHeight = fitsWithoutScroll ? headerH + rowH * numRows + verticalPadding : available;
+
+      section.style.height = `${actualHeight}px`;
       section.style.overflowY = fitsWithoutScroll ? "hidden" : "auto";
       section.style.setProperty("--cal-row-h", `${rowH}px`);
     } else {

@@ -12,6 +12,26 @@
   var gFont = fontFamily.replace(/ /g, '+')
   var softColor = 'rgba(' + parseInt(primaryColor.slice(1,3),16) + ',' + parseInt(primaryColor.slice(3,5),16) + ',' + parseInt(primaryColor.slice(5,7),16) + ',.09)'
   var navSections = _sections.filter(function(s){ return ['services','booking','about','contact'].includes(s.type); })
+  var _elementStylesMap = _sections.reduce(function(acc, s) {
+    if (s.data && s.data.elementStyles) {
+      Object.keys(s.data.elementStyles).forEach(function(field) {
+        acc[s.id + ':' + field] = s.data.elementStyles[field]
+      })
+    }
+    return acc
+  }, {})
+  function sectionCustomStyle(data) {
+    var d = data || {}
+    var parts = []
+    if (d.bgColor) parts.push('background-color:' + d.bgColor)
+    if (d.textColor) parts.push('color:' + d.textColor)
+    if (d.sectionBgImage) {
+      parts.push("background-image:url('" + d.sectionBgImage.replace(/'/g, "\\'") + "')")
+      parts.push('background-size:cover')
+      parts.push('background-position:center')
+    }
+    return parts.join(';')
+  }
 
 doctype html
 html(lang="fr")
@@ -44,26 +64,44 @@ html(lang="fr")
         --sp-nav-h: 68px;
       }
 
-  body(class=isPreview ? 'is-preview' : '')
+  body(class=isPreview ? 'is-preview' : '' data-site-template=site.theme.siteTemplate || '1')
     if isPreview
       .site-preview-bar
         span 👁 Mode aperçu —
         a(href="/mon-site") Retour à l'éditeur
 
     //- ── Navigation ────────────────────────────────────────────────────────
+    -
+      var navIcons = {
+        services:     '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+        booking:      '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+        about:        '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+        gallery:      '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
+        contact:      '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+        testimonials: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+        faq:          '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+        stats:        '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+        cta:          '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.6 3.5 2 2 0 0 1 3.58 1.18h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+        hero:         '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>'
+      }
+      var navLabels = { services: 'Services', booking: 'Réserver', about: 'À propos', contact: 'Contact', gallery: 'Galerie', testimonials: 'Avis', faq: 'FAQ', stats: 'Chiffres', cta: 'Offre' }
     nav.site-nav(id="site-nav")
+      .site-nav__progress#navProgress
       .site-nav__inner
         a.site-nav__logo(href="#top")
           if site.logoUrl
-            img(src=site.logoUrl alt=company.name height="36")
+            img(src=site.logoUrl alt=company.name height="34")
           else
             span.site-nav__name= company.name || 'Mon établissement'
         .site-nav__links
           each s in navSections
             -
-              var labels = { services: 'Services', booking: 'Réserver', about: 'À propos', contact: 'Contact' }
-              var label = (s.data && s.data.title) ? s.data.title : (labels[s.type] || s.type)
-            a.site-nav__link(href=`#${s.id}`)= label
+              var label = (s.data && s.data.title) ? s.data.title : (navLabels[s.type] || s.type)
+              var icon = navIcons[s.type] || ''
+            a.site-nav__link(href=`#${s.id}` data-spy=s.id)
+              if icon
+                svg.site-nav__link-icon(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")!= icon
+              span= label
         a.site-nav__cta(href="#booking") Prendre rendez-vous
         button.site-nav__burger(type="button" aria-label="Menu" id="navBurger")
           span
@@ -81,7 +119,7 @@ html(lang="fr")
           var heroLayout = d.heroLayout || 'full'
           var heroTextAlign = d.textAlign || 'center'
           var overlayOp = d.overlayOpacity !== undefined ? parseInt(d.overlayOpacity) : 48
-        section.s-hero(id=section.id class=`s-hero--${heroLayout}`)
+        section.s-hero(id=section.id class=`s-hero--${heroLayout}` style=sectionCustomStyle(d))
           if heroLayout !== 'minimal'
             if hasBg
               .s-hero__bg(style=`background-image:url('${d.bgImage}')`)
@@ -89,11 +127,11 @@ html(lang="fr")
               .s-hero__bg.s-hero__bg--gradient
             .s-hero__overlay(style=`background:rgba(0,0,0,${(overlayOp/100).toFixed(2)})`)
           .s-hero__content(class=heroTextAlign === 'left' ? 's-hero__content--left' : '')
-            h1.s-hero__title= d.title || 'Votre établissement'
+            h1.s-hero__title(data-editable=isPreview ? section.id + ':title' : null)= d.title || 'Votre établissement'
             if d.subtitle
-              p.s-hero__subtitle= d.subtitle
+              p.s-hero__subtitle(data-editable=isPreview ? section.id + ':subtitle' : null)= d.subtitle
             .s-hero__actions
-              a.s-hero__cta(href="#booking")= d.ctaText || 'Prendre rendez-vous'
+              a.s-hero__cta(href="#booking" data-editable=isPreview ? section.id + ':ctaText' : null)= d.ctaText || 'Prendre rendez-vous'
               if heroLayout !== 'minimal'
                 a.s-hero__secondary(href="#about") En savoir plus
 
@@ -102,12 +140,12 @@ html(lang="fr")
         -
           var d = section.data || {}
           var items = services || []
-        section.s-services(id=section.id)
+        section.s-services(id=section.id style=sectionCustomStyle(d))
           .site-container
             .s-section-header
-              h2.s-section-title= d.title || 'Nos prestations'
+              h2.s-section-title(data-editable=isPreview ? section.id + ':title' : null)= d.title || 'Nos prestations'
               if d.subtitle
-                p.s-section-sub= d.subtitle
+                p.s-section-sub(data-editable=isPreview ? section.id + ':subtitle' : null)= d.subtitle
             if items.length
               .s-services__grid
                 each item in items
@@ -134,15 +172,17 @@ html(lang="fr")
       else if section.type === 'booking'
         -
           var d = section.data || {}
-        section.s-booking(id=section.id)
+          var isCompactBooking = d.embedMode === 'compact'
+          var bookingSrc = `/${companySlug}?embedded=1` + (isCompactBooking ? '&sections=' : '')
+        section.s-booking(id=section.id class=isCompactBooking ? 's-booking--compact' : '' style=sectionCustomStyle(d))
           .site-container
             .s-section-header
-              h2.s-section-title= d.title || 'Réservez en ligne'
+              h2.s-section-title(data-editable=isPreview ? section.id + ':title' : null)= d.title || 'Réservez en ligne'
               if d.subtitle
-                p.s-section-sub= d.subtitle
+                p.s-section-sub(data-editable=isPreview ? section.id + ':subtitle' : null)= d.subtitle
             .s-booking__frame-wrap
               iframe.s-booking__frame(
-                src=`/${companySlug}?embedded=1`
+                src=bookingSrc
                 title="Prise de rendez-vous"
                 loading="lazy"
                 allowfullscreen
@@ -155,7 +195,8 @@ html(lang="fr")
           var hasImg = !!(d.image)
           var aboutLayout = d.layout || 'default'
           var aboutClass = !hasImg ? 's-about__inner--no-img' : (aboutLayout === 'reverse' ? 's-about__inner--reverse' : aboutLayout === 'centered' ? 's-about__inner--centered' : '')
-        section.s-about(id=section.id)
+          var aboutValues = d.values || []
+        section.s-about(id=section.id style=sectionCustomStyle(d))
           .site-container
             .s-about__inner(class=aboutClass)
               if hasImg
@@ -163,9 +204,18 @@ html(lang="fr")
                   img.s-about__img(src=d.image alt=d.title || 'À propos' loading="lazy")
               .s-about__text
                 if d.subtitle
-                  p.s-about__subtitle= d.subtitle
-                h2.s-section-title= d.title || 'À propos de nous'
-                p.s-about__body= d.text || ''
+                  p.s-about__subtitle(data-editable=isPreview ? section.id + ':subtitle' : null)= d.subtitle
+                h2.s-section-title(data-editable=isPreview ? section.id + ':title' : null)= d.title || 'À propos de nous'
+                div.s-about__body(data-editable=isPreview ? section.id + ':text' : null)!= d.text || ''
+                if aboutValues.length
+                  .s-about__values
+                    each v in aboutValues
+                      .s-about__value
+                        if v.icon
+                          span.s-about__value-icon= v.icon
+                        h4.s-about__value-title= v.title || ''
+                        if v.desc
+                          p.s-about__value-desc= v.desc
 
       //- GALLERY
       else if section.type === 'gallery'
@@ -174,10 +224,10 @@ html(lang="fr")
           var imgs = (d.images || []).filter(function(i){ return i && i.url; })
           var galCols = d.columns || '3'
         if imgs.length || isPreview
-          section.s-gallery(id=section.id)
+          section.s-gallery(id=section.id style=sectionCustomStyle(d))
             .site-container
               .s-section-header
-                h2.s-section-title= d.title || 'Notre galerie'
+                h2.s-section-title(data-editable=isPreview ? section.id + ':title' : null)= d.title || 'Notre galerie'
               if imgs.length
                 .s-gallery__grid(class=galCols !== '3' ? 's-gallery__grid--' + galCols : '')
                   each img in imgs
@@ -192,13 +242,34 @@ html(lang="fr")
       else if section.type === 'testimonials'
         -
           var d = section.data || {}
-          var titems = d.items || []
-        if titems.length || isPreview
-          section.s-testimonials(id=section.id)
+          var useBranshee = d.source === 'branshee'
+          var titems = useBranshee ? [] : (d.items || [])
+          var bsReviews = useBranshee ? (reviews || []).slice(0, 9) : []
+        if titems.length || bsReviews.length || useBranshee || isPreview
+          section.s-testimonials(id=section.id style=sectionCustomStyle(d))
             .site-container
               .s-section-header
-                h2.s-section-title= d.title || 'Avis clients'
-              if titems.length
+                h2.s-section-title(data-editable=isPreview ? section.id + ':title' : null)= d.title || 'Avis clients'
+                if useBranshee && reviewCount > 0
+                  .s-testimonials__score
+                    .s-testimonial-card__stars
+                      each star in [1,2,3,4,5]
+                        span(class=star <= Math.round(avgRating) ? 's-star--on' : 's-star--off') ★
+                    span= avgRating.toFixed(1) + ' (' + reviewCount + ' avis)'
+              if useBranshee
+                if bsReviews.length
+                  .s-testimonials__grid
+                    each r in bsReviews
+                      .s-testimonial-card
+                        .s-testimonial-card__stars
+                          each star in [1,2,3,4,5]
+                            span(class=star <= (r.rating || 5) ? 's-star--on' : 's-star--off') ★
+                        p.s-testimonial-card__text= '"' + (r.comment || '') + '"'
+                        .s-testimonial-card__author= r.clientName || 'Client'
+                else
+                  .s-testimonials__empty Aucun avis pour le moment. Soyez le premier à en laisser un !
+                a.s-testimonials__cta(href=`/${companySlug}#avis`) Laisser un avis →
+              else if titems.length
                 .s-testimonials__grid
                   each t in titems
                     -
@@ -218,10 +289,10 @@ html(lang="fr")
           var d = section.data || {}
           var fitems = d.items || []
         if fitems.length || isPreview
-          section.s-faq(id=section.id)
+          section.s-faq(id=section.id style=sectionCustomStyle(d))
             .site-container
               .s-section-header
-                h2.s-section-title= d.title || 'FAQ'
+                h2.s-section-title(data-editable=isPreview ? section.id + ':title' : null)= d.title || 'FAQ'
               if fitems.length
                 .s-faq__list
                   each fitem in fitems
@@ -241,10 +312,10 @@ html(lang="fr")
           var d = section.data || {}
           var sitems = (d.items || []).filter(function(i){ return i && (i.number || i.label); })
         if sitems.length || isPreview
-          section.s-stats(id=section.id)
+          section.s-stats(id=section.id style=sectionCustomStyle(d))
             .site-container
               .s-section-header
-                h2.s-section-title= d.title || 'Nos chiffres clés'
+                h2.s-section-title(data-editable=isPreview ? section.id + ':title' : null)= d.title || 'Nos chiffres clés'
               if sitems.length
                 .s-stats__grid
                   each si in sitems
@@ -261,22 +332,22 @@ html(lang="fr")
         -
           var d = section.data || {}
           var ctaBg = d.bg || 'primary'
-        section.s-cta-banner(id=section.id class='s-cta-banner--' + ctaBg)
+        section.s-cta-banner(id=section.id class='s-cta-banner--' + ctaBg style=sectionCustomStyle(d))
           .s-cta-banner__inner
-            h2.s-cta-banner__title= d.title || 'Prêt à réserver ?'
+            h2.s-cta-banner__title(data-editable=isPreview ? section.id + ':title' : null)= d.title || 'Prêt à réserver ?'
             if d.text
-              p.s-cta-banner__text= d.text
+              p.s-cta-banner__text(data-editable=isPreview ? section.id + ':text' : null)= d.text
             if d.buttonText
-              a.s-cta-banner__btn(href=d.buttonUrl || '#booking')= d.buttonText
+              a.s-cta-banner__btn(href=d.buttonUrl || '#booking' data-editable=isPreview ? section.id + ':buttonText' : null)= d.buttonText
 
       //- CONTACT
       else if section.type === 'contact'
         -
           var d = section.data || {}
-        section.s-contact(id=section.id)
+        section.s-contact(id=section.id style=sectionCustomStyle(d))
           .site-container
             .s-section-header
-              h2.s-section-title(style="color:#fff")= d.title || 'Nous contacter'
+              h2.s-section-title(style="color:#fff" data-editable=isPreview ? section.id + ':title' : null)= d.title || 'Nous contacter'
             .s-contact__body
               .s-contact__grid
                 if d.phone
@@ -367,12 +438,42 @@ html(lang="fr")
             strong BranShee
 
     script.
+      // Styles enregistrés par élément (couleur du texte / fond), appliqués
+      // que ce soit dans l'aperçu ou sur le site publié.
+      var __elementStyles = !{JSON.stringify(_elementStylesMap)};
+      document.querySelectorAll('[data-editable]').forEach(function(el) {
+        var st = __elementStyles[el.dataset.editable];
+        if (!st) return;
+        if (st.color) el.style.color = st.color;
+        if (st.bg) el.style.backgroundColor = st.bg;
+      });
+
       var nav = document.getElementById('site-nav');
-      window.addEventListener('scroll', function() {
-        nav.classList.toggle('scrolled', window.scrollY > 60);
-      }, { passive: true });
-      // Init scrolled if not at top
-      if (window.scrollY > 60) nav.classList.add('scrolled');
+      var navProgress = document.getElementById('navProgress');
+      var spyLinks = Array.from(document.querySelectorAll('.site-nav__link[data-spy]'));
+      var spySections = spyLinks.map(function(a){ return document.getElementById(a.dataset.spy); }).filter(Boolean);
+
+      function updateNav() {
+        var sy = window.scrollY;
+        // scrolled class
+        nav.classList.toggle('scrolled', sy > 60);
+        // progress bar
+        if (navProgress) {
+          var max = document.documentElement.scrollHeight - window.innerHeight;
+          navProgress.style.width = max > 0 ? (Math.min(100, sy / max * 100)).toFixed(1) + '%' : '0%';
+        }
+        // scroll spy
+        if (spySections.length) {
+          var navH = nav.offsetHeight + 20;
+          var active = null;
+          spySections.forEach(function(sec) {
+            if (sec.getBoundingClientRect().top <= navH) active = sec.id;
+          });
+          spyLinks.forEach(function(a) { a.classList.toggle('active', a.dataset.spy === active); });
+        }
+      }
+      window.addEventListener('scroll', updateNav, { passive: true });
+      updateNav();
       // Mobile burger
       var burger = document.getElementById('navBurger');
       var navLinks = document.querySelector('.site-nav__links');
@@ -411,6 +512,139 @@ html(lang="fr")
           if (!wasOpen) item.classList.add('open');
         });
       });
+      // Section options button (preview only) — hover a section, click the gear
+      // to jump to its style options (colors, background image...) in the editor.
+      if (document.body.classList.contains('is-preview')) {
+        document.querySelectorAll('section[id]').forEach(function(sec) {
+          var optBtn = document.createElement('button');
+          optBtn.type = 'button';
+          optBtn.className = 's-section-opt-btn';
+          optBtn.title = 'Options de cette section';
+          optBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>';
+          optBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.parent.postMessage({ type: 'bk:openSection', sectionId: sec.id }, '*');
+          });
+          sec.appendChild(optBtn);
+        });
+      }
+      // Inline text editing (preview only)
+      if (document.body.classList.contains('is-preview')) {
+        document.querySelectorAll('[data-editable]').forEach(function(el) {
+          el.addEventListener('click', function(e) {
+            if (el.contentEditable === 'true') return;
+            e.preventDefault();
+            e.stopPropagation();
+            var original = el.textContent;
+            el.contentEditable = 'true';
+            el.focus();
+            var range = document.createRange();
+            range.selectNodeContents(el);
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            function commit() {
+              if (el.contentEditable !== 'true') return;
+              el.contentEditable = 'false';
+              var parts = el.dataset.editable.split(':');
+              var isRich = parts[1] === 'text';
+              window.parent.postMessage({ type: 'bk:edit', sectionId: parts[0], field: parts[1], value: isRich ? el.innerHTML : el.textContent.trim() }, '*');
+            }
+            el.addEventListener('blur', commit, { once: true });
+            el.addEventListener('keydown', function onKey(ev) {
+              if (ev.key === 'Enter' && !ev.shiftKey && el.dataset.editable && el.dataset.editable.split(':')[1] !== 'text') { ev.preventDefault(); el.removeEventListener('keydown', onKey); el.blur(); }
+              if (ev.key === 'Escape') { if (el.dataset.editable && el.dataset.editable.split(':')[1] === 'text') { el.innerHTML = original; } else { el.textContent = original; } el.removeEventListener('keydown', onKey); el.blur(); }
+            });
+          });
+        });
+      }
+      // Per-element quick color popover (preview only) — hover a text/button,
+      // click the palette icon to set its own text/background color.
+      if (document.body.classList.contains('is-preview')) {
+        var elStyleBtn = document.createElement('button');
+        elStyleBtn.type = 'button';
+        elStyleBtn.className = 's-el-style-btn';
+        elStyleBtn.title = 'Couleur de cet élément';
+        elStyleBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.2-.3-.4-.7-.4-1.1 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-4.4-4.5-8-11-8Z"></path></svg>';
+        elStyleBtn.style.display = 'none';
+        document.body.appendChild(elStyleBtn);
+
+        var elStylePopover = document.createElement('div');
+        elStylePopover.className = 's-el-style-popover';
+        elStylePopover.innerHTML =
+          '<label>Texte<input type="color" data-prop="color"></label>' +
+          '<label>Fond<input type="color" data-prop="bg"></label>' +
+          '<button type="button" class="s-el-style-reset">Réinitialiser</button>';
+        elStylePopover.style.display = 'none';
+        document.body.appendChild(elStylePopover);
+
+        var elStyleCurrent = null;
+
+        function positionNear(target, el) {
+          var r = target.getBoundingClientRect();
+          el.style.top = Math.max(6, r.top - 6) + 'px';
+          el.style.left = Math.min(window.innerWidth - 40, r.right + 6) + 'px';
+        }
+
+        var elStyleHideTimer = null;
+        function cancelElStyleHide() { clearTimeout(elStyleHideTimer); }
+        function scheduleElStyleHide() {
+          clearTimeout(elStyleHideTimer);
+          elStyleHideTimer = setTimeout(function() {
+            if (elStylePopover.style.display === 'flex') return;
+            elStyleBtn.style.display = 'none';
+          }, 300);
+        }
+
+        document.querySelectorAll('[data-editable]').forEach(function(el) {
+          el.addEventListener('mouseenter', function() {
+            if (el.contentEditable === 'true') return;
+            cancelElStyleHide();
+            elStyleCurrent = el;
+            positionNear(el, elStyleBtn);
+            elStyleBtn.style.display = 'flex';
+          });
+          el.addEventListener('mouseleave', scheduleElStyleHide);
+        });
+        elStyleBtn.addEventListener('mouseenter', cancelElStyleHide);
+        elStyleBtn.addEventListener('mouseleave', scheduleElStyleHide);
+
+        elStyleBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!elStyleCurrent) return;
+          var st = __elementStyles[elStyleCurrent.dataset.editable] || {};
+          elStylePopover.querySelector('[data-prop="color"]').value = st.color || '#000000';
+          elStylePopover.querySelector('[data-prop="bg"]').value = st.bg || '#ffffff';
+          positionNear(elStyleCurrent, elStylePopover);
+          elStylePopover.style.display = 'flex';
+        });
+
+        elStylePopover.querySelectorAll('input[type="color"]').forEach(function(input) {
+          input.addEventListener('input', function() {
+            if (!elStyleCurrent) return;
+            var prop = input.dataset.prop;
+            if (prop === 'color') elStyleCurrent.style.color = input.value;
+            else elStyleCurrent.style.backgroundColor = input.value;
+            var parts = elStyleCurrent.dataset.editable.split(':');
+            window.parent.postMessage({ type: 'bk:styleElement', sectionId: parts[0], field: parts[1], prop: prop, value: input.value }, '*');
+          });
+        });
+        elStylePopover.querySelector('.s-el-style-reset').addEventListener('click', function() {
+          if (!elStyleCurrent) return;
+          elStyleCurrent.style.color = '';
+          elStyleCurrent.style.backgroundColor = '';
+          var parts = elStyleCurrent.dataset.editable.split(':');
+          window.parent.postMessage({ type: 'bk:styleElement', sectionId: parts[0], field: parts[1], prop: 'reset', value: null }, '*');
+          elStylePopover.style.display = 'none';
+        });
+
+        document.addEventListener('click', function(e) {
+          if (e.target.closest('.s-el-style-popover') || e.target.closest('.s-el-style-btn')) return;
+          elStylePopover.style.display = 'none';
+        });
+      }
       // Contact form
       document.querySelectorAll('.s-cf-form').forEach(function(form) {
         form.addEventListener('submit', async function(e) {
