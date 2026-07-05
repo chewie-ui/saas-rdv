@@ -65,7 +65,9 @@
 .twofa-feedback--ok { color:var(--accent,#16a34a); }
 .twofa-feedback--err{ color:#dc2626; }
 .twofa-disable      { display:flex; flex-direction:column; gap:12px; }
-.twofa-code-icon    { color:#9ca3af; flex-shrink:0; }
+.twofa-code-icon    { color:#9ca3af; flex-shrink:0; font-size:18px; }
+.twofa-status .material-symbols-outlined { font-size:18px; }
+.settings-2fa .sm-btn .material-symbols-outlined { font-size:18px; }
 .settings-2fa       { }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -917,4 +919,16 @@
   .lang-grid { grid-template-columns: repeat(3, 1fr); }
   .cp-grid { grid-template-columns: 1fr; }
   .pm-iban-grid { grid-template-columns: 1fr; }
+
+  /* "Supprimer le compte" + "Enregistrer les modifications" ne tenaient pas
+     sur une seule ligne à 375px — le texte était tronqué et les boutons se
+     chevauchaient. On les empile en pleine largeur. */
+  .stg-row--actions {
+    flex-direction: column-reverse;
+    padding: 14px 18px;
+  }
+  .stg-row--actions .sm-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }

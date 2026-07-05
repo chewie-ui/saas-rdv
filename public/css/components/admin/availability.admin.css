@@ -106,7 +106,7 @@
   color: #78350f;
   line-height: 1.5;
 }
-.avail-shared-notice svg { flex-shrink: 0; margin-top: 1px; color: #d97706; }
+.avail-shared-notice .material-symbols-outlined { flex-shrink: 0; margin-top: 1px; font-size: 16px; color: #d97706; }
 .avail-shared-notice strong { font-weight: 700; }
 .avail-shared-notice div { display: flex; flex-wrap: wrap; gap: 2px; align-items: baseline; }
 .avail-shared-notice div strong:first-child { display: block; margin-bottom: 2px; width: 100%; }
@@ -753,6 +753,17 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
+}
+
+/* En dessous de 480px, minmax(200px,1fr) pouvait encore produire 2 colonnes
+   sur certains viewports (tablette étroite, orientation paysage) — les
+   cartes devenaient alors trop étroites : l'heure ("09:00") et le bouton
+   "+ Ajouter un horaire" débordaient et étaient tronqués par le
+   overflow:hidden de la carte. On force une seule colonne pleine largeur. */
+@media (max-width: 480px) {
+  .avail-days-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ── Add day-off placeholder card ───────────────────────────── */
@@ -1894,6 +1905,23 @@
 .avail-schedule-mode__option.is-muted:hover {
   opacity: 0.85;
   border-color: var(--accent, #1a7a4a);
+}
+
+/* Sur mobile, les deux options tenaient sur une seule ligne trop étroite —
+   le texte retombait à la ligne au milieu du bouton (ex: "Horaire commun
+   pour tous" coupé en deux). On empile les deux boutons en pleine largeur. */
+@media (max-width: 560px) {
+  .avail-schedule-mode {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .avail-schedule-mode__option {
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+  }
 }
 
 .avail-employee-select {

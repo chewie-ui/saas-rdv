@@ -603,8 +603,15 @@ setInterval(updateTimeline, 60000);
       section.style.removeProperty("--cal-row-h");
     }
 
-    // Attendre que le reflow CSS soit appliqué avant de mesurer les lignes
-    requestAnimationFrame(applyApptHeights);
+    // Attendre que le reflow CSS soit appliqué avant de mesurer les lignes.
+    // updateTimeline() doit être rappelée ici aussi : elle ne tourne sinon
+    // que toutes les 60s, donc le trait "maintenant" restait figé à son
+    // ancienne position (mauvaise heure affichée) juste après un bascule
+    // Confort/Compact, le temps que le prochain tick minute arrive.
+    requestAnimationFrame(() => {
+      applyApptHeights();
+      if (typeof updateTimeline === "function") updateTimeline();
+    });
   }
 
   if (toggle) {

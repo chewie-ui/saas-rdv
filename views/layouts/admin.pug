@@ -51,8 +51,9 @@ html(lang="fr")
                         strong= isImpersonating.userEmail
                 a.impersonation-bar__exit(href="/superadmin/exit-impersonation") Quitter ✕
 
-        div.layout
-            include ../common/sidebar
+        div.layout(class=moduleMode ? 'layout--module' : '')
+            if !moduleMode
+                include ../common/sidebar
             .main
                 .admin-nav
                     #openMenu.flex-c

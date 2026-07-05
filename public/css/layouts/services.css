@@ -616,16 +616,24 @@
      Pas de plafond en pixels : on utilise tout l'espace vertical
      disponible (90vh) pour éviter un scroll interne inutile sur desktop. */
   max-height: 90vh;
+  /* dvh tient compte de la barre d'adresse mobile qui apparaît/disparaît —
+     avec vh seul (basé sur le plus grand viewport possible), le modal
+     centré via transform pouvait déborder en haut ET en bas de l'écran
+     visible, sans scroll possible pour l'atteindre. */
+  max-height: 90dvh;
   overflow: hidden;
 }
 
-/* Le modal de service a deux colonnes — plus large pour tenir sans scroll */
-#serviceModal {
+/* Le modal de service et celui de cours collectif ont deux colonnes — plus
+   larges pour tenir sans scroll */
+#serviceModal,
+#courseModal {
   max-width: 500px;
 }
 
 @media (min-width: 760px) {
-  #serviceModal {
+  #serviceModal,
+  #courseModal {
     max-width: 760px;
   }
 }
@@ -749,6 +757,7 @@
     padding: 20px 16px;
     border-radius: 16px;
     max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
     gap: 12px;
   }
 

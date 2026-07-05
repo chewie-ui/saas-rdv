@@ -44,6 +44,27 @@ exports.listClients = async (req, res) => {
 
     let clients = Array.from(byEmail.values());
 
+    // Dossiers créés manuellement (sans encore de réservation) — sinon un
+    // client tout juste créé via "Nouveau dossier client" resterait invisible
+    // dans la liste tant qu'il n'a pas réservé.
+    const manualDossiers = await ClientDossier.find({
+      company: companyId,
+      email: { $nin: Array.from(byEmail.keys()) },
+    })
+      .select("email fullName phone")
+      .lean();
+    for (const d of manualDossiers) {
+      clients.push({
+        email: d.email,
+        fullName: d.fullName || d.email,
+        phone: d.phone || "",
+        clientRef: null,
+        bookingsCount: 0,
+        lastVisit: null,
+        nextVisit: null,
+      });
+    }
+
     if (search) {
       clients = clients.filter(
         (c) =>
@@ -93,6 +114,43 @@ exports.listClients = async (req, res) => {
   }
 };
 
+// ── Créer un dossier client manuellement (sans passer par une réservation) ────
+exports.createClient = async (req, res) => {
+  try {
+    const companyId = res.locals.currentCompany._id;
+    const email = normalizeEmail(req.body.email);
+    const fullName = (req.body.fullName || "").trim().slice(0, 200);
+    const phone = (req.body.phone || "").trim().slice(0, 40);
+    const generalInfo = (req.body.generalInfo || "").trim().slice(0, 5000);
+
+    if (!email || !email.includes("@")) {
+      return res.status(400).json({ success: false, error: "Adresse e-mail invalide." });
+    }
+    if (!fullName) {
+      return res.status(400).json({ success: false, error: "Le nom est obligatoire." });
+    }
+
+    const existing = await ClientDossier.findOne({ company: companyId, email }).select("_id").lean();
+    if (existing) {
+      return res.status(409).json({ success: false, error: "Un dossier existe déjà pour cet e-mail." });
+    }
+
+    await ClientDossier.create({
+      company: companyId,
+      email,
+      fullName,
+      phone,
+      generalInfo,
+      entries: [],
+    });
+
+    res.json({ success: true, email });
+  } catch (err) {
+    console.error("createClient error:", err);
+    res.status(500).json({ success: false, error: "Erreur serveur." });
+  }
+};
+
 // ── Dossier d'un client (créé à la première consultation) ─────────────────────
 exports.viewClient = async (req, res) => {
   try {
@@ -102,19 +160,21 @@ exports.viewClient = async (req, res) => {
 
     const allBookings = await Booking.find({ company: companyId }).sort({ date: -1 }).lean();
     const bookings = allBookings.filter((b) => normalizeEmail(b.email) === email);
-    if (!bookings.length) return res.redirect("/clients");
-
-    const latest = bookings[0];
-    const fullName = [latest.name, latest.surname].filter(Boolean).join(" ").trim() || email;
 
     let dossier = await ClientDossier.findOne({ company: companyId, email });
+    // Ni réservation ni dossier existant pour cet email → rien à afficher.
+    if (!bookings.length && !dossier) return res.redirect("/clients");
+
+    const latest = bookings[0] || null;
+    const fullName = (dossier && dossier.fullName) || (latest && [latest.name, latest.surname].filter(Boolean).join(" ").trim()) || email;
+
     if (!dossier) {
       dossier = await ClientDossier.create({
         company: companyId,
         email,
         fullName,
-        phone: latest.phone || "",
-        clientRef: latest.clientRef || null,
+        phone: (latest && latest.phone) || "",
+        clientRef: (latest && latest.clientRef) || null,
         generalInfo: "",
         entries: [],
       });
@@ -136,7 +196,7 @@ exports.viewClient = async (req, res) => {
       title: `Dossier — ${fullName}`,
       dossier,
       entries,
-      client: { email, fullName, phone: dossier.phone || latest.phone || "" },
+      client: { email, fullName, phone: dossier.phone || (latest && latest.phone) || "" },
       bookings,
       confirmedCount: confirmedBookings.length,
       lastVisit,

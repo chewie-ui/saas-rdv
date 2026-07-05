@@ -5,11 +5,13 @@
   var bgColor = _theme.bgColor || '#ffffff'
   var textColor = _theme.textColor || '#0f0f1a'
   var fontFamily = _theme.fontFamily || 'Inter'
+  var headingFont = _theme.headingFont || fontFamily
   var roundnessMap = { sharp: '4px', soft: '12px', pill: '24px' }
   var radius = roundnessMap[_theme.roundness] || '12px'
   var seoTitle = (site.seo && site.seo.title) ? site.seo.title : (company.name || 'Notre établissement')
   var seoDesc = (site.seo && site.seo.description) ? site.seo.description : 'Réservez votre rendez-vous en ligne.'
   var gFont = fontFamily.replace(/ /g, '+')
+  var gHeadingFont = headingFont.replace(/ /g, '+')
   var softColor = 'rgba(' + parseInt(primaryColor.slice(1,3),16) + ',' + parseInt(primaryColor.slice(3,5),16) + ',' + parseInt(primaryColor.slice(5,7),16) + ',.09)'
   var navSections = _sections.filter(function(s){ return ['services','booking','about','contact'].includes(s.type); })
   var _elementStylesMap = _sections.reduce(function(acc, s) {
@@ -48,6 +50,8 @@ html(lang="fr")
     link(rel="preconnect" href="https://fonts.googleapis.com")
     link(rel="preconnect" href="https://fonts.gstatic.com" crossorigin)
     link(rel="stylesheet" href=`https://fonts.googleapis.com/css2?family=${gFont}:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap`)
+    if headingFont !== fontFamily
+      link(rel="stylesheet" href=`https://fonts.googleapis.com/css2?family=${gHeadingFont}:ital,wght@0,500;0,600;0,700;0,800;1,500&display=swap`)
     link(rel="stylesheet" href="/css/public/site.css")
     style.
       :root {
@@ -56,6 +60,7 @@ html(lang="fr")
         --sp-text: !{textColor};
         --sp-radius: !{radius};
         --sp-font: '!{fontFamily}', -apple-system, BlinkMacSystemFont, sans-serif;
+        --sp-heading-font: '!{headingFont}', 'Playfair Display', Georgia, serif;
         --sp-soft: !{softColor};
         --sp-border: color-mix(in srgb, !{primaryColor} 20%, #e0e0e0);
         --sp-dark: #0f0f1a;
@@ -96,7 +101,12 @@ html(lang="fr")
         .site-nav__links
           each s in navSections
             -
-              var label = (s.data && s.data.title) ? s.data.title : (navLabels[s.type] || s.type)
+              // La nav utilise un libellé COURT (services → "Services"…). Le
+              // titre de section ne sert de libellé que s'il est court, sinon
+              // les titres de template ("Un havre de paix au cœur de la ville")
+              // débordent et cassent complètement le header.
+              var _navTitle = (s.data && s.data.title) ? String(s.data.title).trim() : ''
+              var label = (_navTitle && _navTitle.length <= 16) ? _navTitle : (navLabels[s.type] || s.type)
               var icon = navIcons[s.type] || ''
             a.site-nav__link(href=`#${s.id}` data-spy=s.id)
               if icon
@@ -122,9 +132,9 @@ html(lang="fr")
         section.s-hero(id=section.id class=`s-hero--${heroLayout}` style=sectionCustomStyle(d))
           if heroLayout !== 'minimal'
             if hasBg
-              .s-hero__bg(style=`background-image:url('${d.bgImage}')`)
+              .s-hero__bg(style=`background-image:url('${d.bgImage}')` data-img-edit=isPreview ? section.id + ':bgImage' : null)
             else
-              .s-hero__bg.s-hero__bg--gradient
+              .s-hero__bg.s-hero__bg--gradient(data-img-edit=isPreview ? section.id + ':bgImage' : null)
             .s-hero__overlay(style=`background:rgba(0,0,0,${(overlayOp/100).toFixed(2)})`)
           .s-hero__content(class=heroTextAlign === 'left' ? 's-hero__content--left' : '')
             h1.s-hero__title(data-editable=isPreview ? section.id + ':title' : null)= d.title || 'Votre établissement'
@@ -201,7 +211,7 @@ html(lang="fr")
             .s-about__inner(class=aboutClass)
               if hasImg
                 .s-about__img-wrap
-                  img.s-about__img(src=d.image alt=d.title || 'À propos' loading="lazy")
+                  img.s-about__img(src=d.image alt=d.title || 'À propos' loading="lazy" data-img-edit=isPreview ? section.id + ':image' : null)
               .s-about__text
                 if d.subtitle
                   p.s-about__subtitle(data-editable=isPreview ? section.id + ':subtitle' : null)= d.subtitle
@@ -232,7 +242,7 @@ html(lang="fr")
                 .s-gallery__grid(class=galCols !== '3' ? 's-gallery__grid--' + galCols : '')
                   each img in imgs
                     .s-gallery__item(onclick=`openLightbox('${img.url}','${(img.caption||'').replace(/'/g,"\\'")}')`)
-                      img.s-gallery__img(src=img.url alt=img.caption || '' loading="lazy")
+                      img.s-gallery__img(src=img.url alt=img.caption || '' loading="lazy" data-img-edit=isPreview ? section.id + ':__gallery' : null data-img-index=isPreview ? (d.images || []).indexOf(img) : null)
                       if img.caption
                         .s-gallery__caption= img.caption
               else
@@ -438,14 +448,34 @@ html(lang="fr")
             strong BranShee
 
     script.
-      // Styles enregistrés par élément (couleur du texte / fond), appliqués
-      // que ce soit dans l'aperçu ou sur le site publié.
+      // Styles enregistrés par élément (couleur, fond, taille, épaisseur,
+      // alignement, style), appliqués aussi bien dans l'aperçu que sur le
+      // site publié. Un seul point d'application (applyElStyle) réutilisé au
+      // chargement ET en direct quand on modifie dans le panneau de réglages.
       var __elementStyles = !{JSON.stringify(_elementStylesMap)};
+      function applyElStyle(el, prop, value) {
+        if (!el) return;
+        var v = (value === null || value === undefined) ? '' : value;
+        switch (prop) {
+          case 'color':         el.style.color = v; break;
+          case 'bg':            el.style.backgroundColor = v; break;
+          case 'fontSize':      el.style.fontSize = v; break;
+          case 'fontWeight':    el.style.fontWeight = v; break;
+          case 'textAlign':     el.style.textAlign = v; break;
+          case 'fontStyle':     el.style.fontStyle = v; break;
+          case 'letterSpacing': el.style.letterSpacing = v; break;
+          case 'lineHeight':    el.style.lineHeight = v; break;
+          case 'textTransform': el.style.textTransform = v; break;
+          case 'padding':       el.style.padding = v; break;
+          case 'borderRadius':  el.style.borderRadius = v; break;
+          case 'borderWidth':   el.style.borderWidth = v; el.style.borderStyle = (v && v !== '0px') ? 'solid' : ''; break;
+          case 'borderColor':   el.style.borderColor = v; break;
+        }
+      }
       document.querySelectorAll('[data-editable]').forEach(function(el) {
         var st = __elementStyles[el.dataset.editable];
         if (!st) return;
-        if (st.color) el.style.color = st.color;
-        if (st.bg) el.style.backgroundColor = st.bg;
+        Object.keys(st).forEach(function(prop) { applyElStyle(el, prop, st[prop]); });
       });
 
       var nav = document.getElementById('site-nav');
@@ -559,32 +589,75 @@ html(lang="fr")
           });
         });
       }
-      // Per-element quick color popover (preview only) — hover a text/button,
-      // click the palette icon to set its own text/background color.
+      // Panneau de réglages par élément (aperçu uniquement) — survolez un
+      // titre / texte / bouton, cliquez l'icône réglages pour changer sa
+      // couleur, son fond, sa taille, son épaisseur, son alignement et son
+      // style. Chaque changement est appliqué en direct et renvoyé à l'éditeur
+      // (bk:styleElement) qui le persiste dans elementStyles.
       if (document.body.classList.contains('is-preview')) {
         var elStyleBtn = document.createElement('button');
         elStyleBtn.type = 'button';
         elStyleBtn.className = 's-el-style-btn';
-        elStyleBtn.title = 'Couleur de cet élément';
-        elStyleBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.2-.3-.4-.7-.4-1.1 0-.8.7-1.5 1.5-1.5H16c3.3 0 6-2.7 6-6 0-4.4-4.5-8-11-8Z"></path></svg>';
+        elStyleBtn.title = 'Réglages de cet élément';
+        elStyleBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>';
         elStyleBtn.style.display = 'none';
         document.body.appendChild(elStyleBtn);
 
-        var elStylePopover = document.createElement('div');
-        elStylePopover.className = 's-el-style-popover';
-        elStylePopover.innerHTML =
-          '<label>Texte<input type="color" data-prop="color"></label>' +
-          '<label>Fond<input type="color" data-prop="bg"></label>' +
-          '<button type="button" class="s-el-style-reset">Réinitialiser</button>';
-        elStylePopover.style.display = 'none';
-        document.body.appendChild(elStylePopover);
+        var elPanel = document.createElement('div');
+        elPanel.className = 's-el-panel';
+        // Petit bouton de réinitialisation par propriété (n'apparaît que si la
+        // propriété a été modifiée — géré dans syncPanel).
+        function rst(prop) {
+          return '<button type="button" class="s-el-rst" data-reset-prop="' + prop + '" title="Réinitialiser cette valeur">↺</button>';
+        }
+        function rangeField(label, prop, unit, min, max, step) {
+          return '<div class="s-el-panel__field"><span class="s-el-panel__label"><span>' + label + '</span>' +
+            '<span class="s-el-panel__lr"><b data-prop-val="' + prop + '">' + min + unit + '</b>' + rst(prop) + '</span></span>' +
+            '<input type="range" class="s-el-panel__range" data-prop="' + prop + '" data-unit="' + unit + '" min="' + min + '" max="' + max + '" step="' + step + '"></div>';
+        }
+        function segField(label, prop, buttons) {
+          return '<div class="s-el-panel__field"><span class="s-el-panel__label"><span>' + label + '</span>' + rst(prop) + '</span>' +
+            '<div class="s-el-panel__seg" data-prop="' + prop + '">' + buttons + '</div></div>';
+        }
+        elPanel.innerHTML =
+          '<div class="s-el-panel__row">' +
+            '<label class="s-el-panel__color">Texte<input type="color" data-prop="color">' + rst('color') + '</label>' +
+            '<label class="s-el-panel__color">Fond<input type="color" data-prop="bg"><button type="button" class="s-el-panel__clearbg" title="Fond transparent">✕</button>' + rst('bg') + '</label>' +
+          '</div>' +
+          rangeField('Taille', 'fontSize', 'px', 11, 80, 1) +
+          segField('Épaisseur', 'fontWeight',
+            '<button type="button" data-val="400">Normal</button><button type="button" data-val="600">Semi</button><button type="button" data-val="800">Gras</button>') +
+          segField('Alignement', 'textAlign',
+            '<button type="button" data-val="left" title="Gauche">⬅</button><button type="button" data-val="center" title="Centre">⬍</button><button type="button" data-val="right" title="Droite">➡</button>') +
+          rangeField('Interligne', 'lineHeight', '', 1, 2.4, 0.05) +
+          rangeField('Espacement', 'letterSpacing', 'px', -2, 8, 0.5) +
+          rangeField('Marge intérieure', 'padding', 'px', 0, 48, 2) +
+          '<div class="s-el-panel__field s-el-panel__field--inline"><span class="s-el-panel__label"><span>Style</span></span>' +
+            '<div class="s-el-panel__toggles">' +
+              '<button type="button" class="s-el-panel__toggle" data-prop="fontStyle" data-on="italic" data-off="normal" title="Italique"><i>I</i></button>' +
+              '<button type="button" class="s-el-panel__toggle" data-prop="textTransform" data-on="uppercase" data-off="none" title="Majuscules"><b style="font-style:normal;font-size:11px">AA</b></button>' +
+            '</div></div>' +
+          '<div class="s-el-panel__sep">Bordure</div>' +
+          rangeField('Arrondi', 'borderRadius', 'px', 0, 40, 1) +
+          rangeField('Épaisseur', 'borderWidth', 'px', 0, 8, 1) +
+          '<div class="s-el-panel__row"><label class="s-el-panel__color">Couleur<input type="color" data-prop="borderColor">' + rst('borderColor') + '</label></div>' +
+          '<button type="button" class="s-el-panel__applyall"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg><span>Appliquer à tous les éléments similaires</span></button>' +
+          '<button type="button" class="s-el-style-reset">Tout réinitialiser</button>';
+        elPanel.style.display = 'none';
+        document.body.appendChild(elPanel);
 
         var elStyleCurrent = null;
 
-        function positionNear(target, el) {
+        function positionNear(target, el, isPanel) {
           var r = target.getBoundingClientRect();
-          el.style.top = Math.max(6, r.top - 6) + 'px';
-          el.style.left = Math.min(window.innerWidth - 40, r.right + 6) + 'px';
+          var top = Math.max(6, r.top - 6);
+          if (isPanel) {
+            // Empêche le panneau de déborder en bas du viewport.
+            var h = el.offsetHeight || 260;
+            top = Math.min(top, Math.max(6, window.innerHeight - h - 10));
+          }
+          el.style.top = top + 'px';
+          el.style.left = Math.min(window.innerWidth - (isPanel ? 234 : 40), r.right + 6) + 'px';
         }
 
         var elStyleHideTimer = null;
@@ -592,7 +665,7 @@ html(lang="fr")
         function scheduleElStyleHide() {
           clearTimeout(elStyleHideTimer);
           elStyleHideTimer = setTimeout(function() {
-            if (elStylePopover.style.display === 'flex') return;
+            if (elPanel.style.display === 'block') return;
             elStyleBtn.style.display = 'none';
           }, 300);
         }
@@ -610,39 +683,255 @@ html(lang="fr")
         elStyleBtn.addEventListener('mouseenter', cancelElStyleHide);
         elStyleBtn.addEventListener('mouseleave', scheduleElStyleHide);
 
+        function pushStyle(prop, value) {
+          if (!elStyleCurrent) return;
+          applyElStyle(elStyleCurrent, prop, value);
+          var key = elStyleCurrent.dataset.editable;
+          if (!__elementStyles[key]) __elementStyles[key] = {};
+          __elementStyles[key][prop] = value;
+          var parts = key.split(':');
+          window.parent.postMessage({ type: 'bk:styleElement', sectionId: parts[0], field: parts[1], prop: prop, value: value }, '*');
+        }
+
+        // Réinitialiser UNE seule propriété de l'élément courant.
+        function pushReset(prop) {
+          if (!elStyleCurrent) return;
+          applyElStyle(elStyleCurrent, prop, '');
+          var key = elStyleCurrent.dataset.editable;
+          if (__elementStyles[key]) delete __elementStyles[key][prop];
+          var parts = key.split(':');
+          window.parent.postMessage({ type: 'bk:styleElement', sectionId: parts[0], field: parts[1], prop: prop, value: null }, '*');
+          syncPanel();
+        }
+
+        var STYLE_PROPS = ['color','bg','fontSize','fontWeight','textAlign','fontStyle','letterSpacing','lineHeight','textTransform','padding','borderRadius','borderWidth','borderColor'];
+
+        // Appliquer le style de l'élément courant à TOUS les éléments du même
+        // type (tous les titres, tous les sous-titres, tous les boutons…) —
+        // façon Wix "appliquer à tout le site".
+        function applyToAllSimilar() {
+          if (!elStyleCurrent) return;
+          var key = elStyleCurrent.dataset.editable;
+          var field = key.split(':')[1];
+          var styles = __elementStyles[key] ? Object.assign({}, __elementStyles[key]) : {};
+          var sectionIds = [];
+          document.querySelectorAll('[data-editable]').forEach(function(el) {
+            if (el.dataset.editable.split(':')[1] !== field) return;
+            sectionIds.push(el.dataset.editable.split(':')[0]);
+            STYLE_PROPS.forEach(function(p) { applyElStyle(el, p, ''); });
+            Object.keys(styles).forEach(function(p) { applyElStyle(el, p, styles[p]); });
+            __elementStyles[el.dataset.editable] = Object.assign({}, styles);
+          });
+          window.parent.postMessage({ type: 'bk:styleElementBulk', field: field, styles: styles, sectionIds: sectionIds }, '*');
+        }
+
+        function syncPanel() {
+          if (!elStyleCurrent) return;
+          var st = __elementStyles[elStyleCurrent.dataset.editable] || {};
+          var cs = window.getComputedStyle(elStyleCurrent);
+          // Couleurs
+          elPanel.querySelector('[data-prop="color"]').value = st.color || rgbToHex(cs.color) || '#000000';
+          elPanel.querySelector('[data-prop="bg"]').value = st.bg || rgbToHex(cs.backgroundColor) || '#ffffff';
+          // Curseurs (taille, interligne, espacement, marge)
+          function setRange(prop, fallback) {
+            var range = elPanel.querySelector('[data-prop="' + prop + '"]');
+            if (!range) return;
+            var stored = st[prop];
+            var num;
+            if (stored !== undefined && stored !== '') num = parseFloat(stored);
+            else num = fallback;
+            if (isNaN(num)) num = fallback;
+            range.value = num;
+            var unit = range.dataset.unit || '';
+            var readout = elPanel.querySelector('[data-prop-val="' + prop + '"]');
+            if (readout) readout.textContent = num + unit;
+          }
+          setRange('fontSize', parseInt(cs.fontSize, 10) || 16);
+          setRange('lineHeight', 1.4);
+          setRange('letterSpacing', parseFloat(cs.letterSpacing) || 0);
+          setRange('padding', 0);
+          setRange('borderRadius', parseInt(cs.borderRadius, 10) || 0);
+          setRange('borderWidth', parseInt(st.borderWidth, 10) || 0);
+          elPanel.querySelector('[data-prop="borderColor"]').value = st.borderColor || rgbToHex(cs.borderColor) || '#000000';
+          // Épaisseur
+          var weight = String(st.fontWeight || cs.fontWeight || '400');
+          elPanel.querySelectorAll('[data-prop="fontWeight"] button').forEach(function(b) {
+            b.classList.toggle('active', b.dataset.val === weight);
+          });
+          // Alignement
+          var align = st.textAlign || cs.textAlign || 'left';
+          if (align === 'start') align = 'left';
+          elPanel.querySelectorAll('[data-prop="textAlign"] button').forEach(function(b) {
+            b.classList.toggle('active', b.dataset.val === align);
+          });
+          // Bascules (italique, majuscules)
+          elPanel.querySelectorAll('.s-el-panel__toggle').forEach(function(btn) {
+            var current = st[btn.dataset.prop] || cs[btn.dataset.prop];
+            btn.classList.toggle('active', current === btn.dataset.on);
+          });
+          // Boutons "réinitialiser cette valeur" : visibles seulement si la
+          // propriété a été personnalisée sur cet élément.
+          elPanel.querySelectorAll('.s-el-rst').forEach(function(b) {
+            b.style.display = (st[b.dataset.resetProp] !== undefined) ? 'inline-flex' : 'none';
+          });
+        }
+
+        function rgbToHex(rgb) {
+          if (!rgb) return null;
+          if (rgb.charAt(0) === '#') return rgb;
+          var m = rgb.match(/\d+/g);
+          if (!m || m.length < 3) return null;
+          if (m.length >= 4 && Number(m[3]) === 0) return null; // transparent
+          return '#' + m.slice(0, 3).map(function(n) { return ('0' + parseInt(n, 10).toString(16)).slice(-2); }).join('');
+        }
+
         elStyleBtn.addEventListener('click', function(e) {
           e.preventDefault();
           e.stopPropagation();
           if (!elStyleCurrent) return;
-          var st = __elementStyles[elStyleCurrent.dataset.editable] || {};
-          elStylePopover.querySelector('[data-prop="color"]').value = st.color || '#000000';
-          elStylePopover.querySelector('[data-prop="bg"]').value = st.bg || '#ffffff';
-          positionNear(elStyleCurrent, elStylePopover);
-          elStylePopover.style.display = 'flex';
+          syncPanel();
+          elPanel.style.display = 'block';
+          // Ancré à droite de l'aperçu, SOUS la barre "Mode aperçu" (fixe,
+          // z-index élevé) qui masquait sinon le haut du panneau. top + bottom
+          // fixent la hauteur → le panneau défile en interne (overflow CSS) et
+          // reste toujours entièrement accessible, où que soit l'élément.
+          var bar = document.querySelector('.site-preview-bar');
+          var topOffset = (bar ? bar.offsetHeight : 0) + 8;
+          elPanel.style.top = topOffset + 'px';
+          elPanel.style.left = 'auto';
+          elPanel.style.right = '10px';
+          elPanel.style.bottom = '10px';
         });
 
-        elStylePopover.querySelectorAll('input[type="color"]').forEach(function(input) {
-          input.addEventListener('input', function() {
-            if (!elStyleCurrent) return;
-            var prop = input.dataset.prop;
-            if (prop === 'color') elStyleCurrent.style.color = input.value;
-            else elStyleCurrent.style.backgroundColor = input.value;
-            var parts = elStyleCurrent.dataset.editable.split(':');
-            window.parent.postMessage({ type: 'bk:styleElement', sectionId: parts[0], field: parts[1], prop: prop, value: input.value }, '*');
+        // Couleurs
+        elPanel.querySelectorAll('input[type="color"]').forEach(function(input) {
+          input.addEventListener('input', function() { pushStyle(input.dataset.prop, input.value); });
+        });
+        elPanel.querySelector('.s-el-panel__clearbg').addEventListener('click', function() {
+          pushStyle('bg', 'transparent');
+        });
+        // Curseurs (taille, interligne, espacement, marge) — un seul gestionnaire
+        elPanel.querySelectorAll('.s-el-panel__range').forEach(function(range) {
+          range.addEventListener('input', function() {
+            var prop = range.dataset.prop;
+            var unit = range.dataset.unit || '';
+            var val = range.value + unit;
+            var readout = elPanel.querySelector('[data-prop-val="' + prop + '"]');
+            if (readout) readout.textContent = val;
+            pushStyle(prop, val);
           });
         });
-        elStylePopover.querySelector('.s-el-style-reset').addEventListener('click', function() {
+        // Segments (épaisseur, alignement)
+        elPanel.querySelectorAll('.s-el-panel__seg').forEach(function(seg) {
+          seg.querySelectorAll('button').forEach(function(b) {
+            b.addEventListener('click', function() {
+              seg.querySelectorAll('button').forEach(function(x){ x.classList.remove('active'); });
+              b.classList.add('active');
+              pushStyle(seg.dataset.prop, b.dataset.val);
+            });
+          });
+        });
+        // Bascules (italique, majuscules)
+        elPanel.querySelectorAll('.s-el-panel__toggle').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var on = !btn.classList.contains('active');
+            btn.classList.toggle('active', on);
+            pushStyle(btn.dataset.prop, on ? btn.dataset.on : btn.dataset.off);
+          });
+        });
+        // Réinitialiser une propriété (petit ↺ par ligne)
+        elPanel.querySelectorAll('.s-el-rst').forEach(function(b) {
+          b.addEventListener('click', function(ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            pushReset(b.dataset.resetProp);
+          });
+        });
+        // Appliquer à tous les éléments similaires
+        elPanel.querySelector('.s-el-panel__applyall').addEventListener('click', applyToAllSimilar);
+        // Réinitialiser tout (cet élément)
+        elPanel.querySelector('.s-el-style-reset').addEventListener('click', function() {
           if (!elStyleCurrent) return;
-          elStyleCurrent.style.color = '';
-          elStyleCurrent.style.backgroundColor = '';
+          STYLE_PROPS.forEach(function(p) { applyElStyle(elStyleCurrent, p, ''); });
+          delete __elementStyles[elStyleCurrent.dataset.editable];
           var parts = elStyleCurrent.dataset.editable.split(':');
           window.parent.postMessage({ type: 'bk:styleElement', sectionId: parts[0], field: parts[1], prop: 'reset', value: null }, '*');
-          elStylePopover.style.display = 'none';
+          syncPanel();
         });
 
         document.addEventListener('click', function(e) {
-          if (e.target.closest('.s-el-style-popover') || e.target.closest('.s-el-style-btn')) return;
-          elStylePopover.style.display = 'none';
+          if (e.target.closest('.s-el-panel') || e.target.closest('.s-el-style-btn')) return;
+          elPanel.style.display = 'none';
+        });
+      }
+      // Remplacement d'image depuis l'aperçu — survolez une image (fond du
+      // hero, photo "À propos"), cliquez "Changer l'image", choisissez un
+      // fichier : il est uploadé puis appliqué en direct et renvoyé à l'éditeur
+      // (bk:edit) qui met à jour la donnée de la section et sauvegarde.
+      if (document.body.classList.contains('is-preview')) {
+        var imgFileInput = document.createElement('input');
+        imgFileInput.type = 'file';
+        imgFileInput.accept = 'image/*';
+        imgFileInput.style.display = 'none';
+        document.body.appendChild(imgFileInput);
+        var imgEditCurrent = null;
+
+        document.querySelectorAll('[data-img-edit]').forEach(function(el) {
+          var host = el.tagName === 'IMG' ? el.parentElement : (el.closest('section') || el.parentElement);
+          if (!host) return;
+          if (window.getComputedStyle(host).position === 'static') host.style.position = 'relative';
+          host.classList.add('bk-img-host');
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 's-img-edit-btn';
+          btn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg><span>Changer l\'image</span>';
+          btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            imgEditCurrent = el;
+            el.__imgBtn = btn;
+            imgFileInput.click();
+          });
+          host.appendChild(btn);
+        });
+
+        imgFileInput.addEventListener('change', async function() {
+          var file = imgFileInput.files[0];
+          if (!file || !imgEditCurrent) return;
+          var el = imgEditCurrent;
+          var btn = el.__imgBtn;
+          var label = btn ? btn.querySelector('span') : null;
+          if (label) label.textContent = 'Envoi…';
+          if (btn) btn.classList.add('is-loading');
+          try {
+            var fd = new FormData();
+            fd.append('image', file);
+            var r = await fetch('/mon-site/upload-image', { method: 'POST', body: fd });
+            var d = await r.json();
+            if (d && d.success && d.url) {
+              if (el.tagName === 'IMG') {
+                el.src = d.url;
+              } else {
+                el.style.backgroundImage = "url('" + d.url + "')";
+                el.classList.remove('s-hero__bg--gradient');
+              }
+              var parts = el.dataset.imgEdit.split(':');
+              if (parts[1] === '__gallery') {
+                // Image de galerie : mise à jour d'un élément du tableau images[]
+                window.parent.postMessage({ type: 'bk:setGalleryImage', sectionId: parts[0], index: Number(el.dataset.imgIndex), url: d.url }, '*');
+              } else {
+                window.parent.postMessage({ type: 'bk:edit', sectionId: parts[0], field: parts[1], value: d.url }, '*');
+              }
+            } else {
+              alert((d && d.error) || "Échec de l'envoi de l'image.");
+            }
+          } catch (err) {
+            alert('Erreur réseau pendant l\'envoi.');
+          }
+          if (label) label.textContent = "Changer l'image";
+          if (btn) btn.classList.remove('is-loading');
+          imgFileInput.value = '';
+          imgEditCurrent = null;
         });
       }
       // Contact form
@@ -674,3 +963,28 @@ html(lang="fr")
           btn.textContent = 'Envoyer';
         });
       });
+
+      // Apparition fluide au défilement (site publié uniquement — désactivé en
+      // mode aperçu pour ne pas gêner l'édition, et si l'utilisateur préfère
+      // réduire les animations). Sécurisé : si ce code ne s'exécute pas, tout
+      // reste visible (l'état masqué dépend de la classe js-reveal).
+      (function() {
+        if (document.body.classList.contains('is-preview')) return;
+        if (!('IntersectionObserver' in window)) return;
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        var sel = '.s-section-header, .s-service-card, .s-testimonial-card, .s-stat-item, .s-about__inner, .s-gallery__item, .s-faq__item, .s-cta-banner__inner, .s-contact__item, .s-booking__frame-wrap';
+        var targets = Array.prototype.slice.call(document.querySelectorAll(sel));
+        if (!targets.length) return;
+        document.body.classList.add('js-reveal');
+        var io = new IntersectionObserver(function(entries) {
+          entries.forEach(function(en) {
+            if (en.isIntersecting) { en.target.classList.add('is-in'); io.unobserve(en.target); }
+          });
+        }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+        targets.forEach(function(el, i) {
+          el.classList.add('sp-reveal');
+          // léger décalage en cascade pour les grilles de cartes
+          el.style.transitionDelay = (Math.min(i % 4, 3) * 60) + 'ms';
+          io.observe(el);
+        });
+      })();

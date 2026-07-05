@@ -1,3 +1,10 @@
+## ⚠️ Conventions — À LIRE AVANT DE CODER
+
+Avant TOUTE modification de code, lire et respecter **`CONVENTIONS.md`** (à la
+racine du projet). Règles clés : icônes = Google Material Symbols dans l'admin ;
+boutons = classes partagées `.sm-btn` (`public/css/classes.css`). Détails et
+exceptions dans le fichier.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.

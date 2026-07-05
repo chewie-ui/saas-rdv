@@ -17,6 +17,7 @@ const SiteSchema = new Schema({
     bgColor:       { type: String, default: "#ffffff" },
     textColor:     { type: String, default: "#0f0f1a" },
     fontFamily:    { type: String, default: "Inter" },
+    headingFont:   { type: String, default: "" },
     roundness:     { type: String, default: "soft" },
     siteTemplate:  { type: String, default: "1" },
   },

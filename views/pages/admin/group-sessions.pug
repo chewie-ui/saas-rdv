@@ -144,95 +144,100 @@ block content
                     path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
         .service-modal__body
             input(type="hidden" id="courseModalId")
-            .field
-                label= t.group_sessions.field_name
-                input.input#courseName(type="text" placeholder=t.group_sessions.name_placeholder)
-            .field
-                label= t.group_sessions.field_description
-                textarea.input.textarea#courseDescription(rows="2" placeholder=t.group_sessions.description_placeholder)
-            .field-row
-                .field
-                    label= t.group_sessions.field_price
-                    input.input#coursePrice(type="number" min="0" step="0.5" placeholder=t.group_sessions.price_placeholder)
-                .field
-                    label= t.group_sessions.field_duration
-                    input.input#courseDuration(type="number" min="5" step="5" value="60")
-                .field
-                    label= t.group_sessions.field_capacity
-                    input.input#courseCapacity(type="number" min="1" max="500" value="10")
+            .service-modal__cols
+                //- ── Colonne gauche : identité du cours ──────────────────────
+                .service-modal__col
+                    .field
+                        label= t.group_sessions.field_name
+                        input.input#courseName(type="text" placeholder=t.group_sessions.name_placeholder)
+                    .field
+                        label= t.group_sessions.field_description
+                        textarea.input.textarea#courseDescription(rows="2" placeholder=t.group_sessions.description_placeholder)
+                    .field-row
+                        .field
+                            label= t.group_sessions.field_price
+                            input.input#coursePrice(type="number" min="0" step="0.5" placeholder=t.group_sessions.price_placeholder)
+                        .field
+                            label= t.group_sessions.field_duration
+                            input.input#courseDuration(type="number" min="5" step="5" value="60")
+                        .field
+                            label= t.group_sessions.field_capacity
+                            input.input#courseCapacity(type="number" min="1" max="500" value="10")
 
-            .field
-                label= t.group_sessions.field_location
-                input.input#courseLocation(type="text" placeholder=t.group_sessions.location_placeholder)
+                    .field
+                        label= t.group_sessions.field_location
+                        input.input#courseLocation(type="text" placeholder=t.group_sessions.location_placeholder)
 
-            .field
-                label= t.group_sessions.field_mode
-                .svc-type-options#courseModeOptions
-                    button.svc-type-option.is-active(type="button" data-mode="recurring")
-                        span.svc-type-option__title= t.group_sessions.mode_recurring_title
-                        span.svc-type-option__desc= t.group_sessions.mode_recurring_desc
-                    button.svc-type-option(type="button" data-mode="fixed")
-                        span.svc-type-option__title= t.group_sessions.mode_fixed_title
-                        span.svc-type-option__desc= t.group_sessions.mode_fixed_desc
+                    if employees && employees.length > 0
+                        .field
+                            label.svc-fee-label
+                                span= t.group_sessions.has_employees_label
+                                label.sa-toggle
+                                    input#courseHasEmployees(type="checkbox")
+                                    .sa-toggle__track
+                            p.xs-comment= t.group_sessions.has_employees_hint
+                            #courseEmployeesField(style="display:none")
+                                .gs-employee-list#courseEmployeeList
+                                    each emp in employees
+                                        label.gs-employee-chip
+                                            input(type="checkbox" value=String(emp._id))
+                                            img(src=emp.profilePicture alt="")
+                                            span= emp.firstName + ' ' + emp.lastName
+                    else
+                        p.xs-comment= t.group_sessions.no_employees_hint
 
-            #courseRecurringFields
-                .field
-                    label= t.group_sessions.field_weekdays
-                    .gs-weekday-picker#courseWeekdayPicker
-                        button.gs-weekday-chip(type="button" data-day="1")= t.days_abbr.monday
-                        button.gs-weekday-chip(type="button" data-day="2")= t.days_abbr.tuesday
-                        button.gs-weekday-chip(type="button" data-day="3")= t.days_abbr.wednesday
-                        button.gs-weekday-chip(type="button" data-day="4")= t.days_abbr.thursday
-                        button.gs-weekday-chip(type="button" data-day="5")= t.days_abbr.friday
-                        button.gs-weekday-chip(type="button" data-day="6")= t.days_abbr.saturday
-                        button.gs-weekday-chip(type="button" data-day="0")= t.days_abbr.sunday
+                //- ── Colonne droite : planification ──────────────────────────
+                .service-modal__col
+                    .field
+                        label= t.group_sessions.field_mode
+                        .svc-type-options#courseModeOptions
+                            button.svc-type-option.is-active(type="button" data-mode="recurring")
+                                span.svc-type-option__title= t.group_sessions.mode_recurring_title
+                                span.svc-type-option__desc= t.group_sessions.mode_recurring_desc
+                            button.svc-type-option(type="button" data-mode="fixed")
+                                span.svc-type-option__title= t.group_sessions.mode_fixed_title
+                                span.svc-type-option__desc= t.group_sessions.mode_fixed_desc
 
-                .field
-                    label= t.group_sessions.field_time
-                    .appt-time-field
-                        .appt-time-box#courseStartBox(tabindex="0" role="button") --:--
-                        .appt-time-panel#courseStartPanel
-                            input.appt-time-search(type="text" placeholder=t.group_sessions.field_time autocomplete="off")
-                            .appt-time-list#courseStartList
+                    #courseRecurringFields
+                        .field
+                            label= t.group_sessions.field_weekdays
+                            .gs-weekday-picker#courseWeekdayPicker
+                                button.gs-weekday-chip(type="button" data-day="1")= t.days_abbr.monday
+                                button.gs-weekday-chip(type="button" data-day="2")= t.days_abbr.tuesday
+                                button.gs-weekday-chip(type="button" data-day="3")= t.days_abbr.wednesday
+                                button.gs-weekday-chip(type="button" data-day="4")= t.days_abbr.thursday
+                                button.gs-weekday-chip(type="button" data-day="5")= t.days_abbr.friday
+                                button.gs-weekday-chip(type="button" data-day="6")= t.days_abbr.saturday
+                                button.gs-weekday-chip(type="button" data-day="0")= t.days_abbr.sunday
 
-            #courseFixedFields(style="display:none")
-                .field
-                    label= t.group_sessions.field_sessions
-                    #courseSessionRows.gs-session-rows
-                    .gs-session-add-row
-                        input.input#newSessionDate(type="date")
-                        .appt-time-field
-                            .appt-time-box#newSessionStartBox(tabindex="0" role="button")= t.group_sessions.session_start
-                            .appt-time-panel#newSessionStartPanel
-                                input.appt-time-search(type="text" placeholder=t.group_sessions.session_start autocomplete="off")
-                                .appt-time-list#newSessionStartList
-                        .appt-time-field
-                            .appt-time-box#newSessionEndBox(tabindex="0" role="button")= t.group_sessions.session_end
-                            .appt-time-panel#newSessionEndPanel
-                                input.appt-time-search(type="text" placeholder=t.group_sessions.session_end autocomplete="off")
-                                .appt-time-list#newSessionEndList
-                        button.sm-btn.sm-btn--ghost#addSessionRowBtn(type="button")= t.group_sessions.add_session_btn
-                    p.xs-comment= t.group_sessions.session_hint
+                        .field
+                            label= t.group_sessions.field_time
+                            .appt-time-field
+                                .appt-time-box#courseStartBox(tabindex="0" role="button") --:--
+                                .appt-time-panel#courseStartPanel
+                                    input.appt-time-search(type="text" placeholder=t.group_sessions.field_time autocomplete="off")
+                                    .appt-time-list#courseStartList
 
-            if employees && employees.length > 0
-                .field
-                    label.svc-fee-label
-                        span= t.group_sessions.has_employees_label
-                        label.sa-toggle
-                            input#courseHasEmployees(type="checkbox")
-                            .sa-toggle__track
-                    p.xs-comment= t.group_sessions.has_employees_hint
-                    #courseEmployeesField(style="display:none")
-                        .gs-employee-list#courseEmployeeList
-                            each emp in employees
-                                label.gs-employee-chip
-                                    input(type="checkbox" value=String(emp._id))
-                                    img(src=emp.profilePicture alt="")
-                                    span= emp.firstName + ' ' + emp.lastName
-            else
-                p.xs-comment= t.group_sessions.no_employees_hint
+                    #courseFixedFields(style="display:none")
+                        .field
+                            label= t.group_sessions.field_sessions
+                            #courseSessionRows.gs-session-rows
+                            .gs-session-add-row
+                                input.input#newSessionDate(type="date")
+                                .appt-time-field
+                                    .appt-time-box#newSessionStartBox(tabindex="0" role="button")= t.group_sessions.session_start
+                                    .appt-time-panel#newSessionStartPanel
+                                        input.appt-time-search(type="text" placeholder=t.group_sessions.session_start autocomplete="off")
+                                        .appt-time-list#newSessionStartList
+                                .appt-time-field
+                                    .appt-time-box#newSessionEndBox(tabindex="0" role="button")= t.group_sessions.session_end
+                                    .appt-time-panel#newSessionEndPanel
+                                        input.appt-time-search(type="text" placeholder=t.group_sessions.session_end autocomplete="off")
+                                        .appt-time-list#newSessionEndList
+                                button.sm-btn.sm-btn--ghost#addSessionRowBtn(type="button")= t.group_sessions.add_session_btn
+                            p.xs-comment= t.group_sessions.session_hint
 
-            p.new-appt-modal__error#courseModalError(style="display:none")
+                    p.new-appt-modal__error#courseModalError(style="display:none")
         .service-modal__footer
             button.sm-btn.sm-btn--ghost#cancelCourseModal(type="button")= t.group_sessions.cancel_btn
             button.sm-btn.sm-btn--primary#saveCourseBtn(type="button")

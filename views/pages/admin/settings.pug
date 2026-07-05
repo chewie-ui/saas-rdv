@@ -166,30 +166,24 @@ block content
                         .settings-2fa
                             if twoFAEnabled
                                 .twofa-status.twofa-status--on
-                                    svg(width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round")
-                                        path(d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z")
-                                        polyline(points="9 12 11 14 15 10")
+                                    span.material-symbols-outlined verified_user
                                     span= t.settings.tfa_on
                                 .twofa-disable
                                     p.twofa-hint= t.settings.tfa_disable_hint
                                     .twofa-row
                                         .twofa-code-wrap
-                                            svg.twofa-code-icon(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                                path(d="M80-200v-80h400v80H80Zm0-200v-80h200v80H80Zm0-200v-80h200v80H80Zm736 400L670-336q-22 14-47.5 21t-52.5 7q-75 0-127.5-52.5T390-488q0-75 52.5-127.5T570-668q75 0 127.5 52.5T750-488q0 27-7 52.5T722-388l146 146-52 52ZM570-390q42 0 71-29t29-71q0-42-29-71t-71-29q-42 0-71 29t-29 71q0 42 29 71t71 29Z")
+                                            span.material-symbols-outlined.twofa-code-icon key
                                             input#disableCode.twofa-code-input(type="tel" placeholder="123 456" maxlength="7" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*")
                                         button.sm-btn.sm-btn--danger#disable2FABtn(type="button")= t.settings.tfa_disable_btn
                                     .twofa-feedback#disableFeedback
                             else
                                 .twofa-status.twofa-status--off
-                                    svg(width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round")
-                                        rect(x="3" y="11" width="18" height="11" rx="2" ry="2")
-                                        path(d="M7 11V7a5 5 0 0 1 10 0v4")
+                                    span.material-symbols-outlined lock
                                     span= t.settings.tfa_off
                                 .twofa-setup#twoFASetup
                                     .twofa-step#step1
                                         button.sm-btn.sm-btn--primary#start2FABtn(type="button")
-                                            svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
-                                                path(d="M12 5v14M5 12h14")
+                                            span.material-symbols-outlined add
                                             span= t.settings.tfa_setup_btn
                                     .twofa-step(id="step2" style="display:none")
                                         .twofa-qr-block

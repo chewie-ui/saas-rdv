@@ -34,6 +34,17 @@ svg {
   box-sizing: border-box;
 }
 
+/* ── Mode "module plein écran" (ex. éditeur Mon site) ──────────────
+   La sidebar admin n'est pas rendue et la barre de nav est masquée :
+   l'éditeur occupe tout l'écran. Un bouton "retour" dans le module
+   ramène au tableau de bord. */
+.layout--module .admin-nav { display: none; }
+.layout--module .main-wrapper {
+  padding: 0;
+  padding-bottom: 0;
+  gap: 0;
+}
+
 .main .admin-nav {
   padding: 10px 16px;
   border-bottom: var(--border);

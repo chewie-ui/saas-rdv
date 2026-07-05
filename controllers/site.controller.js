@@ -4,6 +4,7 @@ const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
 const Review = require("../db/models/review.model");
 const multerConfig = require("../config/multer");
+const siteTemplates = require("../config/site-templates");
 const sharp = require("sharp");
 const fs = require("fs");
 const path = require("path");
@@ -93,7 +94,48 @@ exports.editorPage = async (req, res) => {
     siteUrl: `/s/${site.slug}`,
     previewUrl: `/mon-site/preview`,
     visitCount: site.visitCount || 0,
+    siteTemplates: siteTemplates.listMeta(),
+    // Mode "module plein écran" : masque la sidebar admin + la barre de nav
+    // pour donner tout l'espace à l'éditeur de site (cf. admin.pug).
+    moduleMode: true,
   });
+};
+
+// ── Appliquer un template complet (remplace thème + sections) ─────────────────
+// On garde volontairement le slug, les réseaux sociaux, le logo et le domaine
+// perso : ce sont des données propres à l'établissement, pas au design.
+exports.applyTemplate = async (req, res) => {
+  try {
+    const company = res.locals.currentCompany;
+    const tpl = siteTemplates.getById(req.body.templateId);
+    if (!tpl) return res.status(400).json({ error: "Template inconnu" });
+
+    const site = await Site.findOne({ company: company._id });
+    if (!site) return res.status(404).json({ error: "Site introuvable" });
+
+    // Copie profonde pour ne jamais muter la définition partagée du template.
+    const sections = JSON.parse(JSON.stringify(tpl.sections));
+
+    // Pré-remplir la section contact avec les coordonnées réelles du compte
+    // (sinon le nouveau site afficherait des champs vides).
+    const contact = sections.find((s) => s.type === "contact");
+    if (contact) {
+      contact.data = contact.data || {};
+      if (!contact.data.phone) contact.data.phone = (req.user && req.user.phone) || "";
+      if (!contact.data.email) contact.data.email = (req.user && req.user.email) || "";
+      if (!contact.data.address) contact.data.address = company.address || "";
+    }
+
+    site.sections = sanitizeSections(sections);
+    Object.assign(site.theme, tpl.theme);
+    if (tpl.seo) Object.assign(site.seo, tpl.seo);
+
+    await site.save();
+    res.json({ success: true });
+  } catch (err) {
+    console.error("[site.applyTemplate]", err);
+    res.status(500).json({ error: err.message });
+  }
 };
 
 function sanitizeHtml(raw) {

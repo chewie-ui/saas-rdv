@@ -482,34 +482,38 @@
   }
 
   /* ── Profil établissement (Personnaliser) ─────────────────────── */
-  /* Sur mobile : photo à gauche en petit + champs à droite */
+  /* Sur mobile : photo côte à côte avec les champs, la photo était réduite
+     à 72px (trop petite, "moche") et les champs restaient si étroits que
+     "Type d'activité" tronquait son texte. On empile la photo au-dessus,
+     bien plus grande et centrée, puis les champs en pleine largeur. */
   .biz-row {
-    flex-direction: row !important;
-    align-items: flex-start !important;
-    gap: 14px !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 16px !important;
   }
 
   .biz-photo-col {
-    width: auto !important;
+    width: 100% !important;
     flex-shrink: 0 !important;
     align-items: center !important;
-    gap: 8px !important;
+    gap: 10px !important;
   }
 
   .biz-photo-preview {
-    width: 72px !important;
-    height: 72px !important;
+    width: 112px !important;
+    height: 112px !important;
     aspect-ratio: 1 / 1 !important;
-    border-radius: 10px !important;
+    border-radius: 16px !important;
   }
 
   .biz-photo-col .sm-btn {
-    font-size: 12px !important;
-    padding: 4px 8px !important;
+    font-size: 12.5px !important;
+    padding: 6px 12px !important;
   }
 
   .biz-fields {
     flex: 1 !important;
+    width: 100% !important;
     min-width: 0 !important;
   }
 

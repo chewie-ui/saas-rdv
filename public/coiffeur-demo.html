@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atelier Lumière — Salon de coiffure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#f7f3ee;        /* crème */
+    --bg-2:#efe8df;      /* crème plus chaud */
+    --ink:#211c19;       /* presque noir chaud */
+    --muted:#7c7167;     /* texte secondaire */
+    --line:#e2d9cd;      /* filets */
+    --accent:#b5744e;    /* terracotta */
+    --accent-d:#9c6140;  /* terracotta foncé */
+    --dark:#241e1a;      /* sections sombres */
+    --r:14px;
+    --max:1200px;
+    --nav-h:74px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.65;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  }
+  img{max-width:100%;display:block}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:var(--max);margin:0 auto;padding:0 28px}
+  .serif{font-family:'Playfair Display',Georgia,serif}
+
+  /* Eyebrow */
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:10px;
+    font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:18px;
+  }
+  .eyebrow::before{content:"";width:26px;height:1.5px;background:var(--accent);display:inline-block}
+  .eyebrow--center::after{content:"";width:26px;height:1.5px;background:var(--accent);display:inline-block}
+
+  .section{padding:120px 0}
+  .section__head{max-width:640px;margin:0 auto 64px;text-align:center}
+  .section__head .eyebrow{margin-left:auto;margin-right:auto}
+  .section__title{font-size:clamp(30px,4.4vw,50px);font-weight:600;line-height:1.08;letter-spacing:-.01em}
+  .section__sub{margin-top:20px;color:var(--muted);font-size:17px;line-height:1.7}
+
+  /* Buttons */
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;
+    font-size:14.5px;font-weight:600;letter-spacing:.02em;
+    padding:15px 30px;border-radius:100px;cursor:pointer;border:1.5px solid transparent;
+    transition:transform .2s ease,box-shadow .25s ease,background .2s,color .2s,border-color .2s;
+  }
+  .btn--primary{background:var(--accent);color:#fff;box-shadow:0 10px 26px -10px rgba(181,116,78,.7)}
+  .btn--primary:hover{background:var(--accent-d);transform:translateY(-2px);box-shadow:0 16px 34px -10px rgba(181,116,78,.75)}
+  .btn--ghost{background:transparent;color:var(--ink);border-color:var(--ink)}
+  .btn--ghost:hover{background:var(--ink);color:var(--bg)}
+  .btn--light{background:#fff;color:var(--ink)}
+  .btn--light:hover{transform:translateY(-2px);box-shadow:0 16px 34px -12px rgba(0,0,0,.4)}
+  .btn--outline-light{background:transparent;color:#fff;border-color:rgba(255,255,255,.5)}
+  .btn--outline-light:hover{background:rgba(255,255,255,.12);border-color:#fff}
+
+  /* ── Nav ── */
+  .nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);z-index:100;transition:background .35s,box-shadow .35s,backdrop-filter .35s}
+  .nav__inner{max-width:var(--max);margin:0 auto;padding:0 28px;height:100%;display:flex;align-items:center;gap:16px}
+  .nav__logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;letter-spacing:.01em;color:#fff;margin-right:auto;transition:color .3s;display:flex;align-items:center;gap:9px}
+  .nav__logo b{color:var(--accent);font-weight:700}
+  .nav__links{display:flex;align-items:center;gap:4px}
+  .nav__link{font-size:14px;font-weight:500;color:rgba(255,255,255,.82);padding:9px 14px;border-radius:8px;transition:color .2s,background .2s}
+  .nav__link:hover{color:#fff;background:rgba(255,255,255,.12)}
+  .nav__cta{margin-left:10px}
+  .nav.scrolled{background:rgba(247,243,238,.85);backdrop-filter:blur(16px) saturate(160%);box-shadow:0 1px 0 var(--line),0 8px 30px -18px rgba(0,0,0,.3)}
+  .nav.scrolled .nav__logo{color:var(--ink)}
+  .nav.scrolled .nav__link{color:var(--muted)}
+  .nav.scrolled .nav__link:hover{color:var(--ink);background:var(--bg-2)}
+  .nav.scrolled .nav__cta.btn--ghost{border-color:var(--ink);color:var(--ink)}
+  .nav__burger{display:none;flex-direction:column;gap:5px;width:40px;height:40px;align-items:center;justify-content:center;background:none;border:none;cursor:pointer}
+  .nav__burger span{width:22px;height:2px;background:#fff;border-radius:2px;transition:.25s}
+  .nav.scrolled .nav__burger span{background:var(--ink)}
+
+  /* ── Hero ── */
+  .hero{position:relative;min-height:100vh;display:flex;align-items:center;overflow:hidden}
+  .hero__bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1900&q=80') center/cover}
+  .hero__scrim{position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,15,12,.78) 0%,rgba(20,15,12,.55) 42%,rgba(20,15,12,.15) 100%)}
+  .hero__inner{position:relative;z-index:2;max-width:var(--max);margin:0 auto;padding:120px 28px 90px;width:100%}
+  .hero__content{max-width:640px;color:#fff}
+  .hero .eyebrow{color:#e7b58f}
+  .hero .eyebrow::before{background:#e7b58f}
+  .hero__title{font-size:clamp(42px,6.6vw,78px);font-weight:600;line-height:1.03;letter-spacing:-.02em}
+  .hero__title em{font-style:italic;color:#eab98f}
+  .hero__sub{margin-top:26px;font-size:clamp(16px,1.5vw,19px);color:rgba(255,255,255,.85);max-width:500px;line-height:1.7}
+  .hero__actions{margin-top:38px;display:flex;gap:14px;flex-wrap:wrap}
+  .hero__meta{margin-top:54px;display:flex;gap:40px;flex-wrap:wrap}
+  .hero__meta div{color:#fff}
+  .hero__meta b{font-family:'Playfair Display',serif;font-size:26px;font-weight:600;display:block}
+  .hero__meta span{font-size:12.5px;color:rgba(255,255,255,.65);letter-spacing:.04em}
+
+  /* ── Strip ── */
+  .strip{background:var(--dark);color:#fff}
+  .strip__inner{max-width:var(--max);margin:0 auto;padding:22px 28px;display:flex;flex-wrap:wrap;gap:14px 44px;align-items:center;justify-content:center}
+  .strip__item{display:flex;align-items:center;gap:10px;font-size:14px;color:rgba(255,255,255,.82)}
+  .strip__item svg{color:var(--accent);flex-shrink:0}
+
+  /* ── Services ── */
+  .services{background:var(--bg)}
+  .svc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:#fff}
+  .svc{padding:34px 34px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);transition:background .25s}
+  .svc:nth-child(2n){border-right:none}
+  .svc:hover{background:var(--bg)}
+  .svc__top{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+  .svc__name{font-family:'Playfair Display',serif;font-size:22px;font-weight:600}
+  .svc__price{font-size:15px;font-weight:700;color:var(--accent);white-space:nowrap}
+  .svc__desc{margin-top:10px;color:var(--muted);font-size:14.5px;line-height:1.6}
+  .svc__dur{margin-top:14px;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);letter-spacing:.03em}
+  .svc__dur svg{color:var(--accent)}
+
+  /* ── About ── */
+  .about{background:var(--bg-2)}
+  .about__grid{display:grid;grid-template-columns:1.05fr 1fr;gap:70px;align-items:center}
+  .about__imgs{position:relative}
+  .about__img{border-radius:var(--r);overflow:hidden;box-shadow:0 30px 60px -30px rgba(0,0,0,.35)}
+  .about__img img{width:100%;height:540px;object-fit:cover}
+  .about__badge{position:absolute;right:-18px;bottom:34px;background:#fff;border-radius:var(--r);padding:20px 24px;box-shadow:0 20px 50px -18px rgba(0,0,0,.3);text-align:center}
+  .about__badge b{font-family:'Playfair Display',serif;font-size:34px;color:var(--accent);display:block;line-height:1}
+  .about__badge span{font-size:12px;color:var(--muted);letter-spacing:.04em}
+  .about__title{font-size:clamp(28px,3.6vw,44px);font-weight:600;line-height:1.1;margin-top:6px}
+  .about__text{margin-top:22px;color:var(--muted);font-size:16px;line-height:1.8}
+  .about__values{margin-top:32px;display:grid;gap:18px}
+  .about__value{display:flex;gap:16px;align-items:flex-start}
+  .about__value-ic{flex-shrink:0;width:46px;height:46px;border-radius:12px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center}
+  .about__value h4{font-size:16px;font-weight:600}
+  .about__value p{font-size:14px;color:var(--muted);margin-top:3px}
+
+  /* ── Gallery ── */
+  .gallery{background:var(--dark)}
+  .gallery .section__title{color:#fff}
+  .gallery .section__sub{color:rgba(255,255,255,.6)}
+  .gal-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:230px;gap:16px}
+  .gal-item{position:relative;border-radius:var(--r);overflow:hidden;cursor:pointer}
+  .gal-item img{width:100%;height:100%;object-fit:cover;transition:transform .6s ease}
+  .gal-item::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(20,15,12,.4),transparent 55%);opacity:0;transition:opacity .3s}
+  .gal-item:hover img{transform:scale(1.06)}
+  .gal-item:hover::after{opacity:1}
+  .gal-item--tall{grid-row:span 2}
+
+  /* ── Testimonials ── */
+  .tst{background:var(--bg)}
+  .tst-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .tst-card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:32px 30px;box-shadow:0 1px 2px rgba(0,0,0,.03);transition:transform .25s,box-shadow .25s}
+  .tst-card:hover{transform:translateY(-5px);box-shadow:0 26px 50px -24px rgba(0,0,0,.22)}
+  .tst-card__q{font-family:'Playfair Display',serif;font-size:44px;line-height:1;color:var(--accent);height:26px}
+  .tst-card__stars{color:var(--accent);letter-spacing:2px;font-size:15px;margin:12px 0 14px}
+  .tst-card__text{font-size:15.5px;line-height:1.75;color:#3a332e;font-style:italic}
+  .tst-card__author{margin-top:20px;display:flex;align-items:center;gap:12px}
+  .tst-card__av{width:42px;height:42px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px}
+  .tst-card__name{font-weight:600;font-size:14.5px}
+  .tst-card__role{font-size:12.5px;color:var(--muted)}
+
+  /* ── Booking CTA band ── */
+  .book{position:relative;overflow:hidden;background:var(--dark);color:#fff;text-align:center}
+  .book__bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1900&q=80') center/cover;opacity:.22}
+  .book__inner{position:relative;z-index:2;max-width:660px;margin:0 auto;padding:110px 28px}
+  .book .eyebrow{color:#e7b58f}
+  .book .eyebrow::before,.book .eyebrow--center::after{background:#e7b58f}
+  .book__title{font-size:clamp(32px,4.6vw,54px);font-weight:600;line-height:1.08}
+  .book__sub{margin-top:20px;color:rgba(255,255,255,.75);font-size:17px}
+  .book__actions{margin-top:36px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  /* Emplacement du module de réservation (intégré plus tard) */
+  .book__slot{margin-top:40px;background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.3);border-radius:var(--r);padding:22px;font-size:13.5px;color:rgba(255,255,255,.6)}
+
+  /* ── Contact ── */
+  .contact{background:var(--bg-2)}
+  .contact__grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+  .contact__items{display:grid;gap:18px;margin-top:8px}
+  .contact__item{display:flex;gap:16px;align-items:flex-start}
+  .contact__ic{flex-shrink:0;width:48px;height:48px;border-radius:12px;background:#fff;border:1px solid var(--line);color:var(--accent);display:flex;align-items:center;justify-content:center}
+  .contact__item h4{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
+  .contact__item p{font-size:16px;margin-top:3px}
+  .contact__hours{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:30px 32px;box-shadow:0 20px 50px -30px rgba(0,0,0,.25)}
+  .contact__hours h3{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;margin-bottom:18px}
+  .hrow{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);font-size:15px}
+  .hrow:last-child{border-bottom:none}
+  .hrow span:first-child{color:var(--muted)}
+  .hrow b{font-weight:600}
+  .hrow--closed b{color:#b45}
+
+  /* ── Footer ── */
+  .footer{background:var(--dark);color:rgba(255,255,255,.7);padding:56px 0 30px}
+  .footer__top{display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap;padding-bottom:36px;border-bottom:1px solid rgba(255,255,255,.1)}
+  .footer__logo{font-family:'Playfair Display',serif;font-size:24px;color:#fff;font-weight:600}
+  .footer__logo b{color:var(--accent)}
+  .footer__tag{margin-top:10px;font-size:14px;max-width:280px;color:rgba(255,255,255,.5)}
+  .footer__cols{display:flex;gap:60px;flex-wrap:wrap}
+  .footer__col h5{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-bottom:14px}
+  .footer__col a{display:block;font-size:14px;padding:5px 0;color:rgba(255,255,255,.72);transition:color .2s}
+  .footer__col a:hover{color:var(--accent)}
+  .footer__bottom{padding-top:24px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:13px;color:rgba(255,255,255,.4)}
+
+  /* ── Reveal ── */
+  @media (prefers-reduced-motion:no-preference){
+    .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+    .reveal.in{opacity:1;transform:none}
+  }
+
+  /* ── Responsive ── */
+  @media (max-width:900px){
+    .nav__links{position:fixed;top:var(--nav-h);left:0;right:0;flex-direction:column;background:rgba(247,243,238,.97);backdrop-filter:blur(14px);padding:18px 24px 26px;gap:4px;box-shadow:0 20px 40px -20px rgba(0,0,0,.3);display:none;align-items:stretch}
+    .nav__links.open{display:flex}
+    .nav__link{color:var(--ink);font-size:16px;padding:12px 12px}
+    .nav__cta{display:none}
+    .nav__burger{display:flex}
+    .about__grid,.contact__grid{grid-template-columns:1fr;gap:44px}
+    .about__img img{height:440px}
+    .gal-grid{grid-template-columns:repeat(2,1fr);grid-auto-rows:190px}
+    .tst-grid{grid-template-columns:1fr;max-width:520px;margin:0 auto}
+    .section{padding:88px 0}
+  }
+  @media (max-width:560px){
+    .wrap,.nav__inner,.hero__inner,.strip__inner,.book__inner{padding-left:20px;padding-right:20px}
+    .svc-grid{grid-template-columns:1fr}
+    .svc{border-right:none}
+    .hero__meta{gap:26px}
+    .gal-grid{grid-template-columns:1fr;grid-auto-rows:220px}
+    .gal-item--tall{grid-row:span 1}
+    .about__badge{right:16px}
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <div class="nav__inner">
+    <a href="#top" class="nav__logo">Atelier <b>Lumière</b></a>
+    <div class="nav__links" id="navLinks">
+      <a class="nav__link" href="#prestations">Prestations</a>
+      <a class="nav__link" href="#salon">Le salon</a>
+      <a class="nav__link" href="#galerie">Galerie</a>
+      <a class="nav__link" href="#avis">Avis</a>
+      <a class="nav__link" href="#contact">Contact</a>
+    </div>
+    <a href="#reserver" class="btn btn--ghost nav__cta">Prendre rendez-vous</a>
+    <button class="nav__burger" id="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero" id="top">
+  <div class="hero__bg"></div>
+  <div class="hero__scrim"></div>
+  <div class="hero__inner">
+    <div class="hero__content">
+      <span class="eyebrow">Salon de coiffure · Paris 3ᵉ</span>
+      <h1 class="hero__title serif">Révélez votre plus <em>belle version</em></h1>
+      <p class="hero__sub">Coupe, couleur et soins sur-mesure dans un écrin chaleureux. Une équipe d'expert·e·s à votre écoute, pour une coiffure qui vous ressemble.</p>
+      <div class="hero__actions">
+        <a href="#reserver" class="btn btn--primary">Prendre rendez-vous</a>
+        <a href="#prestations" class="btn btn--outline-light">Voir les prestations</a>
+      </div>
+      <div class="hero__meta">
+        <div><b>15 ans</b><span>D'EXPÉRIENCE</span></div>
+        <div><b>4,9/5</b><span>+800 AVIS</span></div>
+        <div><b>6 experts</b><span>À VOTRE SERVICE</span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- STRIP -->
+<div class="strip">
+  <div class="strip__inner">
+    <div class="strip__item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Ouvert du mardi au samedi · 9h – 19h</div>
+    <div class="strip__item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 10c0 6-8 11-8 11s-8-5-8-11a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.5"/></svg> 24 rue des Archives, Paris 3ᵉ</div>
+    <div class="strip__item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 1.9.6 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2z"/></svg> 01 42 00 00 00</div>
+  </div>
+</div>
+
+<!-- PRESTATIONS -->
+<section class="section services" id="prestations">
+  <div class="wrap">
+    <div class="section__head reveal">
+      <span class="eyebrow eyebrow--center">Nos prestations</span>
+      <h2 class="section__title serif">Un savoir-faire pour chaque envie</h2>
+      <p class="section__sub">Des prestations pensées pour sublimer votre chevelure, avec des produits nobles et des gestes précis.</p>
+    </div>
+    <div class="svc-grid reveal">
+      <div class="svc">
+        <div class="svc__top"><span class="svc__name serif">Coupe & Brushing</span><span class="svc__price">dès 45 €</span></div>
+        <p class="svc__desc">Diagnostic personnalisé, coupe sur-mesure et brushing lumineux qui tient dans le temps.</p>
+        <span class="svc__dur"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg> 45 min</span>
+      </div>
+      <div class="svc">
+        <div class="svc__top"><span class="svc__name serif">Couleur & Balayage</span><span class="svc__price">dès 90 €</span></div>
+        <p class="svc__desc">Coloration, balayage ou ombré réalisés à la main pour un résultat naturel et éclatant.</p>
+        <span class="svc__dur"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg> 2 h</span>
+      </div>
+      <div class="svc">
+        <div class="svc__top"><span class="svc__name serif">Soin profond</span><span class="svc__price">dès 35 €</span></div>
+        <p class="svc__desc">Rituel de soin réparateur adapté à votre nature de cheveu, brillance et douceur immédiates.</p>
+        <span class="svc__dur"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg> 30 min</span>
+      </div>
+      <div class="svc">
+        <div class="svc__top"><span class="svc__name serif">Coiffure d'événement</span><span class="svc__price">dès 120 €</span></div>
+        <p class="svc__desc">Chignon, attaché ou coiffure de mariée : une mise en beauté pour vos plus beaux jours.</p>
+        <span class="svc__dur"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg> 1 h 15</span>
+      </div>
+      <div class="svc">
+        <div class="svc__top"><span class="svc__name serif">Barbe & Contours</span><span class="svc__price">dès 25 €</span></div>
+        <p class="svc__desc">Taille de barbe, contours nets et soin du visage pour une allure impeccable.</p>
+        <span class="svc__dur"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg> 25 min</span>
+      </div>
+      <div class="svc">
+        <div class="svc__top"><span class="svc__name serif">Diagnostic & Conseil</span><span class="svc__price">Offert</span></div>
+        <p class="svc__desc">Un temps d'échange pour comprendre vos envies et définir ensemble le meilleur pour vous.</p>
+        <span class="svc__dur"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg> 15 min</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LE SALON -->
+<section class="section about" id="salon">
+  <div class="wrap">
+    <div class="about__grid">
+      <div class="about__imgs reveal">
+        <div class="about__img"><img src="https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1100&q=80" alt="Intérieur du salon"></div>
+        <div class="about__badge"><b>2009</b><span>DEPUIS</span></div>
+      </div>
+      <div class="reveal">
+        <span class="eyebrow">Le salon</span>
+        <h2 class="about__title serif">Un lieu pensé pour prendre soin de vous</h2>
+        <p class="about__text">Niché au cœur du Marais, l'Atelier Lumière est un havre où l'on ralentit. Nous mêlons expertise technique et écoute sincère, pour que chaque visite soit un vrai moment pour soi — et une coiffure dont vous serez fier·e en repartant.</p>
+        <div class="about__values">
+          <div class="about__value">
+            <div class="about__value-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.8 7.2 17l.9-5.4L4.2 7.7l5.4-.8z"/></svg></div>
+            <div><h4>Expertise reconnue</h4><p>Une équipe formée aux dernières techniques de coupe et de couleur.</p></div>
+          </div>
+          <div class="about__value">
+            <div class="about__value-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div><h4>Produits nobles</h4><p>Des soins végétaux et respectueux de vos cheveux comme de la planète.</p></div>
+          </div>
+          <div class="about__value">
+            <div class="about__value-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+            <div><h4>À votre écoute</h4><p>Un diagnostic offert pour définir ensemble la coiffure qui vous ressemble.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GALERIE -->
+<section class="section gallery" id="galerie">
+  <div class="wrap">
+    <div class="section__head reveal">
+      <span class="eyebrow eyebrow--center">La galerie</span>
+      <h2 class="section__title serif">Nos réalisations</h2>
+      <p class="section__sub">Un aperçu du travail de nos coiffeur·se·s et de l'ambiance du salon.</p>
+    </div>
+    <div class="gal-grid reveal">
+      <div class="gal-item gal-item--tall"><img src="https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=900&q=80" alt=""></div>
+      <div class="gal-item"><img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=900&q=80" alt=""></div>
+      <div class="gal-item"><img src="https://images.unsplash.com/photo-1633681926022-84c23e8cb2d6?auto=format&fit=crop&w=900&q=80" alt=""></div>
+      <div class="gal-item"><img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=900&q=80" alt=""></div>
+      <div class="gal-item gal-item--tall"><img src="https://images.unsplash.com/photo-1522337094846-8a818192de1f?auto=format&fit=crop&w=900&q=80" alt=""></div>
+      <div class="gal-item"><img src="https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=900&q=80" alt=""></div>
+    </div>
+  </div>
+</section>
+
+<!-- AVIS -->
+<section class="section tst" id="avis">
+  <div class="wrap">
+    <div class="section__head reveal">
+      <span class="eyebrow eyebrow--center">Avis clients</span>
+      <h2 class="section__title serif">Ils nous font confiance</h2>
+    </div>
+    <div class="tst-grid reveal">
+      <div class="tst-card">
+        <div class="tst-card__q serif">&ldquo;</div>
+        <div class="tst-card__stars">★★★★★</div>
+        <p class="tst-card__text">La meilleure coloriste que j'ai rencontrée. Mon balayage est naturel et tient des mois. On se sent écoutée du début à la fin.</p>
+        <div class="tst-card__author"><div class="tst-card__av">CM</div><div><div class="tst-card__name">Camille M.</div><div class="tst-card__role">Cliente depuis 3 ans</div></div></div>
+      </div>
+      <div class="tst-card">
+        <div class="tst-card__q serif">&ldquo;</div>
+        <div class="tst-card__stars">★★★★★</div>
+        <p class="tst-card__text">Accueil chaleureux, salon magnifique et une coupe parfaite à chaque fois. La prise de rendez-vous en ligne est hyper pratique.</p>
+        <div class="tst-card__author"><div class="tst-card__av">TL</div><div><div class="tst-card__name">Thomas L.</div><div class="tst-card__role">Client fidèle</div></div></div>
+      </div>
+      <div class="tst-card">
+        <div class="tst-card__q serif">&ldquo;</div>
+        <div class="tst-card__stars">★★★★★</div>
+        <p class="tst-card__text">Un vrai moment de détente. Ils ont su comprendre exactement ce que je voulais. Je ressors toujours avec le sourire.</p>
+        <div class="tst-card__author"><div class="tst-card__av">SB</div><div><div class="tst-card__name">Sofia B.</div><div class="tst-card__role">Cliente depuis 1 an</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESERVER -->
+<section class="book" id="reserver">
+  <div class="book__bg"></div>
+  <div class="book__inner reveal">
+    <span class="eyebrow eyebrow--center">Réservation</span>
+    <h2 class="book__title serif">Prêt·e à changer de tête ?</h2>
+    <p class="book__sub">Réservez votre créneau en ligne en moins d'une minute, sans appel. On s'occupe du reste.</p>
+    <div class="book__actions">
+      <a href="#" class="btn btn--light">Prendre rendez-vous</a>
+      <a href="tel:+33142000000" class="btn btn--outline-light">01 42 00 00 00</a>
+    </div>
+    <div class="book__slot">✨ Ici s'intégrera le module de réservation en ligne BranShee.</div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="section contact" id="contact">
+  <div class="wrap">
+    <div class="contact__grid">
+      <div class="reveal">
+        <span class="eyebrow">Nous trouver</span>
+        <h2 class="about__title serif">Passez nous voir</h2>
+        <div class="contact__items">
+          <div class="contact__item">
+            <div class="contact__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 11-8 11s-8-5-8-11a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.5"/></svg></div>
+            <div><h4>Adresse</h4><p>24 rue des Archives, 75003 Paris</p></div>
+          </div>
+          <div class="contact__item">
+            <div class="contact__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 1.9.6 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2z"/></svg></div>
+            <div><h4>Téléphone</h4><p>01 42 00 00 00</p></div>
+          </div>
+          <div class="contact__item">
+            <div class="contact__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div>
+            <div><h4>Email</h4><p>bonjour@atelier-lumiere.fr</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="contact__hours reveal">
+        <h3 class="serif">Horaires d'ouverture</h3>
+        <div class="hrow"><span>Lundi</span><b class="hrow--closed" style="color:#b45">Fermé</b></div>
+        <div class="hrow"><span>Mardi – Vendredi</span><b>9h00 – 19h00</b></div>
+        <div class="hrow"><span>Samedi</span><b>9h00 – 18h00</b></div>
+        <div class="hrow"><span>Dimanche</span><b style="color:#b45">Fermé</b></div>
+        <a href="#reserver" class="btn btn--primary" style="width:100%;justify-content:center;margin-top:22px">Réserver un créneau</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer__top">
+      <div>
+        <div class="footer__logo serif">Atelier <b>Lumière</b></div>
+        <p class="footer__tag">Salon de coiffure au cœur du Marais. Coupe, couleur & soins sur-mesure.</p>
+      </div>
+      <div class="footer__cols">
+        <div class="footer__col">
+          <h5>Salon</h5>
+          <a href="#prestations">Prestations</a>
+          <a href="#salon">Le salon</a>
+          <a href="#galerie">Galerie</a>
+          <a href="#avis">Avis</a>
+        </div>
+        <div class="footer__col">
+          <h5>Contact</h5>
+          <a href="#contact">24 rue des Archives</a>
+          <a href="tel:+33142000000">01 42 00 00 00</a>
+          <a href="mailto:bonjour@atelier-lumiere.fr">Nous écrire</a>
+        </div>
+        <div class="footer__col">
+          <h5>Suivez-nous</h5>
+          <a href="#">Instagram</a>
+          <a href="#">Facebook</a>
+          <a href="#">TikTok</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>© 2026 Atelier Lumière — Tous droits réservés</span>
+      <span>Propulsé par <b style="color:rgba(255,255,255,.6)">BranShee</b></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Nav scrolled state
+  var nav = document.getElementById('nav');
+  function onScroll(){ nav.classList.toggle('scrolled', window.scrollY > 40); }
+  window.addEventListener('scroll', onScroll, {passive:true}); onScroll();
+
+  // Burger
+  var burger = document.getElementById('burger');
+  var navLinks = document.getElementById('navLinks');
+  burger.addEventListener('click', function(){ navLinks.classList.toggle('open'); });
+  navLinks.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', function(){ navLinks.classList.remove('open'); }); });
+
+  // Scroll reveal
+  if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, {threshold:0.12, rootMargin:'0px 0px -50px 0px'});
+    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  } else {
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
+  }
+</script>
+</body>
+</html>

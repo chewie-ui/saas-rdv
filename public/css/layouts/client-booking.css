@@ -2076,10 +2076,39 @@ body.bk-embed #bkCart .bk-cart {
   .bk-cart__next { flex: 1; justify-content: center; padding: 0 12px; }
   .bk-cart__back { flex-shrink: 0; }
 
-  .bk-head__name { font-size: 20px; }
-  .bk-cover { width: 58px; height: 58px; }
+  /* En-tête établissement : sur mobile on centre tout et on agrandit la
+     photo (plus joli qu'une petite image à gauche avec du vide à côté). */
+  .bk-head {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+    margin-bottom: 30px;
+  }
+  .bk-cover { width: 104px; height: 104px; border-radius: 22px; }
+  .bk-cover span { font-size: 34px; }
+  .bk-head__info { padding-top: 0; width: 100%; }
+  .bk-head__name { font-size: 23px; white-space: normal; }
+  .bk-head__meta { justify-content: center; }
+  .bk-head__pills { justify-content: center; }
 
-  #bkCart { bottom: 16px; }
+  /* Barre "Retour / Continuer" : sur mobile on l'épingle avec des marges
+     gauche/droite fixes plutôt que centrée (left:50% + translateX), ce qui
+     la faisait dépasser du bord droit de l'écran. */
+  #bkCart {
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    transform: none;
+    max-width: none;
+    /* Entrée sans translateX(-50%) (qui décalerait la barre épinglée) */
+    animation-name: bkCartInMobile;
+  }
+}
+
+@keyframes bkCartInMobile {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
 }
 
 @media (max-width: 480px) {

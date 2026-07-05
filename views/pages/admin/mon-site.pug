@@ -32,7 +32,10 @@ block content
         .ms-panel
 
             .ms-panel__top
-                .ms-panel__title Mon site web
+                a.ms-back(href="/panel" title="Retour au tableau de bord")
+                    span.material-symbols-outlined arrow_back
+                    span Tableau de bord
+                .ms-panel__title Éditeur de site
                 .ms-tabs
                     button.ms-tab.active(type="button" data-tab="sections")
                         span.material-symbols-outlined view_agenda
@@ -314,6 +317,52 @@ block content
                 .ms-pane(data-pane="design")
 
                     .ms-design-section
+                        .ms-design-section__title Choisissez un modèle
+                        p.ms-hint(style="margin:-2px 0 14px") Un site complet, prêt à publier — belles images, textes soignés et réservation intégrée. Appliquez-en un, puis personnalisez tout.
+                        .ms-tplgal
+                            each tpl in (siteTemplates || [])
+                                .ms-tplcard
+                                    .ms-tplcard__preview(style=`background:${tpl.thumb.bg}`)
+                                        .ms-tplcard__chrome
+                                            span
+                                            span
+                                            span
+                                        .ms-tplcard__nav(style=`background:${tpl.thumb.text}`)
+                                            span.ms-tplcard__logo(style=`background:${tpl.thumb.accent}`)
+                                            .ms-tplcard__navlinks
+                                                span(style=`background:${tpl.thumb.bg}`)
+                                                span(style=`background:${tpl.thumb.bg}`)
+                                                span(style=`background:${tpl.thumb.bg}`)
+                                            span.ms-tplcard__navcta(style=`background:${tpl.thumb.accent}`)
+                                        .ms-tplcard__hero(style=`background:linear-gradient(140deg, ${tpl.thumb.accent}, ${tpl.thumb.bg})`)
+                                            span.ms-tplcard__htitle(style=`background:${tpl.thumb.text}`)
+                                            span.ms-tplcard__htitle.is-short(style=`background:${tpl.thumb.text}`)
+                                            span.ms-tplcard__hbtn(style=`background:${tpl.thumb.accent}`)
+                                        .ms-tplcard__cards
+                                            span(style=`background:${tpl.thumb.bg};border-color:${tpl.thumb.accent}33`)
+                                            span(style=`background:${tpl.thumb.bg};border-color:${tpl.thumb.accent}33`)
+                                            span(style=`background:${tpl.thumb.bg};border-color:${tpl.thumb.accent}33`)
+                                        span.ms-tplcard__badge= (tpl.sectionsCount || 0) + ' sections'
+                                    .ms-tplcard__body
+                                        .ms-tplcard__head
+                                            span.ms-tplcard__name= tpl.name
+                                            span.ms-tplcard__tag= tpl.tagline
+                                        p.ms-tplcard__desc= tpl.description
+                                        if tpl.bestFor
+                                            .ms-tplcard__bestfor
+                                                span.material-symbols-outlined check_circle
+                                                span= tpl.bestFor
+                                        ul.ms-tplcard__features
+                                            each f in (tpl.features || [])
+                                                li
+                                                    span.material-symbols-outlined done
+                                                    = f
+                                        .ms-tplcard__actions
+                                            button.ms-tplcard__apply(type="button" data-apply-template=tpl.id)
+                                                span.material-symbols-outlined auto_awesome
+                                                | Appliquer ce modèle
+
+                    .ms-design-section
                         .ms-design-section__title Mise en page
                         .ms-layout-tpl-grid
                             button.ms-layout-tpl-card(type="button" data-layout-tpl="1" class=(S.theme.siteTemplate || '1') === '1' ? 'active' : '')
@@ -494,6 +543,9 @@ block content
                     span.material-symbols-outlined smartphone
                 button.ms-preview__refresh(type="button" id="refreshPreview" title="Rafraîchir l'aperçu")
                     span.material-symbols-outlined refresh
+                a.ms-preview__open(href=previewUrl target="_blank" rel="noopener" title="Ouvrir l'aperçu dans un nouvel onglet")
+                    span.material-symbols-outlined open_in_new
+                    span Ouvrir l'aperçu
             .ms-preview__frame-wrap(id="frameWrap")
                 iframe.ms-preview__frame(id="previewFrame" src=previewUrl title="Aperçu du site")
                 .ms-preview__loading(id="previewLoading")
@@ -678,6 +730,17 @@ block content
                     button.ms-modal__btn.ms-modal__btn--cancel(type="button" id="cancelDeleteBtn") Annuler
                     button.ms-modal__btn.ms-modal__btn--danger(type="button" id="confirmDeleteBtn") Supprimer
 
+    .ms-modal-overlay(id="applyTplModal")
+        .ms-modal.ms-modal--sm
+            .ms-modal__hd
+                span.ms-modal__title Appliquer ce template ?
+                button.ms-modal__close(type="button" id="closeApplyTplModal") ✕
+            .ms-modal__body
+                p.ms-hint Le design et le contenu actuels de votre site seront remplacés par ce template (vos services, votre URL et vos réseaux sociaux sont conservés). Vous pourrez ensuite tout personnaliser.
+                .ms-modal__actions
+                    button.ms-modal__btn.ms-modal__btn--cancel(type="button" id="cancelApplyTplBtn") Annuler
+                    button.ms-modal__btn.ms-modal__btn--primary(type="button" id="confirmApplyTplBtn") Appliquer le template
+
     script.
         var __site = !{JSON.stringify(site)};
         var __previewUrl = '/mon-site/preview';
@@ -686,7 +749,7 @@ block content
 
         // Ré-attache les modales directement à <body> : évite tout bug de
         // position:fixed cassée par un ancêtre (overflow/transform) du layout admin.
-        ['addModal', 'deleteModal'].forEach(function(id) {
+        ['addModal', 'deleteModal', 'applyTplModal'].forEach(function(id) {
             var el = document.getElementById(id);
             if (el) document.body.appendChild(el);
         });
@@ -695,6 +758,13 @@ block content
         var state = JSON.parse(JSON.stringify(__site));
         var saveTimer = null;
         var isDirty = false;
+        // Les modifications faites DANS l'aperçu (couleur/texte/image d'un
+        // élément) sont déjà appliquées en direct dans l'iframe : recharger
+        // l'aperçu après leur sauvegarde est inutile ET referme le panneau de
+        // réglages. On ne recharge donc l'aperçu que pour les changements
+        // "côté éditeur" (ajout de section, thème, mise en page…), signalés par
+        // needRefresh. markDirty(fast, true) = édition live → pas de rechargement.
+        var needRefresh = false;
 
         // ── Helpers ──────────────────────────────────────────────────────
         function getSectionById(id) {
@@ -706,8 +776,9 @@ block content
             el.className = 'ms-save-indicator ' + s;
             el.textContent = s === 'pending' ? '● Modifié' : s === 'saving' ? 'Sauvegarde...' : s === 'saved' ? '✓ Sauvegardé' : '';
         }
-        function markDirty(fast) {
+        function markDirty(fast, live) {
             isDirty = true;
+            if (!live) needRefresh = true;
             indicatorState('pending');
             clearTimeout(saveTimer);
             saveTimer = setTimeout(doSave, fast ? 150 : 1400);
@@ -795,10 +866,18 @@ block content
             var items = (s.data && s.data[key]) || [];
             list.innerHTML = '';
             items.forEach(function(item) { list.appendChild(createItemRow(type, item)); });
+            // Marque cette liste comme "rendue" : tant qu'un formulaire n'a pas
+            // été ouvert, son .ms-items-list reste vide dans le DOM alors que
+            // l'état contient les items (galerie/avis/FAQ… d'un template).
+            // syncItemsToState ne doit synchroniser QUE les listes rendues,
+            // sinon une sauvegarde (ex: changement de couleur) écraserait ces
+            // tableaux avec du vide → perte de données.
+            list.dataset.rendered = '1';
         }
 
         function syncItemsToState() {
             document.querySelectorAll('.ms-items-list').forEach(function(list) {
+                if (!list.dataset.rendered) return;
                 var sectionId = list.dataset.sectionId;
                 var key = list.dataset.itemsKey;
                 var type = list.dataset.itemsType;
@@ -864,7 +943,8 @@ block content
                 if (d.success) {
                     state.slug = d.slug;
                     indicatorState('saved');
-                    refreshPreview();
+                    if (needRefresh) refreshPreview();
+                    needRefresh = false;
                 } else {
                     indicatorState('');
                     alert(d.error || 'Erreur lors de la sauvegarde.');
@@ -1685,6 +1765,50 @@ block content
             });
         });
 
+        // ── Appliquer un template complet ────────────────────────────
+        (function() {
+            var modal = document.getElementById('applyTplModal');
+            if (!modal) return;
+            var pendingId = null;
+            function openModal(id) { pendingId = id; modal.classList.add('open'); }
+            function closeModal() { pendingId = null; modal.classList.remove('open'); }
+            document.querySelectorAll('[data-apply-template]').forEach(function(btn) {
+                btn.addEventListener('click', function() { openModal(btn.dataset.applyTemplate); });
+            });
+            var closeBtn = document.getElementById('closeApplyTplModal');
+            var cancelBtn = document.getElementById('cancelApplyTplBtn');
+            var confirmBtn = document.getElementById('confirmApplyTplBtn');
+            if (closeBtn) closeBtn.addEventListener('click', closeModal);
+            if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', function(e){ if (e.target === modal) closeModal(); });
+            if (confirmBtn) confirmBtn.addEventListener('click', async function() {
+                if (!pendingId) return;
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = 'Application…';
+                try {
+                    var res = await fetch('/mon-site/apply-template', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ templateId: pendingId }),
+                    });
+                    var data = await res.json();
+                    if (!res.ok || !data.success) {
+                        confirmBtn.disabled = false;
+                        confirmBtn.textContent = 'Appliquer le template';
+                        alert((data && data.error) || "Erreur lors de l'application du template.");
+                        return;
+                    }
+                    // Rechargement complet : l'éditeur ET l'aperçu se re-rendent
+                    // proprement côté serveur avec le nouveau contenu.
+                    window.location.reload();
+                } catch (err) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Appliquer le template';
+                    alert('Erreur réseau.');
+                }
+            });
+        })();
+
         // ── Inline edit bridge (postMessage from preview iframe) ──────
         window.addEventListener('message', function(e) {
             if (!e.data || e.data.type !== 'bk:edit') return;
@@ -1699,7 +1823,7 @@ block content
                     else inp.value = e.data.value;
                 }
             }
-            markDirty();
+            markDirty(false, true);
         });
 
         // Open a section's edit form from a click in the preview iframe
@@ -1719,17 +1843,69 @@ block content
             item.scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
 
-        // Per-element color set from the preview iframe (palette icon on hover)
+        // Réglages par élément depuis l'aperçu (panneau : couleur, fond, taille,
+        // épaisseur, alignement, style). Le changement est déjà appliqué en
+        // direct dans l'iframe ; ici on met à jour l'état et on sauvegarde avec
+        // le debounce normal (pas "fast") pour que plusieurs réglages successifs
+        // soient regroupés en une seule sauvegarde — sinon l'aperçu se recharge
+        // après chaque petit ajustement et referme le panneau.
         window.addEventListener('message', function(e) {
             if (!e.data || e.data.type !== 'bk:styleElement') return;
             var s = getSectionById(e.data.sectionId);
             if (!s) return;
             if (!s.data.elementStyles) s.data.elementStyles = {};
             if (e.data.prop === 'reset') {
+                // "Tout réinitialiser" pour cet élément
                 delete s.data.elementStyles[e.data.field];
+            } else if (e.data.value === null) {
+                // Réinitialiser UNE seule propriété (petit ↺)
+                if (s.data.elementStyles[e.data.field]) {
+                    delete s.data.elementStyles[e.data.field][e.data.prop];
+                    if (!Object.keys(s.data.elementStyles[e.data.field]).length) {
+                        delete s.data.elementStyles[e.data.field];
+                    }
+                }
             } else {
                 if (!s.data.elementStyles[e.data.field]) s.data.elementStyles[e.data.field] = {};
                 s.data.elementStyles[e.data.field][e.data.prop] = e.data.value;
             }
-            markDirty(true);
+            markDirty(false, true);
+        });
+
+        // "Appliquer à tous les éléments similaires" : copie le style de
+        // l'élément courant sur tous les éléments du même type (mêmes champs).
+        window.addEventListener('message', function(e) {
+            if (!e.data || e.data.type !== 'bk:styleElementBulk') return;
+            var styles = e.data.styles || {};
+            var hasStyles = Object.keys(styles).length > 0;
+            (e.data.sectionIds || []).forEach(function(sid) {
+                var s = getSectionById(sid);
+                if (!s) return;
+                if (!s.data.elementStyles) s.data.elementStyles = {};
+                if (hasStyles) s.data.elementStyles[e.data.field] = Object.assign({}, styles);
+                else delete s.data.elementStyles[e.data.field];
+            });
+            markDirty(false, true);
+        });
+
+        // Image de galerie remplacée depuis l'aperçu (un élément du tableau
+        // images[]). On met à jour l'état ; si le formulaire de la section a
+        // déjà été ouvert (liste rendue), on le re-render pour que le DOM et
+        // l'état restent cohérents avant la sauvegarde.
+        window.addEventListener('message', function(e) {
+            if (!e.data || e.data.type !== 'bk:setGalleryImage') return;
+            var s = getSectionById(e.data.sectionId);
+            if (!s || !s.data || !Array.isArray(s.data.images)) return;
+            var form = document.querySelector('[data-form="' + e.data.sectionId + '"]');
+            var list = form && form.querySelector('.ms-items-list');
+            var rendered = list && list.dataset.rendered;
+            // Si le formulaire est ouvert/rendu, on capture d'abord ses éventuelles
+            // modifications DOM dans l'état (syncItemsToState reconstruit le
+            // tableau images[]) AVANT de fixer la nouvelle URL, sinon elle serait
+            // écrasée par l'ancienne valeur du DOM.
+            if (rendered) syncItemsToState();
+            if (!s.data.images[e.data.index]) return;
+            s.data.images[e.data.index].url = e.data.url;
+            if (rendered) renderItemsList(form, e.data.sectionId);
+            markDirty(false, true);
         });

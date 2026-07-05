@@ -83,6 +83,7 @@ router.get("/client", (req, res) => res.redirect("/clients"));
 
 // ── Dossiers clients ────────────────────────────────────────────────────────
 router.get("/clients", isAuth, injectCompany, requirePermission("clients.view"), clientDossierController.listClients);
+router.post("/clients/create", isAuth, injectCompany, requirePermission("clients.manage"), clientDossierController.createClient);
 router.get("/clients/:email", isAuth, injectCompany, requirePermission("clients.view"), clientDossierController.viewClient);
 router.patch("/clients/dossier/:dossierId/general", isAuth, injectCompany, requirePermission("clients.manage"), clientDossierController.updateGeneralInfo);
 router.post("/clients/dossier/:dossierId/entries", isAuth, injectCompany, requirePermission("clients.manage"), clientDossierController.addEntry);
@@ -188,6 +189,7 @@ const siteCtrl = require("../controllers/site.controller");
 router.get("/mon-site", isVerified, injectCompany, siteCtrl.editorPage);
 router.post("/mon-site/save", isVerified, injectCompany, siteCtrl.save);
 router.post("/mon-site/publish", isVerified, injectCompany, siteCtrl.togglePublish);
+router.post("/mon-site/apply-template", isVerified, injectCompany, siteCtrl.applyTemplate);
 router.get("/mon-site/preview", isVerified, injectCompany, siteCtrl.previewSite);
 router.post("/mon-site/upload-image", isVerified, injectCompany, ...siteCtrl.uploadImage);
 

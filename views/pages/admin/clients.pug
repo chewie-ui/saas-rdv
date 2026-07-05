@@ -5,6 +5,7 @@ block links
     link(rel="stylesheet" href="/css/layouts/clients.css")
 
 block content
+    - const canManageClients = !!(permissions && permissions.clients && permissions.clients.manage)
     .clients-page
         .clients-page__header
             .clients-page__header-left
@@ -16,6 +17,11 @@ block content
                     svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
                         path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80ZM240-275q54-42 117-65.5T480-364q66 0 129 23.5T726-275q41-49 57.5-103T800-480q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 60 16.5 113.5T240-275Zm240-125q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Z")
                     span= onlyBlocked ? `Tous les ${clientTermPlural || 'clients'}` : `${clientTermCap || 'Clients'} bloqués (${blockedCount || 0})`
+                if canManageClients
+                    button.sm-btn.sm-btn--primary#openNewClientModal(type="button")
+                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                            path(d="M440-440H240v-80h200v-200h80v200h200v80H520v200h-80v-200Z")
+                        span= t.clients.add_btn
 
         form.clients-search#clientsSearchForm(method="GET" action="/clients")
             svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
@@ -73,6 +79,34 @@ block content
                             strong= t.clients.next_appt
                             |  #{c.nextVisit ? new Date(c.nextVisit).toLocaleDateString('fr-FR') : t.clients.no_next_appt}
 
+        if canManageClients
+            //- ── Modal : créer un dossier client manuellement ────────────────
+            .modal-overlay#newClientModalOverlay
+            .service-modal#newClientModal
+                .service-modal__header
+                    h3= t.clients.modal_title
+                    button.modal-close#closeNewClientModal(type="button")
+                        svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
+                            path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                .service-modal__body
+                    .field
+                        label= t.clients.field_fullname
+                        input.input#newClientFullName(type="text" placeholder="Ex: Marie Dupont")
+                    .field
+                        label= t.clients.field_email
+                        input.input#newClientEmail(type="email" placeholder="email@example.com")
+                    .field
+                        label= t.clients.field_phone
+                        input.input#newClientPhone(type="tel" placeholder="+32 456 00 00 00")
+                    .field
+                        label= t.clients.field_notes
+                        textarea.input.textarea#newClientNotes(rows="3" placeholder=t.clients.field_notes_hint)
+                    p.new-appt-modal__error#newClientError(style="display:none")
+                .service-modal__footer
+                    button.sm-btn.sm-btn--ghost#cancelNewClientModal(type="button")= t.clients.btn_cancel
+                    button.sm-btn.sm-btn--primary#saveNewClientBtn(type="button")
+                        span= t.clients.btn_create
+
     script.
         (function() {
             var input    = document.getElementById('clientsSearchInput');
@@ -110,4 +144,83 @@ block content
             // Filtrage déjà instantané au clavier — on évite le rechargement de page.
             if (form) form.addEventListener('submit', function(e) { e.preventDefault(); });
             filter();
+        })();
+
+        // ── Modal "Nouveau dossier client" ──────────────────────────────────
+        (function() {
+            var openBtn   = document.getElementById('openNewClientModal');
+            var overlay   = document.getElementById('newClientModalOverlay');
+            var modal     = document.getElementById('newClientModal');
+            var closeBtn  = document.getElementById('closeNewClientModal');
+            var cancelBtn = document.getElementById('cancelNewClientModal');
+            var saveBtn   = document.getElementById('saveNewClientBtn');
+            var errorEl   = document.getElementById('newClientError');
+            var nameInput = document.getElementById('newClientFullName');
+            var emailInput = document.getElementById('newClientEmail');
+            var phoneInput = document.getElementById('newClientPhone');
+            var notesInput = document.getElementById('newClientNotes');
+            if (!openBtn || !overlay || !modal) return;
+
+            function showError(msg) {
+                if (!errorEl) return;
+                errorEl.textContent = msg;
+                errorEl.style.display = '';
+            }
+
+            function open() {
+                nameInput.value = '';
+                emailInput.value = '';
+                phoneInput.value = '';
+                notesInput.value = '';
+                if (errorEl) errorEl.style.display = 'none';
+                overlay.classList.add('show');
+                modal.classList.add('show');
+                nameInput.focus();
+            }
+
+            function close() {
+                overlay.classList.remove('show');
+                modal.classList.remove('show');
+            }
+
+            openBtn.addEventListener('click', open);
+            if (closeBtn) closeBtn.addEventListener('click', close);
+            if (cancelBtn) cancelBtn.addEventListener('click', close);
+            overlay.addEventListener('click', close);
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && modal.classList.contains('show')) close();
+            });
+
+            if (saveBtn) {
+                saveBtn.addEventListener('click', async function() {
+                    var fullName = nameInput.value.trim();
+                    var email = emailInput.value.trim();
+                    if (!fullName) { showError('Le nom est obligatoire.'); return; }
+                    if (!email || email.indexOf('@') === -1) { showError('Adresse e-mail invalide.'); return; }
+
+                    saveBtn.disabled = true;
+                    try {
+                        var res = await fetch('/clients/create', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                fullName: fullName,
+                                email: email,
+                                phone: phoneInput.value.trim(),
+                                generalInfo: notesInput.value.trim(),
+                            }),
+                        });
+                        var data = await res.json();
+                        if (!res.ok || !data.success) {
+                            showError(data.error || 'Erreur serveur.');
+                            saveBtn.disabled = false;
+                            return;
+                        }
+                        window.location.href = '/clients/' + encodeURIComponent(data.email);
+                    } catch (e) {
+                        showError('Erreur réseau.');
+                        saveBtn.disabled = false;
+                    }
+                });
+            }
         })();

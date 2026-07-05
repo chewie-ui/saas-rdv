@@ -34,6 +34,13 @@ io.on("connection", (socket) => {
 
 server.listen(PORT, () => {
   console.log("server on Branshee.com");
-  // Démarre le système de rappels 24h avant chaque rdv
-  reminderScheduler.start();
+  // Démarre le système de rappels 24h avant chaque rdv.
+  // Peut être désactivé pour une instance de test/aperçu (DISABLE_SCHEDULER=1)
+  // afin de ne PAS envoyer de rappels en double quand une autre instance
+  // (la production) tourne déjà sur la même base.
+  if (process.env.DISABLE_SCHEDULER !== "1") {
+    reminderScheduler.start();
+  } else {
+    console.log("[reminderScheduler] désactivé (DISABLE_SCHEDULER=1)");
+  }
 });
