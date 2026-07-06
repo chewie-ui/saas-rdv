@@ -19,6 +19,9 @@ router.patch("/toggle-social", accountController.toggleSocialVisibility);
 
 router.post("/create-checkout", accountController.createCheckout);
 router.post("/purchase-addon/custom-url", isAuth, accountController.purchaseAddonCustomUrl);
+router.post("/collaborator-seats", isAuth, accountController.updateCollaboratorSeats);
+router.post("/sms-topup", isAuth, accountController.topUpSmsBalance);
+router.post("/sms-autorecharge", isAuth, accountController.updateSmsAutoRecharge);
 
 router.post(
   "/update-password",

@@ -77,10 +77,11 @@ async function getDynamicCategories() {
 
 /* ── Tri des établissements : Business > Pro > Gratuit, puis par boost, puis par note ── */
 function planPriority(plan, isPremium) {
-  if (plan === "business") return 3;
-  if (plan === "pro")      return 2;
-  if (isPremium)           return 1; // premium sans plan précis
-  return 0;                          // gratuit
+  if (plan === "business")  return 3;
+  if (plan === "pro")       return 2;
+  if (plan === "essentiel") return 1;
+  if (isPremium)            return 1; // premium sans plan précis
+  return 0;                           // gratuit
 }
 
 function sortEstablishments(a, b) {

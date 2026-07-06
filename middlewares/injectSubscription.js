@@ -12,7 +12,7 @@ async function revokePremium(user) {
   // Ne pas révoquer si l'utilisateur a un plan payant dans son User doc
   // (protège contre la désynchronisation entre Subscription collection et User doc)
   const embeddedPlan = user?.subscription?.plan;
-  if (["pro", "business"].includes(embeddedPlan)) return;
+  if (["essentiel", "pro", "business"].includes(embeddedPlan)) return;
   if (user && user.isPremium) {
     user.isPremium = false;
     await User.findByIdAndUpdate(user._id, { isPremium: false });
@@ -57,8 +57,8 @@ async function resolveSubscriptionState(user) {
       const diffDays  = diffMs !== null ? Math.ceil(diffMs / (1000 * 60 * 60 * 24)) : null;
       const diffHours = diffMs !== null ? Math.ceil(diffMs / (1000 * 60 * 60)) : null;
 
-      locals.isPro         = true;
       locals.currentPlan   = (user.subscription && user.subscription.plan) || "pro";
+      locals.isPro         = ["pro", "business"].includes(locals.currentPlan);
       locals.subscription  = null;
       locals.autoRenew     = false;
       locals.isExpired     = false;
@@ -138,7 +138,7 @@ async function resolveSubscriptionState(user) {
     // On vérifie subscription.status = "active" ET plan valide dans le User doc
     const embeddedPlan   = user.subscription?.plan;
     const embeddedStatus = user.subscription?.status;
-    const validPlans     = ["pro", "business"];
+    const validPlans     = ["essentiel", "pro", "business"];
     const hasPremiumUser = validPlans.includes(embeddedPlan) &&
       (embeddedStatus === "active" || user.isPremium ||
        user.subscription?.stripeSubscriptionId || user.subscription?.stripeCustomerId);
@@ -227,6 +227,12 @@ async function resolveSubscriptionState(user) {
       await revokePremium(user);
     }
   }
+
+  // ── isPro = plan Pro OU Business uniquement ────────────────────────────────
+  // "essentiel" est un plan PAYANT mais ce n'est PAS un plan Pro : il ne
+  // débloque aucune fonctionnalité Pro (rappels, perso, formulaires, équipe…).
+  // On recalcule isPro de façon centralisée pour ne dépendre d'aucune branche.
+  locals.isPro = ["pro", "business"].includes(locals.currentPlan);
 
   return locals;
 }

@@ -15,10 +15,11 @@ const { sanitizeRichText } = require("../utils/sanitizeRichText");
 
 // ── Limites par plan ─────────────────────────────────────────────────────────
 const PLAN_LIMITS = {
-  basic:    { employees: 0, services: 3, formQuestions: 1 },
-  free:     { employees: 0, services: 3, formQuestions: 1 },
-  pro:      { employees: 2, services: 10, formQuestions: 3 },
-  business: { employees: 10, services: 50, formQuestions: 10 },
+  basic:     { employees: 0, services: 3, formQuestions: 1 },
+  free:      { employees: 0, services: 3, formQuestions: 1 },
+  essentiel: { employees: 0, services: 5, formQuestions: 1 }, // = basic (juste RDV illimités en plus)
+  pro:       { employees: 2, services: 10, formQuestions: 3 },
+  business:  { employees: 10, services: 50, formQuestions: 10 },
 };
 
 /**
@@ -197,7 +198,10 @@ exports.createCheckout = async (req, res) => {
 
     // Choisir le bon price ID selon le plan et la période
     let priceId;
-    if (plan === "business") {
+    if (plan === "essentiel") {
+      // Essentiel : mensuel uniquement (le paramètre billing est ignoré).
+      priceId = env.stripePriceEssentielMonthly;
+    } else if (plan === "business") {
       if (billing === "yearly")     priceId = env.stripePriceBusinessYearly;
       else if (billing === "sixmonths") priceId = env.stripePriceBusinessSixMonths;
       else                          priceId = env.stripePriceBusinessMonthly;
@@ -210,7 +214,7 @@ exports.createCheckout = async (req, res) => {
       return res.status(400).json({ error: "Prix non configuré pour ce plan. Contactez le support." });
     }
 
-    const planName = plan === "business" ? "business" : "pro";
+    const planName = plan === "essentiel" ? "essentiel" : plan === "business" ? "business" : "pro";
 
     // ── Upgrade via Stripe subscription update (proration automatique) ────────
     const existingSub = await Subscription.findOne({
@@ -267,6 +271,9 @@ exports.createCheckout = async (req, res) => {
             req.user.isPremium = true;
             if (req.user.subscription) req.user.subscription.plan = planName;
           }
+
+          // Downgrade (ex: pro → essentiel) : rogner le contenu excédentaire.
+          exports.enforcePlanLimits(req.user._id, planName).catch(() => {});
 
           console.log(`✅ Upgrade inline vers ${planName} pour user ${req.user._id}`);
           return res.json({ upgraded: true, plan: planName });
@@ -505,6 +512,171 @@ exports.purchaseAddonCustomUrl = async (req, res) => {
   } catch (err) {
     console.error("purchaseAddonCustomUrl error:", err.message);
     res.status(500).json({ error: err.raw?.message || err.message });
+  }
+};
+
+// ── Sièges collaborateurs supplémentaires (+10€/mois/siège, Pro & Business) ──
+// Ajoutés comme un 2e item sur l'abonnement Stripe existant (proration
+// automatique), pas de nouvelle session de paiement séparée : évite toute
+// interférence avec le webhook checkout.session.completed du plan principal.
+exports.updateCollaboratorSeats = async (req, res) => {
+  try {
+    const { getPlan } = require("../utils/planLimits");
+    const plan = getPlan(req.user);
+    if (plan !== "pro" && plan !== "business") {
+      return res.status(400).json({ error: "Vous devez être sur le plan Pro ou Business pour acheter des sièges supplémentaires." });
+    }
+
+    let seats = parseInt(req.body?.seats, 10);
+    if (!Number.isFinite(seats) || seats < 0) {
+      return res.status(400).json({ error: "Nombre de sièges invalide." });
+    }
+    seats = Math.min(seats, 50); // garde-fou
+
+    const priceId = env.stripePriceExtraCollaborator;
+    if (!priceId) {
+      return res.status(500).json({ error: "Prix non configuré. Contactez le support." });
+    }
+
+    const subscription = await Subscription.findOne({
+      user: req.user._id,
+      status: "active",
+      stripeSubscriptionId: { $exists: true, $ne: null },
+    });
+    if (!subscription) {
+      return res.status(400).json({ error: "Aucun abonnement actif trouvé." });
+    }
+
+    const currentSeats = (req.user.addons && req.user.addons.extraCollaboratorSeats) || 0;
+    if (seats === currentSeats) {
+      return res.json({ success: true, seats });
+    }
+
+    if (seats === 0) {
+      // Retirer complètement l'item de sièges
+      if (subscription.collaboratorSeatsItemId) {
+        await stripe.subscriptionItems.del(subscription.collaboratorSeatsItemId, {
+          proration_behavior: "create_prorations",
+        });
+      }
+      subscription.collaboratorSeatsItemId = undefined;
+    } else if (subscription.collaboratorSeatsItemId) {
+      // Mettre à jour la quantité de l'item existant
+      await stripe.subscriptionItems.update(subscription.collaboratorSeatsItemId, {
+        quantity: seats,
+        proration_behavior: "create_prorations",
+      });
+    } else {
+      // Créer l'item de sièges sur l'abonnement existant
+      const item = await stripe.subscriptionItems.create({
+        subscription: subscription.stripeSubscriptionId,
+        price: priceId,
+        quantity: seats,
+        proration_behavior: "create_prorations",
+      });
+      subscription.collaboratorSeatsItemId = item.id;
+    }
+
+    await subscription.save();
+    await User.findByIdAndUpdate(req.user._id, { "addons.extraCollaboratorSeats": seats });
+
+    res.json({ success: true, seats });
+  } catch (err) {
+    console.error("updateCollaboratorSeats error:", err.message);
+    res.status(500).json({ error: err.raw?.message || err.message });
+  }
+};
+
+// ── Recharge du solde SMS prépayé (paiement unique via Checkout) ────────────
+// Montants fixes générés à la volée (price_data) → aucun produit Stripe dédié.
+// `setup_future_usage: off_session` enregistre la carte pour la recharge auto.
+const SMS_TOPUP_AMOUNTS = { small: 1000, medium: 2000, large: 5000 }; // 10€, 20€, 50€
+
+exports.topUpSmsBalance = async (req, res) => {
+  try {
+    const { getPlan } = require("../utils/planLimits");
+    const plan = getPlan(req.user);
+    if (plan !== "pro" && plan !== "business") {
+      return res.status(400).json({ error: "Vous devez être sur le plan Pro ou Business pour recharger des SMS." });
+    }
+
+    const amountCents = SMS_TOPUP_AMOUNTS[req.body?.pack];
+    if (!amountCents) return res.status(400).json({ error: "Montant invalide." });
+
+    let customerId = req.user.subscription?.stripeCustomerId;
+    if (customerId) {
+      try { await stripe.customers.retrieve(customerId); }
+      catch (_) { customerId = null; }
+    }
+    if (!customerId) {
+      const c = await stripe.customers.create({
+        email: req.user.email,
+        name:  req.user.fullName || req.user.email,
+        metadata: { userId: req.user._id.toString() },
+      });
+      customerId = c.id;
+      await User.findByIdAndUpdate(req.user._id, { "subscription.stripeCustomerId": customerId });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items: [{
+        price_data: {
+          currency: "eur",
+          product_data: { name: `Recharge SMS BranShee — ${(amountCents / 100).toFixed(0)}€` },
+          unit_amount: amountCents,
+        },
+        quantity: 1,
+      }],
+      customer: customerId,
+      // Enregistre la carte pour permettre la recharge automatique off-session.
+      payment_intent_data: { setup_future_usage: "off_session" },
+      metadata: { type: "sms_topup", userId: req.user._id.toString(), amountCents: String(amountCents) },
+      success_url: `${env.appBaseUrl || "https://www.branshee.com"}/customize?smsTopupSuccess=1&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${env.appBaseUrl || "https://www.branshee.com"}/customize`,
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error("topUpSmsBalance error:", err.message);
+    res.status(500).json({ error: err.raw?.message || err.message });
+  }
+};
+
+// Crédite le solde SMS pour une session de recharge, une seule fois (idempotent).
+// Appelé par le webhook ET par la page de retour /customize — le premier qui
+// passe crédite, l'autre est un no-op grâce au garde smsTopupSessions.
+exports.creditSmsTopup = async (userId, sessionId, amountCents) => {
+  if (!userId || !sessionId || !(amountCents > 0)) return false;
+  const upd = await User.findOneAndUpdate(
+    { _id: userId, smsTopupSessions: { $ne: sessionId } },
+    { $inc: { smsBalanceCents: amountCents }, $addToSet: { smsTopupSessions: sessionId } },
+    { new: true }
+  );
+  if (upd) console.log(`✅ Recharge SMS +${amountCents}c créditée (session ${sessionId})`);
+  return !!upd;
+};
+
+// ── Réglages de recharge automatique du solde SMS ───────────────────────────
+exports.updateSmsAutoRecharge = async (req, res) => {
+  try {
+    const enabled = !!req.body?.enabled;
+    // Seuil et montant bornés (en euros dans la requête, stockés en centimes).
+    const thresholdEuros = Math.max(2, Math.min(50, parseInt(req.body?.thresholdEuros, 10) || 5));
+    const amountEuros    = Math.max(5, Math.min(200, parseInt(req.body?.amountEuros, 10) || 20));
+
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: {
+        "smsAutoRecharge.enabled": enabled,
+        "smsAutoRecharge.thresholdCents": thresholdEuros * 100,
+        "smsAutoRecharge.amountCents": amountEuros * 100,
+      },
+    });
+    res.json({ success: true, enabled, thresholdEuros, amountEuros });
+  } catch (err) {
+    console.error("updateSmsAutoRecharge error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -1135,14 +1307,19 @@ exports.updateReminderSettings = async (req, res) => {
       .filter((m) => allowedPaymentMethods.includes(m));
     const paymentNote = (req.body.reminderPaymentNote || "").trim().slice(0, 200);
 
-    await User.findByIdAndUpdate(req.user._id, {
-      $set: {
-        "calendarSettings.reminderDelayHours":     delayHours,
-        "calendarSettings.reminderMessage":        message,
-        "calendarSettings.reminderPaymentMethods": paymentMethods,
-        "calendarSettings.reminderPaymentNote":    paymentNote,
-      },
-    });
+    const smsRemindersEnabled = !!req.body.smsRemindersEnabled;
+    const smsAllowOverage     = !!req.body.smsAllowOverage;
+
+    const update = {
+      "calendarSettings.reminderDelayHours":     delayHours,
+      "calendarSettings.reminderMessage":        message,
+      "calendarSettings.reminderPaymentMethods": paymentMethods,
+      "calendarSettings.reminderPaymentNote":    paymentNote,
+      "calendarSettings.smsRemindersEnabled":    smsRemindersEnabled,
+      "calendarSettings.smsAllowOverage":        smsAllowOverage,
+    };
+
+    await User.findByIdAndUpdate(req.user._id, { $set: update });
     return res.json({ success: true });
   } catch (err) {
     console.error(err);

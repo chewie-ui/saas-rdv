@@ -10,7 +10,7 @@ const subscriptionSchema = new schema(
     },
     plan: {
       type: String,
-      enum: ["basic", "pro", "business", "premium"],
+      enum: ["basic", "essentiel", "pro", "business", "premium"],
       required: true,
     },
     status: {
@@ -29,6 +29,9 @@ const subscriptionSchema = new schema(
     },
 
     stripePriceId: String,
+
+    // Item Stripe pour les sièges collaborateurs supplémentaires (10€/mois/siège)
+    collaboratorSeatsItemId: String,
 
     endDate: {
       type: Date,

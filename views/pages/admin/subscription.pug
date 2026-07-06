@@ -127,10 +127,50 @@ block content
                             path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Zm120 360Z")
                         span Rappels email, Google Calendar, personnalisation…
                 .sub-plan__cta
-                    if !isPro
+                    if currentPlan === 'basic'
                         button.sub-btn.sub-btn--current(disabled)= t.subscription.btn_current
                     else
                         button.sub-btn.sub-btn--outline#getFreePlan= t.subscription.btn_downgrade
+
+            //- ─── Essentiel ─────────────────────────────────────────
+            .sub-plan.sub-plan--essentiel(class=(currentPlan === 'essentiel') ? 'sub-plan--current' : '')
+                .sub-plan__header
+                    .sub-plan__name-wrap
+                        h2.sub-plan__name= t.subscription.plan_ess || 'Essentiel'
+                        p.sub-plan__desc= t.subscription.plan_ess_desc || 'La prise de rendez-vous en ligne, sans limite'
+                    .sub-plan__pricing
+                        span.sub-plan__price 9€
+                        span.sub-plan__per= t.subscription.price_2_sub || '/mois'
+                .sub-plan__divider
+                .sub-plan__features
+                    each feature in (t.subscription.plan_ess_features || ['Rendez-vous illimités', 'Historique complet conservé', 'Vos services & votre catalogue', 'Page de réservation en ligne'])
+                        .sub-plan__feature
+                            svg.feat-check(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                                path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                            span= feature
+                    .sub-plan__feature.sub-plan__feature--locked
+                        svg.feat-lock(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                            path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Zm120 360Z")
+                        span Collaborateurs, personnalisation, rappels, formulaires…
+                .sub-plan__cta
+                    if currentPlan === 'essentiel'
+                        button.sub-btn.sub-btn--current(disabled)= t.subscription.btn_current
+                        .sub-plan__links
+                            if !autoRenew
+                                span.sub-link#retakeSubscription= t.subscription.btn_retake
+                            if autoRenew
+                                span.sub-link.sub-link--danger#cancelSubscriptionPro= t.subscription.btn_cancel
+                        .sub-time-left(class=isExpired ? 'expired' : isExpiring ? 'expiring' : '')
+                            if isExpired
+                                | #{t.subscription.expired_label}
+                            else if hoursLeft
+                                | #{t.subscription.days_left} :&nbsp;
+                                strong #{hoursLeft} #{hoursLeft > 1 ? t.subscription.hours_suffix_many : t.subscription.hours_suffix_one}
+                            else if daysLeft !== null
+                                | #{t.subscription.days_left} :&nbsp;
+                                strong #{daysLeft} #{t.subscription.days}
+                    else
+                        button.sub-btn.sub-btn--upgrade#getEssPlan= t.subscription.btn_get_ess || "Choisir l'Essentiel →"
 
             -
                 //- ── Helpers offres actives ──────────────────────────
@@ -281,6 +321,13 @@ block content
                                 | &nbsp;#{_offerLabel(_bizOffer)} (code #{_bizOffer.code})
 
         //- ── Comparison table ────────────────────────────────────────
+        mixin cmpYes
+          svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+            path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+        mixin cmpNo
+          svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+            path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+
         .sub-compare
             h2.sub-compare__title= t.subscription.compare_title || 'Comparer les fonctionnalités'
             .sub-compare__wrap
@@ -290,6 +337,8 @@ block content
                             th.sub-compare__th--label
                             th.sub-compare__th
                                 span= t.subscription.plan_1
+                            th.sub-compare__th
+                                span= t.subscription.plan_ess || 'Essentiel'
                             th.sub-compare__th.sub-compare__th--pro
                                 svg(viewBox="0 -960 960 960" height="12" width="12" fill="currentColor")
                                     path(d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z")
@@ -300,106 +349,84 @@ block content
                         tr
                             td= t.subscription.compare_bookings || 'RDV / mois'
                             td 20
-                            td
-                                span.cmp-inf ∞
-                            td
-                                span.cmp-inf ∞
-                        tr
-                            td= t.subscription.compare_employees || 'Employés'
-                            td
-                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                            td 5
-                            td 10
+                            td: span.cmp-inf ∞
+                            td: span.cmp-inf ∞
+                            td: span.cmp-inf ∞
                         tr
                             td= t.subscription.compare_services || 'Services'
                             td 5
+                            td 5
                             td 20
-                            td
-                                span.cmp-inf ∞
+                            td: span.cmp-inf ∞
+                        tr
+                            td Historique conservé
+                            td 7 j
+                            td: +cmpYes
+                            td: +cmpYes
+                            td: +cmpYes
                         tr
                             td= t.subscription.compare_reminders || 'Rappels email'
-                            td
-                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                            td
-                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                            td
-                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                            td: +cmpNo
+                            td: +cmpNo
+                            td: +cmpYes
+                            td: +cmpYes
+                        tr
+                            td= t.subscription.compare_sms || 'Rappels SMS / mois'
+                            td: +cmpNo
+                            td: +cmpNo
+                            td 30
+                            td 100
                         tr
                             td= t.subscription.compare_gcal || 'Google Calendar'
-                            td
-                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                            td
-                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                            td
-                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                            td: +cmpNo
+                            td: +cmpNo
+                            td: +cmpYes
+                            td: +cmpYes
                         tr
                             td= t.subscription.compare_custom || 'Page personnalisable'
-                            td
-                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                            td
-                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                            td
-                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                            td: +cmpNo
+                            td: +cmpNo
+                            td: +cmpYes
+                            td: +cmpYes
                         tr
                             td= t.subscription.compare_forms || 'Questions formulaire'
+                            td 1
                             td 1
                             td 5
                             td 10
                         tr
-                            td Collaborateurs
-                            td
-                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                            td 2
-                            td 10
+                            td Collaborateurs inclus
+                            td: +cmpNo
+                            td: +cmpNo
+                            td 1
+                            td 4
                         tr
                             td Établissements
+                            td 1
                             td 1
                             td 1
                             td 5
                         tr
                             td Cours collectifs
-                            td
-                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                            td
-                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                            td
-                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                            td: +cmpNo
+                            td: +cmpNo
+                            td: +cmpNo
+                            td: +cmpYes
                         tr
                             td= t.subscription.compare_url || 'URL personnalisée'
-                            td
-                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                            td: +cmpNo
+                            td: +cmpNo
                             td.cmp-addon= t.subscription.compare_addon || 'Add-on'
-                            td
-                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                            td: +cmpYes
                         tr
                             td= t.subscription.compare_branding || 'Sans branding BranShee'
-                            td
-                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                            td
-                                svg.cmp-no(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
-                            td
-                                svg.cmp-yes(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                            td: +cmpNo
+                            td: +cmpNo
+                            td: +cmpNo
+                            td: +cmpYes
                         tr
                             td= t.subscription.compare_support || 'Support'
+                            td= t.subscription.compare_standard || 'Standard'
                             td= t.subscription.compare_standard || 'Standard'
                             td= t.subscription.compare_priority || 'Prioritaire'
                             td= t.subscription.compare_dedicated || 'Dédié'

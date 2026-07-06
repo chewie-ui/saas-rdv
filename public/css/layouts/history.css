@@ -577,11 +577,16 @@
   .hist-search { flex: unset; width: 100%; }
 
   .hist-selects {
-    overflow-x: auto;
-    padding-bottom: 2px;
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
-  .hist-select { flex-shrink: 0; }
+  .hist-select {
+    width: 100%;
+    min-width: 0;
+  }
+  /* Le filtre employés (dernier select) occupe toute la largeur */
+  .hist-selects .hist-select:last-child { grid-column: 1 / -1; }
 }
 
 @media (min-width: 820px) {

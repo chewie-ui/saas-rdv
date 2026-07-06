@@ -79,6 +79,13 @@ app.post("/account/webhook", express.raw({ type: "application/json" }), async (r
     const validPaymentStatus = ["paid", "no_payment_required"];
     if (!validPaymentStatus.includes(session.payment_status)) {
       console.log("⚠️ payment_status non valide:", session.payment_status, "— skip");
+    } else if (session.mode === "payment") {
+      // Paiement unique (recharge de solde SMS) — ne touche JAMAIS aux champs
+      // subscription.* de l'utilisateur, contrairement au flux abonnement.
+      if (session.metadata?.type === "sms_topup") {
+        const { creditSmsTopup } = require("./controllers/account.controller");
+        await creditSmsTopup(session.metadata.userId, session.id, parseInt(session.metadata.amountCents, 10) || 0);
+      }
     } else {
       const expirationDate = new Date();
       expirationDate.setMonth(expirationDate.getMonth() + 1);
@@ -92,7 +99,10 @@ app.post("/account/webhook", express.raw({ type: "application/json" }), async (r
           env.stripePriceBusinessMonthly,
           env.stripePriceBusinessYearly,
         ].filter(Boolean).includes(priceId);
-        const planName = isBusinessPrice ? "business" : "pro";
+        const isEssentielPrice = [
+          env.stripePriceEssentielMonthly,
+        ].filter(Boolean).includes(priceId);
+        const planName = isEssentielPrice ? "essentiel" : isBusinessPrice ? "business" : "pro";
         console.log("📋 planName:", planName);
 
         const userId = session.client_reference_id;

@@ -104,9 +104,29 @@ const userSchema = schema(
       },
     },
 
-    // Add-ons (purchased separately)
+    // Add-ons récurrents (facturés en plus sur l'abonnement Stripe)
     addons: {
       customUrl: { type: Boolean, default: false },
+      extraCollaboratorSeats: { type: Number, default: 0 }, // +1 collaborateur / siège
+    },
+
+    // Rappels SMS — solde prépayé (en centimes) consommé au-delà du quota inclus
+    // du plan. Rechargeable manuellement, avec recharge automatique optionnelle.
+    smsBalanceCents: { type: Number, default: 0 },
+    // Sessions de recharge déjà créditées (idempotence webhook ↔ page de retour).
+    smsTopupSessions: { type: [String], default: [] },
+    smsAutoRecharge: {
+      enabled:       { type: Boolean, default: false },
+      thresholdCents:{ type: Number, default: 500 },  // recharge quand solde < 5€
+      amountCents:   { type: Number, default: 2000 }, // recharge de 20€
+      inProgress:    { type: Boolean, default: false }, // verrou anti-double-recharge
+      lastFailureAt: { type: Date },                    // dernière recharge auto échouée
+    },
+    // Compteur d'usage du mois courant (réinitialisé automatiquement au
+    // changement de mois via la clé "YYYY-MM"). Sert au quota inclus du plan.
+    smsUsage: {
+      monthKey: { type: String, default: "" }, // "2026-07"
+      count: { type: Number, default: 0 },
     },
 
     isPremium: {
@@ -212,6 +232,11 @@ const userSchema = schema(
       reminderMessage:    { type: String, default: '' }, // message perso affiché dans le rappel
       reminderPaymentMethods: { type: [String], default: [] }, // 'carte' | 'especes' | 'qr_code' | 'virement'
       reminderPaymentNote:    { type: String, default: '' }, // précisions libres sur le paiement (ex: lien QR code)
+      // ── Rappels SMS (Pro & Business, quota mensuel puis email en repli) ────
+      smsRemindersEnabled: { type: Boolean, default: false },
+      // Au-delà du quota inclus : true = continuer en SMS en dépensant le solde
+      // prépayé ; false (défaut) = passer à l'email, ne jamais dépenser le solde.
+      smsAllowOverage: { type: Boolean, default: false },
       gallery:     { type: [String], default: [] },
       equipment:   { type: [String], default: [] },
       categories:  { type: [{ name: String, icon: { type: String, default: '' }, _id: false }], default: [] },

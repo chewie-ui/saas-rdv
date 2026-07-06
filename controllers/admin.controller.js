@@ -2088,7 +2088,10 @@ exports.paymentVerification = async (req, res) => {
         env.stripePriceBusinessMonthly,
         env.stripePriceBusinessYearly,
       ].filter(Boolean).includes(priceId);
-      planName = isBusinessPrice ? "business" : "pro";
+      const isEssentielPrice = [
+        env.stripePriceEssentielMonthly,
+      ].filter(Boolean).includes(priceId);
+      planName = isEssentielPrice ? "essentiel" : isBusinessPrice ? "business" : "pro";
     } catch (liErr) {
       console.error("[paymentVerification] listLineItems error:", liErr.message);
       planName = "pro"; // fallback
@@ -2319,6 +2322,27 @@ exports.customizeCalendarPage = async (req, res) => {
   const canUseCustomUrl = require("../utils/planLimits").LIMITS.customUrl.hasFeature(res.locals.billingUser);
   const defaultOrder    = ['about', 'location', 'hours', 'gallery', 'reviews'];
   const sectionOrder    = cs.sectionOrder && cs.sectionOrder.length ? cs.sectionOrder : defaultOrder;
+  // Retour d'une recharge SMS (Stripe Checkout) : créditer le solde tout de
+  // suite (fallback idempotent, sans attendre le webhook — utile en local).
+  if (req.query.smsTopupSuccess && req.query.session_id) {
+    try {
+      const s = await stripe.checkout.sessions.retrieve(req.query.session_id);
+      if (["paid", "no_payment_required"].includes(s.payment_status) && s.metadata?.type === "sms_topup") {
+        const { creditSmsTopup } = require("./account.controller");
+        await creditSmsTopup(s.metadata.userId, s.id, parseInt(s.metadata.amountCents, 10) || 0);
+        const fresh = await User.findById(req.user._id).select("smsBalanceCents").lean();
+        if (fresh) req.user.smsBalanceCents = fresh.smsBalanceCents;
+      }
+    } catch (e) { console.error("[smsTopup fallback]", e.message); }
+  }
+
+  const { getSmsQuota } = require("../utils/planLimits");
+  const { SMS_PRICE_CENTS } = require("../utils/sms");
+  const smsQuota = getSmsQuota(res.locals.billingUser); // quota inclus du plan
+  const smsUsage = req.user.smsUsage || {};
+  const currentMonthKey = new Date().toISOString().slice(0, 7);
+  const smsUsedThisMonth = smsUsage.monthKey === currentMonthKey ? (smsUsage.count || 0) : 0;
+  const smsAutoRecharge = req.user.smsAutoRecharge || {};
   return res.render("admin/customize", {
     pageName: "Customize",
     title: res.locals.t.customize.title,
@@ -2332,6 +2356,15 @@ exports.customizeCalendarPage = async (req, res) => {
     canUseSocial,
     canUseCustomUrl,
     sectionOrder,
+    smsQuota,
+    smsUsedThisMonth,
+    smsBalanceCents: req.user.smsBalanceCents || 0,
+    smsPriceCents:   SMS_PRICE_CENTS,
+    smsAutoRecharge: {
+      enabled:        !!smsAutoRecharge.enabled,
+      thresholdEuros: Math.round((smsAutoRecharge.thresholdCents || 500) / 100),
+      amountEuros:    Math.round((smsAutoRecharge.amountCents || 2000) / 100),
+    },
   });
 };
 

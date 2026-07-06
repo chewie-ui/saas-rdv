@@ -101,7 +101,7 @@ block content
                     .field
                         label= t.clients.field_notes
                         textarea.input.textarea#newClientNotes(rows="3" placeholder=t.clients.field_notes_hint)
-                    p.new-appt-modal__error#newClientError(style="display:none")
+                    p.clients-modal__error#newClientError(style="display:none")
                 .service-modal__footer
                     button.sm-btn.sm-btn--ghost#cancelNewClientModal(type="button")= t.clients.btn_cancel
                     button.sm-btn.sm-btn--primary#saveNewClientBtn(type="button")
@@ -161,18 +161,30 @@ block content
             var notesInput = document.getElementById('newClientNotes');
             if (!openBtn || !overlay || !modal) return;
 
-            function showError(msg) {
-                if (!errorEl) return;
-                errorEl.textContent = msg;
-                errorEl.style.display = '';
+            function showError(msg, field) {
+                if (errorEl) {
+                    errorEl.textContent = msg;
+                    errorEl.style.display = '';
+                }
+                if (field) { field.classList.add('is-invalid'); field.focus(); }
             }
+
+            function clearError() {
+                if (errorEl) errorEl.style.display = 'none';
+                nameInput.classList.remove('is-invalid');
+                emailInput.classList.remove('is-invalid');
+            }
+
+            // On efface l'état d'erreur dès que l'utilisateur corrige un champ.
+            nameInput.addEventListener('input', clearError);
+            emailInput.addEventListener('input', clearError);
 
             function open() {
                 nameInput.value = '';
                 emailInput.value = '';
                 phoneInput.value = '';
                 notesInput.value = '';
-                if (errorEl) errorEl.style.display = 'none';
+                clearError();
                 overlay.classList.add('show');
                 modal.classList.add('show');
                 nameInput.focus();
@@ -195,8 +207,8 @@ block content
                 saveBtn.addEventListener('click', async function() {
                     var fullName = nameInput.value.trim();
                     var email = emailInput.value.trim();
-                    if (!fullName) { showError('Le nom est obligatoire.'); return; }
-                    if (!email || email.indexOf('@') === -1) { showError('Adresse e-mail invalide.'); return; }
+                    if (!fullName) { showError('Le nom est obligatoire.', nameInput); return; }
+                    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('Adresse e-mail invalide.', emailInput); return; }
 
                     saveBtn.disabled = true;
                     try {

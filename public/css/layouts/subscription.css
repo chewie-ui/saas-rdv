@@ -863,10 +863,18 @@
   min-width: 180px;
 }
 
-/* ── Desktop 3 columns ──────────────────────────────────────── */
-@media (min-width: 820px) {
+/* ── Tablette : 2 colonnes ──────────────────────────────────── */
+@media (min-width: 640px) and (max-width: 1099px) {
   .sub-plans {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+    align-items: start;
+  }
+}
+
+/* ── Desktop : 4 colonnes (Essentiel, Pro, Business + Starter) ── */
+@media (min-width: 1100px) {
+  .sub-plans {
+    grid-template-columns: repeat(4, 1fr);
     align-items: start;
   }
 
@@ -1255,6 +1263,12 @@
   background: var(--surface-card);
   opacity: 0.9;
 }
+
+.sub-plan--essentiel {
+  background: var(--surface-card);
+  border-color: var(--accent-border, rgba(30, 122, 78, 0.22));
+}
+.sub-plan--essentiel .sub-plan__name { color: var(--accent, #1e7a4e); }
 
 /* Upgrade button — pulsing animation to draw attention */
 @keyframes subBtnPulse {

@@ -2,7 +2,7 @@ const User = require("../db/models/user.model");
 const Company = require("../db/models/company/company.model");
 const CompanyMembership = require("../db/models/company/companyMembership.model");
 const CompanyGrade = require("../db/models/company/companyGrade.model");
-const { getPlan, getLimit } = require("../utils/planLimits");
+const { getPlan, getLimit, getCollaboratorLimit } = require("../utils/planLimits");
 const getServices = require("../utils/services");
 const { logActivity } = require("../utils/activityLog");
 
@@ -413,7 +413,7 @@ exports.renderCollaboratorsPage = async (req, res) => {
       invitedAt: m.createdAt,
     }));
 
-  const collaboratorsLimit = getLimit("collaborators", owner);
+  const collaboratorsLimit = getCollaboratorLimit(owner);
 
   const ownerProfile = company.ownerEmployeeProfile || {};
   const { PERMISSION_SCHEMA, PERMISSION_GROUPS } = require("../utils/permissions");
@@ -432,6 +432,7 @@ exports.renderCollaboratorsPage = async (req, res) => {
     collaboratorsLimit: collaboratorsLimit === Infinity ? null : collaboratorsLimit,
     atCollaboratorsLimit: accepted.length >= collaboratorsLimit,
     currentPlan: getPlan(owner),
+    extraCollaboratorSeats: (owner.addons && owner.addons.extraCollaboratorSeats) || 0,
     ownerProfile: {
       isEmployee: ownerProfile.isEmployee !== false,
       displayName: ownerProfile.displayName || "",
@@ -592,7 +593,7 @@ exports.inviteCollaborator = async (req, res) => {
     if (!company) return;
 
     const owner = req.user;
-    const limit = getLimit("collaborators", owner);
+    const limit = getCollaboratorLimit(owner);
     if (limit <= 0) {
       return res.status(403).json({ error: "Votre forfait ne permet pas d'inviter de collaborateurs. Passez au forfait Pro ou Business." });
     }

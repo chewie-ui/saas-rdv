@@ -296,8 +296,32 @@
 }
 
 @media (max-width: 600px) {
+  .page--history-edit {
+    padding-bottom: 150px; /* barre d'actions sur 2 lignes en mobile */
+  }
+
   .edit-actions-bar {
-    padding-right: calc(16px + 66px);
+    padding: 12px 16px;
+    /* Place réservée à droite pour la bulle de chat flottante (bas-droite). */
+    padding-right: calc(16px + 60px);
+    gap: 8px;
+    justify-content: space-between;
+    align-items: stretch;
+  }
+
+  /* "Voir le dossier client" en pleine largeur, au-dessus. */
+  .edit-actions-bar > a.sm-btn {
+    order: 1;
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  /* Retour + Enregistrer se partagent la ligne du dessous. */
+  .edit-actions-bar > button.sm-btn {
+    order: 2;
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
   }
 }
 

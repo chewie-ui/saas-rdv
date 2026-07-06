@@ -121,7 +121,7 @@ exports.setPlan = async (req, res) => {
     const { userId } = req.params;
     const { plan } = req.body; // "free" | "pro" | "business"
 
-    const validPlans = ["free", "pro", "business"];
+    const validPlans = ["free", "essentiel", "pro", "business"];
     if (!validPlans.includes(plan)) {
       return res.status(400).json({ error: "Plan invalide." });
     }
@@ -157,7 +157,7 @@ exports.setPlanForCompany = async (req, res) => {
     if (!company) return res.status(404).json({ error: "Établissement introuvable." });
 
     const { plan } = req.body; // "free" | "pro" | "business"
-    const validPlans = ["free", "pro", "business"];
+    const validPlans = ["free", "essentiel", "pro", "business"];
     if (!validPlans.includes(plan)) return res.status(400).json({ error: "Plan invalide." });
 
     const isFree = plan === "free";

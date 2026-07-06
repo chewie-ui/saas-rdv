@@ -751,14 +751,27 @@
 }
 
 /* ── Responsive : mobile ──────────────────────────────────────────── */
-@media (max-width: 480px) {
+@media (max-width: 600px) {
+  /* Sur téléphone on ANCRE le modal en haut de l'écran plutôt que de le
+     centrer verticalement. Un modal centré (translate -50% Y) voit sa moitié
+     basse passer sous le clavier virtuel — et comme il est centré, impossible
+     de scroller pour l'atteindre : les champs du bas sont coupés. Ancré en
+     haut + hauteur plafonnée au viewport visible (dvh) + corps (.service-modal
+     __body) scrollable = header/footer toujours visibles, tout est joignable. */
   .service-modal {
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%) scale(0.98);
     width: calc(100% - 20px);
     padding: 20px 16px;
     border-radius: 16px;
     max-height: calc(100vh - 24px);
     max-height: calc(100dvh - 24px);
     gap: 12px;
+  }
+
+  .service-modal.show {
+    transform: translateX(-50%) scale(1);
   }
 
   .service-modal__footer {

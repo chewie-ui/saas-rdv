@@ -7,6 +7,7 @@ module.exports = {
   stripePublishableKey: env.STRIPE_PUBLISHABLE_KEY_SERVER,
 
   // Prix — nouveaux noms en priorité, anciens en fallback (rétrocompatibilité)
+  stripePriceEssentielMonthly: env.STRIPE_PRICE_ESSENTIEL_MONTHLY_SERVER || "",
   stripePricePremiumMonthly:  env.STRIPE_PRICE_PREMIUM_MONTHLY_KEY_SERVER  || env.STRIPE_PRICE_KEY_SERVER,
   stripePricePremiumYearly:   env.STRIPE_PRICE_PREMIUM_YEARLY_KEY_SERVER   || env.STRIPE_PRICE_KEY_SERVER,
   stripePriceBusinessMonthly: env.STRIPE_PRICE_BUSINESS_MONTHLY_KEY_SERVER || env.STRIPE_PRICE_KEY_BUSINESS_SERVER,
@@ -14,6 +15,9 @@ module.exports = {
 
   // Add-on : URL personnalisée (+5€/mois)
   stripePriceAddonCustomUrl:  env.STRIPE_PRICE_ADDON_CUSTOM_URL_SERVER || "",
+
+  // Add-on : siège collaborateur supplémentaire (+10€/mois/siège, Pro & Business)
+  stripePriceExtraCollaborator: env.STRIPE_PRICE_EXTRA_COLLABORATOR_SERVER || "",
 
   // URLs — défaut branshee.com si non renseignées
   stripeSuccessUrl: env.STRIPE_SUCCESS_URL_SERVER || "https://www.branshee.com/subscription/success?session_id={CHECKOUT_SESSION_ID}",

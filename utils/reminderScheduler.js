@@ -8,6 +8,8 @@ const User = require("../db/models/user.model");
 const Service = require("../db/models/company/service.model");
 const { atLeast } = require("./planLimits");
 const { sendEmail } = require("./mailer");
+const { sendReminderSmsIfAllowed } = require("./sms");
+const { isFeatureEnabled } = require("../middlewares/featureFlag");
 
 /**
  * Combine le champ `date` (Date, souvent à minuit) avec le champ
@@ -59,7 +61,7 @@ async function sendDueReminders() {
     const companies = await Company.find({ _id: { $in: companyIds } }).select("_id owner").lean();
     const ownerIds = [...new Set(companies.map((c) => String(c.owner)).filter(Boolean))];
     const owners = await User.find({ _id: { $in: ownerIds } })
-      .select("_id isPremium manualPremium subscription calendarSettings location businessName phonePro")
+      .select("_id isPremium manualPremium subscription calendarSettings location businessName phonePro addons smsUsage")
       .lean();
     const ownerById = Object.fromEntries(owners.map((o) => [String(o._id), o]));
     companies.forEach((c) => { companyOwnerMap[String(c._id)] = ownerById[String(c.owner)] || null; });
@@ -130,6 +132,29 @@ async function sendDueReminders() {
     const formattedDate = new Date(booking.date).toLocaleDateString("fr-FR", {
       weekday: "long", day: "2-digit", month: "long", year: "numeric",
     });
+
+    // ── Rappel SMS (si activé par le pro) — repli automatique sur l'email
+    // ci-dessous si le quota mensuel est dépassé et qu'aucun crédit n'est
+    // disponible. Jamais bloquant : une erreur ici n'empêche pas l'email.
+    if (
+      booking.phone &&
+      owner?.calendarSettings?.smsRemindersEnabled &&
+      (await isFeatureEnabled("sms_notifications"))
+    ) {
+      try {
+        const smsBody = `Rappel : votre rendez-vous ${businessName ? `avec ${businessName} ` : ""}est ${delayLabel} (${formattedDate} à ${booking.startTime}).`;
+        const result = await sendReminderSmsIfAllowed(owner, booking.phone, smsBody);
+        if (result.sent) {
+          booking.reminderSent = true;
+          await booking.save();
+          console.log(`[reminderScheduler] Rappel SMS (${result.mode}) envoyé à ${booking.phone}`);
+          continue; // SMS envoyé avec succès — pas besoin de l'email aussi
+        }
+        // result.sent === false → on continue vers l'envoi email ci-dessous
+      } catch (smsErr) {
+        console.error(`[reminderScheduler] Erreur SMS ${booking._id} ❌`, smsErr);
+      }
+    }
 
     try {
       const html = pug.renderFile(templatePath, {

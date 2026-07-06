@@ -37,8 +37,9 @@ let currentPlan       = "pro"; // plan courant sélectionné pour le checkout
 
 // Prix de base (mensuel / annuel) lus depuis les data attributes
 const PRICES = {
-  pro:      { monthly: null, yearly: null },
-  business: { monthly: null, yearly: null },
+  essentiel: { monthly: 9, yearly: 9 }, // mensuel uniquement, prix fixe
+  pro:       { monthly: null, yearly: null },
+  business:  { monthly: null, yearly: null },
 };
 document.querySelectorAll(".sub-plan__price[data-monthly]").forEach((el) => {
   const m = parseFloat(el.dataset.monthly);
@@ -332,7 +333,7 @@ function confirmPurchase(plan) {
       selectedPaymentMethodId = def ? def.id : null;
     }
 
-    const planLabel    = plan === "business" ? "Business" : "Pro";
+    const planLabel    = plan === "business" ? "Business" : plan === "essentiel" ? "Essentiel" : "Pro";
     const billingLabel = isYearly ? "facturation annuelle" : "facturation mensuelle";
     let   price        = getPlanPrice(plan);
     let   priceLabel   = fmtPrice(price);
@@ -596,6 +597,8 @@ async function handlePlanPurchaseClick(plan) {
 if (getProPlan)      getProPlan.onclick      = () => handlePlanPurchaseClick("pro");
 if (getProPlanAlert) getProPlanAlert.onclick = () => handlePlanPurchaseClick("pro");
 if (getBusinessPlan) getBusinessPlan.onclick = () => handlePlanPurchaseClick("business");
+const getEssPlan = document.getElementById("getEssPlan");
+if (getEssPlan)      getEssPlan.onclick      = () => handlePlanPurchaseClick("essentiel");
 
 // ── Strip "Essayer Pro gratuitement" — auto-applies BETA promo then checkout ──
 const getProPlanStrip = document.getElementById("getProPlanStrip");

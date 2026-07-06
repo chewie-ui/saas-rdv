@@ -551,6 +551,71 @@ block content
                                 span#czPaymentNoteCount= (cs.reminderPaymentNote || '').length
                                 | /200
 
+                    //- ── Rappel SMS ────────────────────────────────────────────
+                    .cz-reminder-section
+                        .cz-reminder-label
+                            svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
+                                path(d="M240-80v-800h480v800H240Zm80-80h320v-560H320v560Zm160-40q17 0 28.5-11.5T520-240q0-17-11.5-28.5T480-280q-17 0-28.5 11.5T440-240q0 17 11.5 28.5T480-200ZM320-720h320v-80H320v80Z")
+                                span Rappel par SMS
+
+                        //- Usage du quota inclus ce mois
+                        - var _smsPrice = (smsPriceCents / 100).toFixed(2)
+                        p.cz-reminder-hint(style="margin-bottom:6px")
+                            | Votre forfait inclut&nbsp;
+                            strong= `${smsQuota} SMS/mois`
+                            | . Une fois épuisé, comportement au choix ci-dessous.
+                        .cz-sms-usage-bar(style="height:8px;border-radius:99px;background:var(--border-light,#e5e7eb);overflow:hidden;margin-bottom:6px")
+                            - var _pct = smsQuota > 0 ? Math.min(100, Math.round(smsUsedThisMonth / smsQuota * 100)) : 0
+                            .cz-sms-usage-fill(style=`height:100%;width:${_pct}%;background:var(--accent,#1a7a4a);border-radius:99px`)
+                        p.cz-reminder-hint(style="margin-bottom:14px")
+                            strong= `${smsUsedThisMonth} / ${smsQuota}`
+                            | &nbsp;SMS inclus utilisés ce mois-ci
+
+                        //- Choix 1 : rappels par SMS ou par email
+                        label.cz-sms-toggle-row(style="display:flex;align-items:center;gap:10px;margin-bottom:6px")
+                            input#czSmsEnabled(type="checkbox" checked=calendarSettings.smsRemindersEnabled)
+                            span Envoyer les rappels par SMS (sinon par email)
+                        p.cz-reminder-hint(style="margin:0 0 16px 30px") Décoché = rappels uniquement par email. Coché = SMS, avec repli email automatique si l'envoi échoue.
+
+                        //- Choix 2 : autoriser le dépassement du forfait
+                        label.cz-sms-toggle-row(style="display:flex;align-items:center;gap:10px;margin-bottom:6px")
+                            input#czSmsOverage(type="checkbox" checked=calendarSettings.smsAllowOverage)
+                            span Continuer en SMS au-delà du forfait (utilise mon solde)
+                        p.cz-reminder-hint(style="margin:0 0 16px 30px")
+                            | Décoché (défaut) = une fois vos #{smsQuota} SMS inclus épuisés, on passe à l'email — votre solde n'est jamais touché.
+                            br
+                            | Coché = les SMS continuent, décomptés de votre solde (#{_smsPrice}€/SMS). Solde vide → repli email.
+
+                        //- Solde prépayé + recharge
+                        .cz-sms-balance-box(style="padding:14px;background:var(--surface,#f9fafb);border-radius:10px;border:1px solid var(--border-light,#e5e7eb);margin-bottom:12px")
+                            .cz-sms-balance-head(style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px")
+                                span(style="font-weight:600") Solde SMS prépayé
+                                strong#czSmsBalance(style="font-size:18px")= `${(smsBalanceCents / 100).toFixed(2)}€`
+                            p.cz-reminder-hint(style="margin:0 0 12px")
+                                = `Soit ~${Math.floor(smsBalanceCents / smsPriceCents)} SMS supplémentaires. Utilisé uniquement au-delà de votre quota inclus.`
+                            .cz-sms-topup-buttons(style="display:flex;gap:6px;flex-wrap:wrap")
+                                button.sm-btn.sm-btn--ghost.cz-sms-topup(type="button" data-pack="small") Recharger 10€
+                                button.sm-btn.sm-btn--ghost.cz-sms-topup(type="button" data-pack="medium") 20€
+                                button.sm-btn.sm-btn--ghost.cz-sms-topup(type="button" data-pack="large") 50€
+
+                        //- Recharge automatique (off-session)
+                        .cz-sms-autorecharge-box(style="padding:14px;background:var(--surface,#f9fafb);border-radius:10px;border:1px solid var(--border-light,#e5e7eb)")
+                            label(style="display:flex;align-items:center;gap:10px;margin-bottom:8px")
+                                input#czSmsArEnabled(type="checkbox" checked=smsAutoRecharge.enabled)
+                                span(style="font-weight:600") Recharge automatique
+                            p.cz-reminder-hint(style="margin:0 0 12px") Quand le solde passe sous le seuil, on reprélève automatiquement le montant choisi sur votre carte enregistrée. Vous n'êtes jamais à découvert, et jamais facturé après coup.
+                            .cz-sms-ar-config(style="display:flex;align-items:center;gap:10px;flex-wrap:wrap")
+                                span.cz-reminder-hint(style="margin:0") Si le solde &lt;
+                                select#czSmsArThreshold.cz-select(style="padding:6px 8px;border-radius:8px;border:1px solid var(--border-light,#e5e7eb)")
+                                    each v in [2,5,10,20]
+                                        option(value=v selected=smsAutoRecharge.thresholdEuros === v)= `${v}€`
+                                span.cz-reminder-hint(style="margin:0") recharger de
+                                select#czSmsArAmount.cz-select(style="padding:6px 8px;border-radius:8px;border:1px solid var(--border-light,#e5e7eb)")
+                                    each v in [10,20,50,100]
+                                        option(value=v selected=smsAutoRecharge.amountEuros === v)= `${v}€`
+                                button.sm-btn.sm-btn--primary#czSmsArSave(type="button") Enregistrer
+                                span.cz-reminder-hint#czSmsArStatus(style="margin:0")
+
                     //- ── Preview ────────────────────────────────────────────────
                     .cz-reminder-section.cz-reminder-preview-section
                         .cz-reminder-label
@@ -1850,7 +1915,9 @@ block scripts
                                 reminderDelayHours: selectedDelay,
                                 reminderMessage: msgArea ? msgArea.value.trim() : '',
                                 reminderPaymentMethods: selectedPaymentMethods,
-                                reminderPaymentNote: payNoteArea ? payNoteArea.value.trim() : ''
+                                reminderPaymentNote: payNoteArea ? payNoteArea.value.trim() : '',
+                                smsRemindersEnabled: document.getElementById('czSmsEnabled') ? document.getElementById('czSmsEnabled').checked : false,
+                                smsAllowOverage: document.getElementById('czSmsOverage') ? document.getElementById('czSmsOverage').checked : false
                             })
                         });
                         var data = await res.json();
@@ -1872,6 +1939,56 @@ block scripts
                     }
                 });
             }
+
+            // Recharge du solde SMS (redirection Stripe Checkout)
+            document.querySelectorAll('.cz-sms-topup').forEach(function(btn) {
+                btn.addEventListener('click', async function() {
+                    btn.disabled = true;
+                    try {
+                        var r = await fetch('/account/sms-topup', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pack: btn.dataset.pack }),
+                        });
+                        var d = await r.json();
+                        if (d.url) window.location.href = d.url;
+                        else { alert(d.error || 'Erreur'); btn.disabled = false; }
+                    } catch (e) { alert('Erreur réseau'); btn.disabled = false; }
+                });
+            });
+
+            // Recharge automatique — enregistrer les réglages
+            (function() {
+                var save = document.getElementById('czSmsArSave');
+                if (!save) return;
+                var status = document.getElementById('czSmsArStatus');
+                save.addEventListener('click', async function() {
+                    save.disabled = true;
+                    status.textContent = 'Enregistrement...';
+                    try {
+                        var r = await fetch('/account/sms-autorecharge', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                enabled: document.getElementById('czSmsArEnabled').checked,
+                                thresholdEuros: parseInt(document.getElementById('czSmsArThreshold').value, 10),
+                                amountEuros: parseInt(document.getElementById('czSmsArAmount').value, 10),
+                            }),
+                        });
+                        var d = await r.json();
+                        save.disabled = false;
+                        if (d.success) {
+                            status.textContent = '✓ Enregistré';
+                            status.style.color = '#22c55e';
+                            setTimeout(function() { status.textContent = ''; }, 2500);
+                        } else { status.textContent = d.error || 'Erreur'; status.style.color = '#ef4444'; }
+                    } catch (e) {
+                        save.disabled = false;
+                        status.textContent = 'Erreur réseau';
+                        status.style.color = '#ef4444';
+                    }
+                });
+            })();
 
             updatePreview();
         })();
