@@ -9,371 +9,91 @@ html(lang="fr")
         link(rel="stylesheet" href="/css/layouts/superadmin.css")
         style.
             body { padding: 0 24px 80px; }
-            .sa-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                margin-bottom: 32px;
-                flex-wrap: wrap;
-                gap: 16px;
-            }
-            .sa-header__left {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
-            .sa-header__left h1 {
-                font-size: 24px;
-                font-weight: 700;
-                color: #fff;
-                letter-spacing: -0.02em;
-            }
-            .sa-header__left p {
-                font-size: 13px;
-                color: #555;
-            }
-            .sa-header__right {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            .badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                font-size: 11px;
-                font-weight: 600;
-                letter-spacing: 0.06em;
-                text-transform: uppercase;
-                color: #666;
-                background: #1a1a1a;
-                border: 1px solid #2a2a2a;
-                border-radius: 6px;
-                padding: 5px 10px;
-            }
-            .badge--green { color: #22c55e; border-color: rgba(34,197,94,0.2); background: rgba(34,197,94,0.07); }
-            .badge--yellow { color: #facc15; border-color: rgba(250,204,21,0.2); background: rgba(250,204,21,0.07); }
-            a.logout-btn {
-                font-size: 12px;
-                color: #555;
-                text-decoration: none;
-                padding: 6px 12px;
-                border: 1px solid #2a2a2a;
-                border-radius: 8px;
-                transition: color 0.15s, border-color 0.15s;
-            }
-            a.logout-btn:hover { color: #f87171; border-color: rgba(248,113,113,0.3); }
-            .search-bar {
-                margin-bottom: 24px;
-            }
-            .search-bar form {
-                display: flex;
-                gap: 10px;
-            }
-            .search-bar input {
-                flex: 1;
-                max-width: 340px;
-                background: #1a1a1a;
-                border: 1.5px solid #2a2a2a;
-                border-radius: 10px;
-                color: #fff;
-                font-size: 13px;
-                padding: 9px 14px;
-                outline: none;
-                transition: border-color 0.15s;
-            }
+            .sa-header__left h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -.02em; }
+            .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: .05em; color: #666; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 4px 10px; }
+            .search-bar { margin-bottom: 24px; }
+            .search-bar form { display: flex; gap: 10px; }
+            .search-bar input { flex: 1; max-width: 340px; background: #141414; border: 1.5px solid #2a2a2a; border-radius: 10px; color: #fff; font-size: 13px; padding: 9px 14px; outline: none; transition: border-color .15s; }
             .search-bar input:focus { border-color: #444; }
-            .search-bar button {
-                background: #fff;
-                color: #111;
-                border: none;
-                border-radius: 10px;
-                font-size: 13px;
-                font-weight: 600;
-                padding: 9px 18px;
-                cursor: pointer;
-                transition: opacity 0.15s;
-            }
-            .search-bar button:hover { opacity: 0.85; }
-            .stats-row {
-                display: flex;
-                gap: 12px;
-                margin-bottom: 24px;
-                flex-wrap: wrap;
-            }
-            .stat-card {
-                background: #1a1a1a;
-                border: 1px solid #2a2a2a;
-                border-radius: 12px;
-                padding: 16px 20px;
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-                min-width: 120px;
-            }
-            .stat-card__value {
-                font-size: 26px;
-                font-weight: 700;
-                color: #fff;
-                letter-spacing: -0.02em;
-                line-height: 1;
-            }
-            .stat-card__label {
-                font-size: 11px;
-                color: #555;
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-            }
-            .sources-card {
-                background: #1a1a1a;
-                border: 1px solid #2a2a2a;
-                border-radius: 12px;
-                padding: 18px 20px;
-                margin-bottom: 24px;
-            }
-            .sources-card__title {
-                font-size: 12px;
-                font-weight: 600;
-                color: #999;
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-                margin-bottom: 14px;
-            }
-            .source-row {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                margin-bottom: 8px;
-            }
-            .source-row__name {
-                width: 150px;
-                flex-shrink: 0;
-                font-size: 13px;
-                color: #ddd;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            .source-row__bar-wrap {
-                flex: 1;
-                height: 8px;
-                background: #2a2a2a;
-                border-radius: 4px;
-                overflow: hidden;
-            }
-            .source-row__bar {
-                height: 100%;
-                background: #22c55e;
-                border-radius: 4px;
-            }
-            .source-row__count {
-                width: 60px;
-                flex-shrink: 0;
-                text-align: right;
-                font-size: 13px;
-                font-weight: 600;
-                color: #fff;
-            }
-            .users-table {
-                width: 100%;
-                border-collapse: collapse;
-                background: #1a1a1a;
-                border: 1px solid #2a2a2a;
-                border-radius: 14px;
-                overflow: hidden;
-            }
-            .users-table thead th {
-                text-align: left;
-                font-size: 10px;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.08em;
-                color: #444;
-                padding: 12px 18px;
-                border-bottom: 1px solid #222;
-                background: #161616;
-            }
-            .users-table tbody tr {
-                border-bottom: 1px solid #1f1f1f;
-                transition: background 0.1s;
-            }
+            .search-bar button { background: #fff; color: #111; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; padding: 9px 18px; cursor: pointer; }
+            .stats-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+            .stat-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 15px 20px; display: flex; flex-direction: column; gap: 4px; min-width: 118px; }
+            .stat-card__value { font-size: 25px; font-weight: 700; color: #fff; letter-spacing: -.02em; line-height: 1; }
+            .stat-card__value--green { color: #22c55e; }
+            .stat-card__value--red { color: #f87171; }
+            .stat-card__label { font-size: 10.5px; color: #555; text-transform: uppercase; letter-spacing: .06em; }
+            .sources-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px; }
+            .sources-card__title { font-size: 11px; font-weight: 600; color: #777; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
+            .source-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+            .source-row__name { width: 150px; flex-shrink: 0; font-size: 12.5px; color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .source-row__bar-wrap { flex: 1; height: 7px; background: #222; border-radius: 4px; overflow: hidden; }
+            .source-row__bar { height: 100%; background: linear-gradient(90deg,#22c55e,#16a34a); border-radius: 4px; }
+            .source-row__count { width: 60px; flex-shrink: 0; text-align: right; font-size: 12.5px; font-weight: 600; color: #fff; }
+            .users-table { width: 100%; border-collapse: collapse; background: #141414; border: 1px solid #1e1e1e; border-radius: 14px; overflow: hidden; }
+            .users-table thead th { text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #444; padding: 12px 18px; border-bottom: 1px solid #1e1e1e; background: #131313; }
+            .users-table tbody tr { border-bottom: 1px solid #1c1c1c; transition: background .1s; }
             .users-table tbody tr:last-child { border-bottom: none; }
-            .users-table tbody tr:hover { background: #1f1f1f; }
-            .users-table tbody td {
-                padding: 14px 18px;
-                font-size: 13px;
-                color: #ccc;
-                vertical-align: middle;
-            }
-            .user-info {
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-            }
-            .user-info__name {
-                font-size: 14px;
-                font-weight: 600;
-                color: #fff;
-            }
-            .user-info__email {
-                font-size: 12px;
-                color: #555;
-            }
-            .toggle-wrap {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-            /* Toggle switch */
-            .plan-select {
-                appearance: none;
-                -webkit-appearance: none;
-                background: #1a1a1a;
-                border: 1.5px solid #2a2a2a;
-                border-radius: 8px;
-                color: #ccc;
-                font-size: 12.5px;
-                font-weight: 600;
-                padding: 6px 28px 6px 10px;
-                cursor: pointer;
-                outline: none;
-                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-                background-repeat: no-repeat;
-                background-position: right 8px center;
-                transition: border-color 0.15s;
-            }
-            .plan-select:focus { border-color: #444; }
-            .plan-select[data-plan="free"] { color: #666; }
-            .plan-select[data-plan="pro"] { color: #22c55e; border-color: rgba(34,197,94,0.3); }
-            .plan-select[data-plan="business"] { color: #a78bfa; border-color: rgba(167,139,250,0.3); }
-            .plan-saving { font-size: 11px; color: #555; margin-left: 6px; }
-            .date-col { color: #444; font-size: 12px; }
-            .trial-select {
-                appearance: none;
-                -webkit-appearance: none;
-                background: #1a1a1a;
-                border: 1.5px solid #2a2a2a;
-                border-radius: 8px;
-                color: #888;
-                font-size: 12px;
-                font-weight: 600;
-                padding: 6px 28px 6px 10px;
-                cursor: pointer;
-                outline: none;
-                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-                background-repeat: no-repeat;
-                background-position: right 8px center;
-                transition: border-color 0.15s;
-            }
-            .trial-select:disabled { opacity: 0.3; cursor: not-allowed; }
-            .trial-select:focus { border-color: #444; }
-            .trial-custom-row { display: flex; gap: 6px; margin-top: 6px; }
-            .trial-custom-input {
-                width: 90px;
-                background: #111;
-                border: 1.5px solid #2a2a2a;
-                border-radius: 8px;
-                color: #fff;
-                font-size: 12px;
-                padding: 6px 10px;
-                outline: none;
-                transition: border-color 0.15s;
-            }
-            .trial-custom-input:focus { border-color: #444; }
-            .trial-custom-apply {
-                background: #fff;
-                color: #111;
-                border: none;
-                border-radius: 8px;
-                font-size: 11px;
-                font-weight: 700;
-                padding: 6px 12px;
-                cursor: pointer;
-                transition: opacity 0.15s;
-            }
-            .trial-custom-apply:hover { opacity: 0.85; }
-            .trial-expiry {
-                font-size: 11px;
-                color: #555;
-                margin-top: 4px;
-            }
-            .trial-expiry.expiring { color: #f59e0b; }
-            .trial-expiry.expired  { color: #f87171; }
-
-            /* ── Toggle actif/désactivé ── */
-            .acc-toggle {
-                position: relative;
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                cursor: pointer;
-                user-select: none;
-            }
+            .users-table tbody tr:hover { background: #1a1a1a; }
+            .users-table tbody td { padding: 13px 18px; font-size: 13px; color: #ccc; vertical-align: middle; }
+            .user-info__name { font-size: 14px; font-weight: 600; color: #fff; }
+            .user-info__email { font-size: 12px; color: #555; margin-top: 1px; }
+            .estabs { display: flex; flex-direction: column; gap: 4px; }
+            .estab-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: #cbd5e1; }
+            .estab-plan { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 1px 6px; border-radius: 4px; }
+            .estab-plan--free { color: #64748b; background: #1e1e1e; border: 1px solid #2a2a2a; }
+            .estab-plan--essentiel { color: #38bdf8; background: rgba(56,189,248,.1); border: 1px solid rgba(56,189,248,.25); }
+            .estab-plan--pro { color: #22c55e; background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.25); }
+            .estab-plan--business { color: #a78bfa; background: rgba(167,139,250,.1); border: 1px solid rgba(167,139,250,.25); }
+            .estab-paused { font-size: 10px; color: #f87171; }
+            .no-estab { color: #444; font-size: 12px; }
+            .date-col { color: #555; font-size: 12px; }
+            /* Toggle actif/désactivé */
+            .acc-toggle { position: relative; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
             .acc-toggle input { display: none; }
-            .acc-toggle__track {
-                width: 36px;
-                height: 20px;
-                border-radius: 10px;
-                background: #2a2a2a;
-                border: 1.5px solid #333;
-                transition: background 0.2s, border-color 0.2s;
-                flex-shrink: 0;
-                position: relative;
-            }
-            .acc-toggle__track::after {
-                content: '';
-                position: absolute;
-                top: 2px;
-                left: 2px;
-                width: 14px;
-                height: 14px;
-                border-radius: 50%;
-                background: #444;
-                transition: transform 0.2s, background 0.2s;
-            }
-            .acc-toggle input:checked + .acc-toggle__track {
-                background: rgba(34,197,94,0.15);
-                border-color: rgba(34,197,94,0.4);
-            }
-            .acc-toggle input:checked + .acc-toggle__track::after {
-                transform: translateX(16px);
-                background: #22c55e;
-            }
-            .acc-toggle__label {
-                font-size: 12px;
-                font-weight: 600;
-                color: #555;
-                min-width: 60px;
-            }
+            .acc-toggle__track { width: 36px; height: 20px; border-radius: 10px; background: #2a2a2a; border: 1.5px solid #333; transition: background .2s, border-color .2s; flex-shrink: 0; position: relative; }
+            .acc-toggle__track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #444; transition: transform .2s, background .2s; }
+            .acc-toggle input:checked + .acc-toggle__track { background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.4); }
+            .acc-toggle input:checked + .acc-toggle__track::after { transform: translateX(16px); background: #22c55e; }
+            .acc-toggle__label { font-size: 12px; font-weight: 600; color: #555; min-width: 60px; }
             .acc-toggle input:checked ~ .acc-toggle__label { color: #22c55e; }
             .acc-toggle--disabled-state .acc-toggle__label { color: #f87171 !important; }
-
-            .delete-user-btn {
-                background: rgba(248,113,113,0.1);
-                border: 1px solid rgba(248,113,113,0.3);
-                color: #f87171;
-                font-size: 12px;
-                font-weight: 600;
-                padding: 6px 12px;
-                border-radius: 8px;
-                cursor: pointer;
-                white-space: nowrap;
-                transition: background 0.15s, border-color 0.15s;
-            }
-            .delete-user-btn:hover { background: rgba(248,113,113,0.2); border-color: #f87171; }
-            .delete-user-btn:disabled { opacity: 0.6; cursor: default; }
-            .imp-btn { font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 7px; border: 1px solid #2a2a2a; cursor: pointer; transition: all .15s; white-space: nowrap; background: none; color: #555; }
-            .imp-btn:hover { background: #1f1f1f; color: #fff; border-color: #444; }
-
-            .empty-state {
-                text-align: center;
-                padding: 60px 24px;
-                color: #444;
-                font-size: 14px;
-            }
-            @media (max-width: 700px) {
-                .users-table thead th:nth-child(3),
-                .users-table tbody td:nth-child(3) { display: none; }
+            /* Action buttons */
+            .act-btns { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+            .act-btn { font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 7px; border: 1px solid #2a2a2a; cursor: pointer; transition: all .15s; white-space: nowrap; background: none; color: #666; }
+            .act-btn:hover { background: #1f1f1f; color: #fff; border-color: #444; }
+            .act-btn--msg:hover { color: #60a5fa; border-color: rgba(96,165,250,.4); }
+            .act-btn--del:hover { color: #f87171; border-color: rgba(248,113,113,.4); }
+            .act-btn:disabled { opacity: .6; cursor: default; }
+            .empty-state { text-align: center; padding: 60px 24px; color: #444; font-size: 14px; }
+            /* Compose modal */
+            .sa-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.72); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(3px); }
+            .sa-modal-overlay.open { display: flex; }
+            .sa-modal { background: #111; border: 1px solid #262626; border-radius: 18px; padding: 26px; width: 460px; max-width: 95vw; }
+            .sa-modal__title { font-size: 16px; font-weight: 700; color: #fff; margin: 0 0 4px; }
+            .sa-modal__sub { font-size: 12.5px; color: #666; margin-bottom: 18px; }
+            .sa-modal__sub b { color: #cbd5e1; }
+            .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+            .field__label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #666; }
+            .input, .textarea { background: #1a1a1a; border: 1.5px solid #2a2a2a; border-radius: 10px; color: #fff; font-size: 13.5px; padding: 10px 13px; outline: none; width: 100%; box-sizing: border-box; font-family: inherit; }
+            .input:focus, .textarea:focus { border-color: #444; }
+            .textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
+            .type-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+            .type-chip { padding: 6px 11px; border-radius: 8px; border: 1.5px solid #2a2a2a; background: #1a1a1a; color: #888; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; }
+            .type-chip.active[data-type="info"] { border-color: #3b82f6; color: #fff; background: rgba(59,130,246,.15); }
+            .type-chip.active[data-type="tip"] { border-color: #9333ea; color: #fff; background: rgba(147,51,234,.15); }
+            .type-chip.active[data-type="success"] { border-color: #16a34a; color: #fff; background: rgba(22,163,74,.15); }
+            .type-chip.active[data-type="warning"] { border-color: #d97706; color: #fff; background: rgba(217,119,6,.15); }
+            .type-chip.active[data-type="security"] { border-color: #dc2626; color: #fff; background: rgba(220,38,38,.15); }
+            .sa-modal__actions { display: flex; gap: 8px; margin-top: 18px; }
+            .sa-btn { flex: 1; padding: 11px 16px; border-radius: 10px; font-size: 13.5px; font-weight: 700; cursor: pointer; border: none; }
+            .sa-btn--primary { background: #fff; color: #111; }
+            .sa-btn--ghost { background: #1a1a1a; border: 1px solid #2a2a2a; color: #888; }
+            .sa-btn:disabled { opacity: .5; cursor: default; }
+            .modal-status { font-size: 12px; margin-top: 8px; min-height: 15px; }
+            .modal-status.ok { color: #22c55e; }
+            .modal-status.err { color: #f87171; }
+            @media (max-width: 760px) {
+                .users-table thead th:nth-child(2), .users-table tbody td:nth-child(2) { display: none; }
             }
     body
         - var saPage = 'users'
@@ -381,27 +101,27 @@ html(lang="fr")
 
         .sa-header(style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:32px 0 24px")
             .sa-header__left
-                h1(style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-.02em") 👥 Utilisateurs
-                p(style="font-size:13px;color:#555;margin-top:4px") Gérez les accès premium manuels pour les bêta testeurs.
-            .sa-header__right
+                h1 👥 Utilisateurs
+                p(style="font-size:13px;color:#555;margin-top:4px") Comptes personnels. Le plan est géré par établissement (onglet Établissements).
+            .sa-header__right(style="display:flex;gap:10px;align-items:center")
+                button.act-btn.act-btn--msg#broadcastBtn(type="button" style="padding:8px 14px;font-size:12.5px") 📢 Message à tous
                 span.badge= users.length + ' utilisateurs'
 
-        - var totalFree = users.filter(function(u){ return !u.isPremium && !u.manualPremium; }).length
-        - var totalBusiness = users.filter(function(u){ return u.subscription && u.subscription.plan === 'business'; }).length
-        - var totalPro = users.filter(function(u){ return (u.manualPremium || u.isPremium) && (!u.subscription || u.subscription.plan !== 'business'); }).length
+        - var disabled = disabledCount || 0
+        - var active = users.length - disabled
         .stats-row
             .stat-card
                 .stat-card__value= users.length
-                .stat-card__label Total
+                .stat-card__label Comptes
             .stat-card
-                .stat-card__value= totalFree
-                .stat-card__label Free
+                .stat-card__value.stat-card__value--green= active
+                .stat-card__label Actifs
             .stat-card
-                .stat-card__value= totalPro
-                .stat-card__label Pro
+                .stat-card__value(class=disabled ? 'stat-card__value--red' : '')= disabled
+                .stat-card__label Désactivés
             .stat-card
-                .stat-card__value= totalBusiness
-                .stat-card__label Business
+                .stat-card__value= adminsToday || 0
+                .stat-card__label Inscrits aujourd'hui
             .stat-card
                 .stat-card__value= (totalViews || 0).toLocaleString('fr-FR')
                 .stat-card__label Vues totales
@@ -413,10 +133,7 @@ html(lang="fr")
                 .stat-card__label Clients (total)
             .stat-card
                 .stat-card__value= clientsToday || 0
-                .stat-card__label Clients inscrits aujourd'hui
-            .stat-card
-                .stat-card__value= adminsToday || 0
-                .stat-card__label Pros inscrits aujourd'hui
+                .stat-card__label Clients aujourd'hui
 
         if topSources && topSources.length
             - var maxSourceCount = Math.max.apply(null, topSources.map(function(s){ return s.count; }))
@@ -443,270 +160,114 @@ html(lang="fr")
                 thead
                     tr
                         th Utilisateur
-                        th Plan
-                        th Durée bêta
-                        th Source
+                        th Établissement(s)
                         th Inscrit le
                         th Statut
-                        th Action
+                        th Actions
                 tbody
                     each u in users
-                        - var currentPlan = (u.subscription && u.subscription.plan === 'business' && (u.subscription.status === 'active' || u.manualPremium)) ? 'business' : (u.isPremium || u.manualPremium) ? 'pro' : 'free'
-                        - var isStripe = !!(u.subscription && u.subscription.stripeSubscriptionId)
-                        - var isManual = u.manualPremium && !isStripe
-                        - var expiry = u.manualPremiumExpiry ? new Date(u.manualPremiumExpiry) : null
-                        - var now = new Date()
-                        - var daysLeft = expiry ? Math.ceil((expiry - now) / (1000*60*60*24)) : null
-                        - var expiryStr = expiry ? expiry.toLocaleDateString('fr-FR') : null
                         tr(data-user-id=String(u._id))
                             td
-                                .user-info
-                                    .user-info__name= u.fullName
-                                    .user-info__email= u.email
+                                .user-info__name= u.fullName || '—'
+                                .user-info__email= u.email
                             td
-                                select.plan-select(data-user-id=String(u._id) data-plan=currentPlan)
-                                    option(value="free" selected=(currentPlan === 'free')) Free
-                                    option(value="pro" selected=(currentPlan === 'pro')) Pro
-                                    option(value="business" selected=(currentPlan === 'business')) Business
-                            td
-                                select.trial-select(
-                                    data-user-id=String(u._id)
-                                    disabled=(!isManual || currentPlan === 'free')
-                                )
-                                    option(value="infinite" selected=(!expiry)) ∞ Infini
-                                    option(value="1d" selected=(daysLeft !== null && daysLeft <= 1 && daysLeft > 0)) 1 jour
-                                    option(value="7d" selected=(daysLeft !== null && daysLeft > 1 && daysLeft <= 7)) 7 jours
-                                    option(value="30d" selected=(daysLeft !== null && daysLeft > 7 && daysLeft <= 30)) 1 mois
-                                    option(value="90d" selected=(daysLeft !== null && daysLeft > 30)) 3 mois
-                                    option(value="custom") ✏️ Personnalisé…
-                                .trial-custom-row(style="display:none")
-                                    input.trial-custom-input(type="number" min="1" max="3650" placeholder="Nb de jours")
-                                    button.trial-custom-apply(type="button") OK
-                                if isManual && expiryStr
-                                    .trial-expiry(class=(daysLeft !== null && daysLeft <= 0) ? 'expired' : (daysLeft !== null && daysLeft <= 3) ? 'expiring' : '')
-                                        if daysLeft !== null && daysLeft <= 0
-                                            | ❌ Expiré le #{expiryStr}
-                                        else if daysLeft !== null
-                                            | Expire le #{expiryStr} (#{daysLeft}j)
-                                else if isManual && !expiry
-                                    .trial-expiry ∞ Sans limite
-                            td
-                                if isStripe
-                                    span.badge.badge--green Stripe ✓
-                                else if u.manualPremium
-                                    span.badge.badge--yellow Manuel
+                                if u.establishments && u.establishments.length
+                                    - var uPlan = (u.planKey === 'basic' || !u.planKey) ? 'free' : u.planKey
+                                    .estabs
+                                        each e in u.establishments
+                                            .estab-chip
+                                                span= e.name || ('/' + (e.slug || '—'))
+                                                span.estab-plan(class='estab-plan--' + uPlan)= u.planLabel
+                                                if e.isPaused
+                                                    span.estab-paused ⏸
                                 else
-                                    span.badge —
+                                    span.no-estab —
                             td.date-col= new Date(u.createdAt).toLocaleDateString('fr-FR')
                             td
                                 label.acc-toggle(class=u.isDisabled ? 'acc-toggle--disabled-state' : '')
-                                    input(
-                                        type="checkbox"
-                                        class="acc-status-toggle"
-                                        data-user-id=String(u._id)
-                                        checked=(!u.isDisabled)
-                                    )
+                                    input(type="checkbox" class="acc-status-toggle" data-user-id=String(u._id) checked=(!u.isDisabled))
                                     span.acc-toggle__track
                                     span.acc-toggle__label= u.isDisabled ? 'Désactivé' : 'Actif'
-                            td(style="display:flex;gap:6px;align-items:center;flex-wrap:wrap")
-                                button.imp-btn(
-                                    type="button"
-                                    data-user-id=String(u._id)
-                                    title="Accéder au compte admin de cet utilisateur"
-                                ) 🔒 Accès
-                                button.delete-user-btn(
-                                    type="button"
-                                    data-user-id=String(u._id)
-                                    data-user-name=(u.fullName || u.email)
-                                    title="Supprimer définitivement ce compte"
-                                ) 🗑️ Supprimer
+                            td
+                                .act-btns
+                                    button.act-btn.act-btn--msg(type="button" data-msg-user-id=String(u._id) data-user-name=(u.fullName || u.email)) ✉️ Message
+                                    button.act-btn(type="button" data-imp-user-id=String(u._id) title="Accéder au compte") 🔒 Accès
+                                    button.act-btn.act-btn--del(type="button" data-del-user-id=String(u._id) data-user-name=(u.fullName || u.email) title="Supprimer définitivement") 🗑️
+
+        //- ── Modale de composition de message ──────────────────────────────
+        .sa-modal-overlay#msgOverlay
+            .sa-modal
+                h3.sa-modal__title ✉️ Envoyer un message
+                p.sa-modal__sub#msgSub À : <b id="msgTo">—</b>
+                .field
+                    label.field__label Tonalité
+                    .type-chips#msgTypeChips
+                        button.type-chip.active(type="button" data-type="info") ℹ️ Info
+                        button.type-chip(type="button" data-type="tip") 💡 Conseil
+                        button.type-chip(type="button" data-type="success") ✅ Succès
+                        button.type-chip(type="button" data-type="warning") ⚠️ Alerte
+                        button.type-chip(type="button" data-type="security") 🔒 Sécurité
+                .field
+                    label.field__label Titre
+                    input.input#msgTitle(type="text" maxlength="140" placeholder="ex. Bienvenue sur BranShee !")
+                .field
+                    label.field__label Message
+                    textarea.textarea#msgBody(maxlength="4000" placeholder="Votre message…")
+                .field
+                    label.field__label Bouton (optionnel) — texte / lien
+                    div(style="display:flex;gap:8px")
+                        input.input#msgCtaLabel(type="text" maxlength="60" placeholder="ex. Voir")
+                        input.input#msgCtaUrl(type="text" maxlength="500" placeholder="/subscription")
+                .modal-status#msgStatus
+                .sa-modal__actions
+                    button.sa-btn.sa-btn--primary#msgSend(type="button") Envoyer
+                    button.sa-btn.sa-btn--ghost#msgCancel(type="button") Annuler
 
         script.
-            // ── Plan select ──────────────────────────────────────────
-            document.querySelectorAll('.plan-select').forEach(function(select) {
-                select.addEventListener('change', async function() {
-                    const userId = this.dataset.userId;
-                    const plan = this.value;
-                    const prevPlan = this.dataset.plan;
-                    this.dataset.plan = plan;
-
-                    try {
-                        const res = await fetch('/superadmin/set-plan/' + userId, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ plan })
-                        });
-                        const data = await res.json();
-                        if (!data.success) throw new Error('Failed');
-
-                        const row = this.closest('tr');
-                        // Update source badge
-                        const badgeCell = row.querySelector('td:nth-child(4)');
-                        if (plan === 'free') {
-                            badgeCell.innerHTML = '<span class="badge">—</span>';
-                        } else {
-                            badgeCell.innerHTML = '<span class="badge badge--yellow">Manuel</span>';
-                        }
-                        // Enable/disable trial select
-                        const trialSelect = row.querySelector('.trial-select');
-                        if (trialSelect) {
-                            trialSelect.disabled = (plan === 'free');
-                        }
-                    } catch(e) {
-                        this.value = prevPlan;
-                        this.dataset.plan = prevPlan;
-                        alert('Erreur lors de la mise à jour.');
-                    }
-                });
-            });
-
-            // ── Account status toggle (actif / désactivé) ────────────
+            // ── Statut actif / désactivé ──────────────────────────────
             document.querySelectorAll('.acc-status-toggle').forEach(function(checkbox) {
                 checkbox.addEventListener('change', async function() {
                     const userId = this.dataset.userId;
                     const label = this.closest('.acc-toggle').querySelector('.acc-toggle__label');
                     const wrapper = this.closest('.acc-toggle');
-                    const willBeActive = this.checked; // checked = actif, unchecked = désactivé
-
                     try {
-                        const res = await fetch('/superadmin/toggle-account/' + userId, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' }
-                        });
+                        const res = await fetch('/superadmin/toggle-account/' + userId, { method: 'PATCH', headers: { 'Content-Type': 'application/json' } });
                         const data = await res.json();
                         if (!data.success) throw new Error('Failed');
-
-                        // data.isDisabled = true → compte désactivé
-                        if (data.isDisabled) {
-                            label.textContent = 'Désactivé';
-                            wrapper.classList.add('acc-toggle--disabled-state');
-                        } else {
-                            label.textContent = 'Actif';
-                            wrapper.classList.remove('acc-toggle--disabled-state');
-                        }
+                        if (data.isDisabled) { label.textContent = 'Désactivé'; wrapper.classList.add('acc-toggle--disabled-state'); }
+                        else { label.textContent = 'Actif'; wrapper.classList.remove('acc-toggle--disabled-state'); }
                     } catch(e) {
-                        // Revenir à l'état précédent
                         this.checked = !this.checked;
                         alert('Erreur lors de la mise à jour du statut.');
                     }
                 });
             });
 
-            // ── Suppression définitive d'un compte ────────────────────
-            document.querySelectorAll('.delete-user-btn').forEach(function(btn) {
+            // ── Suppression d'un compte ───────────────────────────────
+            document.querySelectorAll('[data-del-user-id]').forEach(function(btn) {
                 btn.addEventListener('click', async function() {
-                    const userId = this.dataset.userId;
+                    const userId = this.dataset.delUserId;
                     const userName = this.dataset.userName;
-                    if (!confirm('Supprimer définitivement le compte "' + userName + '" et toutes ses données (réservations, services, employés...) ?\n\nCette action est irréversible.')) {
-                        return;
-                    }
-
+                    if (!confirm('Supprimer définitivement le compte "' + userName + '" et toutes ses données (réservations, services, employés...) ?\n\nCette action est irréversible.')) return;
                     this.disabled = true;
-                    this.textContent = '⏳ Suppression…';
-
+                    this.textContent = '⏳';
                     try {
-                        const res = await fetch('/superadmin/users/' + userId, {
-                            method: 'DELETE',
-                            headers: { 'Content-Type': 'application/json' }
-                        });
+                        const res = await fetch('/superadmin/users/' + userId, { method: 'DELETE', headers: { 'Content-Type': 'application/json' } });
                         const data = await res.json();
                         if (!data.success) throw new Error('Failed');
-
-                        const row = this.closest('tr');
-                        row.remove();
+                        this.closest('tr').remove();
                     } catch(e) {
                         this.disabled = false;
-                        this.textContent = '🗑️ Supprimer';
+                        this.textContent = '🗑️';
                         alert('Erreur lors de la suppression du compte.');
                     }
                 });
             });
 
-            // ── Trial duration select ─────────────────────────────────
-            function applyExpiryDisplay(select, data) {
-                const row = select.closest('tr');
-                let expiryEl = row.querySelector('.trial-expiry');
-                if (!expiryEl) {
-                    expiryEl = document.createElement('div');
-                    expiryEl.className = 'trial-expiry';
-                    select.parentNode.appendChild(expiryEl);
-                }
-                if (data.expiry) {
-                    const d = new Date(data.expiry);
-                    const days = Math.ceil((d - new Date()) / (1000*60*60*24));
-                    expiryEl.className = 'trial-expiry' + (days <= 3 ? ' expiring' : '');
-                    expiryEl.textContent = 'Expire le ' + d.toLocaleDateString('fr-FR') + ' (' + days + 'j)';
-                } else {
-                    expiryEl.className = 'trial-expiry';
-                    expiryEl.textContent = '∞ Sans limite';
-                }
-            }
-
-            async function sendTrialDuration(select, body) {
-                const userId = select.dataset.userId;
-                const res = await fetch('/superadmin/set-trial/' + userId, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'Failed');
-                return data;
-            }
-
-            document.querySelectorAll('.trial-select').forEach(function(select) {
-                const customRow = select.parentNode.querySelector('.trial-custom-row');
-                const customInput = customRow ? customRow.querySelector('.trial-custom-input') : null;
-                const customApply = customRow ? customRow.querySelector('.trial-custom-apply') : null;
-
-                select.addEventListener('change', async function() {
-                    const duration = this.value;
-                    const prevVal = this._prevVal || 'infinite';
-
-                    // "Personnalisé…" : affiche juste le champ, n'envoie rien encore.
-                    if (duration === 'custom') {
-                        if (customRow) { customRow.style.display = 'flex'; }
-                        if (customInput) customInput.focus();
-                        return;
-                    }
-                    if (customRow) customRow.style.display = 'none';
-                    this._prevVal = duration;
-
-                    try {
-                        const data = await sendTrialDuration(this, { duration });
-                        applyExpiryDisplay(this, data);
-                    } catch(e) {
-                        this.value = prevVal;
-                        alert('Erreur lors de la mise à jour de la durée.');
-                    }
-                });
-
-                if (customApply) {
-                    const submitCustom = async () => {
-                        const days = parseInt(customInput.value, 10);
-                        if (!days || days <= 0) { customInput.focus(); return; }
-                        try {
-                            const data = await sendTrialDuration(select, { duration: 'custom', customDays: days });
-                            applyExpiryDisplay(select, data);
-                            select._prevVal = '30d'; // approximation pour le fallback en cas d'erreur future
-                            customRow.style.display = 'none';
-                        } catch(e) {
-                            alert('Erreur lors de la mise à jour de la durée.');
-                        }
-                    };
-                    customApply.addEventListener('click', submitCustom);
-                    if (customInput) {
-                        customInput.addEventListener('keydown', function(e) {
-                            if (e.key === 'Enter') { e.preventDefault(); submitCustom(); }
-                        });
-                    }
-                }
-            });
-
-            // ── Impersonation (accès discret) ─────────────────────────────────
-            document.querySelectorAll('.imp-btn').forEach(function(btn) {
+            // ── Impersonation (accès discret) ─────────────────────────
+            document.querySelectorAll('[data-imp-user-id]').forEach(function(btn) {
                 btn.addEventListener('click', function() {
-                    var userId = btn.dataset.userId;
+                    var userId = btn.dataset.impUserId;
                     var form = document.createElement('form');
                     form.method = 'POST';
                     form.action = '/superadmin/impersonate/' + userId;
@@ -714,3 +275,82 @@ html(lang="fr")
                     form.submit();
                 });
             });
+
+            // ── Modale de composition de message ──────────────────────
+            (function() {
+                var overlay = document.getElementById('msgOverlay');
+                var toEl = document.getElementById('msgTo');
+                var titleEl = document.getElementById('msgTitle');
+                var bodyEl = document.getElementById('msgBody');
+                var ctaLabel = document.getElementById('msgCtaLabel');
+                var ctaUrl = document.getElementById('msgCtaUrl');
+                var sendBtn = document.getElementById('msgSend');
+                var cancelBtn = document.getElementById('msgCancel');
+                var status = document.getElementById('msgStatus');
+                var type = 'info';
+                var targetUserId = null; // null = broadcast
+
+                document.querySelectorAll('#msgTypeChips .type-chip').forEach(function(c) {
+                    c.addEventListener('click', function() {
+                        document.querySelectorAll('#msgTypeChips .type-chip').forEach(function(x) { x.classList.remove('active'); });
+                        c.classList.add('active');
+                        type = c.dataset.type;
+                    });
+                });
+
+                function resetType() {
+                    type = 'info';
+                    document.querySelectorAll('#msgTypeChips .type-chip').forEach(function(x) { x.classList.toggle('active', x.dataset.type === 'info'); });
+                }
+                function open(userId, label) {
+                    targetUserId = userId;
+                    toEl.textContent = label;
+                    titleEl.value = ''; bodyEl.value = ''; ctaLabel.value = ''; ctaUrl.value = '';
+                    status.textContent = ''; status.className = 'modal-status';
+                    resetType();
+                    overlay.classList.add('open');
+                    setTimeout(function() { titleEl.focus(); }, 50);
+                }
+                function close() { overlay.classList.remove('open'); }
+
+                document.querySelectorAll('[data-msg-user-id]').forEach(function(btn) {
+                    btn.addEventListener('click', function() { open(btn.dataset.msgUserId, btn.dataset.userName); });
+                });
+                var broadcastBtn = document.getElementById('broadcastBtn');
+                if (broadcastBtn) broadcastBtn.addEventListener('click', function() { open(null, 'Tous les pros 📢'); });
+
+                cancelBtn.addEventListener('click', close);
+                overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+
+                sendBtn.addEventListener('click', function() {
+                    status.className = 'modal-status'; status.textContent = '';
+                    if (!titleEl.value.trim() || !bodyEl.value.trim()) {
+                        status.className = 'modal-status err'; status.textContent = 'Titre et message requis.'; return;
+                    }
+                    sendBtn.disabled = true; sendBtn.textContent = 'Envoi…';
+                    fetch('/superadmin/messages', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            broadcast: targetUserId === null,
+                            recipientId: targetUserId,
+                            title: titleEl.value.trim(),
+                            body: bodyEl.value.trim(),
+                            type: type,
+                            ctaLabel: ctaLabel.value.trim(),
+                            ctaUrl: ctaUrl.value.trim(),
+                        }),
+                    }).then(function(r) { return r.json(); }).then(function(d) {
+                        sendBtn.disabled = false; sendBtn.textContent = 'Envoyer';
+                        if (d.success) {
+                            status.className = 'modal-status ok'; status.textContent = '✅ Message envoyé !';
+                            setTimeout(close, 900);
+                        } else {
+                            status.className = 'modal-status err'; status.textContent = d.error || 'Erreur.';
+                        }
+                    }).catch(function() {
+                        sendBtn.disabled = false; sendBtn.textContent = 'Envoyer';
+                        status.className = 'modal-status err'; status.textContent = 'Erreur réseau.';
+                    });
+                });
+            })();

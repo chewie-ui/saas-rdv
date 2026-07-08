@@ -13,6 +13,10 @@ router.patch(
   accountController.editProfilePicture,
 );
 
+// Messages du fondateur (superadmin → utilisateur)
+router.get("/my-messages", isAuth, accountController.getMyMessages);
+router.post("/my-messages/:id/dismiss", isAuth, accountController.dismissMyMessage);
+
 router.patch("/update-info", accountController.updateAccountInfo);
 router.patch("/update-social", accountController.updateAccountSocial);
 router.patch("/toggle-social", accountController.toggleSocialVisibility);

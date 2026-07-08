@@ -1,0 +1,268 @@
+doctype html
+html(lang="fr")
+    head
+        meta(name="viewport" content="width=device-width, initial-scale=1.0")
+        meta(charset="UTF-8")
+        title Superadmin — Messages
+        link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
+        link(rel="stylesheet" href="/css/import.css")
+        link(rel="stylesheet" href="/css/layouts/superadmin.css")
+        style.
+            body { padding: 0 24px 80px; }
+            .msg-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
+            @media (max-width: 980px) { .msg-grid { grid-template-columns: 1fr; } }
+            .card { background: #141414; border: 1px solid #1e1e1e; border-radius: 16px; padding: 22px; }
+            .card__title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 18px; letter-spacing: -.01em; display: flex; align-items: center; gap: 8px; }
+            .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+            .field__label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #666; }
+            .input, .textarea, .select { background: #1a1a1a; border: 1.5px solid #2a2a2a; border-radius: 10px; color: #fff; font-size: 13.5px; padding: 10px 13px; outline: none; width: 100%; box-sizing: border-box; font-family: inherit; transition: border-color .15s; }
+            .input:focus, .textarea:focus, .select:focus { border-color: #444; }
+            .textarea { min-height: 110px; resize: vertical; line-height: 1.5; }
+            .select { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 11px center; }
+            .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+            /* Mode toggle */
+            .mode-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+            .mode-btn { flex: 1; padding: 11px; border-radius: 10px; border: 1.5px solid #2a2a2a; background: #1a1a1a; color: #888; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; text-align: center; }
+            .mode-btn.active { border-color: #3b82f6; color: #fff; background: rgba(59,130,246,.12); }
+            /* Type chips */
+            .type-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+            .type-chip { padding: 7px 13px; border-radius: 9px; border: 1.5px solid #2a2a2a; background: #1a1a1a; color: #888; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s; }
+            .type-chip.active { color: #fff; }
+            .type-chip.active[data-type="info"]     { border-color: #3b82f6; background: rgba(59,130,246,.15); }
+            .type-chip.active[data-type="tip"]      { border-color: #9333ea; background: rgba(147,51,234,.15); }
+            .type-chip.active[data-type="success"]  { border-color: #16a34a; background: rgba(22,163,74,.15); }
+            .type-chip.active[data-type="warning"]  { border-color: #d97706; background: rgba(217,119,6,.15); }
+            .type-chip.active[data-type="security"] { border-color: #dc2626; background: rgba(220,38,38,.15); }
+            .send-btn { width: 100%; padding: 12px; border-radius: 11px; border: none; background: #fff; color: #111; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity .15s; margin-top: 4px; }
+            .send-btn:hover { opacity: .88; }
+            .send-btn:disabled { opacity: .5; cursor: default; }
+            .send-status { font-size: 12.5px; margin-top: 10px; min-height: 16px; text-align: center; }
+            .send-status.ok { color: #22c55e; }
+            .send-status.err { color: #f87171; }
+            /* Preview */
+            .preview-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #666; margin-bottom: 12px; }
+            .pv { display: flex; gap: 13px; padding: 16px 18px; border-radius: 14px; border: 1px solid var(--pv-border,#1e3a5f); background: var(--pv-bg,#0f1f38); }
+            .pv__icon { flex-shrink: 0; width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 19px; background: rgba(255,255,255,.06); border: 1px solid var(--pv-border,#1e3a5f); }
+            .pv__from { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--pv-accent,#60a5fa); margin-bottom: 5px; }
+            .pv__title { font-size: 14.5px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+            .pv__text { font-size: 13px; line-height: 1.5; color: #9fb2c9; white-space: pre-wrap; word-break: break-word; }
+            .pv__cta { display: inline-flex; margin-top: 11px; padding: 7px 14px; border-radius: 9px; font-size: 12px; font-weight: 600; color: #fff; background: var(--pv-accent,#2563eb); }
+            .pv--info     { --pv-bg:#0f1f38; --pv-border:#1e3a5f; --pv-accent:#3b82f6; }
+            .pv--tip      { --pv-bg:#1e1233; --pv-border:#3b2758; --pv-accent:#9333ea; }
+            .pv--success  { --pv-bg:#0d2417; --pv-border:#1c4530; --pv-accent:#16a34a; }
+            .pv--warning  { --pv-bg:#2a1e08; --pv-border:#4d3a14; --pv-accent:#d97706; }
+            .pv--security { --pv-bg:#2a1010; --pv-border:#5a2020; --pv-accent:#dc2626; }
+            /* History */
+            .hist-item { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid #1c1c1c; }
+            .hist-item:last-child { border-bottom: none; }
+            .hist-dot { flex-shrink: 0; width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 16px; background: #1a1a1a; border: 1px solid #262626; }
+            .hist-body { flex: 1; min-width: 0; }
+            .hist-top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; flex-wrap: wrap; }
+            .hist-to { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 5px; }
+            .hist-to--all { color: #60a5fa; background: rgba(96,165,250,.1); border: 1px solid rgba(96,165,250,.2); }
+            .hist-to--one { color: #a78bfa; background: rgba(167,139,250,.1); border: 1px solid rgba(167,139,250,.2); }
+            .hist-title { font-size: 13.5px; font-weight: 600; color: #eaeaea; }
+            .hist-text { font-size: 12px; color: #666; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .hist-meta { font-size: 11px; color: #555; margin-top: 5px; display: flex; gap: 12px; }
+            .hist-del { background: none; border: 1px solid #262626; color: #555; font-size: 11px; padding: 4px 9px; border-radius: 7px; cursor: pointer; height: fit-content; transition: all .15s; }
+            .hist-del:hover { color: #f87171; border-color: rgba(248,113,113,.35); }
+            .empty { text-align: center; padding: 40px 20px; color: #444; font-size: 13px; }
+    body
+        - var saPage = 'messages'
+        include ../../includes/sa-nav
+
+        .sa-header(style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:32px 0 24px")
+            .sa-header__left
+                h1(style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-.02em") ✉️ Messages
+                p(style="font-size:13px;color:#555;margin-top:4px") Envoyez une bannière stylée à un pro précis ou à toute la communauté.
+
+        .msg-grid
+            //- ── Compose ──────────────────────────────────────────────
+            .card
+                .card__title 📝 Nouveau message
+                .mode-toggle
+                    button.mode-btn.active(type="button" data-mode="broadcast") 📢 À tous les pros
+                    button.mode-btn(type="button" data-mode="targeted") 👤 Un utilisateur
+                .field#recipientField(style="display:none")
+                    label.field__label Email du destinataire
+                    input.input#recipientEmail(type="email" placeholder="ex. cecile@ressourcesetmoi.be" list="userEmails")
+                    datalist#userEmails
+                        if userList
+                            each u in userList
+                                option(value=u.email)= (u.fullName ? u.fullName + ' — ' : '') + u.email
+                .field
+                    label.field__label Tonalité
+                    .type-chips
+                        button.type-chip.active(type="button" data-type="info") ℹ️ Info
+                        button.type-chip(type="button" data-type="tip") 💡 Conseil
+                        button.type-chip(type="button" data-type="success") ✅ Succès
+                        button.type-chip(type="button" data-type="warning") ⚠️ Avertissement
+                        button.type-chip(type="button" data-type="security") 🔒 Sécurité
+                .field
+                    label.field__label Titre
+                    input.input#msgTitle(type="text" maxlength="140" placeholder="ex. Sécurisez votre compte")
+                .field
+                    label.field__label Message
+                    textarea.textarea#msgBody(maxlength="4000" placeholder="Bonjour, nous vous conseillons d'activer la double authentification…")
+                .row2
+                    .field
+                        label.field__label Bouton (texte, optionnel)
+                        input.input#ctaLabel(type="text" maxlength="60" placeholder="ex. Sécuriser mon compte")
+                    .field
+                        label.field__label Bouton (lien, optionnel)
+                        input.input#ctaUrl(type="text" maxlength="500" placeholder="/account")
+                button.send-btn#sendBtn(type="button") Envoyer le message
+                .send-status#sendStatus
+
+            //- ── Aperçu live ──────────────────────────────────────────
+            .card
+                .preview-label Aperçu (ce que verra le pro)
+                .pv.pv--info#preview
+                    .pv__icon#pvIcon ℹ️
+                    .pv__body(style="flex:1;min-width:0")
+                        .pv__from#pvFrom Message de BranShee
+                        .pv__title#pvTitle Titre du message
+                        .pv__text#pvText Le contenu de votre message apparaîtra ici.
+                        .pv__cta#pvCta(style="display:none") Bouton →
+
+        //- ── Historique ───────────────────────────────────────────────
+        .card(style="margin-top:24px")
+            .card__title 🕓 Historique des envois
+            if !messages || !messages.length
+                .empty Aucun message envoyé pour l'instant.
+            else
+                each m in messages
+                    - var ic = { info:'ℹ️', tip:'💡', success:'✅', warning:'⚠️', security:'🔒' }[m.type] || 'ℹ️'
+                    .hist-item(data-id=String(m._id))
+                        .hist-dot= ic
+                        .hist-body
+                            .hist-top
+                                if m.broadcast
+                                    span.hist-to.hist-to--all 📢 Tous
+                                else if m.recipient
+                                    span.hist-to.hist-to--one= m.recipient.fullName || m.recipient.email
+                                else
+                                    span.hist-to.hist-to--one Destinataire supprimé
+                                span.hist-title= m.title
+                            .hist-text= m.body
+                            .hist-meta
+                                span= new Date(m.createdAt).toLocaleDateString('fr-FR', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})
+                                if m.broadcast
+                                    span 👁 #{m.readCount} lu#{m.readCount > 1 ? 's' : ''} / #{totalUsers}
+                                else
+                                    span= m.readCount ? '✓ Lu' : 'Non lu'
+                        button.hist-del(type="button" data-id=String(m._id)) Supprimer
+
+        script.
+            (function() {
+                var mode = 'broadcast';
+                var type = 'info';
+                var FROM = { info: 'Message de BranShee', tip: 'Conseil BranShee', success: 'BranShee', warning: 'Important', security: 'Sécurité de votre compte' };
+                var ICON = { info: 'ℹ️', tip: '💡', success: '✅', warning: '⚠️', security: '🔒' };
+
+                var recipientField = document.getElementById('recipientField');
+                var recipientEmail = document.getElementById('recipientEmail');
+                var titleEl = document.getElementById('msgTitle');
+                var bodyEl = document.getElementById('msgBody');
+                var ctaLabel = document.getElementById('ctaLabel');
+                var ctaUrl = document.getElementById('ctaUrl');
+                var sendBtn = document.getElementById('sendBtn');
+                var status = document.getElementById('sendStatus');
+
+                // Preview elements
+                var preview = document.getElementById('preview');
+                var pvIcon = document.getElementById('pvIcon');
+                var pvFrom = document.getElementById('pvFrom');
+                var pvTitle = document.getElementById('pvTitle');
+                var pvText = document.getElementById('pvText');
+                var pvCta = document.getElementById('pvCta');
+
+                function updatePreview() {
+                    preview.className = 'pv pv--' + type;
+                    pvIcon.textContent = ICON[type];
+                    pvFrom.textContent = (ICON[type] || '') + ' ' + (FROM[type] || 'Message');
+                    pvTitle.textContent = titleEl.value.trim() || 'Titre du message';
+                    pvText.textContent = bodyEl.value.trim() || 'Le contenu de votre message apparaîtra ici.';
+                    if (ctaLabel.value.trim()) { pvCta.style.display = ''; pvCta.textContent = ctaLabel.value.trim() + ' →'; }
+                    else { pvCta.style.display = 'none'; }
+                }
+
+                document.querySelectorAll('.mode-btn').forEach(function(b) {
+                    b.addEventListener('click', function() {
+                        document.querySelectorAll('.mode-btn').forEach(function(x) { x.classList.remove('active'); });
+                        b.classList.add('active');
+                        mode = b.dataset.mode;
+                        recipientField.style.display = mode === 'targeted' ? '' : 'none';
+                    });
+                });
+                document.querySelectorAll('.type-chip').forEach(function(c) {
+                    c.addEventListener('click', function() {
+                        document.querySelectorAll('.type-chip').forEach(function(x) { x.classList.remove('active'); });
+                        c.classList.add('active');
+                        type = c.dataset.type;
+                        updatePreview();
+                    });
+                });
+                [titleEl, bodyEl, ctaLabel].forEach(function(el) { el.addEventListener('input', updatePreview); });
+                updatePreview();
+
+                sendBtn.addEventListener('click', function() {
+                    status.className = 'send-status';
+                    status.textContent = '';
+                    if (!titleEl.value.trim() || !bodyEl.value.trim()) {
+                        status.className = 'send-status err';
+                        status.textContent = 'Titre et message requis.';
+                        return;
+                    }
+                    if (mode === 'targeted' && !recipientEmail.value.trim()) {
+                        status.className = 'send-status err';
+                        status.textContent = 'Email du destinataire requis.';
+                        return;
+                    }
+                    sendBtn.disabled = true;
+                    sendBtn.textContent = 'Envoi…';
+                    fetch('/superadmin/messages', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            broadcast: mode === 'broadcast',
+                            recipientEmail: recipientEmail.value.trim(),
+                            title: titleEl.value.trim(),
+                            body: bodyEl.value.trim(),
+                            type: type,
+                            ctaLabel: ctaLabel.value.trim(),
+                            ctaUrl: ctaUrl.value.trim(),
+                        }),
+                    }).then(function(r) { return r.json(); }).then(function(d) {
+                        sendBtn.disabled = false;
+                        sendBtn.textContent = 'Envoyer le message';
+                        if (d.success) {
+                            status.className = 'send-status ok';
+                            status.textContent = '✅ Message envoyé ! Rechargez pour voir l\'historique.';
+                            titleEl.value = ''; bodyEl.value = ''; ctaLabel.value = ''; ctaUrl.value = '';
+                            updatePreview();
+                        } else {
+                            status.className = 'send-status err';
+                            status.textContent = d.error || 'Erreur.';
+                        }
+                    }).catch(function() {
+                        sendBtn.disabled = false;
+                        sendBtn.textContent = 'Envoyer le message';
+                        status.className = 'send-status err';
+                        status.textContent = 'Erreur réseau.';
+                    });
+                });
+
+                // Suppression d'un message de l'historique
+                document.querySelectorAll('.hist-del').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        if (!confirm('Supprimer ce message ? Il disparaîtra aussi des dashboards où il n\'a pas encore été lu.')) return;
+                        var id = btn.dataset.id;
+                        fetch('/superadmin/messages/' + id, { method: 'DELETE' })
+                            .then(function(r) { return r.json(); })
+                            .then(function(d) {
+                                if (d.success) { var row = document.querySelector('.hist-item[data-id="' + id + '"]'); if (row) row.remove(); }
+                            }).catch(function() {});
+                    });
+                });
+            })();

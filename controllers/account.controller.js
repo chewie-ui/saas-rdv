@@ -1813,3 +1813,47 @@ exports.respondJoinRequest = async (req, res) => {
     return res.status(500).json({ error: "Erreur serveur." });
   }
 };
+
+// ── Messages du fondateur (superadmin → utilisateur) ──────────────────────────
+// L'utilisateur récupère ses messages non fermés (ciblés + diffusions) et peut
+// les fermer. Modèle : db/models/adminMessage.model.js. La bannière est rendue
+// côté client par views/layouts/admin.pug (voir bloc "admin-messages").
+const AdminMessage = require("../db/models/adminMessage.model");
+
+exports.getMyMessages = async (req, res) => {
+  try {
+    if (!req.user) return res.json({ messages: [] });
+    const uid = req.user._id;
+    // Diffusions récentes uniquement (90 j) pour ne pas ressortir de vieux
+    // messages à un compte créé longtemps après.
+    const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const messages = await AdminMessage.find({
+      dismissedBy: { $ne: uid },
+      $or: [
+        { recipient: uid },
+        { broadcast: true, createdAt: { $gte: cutoff } },
+      ],
+    })
+      .select("title body type ctaLabel ctaUrl createdAt")
+      .sort("-createdAt")
+      .limit(10)
+      .lean();
+    res.json({ messages });
+  } catch (err) {
+    console.error("getMyMessages error:", err.message);
+    res.status(500).json({ messages: [] });
+  }
+};
+
+exports.dismissMyMessage = async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Non authentifié" });
+    await AdminMessage.findByIdAndUpdate(req.params.id, {
+      $addToSet: { dismissedBy: req.user._id },
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("dismissMyMessage error:", err.message);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};

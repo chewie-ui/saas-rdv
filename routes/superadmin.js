@@ -84,6 +84,11 @@ router.get("/superadmin/support-chat/:userId", isSuperAdmin, ctrl.getSupportChat
 router.post("/superadmin/support-chat/:userId/reply", isSuperAdmin, ctrl.replySupportChat);
 router.delete("/superadmin/support-chat/:userId", isSuperAdmin, ctrl.deleteSupportChat);
 
+// Messagerie fondateur → utilisateurs pros
+router.get("/superadmin/messages", isSuperAdmin, ctrl.messagesPage);
+router.post("/superadmin/messages", isSuperAdmin, ctrl.sendMessage);
+router.delete("/superadmin/messages/:id", isSuperAdmin, ctrl.deleteMessage);
+
 // Support content editor
 router.get("/superadmin/support-editor", isSuperAdmin, ctrl.supportEditorPage);
 router.post("/superadmin/support-editor/sections", isSuperAdmin, ctrl.addSection);

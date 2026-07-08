@@ -71,9 +71,9 @@ exports.usersPage = async (req, res) => {
   const PageView = require("../db/models/pageView.model");
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
-  const [users, totalViews, uniqueVisitors, totalClients, clientsToday, adminsToday, topSources] = await Promise.all([
+  const [users, totalViews, uniqueVisitors, totalClients, clientsToday, adminsToday, disabledCount, topSources] = await Promise.all([
     User.find(query)
-      .select("fullName email isPremium manualPremium manualPremiumExpiry subscription createdAt isDisabled")
+      .select("fullName email isPremium manualPremium manualPremiumExpiry subscription createdAt isDisabled lastLoginAt")
       .sort("-createdAt")
       .lean(),
     PageView.countDocuments({}),
@@ -81,12 +81,37 @@ exports.usersPage = async (req, res) => {
     Client.countDocuments({}),
     Client.countDocuments({ createdAt: { $gte: startOfDay } }),
     User.countDocuments({ createdAt: { $gte: startOfDay } }),
+    User.countDocuments({ isDisabled: true }),
     PageView.aggregate([
       { $group: { _id: { $ifNull: ["$source", "direct"] }, count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 8 },
     ]),
   ]);
+
+  // ── Rattacher les établissements à chaque propriétaire ────────────────────
+  // Un utilisateur n'a plus de "plan" (il vit sur l'établissement) : ici on
+  // liste juste les établissements qu'il possède, avec leur plan effectif
+  // hérité de lui, pour l'afficher dans la nouvelle page centrée sur la personne.
+  const companies = await Company.find({ owner: { $in: users.map((u) => u._id) } })
+    .select("name slug owner isPaused")
+    .lean();
+  const companiesByOwner = new Map();
+  companies.forEach((c) => {
+    const key = String(c.owner);
+    if (!companiesByOwner.has(key)) companiesByOwner.set(key, []);
+    companiesByOwner.get(key).push(c);
+  });
+  const PLAN_LABEL = { basic: "Free", essentiel: "Essentiel", pro: "Pro", business: "Business" };
+  users.forEach((u) => {
+    u.establishments = companiesByOwner.get(String(u._id)) || [];
+    const rawPlan = (u.manualPremium || u.isPremium)
+      ? (u.subscription?.plan && u.subscription.plan !== "basic" ? u.subscription.plan : "pro")
+      : (u.subscription?.status === "active" ? (u.subscription.plan || "basic") : "basic");
+    u.planKey = rawPlan === "premium" ? "pro" : rawPlan;
+    u.planLabel = PLAN_LABEL[u.planKey] || "Free";
+  });
+
   res.render("superadmin/users", {
     users,
     search: search || "",
@@ -96,6 +121,7 @@ exports.usersPage = async (req, res) => {
     totalClients,
     clientsToday,
     adminsToday,
+    disabledCount,
   });
 };
 
@@ -399,8 +425,9 @@ exports.referralsPage = async (req, res) => {
 
 exports.logsPage = async (req, res) => {
   const limit = 200;
+  const Subscription = require("../db/models/subscription.model");
 
-  const [recentUsers, recentBookings, recentLogins] = await Promise.all([
+  const [recentUsers, recentBookings, recentLogins, recentSubs, recentPayments, accessLinks] = await Promise.all([
     User.find({})
       .select("fullName email isPremium subscription createdAt referredBy")
       .sort({ createdAt: -1 })
@@ -417,6 +444,23 @@ exports.logsPage = async (req, res) => {
       .populate("user", "fullName email")
       .sort({ createdAt: -1 })
       .limit(limit)
+      .lean(),
+    // Abonnements pros (achats BranShee) — statut actif = passage à un plan payant.
+    Subscription.find({ status: "active", plan: { $ne: "basic" } })
+      .populate("user", "fullName email")
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean(),
+    // Paiements clients (RDV réglés en ligne).
+    Booking.find({ "payment.status": "paid" })
+      .select("name surname serviceName payment company")
+      .populate("company", "slug")
+      .sort({ "payment.paidAt": -1 })
+      .limit(100)
+      .lean(),
+    // Activations de liens d'accès (offerts par le fondateur).
+    AccessLink.find({ "uses.0": { $exists: true } })
+      .select("label plan uses")
       .lean(),
   ]);
 
@@ -459,9 +503,46 @@ exports.logsPage = async (req, res) => {
     });
   });
 
+  const PLAN_NICE = { essentiel: "Essentiel", pro: "Pro", business: "Business", premium: "Pro" };
+  recentSubs.forEach((s) => {
+    if (!s.user) return;
+    events.push({
+      type: "subscription",
+      date: s.createdAt,
+      label: `${s.user.fullName || s.user.email} est passé au plan ${PLAN_NICE[s.plan] || s.plan}`,
+      detail: s.user.email,
+      plan: s.plan,
+      icon: "⭐",
+    });
+  });
+
+  recentPayments.forEach((p) => {
+    const amount = p.payment?.amount ? `${p.payment.amount}€` : "";
+    const slug = p.company?.slug || "?";
+    events.push({
+      type: "payment",
+      date: p.payment?.paidAt || p.createdAt,
+      label: `${p.name || ''} ${p.surname || ''} a payé ${amount} — ${p.serviceName || 'prestation'} chez ${slug}`.replace(/\s+/g, " ").trim(),
+      detail: "",
+      icon: "💰",
+    });
+  });
+
+  accessLinks.forEach((link) => {
+    (link.uses || []).forEach((u) => {
+      events.push({
+        type: "access",
+        date: u.usedAt,
+        label: `Accès ${(link.plan || "").toUpperCase()} activé${link.label ? ` (${link.label})` : ""}`,
+        detail: u.email || "",
+        icon: "🎟",
+      });
+    });
+  });
+
   events.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  res.render("superadmin/logs", { events: events.slice(0, 300) });
+  res.render("superadmin/logs", { events: events.slice(0, 400) });
 };
 
 // ── Boost (mise en avant homepage) ───────────────────────────────────────────
@@ -672,10 +753,16 @@ exports.featuresPage = async (req, res) => {
   // sidebar.pug (voir utils/navLinks.js). Aucune liste à maintenir : un
   // nouveau lien ajouté dans la sidebar apparaît ici tout seul, regroupé
   // par section comme dans le sidebar lui-même.
-  const navLinks = extractNavLinks().map((l) => ({
-    ...l,
-    enabled: byKey[l.key]?.status !== "disabled",
-  }));
+  // Certaines pages sont déjà pilotées comme "fonctionnalités admin"
+  // (ex: Cours collectifs = group_sessions) : on les retire de la détection
+  // sidebar pour ne pas les afficher DEUX fois sur cette page.
+  const adminFeatureKeys = new Set(ADMIN_FEATURES.map((f) => f.key));
+  const navLinks = extractNavLinks()
+    .filter((l) => !adminFeatureKeys.has(l.key.replace(/^nav_/, "")))
+    .map((l) => ({
+      ...l,
+      enabled: byKey[l.key]?.status !== "disabled",
+    }));
   const navSections = [];
   navLinks.forEach((l) => {
     let group = navSections.find((s) => s.label === l.section);
@@ -1158,5 +1245,84 @@ exports.supervisionClose = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+// ── Messagerie fondateur → utilisateurs pros ──────────────────────────────────
+const AdminMessage = require("../db/models/adminMessage.model");
+const MSG_TYPES = ["info", "warning", "security", "success", "tip"];
+
+// Page de gestion : composer + historique des messages envoyés.
+exports.messagesPage = async (req, res) => {
+  const [messages, totalUsers, userList] = await Promise.all([
+    AdminMessage.find({})
+      .populate("recipient", "fullName email")
+      .sort("-createdAt")
+      .limit(200)
+      .lean(),
+    User.countDocuments({}),
+    User.find({}).select("fullName email").sort("fullName").lean(),
+  ]);
+  messages.forEach((m) => { m.readCount = (m.dismissedBy || []).length; });
+  res.render("superadmin/messages", { messages, totalUsers, userList });
+};
+
+// Envoi d'un message ciblé (recipientId) ou en diffusion (broadcast=true).
+exports.sendMessage = async (req, res) => {
+  try {
+    const { recipientId, broadcast, title, body, type, ctaLabel, ctaUrl } = req.body;
+
+    const cleanTitle = (title || "").toString().trim();
+    const cleanBody = (body || "").toString().trim();
+    if (!cleanTitle || !cleanBody) {
+      return res.status(400).json({ error: "Titre et message requis." });
+    }
+    const msgType = MSG_TYPES.includes(type) ? type : "info";
+    const isBroadcast = broadcast === true || broadcast === "true" || broadcast === "1";
+
+    let recipient = null;
+    if (!isBroadcast) {
+      let user = null;
+      if (recipientId) {
+        user = await User.findById(recipientId).select("_id").lean();
+      } else if (req.body.recipientEmail) {
+        const email = String(req.body.recipientEmail).trim().toLowerCase();
+        user = await User.findOne({ email }).select("_id").lean();
+      }
+      if (!user) return res.status(404).json({ error: "Destinataire introuvable (vérifiez l'email)." });
+      recipient = user._id;
+    }
+
+    const msg = await AdminMessage.create({
+      recipient,
+      broadcast: isBroadcast,
+      title: cleanTitle.slice(0, 140),
+      body: cleanBody.slice(0, 4000),
+      type: msgType,
+      ctaLabel: (ctaLabel || "").toString().trim().slice(0, 60),
+      ctaUrl: (ctaUrl || "").toString().trim().slice(0, 500),
+    });
+
+    // Notification temps réel : on émet globalement, chaque client recharge
+    // SES propres messages via /api/my-messages (scopé par req.user). Évite de
+    // dépendre du nom exact de la room par utilisateur.
+    try {
+      const io = req.app.get("io");
+      if (io) io.emit("adminMessage:new");
+    } catch (_) {}
+
+    res.json({ success: true, id: msg._id });
+  } catch (err) {
+    console.error("sendMessage error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+exports.deleteMessage = async (req, res) => {
+  try {
+    await AdminMessage.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur." });
   }
 };

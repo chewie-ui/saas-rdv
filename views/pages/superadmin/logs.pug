@@ -33,6 +33,9 @@ html(lang="fr")
             .log-badge--booking  { color: #a78bfa; background: rgba(167,139,250,.1); border: 1px solid rgba(167,139,250,.2); }
             .log-badge--premium  { color: #22c55e; background: rgba(34,197,94,.1);  border: 1px solid rgba(34,197,94,.2);  }
             .log-badge--login    { color: #facc15; background: rgba(250,204,21,.1); border: 1px solid rgba(250,204,21,.2); }
+            .log-badge--subscription { color: #22c55e; background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.25); }
+            .log-badge--payment  { color: #34d399; background: rgba(52,211,153,.1); border: 1px solid rgba(52,211,153,.25); }
+            .log-badge--access   { color: #f472b6; background: rgba(244,114,182,.1); border: 1px solid rgba(244,114,182,.25); }
 
             .log-empty { text-align: center; padding: 60px 24px; color: #444; font-size: 14px; }
 
@@ -59,6 +62,9 @@ html(lang="fr")
             button.log-filter-btn(data-filter="register") 👤 Inscriptions
             button.log-filter-btn(data-filter="login") 🔑 Connexions
             button.log-filter-btn(data-filter="booking") 📅 Réservations
+            button.log-filter-btn(data-filter="subscription") ⭐ Abonnements
+            button.log-filter-btn(data-filter="payment") 💰 Paiements
+            button.log-filter-btn(data-filter="access") 🎟 Accès
 
         if events && events.length
             .log-list#logList
@@ -81,6 +87,12 @@ html(lang="fr")
                                 span.log-badge.log-badge--booking(class=ev.status === 'canceled' || ev.status === 'cancelled' ? 'log-badge--canceled' : '') #{ev.status || 'confirmé'}
                             else if ev.type === 'login'
                                 span.log-badge.log-badge--login connexion
+                            else if ev.type === 'subscription'
+                                span.log-badge.log-badge--subscription= ev.plan || 'abonnement'
+                            else if ev.type === 'payment'
+                                span.log-badge.log-badge--payment paiement
+                            else if ev.type === 'access'
+                                span.log-badge.log-badge--access accès
                             span.log-item__time= dateStr
         else
             .log-empty Aucune activité enregistrée.
