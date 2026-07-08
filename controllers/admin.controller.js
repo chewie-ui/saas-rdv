@@ -765,8 +765,9 @@ exports.createAdminBooking = async (req, res) => {
 
     const {
       date, startTime, name, surname, phone, message,
-      serviceId, employeeId, duration,
+      serviceId, duration,
     } = req.body;
+    let { employeeId } = req.body;
     const rawEmail = req.body.email;
     const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : rawEmail;
 
@@ -790,47 +791,85 @@ exports.createAdminBooking = async (req, res) => {
     // > durée par défaut de l'entreprise — même ordre que l'aperçu affiché
     // dans la modale ("Heure de fin" / "Durée").
     let actualDuration = (Number(duration) > 0 ? Number(duration) : null) || company.slotTime || 60;
+    let serviceDoc = null;
     if (serviceId) {
-      const service = await Service.find({ _id: serviceId, company: currentCompany }).select("name duration color").lean();
-      const svc = service[0];
-      if (svc) {
-        serviceName = svc.name || "";
-        serviceColor = svc.color || "";
-        actualDuration = svc.duration || actualDuration;
+      const service = await Service.find({ _id: serviceId, company: currentCompany }).select("name duration color type capacity recurring sessions").lean();
+      serviceDoc = service[0] || null;
+      if (serviceDoc) {
+        serviceName = serviceDoc.name || "";
+        serviceColor = serviceDoc.color || "";
+        actualDuration = serviceDoc.duration || actualDuration;
+      }
+    }
+
+    // ── Inscription manuelle à un cours collectif : même logique que la
+    // réservation publique (cf. booking.controller.js#createBooking) — on
+    // vérifie la capacité restante plutôt que de bloquer sur un chevauchement
+    // d'employé, puisqu'il s'agit précisément DU cours que l'admin inscrit.
+    // Permet à l'admin d'ajouter Caroline à un atelier qu'il a lui-même
+    // bloqué, tant qu'il reste des places (cf. bug rapporté par Cecile). ────
+    const isGroup = !!(serviceDoc && serviceDoc.type === "group");
+    if (isGroup) {
+      const bookingDateObj = new Date(date);
+      const occurrenceValid = serviceDoc.recurring?.enabled
+        ? (serviceDoc.recurring.weekdays || []).includes(bookingDateObj.getDay()) && serviceDoc.recurring.startTime === startTime
+        : (serviceDoc.sessions || []).some((s) => {
+            const sDate = new Date(s.date);
+            return sDate.getFullYear() === bookingDateObj.getFullYear()
+              && sDate.getMonth() === bookingDateObj.getMonth()
+              && sDate.getDate() === bookingDateObj.getDate()
+              && s.startTime === startTime;
+          });
+      if (!occurrenceValid) {
+        return res.json({ success: false, error: "invalid_session", message: "Cette session n'existe plus, merci de rafraîchir la page." });
+      }
+
+      const capacity = serviceDoc.capacity || 1;
+      const participantCount = await Booking.countDocuments({
+        company: currentCompany, service: serviceId, date: bookingDateObj, startTime, status: "confirmed",
+      });
+      if (participantCount >= capacity) {
+        return res.json({ success: false, error: "session_full", message: "Cette session est complète, merci de choisir un autre horaire." });
       }
     }
 
     let employeeName = "";
-    const team = await getBookableTeam(currentCompany);
-    if (employeeId) {
-      const emp = team.find((m) => m.id === String(employeeId));
-      if (emp) employeeName = `${emp.firstName} ${emp.lastName}`.trim();
-    } else if (team.length >= 1) {
-      // Plusieurs employés : auto-assigner au premier disponible sur ce créneau
-      const [h, m] = startTime.split(":").map(Number);
-      const startMin = h * 60 + m;
-      const endMin = startMin + actualDuration;
-      const Booking = require("../db/models/book.model");
-      const dayBookings = await Booking.find({
-        company: currentCompany,
-        date: new Date(date),
-        status: { $ne: "canceled" },
-        $or: [{ employee: { $in: team.map((x) => x.id) } }, { employee: null }],
-      }).select("startTime slotTime employee").lean();
-      const busyIds = new Set();
-      dayBookings.forEach((b) => {
-        const [bh, bm] = b.startTime.split(":").map(Number);
-        const bs = bh * 60 + bm, be = bs + (b.slotTime || actualDuration);
-        if (startMin < be && endMin > bs) {
-          if (b.employee == null) team.forEach((x) => busyIds.add(x.id));
-          else busyIds.add(String(b.employee));
+    // Un cours collectif n'est jamais assigné à un employé précis (même
+    // convention que la réservation publique) — la capacité a déjà été
+    // vérifiée ci-dessus, pas besoin de chercher un employé libre.
+    if (!isGroup) {
+      const team = await getBookableTeam(currentCompany);
+      if (employeeId) {
+        const emp = team.find((m) => m.id === String(employeeId));
+        if (emp) employeeName = `${emp.firstName} ${emp.lastName}`.trim();
+      } else if (team.length >= 1) {
+        // Plusieurs employés : auto-assigner au premier disponible sur ce créneau
+        const [h, m] = startTime.split(":").map(Number);
+        const startMin = h * 60 + m;
+        const endMin = startMin + actualDuration;
+        const dayBookings = await Booking.find({
+          company: currentCompany,
+          date: new Date(date),
+          status: { $ne: "canceled" },
+          $or: [{ employee: { $in: team.map((x) => x.id) } }, { employee: null }],
+        }).select("startTime slotTime employee").lean();
+        const busyIds = new Set();
+        dayBookings.forEach((b) => {
+          const [bh, bm] = b.startTime.split(":").map(Number);
+          const bs = bh * 60 + bm, be = bs + (b.slotTime || actualDuration);
+          if (startMin < be && endMin > bs) {
+            if (b.employee == null) team.forEach((x) => busyIds.add(x.id));
+            else busyIds.add(String(b.employee));
+          }
+        });
+        const free = team.find((x) => !busyIds.has(x.id));
+        if (free) {
+          employeeId = free.id;
+          employeeName = `${free.firstName} ${free.lastName}`.trim();
         }
-      });
-      const free = team.find((x) => !busyIds.has(x.id));
-      if (free) {
-        employeeId = free.id;
-        employeeName = `${free.firstName} ${free.lastName}`.trim();
       }
+    } else {
+      employeeId = null;
     }
 
     const [hours, minutes] = startTime.split(":").map(Number);
@@ -838,11 +877,13 @@ exports.createAdminBooking = async (req, res) => {
     const endTimeInMinutes = startTimeInMinutes + actualDuration;
     const endTime = `${String(Math.floor(endTimeInMinutes / 60)).padStart(2, "0")}:${String(endTimeInMinutes % 60).padStart(2, "0")}`;
 
-    const conflictMessage = await checkBookingConflict({
-      Booking, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, actualDuration,
-    });
-    if (conflictMessage) {
-      return res.json({ success: false, error: "conflict", message: conflictMessage });
+    if (!isGroup) {
+      const conflictMessage = await checkBookingConflict({
+        Booking, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, actualDuration,
+      });
+      if (conflictMessage) {
+        return res.json({ success: false, error: "conflict", message: conflictMessage });
+      }
     }
 
     const newBooking = await Booking.create({
@@ -862,6 +903,7 @@ exports.createAdminBooking = async (req, res) => {
       serviceColor,
       employee: employeeId || null,
       employeeName,
+      isGroup,
       payment: { method: "none", status: "none", amount: 0, currency: "eur" },
     });
 

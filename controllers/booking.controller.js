@@ -443,11 +443,19 @@ exports.createBooking = async (req, res) => {
     // ce qui permettait deux réservations qui se chevauchent dès qu'un
     // employé précis était sélectionné ou qu'il n'y avait aucun employé.
     if (!isGroup) {
+      // Temps tampon (cf. exports.getBooking plus bas, qui l'applique déjà à
+      // l'affichage des créneaux) — revalidé ici aussi, sinon deux clients
+      // qui réservent la même minute (ou un client avec une liste de
+      // créneaux périmée) peuvent créer deux RDV collés malgré le tampon
+      // configuré (ex: RDV 17h-17h30 immédiatement suivi d'un RDV à 17h30).
+      const bufferBefore = response.bufferBefore ?? response.bufferTime ?? 0;
+      const bufferAfter  = response.bufferAfter  ?? response.bufferTime ?? 0;
+
       function overlapsRange(b) {
         const [bh, bm] = b.startTime.split(":").map(Number);
         const bStart = bh * 60 + bm;
         const bEnd = bStart + (b.slotTime || actualDuration);
-        return startTimeInMinutes < bEnd && endTimeInMinutes > bStart;
+        return startTimeInMinutes < bEnd + bufferAfter && endTimeInMinutes > bStart - bufferBefore;
       }
 
       if (employeeId) {

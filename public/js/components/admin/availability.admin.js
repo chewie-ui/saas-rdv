@@ -137,13 +137,19 @@ document.addEventListener("click", async (event) => {
 
   if (hourItem) {
     const panel = hourItem.closest(".panel-availability");
-    const slotParent = hourItem.closest(".slot-hour");
+    // Une fois le panel "portalé" (cf. openDoffPanelPortal plus bas), il n'est
+    // plus un descendant de son .slot-hour / #holidaysBody d'origine — .hour
+    // a été déplacé avec lui. `_portalAnchor` (l'ancien parent, resté en
+    // place) sert alors de remplacement fiable pour retrouver ce contexte.
+    const slotParent = panel.dataset.portaled === "1" && panel._portalAnchor
+      ? panel._portalAnchor
+      : hourItem.closest(".slot-hour");
     const display = slotParent.querySelector(".hour-container");
-    const container = hourItem.closest(".time-slot");
+    const container = slotParent.closest(".time-slot");
 
     // Si le clic vient d'une ligne de congé, le handler holidaysBody gère l'API
     // On se contente de mettre à jour l'affichage et fermer le panel
-    if (hourItem.closest("#holidaysBody")) {
+    if (slotParent.closest("#holidaysBody")) {
       display.textContent = hourItem.textContent.trim();
       panel.classList.remove("open");
       return;
@@ -517,7 +523,21 @@ if (holidaysBody) {
     const deleteTimeSlot = e.target.closest(".delete-time-slot");
     const scheduleBtn = e.target.closest(".schedule-btn");
     const newHour = e.target.closest(".hour");
-    const row = e.target.closest(".days-off__row");
+
+    // Un panel d'heures "portalé" (cf. openDoffPanelPortal plus bas, qui le
+    // déplace hors de la carte pour échapper à son overflow:hidden) n'est
+    // plus un descendant de sa .days-off__row d'origine — .hour non plus,
+    // puisqu'il a été déplacé avec le panel. `_portalAnchor` (l'ancien
+    // parent du panel, resté en place dans la ligne) permet de la retrouver
+    // quand même, sans quoi `row` valait null et l'heure choisie n'était
+    // jamais sauvegardée (seul l'affichage semblait se mettre à jour).
+    let row = e.target.closest(".days-off__row");
+    if (!row && newHour) {
+      const panel = newHour.closest(".panel-availability");
+      if (panel && panel.dataset.portaled === "1" && panel._portalAnchor) {
+        row = panel._portalAnchor.closest(".days-off__row");
+      }
+    }
     if (!row) return;
     const container = row.querySelector(".days-off__schedule");
     const attributeRow = row.dataset.date;
@@ -550,41 +570,53 @@ if (holidaysBody) {
     }
 
     if (newHour) {
-      const wrapper   = newHour.closest(".slot-hour");
+      const newHourPanel = newHour.closest(".panel-availability");
+      const wrapper = (newHourPanel.dataset.portaled === "1" && newHourPanel._portalAnchor)
+        ? newHourPanel._portalAnchor
+        : newHour.closest(".slot-hour");
       const displayEl = wrapper.querySelector(".hour-container");
       const typeHour  = displayEl.dataset.hours;
       const setNewHour = newHour.textContent.trim();
 
-      // ── Validate start < end before saving ───────────────────────────────
-      const timeSlot = wrapper.closest(".time-slot");
-      if (timeSlot) {
-        const startText = typeHour === "start"
-          ? setNewHour
-          : (timeSlot.querySelector(".start-hour .hour-container")?.textContent.trim() || "00:00");
-        const endText = typeHour === "end"
-          ? setNewHour
-          : (timeSlot.querySelector(".end-hour .hour-container")?.textContent.trim() || "23:59");
-        if (timeToMinutes(startText) >= timeToMinutes(endText)) {
-          newHour.closest(".panel-availability").classList.remove("open");
-          showTimeError("L'heure de fin doit être supérieure à l'heure de début");
-          return;
-        }
-      }
-
       newHour.closest(".panel-availability").classList.remove("open");
 
-      // Mettre à jour l'affichage
+      // On affiche toujours la valeur choisie — même invalide — au lieu de
+      // la rejeter silencieusement : sinon, corriger ensuite l'AUTRE heure
+      // pour rendre la paire valide se basait sur l'ancienne valeur restée
+      // en place (jamais sur ce que l'utilisateur venait de saisir), et le
+      // changement voulu ne se sauvegardait donc jamais (cf. retour client:
+      // "j'ai mis 9h30 en fin, rejeté car début=14h30 ; j'ai corrigé le
+      // début à minuit, mais après refresh la fin était revenue à 10h30").
       displayEl.textContent = setNewHour;
 
-      // Sauvegarder en BDD
+      const timeSlot = wrapper.closest(".time-slot");
+      const startEl = timeSlot?.querySelector(".start-hour .hour-container");
+      const endEl   = timeSlot?.querySelector(".end-hour .hour-container");
+      const startText = (startEl?.textContent.trim()) || "00:00";
+      const endText   = (endEl?.textContent.trim())   || "23:59";
+
+      if (timeSlot && timeToMinutes(startText) >= timeToMinutes(endText)) {
+        startEl?.classList.add("avail-time-box--error");
+        endEl?.classList.add("avail-time-box--error");
+        showTimeError("L'heure de fin doit être supérieure à l'heure de début");
+        return;
+      }
+      startEl?.classList.remove("avail-time-box--error");
+      endEl?.classList.remove("avail-time-box--error");
+
+      // Sauvegarder en BDD — les deux heures du créneau, pas seulement
+      // celle qu'on vient de cliquer : si l'autre heure avait été rejetée
+      // plus tôt (paire alors invalide) et attend toujours d'être
+      // persistée, ce recalcul la sauvegarde maintenant qu'elle est valide.
       await fetch(`/company/set-schedule-day-off`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: typeHour,
-          dateId,
-          time: setNewHour,
-        }),
+        body: JSON.stringify({ type: "start", dateId, time: startText }),
+      });
+      await fetch(`/company/set-schedule-day-off`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "end", dateId, time: endText }),
       });
 
       return;
@@ -1405,7 +1437,17 @@ function openDoffPanelPortal(panel) {
   panel.dataset.portaled = '1';
   panel.style.position = 'fixed';
   panel.style.transform = 'none';
-  document.body.appendChild(panel);
+  // Important : on ancre dans #holidaysBody (pas document.body) — sinon le
+  // panel n'est plus un descendant de #holidaysBody et les handlers de clic
+  // qui font `hourItem.closest("#holidaysBody")` (ici + dans le listener de
+  // holidaysBody plus haut) ne matchent plus. Les heures restaient alors
+  // visibles mais cliquer dessus ne sauvegardait plus rien (le clic tombait
+  // dans la logique des horaires hebdomadaires, prévue pour .avail-day-row,
+  // qui échoue silencieusement sur une ligne de congé). #holidaysBody n'a
+  // pas d'overflow:hidden, donc position:fixed y échappe quand même au clip
+  // de la carte .avail-doff-card.
+  var portalRoot = document.getElementById('holidaysBody') || document.body;
+  portalRoot.appendChild(panel);
   positionDoffPortalPanel(panel, anchor);
 }
 
