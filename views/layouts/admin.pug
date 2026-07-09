@@ -27,41 +27,57 @@ html(lang="fr")
         //- Anti-flash : applique le thème AVANT le rendu
         script.
             (function(){try{var t=localStorage.getItem('branshee-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();
-        //- ── Messages du fondateur (superadmin → utilisateur) ──────────────
+        //- ── Messages du fondateur (superadmin → utilisateur) — popup centré ──
         style.
-            .admin-msgs { display: flex; flex-direction: column; gap: 12px; margin: 0 0 4px; }
-            .admin-msgs:empty { display: none; }
-            .admin-msg {
-                position: relative;
-                display: flex;
-                gap: 14px;
-                padding: 16px 46px 16px 18px;
-                border-radius: 14px;
-                border: 1px solid var(--am-border, #e2e8f0);
-                background: var(--am-bg, #f8fafc);
-                animation: amSlideIn .35s cubic-bezier(.16,1,.3,1);
+            .am-overlay {
+                position: fixed; inset: 0; z-index: 4000;
+                display: flex; align-items: center; justify-content: center;
+                padding: 20px;
+                background: rgba(15, 23, 42, .55);
+                backdrop-filter: blur(4px);
+                animation: amFade .2s ease;
             }
-            @keyframes amSlideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-            .admin-msg__icon { flex-shrink: 0; width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 19px; background: var(--am-icon-bg, #fff); border: 1px solid var(--am-border, #e2e8f0); }
-            .admin-msg__body { flex: 1; min-width: 0; }
-            .admin-msg__title { font-size: 14.5px; font-weight: 700; color: var(--am-title, #0f172a); letter-spacing: -.01em; margin-bottom: 3px; }
-            .admin-msg__text { font-size: 13px; line-height: 1.55; color: var(--am-text, #475569); white-space: pre-wrap; word-break: break-word; }
-            .admin-msg__cta { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 8px 15px; border-radius: 9px; font-size: 12.5px; font-weight: 600; text-decoration: none; color: #fff; background: var(--am-accent, #2563eb); transition: filter .15s; }
-            .admin-msg__cta:hover { filter: brightness(1.08); }
-            .admin-msg__close { position: absolute; top: 12px; right: 12px; width: 26px; height: 26px; border: none; background: transparent; color: var(--am-text, #94a3b8); cursor: pointer; border-radius: 7px; display: flex; align-items: center; justify-content: center; transition: background .15s, color .15s; }
-            .admin-msg__close:hover { background: rgba(0,0,0,.06); color: var(--am-title, #0f172a); }
-            .admin-msg__from { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--am-accent, #2563eb); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
-            .admin-msg--info     { --am-bg:#eff6ff; --am-border:#bfdbfe; --am-icon-bg:#fff; --am-title:#1e3a8a; --am-text:#3b5b8c; --am-accent:#2563eb; }
-            .admin-msg--tip      { --am-bg:#faf5ff; --am-border:#e9d5ff; --am-icon-bg:#fff; --am-title:#6b21a8; --am-text:#7e5aa0; --am-accent:#9333ea; }
-            .admin-msg--success  { --am-bg:#f0fdf4; --am-border:#bbf7d0; --am-icon-bg:#fff; --am-title:#166534; --am-text:#3f7a53; --am-accent:#16a34a; }
-            .admin-msg--warning  { --am-bg:#fffbeb; --am-border:#fde68a; --am-icon-bg:#fff; --am-title:#92400e; --am-text:#946a2a; --am-accent:#d97706; }
-            .admin-msg--security { --am-bg:#fef2f2; --am-border:#fecaca; --am-icon-bg:#fff; --am-title:#991b1b; --am-text:#a15353; --am-accent:#dc2626; }
-            :root[data-theme="dark"] .admin-msg--info     { --am-bg:#0f1f38; --am-border:#1e3a5f; --am-icon-bg:#0b1626; --am-title:#bfdbfe; --am-text:#8fb2de; }
-            :root[data-theme="dark"] .admin-msg--tip      { --am-bg:#1e1233; --am-border:#3b2758; --am-icon-bg:#140b24; --am-title:#e9d5ff; --am-text:#c3a8e0; }
-            :root[data-theme="dark"] .admin-msg--success  { --am-bg:#0d2417; --am-border:#1c4530; --am-icon-bg:#08160e; --am-title:#bbf7d0; --am-text:#8fceaa; }
-            :root[data-theme="dark"] .admin-msg--warning  { --am-bg:#2a1e08; --am-border:#4d3a14; --am-icon-bg:#1c1405; --am-title:#fde68a; --am-text:#d6b876; }
-            :root[data-theme="dark"] .admin-msg--security { --am-bg:#2a1010; --am-border:#5a2020; --am-icon-bg:#1c0a0a; --am-title:#fecaca; --am-text:#e0a0a0; }
-            :root[data-theme="dark"] .admin-msg__close:hover { background: rgba(255,255,255,.08); }
+            @keyframes amFade { from { opacity: 0; } to { opacity: 1; } }
+            .am-modal {
+                position: relative;
+                width: 440px; max-width: 100%;
+                background: var(--am-card, #fff);
+                border: 1px solid var(--am-border, #e2e8f0);
+                border-radius: 20px;
+                box-shadow: 0 24px 60px rgba(0,0,0,.28);
+                overflow: hidden;
+                animation: amPop .34s cubic-bezier(.16,1,.3,1);
+            }
+            @keyframes amPop { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+            .am-modal__accent { height: 5px; background: var(--am-accent, #2563eb); }
+            .am-modal__inner { padding: 26px 26px 22px; text-align: center; }
+            .am-modal__icon { width: 60px; height: 60px; margin: 4px auto 16px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 30px; background: var(--am-icon-bg, #eff6ff); border: 1px solid var(--am-border, #e2e8f0); }
+            .am-modal__from { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--am-accent, #2563eb); margin-bottom: 8px; }
+            .am-modal__title { font-size: 19px; font-weight: 800; color: var(--am-title, #0f172a); letter-spacing: -.02em; margin-bottom: 10px; line-height: 1.25; }
+            .am-modal__text { font-size: 14px; line-height: 1.6; color: var(--am-text, #475569); white-space: pre-wrap; word-break: break-word; }
+            .am-modal__actions { display: flex; flex-direction: column; gap: 10px; margin-top: 22px; }
+            .am-modal__cta { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 18px; border-radius: 11px; font-size: 14px; font-weight: 700; text-decoration: none; color: #fff; background: var(--am-accent, #2563eb); transition: filter .15s; }
+            .am-modal__cta:hover { filter: brightness(1.08); }
+            .am-modal__ok { padding: 12px 18px; border-radius: 11px; font-size: 14px; font-weight: 700; cursor: pointer; border: 1.5px solid var(--am-border, #e2e8f0); background: transparent; color: var(--am-title, #0f172a); transition: background .15s; }
+            .am-modal__ok--solo { color: #fff; background: var(--am-accent, #2563eb); border-color: transparent; }
+            .am-modal__ok:hover { background: var(--am-hover, rgba(0,0,0,.04)); }
+            .am-modal__ok--solo:hover { background: var(--am-accent, #2563eb); filter: brightness(1.08); }
+            .am-modal__close { position: absolute; top: 14px; right: 14px; width: 30px; height: 30px; border: none; background: rgba(0,0,0,.05); color: var(--am-text, #94a3b8); cursor: pointer; border-radius: 9px; display: flex; align-items: center; justify-content: center; transition: background .15s, color .15s; z-index: 2; }
+            .am-modal__close:hover { background: rgba(0,0,0,.1); color: var(--am-title, #0f172a); }
+            .am-modal__count { font-size: 11.5px; color: var(--am-text, #94a3b8); margin-top: 14px; opacity: .8; }
+            .am-modal--info     { --am-border:#bfdbfe; --am-icon-bg:#eff6ff; --am-title:#0f172a; --am-text:#475569; --am-accent:#2563eb; }
+            .am-modal--tip      { --am-border:#e9d5ff; --am-icon-bg:#faf5ff; --am-title:#0f172a; --am-text:#475569; --am-accent:#9333ea; }
+            .am-modal--success  { --am-border:#bbf7d0; --am-icon-bg:#f0fdf4; --am-title:#0f172a; --am-text:#475569; --am-accent:#16a34a; }
+            .am-modal--warning  { --am-border:#fde68a; --am-icon-bg:#fffbeb; --am-title:#0f172a; --am-text:#475569; --am-accent:#d97706; }
+            .am-modal--security { --am-border:#fecaca; --am-icon-bg:#fef2f2; --am-title:#0f172a; --am-text:#475569; --am-accent:#dc2626; }
+            :root[data-theme="dark"] .am-modal { --am-card:#141b2d; --am-hover:rgba(255,255,255,.06); }
+            :root[data-theme="dark"] .am-modal__close { background: rgba(255,255,255,.07); }
+            :root[data-theme="dark"] .am-modal__close:hover { background: rgba(255,255,255,.14); }
+            :root[data-theme="dark"] .am-modal--info     { --am-border:#1e3a5f; --am-icon-bg:#0f1f38; --am-title:#f1f5f9; --am-text:#a3b4cc; --am-accent:#3b82f6; }
+            :root[data-theme="dark"] .am-modal--tip      { --am-border:#3b2758; --am-icon-bg:#1e1233; --am-title:#f1f5f9; --am-text:#c3a8e0; --am-accent:#a855f7; }
+            :root[data-theme="dark"] .am-modal--success  { --am-border:#1c4530; --am-icon-bg:#0d2417; --am-title:#f1f5f9; --am-text:#8fceaa; --am-accent:#22c55e; }
+            :root[data-theme="dark"] .am-modal--warning  { --am-border:#4d3a14; --am-icon-bg:#2a1e08; --am-title:#f1f5f9; --am-text:#d6b876; --am-accent:#f59e0b; }
+            :root[data-theme="dark"] .am-modal--security { --am-border:#5a2020; --am-icon-bg:#2a1010; --am-title:#f1f5f9; --am-text:#e0a0a0; --am-accent:#ef4444; }
         block links
     if isImpersonating
         style.
@@ -150,8 +166,6 @@ html(lang="fr")
                                 sessionStorage.setItem('bs_limit_toast_dismissed', '1');
                             });
                         })();
-                //- Messages du fondateur (rendus côté client, voir script en bas)
-                #adminMessages.admin-msgs
                 .main-wrapper
                     block content
         +dialog()
@@ -647,14 +661,17 @@ html(lang="fr")
                 history.replaceState(null, '', url.toString());
             })();
 
-        //- ── Rendu des messages du fondateur (superadmin → utilisateur) ──────
+        //- ── Messages du fondateur (superadmin → utilisateur) — popup centré ──
         script.
             (function() {
-                var box = document.getElementById('adminMessages');
-                if (!box || !window.__userId) return;
+                if (!window.__userId) return;
 
                 var ICONS = { info: 'ℹ️', tip: '💡', success: '✅', warning: '⚠️', security: '🔒' };
-                var FROM  = { info: 'Message de BranShee', tip: 'Conseil BranShee', success: 'BranShee', warning: 'Important', security: 'Sécurité de votre compte' };
+                var FROM  = { info: 'Message de BranShee', tip: 'Conseil BranShee', success: 'Bonne nouvelle', warning: 'Important', security: 'Sécurité de votre compte' };
+
+                var queue = [];      // messages en attente d'affichage
+                var shownIds = {};   // déjà vus ce chargement
+                var current = null;  // overlay actuellement affiché
 
                 function esc(s) {
                     return String(s == null ? '' : s)
@@ -667,51 +684,77 @@ html(lang="fr")
                     return '';
                 }
 
-                function dismiss(id, el) {
-                    el.style.transition = 'opacity .2s, transform .2s';
-                    el.style.opacity = '0';
-                    el.style.transform = 'translateY(-6px)';
-                    setTimeout(function() { el.remove(); }, 200);
-                    fetch('/account/my-messages/' + id + '/dismiss', { method: 'POST' }).catch(function() {});
+                function closeCurrent(id) {
+                    if (!current) return;
+                    var ov = current;
+                    current = null;
+                    ov.style.transition = 'opacity .18s';
+                    ov.style.opacity = '0';
+                    setTimeout(function() { ov.remove(); showNext(); }, 180);
+                    if (id) fetch('/account/my-messages/' + id + '/dismiss', { method: 'POST' }).catch(function() {});
                 }
 
-                function render(messages) {
-                    var have = {};
-                    Array.prototype.forEach.call(box.querySelectorAll('[data-msg-id]'), function(el) { have[el.getAttribute('data-msg-id')] = true; });
+                function showNext() {
+                    if (current || !queue.length) return;
+                    var m = queue.shift();
+                    var id = String(m._id);
+                    var type = ['info','tip','success','warning','security'].indexOf(m.type) >= 0 ? m.type : 'info';
+                    var url = safeUrl(m.ctaUrl);
+                    var hasCta = m.ctaLabel && url;
+                    var remaining = queue.length; // messages restants après celui-ci
+
+                    var overlay = document.createElement('div');
+                    overlay.className = 'am-overlay';
+                    overlay.innerHTML =
+                        '<div class="am-modal am-modal--' + type + '" role="dialog" aria-modal="true">' +
+                            '<div class="am-modal__accent"></div>' +
+                            '<button class="am-modal__close" type="button" aria-label="Fermer">' +
+                                '<svg viewBox="0 -960 960 960" height="17" width="17" fill="currentColor"><path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/></svg>' +
+                            '</button>' +
+                            '<div class="am-modal__inner">' +
+                                '<div class="am-modal__icon">' + (ICONS[type] || 'ℹ️') + '</div>' +
+                                '<div class="am-modal__from">' + esc(FROM[type] || 'Message') + '</div>' +
+                                '<div class="am-modal__title">' + esc(m.title) + '</div>' +
+                                '<div class="am-modal__text">' + esc(m.body) + '</div>' +
+                                '<div class="am-modal__actions">' +
+                                    (hasCta ? '<a class="am-modal__cta" href="' + esc(url) + '">' + esc(m.ctaLabel) + ' →</a>' : '') +
+                                    '<button class="am-modal__ok' + (hasCta ? '' : ' am-modal__ok--solo') + '" type="button">' + (remaining ? 'Suivant' : 'J\'ai compris') + '</button>' +
+                                '</div>' +
+                                (remaining ? '<div class="am-modal__count">' + (remaining + 1) + ' message' + (remaining ? 's' : '') + ' — ' + remaining + ' restant' + (remaining > 1 ? 's' : '') + '</div>' : '') +
+                            '</div>' +
+                        '</div>';
+
+                    overlay.querySelector('.am-modal__close').addEventListener('click', function() { closeCurrent(id); });
+                    overlay.querySelector('.am-modal__ok').addEventListener('click', function() { closeCurrent(id); });
+                    // Clic sur le fond assombri → fermer (marque comme lu).
+                    overlay.addEventListener('click', function(e) { if (e.target === overlay) closeCurrent(id); });
+
+                    overlay.__msgId = id;
+                    document.body.appendChild(overlay);
+                    current = overlay;
+                }
+
+                function enqueue(messages) {
                     (messages || []).forEach(function(m) {
                         var id = String(m._id);
-                        if (have[id]) return;
-                        var type = ['info','tip','success','warning','security'].indexOf(m.type) >= 0 ? m.type : 'info';
-                        var el = document.createElement('div');
-                        el.className = 'admin-msg admin-msg--' + type;
-                        el.setAttribute('data-msg-id', id);
-                        var cta = '';
-                        var url = safeUrl(m.ctaUrl);
-                        if (m.ctaLabel && url) {
-                            cta = '<a class="admin-msg__cta" href="' + esc(url) + '">' + esc(m.ctaLabel) + ' →</a>';
-                        }
-                        el.innerHTML =
-                            '<div class="admin-msg__icon">' + (ICONS[type] || 'ℹ️') + '</div>' +
-                            '<div class="admin-msg__body">' +
-                                '<div class="admin-msg__from">' + (ICONS[type] || '') + ' ' + esc(FROM[type] || 'Message') + '</div>' +
-                                '<div class="admin-msg__title">' + esc(m.title) + '</div>' +
-                                '<div class="admin-msg__text">' + esc(m.body) + '</div>' +
-                                cta +
-                            '</div>' +
-                            '<button class="admin-msg__close" type="button" aria-label="Fermer">' +
-                                '<svg viewBox="0 -960 960 960" height="16" width="16" fill="currentColor"><path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/></svg>' +
-                            '</button>';
-                        el.querySelector('.admin-msg__close').addEventListener('click', function() { dismiss(id, el); });
-                        box.appendChild(el);
+                        if (shownIds[id]) return;
+                        shownIds[id] = true;
+                        queue.push(m);
                     });
+                    showNext();
                 }
 
                 function load() {
                     fetch('/account/my-messages')
                         .then(function(r) { return r.json(); })
-                        .then(function(d) { render(d.messages || []); })
+                        .then(function(d) { enqueue(d.messages || []); })
                         .catch(function() {});
                 }
+
+                // Fermeture au clavier (Échap) sur le popup courant.
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && current) closeCurrent(current.__msgId);
+                });
 
                 load();
                 // Rafraîchissement live via le socket partagé (émis par le superadmin).
