@@ -92,6 +92,7 @@
   color: #5b21b6;
 }
 .avail-readonly-notice svg { flex-shrink: 0; color: #7c3aed; }
+.avail-readonly-notice .material-symbols-outlined { flex-shrink: 0; color: #7c3aed; }
 
 .avail-shared-notice {
   display: flex;
@@ -130,9 +131,16 @@
   fill: var(--text-muted);
   transition: fill 0.15s;
 }
+.avail-info-tip .material-symbols-outlined {
+  color: var(--text-muted);
+  transition: color 0.15s;
+}
 
 .avail-info-tip:hover svg {
   fill: var(--accent, #22c55e);
+}
+.avail-info-tip:hover .material-symbols-outlined {
+  color: var(--accent, #22c55e);
 }
 
 .avail-info-tip__bubble {
@@ -398,6 +406,9 @@
 .avail-del-slot svg {
   fill: currentColor;
 }
+.avail-del-slot .material-symbols-outlined {
+  color: currentColor;
+}
 
 /* ── Day actions: + Range ───────────────────────────────────── */
 .avail-day-actions {
@@ -431,6 +442,10 @@
 
 .avail-range-btn svg {
   fill: currentColor;
+  flex-shrink: 0;
+}
+.avail-range-btn .material-symbols-outlined {
+  color: currentColor;
   flex-shrink: 0;
 }
 
@@ -512,11 +527,12 @@
   flex-wrap: wrap;
 }
 
-.slot-managed-info svg {
-  fill: #c87800;
+.slot-managed-info .material-symbols-outlined {
+  color: #c87800;
+  font-size: 16px;
   flex-shrink: 0;
 }
-.slot-managed-info span {
+.slot-managed-info span:not(.material-symbols-outlined) {
   flex: 1;
   min-width: 0;
 }
@@ -746,6 +762,10 @@
   fill: currentColor;
   flex-shrink: 0;
 }
+.avail-add-btn .material-symbols-outlined {
+  color: currentColor;
+  flex-shrink: 0;
+}
 .avail-add-btn:hover {
   background: var(--accent);
   color: #fff;
@@ -933,6 +953,7 @@
 }
 
 .avail-doff-del svg { fill: currentColor; }
+.avail-doff-del .material-symbols-outlined { color: currentColor; }
 .avail-doff-del:hover { background: #fee2e2; color: #dc2626; }
 
 /* ── Card body (time slots) ──────────────────────────────────── */
@@ -1025,6 +1046,7 @@
 }
 
 .avail-doff-addtime svg { fill: currentColor; }
+.avail-doff-addtime .material-symbols-outlined { color: currentColor; }
 
 .avail-doff-addtime:hover {
   background: var(--accent-soft);
@@ -1093,6 +1115,10 @@
   fill: var(--accent);
   flex-shrink: 0;
 }
+.avail-lock-banner .material-symbols-outlined {
+  color: var(--accent);
+  flex-shrink: 0;
+}
 
 /* upgrade button inside lock banner — .btn-upgrade-pro handles its own styles */
 
@@ -1127,6 +1153,10 @@
 
 .avail-feature-lock-badge svg {
   fill: var(--accent);
+  flex-shrink: 0;
+}
+.avail-feature-lock-badge .material-symbols-outlined {
+  color: var(--accent);
   flex-shrink: 0;
 }
 
@@ -1390,6 +1420,10 @@
   opacity: 0;
   transition: opacity 0.12s;
 }
+.emp-picker-emp__check .material-symbols-outlined {
+  opacity: 0;
+  transition: opacity 0.12s;
+}
 
 .emp-picker-emp:has(input:checked) .emp-picker-emp__check {
   border-color: var(--accent);
@@ -1399,6 +1433,10 @@
 .emp-picker-emp:has(input:checked) .emp-picker-emp__check svg {
   opacity: 1;
   fill: #fff;
+}
+.emp-picker-emp:has(input:checked) .emp-picker-emp__check .material-symbols-outlined {
+  opacity: 1;
+  color: #fff;
 }
 
 .emp-picker-emp span {
@@ -1521,6 +1559,10 @@
 .avail-cal-nav svg,
 .avail-cal-close svg {
   fill: currentColor;
+}
+.avail-cal-nav .material-symbols-outlined,
+.avail-cal-close .material-symbols-outlined {
+  color: currentColor;
 }
 
 .avail-cal-nav:hover {
@@ -1660,6 +1702,9 @@
 
 .avail-lock-banner--soft svg {
   fill: var(--text-muted);
+}
+.avail-lock-banner--soft .material-symbols-outlined {
+  color: var(--text-muted);
 }
 
 /* Toast shown when basic user tries to add a 2nd congé */

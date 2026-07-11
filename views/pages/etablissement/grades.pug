@@ -6,8 +6,7 @@ block links
 
 block content
     a.etab-back-link(href=`/etablissement/${company.id}/collaborateurs` style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted,#6b7280);text-decoration:none;margin-bottom:20px")
-        svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
-            path(d="M19 12H5M12 19l-7-7 7-7")
+        span.material-symbols-outlined(style=`font-size:14px`) arrow_back
         | Retour aux collaborateurs
 
     .grades-page
@@ -17,8 +16,7 @@ block content
                 h1.grades-page__title Grades
                 if permissions.grades.manage
                     button.sm-btn.sm-btn--primary#createGradeBtn(type="button")
-                        svg(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
-                            path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                        span.material-symbols-outlined(style=`font-size:15px`) add
                         span Créer
 
             if !grades.length
@@ -35,14 +33,12 @@ block content
                                 span.estab-badge.estab-badge--role Défaut
                             if permissions.grades.manage
                                 button.grades-page__item-delete.js-delete-grade(type="button" data-id=g.id data-name=g.name title="Supprimer")
-                                    svg(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
-                                        path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+                                    span.material-symbols-outlined(style=`font-size:15px`) delete
 
         //- ── Colonne droite : éditeur ────────────────────────────────
         .grades-page__editor
             .grades-page__editor-empty#gradeEditorEmpty
-                svg(viewBox="0 -960 960 960" height="48" width="48" fill="currentColor" style="color:var(--border-light,#e2e0db)")
-                    path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Z")
+                span.material-symbols-outlined(style="font-size:48px;color:var(--border-light,#e2e0db)") badge
                 p Sélectionnez un grade à modifier,
                     br
                     | ou créez-en un nouveau.

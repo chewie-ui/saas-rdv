@@ -18,12 +18,10 @@ block content
         //- Back button + Delete button
         .edit-top-bar
             a.edit-back-btn(href="javascript:history.back()")
-                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
-                    path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                span.material-symbols-outlined(style="font-size:20px") arrow_back
                 span= t.hist_edit.back
             button.sm-btn.sm-btn--danger#deleteHistoryBtn(type="button")
-                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                    path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-272h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+                span.material-symbols-outlined delete
                 span= t.hist_edit.delete_btn
 
         .edit-layout
@@ -41,13 +39,11 @@ block content
 
                     .edit-sidebar__meta
                         .edit-sidebar__meta-row
-                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px")
-                                path(d="M224.62-120q-27.62 0-46.12-18.5Q160-157 160-184.62v-510.76q0-27.62 18.5-46.12Q197-760 224.62-760h70.76v-89.23h43.08V-760h286.16v-89.23h40V-760h70.76q27.62 0 46.12 18.5Q800-723 800-695.38v510.76q0 27.62-18.5 46.12Q763-120 735.38-120H224.62Zm0-40h510.76q9.24 0 16.93-7.69 7.69-7.69 7.69-16.93v-350.76H200v350.76q0 9.24 7.69 16.93 7.69 7.69 16.93 7.69ZM200-575.39h560v-119.99q0-9.24-7.69-16.93-7.69-7.69-16.93-7.69H224.62q-9.24 0-16.93 7.69-7.69 7.69-7.69 16.93v119.99Zm0 0V-720-575.39Z")
+                            span.material-symbols-outlined(style="font-size:18px") calendar_month
                             span= results.date.toLocaleDateString(lang)
 
                         .edit-sidebar__meta-row
-                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px")
-                                path(d="M480-120q-75 0-140.5-28.5t-114-77q-48.5-48.5-77-114T120-480q0-75 28.5-140.5t77-114q48.5-48.5 114-77T480-840q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-480q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-120Zm0-40q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Zm24 160v-165l-92-54-20 34 72 43v142h40Z")
+                            span.material-symbols-outlined(style="font-size:18px") schedule
                             span #{results.startTime} – #{results.endTime}
 
                     .edit-sidebar__divider
@@ -76,18 +72,15 @@ block content
                     .edit-sidebar__reminder
                         if results.manualReminderSent
                             .reminder-status-badge.reminder-status-badge--manual
-                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                span.material-symbols-outlined(style="font-size:14px") check
                                 span= t.hist_edit.reminder_sent_manual
                         else if results.reminderSent
                             .reminder-status-badge.reminder-status-badge--auto
-                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                                span.material-symbols-outlined(style="font-size:14px") check
                                 span= t.hist_edit.reminder_sent_auto
                         if results.status === 'confirmed' && results.email && !isPast
                             button.sm-btn.sm-btn--ghost#sendReminderBtn(type="button" style="width:100%;justify-content:center;margin-top:8px")
-                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                    path(d="M160-200v-80l80-80v-280q0-83 50-147.5T420-880v-20q0-25 17.5-42.5T480-960q25 0 42.5 17.5T540-900v20q80 20 130 84.5T720-640v280l80 80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-360h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z")
+                                span.material-symbols-outlined(style="font-size:16px") notifications
                                 span= t.hist_edit.send_reminder_btn
 
             //- ── Right form content ──
@@ -97,8 +90,7 @@ block content
                 .edit-section
                     .edit-section__header
                         .edit-section__icon
-                            svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
-                                path(d="M224.62-120q-27.62 0-46.12-18.5Q160-157 160-184.62v-510.76q0-27.62 18.5-46.12Q197-760 224.62-760h70.76v-89.23h43.08V-760h286.16v-89.23h40V-760h70.76q27.62 0 46.12 18.5Q800-723 800-695.38v510.76q0 27.62-18.5 46.12Q763-120 735.38-120H224.62Zm0-40h510.76q9.24 0 16.93-7.69 7.69-7.69 7.69-16.93v-350.76H200v350.76q0 9.24 7.69 16.93 7.69 7.69 16.93 7.69ZM200-575.39h560v-119.99q0-9.24-7.69-16.93-7.69-7.69-16.93-7.69H224.62q-9.24 0-16.93 7.69-7.69 7.69-7.69 16.93v119.99Zm0 0V-720-575.39Z")
+                            span.material-symbols-outlined(style="font-size:20px") calendar_month
                         h3= t.hist_edit.section_appointment
                     .edit-section__body
                         .edit-fields-row
@@ -108,18 +100,15 @@ block content
                                 .datepicker-wrap
                                     input(type="hidden" id="editDate" value=results.date.toISOString().split('T')[0])
                                     button.datepicker-trigger(type="button" id="datepickerTrigger")
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                            path(d="M224.62-120q-27.62 0-46.12-18.5Q160-157 160-184.62v-510.76q0-27.62 18.5-46.12Q197-760 224.62-760h70.76v-89.23h43.08V-760h286.16v-89.23h40V-760h70.76q27.62 0 46.12 18.5Q800-723 800-695.38v510.76q0 27.62-18.5 46.12Q763-120 735.38-120H224.62Zm0-40h510.76q9.24 0 16.93-7.69 7.69-7.69 7.69-16.93v-350.76H200v350.76q0 9.24 7.69 16.93 7.69 7.69 16.93 7.69ZM200-575.39h560v-119.99q0-9.24-7.69-16.93-7.69-7.69-16.93-7.69H224.62q-9.24 0-16.93 7.69-7.69 7.69-7.69 16.93v119.99Zm0 0V-720-575.39Z")
+                                        span.material-symbols-outlined(style="font-size:16px") calendar_month
                                         span#datepickerDisplay= results.date.toLocaleDateString(lang, {weekday:"long", year:"numeric", month:"long", day:"numeric"})
                                     .datepicker-popup(id="datepickerPopup" style="display:none")
                                         .datepicker-header
                                             button.datepicker-nav(type="button" id="dpPrevMonth")
-                                                svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                                    path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                                                span.material-symbols-outlined(style="font-size:18px") chevron_left
                                             span.datepicker-month-label(id="dpMonthLabel")
                                             button.datepicker-nav(type="button" id="dpNextMonth")
-                                                svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                                    path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                                                span.material-symbols-outlined(style="font-size:18px") chevron_right
                                         .datepicker-weekdays
                                             span= t.days_abbr.monday.charAt(0)
                                             span= t.days_abbr.tuesday.charAt(0)
@@ -151,12 +140,10 @@ block content
                                                 option(value=svcId data-name=svc.name data-duration=svc.duration data-price=(svc.price || '') selected=(currentSvcId === svcId))= svc.name.length > 40 ? svc.name.slice(0, 40) + '…' : svc.name
                                     .svc-info-chips#svcInfoChips(style="display:none")
                                         .svc-chip#svcDurationChip
-                                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                                path(d="M480-120q-75 0-140.5-28.5t-114-77q-48.5-48.5-77-114T120-480q0-75 28.5-140.5t77-114q48.5-48.5 114-77T480-840q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-480q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-120Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Zm24 160v-165l-92-54-20 34 72 43v142h40Z")
+                                            span.material-symbols-outlined(style="font-size:14px") schedule
                                             span#svcDurationLabel —
                                         .svc-chip#svcPriceChip(style="display:none")
-                                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                                path(d="M441-120v-86q-53-12-91.5-46T293-348l74-30q15 48 44.5 73t77.5 25q41 0 69.5-18.5T587-356q0-35-22-55.5T463-463q-77-27-109.5-58.5T321-600q0-41 24.5-74.5T419-717v-83h44v83q50 8 82.5 36.5T589-600l-71 29q-8-30-29.5-56T418-651q-38 0-62 19.5T332-584q0 32 23.5 52.5T445-474q68 22 102.5 57T582-324q0 57-37.5 91T441-194v74h-44v-82Z")
+                                            span.material-symbols-outlined(style="font-size:14px") payments
                                             span#svcPriceLabel —
 
                         //- Employee selector
@@ -206,8 +193,7 @@ block content
                 .edit-section
                     .edit-section__header
                         .edit-section__icon
-                            svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
-                                path(d="M880-720v480q0 33-23.5 56.5T800-160H160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720ZM160-640h640v-80H160v80Zm0 160v240h640v-240H160Z")
+                            span.material-symbols-outlined(style="font-size:20px") payments
                         h3= t.hist_edit.payment_title
                     .edit-section__body
                         .pay-info-grid
@@ -231,18 +217,13 @@ block content
                                 .pay-info-item
                                     span.pay-info-label Carte du client
                                     span.pay-info-value.pay-card-chip
-                                        svg(width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
-                                            rect(x="1" y="4" width="22" height="16" rx="2" ry="2")
-                                            line(x1="1" y1="10" x2="23" y2="10")
+                                        span.material-symbols-outlined(style="font-size:13px") credit_card
                                         | #{pay.cardBrand ? (pay.cardBrand.charAt(0).toUpperCase() + pay.cardBrand.slice(1)) : 'Carte'}
                                         span.pay-card-mask  •••• #{pay.cardLast4}
 
                         if results.noShow
                             .pay-noshow-row(class=results.noShowReason === "invalid" ? "pay-noshow-row--charged" : "pay-noshow-row--free")
-                                svg(width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                    circle(cx="12" cy="12" r="10")
-                                    line(x1="12" y1="8" x2="12" y2="12")
-                                    line(x1="12" y1="16" x2="12.01" y2="16")
+                                span.material-symbols-outlined(style="font-size:16px") info
                                 if results.noShowReason === "invalid"
                                     span= t.hist_edit.noshow_charged
                                 else
@@ -267,10 +248,7 @@ block content
                         if showChargeFailed || showNoCard
                             .charge-failed-block
                                 .charge-failed-block__hd
-                                    svg(width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round")
-                                        circle(cx="12" cy="12" r="10")
-                                        line(x1="12" y1="8" x2="12" y2="12")
-                                        line(x1="12" y1="16" x2="12.01" y2="16")
+                                    span.material-symbols-outlined(style="font-size:18px") warning
                                     if showChargeFailed
                                         div
                                             strong Le prélèvement a échoué
@@ -310,8 +288,7 @@ block content
                                 var piMethod = pi.method || ''
                             .payout-block
                                 .payout-block__msg
-                                    svg(width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                        polyline(points="20 6 9 17 4 12")
+                                    span.material-symbols-outlined(style="font-size:18px") check_circle
                                     div
                                         if isNoShowCharged
                                             strong BranShee a enregistré la pénalité d'absence
@@ -330,42 +307,31 @@ block content
                                     p.payout-block__method-label Moyen de paiement préféré pour recevoir l'argent
                                     if piMethod === 'bank_transfer'
                                         .payout-block__method-display
-                                            svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
-                                                rect(x="3" y="11" width="18" height="11" rx="2" ry="2")
-                                                path(d="M7 11V7a5 5 0 0 1 10 0v4")
+                                            span.material-symbols-outlined(style="font-size:14px") account_balance
                                             span Virement bancaire
                                             if pi.iban
                                                 span.payout-block__method-detail — IBAN : #{pi.iban}
                                             a.payout-block__edit-link#payoutEditLink(href="#") Modifier
                                     else if piMethod === 'paypal'
                                         .payout-block__method-display
-                                            svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
-                                                path(d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z")
+                                            span.material-symbols-outlined(style="font-size:14px") account_balance_wallet
                                             span PayPal
                                             if pi.paypalEmail
                                                 span.payout-block__method-detail — #{pi.paypalEmail}
                                             a.payout-block__edit-link#payoutEditLink(href="#") Modifier
                                     else if piMethod === 'cash'
                                         .payout-block__method-display
-                                            svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
-                                                rect(x="1" y="4" width="22" height="16" rx="2" ry="2")
-                                                line(x1="1" y1="10" x2="23" y2="10")
+                                            span.material-symbols-outlined(style="font-size:14px") payments
                                             span Espèces
                                             a.payout-block__edit-link#payoutEditLink(href="#") Modifier
                                     else if piMethod === 'other'
                                         .payout-block__method-display
-                                            svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
-                                                circle(cx="12" cy="12" r="10")
-                                                line(x1="12" y1="8" x2="12" y2="12")
-                                                line(x1="12" y1="16" x2="12.01" y2="16")
+                                            span.material-symbols-outlined(style="font-size:14px") info
                                             span #{pi.other || 'Autre'}
                                             a.payout-block__edit-link#payoutEditLink(href="#") Modifier
                                     else
                                         .payout-block__no-method
-                                            svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2")
-                                                circle(cx="12" cy="12" r="10")
-                                                line(x1="12" y1="8" x2="12" y2="12")
-                                                line(x1="12" y1="16" x2="12.01" y2="16")
+                                            span.material-symbols-outlined(style="font-size:14px") info
                                             span Veuillez ajouter un moyen de recevoir l'argent
                                             a.payout-block__edit-link#payoutEditLink(href="#") Ajouter
                                     //- Formulaire inline (caché par défaut, révélé par "Modifier / Ajouter")
@@ -394,10 +360,7 @@ block content
                         if isPast && results.status === 'confirmed' && !results.noShow
                             .noshow-wrap
                                 button.sm-btn.sm-btn--danger#noShowBtn(type="button")
-                                    svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                        circle(cx="12" cy="12" r="10")
-                                        line(x1="12" y1="8" x2="12" y2="12")
-                                        line(x1="12" y1="16" x2="12.01" y2="16")
+                                    span.material-symbols-outlined(style="font-size:14px") info
                                     span= t.hist_edit.noshow_btn
                                 .noshow-choices#noShowChoices(style="display:none")
                                     p.noshow-choices__title= t.hist_edit.noshow_question
@@ -416,10 +379,7 @@ block content
                             - var penaltyAmt = pay.penaltyAmount || pay.amount
                             .noshow-wrap
                                 button.sm-btn.sm-btn--danger#cancelReviewBtn(type="button")
-                                    svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                        circle(cx="12" cy="12" r="10")
-                                        line(x1="12" y1="8" x2="12" y2="12")
-                                        line(x1="12" y1="16" x2="12.01" y2="16")
+                                    span.material-symbols-outlined(style="font-size:14px") info
                                     span= t.hist_edit.cancel_fee_charged.replace('{amount}', penaltyAmt)
                                 .noshow-choices#cancelReviewChoices(style="display:none")
                                     p.noshow-choices__title= t.hist_edit.cancel_fee_question.replace('{amount}', penaltyAmt)
@@ -430,18 +390,14 @@ block content
                                     button.sm-btn.sm-btn--ghost#cancelReviewCancel(type="button")= t.hist_edit.generic_cancel
                         if pay && pay.cancellationReviewDecision
                             .noshow-badge(class=pay.cancellationReviewDecision === 'refunded' ? 'noshow-badge--free' : 'noshow-badge--charged')
-                                svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                    circle(cx="12" cy="12" r="10")
-                                    line(x1="12" y1="8" x2="12" y2="12")
-                                    line(x1="12" y1="16" x2="12.01" y2="16")
+                                span.material-symbols-outlined(style="font-size:14px") info
                                 span= pay.cancellationReviewDecision === 'refunded' ? t.hist_edit.cancel_late_refunded : t.hist_edit.cancel_late_kept
 
                 //- Section: Client
                 .edit-section
                     .edit-section__header
                         .edit-section__icon
-                            svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
-                                path(d="M480-492.31q-57.75 0-98.87-41.12Q340-574.56 340-632.31q0-57.75 41.13-98.87 41.12-41.13 98.87-41.13 57.75 0 98.87 41.13Q620-690.06 620-632.31q0 57.75-41.13 98.88Q537.75-492.31 480-492.31ZM170-180v-57.85q0-29.61 15.96-54.42 15.96-24.81 42.58-38.35 59.15-29.07 119.3-43.61Q407.99-388.77 480-388.77t132.16 14.54q60.15 14.54 119.3 43.61 26.62 13.54 42.58 38.35Q790-267.46 790-237.85V-180H170Z")
+                            span.material-symbols-outlined(style="font-size:20px") person
                         h3= t.hist_edit.section_client
                     .edit-section__body
                         .edit-fields-row.two-col
@@ -468,8 +424,7 @@ block content
                     .edit-section
                         .edit-section__header
                             .edit-section__icon
-                                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px")
-                                    path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Zm-20 200v-40q0-33 10-56t36-49l44-44q14-14 21-29t7-32q0-34-22.5-57T480-640q-38 0-62 22t-31 58l-76-16q12-54 54-88t115-34q67 0 110.5 38.5T634-550q0 29-10 52.5T593-452l-47 44q-14 13-20 29t-6 35v40H460Zm20 120q-17 0-28.5-11.5T440-200q0-17 11.5-28.5T480-240q17 0 28.5 11.5T520-200q0 17-11.5 28.5T480-160Z")
+                                span.material-symbols-outlined(style="font-size:20px") help
                             h3= t.hist_edit.section_form_answers
                         .edit-section__body
                             .form-answers-list
@@ -484,127 +439,32 @@ block content
                 span= t.hist_edit.back
             if results.email
                 a.sm-btn.sm-btn--soft(href=`/clients/${encodeURIComponent(results.email)}`)
-                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                        path(d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z")
+                    span.material-symbols-outlined(style="font-size:16px") description
                     span= t.hist_edit.view_client_file
             button.sm-btn.sm-btn--primary#saveBtnEdit(type="button")
-                svg.save-icon(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px")
-                    path(d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z")
+                span.material-symbols-outlined.save-icon(style="font-size:18px") save
                 span#saveBtnLabel= t.hist_edit.save
 
     //- ── Conflict modal ──────────────────────────────────────────────────────
     .conflict-overlay(id="conflictOverlay" style="display:none")
         .conflict-modal(id="conflictModal")
             .conflict-modal__icon
-                svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
-                    path(d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z")
+                span.material-symbols-outlined(style="font-size:32px") warning
             h3.conflict-modal__title= t.hist_edit.conflict_title
             p.conflict-modal__desc= t.hist_edit.conflict_desc
             ul.conflict-list(id="conflictList")
             .conflict-modal__warning
-                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                    path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Z")
+                span.material-symbols-outlined(style="font-size:14px") warning
                 span= t.hist_edit.conflict_warning
             .conflict-modal__actions
                 button.sm-btn.sm-btn--ghost(type="button" id="conflictCancel")= t.hist_edit.generic_cancel
                 button.sm-btn.sm-btn--danger(type="button" id="conflictForce")
-                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                        path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-272h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+                    span.material-symbols-outlined(style="font-size:16px") delete
                     span= t.hist_edit.conflict_force
 
 block scripts
     script(src="/js/layouts/history.js" type="module")
-    script.
-        // ── Popups génériques (confirm / alert) ────────────────────────────────
-        (function() {
-            function buildModal(opts) {
-                var existing = document.getElementById('__customModal');
-                if (existing) existing.remove();
-
-                var overlay = document.createElement('div');
-                overlay.id = '__customModal';
-                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
-
-                var iconBg   = opts.danger ? '#fef2f2' : '#eff6ff';
-                var iconBorder = opts.danger ? '#fecaca' : '#bfdbfe';
-                var iconColor  = opts.danger ? '#dc2626' : '#2563eb';
-                var confirmBg  = opts.danger ? '#dc2626' : '#2563eb';
-                var confirmBgHover = opts.danger ? '#b91c1c' : '#1d4ed8';
-                var confirmShadow  = opts.danger ? 'rgba(220,38,38,.3)' : 'rgba(37,99,235,.3)';
-
-                var iconSvg = opts.alertOnly
-                    ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="' + iconColor + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
-                    : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="' + iconColor + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
-
-                overlay.innerHTML = '<style>' +
-                    '@keyframes __cmslidein{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}' +
-                    '#__customModal .cm{background:#fff;border-radius:20px;max-width:420px;width:100%;box-shadow:0 24px 48px -8px rgba(0,0,0,.22);display:flex;flex-direction:column;gap:0;overflow:hidden;animation:__cmslidein .18s cubic-bezier(.34,1.4,.64,1)}' +
-                    '#__customModal .cm__head{padding:24px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}' +
-                    '#__customModal .cm__icon-wrap{width:44px;height:44px;border-radius:50%;background:' + iconBg + ';border:1px solid ' + iconBorder + ';display:flex;align-items:center;justify-content:center;flex-shrink:0}' +
-                    '#__customModal .cm__close{background:none;border:none;cursor:pointer;color:#9ca3af;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;flex-shrink:0;padding:0}' +
-                    '#__customModal .cm__close:hover{background:#f3f4f6;color:#111}' +
-                    '#__customModal .cm__body{padding:16px 24px 0;display:flex;flex-direction:column;gap:6px}' +
-                    '#__customModal .cm__title{font-size:17px;font-weight:700;color:#111;margin:0}' +
-                    '#__customModal .cm__desc{font-size:13.5px;color:#6b7280;line-height:1.55;margin:0}' +
-                    '#__customModal .cm__actions{padding:20px 24px 24px;display:flex;gap:8px;justify-content:flex-end}' +
-                    '#__customModal .cm__cancel{display:inline-flex;align-items:center;justify-content:center;padding:9px 18px;border-radius:10px;font-size:13.5px;font-weight:600;background:#f3f4f6;border:1px solid #e5e7eb;color:#4b5563;cursor:pointer;font-family:inherit;transition:background .15s}' +
-                    '#__customModal .cm__cancel:hover{background:#e9eaec}' +
-                    '#__customModal .cm__confirm{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 20px;border-radius:10px;font-size:13.5px;font-weight:700;background:' + confirmBg + ';border:none;color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 1px 3px ' + confirmShadow + ';transition:background .15s}' +
-                    '#__customModal .cm__confirm:hover{background:' + confirmBgHover + '}' +
-                    '</style>' +
-                    '<div class="cm">' +
-                    '<div class="cm__head"><div class="cm__icon-wrap">' + iconSvg + '</div>' +
-                    '<button class="cm__close" aria-label="#{t.hist_edit.generic_cancel}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>' +
-                    '<div class="cm__body"><p class="cm__title">' + opts.title + '</p><p class="cm__desc">' + opts.desc + '</p></div>' +
-                    '<div class="cm__actions">' +
-                    (opts.alertOnly ? '' : '<button class="cm__cancel">' + (opts.cancelLabel || '#{t.hist_edit.generic_cancel}') + '</button>') +
-                    '<button class="cm__confirm">' + opts.confirmLabel + '</button>' +
-                    '</div></div>';
-
-                return overlay;
-            }
-
-            window.__alertModal = function(desc, title) {
-                return new Promise(function(resolve) {
-                    var overlay = buildModal({
-                        title: title || '#{t.hist_edit.generic_info_title}',
-                        desc: desc,
-                        confirmLabel: '#{t.hist_edit.generic_ok}',
-                        alertOnly: true,
-                    });
-                    function close() { overlay.remove(); resolve(); }
-                    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
-                    overlay.querySelector('.cm__close').addEventListener('click', close);
-                    overlay.querySelector('.cm__confirm').addEventListener('click', close);
-                    document.body.appendChild(overlay);
-                    document.addEventListener('keydown', function onKey(e) {
-                        if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey); }
-                    });
-                });
-            };
-
-            window.__confirmModal = function(desc, opts) {
-                opts = opts || {};
-                return new Promise(function(resolve) {
-                    var overlay = buildModal({
-                        title: opts.title || '#{t.hist_edit.generic_confirm_title}',
-                        desc: desc,
-                        confirmLabel: opts.confirmLabel || '#{t.hist_edit.generic_confirm}',
-                        cancelLabel: opts.cancelLabel || '#{t.hist_edit.generic_cancel}',
-                        danger: opts.danger || false,
-                    });
-                    function close(result) { overlay.remove(); resolve(result); }
-                    overlay.addEventListener('click', function(e) { if (e.target === overlay) close(false); });
-                    overlay.querySelector('.cm__close').addEventListener('click', function() { close(false); });
-                    overlay.querySelector('.cm__cancel').addEventListener('click', function() { close(false); });
-                    overlay.querySelector('.cm__confirm').addEventListener('click', function() { close(true); });
-                    document.body.appendChild(overlay);
-                    document.addEventListener('keydown', function onKey(e) {
-                        if (e.key === 'Escape') { close(false); document.removeEventListener('keydown', onKey); }
-                    });
-                });
-            };
-        })();
+    script(src="/js/utils/confirm-modal.js")
     script.
         // ── Supprimer le rendez-vous ──────────────────────────────────────────
         (function() {
@@ -612,62 +472,17 @@ block scripts
             if (!btn) return;
             var bookingId = window.__bookingId || '!{results._id}';
 
-            btn.addEventListener('click', function() {
-                // Même popup que sur la page calendrier
-                var existing = document.getElementById('__deleteModal');
-                if (existing) existing.remove();
-
-                var overlay = document.createElement('div');
-                overlay.id = '__deleteModal';
-                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
-                overlay.innerHTML = '<style>' +
-                    '@keyframes __dfadeIn{from{opacity:0}to{opacity:1}}' +
-                    '@keyframes __dslidein{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}' +
-                    '#__deleteModal .dm{background:#fff;border-radius:20px;max-width:420px;width:100%;box-shadow:0 24px 48px -8px rgba(0,0,0,.22);display:flex;flex-direction:column;gap:0;overflow:hidden;animation:__dslidein .18s cubic-bezier(.34,1.4,.64,1)}' +
-                    '#__deleteModal .dm__head{padding:24px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}' +
-                    '#__deleteModal .dm__icon-wrap{width:44px;height:44px;border-radius:50%;background:#fef2f2;border:1px solid #fecaca;display:flex;align-items:center;justify-content:center;flex-shrink:0}' +
-                    '#__deleteModal .dm__icon-wrap .material-symbols-outlined{font-size:22px;color:#dc2626}' +
-                    '#__deleteModal .dm__close{background:none;border:none;cursor:pointer;color:#9ca3af;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;flex-shrink:0;padding:0}' +
-                    '#__deleteModal .dm__close .material-symbols-outlined{font-size:18px}' +
-                    '#__deleteModal .dm__close:hover{background:#f3f4f6;color:#111}' +
-                    '#__deleteModal .dm__body{padding:16px 24px 0;display:flex;flex-direction:column;gap:6px}' +
-                    '#__deleteModal .dm__title{font-size:17px;font-weight:700;color:#111;margin:0}' +
-                    '#__deleteModal .dm__desc{font-size:13.5px;color:#6b7280;line-height:1.55;margin:0}' +
-                    '#__deleteModal .dm__actions{padding:20px 24px 24px;display:flex;gap:8px;justify-content:flex-end}' +
-                    '#__deleteModal .dm__cancel{display:inline-flex;align-items:center;justify-content:center;padding:9px 18px;border-radius:10px;font-size:13.5px;font-weight:600;background:#f3f4f6;border:1px solid #e5e7eb;color:#4b5563;cursor:pointer;font-family:inherit;transition:background .15s}' +
-                    '#__deleteModal .dm__cancel:hover{background:#e9eaec}' +
-                    '#__deleteModal .dm__confirm{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 20px;border-radius:10px;font-size:13.5px;font-weight:700;background:#dc2626;border:none;color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 1px 3px rgba(220,38,38,.3);transition:background .15s}' +
-                    '#__deleteModal .dm__confirm:hover{background:#b91c1c}' +
-                    '#__deleteModal .dm__confirm.loading{opacity:.6;cursor:wait;pointer-events:none}' +
-                    '#__deleteModal .dm__confirm .material-symbols-outlined{font-size:16px}' +
-                    '</style>' +
-                    '<div class="dm">' +
-                    '<div class="dm__head"><div class="dm__icon-wrap"><span class="material-symbols-outlined">delete</span></div>' +
-                    '<button class="dm__close" aria-label="#{t.hist_edit.generic_cancel}"><span class="material-symbols-outlined">close</span></button></div>' +
-                    '<div class="dm__body"><p class="dm__title">' + window.__deleteModalTitle + '</p><p class="dm__desc">' + window.__deleteModalDesc + '</p></div>' +
-                    '<div class="dm__actions"><button class="dm__cancel">#{t.hist_edit.generic_cancel}</button><button class="dm__confirm"><span class="material-symbols-outlined">delete</span>#{t.hist_edit.delete_modal_confirm}</button></div>' +
-                    '</div>';
-
-                function close() { overlay.remove(); }
-                overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
-                overlay.querySelector('.dm__close').addEventListener('click', close);
-                overlay.querySelector('.dm__cancel').addEventListener('click', close);
-                overlay.querySelector('.dm__confirm').addEventListener('click', async function() {
-                    this.classList.add('loading');
-                    this.textContent = '#{t.hist_edit.deleting_label}';
-                    try {
-                        var res  = await fetch('/appointment/' + bookingId + '/delete', { method: 'DELETE' });
-                        var data = await res.json();
-                        close();
-                        if (data.success) { window.location.href = '/history'; }
-                        else window.__alertModal(data.message || "#{t.hist_edit.delete_error}");
-                    } catch(e) { close(); window.__alertModal('#{t.hist_edit.network_error}'); }
+            btn.addEventListener('click', async function() {
+                var result = await window.confirmDelete({
+                    url: '/appointment/' + bookingId + '/delete',
+                    title: window.__deleteModalTitle,
+                    desc: window.__deleteModalDesc,
+                    confirmLabel: '#{t.hist_edit.delete_modal_confirm}',
+                    cancelLabel: '#{t.hist_edit.generic_cancel}',
+                    errorMessage: "#{t.hist_edit.delete_error}",
+                    networkErrorMessage: '#{t.hist_edit.network_error}',
                 });
-
-                document.body.appendChild(overlay);
-                document.addEventListener('keydown', function onKey(e) {
-                    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey); }
-                });
+                if (result.success) window.location.href = '/history';
             });
         })();
 
@@ -760,9 +575,9 @@ block scripts
             async function submitNoShow(reason, btn) {
                 const amount = btn.dataset.amount;
                 if (reason === 'invalid' && amount) {
-                    if (!(await window.__confirmModal(`#{t.hist_edit.charge_question}`.replace('{amount}', amount), { title: "#{t.hist_edit.charge_confirm_title}", confirmLabel: '#{t.hist_edit.charge_confirm_btn}', danger: true }))) return;
+                    if (!(await window.confirmModal("#{t.hist_edit.charge_confirm_title}", `#{t.hist_edit.charge_question}`.replace('{amount}', amount), { confirmLabel: '#{t.hist_edit.charge_confirm_btn}', danger: true }))) return;
                 } else if (reason === 'invalid') {
-                    if (!(await window.__confirmModal('#{t.hist_edit.mark_invalid_question}', { title: '#{t.hist_edit.generic_confirm_title}', confirmLabel: '#{t.hist_edit.generic_confirm}', danger: true }))) return;
+                    if (!(await window.confirmModal('#{t.hist_edit.generic_confirm_title}', '#{t.hist_edit.mark_invalid_question}', { confirmLabel: '#{t.hist_edit.generic_confirm}', danger: true }))) return;
                 }
 
                 noShowChoices.querySelectorAll('button').forEach(b => b.disabled = true);
@@ -778,14 +593,14 @@ block scripts
                     if (data.success) {
                         location.reload();
                     } else {
-                        await window.__alertModal(data.error || "#{t.hist_edit.processing_error}", '#{t.hist_edit.generic_info_title}');
+                        await window.alertModal(data.error || "#{t.hist_edit.processing_error}", '#{t.hist_edit.generic_info_title}');
                         noShowChoices.querySelectorAll('button').forEach(b => b.disabled = false);
                         btn.querySelector('span').textContent = reason === 'invalid'
                             ? (amount ? `#{t.hist_edit.noshow_invalid_charge}`.replace('{amount}', amount) : '#{t.hist_edit.noshow_invalid}')
                             : '#{t.hist_edit.noshow_valid}';
                     }
                 } catch (e) {
-                    await window.__alertModal('#{t.hist_edit.network_error}', '#{t.hist_edit.generic_info_title}');
+                    await window.alertModal('#{t.hist_edit.network_error}', '#{t.hist_edit.generic_info_title}');
                     noShowChoices.querySelectorAll('button').forEach(b => b.disabled = false);
                 }
             }
@@ -814,8 +629,8 @@ block scripts
             }
 
             async function submitCancelReview(decision, btn) {
-                if (decision === 'refunded' && !(await window.__confirmModal("#{t.hist_edit.refund_question}", { title: '#{t.hist_edit.refund_confirm_title}', confirmLabel: '#{t.hist_edit.refund_confirm_btn}' }))) return;
-                if (decision === 'kept' && !(await window.__confirmModal("#{t.hist_edit.keep_question}", { title: '#{t.hist_edit.generic_confirm_title}', confirmLabel: '#{t.hist_edit.generic_confirm}', danger: true }))) return;
+                if (decision === 'refunded' && !(await window.confirmModal('#{t.hist_edit.refund_confirm_title}', "#{t.hist_edit.refund_question}", { confirmLabel: '#{t.hist_edit.refund_confirm_btn}', danger: false }))) return;
+                if (decision === 'kept' && !(await window.confirmModal('#{t.hist_edit.generic_confirm_title}', "#{t.hist_edit.keep_question}", { confirmLabel: '#{t.hist_edit.generic_confirm}', danger: true }))) return;
 
                 cancelReviewChoices.querySelectorAll('button').forEach(b => b.disabled = true);
                 btn.querySelector('span').textContent = '#{t.hist_edit.processing_label}';
@@ -830,14 +645,14 @@ block scripts
                     if (data.success) {
                         location.reload();
                     } else {
-                        await window.__alertModal(data.error || "#{t.hist_edit.processing_error}", '#{t.hist_edit.generic_info_title}');
+                        await window.alertModal(data.error || "#{t.hist_edit.processing_error}", '#{t.hist_edit.generic_info_title}');
                         cancelReviewChoices.querySelectorAll('button').forEach(b => b.disabled = false);
                         btn.querySelector('span').textContent = decision === 'refunded'
                             ? '#{t.hist_edit.cancel_fee_refund}'
                             : '#{t.hist_edit.cancel_fee_keep}';
                     }
                 } catch (e) {
-                    await window.__alertModal('#{t.hist_edit.network_error}', '#{t.hist_edit.generic_info_title}');
+                    await window.alertModal('#{t.hist_edit.network_error}', '#{t.hist_edit.generic_info_title}');
                     cancelReviewChoices.querySelectorAll('button').forEach(b => b.disabled = false);
                 }
             }
@@ -849,9 +664,10 @@ block scripts
             const sendReminderBtn = document.getElementById('sendReminderBtn');
             if (sendReminderBtn) {
                 sendReminderBtn.addEventListener('click', async () => {
-                    const confirmed = await window.__confirmModal(
+                    const confirmed = await window.confirmModal(
+                        "#{t.hist_edit.send_reminder_title}",
                         "#{t.hist_edit.send_reminder_question}",
-                        { title: "#{t.hist_edit.send_reminder_title}", confirmLabel: '#{t.hist_edit.send_reminder_confirm}' }
+                        { confirmLabel: '#{t.hist_edit.send_reminder_confirm}', danger: false }
                     );
                     if (!confirmed) return;
 
@@ -868,12 +684,12 @@ block scripts
                         if (data.success) {
                             location.reload();
                         } else {
-                            await window.__alertModal(data.message || data.error || "#{t.hist_edit.send_error}", '#{t.hist_edit.generic_info_title}');
+                            await window.alertModal(data.message || data.error || "#{t.hist_edit.send_error}", '#{t.hist_edit.generic_info_title}');
                             sendReminderBtn.disabled = false;
                             sendReminderBtn.innerHTML = origHtml;
                         }
                     } catch (e) {
-                        await window.__alertModal('#{t.hist_edit.network_error}', '#{t.hist_edit.generic_info_title}');
+                        await window.alertModal('#{t.hist_edit.network_error}', '#{t.hist_edit.generic_info_title}');
                         sendReminderBtn.disabled = false;
                         sendReminderBtn.innerHTML = origHtml;
                     }

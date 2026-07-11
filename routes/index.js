@@ -467,6 +467,19 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
     return res.status(403).render("client/company-paused");
   }
 
+  // ── Mon Site (Business) : si un mini-site est publié, il remplace la page
+  // de réservation classique à cette même URL — c'est la page d'accueil de
+  // l'établissement, avec le calendrier intégré dans sa section "booking".
+  // `?embedded=1` = appel venant de CETTE iframe interne → on l'ignore pour
+  // ne jamais boucler et toujours servir la page de réservation pure ici.
+  if (!req.query.embedded) {
+    const { getLimit } = require("../utils/planLimits");
+    if (getLimit("mySite", coach)) {
+      const rendered = await require("../controllers/site.controller").renderSiteForCompany(company, res);
+      if (rendered) return;
+    }
+  }
+
   const Service = require("../db/models/company/service.model");
   const { getBookableTeam } = require("../utils/bookableTeam");
 

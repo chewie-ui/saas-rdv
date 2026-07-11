@@ -16,6 +16,7 @@ html(lang="fr")
             gtag('js', new Date());
             gtag('config', 'G-PZR5994GKD');
             gtag('config', 'AW-18287595473');
+        include ../includes/gads-conversion
         link(rel="icon" href="/images/icon.svg" type="image/svg+xml")
         link(rel="shortcut icon" href="/images/icon.svg")
         link(rel="stylesheet", href="/css/import.css")
@@ -650,16 +651,6 @@ html(lang="fr")
                 document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && overlay.style.display !== 'none') closePopup(); });
             })();
 
-            // ── Google Ads conversion tracking ───────────────────────────────
-            (function() {
-                if (new URLSearchParams(window.location.search).get('gads_conversion') !== '1') return;
-                if (typeof gtag !== 'function') return;
-                gtag('event', 'conversion', { 'send_to': 'AW-18287595473/oJ11CPzym8gcENGfmpBE' });
-                // Nettoyer le param de l'URL sans recharger la page
-                var url = new URL(window.location.href);
-                url.searchParams.delete('gads_conversion');
-                history.replaceState(null, '', url.toString());
-            })();
 
         //- ── Messages du fondateur (superadmin → utilisateur) — popup centré ──
         script.

@@ -54,7 +54,11 @@ div(style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system
                         td(style="width:56px;height:56px;background:rgba(255,255,255,0.15);border-radius:50%;text-align:center;vertical-align:middle;")
                           span(style="font-size:24px;line-height:56px;") ⏰
                     p(style="margin:0 0 6px;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;") Rappel de rendez-vous
-                    p(style="margin:0;font-size:14px;color:rgba(255,255,255,0.8);") Votre rendez-vous a lieu #{delayLabel || 'demain'}
+                    p(style="margin:0;font-size:14px;color:rgba(255,255,255,0.8);")
+                      if _hasBusiness
+                        | Vous avez réservé chez #{businessName} — c'est #{delayLabel || 'demain'}
+                      else
+                        | Votre rendez-vous a lieu #{delayLabel || 'demain'}
 
               //- Corps
               table(width="100%" cellpadding="0" cellspacing="0" role="presentation")

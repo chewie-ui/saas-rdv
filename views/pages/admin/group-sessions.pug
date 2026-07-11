@@ -17,14 +17,12 @@ block content
                     span.gs-counter #{courses.length} / #{maxServices}
                 if canManageGS
                     button.sm-btn.sm-btn--primary#addCourseBtn(disabled=(maxServices === 0))
-                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                            path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                        span.material-symbols-outlined add
                         span= t.group_sessions.new_course_btn
 
         if courses.length === 0
             .gs-empty
-                svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor")
-                    path(d="M480-120 200-272v-240L40-600l440-240 440 240v320h-80v-276l-80 44v240L480-120Zm0-332 274-148-274-148-274 148 274 148Zm0 240 200-108v-153l-200 108-200-108v153l200 108Z")
+                span.material-symbols-outlined(style=`font-size:40px`) groups
                 p= t.group_sessions.empty_title
                 p.gs-empty__hint= t.group_sessions.empty_hint
         else
@@ -59,19 +57,16 @@ block content
                         .gs-course-card__meta
                             if course.recurring.enabled
                                 span.gs-course-card__chip
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="13px" viewBox="0 -960 960 960" width="13px" fill="currentColor")
-                                        path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
+                                    span.material-symbols-outlined(style=`font-size:13px`) calendar_month
                                     = (course.recurring.weekdays || []).map(function(d){ return weekdayLabels[d]; }).join(', ')
                                 span.gs-course-card__chip
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="13px" viewBox="0 -960 960 960" width="13px" fill="currentColor")
-                                        path(d="M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q150 0 255 105t105 255q0 150-105 255T480-120Zm56-260L480-440v-200h80v167l140 140-44 44Z")
+                                    span.material-symbols-outlined(style=`font-size:13px`) schedule
                                     = course.recurring.startTime
                             else
                                 - var futureSessions = (course.sessions || []).filter(function(s){ return new Date(s.date) >= new Date(new Date().setHours(0,0,0,0)); }).sort(function(a,b){ return new Date(a.date) - new Date(b.date); })
                                 if futureSessions.length > 0
                                     span.gs-course-card__chip
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="13px" viewBox="0 -960 960 960" width="13px" fill="currentColor")
-                                            path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
+                                        span.material-symbols-outlined(style=`font-size:13px`) calendar_month
                                         = `${futureSessions.length} ${futureSessions.length > 1 ? t.group_sessions.dates_plural : t.group_sessions.date_singular} · ${t.group_sessions.next_label} ${new Date(futureSessions[0].date).toLocaleDateString(lang, { day: '2-digit', month: '2-digit' })} ${t.group_sessions.at_label} ${futureSessions[0].startTime}`
                                 else
                                     span.gs-course-card__chip.gs-course-card__chip--muted= t.group_sessions.no_upcoming_dates
@@ -90,15 +85,13 @@ block content
                                         span= emp.fullName
                             else
                                 .gs-course-card__emp-none
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="13px" viewBox="0 -960 960 960" width="13px" fill="currentColor")
-                                        path(d="M480-481q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Z")
+                                    span.material-symbols-outlined(style=`font-size:13px`) person
                                     = t.group_sessions.blocks_everyone
                         if canManageGS
                             .gs-course-card__actions
                                 button.sm-btn.sm-btn--ghost.edit-course-btn(data-id=String(course._id))= t.group_sessions.edit_btn
                                 button.gs-course-card__delete.delete-course-btn(data-id=String(course._id) data-name=course.name title=t.group_sessions.delete_tooltip)
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                        path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+                                    span.material-symbols-outlined delete
 
         .gs-divider
         .gs-page__header
@@ -108,8 +101,7 @@ block content
 
         if sessions.length === 0
             .gs-empty
-                svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor")
-                    path(d="M40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm720 0v-120q0-44-24.5-84.5T666-434q51 6 96 20.5t84 35.5q36 20 55 44.5t19 53.5v120H760ZM360-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Z")
+                span.material-symbols-outlined(style=`font-size:40px`) event_repeat
                 p= t.group_sessions.no_sessions_title
                 p.gs-empty__hint= t.group_sessions.no_sessions_hint
         else
@@ -140,8 +132,7 @@ block content
         .service-modal__header
             h3#courseModalTitle= t.group_sessions.modal_new_title
             button.modal-close#closeCourseModal(type="button")
-                svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                span.material-symbols-outlined close
         .service-modal__body
             input(type="hidden" id="courseModalId")
             .service-modal__cols
@@ -253,49 +244,6 @@ block scripts
     script(src="/js/components/admin/group-sessions.admin.js" type="module")
     script.
         (function() {
-            function buildModal(opts) {
-                var existing = document.getElementById('__customModal');
-                if (existing) existing.remove();
-
-                var overlay = document.createElement('div');
-                overlay.id = '__customModal';
-                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
-
-                overlay.innerHTML = '<style>' +
-                    '@keyframes __cmslidein{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}' +
-                    '#__customModal .cm{background:#fff;border-radius:20px;max-width:520px;width:100%;max-height:80vh;box-shadow:0 24px 48px -8px rgba(0,0,0,.22);display:flex;flex-direction:column;gap:0;overflow:hidden;animation:__cmslidein .18s cubic-bezier(.34,1.4,.64,1)}' +
-                    '#__customModal .cm__head{padding:20px 24px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid #eee}' +
-                    '#__customModal .cm__close{background:none;border:none;cursor:pointer;color:#9ca3af;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;flex-shrink:0;padding:0}' +
-                    '#__customModal .cm__close:hover{background:#f3f4f6;color:#111}' +
-                    '#__customModal .cm__title{font-size:17px;font-weight:700;color:#111;margin:0}' +
-                    '#__customModal .cm__desc{font-size:13px;color:#6b7280;margin:4px 0 0}' +
-                    '#__customModal .cm__body{padding:8px 24px 24px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}' +
-                    '#__customModal .gs-part{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid #eee;border-radius:12px}' +
-                    '#__customModal .gs-part__info{display:flex;flex-direction:column;gap:2px}' +
-                    '#__customModal .gs-part__name{font-size:13.5px;font-weight:700;color:#111}' +
-                    '#__customModal .gs-part__contact{font-size:12px;color:#6b7280}' +
-                    '#__customModal .gs-part__actions{display:flex;gap:6px;flex-shrink:0}' +
-                    '#__customModal .gs-part__btn{display:inline-flex;align-items:center;justify-content:center;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;border:1px solid #e5e7eb;background:#f3f4f6;color:#374151;transition:background .15s}' +
-                    '#__customModal .gs-part__btn:hover{background:#e9eaec}' +
-                    '#__customModal .gs-part__btn--danger{background:#fef2f2;color:#dc2626;border-color:#fecaca}' +
-                    '#__customModal .gs-part__btn--danger:hover{background:#fee2e2}' +
-                    '#__customModal .gs-empty-list{font-size:13px;color:#6b7280;text-align:center;padding:24px 0}' +
-                    '</style>' +
-                    '<div class="cm">' +
-                    '<div class="cm__head"><div><p class="cm__title">' + opts.title + '</p><p class="cm__desc">' + (opts.desc || '') + '</p></div>' +
-                    '<button class="cm__close" aria-label="Fermer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>' +
-                    '<div class="cm__body">' + (opts.bodyHtml || '') + '</div>' +
-                    '</div>';
-
-                overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
-                overlay.querySelector('.cm__close').addEventListener('click', function() { overlay.remove(); });
-                document.addEventListener('keydown', function onKey(e) {
-                    if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onKey); }
-                });
-
-                return overlay;
-            }
-
             function escapeHtml(str) {
                 var div = document.createElement('div');
                 div.textContent = str || '';
@@ -309,12 +257,12 @@ block scripts
                 var serviceName = row.querySelector('.gs-row__service').textContent.trim();
                 var dateLabel = row.querySelector('.gs-row__date').textContent.trim();
 
-                var overlay = buildModal({
+                var overlay = window.showModal({
                     title: serviceName,
                     desc: dateLabel + ' #{t.group_sessions.at_label} ' + startTime,
                     bodyHtml: '<div class="gs-empty-list">#{t.group_sessions.loading}</div>',
+                    maxWidth: '520px',
                 });
-                document.body.appendChild(overlay);
 
                 try {
                     var res = await fetch('/group-sessions/participants?serviceId=' + encodeURIComponent(serviceId) + '&date=' + encodeURIComponent(date) + '&startTime=' + encodeURIComponent(startTime));
@@ -352,7 +300,8 @@ block scripts
                 var cancelBtn = e.target.closest('[data-cancel]');
                 if (!cancelBtn) return;
                 var id = cancelBtn.dataset.cancel;
-                if (!confirm('#{t.group_sessions.remove_participant_confirm}')) return;
+                var confirmed = await window.confirmModal('#{t.group_sessions.remove_participant_btn}', '#{t.group_sessions.remove_participant_confirm}');
+                if (!confirmed) return;
                 try {
                     var res = await fetch('/appointment/' + id + '/cancel', { method: 'PATCH' });
                     if (res.ok) {
@@ -360,10 +309,10 @@ block scripts
                         // Refresh page to update participant counts in the table.
                         setTimeout(function() { window.location.reload(); }, 300);
                     } else {
-                        alert('#{t.group_sessions.remove_error}');
+                        await window.alertModal('#{t.group_sessions.remove_error}');
                     }
                 } catch (e) {
-                    alert('#{t.group_sessions.network_error}');
+                    await window.alertModal('#{t.group_sessions.network_error}');
                 }
             });
         })();

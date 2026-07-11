@@ -7,7 +7,7 @@ block content
     -
         var S = site
         var theme = S.theme || {}
-        var siteFullUrl = 'https://www.branshee.com/s/' + S.slug
+        var siteFullUrl = 'https://www.branshee.com/' + companySlug
         var sectionIcons = {
             hero: 'home',
             services: 'list_alt',
@@ -462,9 +462,10 @@ block content
 
                     .ms-settings-section
                         .ms-settings-section__title URL du site
-                        .ms-slug-row
-                            span.ms-slug-prefix branshee.com/s/
-                            input#slugInput.ms-slug-input(type="text" value=S.slug maxlength="50" placeholder="mon-site")
+                        p.ms-hint(style="margin-bottom:10px") C'est aussi l'adresse de votre page de réservation — une seule URL pour tout.
+                        .ms-slug-row.ms-slug-row--readonly
+                            span.ms-slug-prefix branshee.com/
+                            span.ms-slug-value= companySlug
                         button.ms-copy-link(type="button" id="copyLinkBtn")
                             span.material-symbols-outlined content_copy
                             span#copyLinkText Copier le lien
@@ -472,6 +473,9 @@ block content
                             a.ms-open-link(href=siteFullUrl target="_blank" rel="noopener")
                                 span.material-symbols-outlined open_in_new
                                 | Voir le site en ligne
+                        a.ms-open-link(href="/customize-calendar#partage-lien")
+                            span.material-symbols-outlined edit
+                            | Modifier cette adresse
 
                     .ms-settings-section
                         .ms-settings-section__title
@@ -741,8 +745,10 @@ block content
                     button.ms-modal__btn.ms-modal__btn--cancel(type="button" id="cancelApplyTplBtn") Annuler
                     button.ms-modal__btn.ms-modal__btn--primary(type="button" id="confirmApplyTplBtn") Appliquer le template
 
+    script(src="/js/utils/confirm-modal.js")
     script.
         var __site = !{JSON.stringify(site)};
+        var __companySlug = !{JSON.stringify(companySlug)};
         var __previewUrl = '/mon-site/preview';
         var __saveUrl = '/mon-site/save';
         var __publishUrl = '/mon-site/publish';
@@ -947,7 +953,7 @@ block content
                     needRefresh = false;
                 } else {
                     indicatorState('');
-                    alert(d.error || 'Erreur lors de la sauvegarde.');
+                    window.alertModal(d.error || 'Erreur lors de la sauvegarde.');
                 }
             } catch(e) {
                 indicatorState('');
@@ -1242,7 +1248,7 @@ block content
                         var frm = document.querySelector('[data-form="' + fSid + '"]');
                         if (frm) { var inp = frm.querySelector('[data-field="' + fieldUpload + '"]'); if (inp) inp.value = d.url; }
                         markDirty();
-                    } else { alert((d&&d.error)||'Erreur lors de l\'upload'); }
+                    } else { window.alertModal((d&&d.error)||'Erreur lors de l\'upload'); }
                     e.target.value = '';
                 });
                 return;
@@ -1263,7 +1269,7 @@ block content
                         var gl = document.querySelector('.ms-items-list[data-section-id="' + addUpload + '"]');
                         if (gl) gl.appendChild(createItemRow('gallery', ni));
                         markDirty();
-                    } else { alert((d&&d.error)||'Erreur lors de l\'upload'); }
+                    } else { window.alertModal((d&&d.error)||'Erreur lors de l\'upload'); }
                     e.target.value = '';
                 });
                 return;
@@ -1278,7 +1284,7 @@ block content
                     if (!err && d && d.success && itemRow) {
                         var urlInp = itemRow.querySelector('[data-item-key="url"]');
                         if (urlInp) { urlInp.value = d.url; urlInp.dispatchEvent(new Event('input', { bubbles: true })); }
-                    } else { alert((d&&d.error)||'Erreur lors de l\'upload'); }
+                    } else { window.alertModal((d&&d.error)||'Erreur lors de l\'upload'); }
                     e.target.value = '';
                 });
                 return;
@@ -1452,18 +1458,14 @@ block content
                     state.logoUrl = d.url;
                     if (logoInput) logoInput.value = d.url;
                     markDirty();
-                } else { alert((d&&d.error)||'Erreur lors de l\'upload'); }
+                } else { window.alertModal((d&&d.error)||'Erreur lors de l\'upload'); }
                 e.target.value = '';
             });
         });
 
         // ── Settings ─────────────────────────────────────────────────────
-        var slugInput = document.getElementById('slugInput');
-        if (slugInput) slugInput.addEventListener('input', function() {
-            state.slug = slugInput.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
-            slugInput.value = state.slug;
-            markDirty();
-        });
+        // L'URL du site suit désormais l'URL de l'établissement (companySlug) —
+        // se modifie depuis "Personnaliser", pas ici (cf. lien "Modifier cette adresse").
 
         var seoTitle = document.getElementById('seoTitle');
         var seoDesc = document.getElementById('seoDesc');
@@ -1497,7 +1499,7 @@ block content
         var copyBtn = document.getElementById('copyLinkBtn');
         var copyText = document.getElementById('copyLinkText');
         if (copyBtn) copyBtn.addEventListener('click', function() {
-            var url = 'https://www.branshee.com/s/' + (state.slug || '');
+            var url = 'https://www.branshee.com/' + __companySlug;
             navigator.clipboard.writeText(url).then(function() {
                 if (copyText) copyText.textContent = '✓ Copié !';
                 setTimeout(function() { if (copyText) copyText.textContent = 'Copier le lien'; }, 2000);
@@ -1532,7 +1534,7 @@ block content
                         if (live && !existing) {
                             var a = document.createElement('a');
                             a.className = 'ms-open-link';
-                            a.href = 'https://www.branshee.com/s/' + state.slug;
+                            a.href = 'https://www.branshee.com/' + __companySlug;
                             a.target = '_blank';
                             a.rel = 'noopener';
                             a.innerHTML = '<span class="material-symbols-outlined">open_in_new</span> Voir le site en ligne';
@@ -1795,7 +1797,7 @@ block content
                     if (!res.ok || !data.success) {
                         confirmBtn.disabled = false;
                         confirmBtn.textContent = 'Appliquer le template';
-                        alert((data && data.error) || "Erreur lors de l'application du template.");
+                        await window.alertModal((data && data.error) || "Erreur lors de l'application du template.");
                         return;
                     }
                     // Rechargement complet : l'éditeur ET l'aperçu se re-rendent
@@ -1804,7 +1806,7 @@ block content
                 } catch (err) {
                     confirmBtn.disabled = false;
                     confirmBtn.textContent = 'Appliquer le template';
-                    alert('Erreur réseau.');
+                    await window.alertModal('Erreur réseau.');
                 }
             });
         })();

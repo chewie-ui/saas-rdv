@@ -29,8 +29,7 @@ block content
                         tr
                             td(colspan="4" style="padding:56px 24px;text-align:center;")
                                 .hist-empty
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor" style="opacity:.15;margin-bottom:12px;display:block;margin:0 auto 12px")
-                                        path(d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Z")
+                                    span.material-symbols-outlined(style="font-size:40px;opacity:.15;margin:0 auto 12px;display:block") description
                                     p(style="font-size:14px;font-weight:600;color:var(--text-secondary);margin:0 0 4px")= t.logs.empty_title
                                     p(style="font-size:13px;color:var(--text-muted);margin:0")= t.logs.empty_hint
                     each log in logs
@@ -52,17 +51,13 @@ block content
                     .hist-pag-btns
                         if currentPage > 1
                             a.hist-pag-btn(href=`/logs?page=${currentPage - 1}&action=${selectedAction}`)
-                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                    path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                                span.material-symbols-outlined(style=`font-size:18px`) chevron_left
                         else
                             span.hist-pag-btn.disabled
-                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                    path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                                span.material-symbols-outlined(style=`font-size:18px`) chevron_left
                         if currentPage < totalPages
                             a.hist-pag-btn(href=`/logs?page=${currentPage + 1}&action=${selectedAction}`)
-                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                    path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                                span.material-symbols-outlined(style=`font-size:18px`) chevron_right
                         else
                             span.hist-pag-btn.disabled
-                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                    path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                                span.material-symbols-outlined(style=`font-size:18px`) chevron_right

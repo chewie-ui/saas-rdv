@@ -99,6 +99,9 @@ const LIMITS = {
   // Send emails without "Powered by BranShee" branding
   noBranding: { basic: false, essentiel: false, pro: false, business: true },
 
+  // Mon Site (mini-site vitrine + URL branshee.com/<slug>) : réservé à Business.
+  mySite: { basic: false, essentiel: false, pro: false, business: true },
+
   // Custom URL: business = included; others need addon purchase
   customUrl: {
     hasFeature: (user) => {

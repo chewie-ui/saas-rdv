@@ -72,10 +72,6 @@ exports.createUser = async (req, res) => {
     }
   }
 
-  const checkName = await User.findOne({ fullName: fullname }).lean();
-  if (checkName)
-    return fail(res.locals.t?.auth?.error_name_taken || "Ce nom est déjà utilisé.");
-
   const checkEmail = await User.findOne({ email }).lean();
   if (checkEmail)
     return fail(res.locals.t?.auth?.error_email_taken || "Cette adresse email est déjà utilisée.");
@@ -169,12 +165,19 @@ exports.createUser = async (req, res) => {
     req.login(user, (err) => {
       if (err) return fail("Erreur lors de la connexion.");
 
+      // Conversion Google Ads ("Inscription") : à chaque compte créé avec
+      // succès, quel que soit le chemin de redirection ensuite (rejoindre un
+      // établissement, client/undecided, plan payant en attente, ou
+      // onboarding gratuit). Avant, seul le dernier cas ci-dessous trackait —
+      // les 3 autres redirections partaient sans jamais déclencher le tag,
+      // ce qui sous-comptait fortement les conversions réelles.
       if (!wantsCompany) {
         // Pas d'établissement créé maintenant (client/undecided, ou pro qui
         // attend l'approbation pour rejoindre) → direction neutre. La carte
         // "Votre établissement" dans /settings affiche l'état (pending, etc).
-        if (isAjax) return res.json({ success: true, redirect: wantsToJoin ? "/settings" : "/" });
-        return res.redirect(wantsToJoin ? "/settings" : "/");
+        const dest = wantsToJoin ? "/settings?gads_conversion=1" : "/?gads_conversion=1";
+        if (isAjax) return res.json({ success: true, redirect: dest });
+        return res.redirect(dest);
       }
 
       // Si l'utilisateur vient d'un lien d'invitation ou bouton "Essai / Plan"
@@ -186,7 +189,7 @@ exports.createUser = async (req, res) => {
         delete req.session.pendingPlan;
         delete req.session.pendingBilling;
         delete req.session.pendingPromo;
-        let dest = `/subscription?plan=${plan}&billing=${billing}&autoCheckout=1`;
+        let dest = `/subscription?plan=${plan}&billing=${billing}&autoCheckout=1&gads_conversion=1`;
         if (pendingPromo) dest += `&promo=${encodeURIComponent(pendingPromo)}`;
         if (isAjax) return res.json({ success: true, redirect: dest });
         return res.redirect(dest);

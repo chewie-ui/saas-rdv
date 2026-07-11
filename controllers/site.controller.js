@@ -10,6 +10,19 @@ const fs = require("fs");
 const path = require("path");
 const pug = require("pug");
 const { sendEmail } = require("../utils/mailer");
+const { getLimit } = require("../utils/planLimits");
+
+// "Mon Site" (mini-site vitrine, réservé au plan Business) — vérification
+// serveur systématique sur toute route de mutation. La page d'édition cache
+// déjà le builder aux non-Business (cf. editorPage), mais sans ce garde-fou
+// ici, n'importe qui pourrait éditer/publier via une requête directe (même
+// trou que celui repéré sur l'addon "URL personnalisée" — on ne le reproduit
+// pas ici).
+function requireMySitePlan(req, res) {
+  if (getLimit("mySite", res.locals.billingUser)) return true;
+  res.status(403).json({ error: "Fonctionnalité réservée au plan Business." });
+  return false;
+}
 
 const SITE_IMG_DIR = path.join(__dirname, "..", "public", "uploads", "site");
 
@@ -73,6 +86,20 @@ function defaultSections(company, user) {
 
 exports.editorPage = async (req, res) => {
   const company = res.locals.currentCompany;
+  const companySlug = company.slug || String(company._id);
+
+  // Plan requis : Business. On affiche un écran de mise à niveau propre
+  // plutôt que le builder — pas de flash du contenu verrouillé, pas de
+  // Site créé inutilement pour un compte qui ne peut pas publier.
+  if (!getLimit("mySite", res.locals.billingUser)) {
+    return res.render("admin/mon-site-locked", {
+      pageName: "MonSite",
+      title: "Mon site — BranShee",
+      companySlug,
+      moduleMode: true,
+    });
+  }
+
   let site = await Site.findOne({ company: company._id }).lean();
   if (!site) {
     const slug = await uniqueSlug(company.name || req.user.businessName);
@@ -84,14 +111,13 @@ exports.editorPage = async (req, res) => {
     site = created.toObject();
   }
   const services = await Service.find({ company: company._id, active: true }).sort("order").lean();
-  const companySlug = company.slug || String(company._id);
   res.render("admin/mon-site", {
     pageName: "MonSite",
     title: "Mon site — BranShee",
     site,
     services,
     companySlug,
-    siteUrl: `/s/${site.slug}`,
+    siteUrl: `/${companySlug}`,
     previewUrl: `/mon-site/preview`,
     visitCount: site.visitCount || 0,
     siteTemplates: siteTemplates.listMeta(),
@@ -106,6 +132,7 @@ exports.editorPage = async (req, res) => {
 // perso : ce sont des données propres à l'établissement, pas au design.
 exports.applyTemplate = async (req, res) => {
   try {
+    if (!requireMySitePlan(req, res)) return;
     const company = res.locals.currentCompany;
     const tpl = siteTemplates.getById(req.body.templateId);
     if (!tpl) return res.status(400).json({ error: "Template inconnu" });
@@ -166,6 +193,7 @@ function sanitizeSections(sections) {
 
 exports.save = async (req, res) => {
   try {
+    if (!requireMySitePlan(req, res)) return;
     const company = res.locals.currentCompany;
     const { sections, theme, seo, logoUrl, slug, customDomain, social } = req.body;
     const site = await Site.findOne({ company: company._id });
@@ -195,6 +223,7 @@ exports.save = async (req, res) => {
 
 exports.togglePublish = async (req, res) => {
   try {
+    if (!requireMySitePlan(req, res)) return;
     const company = res.locals.currentCompany;
     const site = await Site.findOne({ company: company._id });
     if (!site) return res.status(404).json({ error: "Site introuvable" });
@@ -207,6 +236,7 @@ exports.togglePublish = async (req, res) => {
 };
 
 exports.previewSite = async (req, res) => {
+  if (!getLimit("mySite", res.locals.billingUser)) return res.status(403).send("");
   const company = res.locals.currentCompany;
   const site = await Site.findOne({ company: company._id }).lean();
   if (!site) return res.status(404).send("<p>Site non créé.</p>");
@@ -219,6 +249,7 @@ exports.previewSite = async (req, res) => {
 exports.uploadImage = [
   multerConfig.single("image"),
   async (req, res) => {
+    if (!requireMySitePlan(req, res)) return;
     if (!req.file) return res.status(400).json({ error: "Aucun fichier envoyé" });
     try {
       fs.mkdirSync(SITE_IMG_DIR, { recursive: true });
@@ -262,17 +293,34 @@ exports.contactForm = async (req, res) => {
   }
 };
 
+// Rendu public du mini-site — appelé à la fois par la route de compat
+// "/s/:slug" ci-dessous et par la route canonique "/:company" (routes/index.js)
+// quand l'établissement est en plan Business avec un site publié. Incrémente
+// le compteur de visites et retourne true si un site a été rendu, false sinon
+// (laisse alors l'appelant retomber sur la page de réservation classique).
+exports.renderSiteForCompany = async (company, res) => {
+  const site = await Site.findOne({ company: company._id, isPublished: true }).lean();
+  if (!site) return false;
+  const services = await Service.find({ company: company._id, active: true }).sort("order").lean();
+  const companySlug = company.slug || String(company._id);
+  Site.findByIdAndUpdate(site._id, { $inc: { visitCount: 1 } }).exec().catch(() => {});
+  const { reviews, avgRating, reviewCount } = await fetchReviews(company._id);
+  res.render("public/site", { site, company, services, companySlug, isPreview: false, reviews, avgRating, reviewCount });
+  return true;
+};
+
+// Ancienne URL "/s/:slug" — conservée pour ne pas casser les liens déjà
+// partagés (réseaux sociaux, cartes de visite…) : redirige de façon
+// permanente vers l'URL canonique branshee.com/<slug établissement>, qui est
+// désormais la seule adresse du site (cf. décision : le site remplace la
+// page de réservation à cette URL pour les comptes Business).
 exports.publicSite = async (req, res) => {
   try {
-    const site = await Site.findOne({ slug: req.params.slug, isPublished: true }).lean();
+    const site = await Site.findOne({ slug: req.params.slug }).lean();
     if (!site) return res.status(404).render("client/404");
-    const company = await Company.findById(site.company).lean();
+    const company = await Company.findById(site.company).select("slug").lean();
     if (!company) return res.status(404).render("client/404");
-    const services = await Service.find({ company: company._id, active: true }).sort("order").lean();
-    const companySlug = company.slug || String(company._id);
-    Site.findByIdAndUpdate(site._id, { $inc: { visitCount: 1 } }).exec().catch(() => {});
-    const { reviews, avgRating, reviewCount } = await fetchReviews(company._id);
-    res.render("public/site", { site, company, services, companySlug, isPreview: false, reviews, avgRating, reviewCount });
+    return res.redirect(301, `/${company.slug || site.company}`);
   } catch (err) {
     console.error("[site.publicSite]", err);
     res.status(500).render("client/404");

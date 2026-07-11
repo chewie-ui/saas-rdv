@@ -20,20 +20,16 @@ block content
                 p.cz-header__sub Gérez votre page publique, vos rappels et vos sections.
             .cz-tabs
                 button.cz-tab.is-active#czTabGeneral(type="button")
-                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                        path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 128.5-46.5T480-440q66 0 132.5 15.5T741-378q29 15 46.5 43.5T805-272v112H160Z")
+                    span.material-symbols-outlined(style="font-size:16px") settings
                     | &nbsp;Général
                 button.cz-tab#czTabRappels(type="button")
-                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                        path(d="M160-200v-80h80v-280q0-83 50-149.5T420-790v-30q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v30q130 30 180 96.5T770-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Z")
+                    span.material-symbols-outlined(style="font-size:16px") notifications
                     | &nbsp;Rappels
                 button.cz-tab#czTabDesign(type="button")
-                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                        path(d="M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-156t88-127Q256-817 330-848.5T488-880q80 0 151 27.5t124.5 76q53.5 48.5 85 115T880-516q0 105-70 175.5T640-270h-74q-9 0-12.5 5t-3.5 11q0 12 15 34.5t15 51.5q0 50-27.5 74T480-80ZM240-500q0 17 11.5 28.5T280-460q17 0 28.5-11.5T320-500q0-17-11.5-28.5T280-540q-17 0-28.5 11.5T240-500Zm120-160q0 17 11.5 28.5T400-620q17 0 28.5-11.5T440-660q0-17-11.5-28.5T400-700q-17 0-28.5 11.5T360-660Zm240 0q0 17 11.5 28.5T640-620q17 0 28.5-11.5T680-660q0-17-11.5-28.5T640-700q-17 0-28.5 11.5T600-660Zm120 160q0 17 11.5 28.5T760-460q17 0 28.5-11.5T800-500q0-17-11.5-28.5T760-540q-17 0-28.5 11.5T720-500Z")
+                    span.material-symbols-outlined(style="font-size:16px") palette
                     | &nbsp;Design
                 button.cz-tab#czTabIntegration(type="button")
-                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                        path(d="M160-160v-160h110l260-440H160v-160h640v160H690L430-320h110v160H160Z")
+                    span.material-symbols-outlined(style="font-size:16px") link
                     | &nbsp;Intégration
 
         //- ── PANNEAU GÉNÉRAL ────────────────────────────────────────────────────
@@ -47,8 +43,7 @@ block content
                 p.info-card__desc Ces informations sont affichées en haut de votre page de réservation.
             if _missingProfile
                 .biz-incomplete-banner#bizIncompleteBanner
-                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                        path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z")
+                    span.material-symbols-outlined(style="font-size:16px") info
                     span Ajoutez une photo et un nom pour que votre page de réservation soit complète et professionnelle.
             .biz-row
                 .biz-photo-col
@@ -57,8 +52,7 @@ block content
                             img#businessPicPreview(alt="Photo de l'établissement" src=user.businessPicture)
                         else
                             .biz-photo-placeholder#businessPicPreview
-                                svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
-                                    path(d="M160-120q-33 0-56.5-23.5T80-200v-480q0-33 23.5-56.5T160-760h126l74-80h240l74 80h126q33 0 56.5 23.5T880-680v480q0 33-23.5 56.5T800-120H160Zm0-80h640v-480H160v480Zm320-80q-58 0-99-41t-41-99q0-58 41-99t99-41q58 0 99 41t41 99q0 58-41 99t-99 41Zm0-80q25 0 42.5-17.5T540-420q0-25-17.5-42.5T480-480q-25 0-42.5 17.5T420-420q0 25 17.5 42.5T480-360Z")
+                                span.material-symbols-outlined(style="font-size:32px") photo_camera
                     input#businessFileInput(type="file" style="display:none" accept="image/*")
                     .biz-photo-btns
                         button.sm-btn.sm-btn--ghost#uploadBusinessBtn
@@ -98,8 +92,7 @@ block content
                     input#toggleSectionAbout.toggle-cb(type="checkbox" checked=cs.showSectionAbout !== false)
                     span.section-pill À propos
             .section-off-banner
-                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                    path(d="m644-428-58-58q9-47-27-88t-93-32l-58-58q17-8 34.5-12t37.5-4q75 0 127.5 52.5T660-500q0 20-4 37.5T644-428Zm128 126-58-56q38-29 67.5-63.5T832-500q-50-101-143.5-160.5T480-720q-29 0-57 4t-55 12l-62-62q41-17 84-25.5t90-8.5q151 0 269 83.5T920-500q-23 56-60.5 105T772-302Zm20 246L624-220q-35 11-70.5 16.5T480-198q-151 0-269-83.5T40-500q24-56 64-104.5t90-85.5L78-806l56-56 736 736-56 56ZM222-624q-29 26-53 57t-41 67q50 101 143.5 160.5T480-280q20 0 39-2.5t39-5.5l-36-38q-11 3-21 4.5t-21 1.5q-75 0-127.5-52.5T280-500q0-11 1.5-21t4.5-21l-64-82Zm319 93Zm-151 75Z")
+                span.material-symbols-outlined(style="font-size:16px") visibility_off
                 span Cette section est masquée sur votre page publique — les visiteurs ne la verront pas.
             .section-body(style=(cs.showSectionAbout === false ? 'display:none' : ''))
                 .about-editor
@@ -263,8 +256,7 @@ block content
                     input#toggleSectionGallery.toggle-cb(type="checkbox" checked=!!cs.showSectionGallery)
                     span.section-pill Galerie
             .section-off-banner
-                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                    path(d="m644-428-58-58q9-47-27-88t-93-32l-58-58q17-8 34.5-12t37.5-4q75 0 127.5 52.5T660-500q0 20-4 37.5T644-428Zm128 126-58-56q38-29 67.5-63.5T832-500q-50-101-143.5-160.5T480-720q-29 0-57 4t-55 12l-62-62q41-17 84-25.5t90-8.5q151 0 269 83.5T920-500q-23 56-60.5 105T772-302Zm20 246L624-220q-35 11-70.5 16.5T480-198q-151 0-269-83.5T40-500q24-56 64-104.5t90-85.5L78-806l56-56 736 736-56 56ZM222-624q-29 26-53 57t-41 67q50 101 143.5 160.5T480-280q20 0 39-2.5t39-5.5l-36-38q-11 3-21 4.5t-21 1.5q-75 0-127.5-52.5T280-500q0-11 1.5-21t4.5-21l-64-82Zm319 93Zm-151 75Z")
+                span.material-symbols-outlined(style="font-size:16px") visibility_off
                 span Cette section est masquée sur votre page publique — les visiteurs ne la verront pas.
 
             .gl-body
@@ -275,16 +267,13 @@ block content
                     span.gl-toolbar__label Format
                     .gl-layout-btns#glLayoutBtns
                         button.gl-layout-btn(type="button" data-layout="grid" class=(_galleryLayout === 'grid' ? 'is-active' : '') title="Grille uniforme")
-                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                path(d="M120-520v-320h320v320H120Zm0 400v-320h320v320H120Zm400-400v-320h320v320H520Zm0 400v-320h320v320H520ZM200-600h160v-160H200v160Zm400 0h160v-160H600v160Zm0 400h160v-160H600v160Zm-400 0h160v-160H200v160Z")
+                            span.material-symbols-outlined(style="font-size:14px") grid_view
                             span Grille
                         button.gl-layout-btn(type="button" data-layout="masonry" class=(_galleryLayout === 'masonry' ? 'is-active' : '') title="Mosaïque")
-                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                path(d="M80-120v-720h200v720H80Zm260 0v-480h200v480H340Zm260 0v-280h200v280H600Z")
+                            span.material-symbols-outlined(style="font-size:14px") view_quilt
                             span Mosaïque
                         button.gl-layout-btn(type="button" data-layout="carousel" class=(_galleryLayout === 'carousel' ? 'is-active' : '') title="Carrousel défilant")
-                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm0-80h640v-480H160v480Zm200-80 240-160-240-160v320Z")
+                            span.material-symbols-outlined(style="font-size:14px") view_carousel
                             span Carrousel
                     .gl-right
                         span.gl-count
@@ -300,24 +289,20 @@ block content
                                 img.gl-item__img(src=photo alt="" loading="lazy")
                                 .gl-item__overlay
                                     button.gl-item__del(type="button" data-index=idx title="Supprimer")
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                            path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+                                        span.material-symbols-outlined(style="font-size:14px") delete
                                     .gl-item__drag
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                            path(d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-400q-33 0-56.5-23.5T280-480q0-33 23.5-56.5T360-560q33 0 56.5 23.5T440-480q0 33-23.5 56.5T360-400Zm240 0q-33 0-56.5-23.5T520-480q0-33 23.5-56.5T600-560q33 0 56.5 23.5T680-480q0 33-23.5 56.5T600-400ZM360-640q-33 0-56.5-23.5T280-720q0-33 23.5-56.5T360-800q33 0 56.5 23.5T440-720q0 33-23.5 56.5T360-640Zm240 0q-33 0-56.5-23.5T520-720q0-33 23.5-56.5T600-800q33 0 56.5 23.5T680-720q0 33-23.5 56.5T600-640Z")
+                                        span.material-symbols-outlined(style="font-size:14px") drag_indicator
 
                 //- ── État vide (sibling, pas dans la grille) ─────────────────
                 if gallery.length === 0
                     .gl-empty#glEmpty
-                        svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
-                            path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm40-80h480L570-480 450-320l-90-120-120 160Zm-40 80v-560 560Z")
+                        span.material-symbols-outlined(style="font-size:32px") image
                         p Aucune photo pour le moment
                         p.gl-empty__sub Cliquez sur le bouton ci-dessous pour ajouter vos premières photos.
 
                 //- ── Bouton ajout — toujours visible ────────────────────────
                 label.gl-upload(for="glFileInput" style=(gallery.length >= 12 ? 'display:none' : ''))
-                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                        path(d="M440-320v-326L336-542l-56-58 200-200 200 200-56 58-104-104v326h-80ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z")
+                    span.material-symbols-outlined(style="font-size:18px") upload
                     span Ajouter des photos
                     input#glFileInput(type="file" accept="image/*" multiple style="display:none")
 
@@ -328,8 +313,7 @@ block content
                 p.info-card__desc= t.info.custom_url_desc || 'Choisissez une URL unique pour votre page de réservation publique.'
             if !canUseCustomUrl
                 .info-addon-gate
-                    svg(xmlns="http://www.w3.org/2000/svg" height="28px" viewBox="0 -960 960 960" width="28px" fill="currentColor")
-                        path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z")
+                    span.material-symbols-outlined(style="font-size:28px") lock
                     .info-addon-gate__text
                         strong URL personnalisée — Business
                         if isPro
@@ -361,8 +345,7 @@ block content
                     .slug-share-row
                         .slug-share-url#slugShareUrl= 'branshee.com/' + (currentCompany.slug || String(currentCompany._id))
                         button.sm-btn.sm-btn--ghost#copySlugBtn(type="button")
-                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z")
+                            span.material-symbols-outlined(style="font-size:14px") content_copy
                             span Copier le lien
                 .info-card__actions
                     button.sm-btn.sm-btn--primary#saveSlugBtn
@@ -375,10 +358,10 @@ block content
                 p.info-card__desc Glissez les sections pour définir l'ordre d'affichage sur votre page publique.
             -
                 var _sectionMeta = {
-                    about:    { label: 'À propos',    icon: 'M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Z' },
-                    location: { label: 'Localisation', icon: 'M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 294q122-112 181-203.5T720-552q0-109-69.5-178.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186Z' },
-                    hours:    { label: 'Horaires',    icon: 'M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z' },
-                    gallery:  { label: 'Galerie',     icon: 'M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm40-80h480L570-480 450-320l-90-120-120 160Z' }
+                    about:    { label: 'À propos',    icon: 'info' },
+                    location: { label: 'Localisation', icon: 'location_on' },
+                    hours:    { label: 'Horaires',    icon: 'schedule' },
+                    gallery:  { label: 'Galerie',     icon: 'image' }
                 }
                 // Les avis sont toujours en dernier (pas draggable)
                 var _order = (sectionOrder || ['about','location','hours','gallery']).filter(function(k){ return k !== 'reviews'; })
@@ -387,14 +370,11 @@ block content
             .section-order-list#sectionOrderList
                 .section-order-item.section-order-item--locked
                     .section-order-item__grip
-                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor" style="opacity:.2")
-                            path(d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-440q-33 0-56.5-23.5T280-520q0-33 23.5-56.5T360-600q33 0 56.5 23.5T440-520q0 33-23.5 56.5T360-440Zm240 0q-33 0-56.5-23.5T520-520q0-33 23.5-56.5T600-600q33 0 56.5 23.5T680-520q0 33-23.5 56.5T600-440ZM360-720q-33 0-56.5-23.5T280-800q0-33 23.5-56.5T360-880q33 0 56.5 23.5T440-800q0 33-23.5 56.5T360-720Zm240 0q-33 0-56.5-23.5T520-800q0-33 23.5-56.5T600-880q33 0 56.5 23.5T680-800q0 33-23.5 56.5T600-720Z")
-                    svg.section-order-item__icon(viewBox="0 -960 960 960" height="17" width="17" fill="currentColor")
-                        path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
+                        span.material-symbols-outlined(style="font-size:18px;opacity:.2") drag_indicator
+                    span.material-symbols-outlined.section-order-item__icon(style="font-size:17px") event
                     span.section-order-item__label Prise de rendez-vous
                     span.section-order-item__lock
-                        svg(viewBox="0 -960 960 960" height="13" width="13" fill="currentColor")
-                            path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
+                        span.material-symbols-outlined(style="font-size:13px") lock
                         | Toujours en 1er
 
                 each sKey in _order
@@ -402,23 +382,18 @@ block content
                     if sm
                         .section-order-item(data-key=sKey)
                             .section-order-item__grip
-                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                    path(d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-440q-33 0-56.5-23.5T280-520q0-33 23.5-56.5T360-600q33 0 56.5 23.5T440-520q0 33-23.5 56.5T360-440Zm240 0q-33 0-56.5-23.5T520-520q0-33 23.5-56.5T600-600q33 0 56.5 23.5T680-520q0 33-23.5 56.5T600-440ZM360-720q-33 0-56.5-23.5T280-800q0-33 23.5-56.5T360-880q33 0 56.5 23.5T440-800q0 33-23.5 56.5T360-720Zm240 0q-33 0-56.5-23.5T520-800q0-33 23.5-56.5T600-880q33 0 56.5 23.5T680-800q0 33-23.5 56.5T600-720Z")
-                            svg.section-order-item__icon(viewBox="0 -960 960 960" height="17" width="17" fill="currentColor")
-                                path(d=sm.icon)
+                                span.material-symbols-outlined(style="font-size:18px") drag_indicator
+                            span.material-symbols-outlined.section-order-item__icon(style="font-size:17px")= sm.icon
                             span.section-order-item__label= sm.label
 
                 //- Item "Avis clients" verrouillé en dernier
                 .section-order-item.section-order-item--locked
                     .section-order-item__grip
-                        svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor" style="opacity:.2")
-                            path(d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-440q-33 0-56.5-23.5T280-520q0-33 23.5-56.5T360-600q33 0 56.5 23.5T440-520q0 33-23.5 56.5T360-440Zm240 0q-33 0-56.5-23.5T520-520q0-33 23.5-56.5T600-600q33 0 56.5 23.5T680-520q0 33-23.5 56.5T600-440ZM360-720q-33 0-56.5-23.5T280-800q0-33 23.5-56.5T360-880q33 0 56.5 23.5T440-800q0 33-23.5 56.5T360-720Zm240 0q-33 0-56.5-23.5T520-800q0-33 23.5-56.5T600-880q33 0 56.5 23.5T680-800q0 33-23.5 56.5T600-720Z")
-                    svg.section-order-item__icon(viewBox="0 -960 960 960" height="17" width="17" fill="currentColor")
-                        path(d="m233-120 65-281L80-580l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z")
+                        span.material-symbols-outlined(style="font-size:18px;opacity:.2") drag_indicator
+                    span.material-symbols-outlined.section-order-item__icon(style="font-size:17px") star
                     span.section-order-item__label Avis clients
                     span.section-order-item__lock
-                        svg(viewBox="0 -960 960 960" height="13" width="13" fill="currentColor")
-                            path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
+                        span.material-symbols-outlined(style="font-size:13px") lock
                         | Toujours en dernier
 
             .section-order-status#sectionOrderStatus
@@ -488,8 +463,7 @@ block content
                 .info-card
                     .info-card__header
                         .cz-reminder-header-icon
-                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm112-260 56-56-128-128v-176h-80v208l152 152Z")
+                            span.material-symbols-outlined(style="font-size:18px") notifications
                         .info-card__header__left
                             h3 Rappels automatiques
                             p.info-card__desc Un email est envoyé automatiquement à votre client avant son rendez-vous. Vous pouvez choisir le délai et personnaliser le message.
@@ -497,8 +471,7 @@ block content
                     //- ── Délai d'envoi ─────────────────────────────────────────
                     .cz-reminder-section
                         .cz-reminder-label
-                            svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
-                                path(d="M520-496v-224h-80v258l134 134 57-57-111-111Z M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                            span.material-symbols-outlined(style="font-size:15px") schedule
                             span Envoyer le rappel
                         .cz-delay-options#czDelayOptions
                             - var _delay = cs.reminderDelayHours || 24
@@ -512,8 +485,7 @@ block content
                     //- ── Message personnalisé ───────────────────────────────────
                     .cz-reminder-section
                         .cz-reminder-label
-                            svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
-                                path(d="M240-400h480v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM880-80 720-240H160q-33 0-56.5-23.5T80-320v-480q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v720Z")
+                            span.material-symbols-outlined(style="font-size:15px") chat
                             span Message personnalisé
                         p.cz-reminder-hint Affiché dans l'email de rappel, dans un encadré "Message de votre prestataire". Laissez vide pour ne rien afficher.
                         .cz-reminder-msg-wrap
@@ -529,8 +501,7 @@ block content
                     //- ── Modes de paiement ─────────────────────────────────────
                     .cz-reminder-section
                         .cz-reminder-label
-                            svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
-                                path(d="M80-200v-560h800v560H80Zm80-360h640v-120H160v120Zm0 120v160h640v-160H160Z")
+                            span.material-symbols-outlined(style="font-size:15px") payments
                             span Modes de paiement acceptés
                         p.cz-reminder-hint Indiqués dans l'email de rappel pour informer votre client comment régler le rendez-vous.
                         - var _payMethods = cs.reminderPaymentMethods || []
@@ -554,9 +525,8 @@ block content
                     //- ── Rappel SMS ────────────────────────────────────────────
                     .cz-reminder-section
                         .cz-reminder-label
-                            svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
-                                path(d="M240-80v-800h480v800H240Zm80-80h320v-560H320v560Zm160-40q17 0 28.5-11.5T520-240q0-17-11.5-28.5T480-280q-17 0-28.5 11.5T440-240q0 17 11.5 28.5T480-200ZM320-720h320v-80H320v80Z")
-                                span Rappel par SMS
+                            span.material-symbols-outlined(style="font-size:15px") sms
+                            span Rappel par SMS
 
                         //- Usage du quota inclus ce mois
                         - var _smsPrice = (smsPriceCents / 100).toFixed(2)
@@ -619,8 +589,7 @@ block content
                     //- ── Preview ────────────────────────────────────────────────
                     .cz-reminder-section.cz-reminder-preview-section
                         .cz-reminder-label
-                            svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
-                                path(d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54 137-174 218.5T480-200Z")
+                            span.material-symbols-outlined(style="font-size:15px") visibility
                             span Aperçu de l'email
                         .cz-reminder-preview#czReminderPreview
                             .cz-preview-badge ⏰&nbsp;Rappel de rendez-vous
@@ -647,8 +616,7 @@ block content
                     .cz-ds-card
                         .cz-ds-card__head
                             .cz-ds-card__head-icon
-                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                    path(d="M480-80q-33 0-56.5-23.5T400-160q0-33 23.5-56.5T480-240q33 0 56.5 23.5T560-160q0 33-23.5 56.5T480-80Zm0-640q-33 0-56.5-23.5T400-800q0-33 23.5-56.5T480-880q33 0 56.5 23.5T560-800q0 33-23.5 56.5T480-720ZM160-560q-33 0-56.5-23.5T80-640q0-33 23.5-56.5T160-720q33 0 56.5 23.5T240-640q0 33-23.5 56.5T160-560Zm640 0q-33 0-56.5-23.5T720-640q0-33 23.5-56.5T800-720q33 0 56.5 23.5T880-640q0 33-23.5 56.5T800-560ZM160-160q-33 0-56.5-23.5T80-240q0-33 23.5-56.5T160-320q33 0 56.5 23.5T240-240q0 33-23.5 56.5T160-160Zm640 0q-33 0-56.5-23.5T720-240q0-33 23.5-56.5T800-320q33 0 56.5 23.5T880-240q0 33-23.5 56.5T800-160Z")
+                                span.material-symbols-outlined(style="font-size:16px") auto_awesome
                             p.cz-ds-card__title Thèmes
                         .cz-ds-card__body
                             p(style="font-size:12.5px;color:var(--muted,#6b7280);margin:0 0 12px") Un clic applique une palette complète (couleurs, police, arrondi, ombre) — vous pourrez ensuite tout affiner ci-dessous.
@@ -658,8 +626,7 @@ block content
                     .cz-ds-card
                         .cz-ds-card__head
                             .cz-ds-card__head-icon
-                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                    path(d="M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 32.5-156t88-127Q256-817 330-848.5T488-880q80 0 151 27.5t124.5 76q53.5 48.5 85 115T880-516q0 105-70 175.5T640-270h-74q-9 0-12.5 5t-3.5 11q0 12 15 34.5t15 51.5q0 50-27.5 74T480-80Z")
+                                span.material-symbols-outlined(style="font-size:16px") colorize
                             p.cz-ds-card__title Couleurs principales
                         .cz-ds-card__body
                             .cz-color-row(data-color="accentColor")
@@ -671,8 +638,7 @@ block content
                                     input(type="color" value=(cs.accentColor || '#22c55e') tabindex="-1" aria-hidden="true")
                                     input.cz-color-picker__hex(type="text" value=((cs.accentColor || '#22c55e').toUpperCase()) maxlength="7" spellcheck="false")
                                 button.cz-color-reset(type="button" title="Réinitialiser")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+                                    span.material-symbols-outlined(style="font-size:14px") refresh
 
                             .cz-color-row(data-color="accentText")
                                 .cz-color-row__label
@@ -683,15 +649,13 @@ block content
                                     input(type="color" value=(cs.accentText || '#ffffff') tabindex="-1" aria-hidden="true")
                                     input.cz-color-picker__hex(type="text" value=((cs.accentText || '#ffffff').toUpperCase()) maxlength="7" spellcheck="false")
                                 button.cz-color-reset(type="button" title="Réinitialiser")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+                                    span.material-symbols-outlined(style="font-size:14px") refresh
 
                     //- Fond de page & calendrier
                     .cz-ds-card
                         .cz-ds-card__head
                             .cz-ds-card__head-icon
-                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                    path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Z")
+                                span.material-symbols-outlined(style="font-size:16px") wallpaper
                             p.cz-ds-card__title Fond de page & calendrier
                         .cz-ds-card__body
                             .cz-color-row(data-color="pageBg")
@@ -703,8 +667,7 @@ block content
                                     input(type="color" value=(cs.pageBg || '#f3f4f6') tabindex="-1" aria-hidden="true")
                                     input.cz-color-picker__hex(type="text" value=((cs.pageBg || '#f3f4f6').toUpperCase()) maxlength="7" spellcheck="false")
                                 button.cz-color-reset(type="button" title="Réinitialiser")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+                                    span.material-symbols-outlined(style="font-size:14px") refresh
 
                             .cz-color-row(data-color="calBg")
                                 .cz-color-row__label
@@ -715,8 +678,7 @@ block content
                                     input(type="color" value=(cs.calBg || '#ffffff') tabindex="-1" aria-hidden="true")
                                     input.cz-color-picker__hex(type="text" value=((cs.calBg || '#ffffff').toUpperCase()) maxlength="7" spellcheck="false")
                                 button.cz-color-reset(type="button" title="Réinitialiser")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+                                    span.material-symbols-outlined(style="font-size:14px") refresh
 
                     //- Jours & bouton
                     - var _accFallback  = cs.accentColor || '#22c55e'
@@ -725,8 +687,7 @@ block content
                     .cz-ds-card
                         .cz-ds-card__head
                             .cz-ds-card__head-icon
-                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                    path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-840h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Z")
+                                span.material-symbols-outlined(style="font-size:16px") view_agenda
                             p.cz-ds-card__title Jours & bouton
                         .cz-ds-card__body
                             .cz-color-row(data-color="dayBg")
@@ -738,8 +699,7 @@ block content
                                     input(type="color" value=(cs.dayBg || '#ffffff') tabindex="-1" aria-hidden="true")
                                     input.cz-color-picker__hex(type="text" value=((cs.dayBg || '#ffffff').toUpperCase()) maxlength="7" spellcheck="false")
                                 button.cz-color-reset(type="button" title="Réinitialiser")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+                                    span.material-symbols-outlined(style="font-size:14px") refresh
 
                             .cz-color-row(data-color="daySelectedBg")
                                 .cz-color-row__label
@@ -750,8 +710,7 @@ block content
                                     input(type="color" value=(cs.daySelectedBg || _accFallback) tabindex="-1" aria-hidden="true")
                                     input.cz-color-picker__hex(type="text" value=((cs.daySelectedBg || _accFallback).toUpperCase()) maxlength="7" spellcheck="false")
                                 button.cz-color-reset(type="button" title="Suivre la couleur d'accent")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+                                    span.material-symbols-outlined(style="font-size:14px") refresh
 
                             .cz-color-row(data-color="daySelectedText")
                                 .cz-color-row__label
@@ -762,8 +721,7 @@ block content
                                     input(type="color" value=(cs.daySelectedText || _accTxtFallback) tabindex="-1" aria-hidden="true")
                                     input.cz-color-picker__hex(type="text" value=((cs.daySelectedText || _accTxtFallback).toUpperCase()) maxlength="7" spellcheck="false")
                                 button.cz-color-reset(type="button" title="Suivre la couleur d'accent")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+                                    span.material-symbols-outlined(style="font-size:14px") refresh
 
                             .cz-color-row(data-color="dayHoverBg")
                                 .cz-color-row__label
@@ -774,8 +732,7 @@ block content
                                     input(type="color" value=(cs.dayHoverBg || _availFallback) tabindex="-1" aria-hidden="true")
                                     input.cz-color-picker__hex(type="text" value=((cs.dayHoverBg || _availFallback).toUpperCase()) maxlength="7" spellcheck="false")
                                 button.cz-color-reset(type="button" title="Revenir au survol automatique")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+                                    span.material-symbols-outlined(style="font-size:14px") refresh
 
                             .cz-color-row(data-color="btnHoverBg")
                                 .cz-color-row__label
@@ -786,15 +743,13 @@ block content
                                     input(type="color" value=(cs.btnHoverBg || _accFallback) tabindex="-1" aria-hidden="true")
                                     input.cz-color-picker__hex(type="text" value=((cs.btnHoverBg || _accFallback).toUpperCase()) maxlength="7" spellcheck="false")
                                 button.cz-color-reset(type="button" title="Revenir au survol automatique")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+                                    span.material-symbols-outlined(style="font-size:14px") refresh
 
                     //- Textes du parcours de réservation
                     .cz-ds-card
                         .cz-ds-card__head
                             .cz-ds-card__head-icon
-                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                    path(d="M220-200v-560h80v240h360v-240h80v560h-80v-240H300v240h-80Z")
+                                span.material-symbols-outlined(style="font-size:16px") text_fields
                             p.cz-ds-card__title Textes
                         .cz-ds-card__body
                             .field
@@ -827,8 +782,7 @@ block content
                     .cz-ds-card
                         .cz-ds-card__head
                             .cz-ds-card__head-icon
-                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                    path(d="M480-480q66 0 113-47t47-113q0-66-47-113t-113-47q-66 0-113 47t-47 113q0 66 47 113t113 47ZM160-160v-94q0-38 19-65t49-41q67-30 128.5-45T480-420q62 0 123 15.5T731.5-360q31 14 49.5 41t18 65v94H160Z")
+                                span.material-symbols-outlined(style="font-size:16px") event_available
                             p.cz-ds-card__title Disponibilité des jours
                         .cz-ds-card__body
                             .cz-color-row(data-color="dayAvailableColor")
@@ -840,8 +794,7 @@ block content
                                     input(type="color" value=(cs.dayAvailableColor || '#16a34a') tabindex="-1" aria-hidden="true")
                                     input.cz-color-picker__hex(type="text" value=((cs.dayAvailableColor || '#16a34a').toUpperCase()) maxlength="7" spellcheck="false")
                                 button.cz-color-reset(type="button" title="Réinitialiser")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+                                    span.material-symbols-outlined(style="font-size:14px") refresh
 
                             .cz-color-row(data-color="dayBusyColor")
                                 .cz-color-row__label
@@ -852,8 +805,7 @@ block content
                                     input(type="color" value=(cs.dayBusyColor || '#ea580c') tabindex="-1" aria-hidden="true")
                                     input.cz-color-picker__hex(type="text" value=((cs.dayBusyColor || '#ea580c').toUpperCase()) maxlength="7" spellcheck="false")
                                 button.cz-color-reset(type="button" title="Réinitialiser")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+                                    span.material-symbols-outlined(style="font-size:14px") refresh
 
                             .cz-color-row(data-color="dayFullColor")
                                 .cz-color-row__label
@@ -864,8 +816,7 @@ block content
                                     input(type="color" value=(cs.dayFullColor || '#ef4444') tabindex="-1" aria-hidden="true")
                                     input.cz-color-picker__hex(type="text" value=((cs.dayFullColor || '#ef4444').toUpperCase()) maxlength="7" spellcheck="false")
                                 button.cz-color-reset(type="button" title="Réinitialiser")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+                                    span.material-symbols-outlined(style="font-size:14px") refresh
 
                             //- Aperçu indépendant des vraies données — pour voir le rendu
                             //- des 3 états sans devoir attendre/forcer un jour réel complet.
@@ -889,8 +840,7 @@ block content
                     .cz-ds-card
                         .cz-ds-card__head
                             .cz-ds-card__head-icon
-                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                    path(d="M220-200v-560h80v240h360v-240h80v560h-80v-240H300v240h-80Z")
+                                span.material-symbols-outlined(style="font-size:16px") font_download
                             p.cz-ds-card__title Police de caractères
                         .cz-ds-card__body
                             - var _fonts = ['Inter','Poppins','Lato','Montserrat','Playfair Display','Nunito']
@@ -921,8 +871,7 @@ block content
                     .cz-ds-card
                         .cz-ds-card__head
                             .cz-ds-card__head-icon
-                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                    path(d="M200-120q-33 0-56.5-23.5T120-200v-200h80v200h200v80H200Zm480 0v-80h200v-200h80v200q0 33-23.5 56.5T880-120H680ZM120-560v-200q0-33 23.5-56.5T200-840h200v80H200v200h-80Zm640 0v-200H560v-80h200q33 0 56.5 23.5T840-760v200h-80Z")
+                                span.material-symbols-outlined(style="font-size:16px") rounded_corner
                             p.cz-ds-card__title Arrondi des coins
                         .cz-ds-card__body
                             - var _curRadius = cs.borderRadius || 'md'
@@ -944,8 +893,7 @@ block content
                     .cz-ds-card
                         .cz-ds-card__head
                             .cz-ds-card__head-icon
-                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                    path(d="M160-160v-640h80v640h-80Zm160 0v-640h80v640h-80Zm120 0v-640h40v640h-40Zm120 0v-640h80v640h-80Zm160 0v-640h80v640h-80Z")
+                                span.material-symbols-outlined(style="font-size:16px") border_style
                             p.cz-ds-card__title Type de bordure
                         .cz-ds-card__body
                             - var _curBorder = cs.borderStyle || 'subtle'
@@ -967,8 +915,7 @@ block content
                     .cz-ds-card
                         .cz-ds-card__head
                             .cz-ds-card__head-icon
-                                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                                    path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z")
+                                span.material-symbols-outlined(style="font-size:16px") blur_on
                             p.cz-ds-card__title Ombres
                         .cz-ds-card__body
                             - var _curShadow = cs.shadowStyle || 'subtle'
@@ -989,16 +936,13 @@ block content
                     //- Save bar
                     .cz-design__save
                         button.sm-btn.sm-btn--primary#czDesignSave(type="button")
-                            svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                path(d="M840-680v480q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h480l160 160Zm-80 34L646-760H200v560h560v-446ZM480-240q33 0 56.5-23.5T560-320q0-33-23.5-56.5T480-400q-33 0-56.5 23.5T400-320q0 33 23.5 56.5T480-240ZM240-560h360v-160H240v160Zm-40-86v446-560 114Z")
+                            span.material-symbols-outlined(style="font-size:14px") save
                             span &nbsp;Enregistrer
                         .cz-design__save-actions
                             button.cz-undo-btn#czDesignUndo(type="button" title="Annuler (Ctrl+Z)" disabled)
-                                svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
-                                    path(d="M280-200v-80h284q63 0 109.5-40T720-420q0-60-46.5-100T564-560H312l104 104-56 56-200-200 200-200 56 56-104 104h252q97 0 166.5 63T800-420q0 94-69.5 157T564-200H280Z")
+                                span.material-symbols-outlined(style="font-size:15px") undo
                             button.cz-undo-btn#czDesignRedo(type="button" title="Rétablir (Ctrl+Y)" disabled)
-                                svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
-                                    path(d="M396-200q-97 0-166.5-63T160-420q0-94 69.5-157T396-640h252L544-744l56-56 200 200-200 200-56-56 104-104H396q-63 0-109.5 40T240-420q0 60 46.5 100T396-280h284v80H396Z")
+                                span.material-symbols-outlined(style="font-size:15px") redo
                             button.sm-btn.sm-btn--ghost#czDesignResetAll(type="button") Réinitialiser
                         span#czDesignSaveStatus.cz-design__save-status
 
@@ -1012,8 +956,7 @@ block content
                                 span.cz-preview-bar__dot
                             span.cz-preview-bar__url#czDesignPreviewUrl= currentCompany ? ('branshee.com/' + (currentCompany.slug || currentCompany._id)) : 'branshee.com/votre-page'
                             button.cz-preview-bar__refresh#czDesignRefresh(type="button" title="Rafraîchir")
-                                svg(xmlns="http://www.w3.org/2000/svg" height="15px" viewBox="0 -960 960 960" width="15px" fill="currentColor")
-                                    path(d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126t72-106l57 57q-38 34-56.5 79T240-440q0 88 56 153.5T440-207v85Zm80 0v-85q87-12 143.5-77.5T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 57-44 43h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z")
+                                span.material-symbols-outlined(style="font-size:15px") refresh
                         if bUrl
                             iframe.cz-preview-iframe#czDesignPreviewIframe(
                                 src=""
@@ -1021,8 +964,7 @@ block content
                             )
                         else
                             .cz-preview-iframe(style="display:flex;align-items:center;justify-content:center;height:900px;background:#f9fafb;color:#9ca3af;font-size:13px;flex-direction:column;gap:10px;")
-                                svg(xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor")
-                                    path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Z")
+                                span.material-symbols-outlined(style="font-size:32px") language
                                 span Configurez votre URL personnalisée pour voir l'aperçu
 
         //- ── PANNEAU INTÉGRATION ────────────────────────────────────────────────
@@ -1035,8 +977,7 @@ block content
                 .cz-int-card
                     .cz-int-card__head
                         .cz-int-card__icon.cz-int-card__icon--link
-                            svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                                path(d="M440-280H280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h160v80H280q-50 0-85 35t-35 85q0 50 35 85t85 35h160v80ZM320-440v-80h320v80H320Zm200 160v-80h160q50 0 85-35t35-85q0-50-35-85t-85-35H520v-80h160q83 0 141.5 58.5T880-480q0 83-58.5 141.5T680-280H520Z")
+                            span.material-symbols-outlined(style="font-size:20px") link
                         .cz-int-card__htext
                             h3 Lien direct
                             p Partagez votre page de réservation avec vos clients.
@@ -1048,24 +989,21 @@ block content
                                 value=bUrl2 || 'URL non disponible — configurez votre URL'
                             )
                             button.cz-copy-field__btn#czIntLinkCopy(type="button")
-                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                    path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Z")
+                                span.material-symbols-outlined(style="font-size:14px") content_copy
                                 | &nbsp;Copier
                         .cz-copy-field(style="margin-top:0")
                             button.cz-copy-field__btn#czIntOpenPage(
                                 type="button"
                                 style="width:100%;border-left:none;justify-content:center;padding:10px 14px"
                             )
-                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                    path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z")
+                                span.material-symbols-outlined(style="font-size:14px") open_in_new
                                 | &nbsp;Ouvrir la page
 
                 //- ── Intégration iframe ─────────────────────────────────────────
                 .cz-int-card
                     .cz-int-card__head
                         .cz-int-card__icon.cz-int-card__icon--embed
-                            svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                                path(d="M320-240 80-480l240-240 57 57-184 184 183 183-56 56Zm320 0-57-57 184-184-183-183 56-56 240 240-240 240Z")
+                            span.material-symbols-outlined(style="font-size:20px") code
                         .cz-int-card__htext
                             h3 Intégrer sur votre site
                             p Copiez le code iframe et collez-le dans votre site web.
@@ -1093,33 +1031,28 @@ block content
                                 label.cz-embed-section-opt
                                     input(type="checkbox" name="embedSection" value="booking" checked disabled)
                                     span.cz-embed-section-opt__box
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                            path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-840h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Z")
+                                        span.material-symbols-outlined(style="font-size:14px") calendar_month
                                     span.cz-embed-section-opt__label Calendrier
                                     span.cz-embed-section-opt__badge Inclus
                                 label.cz-embed-section-opt
                                     input(type="checkbox" id="embedSecProfile" name="embedSection" value="profile")
                                     span.cz-embed-section-opt__box
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                            path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 129-46.5T480-440q68 0 135 15.5T744-378q29 15 46.5 43.5T808-272v112H160Z")
+                                        span.material-symbols-outlined(style="font-size:14px") person
                                     span.cz-embed-section-opt__label Profil
                                 label.cz-embed-section-opt
                                     input(type="checkbox" id="embedSecReviews" name="embedSection" value="reviews")
                                     span.cz-embed-section-opt__box
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                            path(d="m354-287 126-76 126 77-33-144 111-96-146-13-58-136-58 135-146 13 111 97-33 143ZM233-120l65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Zm247-350Z")
+                                        span.material-symbols-outlined(style="font-size:14px") star
                                     span.cz-embed-section-opt__label Avis
                                 label.cz-embed-section-opt
                                     input(type="checkbox" id="embedSecAbout" name="embedSection" value="about")
                                     span.cz-embed-section-opt__box
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                            path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                                        span.material-symbols-outlined(style="font-size:14px") info
                                     span.cz-embed-section-opt__label À propos
                                 label.cz-embed-section-opt
                                     input(type="checkbox" id="embedSecHours" name="embedSection" value="hours")
                                     span.cz-embed-section-opt__box
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                            path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                                        span.material-symbols-outlined(style="font-size:14px") schedule
                                     span.cz-embed-section-opt__label Horaires
 
                         //- Contrôles de taille
@@ -1142,8 +1075,7 @@ block content
                                 type="button"
                                 style="align-self:stretch;flex-direction:column;justify-content:center;gap:4px;padding:0 16px"
                             )
-                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                    path(d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Z")
+                                span.material-symbols-outlined(style="font-size:14px") content_copy
                                 | Copier
 
                         //- Aperçu embed — grand, mis à jour en temps réel
@@ -1164,8 +1096,7 @@ block content
                 .cz-int-card
                     .cz-int-card__head
                         .cz-int-card__icon.cz-int-card__icon--qr
-                            svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                                path(d="M120-680v-160h160v80H200v80h-80Zm0 520v-160h80v80h80v80H120Zm520 0v-80h80v-80h80v160H640ZM640-680v-80h80v-80h80v160H640ZM680-360v-80h80v80h-80Zm-80 80v-80h80v80h-80Zm-80-80v-80h80v80h-80Zm40-200v-80h80v80h-80Zm-200-80v-80h80v80h-80Zm320 0v-80h80v80h-80ZM200-240h160v80H200v-80Zm-80-240h80v80h-80v-80Zm640 0h80v80h-80v-80ZM200-680h-80v80h80v80h80v-80h80v-160H200v80Zm0 400h160v-160H200v160Zm400-400v-160H440v160h160Z")
+                            span.material-symbols-outlined(style="font-size:20px") qr_code
                         .cz-int-card__htext
                             h3 QR Code
                             p Permettez à vos clients de scanner pour réserver.
@@ -1176,8 +1107,7 @@ block content
                             .cz-qr-actions
                                 p(style="font-size:13px;color:var(--text-secondary);margin:0 0 12px") Scannez ce QR code pour accéder directement à votre page de réservation. Idéal à afficher en vitrine ou sur vos supports.
                                 button.sm-btn.sm-btn--primary#czQrDownload(type="button")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                        path(d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z")
+                                    span.material-symbols-outlined(style="font-size:14px") download
                                     | &nbsp;Télécharger HD
 
 block scripts
@@ -1405,6 +1335,7 @@ block scripts
             }
         }
 
+    script(src="/js/utils/confirm-modal.js")
     script(src="/js/utils/image-upload.js")
     script(src='/js/layouts/informations.js')
     script(src='/js/layouts/customize.js')
@@ -1813,12 +1744,12 @@ block scripts
                     if (d.url) {
                         window.location.href = d.url;
                     } else {
-                        alert(d.error || 'Erreur lors de la création du paiement.');
+                        await window.alertModal(d.error || 'Erreur lors de la création du paiement.');
                         btn.disabled = false;
                         if (span) span.textContent = 'Activer — 5€/mois';
                     }
                 } catch(e) {
-                    alert('Erreur réseau.');
+                    await window.alertModal('Erreur réseau.');
                     btn.disabled = false;
                     if (span) span.textContent = 'Activer — 5€/mois';
                 }
@@ -1952,8 +1883,8 @@ block scripts
                         });
                         var d = await r.json();
                         if (d.url) window.location.href = d.url;
-                        else { alert(d.error || 'Erreur'); btn.disabled = false; }
-                    } catch (e) { alert('Erreur réseau'); btn.disabled = false; }
+                        else { await window.alertModal(d.error || 'Erreur'); btn.disabled = false; }
+                    } catch (e) { await window.alertModal('Erreur réseau'); btn.disabled = false; }
                 });
             });
 

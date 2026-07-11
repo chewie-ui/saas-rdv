@@ -2,9 +2,16 @@ const Company = require("../db/models/company/company.model");
 const DaysOff = require("../db/models/company/daysOff.model");
 const CompanyMembership = require("../db/models/company/companyMembership.model");
 
+// Endpoint PUBLIC (page de réservation, sans authentification) — ne doit
+// renvoyer QUE ce que le calendrier client a besoin de connaître (durée des
+// créneaux, délai minimum de réservation). Avant, le document Company
+// complet était renvoyé tel quel, exposant l'IBAN/BIC et les identifiants
+// Stripe Connect de l'établissement (payoutInfo, stripeConnect,
+// acceptedPayments.bankTransfer) à quiconque devinait un companyId.
 exports.companyInfos = async (req, res) => {
   const { companyId } = req.params;
-  const doc = await Company.findById(companyId);
+  const doc = await Company.findById(companyId).select("slotTime slotMode slotInterval minBookingLeadTime");
+  if (!doc) return res.status(404).json({ error: "Établissement introuvable." });
   return res.json(doc);
 };
 

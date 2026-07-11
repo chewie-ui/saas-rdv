@@ -81,6 +81,15 @@ exports.enforcePlanLimits = async (userId, planName) => {
       await form.save();
     }
 
+    // ── Mon Site (mini-site vitrine, réservé à Business) ───────────────────────
+    // Downgrade depuis Business → dépublier : le site remplace la page de
+    // réservation à branshee.com/<slug>, on ne peut pas le laisser en ligne
+    // pour un plan qui n'y a plus droit (cf. utils/planLimits.js LIMITS.mySite).
+    if (planName !== "business") {
+      const Site = require("../db/models/site.model");
+      await Site.updateMany({ company: companyId, isPublished: true }, { isPublished: false });
+    }
+
     console.log(`✅ [enforcePlanLimits] Limites "${planName}" appliquées pour user ${userId}`);
   } catch (err) {
     console.error("[enforcePlanLimits] Erreur:", err.message);

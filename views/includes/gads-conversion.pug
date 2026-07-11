@@ -1,0 +1,17 @@
+//- Déclenche la conversion Google Ads "Inscription" si l'URL courante porte
+//- ?gads_conversion=1 — ajouté à TOUTE redirection suivant une inscription
+//- réussie (formulaire classique, Google OAuth, avec ou sans plan payant en
+//- attente), quel que soit le layout de la page de destination. Avant ce
+//- fichier, seul admin.pug avait ce script : les inscriptions redirigées vers
+//- /subscription, /settings ou / (client.pug, index.pug, auth.pug) n'étaient
+//- jamais trackées par Google Ads.
+script.
+    (function() {
+        var p = new URLSearchParams(window.location.search).get('gads_conversion');
+        if (p !== '1') return;
+        if (typeof gtag !== 'function') return;
+        gtag('event', 'conversion', { 'send_to': 'AW-18287595473/oJ11CPzym8gcENGfmpBE' });
+        var url = new URL(window.location.href);
+        url.searchParams.delete('gads_conversion');
+        history.replaceState(null, '', url.toString());
+    })();

@@ -44,26 +44,21 @@ block content
                         .parrainage-field__row
                             span.parrainage-field__value#referralCode= referralCode || '—'
                             button.sm-btn.sm-btn--ghost(type="button" data-copy=referralCode title=t.referral.copy_code_title)
-                                svg(viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                    rect(x="9" y="9" width="13" height="13" rx="2" ry="2")
-                                    path(d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1")
+                                span.material-symbols-outlined(style=`font-size:15px`) content_copy
                                 span= t.referral.copy_btn
                     .parrainage-field
                         label.parrainage-field__label= t.referral.link_label
                         .parrainage-field__row
                             span.parrainage-field__value.parrainage-field__value--link#referralUrl= referralLink
                             button.sm-btn.sm-btn--ghost(type="button" data-copy=referralLink title=t.referral.copy_link_title)
-                                svg(viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                    rect(x="9" y="9" width="13" height="13" rx="2" ry="2")
-                                    path(d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1")
+                                span.material-symbols-outlined(style=`font-size:15px`) content_copy
                                 span= t.referral.copy_btn
 
                 .parrainage-qr
                     label.parrainage-field__label= t.referral.qr_label
                     img.parrainage-qr__img(src=qrUrl alt=t.referral.qr_alt loading="lazy")
                     a.sm-btn.sm-btn--ghost.sm-btn--full(href=qrUrl download="branshee-parrainage-qr.png" target="_blank")
-                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                            path(d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z")
+                        span.material-symbols-outlined(style=`font-size:16px`) download
                         span= t.referral.download_btn
 
         //- ── Statistiques ────────────────────────────────────────────────────

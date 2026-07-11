@@ -8,8 +8,7 @@ block links
 
 block content
     a.etab-back-link(href="/etablissement/mes-etablissements" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted,#6b7280);text-decoration:none;margin-bottom:16px")
-        svg(width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
-            path(d="M19 12H5M12 19l-7-7 7-7")
+        span.material-symbols-outlined(style=`font-size:14px`) arrow_back
         | Retour à mes établissements
 
     .dash-header
@@ -23,8 +22,7 @@ block content
         .dash-header__cta
             if permissions.collaborators.manage && !atCollaboratorsLimit
                 button.sm-btn.sm-btn--primary#inviteBtn(type="button")
-                    svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                        path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                    span.material-symbols-outlined(style=`font-size:16px`) add
                     span Inviter un collaborateur
 
     if collaboratorsLimit === 0
@@ -194,8 +192,7 @@ block content
     .cancel-modal-overlay#inviteModalOverlay(style="display:none")
         .cancel-modal.invite-modal#inviteModal
             .cancel-modal__icon.cancel-modal__icon--accent
-                svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
-                    path(d="M720-400v-120H600v-80h120v-120h80v120h120v80H800v120h-80ZM240-440q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM0-200v-50q0-37 19-65t52-44q49-25 100-37t69-12q12 0 28 1.5t29 3.5q-7 39-1 76.5t22 71.5q-50 1-91 16t-67 32q-19 11-31 28.5T0-200Z")
+                span.material-symbols-outlined(style=`font-size:22px`) person_add
             h3.cancel-modal__title Inviter un collaborateur
             p.invite-modal__sub La personne doit déjà avoir un compte BranShee. Elle recevra une invitation et devra l'accepter avant d'avoir accès.
 

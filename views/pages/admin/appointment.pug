@@ -13,18 +13,15 @@ block content
                 //- ── Left: mini-calendar ──
                 .calendar__section.calendar__section--left
                     .mini-cal-wrapper
-                        button.cal-icon-btn#miniCalTrigger(type="button" aria-label="Open month calendar")
-                            svg(xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor")
-                                path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm280 240q-17 0-28.5-11.5T440-480q0-17 11.5-28.5T480-520q17 0 28.5 11.5T520-480q0 17-11.5 28.5T480-440Zm-160 0q-17 0-28.5-11.5T280-480q0-17 11.5-28.5T320-520q17 0 28.5 11.5T360-480q0 17-11.5 28.5T320-440Zm320 0q-17 0-28.5-11.5T600-480q0-17 11.5-28.5T640-520q17 0 28.5 11.5T680-480q0 17-11.5 28.5T640-440ZM480-280q-17 0-28.5-11.5T440-320q0-17 11.5-28.5T480-360q17 0 28.5 11.5T520-320q0 17-11.5 28.5T480-280Zm-160 0q-17 0-28.5-11.5T280-320q0-17 11.5-28.5T320-360q17 0 28.5 11.5T360-320q0 17-11.5 28.5T320-280Zm320 0q-17 0-28.5-11.5T600-320q0-17 11.5-28.5T640-360q17 0 28.5 11.5T680-320q0 17-11.5 28.5T640-280Z")
+                        button.cal-icon-btn#miniCalTrigger(type="button" aria-label="Ouvrir le calendrier mensuel")
+                            span.material-symbols-outlined calendar_month
                         .mini-cal-dropdown#miniCalDropdown
                             .mini-cal-header
                                 button.cal-icon-btn#miniCalPrev(type="button" aria-label="Mois précédent")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                        path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                                    span.material-symbols-outlined chevron_left
                                 span.mini-cal-title#miniCalTitle
                                 button.cal-icon-btn#miniCalNext(type="button" aria-label="Mois suivant")
-                                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                        path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                                    span.material-symbols-outlined chevron_right
                             .mini-cal-grid
                                 .mini-cal-daynames
                                     span= t.days_abbr.monday
@@ -39,18 +36,15 @@ block content
                 //- ── Center: date navigation ──
                 .calendar__section.calendar__section--center
                     a.cal-today-btn.sm-btn.sm-btn--primary(href=`/appointment?view=${view}`)
-                        svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                            path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
+                        span.material-symbols-outlined today
                         span= t.bk.today
                     .cal-nav-group
                         if view === 'month'
                             a.cal-nav-btn(href=`/appointment?date=${prevMonthIso}&employee=${employeeFilter}&view=month` aria-label="Mois précédent")
-                                svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                    path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                                span.material-symbols-outlined chevron_left
                         else
-                            button.cal-nav-btn.calendar__date-btn.calendar__date-btn--previous(data-direction="prev" aria-label="Previous")
-                                svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                    path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                            button.cal-nav-btn.calendar__date-btn.calendar__date-btn--previous(data-direction="prev" aria-label="Mois précédent")
+                                span.material-symbols-outlined chevron_left
                         .cal-date-label
                             if view === 'month'
                                 span.cal-date-week= monthLabel
@@ -61,45 +55,30 @@ block content
                                     span.cal-date-daynum= focusedDayDate
                         if view === 'month'
                             a.cal-nav-btn(href=`/appointment?date=${nextMonthIso}&employee=${employeeFilter}&view=month` aria-label="Mois suivant")
-                                svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                    path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                                span.material-symbols-outlined chevron_right
                         else
-                            button.cal-nav-btn.calendar__date-btn.calendar__date-btn--next(data-direction="next" aria-label="Next")
-                                svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                    path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                            button.cal-nav-btn.calendar__date-btn.calendar__date-btn--next(data-direction="next" aria-label="Mois suivant")
+                                span.material-symbols-outlined chevron_right
 
                 //- ── Right: view toggle + employee filter ──
                 .calendar__section.calendar__section--right
                     //- Vue semaine / mois (desktop uniquement)
                     .cal-view-toggle
                         a.cal-view-btn(href=`/appointment?date=${focusedIso}&employee=${employeeFilter}&view=week` class=(view === 'week' ? 'is-active' : ''))
-                            svg(viewBox="0 0 24 24" width="14" height="14" fill="currentColor")
-                                rect(x="4" y="4" width="4" height="16" rx="1.3")
-                                rect(x="10" y="4" width="4" height="16" rx="1.3")
-                                rect(x="16" y="4" width="4" height="16" rx="1.3")
+                            span.material-symbols-outlined(style="font-size:14px") view_week
                             span= t.appt.view_week
                         a.cal-view-btn(href=`/appointment?date=${focusedIso}&employee=${employeeFilter}&view=month` class=(view === 'month' ? 'is-active' : ''))
-                            svg(viewBox="0 0 24 24" width="14" height="14" fill="currentColor")
-                                rect(x="4" y="4" width="7" height="7" rx="1.3")
-                                rect(x="13" y="4" width="7" height="7" rx="1.3")
-                                rect(x="4" y="13" width="7" height="7" rx="1.3")
-                                rect(x="13" y="13" width="7" height="7" rx="1.3")
+                            span.material-symbols-outlined(style="font-size:14px") grid_view
                             span= t.appt.view_month
 
                     //- Densité du calendrier : scrollable (confort) vs compact (tient sur l'écran)
                     if view === 'week'
                         .cal-view-toggle.cal-density-toggle#calDensityToggle
                             button.cal-view-btn.is-active(type="button" data-density="comfort" title="Calendrier détaillé, défile verticalement")
-                                svg(viewBox="0 0 24 24" width="14" height="14" fill="currentColor")
-                                    rect(x="4" y="5" width="16" height="5" rx="1.5")
-                                    rect(x="4" y="14" width="16" height="5" rx="1.5")
+                                span.material-symbols-outlined(style="font-size:14px") view_agenda
                                 span= t.appt.density_comfort
                             button.cal-view-btn(type="button" data-density="compact" title="Calendrier resserré pour tenir sur l'écran, sans défilement")
-                                svg(viewBox="0 0 24 24" width="14" height="14" fill="currentColor")
-                                    rect(x="4" y="4" width="16" height="3" rx="1")
-                                    rect(x="4" y="9" width="16" height="3" rx="1")
-                                    rect(x="4" y="14" width="16" height="3" rx="1")
-                                    rect(x="4" y="19" width="16" height="1.5" rx="0.75")
+                                span.material-symbols-outlined(style="font-size:14px") view_headline
                                 span= t.appt.density_compact
 
                     //- Employee filter
@@ -149,8 +128,7 @@ block content
                         span.cal-month__day= d.day
                         if canManageAppt
                             button.cal-month__add-btn(type="button" data-iso=d.iso title="Nouveau rendez-vous ce jour-là")
-                                svg(xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor")
-                                    path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
+                                span.material-symbols-outlined(style="font-size:14px") add
                         if d.colorCounts && d.colorCounts.length > 0
                             .cal-month__counts
                                 each cc in d.colorCounts
@@ -266,15 +244,12 @@ block content
         .appt-popup__toolbar
             if canManageAppt
                 button.appt-popup__tool-btn#apptPopupEdit(type="button" title="Modifier")
-                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                        path(d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z")
+                    span.material-symbols-outlined edit
             if canCancelDeleteAppt
                 button.appt-popup__tool-btn.appt-popup__tool-btn--danger#apptPopupDelete(type="button" title="Supprimer")
-                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                        path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+                    span.material-symbols-outlined delete
             button.appt-popup__tool-btn#apptPopupClose(type="button" title="Fermer")
-                svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                span.material-symbols-outlined close
         .appt-popup__body
             .appt-popup__color-dot#apptPopupDot
             .appt-popup__info
@@ -282,22 +257,18 @@ block content
                 p.appt-popup__datetime#apptPopupDatetime
                 .appt-popup__meta
                     .appt-popup__meta-row#apptPopupEmployeeRow
-                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                            path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Z")
+                        span.material-symbols-outlined(style="font-size:16px") person
                         span#apptPopupEmployeeName
                     .appt-popup__meta-row#apptPopupServiceRow
-                        svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                            path(d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z")
+                        span.material-symbols-outlined(style="font-size:16px") sell
                         span#apptPopupServiceName
                 .appt-popup__canceled-badge#apptPopupCanceled= t.appt.canceled
         .appt-popup__footer#apptPopupFooter
             a.appt-popup__detail-btn#apptPopupDetailBtn(href="#")
-                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                    path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                span.material-symbols-outlined(style="font-size:16px") open_in_new
                 | #{t.appt.view_detail_btn}
             a.appt-popup__detail-btn#apptPopupDossierBtn(href="#")
-                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                    path(d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z")
+                span.material-symbols-outlined(style="font-size:16px") description
                 | Dossier #{clientTerm || 'client'}
 
     //- ── Nouveau rendez-vous (panel admin) ──────────────────────────────────
@@ -306,8 +277,7 @@ block content
             .new-appt-modal__head
                 h3= t.appt.new_appt_title
                 button.new-appt-modal__close#newApptClose(type="button" aria-label="Fermer")
-                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                        path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                    span.material-symbols-outlined close
             .new-appt-modal__body
                 .edit-fields-row.two-col
                     .field-container.flex.col
@@ -379,12 +349,10 @@ block content
     //- ── Choix après glisser sur le calendrier : "Rendez-vous" ou "Absence" ──
     .drag-choice#dragChoice(style="display:none")
         button.drag-choice__btn#dragChoiceAppt(type="button")
-            svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
+            span.material-symbols-outlined(style="font-size:16px") event
             span= t.appt.drag_choice_appt
         button.drag-choice__btn.drag-choice__btn--block#dragChoiceBlock(type="button")
-            svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm-99-184 99-99 99 99 56-57-99-98 99-98-56-57-99 99-99-99-57 57 99 98-99 98 57 57Z")
+            span.material-symbols-outlined(style="font-size:16px") block
             span= t.appt.drag_choice_absence
 
     //- ── Modal : marquer une absence ──────────────────────────────────────
@@ -393,8 +361,7 @@ block content
             .new-appt-modal__head
                 h3= t.appt.block_modal_title
                 button.new-appt-modal__close#blockApptClose(type="button" aria-label="Fermer")
-                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                        path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+                    span.material-symbols-outlined close
             .new-appt-modal__body
                 .edit-fields-row.two-col
                     .field-container.flex.col

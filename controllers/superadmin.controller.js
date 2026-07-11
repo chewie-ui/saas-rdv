@@ -435,7 +435,11 @@ exports.logsPage = async (req, res) => {
       .lean(),
     Booking.find({})
       .select("name surname email date startTime status company service isGroup createdAt")
-      .populate("company", "slug owner")
+      .populate({
+        path: "company",
+        select: "name owner",
+        populate: { path: "owner", select: "businessName fullName" },
+      })
       .populate("service", "name")
       .sort({ createdAt: -1 })
       .limit(limit)
@@ -454,7 +458,11 @@ exports.logsPage = async (req, res) => {
     // Paiements clients (RDV réglés en ligne).
     Booking.find({ "payment.status": "paid" })
       .select("name surname serviceName payment company")
-      .populate("company", "slug")
+      .populate({
+        path: "company",
+        select: "name owner",
+        populate: { path: "owner", select: "businessName fullName" },
+      })
       .sort({ "payment.paidAt": -1 })
       .limit(100)
       .lean(),
@@ -490,13 +498,15 @@ exports.logsPage = async (req, res) => {
     });
   });
 
+  const companyLabel = (company) =>
+    company?.name || company?.owner?.businessName || company?.owner?.fullName || "établissement supprimé";
+
   recentBookings.forEach((b) => {
     const serviceName = b.service?.name || "Service";
-    const slug = b.company?.slug || "?";
     events.push({
       type: "booking",
       date: b.createdAt,
-      label: `${b.name || ''} ${b.surname || ''} → ${serviceName} chez ${slug}`,
+      label: `${b.name || ''} ${b.surname || ''} → ${serviceName} chez ${companyLabel(b.company)}`,
       detail: b.email || "",
       status: b.status,
       icon: b.isGroup ? "👥" : "📅",
@@ -518,11 +528,10 @@ exports.logsPage = async (req, res) => {
 
   recentPayments.forEach((p) => {
     const amount = p.payment?.amount ? `${p.payment.amount}€` : "";
-    const slug = p.company?.slug || "?";
     events.push({
       type: "payment",
       date: p.payment?.paidAt || p.createdAt,
-      label: `${p.name || ''} ${p.surname || ''} a payé ${amount} — ${p.serviceName || 'prestation'} chez ${slug}`.replace(/\s+/g, " ").trim(),
+      label: `${p.name || ''} ${p.surname || ''} a payé ${amount} — ${p.serviceName || 'prestation'} chez ${companyLabel(p.company)}`.replace(/\s+/g, " ").trim(),
       detail: "",
       icon: "💰",
     });

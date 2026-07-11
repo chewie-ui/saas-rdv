@@ -38,6 +38,11 @@
   margin-bottom: 4px;
 }
 
+.gs-empty .material-symbols-outlined {
+  opacity: 0.4;
+  margin-bottom: 4px;
+}
+
 .gs-empty p {
   margin: 0;
   font-size: 14px;
@@ -264,6 +269,7 @@
   padding: 4px 10px;
 }
 .gs-course-card__chip svg { flex-shrink: 0; }
+.gs-course-card__chip .material-symbols-outlined { flex-shrink: 0; }
 .gs-course-card__chip--price { color: var(--accent); background: var(--accent-soft); }
 
 .gs-course-card__employees {
@@ -462,4 +468,67 @@
 .gs-session-add-row #addSessionRowBtn {
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+/* ── Liste des participants (dans la modale partagée #__confirmModal) ─────── */
+.gs-part {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+}
+.gs-part__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.gs-part__name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink, #111);
+}
+.gs-part__contact {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.gs-part__actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.gs-part__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 12px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: none;
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+  color: #374151;
+  transition: background 0.15s;
+}
+.gs-part__btn:hover {
+  background: #e9eaec;
+}
+.gs-part__btn--danger {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+.gs-part__btn--danger:hover {
+  background: #fee2e2;
+}
+.gs-empty-list {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 24px 0;
 }

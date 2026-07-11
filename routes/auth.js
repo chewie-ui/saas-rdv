@@ -382,8 +382,12 @@ router.get("/auth/google/callback", async (req, res) => {
     req.login(user, (err) => {
       if (err) return res.redirect("/login?error=google");
       logLoginEvent(user, "google");
-      if (isNewUser && user.accountIntent !== "pro") return res.redirect("/");
-      return res.redirect("/appointment");
+      // Conversion Google Ads uniquement pour une VRAIE nouvelle inscription
+      // (pas une simple connexion) — sinon un pro existant qui se reconnecte
+      // via Google compterait comme une conversion à chaque fois.
+      const conv = isNewUser ? "?gads_conversion=1" : "";
+      if (isNewUser && user.accountIntent !== "pro") return res.redirect("/" + conv);
+      return res.redirect("/appointment" + conv);
     });
   } catch (err) {
     console.error("Google user OAuth error:", err);

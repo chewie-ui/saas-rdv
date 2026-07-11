@@ -9,14 +9,12 @@ block content
 
         .welcome-cta-group
             button.sm-btn.sm-btn--primary.welcome-cta-main#startTourBtn(type="button")
-                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                    path(d="M320-200v-560l440 280-440 280Z")
+                span.material-symbols-outlined(style=`font-size:18px`) play_arrow
                 | Commencer la visite guidée
             a.welcome-cta-skip(href="/appointment") Plus tard, j'irai directement à mon tableau de bord →
 
         .welcome-tip
-            svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+            span.material-symbols-outlined(style=`font-size:16px`) info
             span On vous guidera dans vos disponibilités, vos services, puis la personnalisation de votre page. Vous pourrez ignorer le tutoriel à tout moment.
 
     style.
@@ -30,7 +28,7 @@ block content
         .welcome-cta-skip { font-size: 13px; color: var(--text-muted); text-decoration: none; }
         .welcome-cta-skip:hover { color: var(--text-primary); text-decoration: underline; }
         .welcome-tip { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 13px; color: var(--text-muted); background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 10px; padding: 10px 16px; text-align: left; }
-        .welcome-tip svg { fill: var(--accent); flex-shrink: 0; }
+        .welcome-tip .material-symbols-outlined { color: var(--accent); flex-shrink: 0; }
 
 block scripts
     script.

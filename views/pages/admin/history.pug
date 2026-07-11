@@ -10,8 +10,7 @@ block content
         //- ── Free plan banner ────────────────────────────────────
         if currentPlan === 'basic'
             .hist-free-banner
-                svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                    path(d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z")
+                span.material-symbols-outlined info
                 span Version gratuite — l'historique est conservé
                 strong  7 jours
                 span  puis supprimé automatiquement.
@@ -76,8 +75,7 @@ block content
                             tr
                                 td(colspan="8")
                                     .hist-empty
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="currentColor" style="opacity:.12;display:block;margin:0 auto 12px")
-                                            path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z")
+                                        span.material-symbols-outlined(style="opacity:.12;display:block;margin:0 auto 12px;font-size:40px") history
                                         p.hist-empty__title= t.hist_page.empty_title
                                         p.hist-empty__sub= t.hist_page.empty_subtitle
                         each h in history
@@ -124,12 +122,10 @@ block content
                         //- Prev
                         if currentPage > 1
                             a.hist-pag-btn(href=`/history?page=${currentPage - 1}&limit=${currentLimit}` title="Précédent")
-                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                                span.material-symbols-outlined(style="font-size:16px") chevron_left
                         else
                             span.hist-pag-btn.disabled
-                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                                span.material-symbols-outlined(style="font-size:16px") chevron_left
 
                         //- Page numbers
                         - var startPg = Math.max(1, currentPage - 2)
@@ -154,12 +150,10 @@ block content
                         //- Next
                         if currentPage < totalPages
                             a.hist-pag-btn(href=`/history?page=${currentPage + 1}&limit=${currentLimit}` title="Suivant")
-                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                                span.material-symbols-outlined(style="font-size:16px") chevron_right
                         else
                             span.hist-pag-btn.disabled
-                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                                span.material-symbols-outlined(style="font-size:16px") chevron_right
 
                     span.hist-pag-info #{totalBookings} au total
 
@@ -204,8 +198,7 @@ block content
                     .hist-card__footer
                         a.hist-open-btn(href=`/history/edit/${h._id}`)
                             = t.hist_page.view
-                            svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13")
-                                path(d="M5 12h14M13 6l6 6-6 6")
+                            span.material-symbols-outlined(style="font-size:13px") arrow_forward
 
             if totalPages > 1
                 .hist-pagination
@@ -213,37 +206,30 @@ block content
                     .hist-pag-center
                         if currentPage > 1
                             a.hist-pag-btn(href=`/history?page=${currentPage - 1}&limit=${currentLimit}`)
-                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                                span.material-symbols-outlined(style="font-size:16px") chevron_left
                         else
                             span.hist-pag-btn.disabled
-                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z")
+                                span.material-symbols-outlined(style="font-size:16px") chevron_left
                         if currentPage < totalPages
                             a.hist-pag-btn(href=`/history?page=${currentPage + 1}&limit=${currentLimit}`)
-                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                                span.material-symbols-outlined(style="font-size:16px") chevron_right
                         else
                             span.hist-pag-btn.disabled
-                                svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                                    path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                                span.material-symbols-outlined(style="font-size:16px") chevron_right
 
         //- ── Context menu (kept for compatibility) ────────────────
         .history__actions-panel
             .history__actions-row.show
                 .row__icon.flex-c
-                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                        path(d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-134 0-244.5-72.5T61-500q54-137 164.5-209.5T480-782q134 0 244.5 72.5T899-500q-54 137-164.5 209.5T480-200Z")
+                    span.material-symbols-outlined(style="font-size:18px") visibility
                 .row__text= t.hist_page.view
             .history__actions-row.edit
                 .row__icon.flex-c
-                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                        path(d="M200-200h50l391-391-50-50-391 391v50Zm-60 60v-135l527-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l49 49q12 11 17 26t5 30q0 16-5 30.5T817-647L290-120H140Zm620-571-49-49 49 49Zm-126 77-25-25 50 50-25-25Z")
+                    span.material-symbols-outlined(style="font-size:18px") edit
                 .row__text= t.hist.edit
             .history__actions-row.delete
                 .row__icon.flex-c
-                    svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                        path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+                    span.material-symbols-outlined(style="font-size:18px") delete
                 .row__text= t.hist.del
 
 block scripts

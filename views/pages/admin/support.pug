@@ -11,8 +11,7 @@ block content
             p.info-page__subtitle= t.support.subtitle
 
         .support-search
-            svg.support-search__icon(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                path(d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z")
+            span.material-symbols-outlined.support-search__icon(style=`font-size:18px`) search
             input#supportSearch.support-search__input(type="text" placeholder=t.support.search_placeholder)
             .support-search__results#searchResults
 
@@ -49,8 +48,7 @@ block content
                         .guide-tour-card__body
                             h4= g.title
                             p= g.desc
-                        svg.guide-tour-card__arrow(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                            path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+                        span.material-symbols-outlined.guide-tour-card__arrow(style=`font-size:18px`) chevron_right
 
         if sections && sections.length
             each section, i in sections
@@ -73,8 +71,7 @@ block content
                                 .support-faq-item
                                     .support-faq-item__q
                                         span= faq.question
-                                        svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                            path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
+                                        span.material-symbols-outlined(style=`font-size:18px`) expand_more
                                     .support-faq-item__a !{faq.answer}
         else
             .info-card.support-section(id="chapter-0")
@@ -99,26 +96,22 @@ block content
                     .support-faq-item
                         .support-faq-item__q
                             span= t.support.demo_faq1_q
-                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
+                            span.material-symbols-outlined(style=`font-size:18px`) expand_more
                         .support-faq-item__a!= t.support.demo_faq1_a
                     .support-faq-item
                         .support-faq-item__q
                             span= t.support.demo_faq2_q
-                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
+                            span.material-symbols-outlined(style=`font-size:18px`) expand_more
                         .support-faq-item__a!= t.support.demo_faq2_a
                     .support-faq-item
                         .support-faq-item__q
                             span= t.support.demo_faq3_q
-                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
+                            span.material-symbols-outlined(style=`font-size:18px`) expand_more
                         .support-faq-item__a!= t.support.demo_faq3_a
                     .support-faq-item
                         .support-faq-item__q
                             span= t.support.demo_faq4_q
-                            svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
-                                path(d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z")
+                            span.material-symbols-outlined(style=`font-size:18px`) expand_more
                         .support-faq-item__a= t.support.demo_faq4_a
 
         .info-card.support-section(id=`chapter-${_chapters.length - 1}`)

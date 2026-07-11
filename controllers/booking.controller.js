@@ -671,6 +671,8 @@ exports.createBooking = async (req, res) => {
                            (a) => a.required || (a.answer !== undefined && a.answer !== null && String(a.answer).trim() !== "")
                          ),
         locationText,
+        businessName:  (companyOwner?.businessName || "").trim(),
+        businessPhone: (companyOwner?.phonePro || "").trim(),
         cancelUrl,
         bookingId:   newBooking._id,
         cancelToken: newBooking.cancelToken,

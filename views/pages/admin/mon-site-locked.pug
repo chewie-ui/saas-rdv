@@ -1,0 +1,40 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet" href="/css/layouts/mon-site.css")
+
+block content
+    .ms-locked
+        a.ms-back(href="/panel" title="Retour au tableau de bord")
+            span.material-symbols-outlined arrow_back
+            span Tableau de bord
+
+        .ms-locked__card
+            .ms-locked__icon
+                span.material-symbols-outlined language
+            .ms-locked__badge Fonctionnalité Business
+            h1.ms-locked__title Créez votre site vitrine
+            p.ms-locked__text
+                | En plus de votre agenda, publiez un vrai site pour votre établissement — présentation, galerie, avis clients, prise de rendez-vous intégrée — à votre propre adresse&nbsp;:
+
+            .ms-locked__preview
+                span.ms-locked__preview-dim branshee.com/
+                span.ms-locked__preview-slug= companySlug
+
+            .ms-locked__features
+                .ms-locked__feature
+                    span.material-symbols-outlined check_circle
+                    span Éditeur visuel — sections, couleurs, images, sans coder
+                .ms-locked__feature
+                    span.material-symbols-outlined check_circle
+                    span Réservation intégrée directement sur votre site
+                .ms-locked__feature
+                    span.material-symbols-outlined check_circle
+                    span Templates prêts à l'emploi + personnalisation complète
+                .ms-locked__feature
+                    span.material-symbols-outlined check_circle
+                    span Formulaire de contact, avis, réseaux sociaux, SEO
+
+            .ms-locked__actions
+                a.sm-btn.sm-btn--primary(href="/subscription") Passer au plan Business
+                a.sm-btn.sm-btn--ghost(href="/panel") Plus tard
