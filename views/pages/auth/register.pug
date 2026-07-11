@@ -25,6 +25,16 @@ block links
         .reg-progress__line { flex:1; height:2px; background:#e5e7eb; margin:0 8px; transition:background .2s; }
         .reg-progress__line.done { background:#15803d; }
 
+        /* Sur mobile, 4 labels en nowrap ne tiennent pas dans la largeur —
+           ça faisait déborder toute la page horizontalement. On ne garde que
+           le label de l'étape en cours, plus compact. */
+        @media (max-width:480px) {
+            .reg-progress__label { display:none; }
+            .reg-progress__label.current { display:inline; font-size:11.5px; }
+            .reg-progress__dot { width:24px; height:24px; font-size:11px; }
+            .reg-progress__line { margin:0 4px; }
+        }
+
         /* ── Nav buttons ──────────────────────────────────────────── */
         .reg-nav { display:flex; gap:10px; margin-top:4px; }
         .reg-back { flex:0 0 auto; background:none; border:1.5px solid #e5e7eb; border-radius:9px; padding:0 16px; height:38px; font-size:14px; font-weight:600; color:#6b7280; cursor:pointer; transition:border-color .15s,color .15s; }
@@ -100,8 +110,8 @@ block content
         //- ── Panneau droit : formulaire ────────────────────────────
         .auth-form-panel
             .auth-form-inner
-                h1= t.auth.register_title || 'Créez votre compte'
-                p.auth-sub= t.auth.register_desc || 'Pour gérer votre établissement ou pour réserver vos rendez-vous — un seul compte BranShee.'
+                h1#regTitle= t.auth.register_title || 'Créez votre compte'
+                p.auth-sub#regDesc= t.auth.register_desc || 'Pour gérer votre établissement ou pour réserver vos rendez-vous — un seul compte BranShee.'
 
                 //- Barre de progression
                 .reg-progress#regProgress
@@ -345,6 +355,11 @@ block scripts
     script(src="/js/components/topbar.js")
     script.
         const __services = !{JSON.stringify(services)};
+        const __regCopy = {
+            pro:       { title: !{JSON.stringify(t.auth.register_title_pro || t.auth.register_title)}, desc: !{JSON.stringify(t.auth.register_desc_pro || t.auth.register_desc)} },
+            client:    { title: !{JSON.stringify(t.auth.register_title_client || t.auth.register_title)}, desc: !{JSON.stringify(t.auth.register_desc_client || t.auth.register_desc)} },
+            undecided: { title: !{JSON.stringify(t.auth.register_title)}, desc: !{JSON.stringify(t.auth.register_desc)} },
+        };
         (function() {
 
             /* ── State ────────────────────────────────────────────── */
@@ -452,6 +467,16 @@ block scripts
                 match.classList.add('is-selected');
                 match.querySelector('input[type="radio"]').checked = true;
                 intentInput.value = value;
+                // Le titre/sous-titre du formulaire s'adapte à l'intention —
+                // avant, un visiteur "client" (juste réserver un RDV) voyait
+                // toujours "Créez votre compte admin... gérer votre activité
+                // et inviter votre équipe", ce qui n'a aucun sens pour lui et
+                // est une cause plausible d'abandon en cours d'inscription.
+                var copy = __regCopy[value] || __regCopy.undecided;
+                var titleEl = document.getElementById('regTitle');
+                var descEl  = document.getElementById('regDesc');
+                if (titleEl) titleEl.textContent = copy.title;
+                if (descEl)  descEl.textContent  = copy.desc;
                 if (value === 'pro') {
                     // Ouvre directement la sous-étape créer/rejoindre, au lieu
                     // d'empiler les 2 choix sous les 3 cartes principales.

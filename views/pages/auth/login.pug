@@ -33,7 +33,14 @@ block content
                 h1= t.auth.login_title
                 p.auth-sub= t.auth.login_desc
 
-                .auth-error#loginError(style=error ? '' : 'display:none')= error || ''
+                .auth-error#loginError(style=error ? '' : 'display:none')
+                    if error === t.auth.error_invalid_credentials
+                        = error
+                        br
+                        span= t.auth.no_account + ' '
+                        a(href="/register")= t.auth.register_link
+                    else
+                        = error || ''
 
                 //- Google SSO
                 a.auth-social-btn(href="/auth/google")
@@ -49,7 +56,7 @@ block content
                     span OR
                     hr
 
-                form(action="/login" method="POST")
+                form(action="/login" method="POST" novalidate)
                     .auth-field
                         label.auth-label= t.auth.email
                         input.auth-input(
@@ -85,11 +92,35 @@ block scripts
         (function() {
             var form      = document.querySelector('form[action="/login"]');
             var errBox    = document.getElementById('loginError');
+            var emailInput = form ? form.querySelector('input[name="email"]') : null;
             var submitBtn = form ? form.querySelector('button[type="submit"]') : null;
 
-            function showError(msg) {
+            function showError(msg, el) {
+                if (errBox) {
+                    errBox.textContent = msg;
+                    errBox.style.display = 'block';
+                    errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+                if (el) { el.classList.add('auth-input--error'); el.focus(); }
+            }
+
+            // Email/mot de passe incorrect couvre aussi bien "mauvais mot de
+            // passe" que "ce compte n'existe pas" (volontairement, pour ne
+            // pas révéler quels emails sont inscrits) — mais un visiteur qui
+            // n'a simplement pas encore de compte doit comprendre que c'est
+            // ça le problème, pas juste réessayer son mot de passe en boucle.
+            function showCredentialsError(msg) {
                 if (!errBox) return;
-                errBox.textContent = msg;
+                errBox.innerHTML = '';
+                errBox.appendChild(document.createTextNode(msg));
+                errBox.appendChild(document.createElement('br'));
+                var hint = document.createElement('span');
+                hint.textContent = !{JSON.stringify(t.auth.no_account)} + ' ';
+                var link = document.createElement('a');
+                link.href = '/register';
+                link.textContent = !{JSON.stringify(t.auth.register_link)};
+                hint.appendChild(link);
+                errBox.appendChild(hint);
                 errBox.style.display = 'block';
                 errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
@@ -100,6 +131,14 @@ block scripts
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
                     if (errBox) errBox.style.display = 'none';
+                    if (emailInput) emailInput.classList.remove('auth-input--error');
+
+                    var email = emailInput ? emailInput.value.trim() : '';
+                    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                        showError(!{JSON.stringify(t.auth.error_invalid_email)}, emailInput);
+                        return;
+                    }
+
                     submitBtn.disabled = true;
                     var span = submitBtn.querySelector('span');
                     if (span) span.textContent = '…'; else submitBtn.textContent = '…';
@@ -116,6 +155,10 @@ block scripts
                     .then(function(data) {
                         if (data.success) {
                             window.location.href = data.redirect || '/appointment';
+                        } else if (data.error === !{JSON.stringify(t.auth.error_invalid_credentials || "Email ou mot de passe incorrect.")}) {
+                            showCredentialsError(data.error);
+                            submitBtn.disabled = false;
+                            if (span) span.textContent = origLabel; else submitBtn.textContent = origLabel;
                         } else {
                             showError(data.error || 'Une erreur est survenue.');
                             submitBtn.disabled = false;

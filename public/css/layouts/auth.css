@@ -6,6 +6,7 @@
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  overflow-x: hidden;
   background: var(--surface);
   font-family: var(--font-primary);
 }
@@ -284,6 +285,24 @@
   font-size: 13px;
   font-weight: 500;
   margin-bottom: 14px;
+}
+
+.auth-error a {
+  color: var(--danger);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* Champ en erreur (validation email invalide, réponse serveur, etc.) — entouré en rouge */
+.auth-input.auth-input--error {
+  border-color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.04) !important;
+  animation: auth-shake .3s ease;
+}
+@keyframes auth-shake {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-4px); }
+  75%      { transform: translateX(4px); }
 }
 
 /* ── Responsive ───────────────────────────────────────────── */

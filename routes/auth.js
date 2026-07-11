@@ -153,9 +153,10 @@ router.post("/login", (req, res, next) => {
         // Si la vérification Client échoue pour une raison quelconque, on
         // retombe sur le message d'erreur générique ci-dessous.
       }
-      if (isAjax) return res.status(400).json({ error: "Email ou mot de passe incorrect." });
+      const invalidCredentialsMsg = res.locals.t?.auth?.error_invalid_credentials || "Email ou mot de passe incorrect.";
+      if (isAjax) return res.status(400).json({ error: invalidCredentialsMsg });
       return res.render("auth/login", {
-        error: "Email ou mot de passe incorrect.",
+        error: invalidCredentialsMsg,
         becomeCoach: true,
         alwaysSticky: true,
       });
