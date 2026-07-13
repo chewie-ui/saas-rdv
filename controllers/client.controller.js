@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 const Client = require("../db/models/client.model");
 const User = require("../db/models/user.model");
 const Booking = require("../db/models/book.model");
+const { isSafePlainText } = require("../utils/validateName");
 
 // ─── REGISTER ────────────────────────────────────────────────────────────────
 
@@ -31,6 +32,9 @@ exports.postRegister = async (req, res) => {
 
   if (!fullName || !email || !password)
     return fail("Veuillez remplir tous les champs obligatoires.");
+
+  if (!isSafePlainText(fullName))
+    return fail("Le nom ne peut pas contenir les caractères < ou >.");
 
   if (password !== confirmPassword)
     return fail("Les mots de passe ne correspondent pas.");
@@ -228,7 +232,7 @@ exports.updateProfile = async (req, res) => {
   try {
     const { fullName, phone, location, languages, emailNotifications } = req.body;
 
-    if (!fullName || fullName.trim().length < 2) {
+    if (!fullName || fullName.trim().length < 2 || !isSafePlainText(fullName)) {
       return res.redirect("/espace-client/parametres?error=invalid_name");
     }
 

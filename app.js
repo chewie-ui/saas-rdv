@@ -3,6 +3,7 @@ const env = require(`./environment/${process.env.NODE_ENV || "development"}`);
 
 const express = require("express");
 const compression = require("compression");
+const helmet = require("helmet");
 const path = require("path");
 const passport = require("passport");
 const cookieParser = require("cookie-parser");
@@ -34,6 +35,25 @@ if (process.env.NODE_ENV === "production") {
 
 // Compress all HTTP responses (gzip/br)
 app.use(compression());
+
+// En-têtes de sécurité de base (retire X-Powered-By, X-Content-Type-Options,
+// etc.). On désactive volontairement plusieurs protections par défaut de
+// Helmet qui casseraient des fonctionnalités existantes du site :
+// - contentSecurityPolicy : le site utilise énormément de <script> inline
+//   (window.__t, gtag, Stripe, Clarity...) sans nonce — une CSP par défaut
+//   bloquerait tout. À traiter comme un chantier séparé si besoin un jour.
+// - frameguard (X-Frame-Options) : la page de réservation est pensée pour
+//   être intégrée en iframe sur le site du pro ("widget"), donc jamais DENY.
+// - crossOriginEmbedderPolicy / crossOriginOpenerPolicy /
+//   crossOriginResourcePolicy : casseraient Stripe Elements (iframe),
+//   Google OAuth et l'intégration du widget sur des domaines tiers.
+app.use(helmet({
+  contentSecurityPolicy: false,
+  frameguard: false,
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: false,
+  crossOriginResourcePolicy: false,
+}));
 
 app.set("view engine", "pug");
 
@@ -205,6 +225,10 @@ require("./config/passport");
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// Doit tourner APRÈS les parseurs de body (rien à nettoyer avant) et AVANT
+// toute route/session (protège aussi la lecture de la session/passport).
+app.use(require("./middlewares/mongoSanitize"));
+
 app.use(require("./config/session"));
 
 app.use(passport.initialize());
@@ -261,6 +285,18 @@ app.use(injectSubscription);
 app.use(googleCalendarRoutes);
 app.use(routes);
 
+// Body JSON invalide (bots/scanners qui POSTent du JSON pourri comme "@" ou
+// "test_data" sur toutes les routes) — renvoyer un 400 propre au lieu de
+// laisser body-parser cracher une stack trace à chaque requête. Ces requêtes
+// sont du bruit d'Internet, pas une vraie erreur de l'app : on les jette
+// silencieusement pour garder les logs lisibles.
+app.use((err, req, res, next) => {
+  if (err && (err.type === "entity.parse.failed" || (err.status === 400 && err instanceof SyntaxError))) {
+    return res.status(400).json({ success: false, message: "Requête invalide." });
+  }
+  next(err);
+});
+
 // Erreurs multer (ex: fichier image trop volumineux) — renvoyer un message
 // clair en JSON plutôt que de laisser planter la requête en page d'erreur.
 app.use((err, req, res, next) => {
@@ -271,6 +307,18 @@ app.use((err, req, res, next) => {
     return res.status(400).json({ success: false, message });
   }
   next(err);
+});
+
+// Filet final : toute autre erreur non gérée par une route est logguée puis
+// renvoyée en 500 propre, SANS jamais faire tomber le process. Sans ça,
+// Express affiche sa page d'erreur par défaut et loggue une stack brute.
+app.use((err, req, res, next) => {
+  console.error("[app error]", req.method, req.originalUrl, "-", err && err.message);
+  if (res.headersSent) return next(err);
+  res.status(err && err.status ? err.status : 500).json({
+    success: false,
+    message: "Une erreur est survenue.",
+  });
 });
 
 module.exports = app;

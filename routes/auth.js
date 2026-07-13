@@ -18,6 +18,27 @@ const crypto = require("crypto");
 const { requireFeatureActive } = require("../middlewares/featureFlag");
 const isAuth = require("../middlewares/isAuth");
 const LoginEvent = require("../db/models/loginEvent.model");
+const rateLimit = require("express-rate-limit");
+
+// Anti brute-force sur les endpoints d'authentification — un compte email
+// existant (login) ou un email/téléphone (codes de vérification) ne doit
+// pas pouvoir être bombardé de tentatives. Compte par IP, fenêtre glissante.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Trop de tentatives. Veuillez réessayer dans quelques minutes." },
+});
+// Codes à 6 chiffres (2FA, réinitialisation mdp) — surface bien plus étroite
+// à brute-forcer, donc limite plus stricte.
+const codeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Trop de tentatives. Veuillez réessayer dans quelques minutes." },
+});
 
 // Fire-and-forget : ne doit jamais faire échouer une connexion si l'écriture
 // du log rate (DB lente, etc.) — c'est juste un historique pour le superadmin.
@@ -122,7 +143,7 @@ router.post("/set-pending", (req, res) => {
   res.json({ ok: true });
 });
 
-router.post("/register", createUser);
+router.post("/register", authLimiter, createUser);
 
 // ── Liste des métiers pour le formulaire d'inscription (utilisée par le
 // client desktop — le site web la passe directement au template Pug) ───────
@@ -130,7 +151,7 @@ router.get("/api/business-types", (req, res) => {
   res.json({ businessTypes: getServices(res.locals.lang || "fr") });
 });
 
-router.post("/login", (req, res, next) => {
+router.post("/login", authLimiter, (req, res, next) => {
   const isAjax = req.headers["x-requested-with"] === "fetch";
   passport.authenticate("local", async (err, user, info) => {
     if (err) return next(err);
@@ -210,7 +231,7 @@ router.get("/login/2fa", (req, res) => {
   res.render("auth/login-2fa", { becomeCoach: true, alwaysSticky: true, error });
 });
 
-router.post("/login/2fa", async (req, res) => {
+router.post("/login/2fa", codeLimiter, async (req, res) => {
   const isAjax = req.headers["x-requested-with"] === "fetch";
   const { pending2FAUserId } = req.session;
   if (!pending2FAUserId) {
@@ -400,7 +421,7 @@ router.get("/forgot-password", (req, res) => {
   res.render("auth/forgot-password", { alwaysSticky: true });
 });
 
-router.post("/forgot-password/verify-code", forgotPasswordVerifyCode);
-router.post("/forgot-password/check-code", checkCodePwd);
-router.patch("/forgot-password/new-password", newPwd);
+router.post("/forgot-password/verify-code", authLimiter, forgotPasswordVerifyCode);
+router.post("/forgot-password/check-code", codeLimiter, checkCodePwd);
+router.patch("/forgot-password/new-password", authLimiter, newPwd);
 module.exports = router;

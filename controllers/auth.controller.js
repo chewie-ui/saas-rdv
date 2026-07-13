@@ -8,6 +8,7 @@ const CompanyMembership = require("../db/models/company/companyMembership.model"
 const { sendEmail } = require("../utils/mailer");
 const { getPlan } = require("../utils/planLimits");
 const getServices = require("../utils/services");
+const { isSafePlainText } = require("../utils/validateName");
 const pug = require("pug");
 const path = require("path");
 
@@ -50,14 +51,17 @@ exports.createUser = async (req, res) => {
   const wantsToJoin  = accountIntent === "pro" && proMode === "join";
   const joinCompanyId = (req.body.joinCompanyId || "").trim();
 
+  if (!fullname || !isSafePlainText(fullname))
+    return fail(res.locals.t?.auth?.error_invalid_name || "Le nom ne peut pas contenir les caractères < ou >.");
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email))
     return fail(res.locals.t?.auth?.error_invalid_email || "Veuillez entrer une adresse email valide.");
 
-  // Validate businessType against the allowed list — seulement pour un pro qui crée
-  const allowedServices = getServices(res.locals.lang || "fr");
-  if (wantsCompany && (!businessType || !allowedServices.includes(businessType)))
-    return fail("Veuillez choisir votre métier dans la liste proposée.");
+  // Un métier hors liste conseillée est accepté (signalé en orange côté profil,
+  // cf. customize.pug) — seul un champ vide bloque, pour un pro qui crée.
+  if (wantsCompany && !businessType)
+    return fail("Veuillez indiquer votre métier.");
 
   // Valider l'établissement à rejoindre — doit exister et son propriétaire
   // doit être en plan Business (seul plan pensé pour plusieurs comptes).

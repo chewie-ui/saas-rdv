@@ -12,6 +12,7 @@ const path = require("path");
 const speakeasy = require("speakeasy");
 const QRCode = require("qrcode");
 const { sanitizeRichText } = require("../utils/sanitizeRichText");
+const { isSafePlainText } = require("../utils/validateName");
 
 // ── Limites par plan ─────────────────────────────────────────────────────────
 const PLAN_LIMITS = {
@@ -115,6 +116,10 @@ exports.editProfilePicture = async (req, res) => {
 exports.updateAccountInfo = async (req, res) => {
   try {
     const { fullName, phone } = req.body;
+
+    if (fullName !== undefined && !isSafePlainText(fullName)) {
+      return res.status(400).json({ error: "Le nom ne peut pas contenir les caractères < ou >." });
+    }
 
     const user = req.user;
     const updates = {};
@@ -873,6 +878,11 @@ exports.updateBusinessType = async (req, res) => {
 exports.editBusinessInfo = async (req, res) => {
   try {
     const { businessName, description, businessType, businessPicture } = req.body;
+
+    if (businessName && !isSafePlainText(businessName)) {
+      return res.status(400).json({ error: "Le nom ne peut pas contenir les caractères < ou >." });
+    }
+
     // Mise à jour partielle : ne touche que les champs envoyés. Le champ
     // "Description" a été retiré de ce formulaire (Personnaliser) mais reste
     // utilisé ailleurs (page publique, méta SEO) — un envoi blind écraserait

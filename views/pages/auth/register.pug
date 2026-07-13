@@ -301,6 +301,7 @@ block content
                                 )
                                 input(type="hidden" name="businessType" id="businessTypeInput")
                                 .auth-service-dropdown#serviceDropdown
+                            p.auth-field-hint#businessTypeHint Ce métier n'est pas dans la liste conseillée, mais c'est noté !
 
                         .auth-field#joinCompanyField(style="display:none")
                             label.auth-label Établissement à rejoindre
@@ -541,6 +542,7 @@ block scripts
                 var name  = nameInput  ? nameInput.value.trim()  : '';
                 var email = emailInput ? emailInput.value.trim() : '';
                 if (!name)  { showError('Veuillez entrer votre nom.', nameInput); return; }
+                if (/[<>]/.test(name)) { showError(!{JSON.stringify(t.auth.error_invalid_name)}, nameInput); return; }
                 if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                     showError('Veuillez entrer une adresse email valide.', emailInput); return;
                 }
@@ -609,8 +611,16 @@ block scripts
             var svcInput   = document.getElementById('serviceInput');
             var svcHidden  = document.getElementById('businessTypeInput');
             var svcDropdown = document.getElementById('serviceDropdown');
+            var svcHint    = document.getElementById('businessTypeHint');
 
             function normalize(str) { return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+            // Un métier tapé à la main (absent de la liste conseillée) reste accepté :
+            // on le mémorise quand même dans le champ caché, on avertit juste en orange.
+            function markCustom(isCustom) {
+                svcInput.classList.toggle('service-input--custom', isCustom);
+                if (svcHint) svcHint.classList.toggle('is-visible', isCustom);
+            }
 
             function renderList(items) {
                 svcDropdown.innerHTML = '';
@@ -626,6 +636,7 @@ block scripts
                         svcDropdown.style.display = 'none';
                         svcInput.classList.add('service-input--selected');
                         svcInput.classList.remove('service-input--invalid');
+                        markCustom(false);
                     });
                     svcDropdown.appendChild(li);
                 });
@@ -636,6 +647,7 @@ block scripts
                 svcInput.addEventListener('input', function() {
                     svcHidden.value = '';
                     svcInput.classList.remove('service-input--selected','service-input--invalid');
+                    markCustom(false);
                     var q = normalize(svcInput.value.trim());
                     if (!q) { svcDropdown.style.display = 'none'; return; }
                     renderList(__services.filter(function(s){ return normalize(s).includes(q); }).slice(0,8));
@@ -645,10 +657,17 @@ block scripts
                     if (q) renderList(__services.filter(function(s){ return normalize(s).includes(q); }).slice(0,8));
                 });
                 svcInput.addEventListener('blur', function() {
-                    setTimeout(function() {
-                        svcDropdown.style.display = 'none';
-                        if (svcInput.value.trim() && !svcHidden.value) svcInput.classList.add('service-input--invalid');
-                    }, 160);
+                    // Immédiat (pas dans le setTimeout ci-dessous) : sinon un clic
+                    // direct sur "Continuer" juste après la saisie pourrait soumettre
+                    // avant que la valeur ne soit acceptée, et bloquer à tort.
+                    var typed = svcInput.value.trim();
+                    // Rien sélectionné dans la liste mais du texte tapé : on
+                    // l'accepte quand même (non bloquant), juste signalé en orange.
+                    if (typed && !svcHidden.value) {
+                        svcHidden.value = typed;
+                        markCustom(true);
+                    }
+                    setTimeout(function() { svcDropdown.style.display = 'none'; }, 160);
                 });
             }
 
@@ -749,11 +768,12 @@ block scripts
                 e.preventDefault();
                 clearErrors();
 
-                // Valider métier — seulement pour un compte "pro" qui crée
-                if (intentInput.value === 'pro' && proModeInput.value === 'create' &&
-                    (!svcHidden.value || !__services.includes(svcHidden.value))) {
+                // Valider métier — seulement pour un compte "pro" qui crée. Un métier
+                // absent de la liste conseillée est accepté (signalé en orange plus
+                // haut) ; seul un champ complètement vide bloque la suite.
+                if (intentInput.value === 'pro' && proModeInput.value === 'create' && !svcHidden.value) {
                     svcInput.classList.add('service-input--invalid');
-                    showError('Veuillez choisir votre métier dans la liste.');
+                    showError('Veuillez indiquer votre métier.');
                     svcInput.focus();
                     return;
                 }

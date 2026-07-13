@@ -1,6 +1,20 @@
 const http = require("http");
 const https = require("https");
 
+// ── Filet de sécurité process ───────────────────────────────────────────────
+// Sans ça, la MOINDRE erreur non gérée (une promesse rejetée quelque part, une
+// exception inattendue dans un callback) tue TOUT le process Node → le site
+// tombe entièrement d'un coup. Ici on se contente de LOGGUER l'erreur et on
+// laisse le serveur continuer à tourner : une requête pourrie ne doit jamais
+// faire tomber les 99 % d'utilisateurs légitimes. PM2 reste le filet ultime si
+// le process meurt vraiment (OOM, etc.) → il le relance en < 1 s.
+process.on("unhandledRejection", (reason) => {
+  console.error("[unhandledRejection]", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("[uncaughtException]", err && err.stack ? err.stack : err);
+});
+
 const app = require("../app.js");
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);

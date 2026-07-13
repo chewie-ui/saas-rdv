@@ -354,7 +354,11 @@ function buildDayBoxes(dayItems) {
 exports.appointment = async (req, res) => {
   const currentCompany = res.locals.currentCompany;
   if (!currentCompany) {
-    return res.redirect("/register");
+    // Un utilisateur connecté sans établissement (ex: intention "undecided"
+    // à l'inscription) ne doit JAMAIS être renvoyé vers /register : pour un
+    // compte déjà authentifié, GET /register redirige lui-même vers
+    // /appointment → boucle de redirection infinie ("trop de redirections").
+    return res.redirect("/etablissement/mes-etablissements");
   }
 
   // Employee filter from query param
@@ -1094,7 +1098,9 @@ async function getDaysOff(companyId) {
 exports.availability = async (req, res) => {
   const currentCompany = res.locals.currentCompany;
   if (!currentCompany) {
-    return res.redirect("/register");
+    // Cf. exports.appointment ci-dessus : jamais /register pour un compte
+    // déjà connecté (boucle de redirection infinie avec GET /register).
+    return res.redirect("/etablissement/mes-etablissements");
   }
   const Service  = require("../db/models/company/service.model");
   const [daysOff, currentSlotTime, slotConfig, serviceCount, activeEmployees, companyDoc] = await Promise.all([
@@ -1558,7 +1564,9 @@ exports.updateBookingEmployee = async (req, res) => {
 exports.getWeekData = async (req, res) => {
   const currentCompany = res.locals.currentCompany;
   if (!currentCompany) {
-    return res.redirect("/register");
+    // Cf. exports.appointment ci-dessus : jamais /register pour un compte
+    // déjà connecté (boucle de redirection infinie avec GET /register).
+    return res.redirect("/etablissement/mes-etablissements");
   }
   const referenceDate = new Date(req.query.date);
 

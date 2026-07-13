@@ -6,6 +6,17 @@ const accountController = require("../../controllers/account.controller");
 
 const injectCompany = require("../../middlewares/injectCompany");
 const isAuth = require("../../middlewares/isAuth");
+const rateLimit = require("express-rate-limit");
+
+// Anti brute-force sur les codes à 6 chiffres (2FA, suppression de compte,
+// vérification email) — surface étroite, donc limite stricte par IP.
+const codeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Trop de tentatives. Veuillez réessayer dans quelques minutes." },
+});
 router.patch(
   "/profile-picture",
   upload.single("profilePicture"),
@@ -40,8 +51,8 @@ router.post(
   isAuth,
   accountController.editEmailConfirmation,
 );
-router.post("/check-digital-code", accountController.checkDigitalCode);
-router.post("/verification/code", accountController.verificationCode);
+router.post("/check-digital-code", codeLimiter, accountController.checkDigitalCode);
+router.post("/verification/code", codeLimiter, accountController.verificationCode);
 
 router.patch("/edit/email", accountController.editEmail);
 
@@ -60,7 +71,7 @@ router.patch(
 router.delete("/business-picture", accountController.deleteBusinessPicture);
 
 router.post("/send-delete-code", isAuth, accountController.sendDeleteCode);
-router.delete("/delete-account", isAuth, accountController.deleteAccount);
+router.delete("/delete-account", isAuth, codeLimiter, accountController.deleteAccount);
 
 router.patch("/calendar-settings", accountController.updateCalendarSettings);
 router.patch("/embed-settings", isAuth, accountController.updateEmbedSettings);
@@ -101,8 +112,8 @@ router.delete("/payment-method/:pmId", isAuth, accountController.detachPaymentMe
 
 // ── 2FA ──────────────────────────────────────────────────────────────────────
 router.post("/2fa/setup",   isAuth, accountController.setup2FA);
-router.post("/2fa/enable",  isAuth, accountController.enable2FA);
-router.post("/2fa/disable", isAuth, accountController.disable2FA);
+router.post("/2fa/enable",  isAuth, codeLimiter, accountController.enable2FA);
+router.post("/2fa/disable", isAuth, codeLimiter, accountController.disable2FA);
 
 // ── Langue de l'interface ────────────────────────────────────────────────────
 router.post("/language", isAuth, accountController.updateLanguage);

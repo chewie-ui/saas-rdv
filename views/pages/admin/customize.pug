@@ -78,6 +78,7 @@ block content
                                 value=user.businessType || ""
                             )
                             .service-dropdown#businessTypeDropdown
+                        p.field-hint#businessTypeHint Ce métier n'est pas dans la liste conseillée.
             .info-card__actions
                 button.sm-btn.sm-btn--primary#saveBusinessInfo
                     span Enregistrer
@@ -1412,9 +1413,19 @@ block scripts
             // ── Business type autocomplete ────────────────────────────────────
             var btInput   = document.getElementById('businessTypeInput');
             var btDropdown = document.getElementById('businessTypeDropdown');
+            var btHint    = document.getElementById('businessTypeHint');
 
             function normalize(str) {
                 return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+            }
+            // Métier absent de la liste conseillée : accepté quand même, juste
+            // signalé en orange (ni bloquant, ni corrigé automatiquement).
+            function checkBusinessTypeCustom() {
+                if (!btInput) return;
+                var value = btInput.value.trim();
+                var isCustom = !!value && !__services.some(function (s) { return normalize(s) === normalize(value); });
+                btInput.classList.toggle('input--warn', isCustom);
+                if (btHint) btHint.classList.toggle('is-visible', isCustom);
             }
             function renderBtList(items) {
                 btDropdown.innerHTML = '';
@@ -1427,13 +1438,16 @@ block scripts
                         e.preventDefault();
                         btInput.value = item;
                         btDropdown.style.display = 'none';
+                        checkBusinessTypeCustom();
                     });
                     btDropdown.appendChild(div);
                 });
                 btDropdown.style.display = 'block';
             }
             if (btInput && btDropdown) {
+                checkBusinessTypeCustom(); // état initial (valeur déjà enregistrée)
                 btInput.addEventListener('input', function () {
+                    checkBusinessTypeCustom();
                     var q = normalize(btInput.value.trim());
                     if (!q) { btDropdown.style.display = 'none'; return; }
                     renderBtList(__services.filter(function (s) { return normalize(s).includes(q); }).slice(0, 8));

@@ -96,6 +96,30 @@ block content
                     button.sm-btn.sm-btn--primary#saveChanges(disabled)
                         span= t.profile.save
 
+            if currentCompany
+                //- Pause / réactivation de l'établissement
+                .stg-card
+                    .stg-card__head
+                        p.stg-card__title= t.profile.pause_title
+                        p.stg-card__desc= t.profile.pause_desc
+                    .stg-card__body
+                        .stg-form(style="margin-bottom:0;border:none;border-radius:0")
+                            .stg-row(style="border-top:none")
+                                .stg-row__label
+                                    | #{t.profile.pause_status_label}
+                                    p.stg-row__desc
+                                        if currentCompany.isPaused
+                                            span(style="color:#dc2626;font-weight:600") #{t.profile.pause_status_paused}
+                                        else
+                                            span(style="color:#16a34a;font-weight:600") #{t.profile.pause_status_active}
+                                .stg-row__field
+                                    if currentCompany.isPaused
+                                        button.sm-btn.sm-btn--primary#toggleCompanyPauseBtn(type="button" data-paused="1")
+                                            span= t.profile.pause_resume_btn
+                                    else
+                                        button.sm-btn.sm-btn--ghost#toggleCompanyPauseBtn(type="button" data-paused="0")
+                                            span= t.profile.pause_pause_btn
+
         //- ══════════════════════════════════════════════════════════════
         //- SECTION — Sécurité
         //- ══════════════════════════════════════════════════════════════
@@ -656,6 +680,7 @@ block content
     +prompt()
 
 block scripts
+    script(src="/js/utils/confirm-modal.js")
     script(src="/js/utils/image-upload.js")
     script(src='/js/layouts/informations.js')
     script(src="https://js.stripe.com/v3/")
@@ -781,6 +806,40 @@ block scripts
                 } else {
                     phoneLocal.style.borderColor = '';
                     phoneLocal.title = '';
+                }
+            });
+        })();
+
+        // ── Pause / réactivation de l'établissement ─────────────────────────
+        (function() {
+            var btn = document.getElementById('toggleCompanyPauseBtn');
+            if (!btn) return;
+
+            btn.addEventListener('click', async function() {
+                var isPaused = btn.dataset.paused === '1';
+                var confirmed = await window.confirmModal(
+                    isPaused ? !{JSON.stringify(t.profile.resume_confirm_title)} : !{JSON.stringify(t.profile.pause_confirm_title)},
+                    isPaused ? !{JSON.stringify(t.profile.resume_confirm_desc)} : !{JSON.stringify(t.profile.pause_confirm_desc)},
+                    {
+                        confirmLabel: isPaused ? !{JSON.stringify(t.profile.resume_confirm_btn)} : !{JSON.stringify(t.profile.pause_confirm_btn)},
+                        danger: !isPaused,
+                    }
+                );
+                if (!confirmed) return;
+
+                btn.disabled = true;
+                try {
+                    var res = await fetch(isPaused ? '/account/company-resume' : '/account/company-pause', { method: 'PATCH' });
+                    var data = await res.json();
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        await window.alertModal(data.error || !{JSON.stringify(t.profile.pause_error)});
+                        btn.disabled = false;
+                    }
+                } catch (e) {
+                    await window.alertModal(!{JSON.stringify(t.profile.pause_error)});
+                    btn.disabled = false;
                 }
             });
         })();

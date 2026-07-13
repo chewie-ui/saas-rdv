@@ -39,7 +39,9 @@ function sanitizeSessions(raw) {
 exports.listGroupSessions = async (req, res) => {
   const currentCompany = res.locals.currentCompany;
   if (!currentCompany) {
-    return res.redirect("/register");
+    // Cf. admin.controller.js#appointment : jamais /register pour un compte
+    // déjà connecté (boucle de redirection infinie avec GET /register).
+    return res.redirect("/etablissement/mes-etablissements");
   }
 
   const startOfToday = new Date();
