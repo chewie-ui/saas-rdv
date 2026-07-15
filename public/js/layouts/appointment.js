@@ -510,8 +510,8 @@ setInterval(updateTimeline, 60000);
   }
 
   // Positionne chaque colonne "RDV" (une par jour) en mesurant la vraie
-  // cellule d'en-tête correspondante — pas de placement CSS Grid, qui
-  // perturbait l'auto-placement des cellules de fond.
+  // cellule correspondante — pas de placement CSS Grid, qui perturbait
+  // l'auto-placement des cellules de fond.
   function positionDayColumns() {
     const gridSection = section.querySelector(".grid-section");
     if (!gridSection) return;
@@ -521,12 +521,20 @@ setInterval(updateTimeline, 60000);
 
     section.querySelectorAll(".day-events-col").forEach((col) => {
       const iso = col.dataset.iso;
-      const headerForDay = gridSection.querySelector(`.cell.day-header[data-iso="${iso}"]`);
-      if (!headerForDay || headerForDay.offsetParent === null) {
+      // NB: on mesure une cellule ".cell.day" (grille de fond), PAS
+      // ".cell.day-header" — sur mobile, TOUS les en-têtes sont cachés en
+      // display:none sans condition (remplacés par la bande de jours du
+      // haut), donc leur offsetParent est toujours null, quel que soit le
+      // jour affiché. Ça faisait disparaître la colonne du jour sélectionné
+      // (et donc ses RDV) sur mobile, systématiquement. ".cell.day", lui,
+      // reste correctement visible/caché selon ".focused" sur mobile comme
+      // sur desktop.
+      const dayCell = gridSection.querySelector(`.cell.day[data-iso="${iso}"]`);
+      if (!dayCell || dayCell.offsetParent === null) {
         col.style.display = "none";
         return;
       }
-      const dayRect = headerForDay.getBoundingClientRect();
+      const dayRect = dayCell.getBoundingClientRect();
       col.style.display = "block";
       col.style.left = `${Math.round(dayRect.left - gridRect.left)}px`;
       col.style.width = `${Math.round(dayRect.width)}px`;
@@ -639,6 +647,19 @@ setInterval(updateTimeline, 60000);
   // remplace seulement les colonnes de RDV puis doit recalculer leur
   // position top/height, sans dupliquer cette logique de mesure des lignes.
   window.__bkRecalcApptPositions = applyApptHeights;
+
+  // La position de chaque RDV est mesurée une seule fois sur les vraies
+  // cellules rendues — correct au moment du calcul, mais si la police web
+  // finit de charger APRÈS (réseau mobile plus lent que sur PC), les
+  // largeurs/hauteurs mesurées peuvent devenir obsolètes sans qu'aucun
+  // resize ne se déclenche pour recalculer : les RDV restent alors
+  // positionnés d'après l'ancienne mise en page (potentiellement hors de la
+  // zone visible). On recale dès que les polices sont prêtes, + un filet de
+  // sécurité après le chargement complet de la page (images, etc.).
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => applyApptHeights()).catch(() => {});
+  }
+  window.addEventListener("load", () => applyApptHeights());
 })();
 
 // ── Clic-glisser pour créer un RDV (façon Google Calendar) ─────────────────
@@ -725,11 +746,24 @@ setInterval(updateTimeline, 60000);
     drag.finalEnd = endMin;
   }
 
-  function onMouseMove(e) {
+  function moveDrag(clientY) {
     if (!drag) return;
-    const cell = cellAt(drag.iso, e.clientY);
+    const cell = cellAt(drag.iso, clientY);
     const currentMin = cell ? timeToMinutes(cell.dataset.time) : drag.startMin;
     updateGhost(currentMin);
+  }
+
+  function onMouseMove(e) {
+    moveDrag(e.clientY);
+  }
+
+  function onTouchMove(e) {
+    if (!drag) return;
+    // Empêche la page de scroller pendant qu'on glisse sur la grille — sinon
+    // impossible de dessiner une plage sur tactile (le doigt fait défiler la
+    // page au lieu d'étendre le ghost).
+    e.preventDefault();
+    moveDrag(e.touches[0].clientY);
   }
 
   function showDragChoice(anchorRect, info) {
@@ -762,6 +796,7 @@ setInterval(updateTimeline, 60000);
       apptBtn.removeEventListener("click", onApptChoice);
       blockBtn.removeEventListener("click", onBlockChoice);
       document.removeEventListener("mousedown", onOutside, true);
+      document.removeEventListener("touchstart", onOutside, true);
     }
     function onApptChoice() { cleanup(); openApptModal(); }
     function onBlockChoice() {
@@ -778,8 +813,12 @@ setInterval(updateTimeline, 60000);
 
     apptBtn.addEventListener("click", onApptChoice);
     blockBtn.addEventListener("click", onBlockChoice);
-    // Capture + délai : sinon le mouseup qui vient de déclencher ce menu le referme aussitôt.
-    setTimeout(() => document.addEventListener("mousedown", onOutside, true), 0);
+    // Capture + délai : sinon le mouseup/touchend qui vient de déclencher ce
+    // menu le referme aussitôt.
+    setTimeout(() => {
+      document.addEventListener("mousedown", onOutside, true);
+      document.addEventListener("touchstart", onOutside, true);
+    }, 0);
   }
 
   // Annule un glisser en cours sans rien ouvrir — utilisé en filet de
@@ -789,18 +828,24 @@ setInterval(updateTimeline, 60000);
   // du point de vue de la page — sans ça, le ghost reste affiché pour
   // toujours et un nouveau glisser s'empile par-dessus au lieu de le
   // remplacer).
-  function cancelDrag() {
-    if (!drag) return;
+  function removeMoveEndListeners() {
     document.removeEventListener("mousemove", onMouseMove);
     document.removeEventListener("mouseup", onMouseUp);
+    document.removeEventListener("touchmove", onTouchMove);
+    document.removeEventListener("touchend", onTouchEnd);
+    document.removeEventListener("touchcancel", cancelDrag);
+  }
+
+  function cancelDrag() {
+    if (!drag) return;
+    removeMoveEndListeners();
     drag.ghost.remove();
     drag = null;
   }
 
-  function onMouseUp() {
+  function endDrag() {
     if (!drag) return;
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("mouseup", onMouseUp);
+    removeMoveEndListeners();
 
     const { iso, finalStart, finalEnd, ghost } = drag;
     const anchorRect = ghost.getBoundingClientRect();
@@ -808,6 +853,14 @@ setInterval(updateTimeline, 60000);
     drag = null;
 
     showDragChoice(anchorRect, { date: iso, startMin: finalStart, endMin: finalEnd });
+  }
+
+  function onMouseUp() {
+    endDrag();
+  }
+
+  function onTouchEnd() {
+    endDrag();
   }
 
   // La fenêtre perd le focus (capture d'écran, alt-tab, autre appli au
@@ -818,27 +871,44 @@ setInterval(updateTimeline, 60000);
     if (document.hidden) cancelDrag();
   });
 
+  function startDrag(cell) {
+    cancelDrag(); // au cas où un glisser précédent serait resté coincé
+    const iso = cell.dataset.iso;
+    const startMin = timeToMinutes(cell.dataset.time);
+    const col = getEventsCol(iso);
+    if (!col) return false;
+
+    const ghost = document.createElement("div");
+    ghost.className = "cal-drag-ghost";
+    col.appendChild(ghost);
+
+    drag = { iso, startMin, ghost, finalStart: startMin, finalEnd: startMin + gridStep };
+    updateGhost(startMin);
+    return true;
+  }
+
   gridSection.querySelectorAll(".cell.day").forEach((cell) => {
     cell.addEventListener("mousedown", (e) => {
       if (!window.__canManageAppointments) return;
       if (e.button !== 0) return; // clic gauche uniquement
-      cancelDrag(); // au cas où un glisser précédent serait resté coincé
-      const iso = cell.dataset.iso;
-      const startMin = timeToMinutes(cell.dataset.time);
-      const col = getEventsCol(iso);
-      if (!col) return;
-
-      const ghost = document.createElement("div");
-      ghost.className = "cal-drag-ghost";
-      col.appendChild(ghost);
-
-      drag = { iso, startMin, ghost, finalStart: startMin, finalEnd: startMin + gridStep };
-      updateGhost(startMin);
-
+      if (!startDrag(cell)) return;
       document.addEventListener("mousemove", onMouseMove);
       document.addEventListener("mouseup", onMouseUp);
       e.preventDefault();
     });
+
+    // Tactile : mêmes gestes que la souris (appui = début, glisser = étend
+    // la plage, relâcher = ouvre le choix Rendez-vous/Absence). Sans ça, ces
+    // interactions ne fonctionnaient pas du tout sur mobile/tablette — le
+    // navigateur ne synthétise pas de façon fiable les événements souris
+    // pour un geste de type "glisser".
+    cell.addEventListener("touchstart", (e) => {
+      if (!window.__canManageAppointments) return;
+      if (!startDrag(cell)) return;
+      document.addEventListener("touchmove", onTouchMove, { passive: false });
+      document.addEventListener("touchend", onTouchEnd);
+      document.addEventListener("touchcancel", cancelDrag);
+    }, { passive: true });
   });
 })();
 
