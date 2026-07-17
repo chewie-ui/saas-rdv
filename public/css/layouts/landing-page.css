@@ -1096,6 +1096,10 @@ html {
   transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 .pro-mock__price-pill:hover {
+  /* color forcé : sans lui, la règle globale `a:hover { color: accent-hover }`
+     (plus spécifique que .pro-mock__price-pill) verdissait le texte → illisible
+     sur le fond vert, d'où l'effet « blob » au survol. */
+  color: #fff;
   background: var(--accent-hover, var(--accent));
   transform: rotate(-3deg) scale(1.06);
   box-shadow: 0 10px 24px -4px rgba(30, 122, 78, 0.6);
