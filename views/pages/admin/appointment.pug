@@ -168,11 +168,12 @@ block content
                 .day-events-col(data-iso=day.isoDate)
                     each box in (boxesByDay[day.isoDate] || [])
                         if box.kind === 'summary'
-                            a.appt-pill.appt-pill--summary(
-                                href=`/appointment?date=${day.isoDate}`
+                            div.appt-pill.appt-pill--summary(
+                                role="button" tabindex="0"
                                 style="left:calc(0% + 3px);width:calc(100% - 6px)"
                                 data-start-minutes=box.startMin
                                 data-slot-minutes=(box.endMin - box.startMin)
+                                data-group-date=day.isoDate
                             )
                                 .appt-pill__avatars
                                     each appt, i in box.items
@@ -180,6 +181,19 @@ block content
                                             img.appt-pill__photo(src=appt.employeePhoto alt="" title=appt.employeeName)
                                     .appt-pill__extra +#{box.items.length - 3}
                                 span.appt-pill__label= box.items.length + ' RDV'
+                                //- Données du groupe (cachées) — clonées dans la modale au clic
+                                .appt-group-data(hidden)
+                                    each appt in box.items
+                                        a.appt-group__row(href=`/history/edit/${appt._id}` class=(appt.status === 'canceled' ? 'is-canceled' : ''))
+                                            span.appt-group__time= appt.startHour
+                                            span.appt-group__main
+                                                span.appt-group__name= appt.name + ' ' + (appt.surname || '')
+                                                if appt.serviceName
+                                                    span.appt-group__svc= appt.serviceName
+                                            if appt.employeeName
+                                                span.appt-group__emp(title=appt.employeeName)
+                                                    img(src=appt.employeePhoto alt="")
+                                                    span= appt.employeeName.split(' ')[0]
                         else
                             - var appointment = box.appointment
                             - var leftPct = (box.col / box.colCount) * 100
@@ -270,6 +284,16 @@ block content
             a.appt-popup__detail-btn#apptPopupDossierBtn(href="#")
                 span.material-symbols-outlined(style="font-size:16px") description
                 | Dossier #{clientTerm || 'client'}
+
+    //- ── Modale « groupe de RDV » (créneau avec > 3 RDV simultanés) ──────────
+    #apptGroupModal.appt-group-modal(hidden)
+        .appt-group-modal__overlay#apptGroupOverlay
+        .appt-group-modal__panel(role="dialog" aria-modal="true")
+            .appt-group-modal__head
+                h3.appt-group-modal__title#apptGroupTitle Rendez-vous
+                button.appt-group-modal__close#apptGroupClose(type="button" aria-label="Fermer")
+                    span.material-symbols-outlined close
+            .appt-group-modal__body#apptGroupBody
 
     //- ── Nouveau rendez-vous (panel admin) ──────────────────────────────────
     .new-appt-overlay#newApptOverlay
@@ -393,6 +417,48 @@ block content
         window.__defaultSlotTime = !{slotTime || 60};
         window.__canManageAppointments = !{canManageAppt};
         window.__canCancelDeleteAppointments = !{canCancelDeleteAppt};
+
+    //- Modale groupe de RDV : au clic sur un pill « N RDV », on liste les RDV
+    //- du créneau (chacun cliquable vers son détail) au lieu de recharger.
+    script.
+        (function () {
+            var modal = document.getElementById('apptGroupModal');
+            var body  = document.getElementById('apptGroupBody');
+            var title = document.getElementById('apptGroupTitle');
+            if (!modal || !body) return;
+
+            function openGroup(pill) {
+                var data = pill.querySelector('.appt-group-data');
+                if (!data) return;
+                body.innerHTML = data.innerHTML;
+                var n = body.querySelectorAll('.appt-group__row').length;
+                title.textContent = n + ' rendez-vous';
+                modal.hidden = false;
+                document.body.classList.add('appt-group-open');
+            }
+            function closeGroup() {
+                modal.hidden = true;
+                document.body.classList.remove('appt-group-open');
+            }
+
+            // Capture : on intercepte le clic sur le pill résumé AVANT tout autre
+            // handler (drag-création, etc.) et on l'empêche de se propager.
+            document.addEventListener('click', function (e) {
+                var pill = e.target.closest('.appt-pill--summary');
+                if (pill) { e.preventDefault(); e.stopPropagation(); openGroup(pill); }
+            }, true);
+
+            document.getElementById('apptGroupClose').addEventListener('click', closeGroup);
+            document.getElementById('apptGroupOverlay').addEventListener('click', closeGroup);
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) closeGroup(); });
+
+            // Accessibilité : Entrée/Espace sur un pill résumé focalisé
+            document.addEventListener('keydown', function (e) {
+                if ((e.key === 'Enter' || e.key === ' ') && document.activeElement && document.activeElement.classList.contains('appt-pill--summary')) {
+                    e.preventDefault(); openGroup(document.activeElement);
+                }
+            });
+        })();
 
 block scripts
     script(src="/js/layouts/appointment.js" type="module")

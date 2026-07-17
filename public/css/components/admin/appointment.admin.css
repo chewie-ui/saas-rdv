@@ -1913,3 +1913,139 @@ body:has(.cal-month) .cal-month {
   font-weight: 600;
   color: var(--accent);
 }
+
+/* ═══ Modale « groupe de RDV » (clic sur un pill « N RDV ») ══════════════════ */
+.appt-pill--summary { cursor: pointer; }
+body.appt-group-open { overflow: hidden; }
+
+.appt-group-modal[hidden] { display: none; }
+.appt-group-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.appt-group-modal__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(2px);
+  animation: apptGroupFade 0.15s ease both;
+}
+.appt-group-modal__panel {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-card, #fff);
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+  animation: apptGroupIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes apptGroupFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes apptGroupIn { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .appt-group-modal__overlay, .appt-group-modal__panel { animation: none; }
+}
+
+.appt-group-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-light, #eef0f2);
+}
+.appt-group-modal__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink, #0f172a);
+}
+.appt-group-modal__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #64748b);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.appt-group-modal__close:hover { background: var(--surface-soft, #f1f5f4); color: var(--ink, #0f172a); }
+.appt-group-modal__close .material-symbols-outlined { font-size: 20px; }
+
+.appt-group-modal__body {
+  padding: 8px;
+  overflow-y: auto;
+}
+
+/* Une ligne de RDV dans la modale */
+.appt-group__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 11px;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+.appt-group__row:hover { background: var(--accent-soft, #f0fdf4); }
+.appt-group__row.is-canceled { opacity: 0.55; }
+.appt-group__row.is-canceled .appt-group__name { text-decoration: line-through; }
+
+.appt-group__time {
+  flex-shrink: 0;
+  width: 46px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent-strong, #15803d);
+  font-variant-numeric: tabular-nums;
+}
+.appt-group__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.appt-group__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.appt-group__svc {
+  font-size: 12px;
+  color: var(--text-muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.appt-group__emp {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+}
+.appt-group__emp img {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border-light, #e5e7eb);
+}

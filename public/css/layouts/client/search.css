@@ -13,8 +13,10 @@
 .sx-hero {
   position: relative;
   padding: 104px 20px 40px;
-  overflow: hidden;
   text-align: center;
+  /* Pas d'overflow:hidden ici : il rognerait les menus d'autocomplétion qui
+     dépassent sous le hero. Le dégradé de fond (.sx-hero__bg) est déjà borné
+     par inset:0, il ne déborde donc pas. */
 }
 .sx-hero__bg {
   position: absolute;
@@ -164,9 +166,19 @@
   color: var(--ink-2, #374151);
   cursor: pointer;
   transition: background 0.1s;
+  min-width: 0;
 }
 .sx-dd__item:hover { background: var(--accent-soft, #f0fdf4); color: var(--accent-strong, #15803d); }
 .sx-dd__item svg { width: 15px; height: 15px; color: var(--text-muted, #9ca3af); flex-shrink: 0; }
+/* Longs noms (villes/régions) : une seule ligne, tronquée — jamais de retour
+   à la ligne qui casse la hauteur de la ligne du menu. */
+.sx-dd__item span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .sx-dd__item:hover svg { color: var(--accent, #16a34a); }
 
 /* ── Raccourcis populaires ── */

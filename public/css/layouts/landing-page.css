@@ -104,9 +104,25 @@ html {
   letter-spacing: 0;
   color: var(--accent);
 }
-/* Le point final en vert — la petite touche qui donne du caractère au titre */
+/* Le point final = un disque vert ROND (le "." de Plus Jakarta Sans est carré,
+   on ne peut donc pas utiliser le vrai glyphe). Astuce d'alignement : sur un
+   inline-block, `overflow:hidden` place la ligne de base sur le BORD BAS — le
+   disque se pose donc pile sur la ligne de base du texte (sans `overflow`, un
+   inline-block vide « pend » sous la ligne). Taille en vw → il grandit avec
+   l'écran ; le glyphe "." est masqué (transparent + font-size:0 + clip). */
 .pro-h1__dot {
-  color: var(--accent);
+  display: inline-block;
+  width: clamp(11px, 1.2vw, 20px);
+  height: clamp(11px, 1.2vw, 20px);
+  border-radius: 50%;
+  background: var(--accent);
+  overflow: hidden;
+  color: transparent;
+  font-size: 0;
+  vertical-align: baseline;
+  /* `em` vaudrait 0 ici (font-size:0) → on décolle le disque du mot avec une
+     marge en vw, qui grandit avec l'écran comme le disque. */
+  margin-left: clamp(5px, 0.5vw, 10px);
 }
 
 /* Entrée en fondu douce au chargement (texte puis mockup, léger décalage) —
