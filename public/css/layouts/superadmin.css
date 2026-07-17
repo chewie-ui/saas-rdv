@@ -187,3 +187,65 @@ body {
   text-transform: uppercase;
   letter-spacing: .06em;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE — s'applique à toutes les pages superadmin
+   (chargé partout via /css/layouts/superadmin.css)
+   ══════════════════════════════════════════════════════════════ */
+
+/* Filet de sécurité : jamais de défilement horizontal de toute la page */
+html, body { max-width: 100%; overflow-x: hidden; }
+
+@media (max-width: 900px) {
+  .sa-page { padding: 22px 16px; }
+
+  /* Les tableaux deviennent défilables horizontalement (au lieu de faire
+     déborder la page). Uniquement sur petit écran — sur desktop ils gardent
+     leur rendu normal (cellules qui s'ajustent/enroulent). */
+  .users-table, .est-table, .promo-table, .links-table, .boost-table,
+  .referrals-table, .sa-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  .users-table thead, .est-table thead, .promo-table thead,
+  .links-table thead, .boost-table thead, .referrals-table thead {
+    display: table-header-group;
+  }
+
+  /* Topbar plus compacte */
+  .sa-topbar { padding: 0 12px; }
+  .sa-topbar__brand { margin-right: 14px; }
+
+  /* Grilles 2 colonnes connues → empilées */
+  .msg-grid, .row2, .se-video, .sa-grid-2 { grid-template-columns: 1fr !important; }
+  .se-video { gap: 10px; }
+
+  /* En-têtes de page : les contrôles passent dessous, pleine largeur */
+  .sa-header { flex-direction: column; align-items: stretch !important; }
+  .sa-header__right { justify-content: flex-start; flex-wrap: wrap; }
+}
+
+@media (max-width: 600px) {
+  .sa-page { padding: 18px 12px; }
+  .sa-page-header h1 { font-size: 19px; }
+
+  /* Le nom de marque prend de la place inutilement sur petit écran */
+  .sa-topbar__name { display: none; }
+  .sa-topbar__logout { margin-left: 8px; padding: 6px 9px; }
+
+  /* Cartes de stats : 2 par ligne */
+  .sa-stats { gap: 8px; }
+  .sa-stat, .stat-card { flex: 1 1 calc(50% - 4px); min-width: 0; }
+  .sa-stat__val, .stat-card__val { font-size: 21px; }
+
+  /* Champs de recherche : pleine largeur */
+  .search-bar input, .log-search__input { max-width: 100% !important; }
+
+  /* Modales : plein écran en largeur */
+  .sa-modal { width: 100% !important; max-width: 100% !important; border-radius: 16px; padding: 20px; }
+  .sa-modal-overlay { padding: 12px; align-items: flex-start; }
+  .sa-modal__actions { flex-direction: column; }
+}

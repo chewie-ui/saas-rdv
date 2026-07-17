@@ -589,6 +589,28 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
         hasReviewed = !!existingReview;
       }
     } catch (_) {}
+  } else if (req.user && String(req.user._id) !== String(company.owner)) {
+    // Compte unifié (User) connecté qui n'est PAS le propriétaire de cet
+    // établissement → il peut aussi laisser un avis (avant, seul un ancien
+    // compte Client était reconnu, d'où le « connectez-vous » trompeur qui
+    // renvoyait vers l'admin puisque le User était déjà connecté).
+    try {
+      const parts = (req.user.fullName || "").trim().split(" ");
+      clientUser = {
+        firstName: parts[0] || "",
+        lastName: parts.slice(1).join(" ") || "",
+        email: req.user.email || "",
+        phone: req.user.phone || "",
+      };
+      clientSession = {
+        _id:            String(req.user._id),
+        fullName:       req.user.fullName || "",
+        profilePicture: req.user.profilePicture || "/images/no-user.webp",
+      };
+      const Review = require("../db/models/review.model");
+      const existingReview = await Review.findOne({ company: company._id, client: req.user._id }).lean();
+      hasReviewed = !!existingReview;
+    } catch (_) {}
   }
 
   // ── Avis ──────────────────────────────────────────────────────────────────
@@ -657,6 +679,10 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
     clientUser,
     clientSession,
     hasReviewed,
+    // Pour l'affichage de la section avis : un connecté ne doit jamais voir
+    // « connectez-vous », et le propriétaire voit un message dédié.
+    viewerLoggedIn: !!(req.user || (req.session && req.session.clientId)),
+    viewerIsOwner:  !!(req.user && String(req.user._id) === String(company.owner)),
     reviews,
     avgRating,
     reviewCount,

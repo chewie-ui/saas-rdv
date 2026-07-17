@@ -401,8 +401,16 @@ block content
                         span.bk-reviews__avg= avgRating.toFixed(1)
                         span.bk-reviews__count (#{reviewCount} avis)
 
-            //- ── Formulaire (client connecté + pas encore posté) ────────────
-            if clientSession && !hasReviewed
+            //- ── Zone « laisser un avis » — 4 états, jamais « connectez-vous »
+            //- pour quelqu'un de déjà connecté. ──────────────────────────────
+            if hasReviewed
+                //- 1) A déjà noté cet établissement
+                p.bk-review-done
+                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                        path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-56-240 226-226-57-57-169 169-85-85-57 57 142 142Z")
+                    | Vous avez déjà publié un avis pour cet établissement.
+            else if clientSession
+                //- 2) Connecté & éligible → formulaire
                 .bk-review-form#bkReviewForm
                     .bk-review-form__header
                         img.bk-review-form__avatar(src=clientSession.profilePicture alt=clientSession.fullName)
@@ -416,17 +424,19 @@ block content
                     .bk-review-form__actions
                         button.bk-review-form__submit#bkReviewSubmit(type="button") Publier l'avis
                         span.bk-review-form__status#bkReviewStatus
-            else if !clientSession
+            else if viewerIsOwner
+                //- 3) Le propriétaire regarde sa propre page
+                p.bk-review-done
+                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
+                        path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Z")
+                    | Vous ne pouvez pas ajouter un avis sur votre propre établissement.
+            else if !viewerLoggedIn
+                //- 4) Visiteur anonyme → invitation à se connecter (côté client)
                 .bk-review-login
                     svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
                         path(d="m233-120 65-281L80-580l288-25 112-265 112 265 288 25-218 179 65 281-247-149-247 149Z")
                     span Pour laisser un avis,&nbsp;
-                    a.bk-review-login__link(href="/login") connectez-vous à votre compte client
-            else if hasReviewed
-                p.bk-review-done
-                    svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
-                        path(d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-56-240 226-226-57-57-169 169-85-85-57 57 142 142Z")
-                    | Vous avez déjà publié un avis pour cet établissement.
+                    a.bk-review-login__link(href=`/login?returnTo=${encodeURIComponent('/' + (company.slug || company._id))}`) connectez-vous
 
             //- ── Liste des avis ─────────────────────────────────────────────
             if reviews && reviews.length > 0
