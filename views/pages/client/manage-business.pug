@@ -66,22 +66,13 @@ block content
                 .pro-hero__inner
 
                     .pro-hero__left
-                        .pro-badge
-                            span.pro-badge__dot
-                            = pl.hero.badge
-                        h1.pro-h1
-                            = pl.hero.title_1
-                            br
-                            em= pl.hero.title_2
+                        //- Le point final passe en vert (accent) — même effet que
+                        //- la maquette validée. Remplace uniquement le "." de fin ;
+                        //- si la trad ne finit pas par un point, rien ne change.
+                        h1.pro-h1!= pl.hero.title_1.replace(/\.\s*$/, '<span class="pro-h1__dot">.</span>')
                         p.pro-sub= pl.hero.sub
                         .pro-actions
                             a.sm-btn.sm-btn--primary(href="/register")= pl.hero.cta_free
-                            a.sm-btn.sm-btn--ghost(href="/search")= pl.hero.cta_pro
-                        p.pro-hero__card-note= pl.hero.card_note
-                        .pro-pricing-note
-                            span= pl.hero.price_anchor_pre + ' '
-                            strong= pl.hero.price_anchor_strong
-                            span= ' ' + pl.hero.price_anchor_post
                         .pro-micro
                             span
                                 svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
@@ -95,17 +86,7 @@ block content
                                 svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
                                     path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
                                 = pl.hero.check_3
-
-                        if t.landing && t.landing.cats
-                            .lp__cats
-                                each cat in t.landing.cats
-                                    if cat.key !== 'all'
-                                        span.lp__cat= cat.label
-
-                        a.pro-hero__alt-link(href="/search")
-                            svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="13" height="13")
-                                path(d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z")
-                            = pl.hero.alt_link
+                        a.pro-hero__findpro(href="/search")= pl.hero.findpro
 
                     //- Mockup calendrier (UI démo, non traduit sauf pastilles)
                     .pro-hero__right
@@ -514,6 +495,11 @@ block content
                     a.sm-btn.sm-btn--primary(href="/register")= pl.cta.btn_1
                     a.sm-btn.sm-btn--ghost(href="/register?plan=pro&billing=monthly")= pl.cta.btn_2
                 a.pro-cta__contact(href="/contact")= pl.cta.contact
+
+        //- Barre d'action collante — mobile uniquement. Le trafic Ads est
+        //- surtout mobile et la page est longue : sans ça, le CTA disparaît dès
+        //- qu'on scrolle passé le hero. Toujours accessible en bas d'écran.
+        a.pro-sticky-cta(href="/register")= pl.hero.cta_free
 
 block scripts
     script(src="/js/layouts/landing-page.js" type="module")

@@ -1,5 +1,6 @@
 const Client = require("../db/models/client.model");
 const CompanyMembership = require("../db/models/company/companyMembership.model");
+const Company = require("../db/models/company/company.model");
 
 /**
  * Injecte les infos du client connecté (espace client) dans `res.locals`
@@ -49,15 +50,24 @@ module.exports = async function injectClientUser(req, res, next) {
       fullName: req.user.fullName || "",
       profilePicture: req.user.profilePicture || "/images/no-user.webp",
     };
-    if (req.user.company) {
-      res.locals.hasEstablishment = true;
-    } else {
-      try {
+    try {
+      if (req.user.company) {
+        // Le champ `company` sur le User n'est qu'une référence — il peut
+        // rester renseigné alors que l'établissement n'a jamais été créé
+        // (échec pendant l'inscription) ou a été supprimé (isDeleted) depuis.
+        // Sans cette vérification, "hasEstablishment" mentait à la topbar
+        // ("Gérer mon établissement" affiché + lien vers /appointment, qui
+        // ne trouve alors aucun établissement réel et boucle sans jamais
+        // aboutir nulle part pour l'utilisateur).
+        const exists = await Company.exists({ _id: req.user.company, isDeleted: { $ne: true } });
+        res.locals.hasEstablishment = !!exists;
+      }
+      if (!res.locals.hasEstablishment) {
         const accepted = await CompanyMembership.exists({ user: req.user._id, status: "accepted" });
         res.locals.hasEstablishment = !!accepted;
-      } catch (_) {
-        // best-effort — ne bloque jamais la page
       }
+    } catch (_) {
+      // best-effort — ne bloque jamais la page
     }
     return next();
   }

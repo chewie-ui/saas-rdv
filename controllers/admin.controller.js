@@ -10,6 +10,7 @@ const stripe = new Stripe(env.stripeSecretKey);
 const { getAppointments, GetAllAppointments } = require("../queries/booking.queries");
 const { sendEmail } = require("../utils/mailer");
 const { isFeatureEnabled } = require("../middlewares/featureFlag");
+const { getOnboardingStatus } = require("../utils/onboardingStatus");
 
 exports.panel = async (req, res) => {
   try {
@@ -175,6 +176,19 @@ exports.panel = async (req, res) => {
     const initials = companyName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "BS";
     const nextAppt = todayEnriched.find((a) => a.status === "confirmed" && a.startTime >= `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`);
 
+    // ── Checklist d'onboarding (masquée si complète ou fermée) ────────────────
+    // Réservée au PROPRIÉTAIRE : c'est la mise en route de SA page, et les flags
+    // (dismissed / linkShared) vivent sur son compte. Un collaborateur verrait
+    // sinon un état calculé sur SON user (logo/lien faux) et poserait les flags
+    // au mauvais endroit.
+    let onboarding = null;
+    if (res.locals.membershipRole === "owner") {
+      try {
+        const status = await getOnboardingStatus(req.user, res.locals.currentCompany);
+        if (status && !status.complete && !status.dismissed) onboarding = status;
+      } catch (_) { /* non bloquant */ }
+    }
+
     res.render("admin/panel", {
       pageName: "Dashboard",
       title: "Dashboard — BranShee",
@@ -187,6 +201,7 @@ exports.panel = async (req, res) => {
       recentBookings: recentEnriched,
       recentLogs: logsEnriched,
       nextAppt,
+      onboarding,
       todayStr: now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }),
     });
   } catch (err) {
@@ -196,7 +211,7 @@ exports.panel = async (req, res) => {
       title: "Dashboard — BranShee",
       greeting: "Bonjour", companyName: "Studio", initials: "BS",
       stats: [], todayAppts: [], upcomingAppts: [], recentBookings: [], recentLogs: [],
-      nextAppt: null,
+      nextAppt: null, onboarding: null,
       todayStr: new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }),
     });
   }
@@ -211,7 +226,8 @@ exports.book = async (req, res) => {
   const { bookId } = req.params;
 
   const [client, company, activeEmployees] = await Promise.all([
-    Booking.findById(bookId)
+    // IDOR : scopé à l'établissement courant.
+    Booking.findOne({ _id: bookId, company: res.locals.currentCompany._id })
       .populate("employee", "fullName profilePicture")
       .populate("clientRef", "fullName profilePicture email phone"),
     Company.findOne(
@@ -1312,7 +1328,9 @@ exports.deleteBooking = async (req, res) => {
   }
   const { bookId } = req.params;
 
-  const data = await Booking.findByIdAndDelete(bookId);
+  // IDOR : la requête est scopée à l'établissement courant — un RDV d'un autre
+  // établissement n'est jamais trouvé, donc jamais supprimé.
+  const data = await Booking.findOneAndDelete({ _id: bookId, company: res.locals.currentCompany?._id });
 
   if (data) {
     const companyDoc = await Company.findById(data.company);
@@ -1348,7 +1366,8 @@ exports.restoreBooking = async (req, res) => {
   try {
     const { bookId } = req.params;
 
-    const booking = await Booking.findByIdAndUpdate(bookId, { status: "confirmed" }, { new: true }).lean();
+    // IDOR : scopé à l'établissement courant.
+    const booking = await Booking.findOneAndUpdate({ _id: bookId, company: res.locals.currentCompany?._id }, { status: "confirmed" }, { new: true }).lean();
 
     if (booking) {
       const companyDoc = await Company.findById(booking.company);
@@ -1397,7 +1416,9 @@ exports.cancelBooking = async (req, res) => {
   }
   const { id } = req.params;
 
-  const booking = await Booking.findByIdAndUpdate(id, { status: "canceled" }, { new: false }).lean();
+  // IDOR : scopé à l'établissement courant — impossible d'annuler (et donc
+  // d'envoyer un email au client) le RDV d'un autre établissement.
+  const booking = await Booking.findOneAndUpdate({ _id: id, company: res.locals.currentCompany?._id }, { status: "canceled" }, { new: false }).lean();
 
   if (booking) {
     const companyDoc = await Company.findById(booking.company);
@@ -1553,7 +1574,9 @@ exports.updateBookingEmployee = async (req, res) => {
       updateFields.employeeName = "";
     }
 
-    await Booking.findByIdAndUpdate(bookId, updateFields);
+    // IDOR : scopé à l'établissement courant.
+    const updated = await Booking.findOneAndUpdate({ _id: bookId, company: res.locals.currentCompany?._id }, updateFields);
+    if (!updated) return res.status(404).json({ success: false, error: "Rendez-vous introuvable." });
     return res.json({ success: true, employeeId: employeeId || null, employeeName: updateFields.employeeName });
   } catch (err) {
     console.error(err);
@@ -1733,36 +1756,67 @@ exports.historyDeleteRow = async (req, res) => {
   try {
     const { id } = req.body;
 
-    const response = await Booking.findByIdAndDelete(id);
-    console.log(response);
+    // IDOR : scopé à l'établissement courant.
+    const response = await Booking.findOneAndDelete({ _id: id, company: res.locals.currentCompany?._id });
     if (response) {
       return res.json({ success: true });
     } else {
-      return res.json({ success: false });
+      return res.status(404).json({ success: false });
     }
   } catch (err) {
-    return res.json({ err });
+    console.error("historyDeleteRow error:", err.message);
+    return res.status(500).json({ success: false });
   }
 };
 
 exports.historySearch = async (req, res) => {
-  const { client } = req.query;
   try {
-    const searchRegex = new RegExp(client, "i");
+    // ── FAILLE CRITIQUE CORRIGÉE (fuite RGPD) ─────────────────────────────
+    // Avant, la requête n'avait AUCUN filtre `company` → un pro qui cherchait
+    // un client recevait les nom/email/téléphone/message de TOUS les clients
+    // de TOUS les établissements de la plateforme. En plus, la saisie brute
+    // dans `new RegExp` permettait un blocage serveur (ReDoS). Désormais :
+    // scopé à l'établissement courant, regex échappée, projection minimale
+    // (aucune donnée sensible renvoyée), résultats bornés.
+    const currentCompany = res.locals.currentCompany;
+    if (!currentCompany) {
+      return res.status(400).json({ success: false, error: "Aucun établissement." });
+    }
 
-    const results = await Booking.find({
-      $or: [{ name: searchRegex }, { surname: searchRegex }, { email: searchRegex }, { phone: searchRegex }, { message: searchRegex }],
-    });
+    const raw = (req.query.client || "").trim().slice(0, 80);
+    const filter = { company: currentCompany._id };
+    if (raw) {
+      const escaped = raw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const searchRegex = new RegExp(escaped, "i");
+      filter.$or = [
+        { name: searchRegex },
+        { surname: searchRegex },
+        { email: searchRegex },
+        { phone: searchRegex },
+        { message: searchRegex },
+      ];
+    }
+
+    const results = await Booking.find(filter)
+      .select("name surname serviceName employee employeeName date startTime status slotTime")
+      .sort({ date: -1 })
+      .limit(300)
+      .lean();
+
     return res.json({ success: true, results });
   } catch (err) {
-    return res.json({ err });
+    console.error("historySearch error:", err.message);
+    return res.status(500).json({ success: false, error: "Erreur serveur." });
   }
 };
 
 exports.historyEditRow = async (req, res) => {
   try {
     const { id } = req.params;
-    const results = await Booking.findById(id).populate("employee");
+    // IDOR : scopé à l'établissement courant — impossible d'ouvrir la fiche
+    // d'édition (données client complètes) d'un RDV d'un autre établissement.
+    const results = await Booking.findOne({ _id: id, company: res.locals.currentCompany?._id }).populate("employee");
+    if (!results) return res.redirect("/history");
 
     // Fetch services & employees for the booking's company (for edit selectors)
     let services = [];
@@ -1924,6 +1978,17 @@ exports.settingsInit = async (req, res) => {
 exports.historyEditRowPatch = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // ── IDOR CRITIQUE CORRIGÉ ─────────────────────────────────────────────
+    // On vérifie DÈS LE DÉBUT que le RDV appartient à l'établissement courant.
+    // Sans ça, un pro pouvait réécrire le RDV d'un concurrent, et pire :
+    // via forceDeleteConflicts, déclencher un deleteMany() sur l'établissement
+    // ciblé (suppression en masse de RDV chez un tiers).
+    const owned = await Booking.exists({ _id: id, company: res.locals.currentCompany?._id });
+    if (!owned) {
+      return res.status(404).json({ success: false, error: "Rendez-vous introuvable." });
+    }
+
     const {
       name,
       surname,
@@ -1988,7 +2053,9 @@ exports.historyEditRowPatch = async (req, res) => {
     // ── Optional: force-delete conflicting bookings before saving ──────────────
     const { forceDeleteConflicts } = req.body;
     if (forceDeleteConflicts && req.body.date && updateFields.startTime && updateFields.endTime) {
-      const bookingCompany = (await Booking.findById(id).select("company").lean())?.company;
+      // Appartenance déjà vérifiée en tête → on force le scope sur
+      // l'établissement courant (jamais celui d'un tiers).
+      const bookingCompany = res.locals.currentCompany._id;
       const conflictQuery = buildConflictQuery(
         bookingCompany,
         req.body.date,       // keep as YYYY-MM-DD string for buildConflictQuery
@@ -2000,7 +2067,7 @@ exports.historyEditRowPatch = async (req, res) => {
       await Booking.deleteMany(conflictQuery);
     }
 
-    const response = await Booking.findByIdAndUpdate(id, updateFields, { new: true }).lean();
+    const response = await Booking.findOneAndUpdate({ _id: id, company: res.locals.currentCompany._id }, updateFields, { new: true }).lean();
 
     // ── Sync Google Calendar ──────────────────────────────────────────────────
     if (response) {
@@ -2070,11 +2137,14 @@ exports.historyCheckConflicts = async (req, res) => {
       return res.json({ hasConflict: false, conflicts: [] });
     }
 
-    const booking = await Booking.findById(id).select("company").lean();
+    // IDOR : on ne cherche des conflits que si le RDV appartient à
+    // l'établissement courant, et on scope la recherche à cet établissement
+    // (avant, on renvoyait les RDV d'un autre établissement).
+    const booking = await Booking.findOne({ _id: id, company: res.locals.currentCompany?._id }).select("_id").lean();
     if (!booking) return res.json({ hasConflict: false, conflicts: [] });
 
     const query = buildConflictQuery(
-      booking.company,
+      res.locals.currentCompany._id,
       date,
       startTime,
       endTime,
@@ -2277,7 +2347,9 @@ exports.saveAdminNotes = async (req, res) => {
     const { bookId } = req.params;
     const { adminNotes } = req.body;
 
-    await Booking.findByIdAndUpdate(bookId, { adminNotes });
+    // IDOR : scopé à l'établissement courant.
+    const updated = await Booking.findOneAndUpdate({ _id: bookId, company: res.locals.currentCompany?._id }, { adminNotes });
+    if (!updated) return res.status(404).json({ success: false });
 
     return res.json({ success: true });
   } catch (err) {
@@ -2896,5 +2968,30 @@ exports.parrainageClaim = async (req, res) => {
   } catch (err) {
     console.error("parrainageClaim error:", err);
     return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Onboarding (checklist du dashboard) ─────────────────────────────────────
+// Deux petits endpoints appelés en fetch() depuis le widget de démarrage :
+// masquer la checklist, et valider l'étape « partager mon lien » au clic.
+exports.onboardingDismiss = async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ success: false });
+    await User.updateOne({ _id: req.user._id }, { $set: { "onboarding.dismissed": true } });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("[onboardingDismiss]", err);
+    return res.status(500).json({ success: false });
+  }
+};
+
+exports.onboardingLinkShared = async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ success: false });
+    await User.updateOne({ _id: req.user._id }, { $set: { "onboarding.linkShared": true } });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("[onboardingLinkShared]", err);
+    return res.status(500).json({ success: false });
   }
 };

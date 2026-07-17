@@ -53,10 +53,32 @@ function parseGmapCoords(url) {
   return null;
 }
 
+// ── Anti-SSRF ─────────────────────────────────────────────────────────────
+// Cet endpoint fait des requêtes HTTP côté serveur en suivant les redirections
+// d'une URL fournie par le client. Sans garde-fou, c'est une SSRF : on pourrait
+// forcer le serveur à taper des services internes ou les métadonnées cloud
+// (169.254.169.254). On restreint aux seuls domaines Google Maps — à l'URL de
+// départ ET à CHAQUE redirection, pour qu'un 302 ne puisse pas rediriger vers
+// un hôte interne.
+function isAllowedGmapUrl(urlStr) {
+  try {
+    const u = new URL(urlStr);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    const h = u.hostname.toLowerCase();
+    // google.<tld>, *.google.<tld>, goo.gl, *.goo.gl, g.co, *.g.co
+    return /(^|\.)(google\.[a-z.]{2,}|goo\.gl|g\.co)$/.test(h);
+  } catch (_) {
+    return false;
+  }
+}
+
 function followRedirects(url, maxRedirects = 8) {
   return new Promise((resolve, reject) => {
     const go = (currentUrl, hops) => {
       if (hops <= 0) return resolve(currentUrl);
+      if (!isAllowedGmapUrl(currentUrl)) {
+        return reject(new Error("Hôte non autorisé"));
+      }
       const lib = currentUrl.startsWith("https") ? https : http;
       const req = lib.request(currentUrl, {
         method: "HEAD",
@@ -66,6 +88,8 @@ function followRedirects(url, maxRedirects = 8) {
         const location = res.headers["location"];
         if (location && res.statusCode >= 300 && res.statusCode < 400) {
           const next = location.startsWith("http") ? location : new URL(location, currentUrl).href;
+          // Une redirection ne peut PAS sortir de la liste blanche Google.
+          if (!isAllowedGmapUrl(next)) return resolve(currentUrl);
           go(next, hops - 1);
         } else {
           resolve(currentUrl);

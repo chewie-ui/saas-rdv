@@ -223,6 +223,7 @@ html(lang="fr")
                     button.sa-btn.sa-btn--primary#msgSend(type="button") Envoyer
                     button.sa-btn.sa-btn--ghost#msgCancel(type="button") Annuler
 
+        script(src="/js/utils/confirm-modal.js")
         script.
             // ── Statut actif / désactivé ──────────────────────────────
             document.querySelectorAll('.acc-status-toggle').forEach(function(checkbox) {
@@ -248,18 +249,25 @@ html(lang="fr")
                 btn.addEventListener('click', async function() {
                     const userId = this.dataset.delUserId;
                     const userName = this.dataset.userName;
-                    if (!confirm('Supprimer définitivement le compte "' + userName + '" et toutes ses données (réservations, services, employés...) ?\n\nCette action est irréversible.')) return;
+                    const confirmed = await window.confirmModal(
+                        'Supprimer "' + userName + '" ?',
+                        'Toutes ses données (réservations, services, employés...) seront définitivement supprimées. Cette action est irréversible.'
+                    );
+                    if (!confirmed) return;
                     this.disabled = true;
                     this.textContent = '⏳';
                     try {
                         const res = await fetch('/superadmin/users/' + userId, { method: 'DELETE', headers: { 'Content-Type': 'application/json' } });
                         const data = await res.json();
-                        if (!data.success) throw new Error('Failed');
+                        if (!data.success) throw new Error(data.error || 'Failed');
                         this.closest('tr').remove();
                     } catch(e) {
                         this.disabled = false;
                         this.textContent = '🗑️';
-                        alert('Erreur lors de la suppression du compte.');
+                        // Message réel du serveur affiché (au lieu d'un texte
+                        // générique toujours identique) — pour comprendre la
+                        // vraie cause si ça échoue encore.
+                        await window.alertModal(e.message && e.message !== 'Failed' ? e.message : 'Erreur lors de la suppression du compte.');
                     }
                 });
             });

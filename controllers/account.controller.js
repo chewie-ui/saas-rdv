@@ -6,6 +6,7 @@ const Subscription = require("../db/models/subscription.model");
 const Stripe = require("stripe");
 const stripe = new Stripe(env.stripeSecretKey);
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const { sendEmail } = require("../utils/mailer");
 const pug  = require("pug");
 const path = require("path");
@@ -735,91 +736,81 @@ exports.cancelSubscription = async (req, res) => {
 exports.editEmailConfirmation = async (req, res) => {
   try {
     const { email } = req.body;
-    console.log(email);
 
     const user = await User.findById(req.user._id).select("email");
-
     if (!user) {
       return res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
     }
-    console.log(user.email.trim());
-    console.log(email.trim());
 
-    if (user.email.trim() !== email.trim()) {
+    if (user.email.trim() !== (email || "").trim()) {
       return res.json({ success: false, message: "Invalid email" });
     }
 
-    // 1. Générer un code (ex: 6 chiffres)
-    const verificationCode = Math.floor(100000 + Math.random() * 900000);
-    console.log(verificationCode);
+    // Code cryptographiquement sûr (avant : Math.random, prévisible), avec
+    // expiration — le code n'était ni loggué de façon sûre ni périmé.
+    const code = crypto.randomInt(100000, 1000000);
+    req.session.emailVerification = { code: String(code), expiresAt: Date.now() + 15 * 60 * 1000 };
 
-    req.session.emailVerificationCode = verificationCode;
-    // req.session.pendingEmail = req.body.newEmail;
     const verifyHtml = pug.renderFile(
       path.join(__dirname, "../views/templates/emails/verification-code.pug"),
-      { code: verificationCode, subject: "Vérification de votre adresse e-mail", body: "Voici votre code de vérification pour modifier votre adresse e-mail :" }
+      { code, subject: "Vérification de votre adresse e-mail", body: "Voici votre code de vérification pour modifier votre adresse e-mail :" }
     );
     await sendEmail(email, "Vérification de votre adresse e-mail — BranShee", verifyHtml);
 
     res.json({ success: true });
   } catch (err) {
+    console.error("editEmailConfirmation error:", err.message);
     res.status(500).json({ success: false, message: "Impossible d'envoyer le mail" });
   }
 };
 
+function emailCodeValid(session, provided) {
+  const ev = session.emailVerification;
+  if (!ev || !ev.code || !ev.expiresAt || Date.now() > ev.expiresAt) return false;
+  return Number(provided) === Number(ev.code);
+}
+
 exports.checkDigitalCode = async (req, res) => {
-  const { code } = req.body;
-  const { emailVerificationCode } = req.session;
-
-  if (Number(code) === Number(emailVerificationCode)) {
-    return res.json({ success: true });
-  }
-
-  return res.json({ success: false });
+  const ok = emailCodeValid(req.session, req.body.code);
+  return res.json({ success: ok });
 };
 
 exports.verificationCode = (req, res) => {
-  console.log("OK");
-
   try {
-    const { emailVerificationCode } = req.session;
-    const { val } = req.body;
-    if (val !== emailVerificationCode) {
-      return res.json({ success: true, message: "Code invalid" });
-    }
-
-    return res.json({ success: true });
+    // CORRIGÉ : avant, ce handler renvoyait `success:true` MÊME sur code
+    // invalide (comparaison string vs number toujours fausse) → la
+    // vérification était totalement contournable.
+    const ok = emailCodeValid(req.session, req.body.val);
+    return res.json({ success: ok, message: ok ? undefined : "Code invalide" });
   } catch (err) {
-    console.error(err);
-    return res.json({ err });
+    console.error("verificationCode error:", err.message);
+    return res.status(500).json({ success: false });
   }
 };
 
 exports.editEmail = async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = (req.body.email || "").toLowerCase().trim();
 
-    if (!email) return res.json({ success: false, message: "Email is required" });
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ success: false, message: "Adresse email invalide." });
+    }
 
-    const isEmail = await User.findOne({ email });
-
-    if (isEmail)
+    const isEmail = await User.findOne({ email }).select("_id").lean();
+    if (isEmail) {
       return res.json({
         success: false,
-        message: "This email is already taken by another account",
+        message: "Cette adresse email est déjà utilisée par un autre compte.",
       });
+    }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user._id,
-      {
-        email: email.toLowerCase(),
-      },
-      { new: true },
-    );
-    return res.json({ success: true, user: updatedUser });
+    await User.findByIdAndUpdate(req.user._id, { email });
+    // Ne renvoie PLUS l'objet user complet (il contenait le mot de passe haché,
+    // le secret 2FA, les ids Stripe…). On confirme seulement le nouvel email.
+    return res.json({ success: true, email });
   } catch (err) {
-    console.error(err);
-    return res.json(err);
+    console.error("editEmail error:", err.message);
+    return res.status(500).json({ success: false, message: "Erreur serveur." });
   }
 };
 
@@ -946,8 +937,8 @@ exports.sendDeleteCode = async (req, res) => {
     const user = await User.findById(req.user._id).select("email");
     if (!user) return res.status(404).json({ success: false });
 
-    const code = Math.floor(100000 + Math.random() * 900000);
-    req.session.deleteAccountCode = code;
+    const code = crypto.randomInt(100000, 1000000);
+    req.session.deleteAccount = { code: String(code), expiresAt: Date.now() + 15 * 60 * 1000 };
 
     const deleteHtml = pug.renderFile(
       path.join(__dirname, "../views/templates/emails/verification-code.pug"),
@@ -965,10 +956,10 @@ exports.sendDeleteCode = async (req, res) => {
 exports.deleteAccount = async (req, res) => {
   try {
     const { code } = req.body;
-    const { deleteAccountCode } = req.session;
+    const da = req.session.deleteAccount;
 
-    if (!deleteAccountCode || Number(code) !== Number(deleteAccountCode)) {
-      return res.json({ success: false, message: "Code invalide" });
+    if (!da || !da.code || !da.expiresAt || Date.now() > da.expiresAt || Number(code) !== Number(da.code)) {
+      return res.json({ success: false, message: "Code invalide ou expiré." });
     }
 
     const userId = req.user._id;
@@ -991,7 +982,7 @@ exports.deleteAccount = async (req, res) => {
     await Subscription.findOneAndDelete({ user: userId });
     await User.findByIdAndDelete(userId);
 
-    delete req.session.deleteAccountCode;
+    delete req.session.deleteAccount;
 
     req.logout(() => {
       res.json({ success: true });

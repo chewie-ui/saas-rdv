@@ -313,6 +313,18 @@ const userSchema = schema(
       default: null,
     },
 
+    // ── Onboarding (checklist de démarrage + relances email) ───────────────
+    // État de la mise en route d'un compte pro. `linkShared`/`dismissed` sont
+    // posés par des clics de l'utilisateur ; les autres étapes (service, logo,
+    // 1ère résa) sont recalculées en direct — cf. utils/onboardingStatus.js.
+    onboarding: {
+      linkShared: { type: Boolean, default: false }, // a cliqué « Partager mon lien » depuis le dashboard
+      dismissed:  { type: Boolean, default: false }, // a fermé la checklist manuellement
+      // 0 = aucune relance envoyée · 1 = relance J+1 envoyée · 2 = relance J+3 envoyée.
+      // Garde anti-spam pour le scheduler de relances (utils/reminderScheduler.js).
+      nudgeStage: { type: Number, default: 0 },
+    },
+
     // Compte désactivé par le superadmin (masqué de /search + URL bloquée)
     isDisabled: {
       type: Boolean,

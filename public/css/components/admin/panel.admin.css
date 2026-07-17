@@ -421,3 +421,149 @@
 @media (max-width: 400px) {
   .dash-stats { grid-template-columns: 1fr; }
 }
+
+/* ── Checklist de démarrage (onboarding) ─────────────────────────────────── */
+.dash-onboard {
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 20px 22px;
+  position: relative;
+  overflow: hidden;
+}
+/* Filet d'accent à gauche pour attirer l'œil sans être criard */
+.dash-onboard::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--accent);
+}
+.dash-onboard__hd {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dash-onboard__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.dash-onboard__sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.dash-onboard__close {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.dash-onboard__close:hover {
+  background: var(--surface-soft, #f3f4f6);
+  color: var(--ink);
+}
+.dash-onboard__close .material-symbols-outlined { font-size: 18px; }
+
+/* ── Barre de progression ────────────────────────────────────────────────── */
+.dash-onboard__progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 4px;
+}
+.dash-onboard__bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border-light, #e5e7eb);
+  overflow: hidden;
+}
+.dash-onboard__bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width .4s ease;
+}
+.dash-onboard__count {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* ── Étapes ──────────────────────────────────────────────────────────────── */
+.dash-onboard__steps {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dash-onboard__step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 10px;
+  border-radius: 10px;
+  transition: background .15s;
+}
+.dash-onboard__step:hover { background: var(--surface-soft, #f9fafb); }
+.dash-onboard__step-check {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-soft, #f3f4f6);
+  color: var(--text-muted);
+  border: 1.5px solid var(--border-light, #e5e7eb);
+}
+.dash-onboard__step-check .material-symbols-outlined { font-size: 19px; }
+.dash-onboard__step.is-done .dash-onboard__step-check {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.dash-onboard__step-body { flex: 1; min-width: 0; }
+.dash-onboard__step-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.dash-onboard__step.is-done .dash-onboard__step-title {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--border-medium, #d1d5db);
+}
+.dash-onboard__step-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.dash-onboard__step.is-done .dash-onboard__step-desc { display: none; }
+.dash-onboard__step-cta {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .dash-onboard__step { flex-wrap: wrap; }
+  .dash-onboard__step-cta { width: 100%; justify-content: center; }
+}

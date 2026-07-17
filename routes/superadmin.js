@@ -1,5 +1,16 @@
 const router = require("express").Router();
 const ctrl = require("../controllers/superadmin.controller");
+const rateLimit = require("express-rate-limit");
+
+// Anti brute-force du secret superadmin — toute la surface admin repose sur ce
+// seul mot de passe, il ne doit pas pouvoir être bombardé de tentatives.
+const superadminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Trop de tentatives. Réessayez dans quelques minutes." },
+});
 
 function isSuperAdmin(req, res, next) {
   if (req.session && req.session.isSuperAdmin) return next();
@@ -7,7 +18,7 @@ function isSuperAdmin(req, res, next) {
 }
 
 router.get("/superadmin/login", ctrl.loginPage);
-router.post("/superadmin/login", ctrl.login);
+router.post("/superadmin/login", superadminLoginLimiter, ctrl.login);
 router.get("/superadmin/logout", ctrl.logout);
 router.get("/superadmin", isSuperAdmin, ctrl.usersPage);
 const upload = require("../config/multer");

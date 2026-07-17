@@ -60,6 +60,10 @@ router.get("/appointement/:bookId", isAuth, (req, res) => res.redirect(`/history
 
 const isVerified = [isAuth, injectCompany];
 
+// ── Checklist d'onboarding du dashboard (fetch depuis panel.pug) ──────────────
+router.post("/onboarding/dismiss", isAuth, adminController.onboardingDismiss);
+router.post("/onboarding/link-shared", isAuth, adminController.onboardingLinkShared);
+
 // ── Onboarding de bienvenue ───────────────────────────────────────────────────
 router.get("/welcome", isAuth, injectCompany, (req, res) => {
   res.render("admin/welcome", {
@@ -219,6 +223,10 @@ router.get("/settings/stripe-connect/refresh",  adminController.stripeConnectRef
 router.post("/settings/stripe-connect/manual",  isVerified, requirePermission("billing.manage"), adminController.saveStripeAccountManual);
 router.delete("/settings/stripe-connect",       isVerified, requirePermission("billing.manage"), adminController.disconnectStripeConnect);
 
-router.patch("/api/company/payout-info", isVerified, adminController.savePayoutInfo);
+// FAILLE CRITIQUE CORRIGÉE : cette route réécrit l'IBAN/BIC/PayPal vers lequel
+// l'argent est reversé. Sans `billing.manage`, n'importe quel collaborateur
+// (même grade Staff) pouvait détourner les versements. Désormais réservé aux
+// rôles ayant explicitement la gestion de la facturation.
+router.patch("/api/company/payout-info", isVerified, requirePermission("billing.manage"), adminController.savePayoutInfo);
 
 module.exports = router;

@@ -241,6 +241,100 @@ async function purgeFreePlanHistory() {
 }
 
 /**
+ * Relances d'onboarding (J+1 puis J+3) pour les pros qui se sont inscrits mais
+ * n'ont pas fini de configurer leur page. Deux paliers max, tracés par
+ * `user.onboarding.nudgeStage` (0 → aucune, 1 → J+1 envoyée, 2 → J+3 envoyée),
+ * ce qui garantit qu'aucun compte ne reçoit plus de 2 emails de relance.
+ *
+ * Garde-fous : on ne relance que les comptes créés il y a 1 à 30 jours (au-delà
+ * = froid, ne pas spammer), non désactivés, qui n'ont pas fermé la checklist
+ * (`onboarding.dismissed`), et qui possèdent réellement un établissement (pro).
+ * Si l'onboarding est déjà complet, on fige nudgeStage à 2 sans envoyer d'email.
+ */
+async function sendOnboardingNudges() {
+  const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
+  const { getOnboardingStatus } = require("./onboardingStatus");
+  const now = Date.now();
+  const H = 60 * 60 * 1000;
+  const notOlderThan = new Date(now - 30 * 24 * H); // créé après cette date
+  const atLeastOneDay = new Date(now - 24 * H);     // créé avant cette date (≥ 24h)
+
+  let users;
+  try {
+    users = await User.find({
+      createdAt: { $gte: notOlderThan, $lte: atLeastOneDay },
+      "onboarding.dismissed": { $ne: true },
+      "onboarding.nudgeStage": { $lt: 2 },
+      isDisabled: { $ne: true },
+      email: { $exists: true, $ne: "" },
+    })
+      .select("_id fullName email businessPicture onboarding createdAt")
+      .lean();
+  } catch (err) {
+    console.error("[onboardingNudge] Erreur lecture DB ❌", err);
+    return;
+  }
+
+  const templatePath = path.join(
+    __dirname,
+    "../views/templates/emails/onboarding-nudge.pug",
+  );
+
+  for (const user of users) {
+    try {
+      // Doit être un pro (établissement créé) — sinon c'est un compte client,
+      // pas concerné par la mise en route d'une page de réservation.
+      const company = await Company.findOne({ owner: user._id })
+        .select("_id slug")
+        .lean();
+      if (!company) continue;
+
+      const ageH = (now - new Date(user.createdAt).getTime()) / H;
+      const stage = (user.onboarding && user.onboarding.nudgeStage) || 0;
+
+      // Palier suivant : 0 → J+1 (≥24h) ; 1 → J+3 (≥72h)
+      let targetStage = null;
+      if (stage === 0 && ageH >= 24) targetStage = 1;
+      else if (stage === 1 && ageH >= 72) targetStage = 2;
+      if (!targetStage) continue;
+
+      const status = await getOnboardingStatus(user, company);
+      if (!status) continue;
+
+      if (status.complete) {
+        // Rien à relancer : on fige le palier au max pour ne plus réévaluer.
+        await User.updateOne({ _id: user._id }, { $set: { "onboarding.nudgeStage": 2 } });
+        continue;
+      }
+
+      const missingSteps = status.steps
+        .filter((s) => !s.done)
+        .map((s) => ({ title: s.title, desc: s.desc }));
+
+      const firstName = (user.fullName || "").trim().split(" ")[0] || "";
+      const html = pug.renderFile(templatePath, {
+        firstName,
+        missingSteps,
+        stage: targetStage,
+        dashboardUrl: `${env.appBaseUrl}/panel`,
+      });
+
+      const subject = missingSteps.length === 1
+        ? "Il ne reste qu'une étape pour lancer votre agenda BranShee"
+        : "Votre agenda BranShee est presque prêt 🚀";
+
+      const ok = await sendEmail(user.email, subject, html);
+      if (ok) {
+        await User.updateOne({ _id: user._id }, { $set: { "onboarding.nudgeStage": targetStage } });
+        console.log(`[onboardingNudge] Relance palier ${targetStage} → ${user.email} (${missingSteps.length} étape(s) restante(s))`);
+      }
+    } catch (err) {
+      console.error(`[onboardingNudge] Erreur relance ${user && user.email} ❌`, err);
+    }
+  }
+}
+
+/**
  * Démarre le cron : on tourne toutes les 15 minutes. Le flag
  * `reminderSent` empêche tout doublon si le serveur redémarre.
  */
@@ -259,6 +353,13 @@ function start() {
     );
   });
 
+  // Chaque jour à 10h00 : relances d'onboarding (J+1 / J+3)
+  cron.schedule("0 10 * * *", () => {
+    sendOnboardingNudges().catch((err) =>
+      console.error("[onboardingNudge] Erreur tâche ❌", err),
+    );
+  });
+
   // Un premier run au démarrage pour rattraper un éventuel retard
   sendDueReminders().catch((err) =>
     console.error("[reminderScheduler] Erreur run initial ❌", err),
@@ -267,4 +368,4 @@ function start() {
   console.log("[reminderScheduler] Démarré (rappels toutes les 15 min, purge gratuits à 03h00)");
 }
 
-module.exports = { start, sendDueReminders, purgeFreePlanHistory };
+module.exports = { start, sendDueReminders, purgeFreePlanHistory, sendOnboardingNudges };

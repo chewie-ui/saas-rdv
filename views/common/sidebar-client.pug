@@ -25,7 +25,7 @@ aside.sidebar#sidebar
                 //- Établissement (cf. plan d'unification + multi-établissements) :
                 //- un seul lien vers "Mes établissements" — créer/rejoindre se
                 //- font désormais depuis cette page (boutons + modales).
-                a.sb-link(href="/etablissement/mes-etablissements" class=pageName === 'Mes établissements' ? 'active' : '')
+                a.sb-link(href=hasEstablishment ? "/etablissement/mes-etablissements" : "/demarrer" class=pageName === 'Mes établissements' ? 'active' : '')
                     svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
                         path(d="M160-120v-650l320-150 320 150v650H160Zm240-80h160v-200H400v200Zm-160 0h80v-280h320v280h80v-528l-240-112-240 112v528Z")
                     span= hasEstablishment ? 'Gérer mes établissements' : 'Commencer mon établissement'

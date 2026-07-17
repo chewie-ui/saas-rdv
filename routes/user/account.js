@@ -160,7 +160,12 @@ router.patch("/establishments/:id/pause", isAuth, requireEstablishmentManage, es
 router.delete("/establishments/:id", isAuth, requireEstablishmentDelete, establishmentController.deleteEstablishment);
 
 router.post("/establishments/:id/collaborateurs", isAuth, requireCollaboratorsManage, establishmentController.inviteCollaborator);
-router.patch("/establishments/:id/collaborateurs/:membershipId/grade", isAuth, requireCollaboratorsManage, establishmentController.updateCollaboratorGrade);
+// Attribuer un grade = distribuer des permissions (dont facturation,
+// suppression d'établissement…). On exige donc AUSSI `grades.manage` (par
+// défaut réservé au patron), pas seulement `collaborators.manage` : sinon un
+// collaborateur autorisé à gérer l'équipe pouvait s'octroyer un grade
+// supérieur au sien. Le handler interdit en plus d'agir sur son propre grade.
+router.patch("/establishments/:id/collaborateurs/:membershipId/grade", isAuth, requireCollaboratorsManage, requirePermissionForParamCompany("grades.manage"), establishmentController.updateCollaboratorGrade);
 router.patch("/establishments/:id/collaborateurs/:membershipId/time-off-permission", isAuth, requireCollaboratorsManage, establishmentController.updateCollaboratorTimeOffPermission);
 router.patch("/establishments/:id/collaborateurs/:membershipId/active", isAuth, requireCollaboratorsManage, establishmentController.toggleCollaboratorActive);
 router.delete("/establishments/:id/collaborateurs/:membershipId", isAuth, requireCollaboratorsManage, establishmentController.removeCollaborator);

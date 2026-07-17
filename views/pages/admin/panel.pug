@@ -21,6 +21,36 @@ block content
                 span.material-symbols-outlined(style=`font-size:14px`) add
                 span Nouveau RDV
 
+    //- ── Checklist de démarrage (masquée une fois complétée / fermée) ────────
+    if onboarding
+        section.dash-onboard#dashOnboard(data-booking-url=onboarding.bookingUrl)
+            .dash-onboard__hd
+                .dash-onboard__hd-left
+                    h3.dash-onboard__title Bien démarrer sur BranShee
+                    p.dash-onboard__sub Encore #{onboarding.total - onboarding.doneCount} étape#{(onboarding.total - onboarding.doneCount) > 1 ? 's' : ''} et votre page est prête à recevoir des réservations.
+                button.dash-onboard__close#dashOnboardClose(type="button" title="Masquer" aria-label="Masquer")
+                    span.material-symbols-outlined close
+            .dash-onboard__progress
+                .dash-onboard__bar
+                    .dash-onboard__bar-fill(style=`width:${onboarding.percent}%`)
+                .dash-onboard__count #{onboarding.doneCount}/#{onboarding.total}
+            ul.dash-onboard__steps
+                each step in onboarding.steps
+                    li.dash-onboard__step(class=step.done ? 'is-done' : '')
+                        .dash-onboard__step-check
+                            if step.done
+                                span.material-symbols-outlined check
+                            else
+                                span.material-symbols-outlined= step.icon
+                        .dash-onboard__step-body
+                            .dash-onboard__step-title= step.title
+                            .dash-onboard__step-desc= step.desc
+                        if !step.done
+                            if step.key === 'link'
+                                button.sm-btn.sm-btn--ghost.dash-onboard__step-cta#dashOnboardShare(type="button")= step.cta
+                            else
+                                a.sm-btn.sm-btn--ghost.dash-onboard__step-cta(href=step.href)= step.cta
+
     //- ── Stat cards ─────────────────────────────────────────────────────────
     .dash-stats
         each s in stats
@@ -126,3 +156,51 @@ block content
                                 .dash-act-row__when= l.ago
                     else
                         .dash-empty Aucune activité enregistrée
+
+block scripts
+    script.
+        (function () {
+            var box = document.getElementById('dashOnboard');
+            if (!box) return;
+
+            // ── Fermer / masquer la checklist ─────────────────────────────────
+            var closeBtn = document.getElementById('dashOnboardClose');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function () {
+                    box.style.display = 'none';
+                    fetch('/onboarding/dismiss', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                    }).catch(function () {});
+                });
+            }
+
+            // ── Partager mon lien : copie l'URL + valide l'étape ──────────────
+            var shareBtn = document.getElementById('dashOnboardShare');
+            if (shareBtn) {
+                shareBtn.addEventListener('click', function () {
+                    var url = box.getAttribute('data-booking-url') || '';
+                    var full = /^https?:\/\//.test(url) ? url : ('https://' + url);
+                    var done = function () {
+                        shareBtn.textContent = 'Lien copié ✓';
+                        fetch('/onboarding/link-shared', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                        }).then(function () {
+                            setTimeout(function () { window.location.reload(); }, 700);
+                        }).catch(function () {
+                            setTimeout(function () { window.location.reload(); }, 700);
+                        });
+                    };
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(full).then(done, done);
+                    } else {
+                        var ta = document.createElement('textarea');
+                        ta.value = full; document.body.appendChild(ta); ta.select();
+                        try { document.execCommand('copy'); } catch (e) {}
+                        document.body.removeChild(ta);
+                        done();
+                    }
+                });
+            }
+        })();

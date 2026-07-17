@@ -18,6 +18,24 @@ block content
                 path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
             span Réserver
 
+    //- ── Bannière « Devenez pro » (comptes sans établissement) ───────────────
+    //- N'apparaît que pour un compte User (pas un compte Client legacy) qui n'a
+    //- pas encore d'établissement — mène au démarrage express en 1 minute.
+    if canCreateEstablishment
+        a.dash-pro-banner(href="/demarrer")
+            .dash-pro-banner__glow
+            .dash-pro-banner__body
+                span.dash-pro-banner__badge NOUVEAU
+                h2.dash-pro-banner__title Vous êtes un professionnel ?
+                p.dash-pro-banner__sub Créez votre page de réservation et laissez vos clients réserver seuls, 24h/24. En ligne en 1 minute, gratuit.
+                span.dash-pro-banner__cta
+                    span Commencer mon établissement
+                    svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                        path(d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z")
+            .dash-pro-banner__art
+                svg(viewBox="0 -960 960 960" height="64" width="64" fill="currentColor")
+                    path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z")
+
     //- ── État vide ───────────────────────────────────────────────
     if bookings.upcoming.length === 0 && bookings.past.length === 0
         .dash-empty
@@ -361,9 +379,26 @@ block scripts
                         }
                     }
 
-                    confirmBtn.href = href;
+                    // L'annulation se fait par POST (le GET n'affiche plus qu'une
+                    // page de confirmation). L'admin/le client a déjà confirmé via
+                    // cette modale, donc on poste directement.
+                    confirmBtn.dataset.action = href;
                     overlay.style.display = 'flex';
                 });
+            });
+
+            // Confirmation → POST direct (l'utilisateur a déjà confirmé ici).
+            if (confirmBtn) confirmBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                var action = confirmBtn.dataset.action;
+                if (!action) return;
+                confirmBtn.textContent = 'Annulation…';
+                confirmBtn.style.pointerEvents = 'none';
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = action;
+                document.body.appendChild(form);
+                form.submit();
             });
 
             if (closeBtn) closeBtn.addEventListener('click', function() { overlay.style.display = 'none'; });

@@ -204,6 +204,16 @@ exports.getDashboard = async (req, res) => {
   // Marquer les RDV passés pour lesquels le client a déjà posté un avis
   const reviewedCompanyIds = new Set(myReviews.map(r => r.company?.toString()).filter(Boolean));
 
+  // ── Peut-il démarrer un établissement ? ─────────────────────────────────
+  // Uniquement pour un compte User (pas un compte Client legacy) qui ne
+  // possède encore aucun établissement → on propose le démarrage express.
+  let canCreateEstablishment = false;
+  if (req.user) {
+    try {
+      canCreateEstablishment = !(await Company.exists({ owner: req.user._id, isDeleted: { $ne: true } }));
+    } catch (_) { canCreateEstablishment = false; }
+  }
+
   return res.render("client/client-dashboard", {
     title: "Mon espace — BranShee",
     pageName: "Mes rendez-vous",
@@ -211,6 +221,7 @@ exports.getDashboard = async (req, res) => {
     bookings: { upcoming, past },
     myReviews: myReviewsEnriched,
     reviewedCompanyIds: [...reviewedCompanyIds],
+    canCreateEstablishment,
   });
 };
 

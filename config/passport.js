@@ -33,7 +33,14 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await User.findById(id);
+    // On EXCLUT les champs sensibles de `req.user` (présent sur res.locals.user,
+    // donc potentiellement rendu dans un template) : mot de passe haché, secret
+    // 2FA, jetons Google Calendar. Aucun handler ne lit ces champs depuis
+    // req.user (ils re-chargent l'user au besoin), donc c'est sans effet
+    // fonctionnel — juste une réduction de surface d'exposition.
+    const user = await User.findById(id).select(
+      "-password -twoFA.secret -googleCalendar.refreshToken -googleCalendar.accessToken"
+    );
     done(null, user);
   } catch (err) {
     done(err);

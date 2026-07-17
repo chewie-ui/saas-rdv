@@ -382,6 +382,20 @@ const establishmentController = require("../controllers/establishment.controller
 const isAuth = require("../middlewares/isAuth");
 const isClientOrUserAuth = require("../middlewares/isClientOrUserAuth");
 
+// ── Démarrage express (« 3 clics ») — conversion des comptes client en pro ──
+// À enregistrer AVANT la route attrape-tout "/:company" pour que "demarrer" ne
+// soit pas confondu avec un slug d'établissement.
+const _qsUpload = require("../config/multer");
+const { processSingleImage: _qsProcessImage } = require("../middlewares/processImageUpload");
+router.get("/demarrer", isAuth, establishmentController.quickStartPage);
+router.post(
+  "/demarrer/creer",
+  isAuth,
+  _qsUpload.single("photo"),
+  _qsProcessImage("photo"),
+  establishmentController.quickStartCreate,
+);
+
 router.get("/etablissement/mes-etablissements", isClientOrUserAuth, establishmentController.listMyEstablishments);
 // Page admin (sidebar.pug) — bascule l'établissement actif puis réutilise
 // injectCompany pour avoir tous les locals attendus par le layout admin.

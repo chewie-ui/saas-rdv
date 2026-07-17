@@ -1,0 +1,232 @@
+extends ../../layouts/auth
+
+block links
+    link(rel="stylesheet" href="/css/layouts/quick-start.css")
+
+block content
+    main.qs-body
+        .qs-card
+            //- ── En-tête + progression ───────────────────────────────────────
+            .qs-head
+                a.qs-logo(href="/espace-client")
+                    img(src="/images/icon.svg" alt="BranShee")
+                    span BranShee
+                .qs-steps#qsSteps
+                    span.qs-step.is-active(data-step="1")
+                    span.qs-step(data-step="2")
+                    span.qs-step(data-step="3")
+
+            //- ══ ÉTAPE 1 — Votre établissement ═══════════════════════════════
+            section.qs-panel.is-active(data-panel="1")
+                .qs-panel__intro
+                    h1.qs-title Créez votre page de réservation
+                    p.qs-sub En 1 minute, votre calendrier est en ligne et prêt à partager. C'est parti 👇
+
+                //- Logo
+                .qs-logo-upload
+                    label.qs-avatar(for="qsPhoto")
+                        img#qsAvatarPreview(src="/images/no-user.webp" alt="Logo")
+                        span.qs-avatar__edit
+                            span.material-symbols-outlined photo_camera
+                    .qs-logo-upload__txt
+                        span.qs-logo-upload__label Votre logo ou photo
+                        span.qs-logo-upload__hint Optionnel — ça rend votre page pro
+                    input#qsPhoto(type="file" accept="image/*" hidden)
+
+                //- Nom
+                .qs-field
+                    label.qs-label(for="qsName") Nom de votre établissement
+                    input#qsName.qs-input(type="text" placeholder="Ex : Studio Marie, Coach Paul…" maxlength="80" value=prefillName autocomplete="off")
+                    p.qs-error#qsNameError Indiquez un nom pour continuer.
+
+                //- Métier
+                .qs-field
+                    label.qs-label(for="qsType") Votre métier / activité
+                        span.qs-opt (optionnel)
+                    input#qsType.qs-input(type="text" placeholder="Ex : Coiffure, Coaching, Massage…" maxlength="60" value=prefillType autocomplete="off" list="qsTypeList")
+                    datalist#qsTypeList
+                        option(value="Coiffure")
+                        option(value="Barbier")
+                        option(value="Massage / Bien-être")
+                        option(value="Coaching sportif")
+                        option(value="Onglerie")
+                        option(value="Esthétique")
+                        option(value="Thérapie / Psychologie")
+                        option(value="Tatouage")
+                        option(value="Photographe")
+
+                button.qs-btn.qs-btn--primary#qsNext1(type="button")
+                    span Continuer
+                    span.material-symbols-outlined arrow_forward
+
+            //- ══ ÉTAPE 2 — Vos disponibilités ════════════════════════════════
+            section.qs-panel(data-panel="2")
+                .qs-panel__intro
+                    h1.qs-title Vos disponibilités
+                    p.qs-sub Quels jours êtes-vous ouvert ? (vous pourrez tout affiner plus tard)
+
+                .qs-days#qsDays
+                    each lbl, i in dayLabels
+                        //- i = index Date.getDay() (0=Dim … 6=Sam). Ouvert Lun→Ven par défaut.
+                        button.qs-day(type="button" data-day=i class=(i >= 1 && i <= 5) ? 'is-on' : '')= lbl
+
+                .qs-hours
+                    .qs-field.qs-field--inline
+                        label.qs-label(for="qsStart") De
+                        input#qsStart.qs-input.qs-input--time(type="time" value="09:00" step="900")
+                    .qs-field.qs-field--inline
+                        label.qs-label(for="qsEnd") à
+                        input#qsEnd.qs-input.qs-input--time(type="time" value="18:00" step="900")
+                p.qs-error#qsDaysError Choisissez au moins un jour d'ouverture.
+
+                .qs-actions
+                    button.qs-btn.qs-btn--ghost#qsBack2(type="button")
+                        span.material-symbols-outlined arrow_back
+                        span Retour
+                    button.qs-btn.qs-btn--primary#qsCreate(type="button")
+                        span Créer mon calendrier
+                        span.material-symbols-outlined arrow_forward
+
+            //- ══ ÉTAPE 3 — C'est prêt ! ══════════════════════════════════════
+            section.qs-panel(data-panel="3")
+                .qs-success
+                    .qs-success__badge
+                        span.material-symbols-outlined check
+                    h1.qs-title Votre calendrier est prêt à être publié ! 🎉
+                    p.qs-sub Partagez ce lien à vos clients — ils réservent seuls, 24h/24. Chaque rendez-vous apparaîtra dans votre page <strong>Rendez-vous</strong>.
+
+                    //- Lien partageable
+                    .qs-link
+                        span.qs-link__url#qsLinkUrl branshee.com/...
+                        button.qs-link__copy#qsCopy(type="button" title="Copier")
+                            span.material-symbols-outlined content_copy
+
+                    //- Ajouter des services ?
+                    .qs-services
+                        p.qs-services__q Voulez-vous ajouter vos prestations maintenant ?
+                        p.qs-services__hint Ce que vos clients pourront réserver (coupe, séance, consultation…).
+                        .qs-actions
+                            a.qs-btn.qs-btn--ghost#qsSkipServices(href="/panel")
+                                span Plus tard
+                            a.qs-btn.qs-btn--primary#qsAddServices(href="/services")
+                                span.material-symbols-outlined add
+                                span Ajouter mes services
+
+    //- Overlay de chargement pendant la création
+    #qsLoading.qs-loading(hidden)
+        .qs-loading__spinner
+        span Création de votre calendrier…
+
+block scripts
+    script.
+        (function () {
+            var state = { step: 1, days: new Set([1,2,3,4,5]), photoFile: null };
+            var panels = document.querySelectorAll('.qs-panel');
+            var steps  = document.querySelectorAll('.qs-step');
+
+            function goTo(n) {
+                state.step = n;
+                panels.forEach(function (p) { p.classList.toggle('is-active', +p.dataset.panel === n); });
+                steps.forEach(function (s) {
+                    var sn = +s.dataset.step;
+                    s.classList.toggle('is-active', sn === n);
+                    s.classList.toggle('is-done', sn < n);
+                });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            // ── Logo : aperçu ────────────────────────────────────────────────
+            var photoInput = document.getElementById('qsPhoto');
+            var avatarPreview = document.getElementById('qsAvatarPreview');
+            photoInput.addEventListener('change', function () {
+                var f = photoInput.files && photoInput.files[0];
+                if (!f) return;
+                state.photoFile = f;
+                var reader = new FileReader();
+                reader.onload = function (e) { avatarPreview.src = e.target.result; };
+                reader.readAsDataURL(f);
+            });
+
+            // ── Étape 1 → 2 ──────────────────────────────────────────────────
+            var nameInput = document.getElementById('qsName');
+            var nameError = document.getElementById('qsNameError');
+            document.getElementById('qsNext1').addEventListener('click', function () {
+                if (!nameInput.value.trim()) {
+                    nameError.classList.add('is-visible');
+                    nameInput.classList.add('is-error');
+                    nameInput.focus();
+                    return;
+                }
+                nameError.classList.remove('is-visible');
+                nameInput.classList.remove('is-error');
+                goTo(2);
+            });
+            nameInput.addEventListener('input', function () {
+                if (nameInput.value.trim()) { nameError.classList.remove('is-visible'); nameInput.classList.remove('is-error'); }
+            });
+
+            // ── Étape 2 : jours ──────────────────────────────────────────────
+            var daysError = document.getElementById('qsDaysError');
+            document.querySelectorAll('.qs-day').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var d = +btn.dataset.day;
+                    if (state.days.has(d)) { state.days.delete(d); btn.classList.remove('is-on'); }
+                    else { state.days.add(d); btn.classList.add('is-on'); }
+                    if (state.days.size) daysError.classList.remove('is-visible');
+                });
+            });
+            document.getElementById('qsBack2').addEventListener('click', function () { goTo(1); });
+
+            // ── Création ─────────────────────────────────────────────────────
+            var loading = document.getElementById('qsLoading');
+            var createBtn = document.getElementById('qsCreate');
+            createBtn.addEventListener('click', function () {
+                if (!state.days.size) { daysError.classList.add('is-visible'); return; }
+                createBtn.disabled = true;
+                loading.hidden = false;
+
+                var fd = new FormData();
+                fd.append('name', nameInput.value.trim());
+                fd.append('businessType', document.getElementById('qsType').value.trim());
+                fd.append('days', Array.from(state.days).join(','));
+                fd.append('start', document.getElementById('qsStart').value || '09:00');
+                fd.append('end', document.getElementById('qsEnd').value || '18:00');
+                if (state.photoFile) fd.append('photo', state.photoFile);
+
+                fetch('/demarrer/creer', { method: 'POST', body: fd })
+                    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                    .then(function (res) {
+                        loading.hidden = true;
+                        createBtn.disabled = false;
+                        if (!res.ok || !res.j.success) {
+                            if (res.j && res.j.redirect) { window.location = res.j.redirect; return; }
+                            alert((res.j && res.j.error) || 'Une erreur est survenue. Réessayez.');
+                            return;
+                        }
+                        document.getElementById('qsLinkUrl').textContent = res.j.bookingUrlDisplay;
+                        var copyBtn = document.getElementById('qsCopy');
+                        copyBtn.addEventListener('click', function () {
+                            var url = res.j.bookingUrlFull;
+                            var done = function () {
+                                copyBtn.classList.add('is-copied');
+                                copyBtn.querySelector('.material-symbols-outlined').textContent = 'check';
+                                setTimeout(function () {
+                                    copyBtn.classList.remove('is-copied');
+                                    copyBtn.querySelector('.material-symbols-outlined').textContent = 'content_copy';
+                                }, 1800);
+                            };
+                            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, done);
+                            else {
+                                var ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select();
+                                try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(ta); done();
+                            }
+                        });
+                        goTo(3);
+                    })
+                    .catch(function () {
+                        loading.hidden = true;
+                        createBtn.disabled = false;
+                        alert('Connexion interrompue. Réessayez.');
+                    });
+            });
+        })();

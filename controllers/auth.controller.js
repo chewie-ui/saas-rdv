@@ -229,62 +229,105 @@ exports.getCompanyIfExist = async (identifier) => {
 
 exports.forgotPasswordVerifyCode = async (req, res) => {
   try {
-    const { value } = req.body;
-    const code = Math.floor(100000 + Math.random() * 900000);
-    console.log(code);
-
-    req.session.forgotPwdCode = code;
-    const resetHtml = pug.renderFile(
-      path.join(__dirname, "../views/templates/emails/reset-password.pug"),
-      { code }
-    );
-    const isSent = await sendEmail(
-      value,
-      `Code de réinitialisation de votre mot de passe — BranShee`,
-      resetHtml,
-    );
-    console.log(isSent);
-    if (isSent) {
-      return res.json({ success: true });
-    } else {
+    const email = (req.body.value || "").toLowerCase().trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.json({ success: false });
     }
+
+    // Anti-énumération : on répond TOUJOURS "success" pour ne pas révéler si
+    // l'email est inscrit (avant, le front affichait "Aucun compte trouvé",
+    // ce qui permettait de sonder quels emails existent). On ne génère et
+    // n'envoie un code que si le compte existe réellement.
+    const user = await User.findOne({ email }).select("_id").lean();
+    if (user) {
+      // Code cryptographiquement sûr (avant : Math.random, prévisible), lié à
+      // l'email, avec expiration et limite de tentatives — voir checkCodePwd.
+      const code = crypto.randomInt(100000, 1000000);
+      req.session.forgotPwd = {
+        code: String(code),
+        email,
+        expiresAt: Date.now() + 15 * 60 * 1000,
+        attempts: 0,
+        verified: false,
+      };
+      const resetHtml = pug.renderFile(
+        path.join(__dirname, "../views/templates/emails/reset-password.pug"),
+        { code },
+      );
+      await sendEmail(
+        email,
+        `Code de réinitialisation de votre mot de passe — BranShee`,
+        resetHtml,
+      ).catch((e) => console.error("reset email error:", e.message));
+    } else {
+      // Purge un éventuel état résiduel lié à un autre email.
+      delete req.session.forgotPwd;
+    }
+
+    return res.json({ success: true });
   } catch (err) {
-    console.error(err);
-    return res.json({ err });
+    console.error("forgotPasswordVerifyCode error:", err.message);
+    return res.status(500).json({ success: false });
   }
 };
 
 exports.checkCodePwd = (req, res) => {
-  const codeA = req.session.forgotPwdCode;
+  const fp = req.session.forgotPwd;
   const { code } = req.body;
 
-  if (Number(codeA) === Number(code)) {
+  if (!fp || !fp.code || !fp.expiresAt || Date.now() > fp.expiresAt) {
+    return res.json({ success: false, error: "expired" });
+  }
+  // Limite de tentatives — empêche le brute-force d'un code à 6 chiffres.
+  fp.attempts = (fp.attempts || 0) + 1;
+  if (fp.attempts > 6) {
+    delete req.session.forgotPwd;
+    return res.json({ success: false, error: "too_many" });
+  }
+  if (Number(code) === Number(fp.code)) {
+    fp.verified = true;
     return res.json({ success: true });
   }
-
-  return res.json({ success: false, error: "code doesn' match" });
+  return res.json({ success: false, error: "invalid" });
 };
 
 exports.newPwd = async (req, res) => {
-  const { email, password } = req.body;
-  console.log(password);
-  console.log(email);
+  try {
+    const email = (req.body.email || "").toLowerCase().trim();
+    const { password } = req.body;
+    const fp = req.session.forgotPwd;
 
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
+    // ── FAILLE CRITIQUE CORRIGÉE ──────────────────────────────────────────
+    // Avant, ce handler changeait le mot de passe pour un email SANS jamais
+    // vérifier le code de réinitialisation (checkCodePwd était totalement
+    // découplé) → prise de contrôle de n'importe quel compte via un simple
+    // appel API. On exige désormais qu'un code ait bien été VÉRIFIÉ en session
+    // pour CE MÊME email, non expiré, et à usage unique (purgé ensuite).
+    if (!fp || fp.verified !== true || Date.now() > fp.expiresAt || fp.email !== email) {
+      return res.status(403).json({
+        success: false,
+        message: "Session de réinitialisation invalide ou expirée. Recommencez.",
+      });
+    }
+    if (!password || password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Le mot de passe doit contenir au moins 8 caractères.",
+      });
+    }
 
-  const user = await User.findOneAndUpdate(
-    { email },
-    { password: hashedPassword },
-    { new: true }, // renvoie le user mis a jour
-  );
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.findOneAndUpdate({ email }, { password: hashedPassword });
 
-  console.log(user);
+    // Usage unique : on purge la session quel que soit le résultat.
+    delete req.session.forgotPwd;
 
-  if (!user || user == null || user == "null") {
-    return res.json({ error: 404, success: false, message: "User not found" });
+    if (!user) {
+      return res.json({ success: false, message: "Utilisateur introuvable." });
+    }
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("newPwd error:", err.message);
+    return res.status(500).json({ success: false, message: "Erreur serveur." });
   }
-
-  res.json({ success: true });
 };

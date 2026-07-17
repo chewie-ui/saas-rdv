@@ -20,10 +20,21 @@ exports.loginPage = (req, res) => {
   res.render("superadmin/login", { error: null });
 };
 
+// Comparaison à temps constant : un `===` classique s'arrête au premier
+// caractère différent, ce qui laisse fuir la longueur/le préfixe du secret par
+// mesure de timing. On hashe les deux côtés (longueur fixe) avant de comparer.
+function secretMatches(provided) {
+  const expected = process.env.SUPERADMIN_SECRET;
+  if (!expected || !provided) return false; // jamais de login si secret non défini
+  const a = crypto.createHash("sha256").update(String(provided)).digest();
+  const b = crypto.createHash("sha256").update(String(expected)).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+
 exports.login = (req, res) => {
   const isAjax = req.headers["x-requested-with"] === "fetch";
   const { secret } = req.body;
-  if (secret && secret === process.env.SUPERADMIN_SECRET) {
+  if (secretMatches(secret)) {
     req.session.isSuperAdmin = true;
     if (isAjax) return res.json({ success: true, redirect: "/superadmin" });
     return res.redirect("/superadmin");
@@ -712,26 +723,47 @@ exports.deleteUserAccount = async (req, res) => {
     const user = await User.findById(userId).select("_id");
     if (!user) return res.status(404).json({ error: "Utilisateur introuvable." });
 
-    const company = await Company.findOne({ owner: userId }).select("_id").lean();
-    if (company) {
-      const companyId = company._id;
+    const CompanyMembership = require("../db/models/company/companyMembership.model");
+    const Subscription = require("../db/models/subscription.model");
+
+    // Un utilisateur peut posséder PLUSIEURS établissements (cf. "Gérer mes
+    // établissements") — { owner: userId } seul (sans .find) n'en trouvait
+    // qu'un, et le champ utilisé plus bas pour purger les réservations était
+    // `userId` au lieu de l'ID de chaque établissement (les Booking
+    // référencent `company`, jamais l'utilisateur) : les réservations
+    // n'étaient donc jamais réellement supprimées, laissées orphelines après
+    // coup — et selon les données, ça pouvait faire échouer le reste de
+    // l'opération de façon imprévisible.
+    const companies = await Company.find({ owner: userId }).select("_id").lean();
+    const companyIds = companies.map((c) => c._id);
+    if (companyIds.length > 0) {
       await Promise.all([
-        Service.deleteMany({ company: companyId }),
-        Employee.deleteMany({ company: companyId }),
-        DaysOff.deleteMany({ company: companyId }),
-        Form.deleteMany({ company: companyId }),
-        Review.deleteMany({ company: companyId }),
+        Service.deleteMany({ company: { $in: companyIds } }),
+        Employee.deleteMany({ company: { $in: companyIds } }),
+        DaysOff.deleteMany({ company: { $in: companyIds } }),
+        Form.deleteMany({ company: { $in: companyIds } }),
+        Review.deleteMany({ company: { $in: companyIds } }),
+        Booking.deleteMany({ company: { $in: companyIds } }),
+        CompanyMembership.deleteMany({ company: { $in: companyIds } }),
       ]);
-      await Company.deleteOne({ _id: companyId });
+      await Company.deleteMany({ _id: { $in: companyIds } });
     }
 
-    await Booking.deleteMany({ company: userId });
+    // Adhésions de CET utilisateur comme collaborateur d'AUTRES établissements
+    // (pas les siens) + son historique de connexions/abonnements — sinon
+    // laissés orphelins, référençant un User qui n'existe plus.
+    await Promise.all([
+      CompanyMembership.deleteMany({ user: userId }),
+      LoginEvent.deleteMany({ user: userId }),
+      Subscription.deleteMany({ user: userId }),
+    ]);
+
     await User.deleteOne({ _id: userId });
 
     res.json({ success: true });
   } catch (err) {
     console.error("deleteUserAccount error:", err);
-    res.status(500).json({ error: "Erreur serveur." });
+    res.status(500).json({ error: err.message || "Erreur serveur." });
   }
 };
 
@@ -1151,6 +1183,18 @@ exports.impersonate = async (req, res) => {
 };
 
 exports.exitImpersonation = (req, res) => {
+  // ── FAILLE CRITIQUE CORRIGÉE ──────────────────────────────────────────────
+  // Avant, cette route n'avait AUCUN garde et posait `isSuperAdmin = true`
+  // sans condition → n'importe quel visiteur anonyme qui ouvrait cette URL
+  // devenait superadmin. On ne restaure le statut QUE si la session porte
+  // bien la preuve d'une usurpation en cours (`superadminBackup`, posé
+  // uniquement par impersonate()/supervisionImpersonate() côté superadmin
+  // authentifié). Sans backup → pas d'élévation, on renvoie vers l'accueil.
+  const hadBackup = req.session.superadminBackup === true;
+  if (!hadBackup) {
+    return res.redirect("/");
+  }
+
   const impersonating = req.session.isImpersonating;
   req.logout((err) => {
     if (err) console.error("logout error:", err);

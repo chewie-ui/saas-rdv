@@ -19,7 +19,16 @@ html {
    HERO
    ════════════════════════════════════════════════════════ */
 .pro-hero {
-  padding: 72px 0 64px;
+  box-sizing: border-box;
+  /* Le hero remplit tout l'écran, contenu centré verticalement. `min-height`
+     (pas `height`) + `svh` : si le contenu dépasse la hauteur d'écran (mobile),
+     la section grandit au lieu de couper — jamais de contenu tronqué. Le
+     padding haut dégage la topbar fixe (64px). */
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  align-content: center;
+  padding: 88px 0 48px;
   background: linear-gradient(180deg, var(--accent-soft) 0%, var(--surface) 72%);
   position: relative;
   overflow: hidden;
@@ -81,10 +90,12 @@ html {
 }
 
 .pro-h1 {
-  font-size: clamp(34px, 5.5vw, 62px);
+  /* Fluide : grandit avec l'écran (jusqu'à 80px sur grand moniteur) pour que
+     le hero ne paraisse jamais « petit et perdu » sur un grand écran. */
+  font-size: clamp(34px, 4.8vw, 80px);
   font-weight: 800;
-  line-height: 1.04;
-  letter-spacing: -2px;
+  line-height: 1.03;
+  letter-spacing: -0.035em;
   color: var(--ink);
   margin: 0;
 }
@@ -93,13 +104,29 @@ html {
   letter-spacing: 0;
   color: var(--accent);
 }
+/* Le point final en vert — la petite touche qui donne du caractère au titre */
+.pro-h1__dot {
+  color: var(--accent);
+}
+
+/* Entrée en fondu douce au chargement (texte puis mockup, léger décalage) —
+   discrète, désactivée si l'utilisateur préfère moins d'animation. */
+@keyframes proHeroIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.pro-hero__left { animation: proHeroIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.pro-hero__right { animation: proHeroIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both; }
+@media (prefers-reduced-motion: reduce) {
+  .pro-hero__left, .pro-hero__right { animation: none; }
+}
 
 .pro-sub {
-  font-size: 16px;
-  line-height: 1.65;
+  font-size: clamp(16px, 1.15vw, 20px);
+  line-height: 1.6;
   color: var(--text-secondary);
   margin: 0;
-  max-width: 480px;
+  max-width: clamp(420px, 30vw, 540px);
 }
 
 .pro-actions {
@@ -149,6 +176,19 @@ html {
   flex-shrink: 0;
 }
 
+/* Lien discret « chercher un pro » (public client, sous la réassurance) */
+.pro-hero__findpro {
+  display: inline-block;
+  margin-top: 22px;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--border-medium, #d1d5db);
+  padding-bottom: 1px;
+  transition: color .15s;
+}
+.pro-hero__findpro:hover { color: var(--ink, #111827); }
+
 /* Category chips in hero */
 .lp__cats {
   display: flex;
@@ -184,7 +224,7 @@ html {
   padding: 14px;
   transform: rotate(-1.5deg);
   width: 100%;
-  max-width: 480px;
+  max-width: clamp(440px, 34vw, 600px);
   position: relative;
 }
 
@@ -965,13 +1005,36 @@ html {
   }
   .pro-hero__inner {
     grid-template-columns: 1.1fr 1fr;
-    gap: 64px;
+    gap: clamp(56px, 6vw, 112px);
+  }
+  /* Le contenu du hero respire davantage à mesure que l'écran grandit */
+  .pro-hero__left {
+    gap: clamp(20px, 1.8vw, 32px);
   }
   .pro-features__grid {
     grid-template-columns: repeat(3, 1fr);
   }
   .pro-stats__grid {
     grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Grand écran : le hero utilise plus de largeur pour ne pas laisser le
+   contenu « flotter » au centre d'un conteneur trop étroit (1200px). */
+@media (min-width: 1500px) {
+  .pro-hero .container {
+    max-width: 1340px;
+  }
+}
+
+/* Écran HAUT (grand moniteur) : on plafonne la hauteur du hero. Le remplir à
+   100vh y laisserait un immense vide autour d'un contenu forcément compact ;
+   on le borne à une hauteur généreuse mais maîtrisée, et la section suivante
+   « pointe » en bas de l'écran — ce qui invite naturellement à scroller.
+   Les écrans plus courts (laptops, mobile) gardent le plein écran (100svh). */
+@media (min-width: 1024px) and (min-height: 900px) {
+  .pro-hero {
+    min-height: 880px;
   }
 }
 
@@ -1509,5 +1572,35 @@ html {
   }
   .pro-jobs__grid {
     grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ── Barre d'action collante (mobile uniquement) ─────────────────────────── */
+.pro-sticky-cta {
+  display: none;
+}
+@media (max-width: 819px) {
+  .pro-sticky-cta {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px 20px;
+    border-radius: 14px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    text-decoration: none;
+    text-align: center;
+    box-shadow: 0 8px 28px -6px rgba(30, 122, 78, 0.55), 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+  /* Laisse la place à la barre pour ne pas masquer le dernier contenu. */
+  .pro-lp {
+    padding-bottom: 88px;
   }
 }

@@ -129,7 +129,10 @@ exports.createBookingSetupIntent = async (req, res) => {
 //                la carte enregistrée (ou on garde le paiement déjà capturé).
 exports.markNoShow = async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id);
+    // IDOR CRITIQUE : cet endpoint déclenche un prélèvement/remboursement
+    // Stripe. Scopé à l'établissement courant → impossible d'agir sur la carte
+    // enregistrée du client d'un autre établissement.
+    const booking = await Booking.findOne({ _id: req.params.id, company: res.locals.currentCompany?._id });
     if (!booking) return res.status(404).json({ error: "Réservation introuvable." });
 
     const reason = req.body.reason === "valid" ? "valid" : "invalid";
@@ -228,7 +231,9 @@ exports.markNoShow = async (req, res) => {
 //  - "kept"     → raison non valable : l'établissement garde les frais
 exports.reviewCancellationPenalty = async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id);
+    // IDOR CRITIQUE : déclenche un remboursement Stripe. Scopé à
+    // l'établissement courant.
+    const booking = await Booking.findOne({ _id: req.params.id, company: res.locals.currentCompany?._id });
     if (!booking) return res.status(404).json({ error: "Réservation introuvable." });
 
     const decision = req.body.decision === "refunded" ? "refunded" : "kept";
@@ -384,7 +389,7 @@ exports.createBooking = async (req, res) => {
     // d'employé ni de vérification de chevauchement individuelle. ──────────
     let serviceDoc = null;
     if (serviceId) {
-      serviceDoc = await Service.findById(serviceId).select("type capacity color recurring sessions location duration").lean();
+      serviceDoc = await Service.findById(serviceId).select("type capacity color recurring sessions location duration price").lean();
     }
     const isGroup = !!(serviceDoc && serviceDoc.type === "group");
 
@@ -554,6 +559,52 @@ exports.createBooking = async (req, res) => {
       }
     }
 
+    // ── Paiement en ligne : VÉRIFICATION SERVEUR du PaymentIntent ───────────
+    // FAILLE CRITIQUE CORRIGÉE : avant, on marquait le RDV "payé" en se fiant
+    // AVEUGLÉMENT à `stripePaymentIntentId` et `servicePrice` envoyés par le
+    // navigateur → un client pouvait forger un id, payer 0,50 € un service à
+    // 60 €, ou enregistrer un RDV "payé" sans payer du tout. On récupère
+    // désormais le PaymentIntent auprès de Stripe, on exige qu'il soit
+    // réellement "succeeded", et on vérifie que le montant reçu couvre bien le
+    // prix du service (issu de la BASE, jamais du body). Montant stocké =
+    // celui confirmé par Stripe.
+    let onlinePayment = null;
+    if (paymentMethod === "online" && stripePaymentIntentId && stripe) {
+      try {
+        const pi = await stripe.paymentIntents.retrieve(stripePaymentIntentId);
+        const receivedCents = pi ? (pi.amount_received ?? pi.amount ?? 0) : 0;
+        const expectedCents = serviceDoc && Number(serviceDoc.price) > 0
+          ? toCents(serviceDoc.price)
+          : 0;
+        const succeeded = pi && pi.status === "succeeded";
+        const amountOk = expectedCents === 0 || receivedCents >= expectedCents;
+        if (succeeded && amountOk) {
+          onlinePayment = {
+            stripePaymentIntentId: pi.id,
+            amount:  receivedCents / 100,
+            paidAt:  new Date(),
+          };
+        } else {
+          // Paiement en ligne réclamé mais non vérifiable (forgé, échoué, ou
+          // montant insuffisant) → on refuse la réservation plutôt que de
+          // créer un RDV faussement "payé".
+          console.error("Paiement en ligne non vérifié:", { piStatus: pi?.status, receivedCents, expectedCents });
+          return res.json({
+            success: false,
+            error: "payment_unverified",
+            message: "Le paiement n'a pas pu être vérifié. Réessayez ou contactez l'établissement.",
+          });
+        }
+      } catch (piErr) {
+        console.error("PaymentIntent verify error:", piErr.message);
+        return res.json({
+          success: false,
+          error: "payment_unverified",
+          message: "Le paiement n'a pas pu être vérifié. Réessayez ou contactez l'établissement.",
+        });
+      }
+    }
+
     const newBooking = await Booking.create({
       date: new Date(date),
       startTime,
@@ -578,13 +629,16 @@ exports.createBooking = async (req, res) => {
       employeeName: employeeName || "",
       isGroup,
       // ── Payment ────────────────────────────────────────────────────────────
+      // Statut "paid" UNIQUEMENT si onlinePayment a été vérifié côté serveur
+      // ci-dessus. Sinon on retombe sur le montant informatif (méthodes hors
+      // ligne) sans jamais prétendre que c'est payé.
       payment: {
         method: ["online", "on_site", "bank_transfer", "paypal"].includes(paymentMethod) ? paymentMethod : "none",
-        status: paymentMethod === "online" && stripePaymentIntentId ? "paid" : "none",
-        stripePaymentIntentId: stripePaymentIntentId || "",
-        amount:   servicePrice ? Number(servicePrice) : 0,
+        status: onlinePayment ? "paid" : "none",
+        stripePaymentIntentId: onlinePayment ? onlinePayment.stripePaymentIntentId : "",
+        amount:   onlinePayment ? onlinePayment.amount : (servicePrice ? Number(servicePrice) : 0),
         currency: "eur",
-        paidAt:   paymentMethod === "online" && stripePaymentIntentId ? new Date() : null,
+        paidAt:   onlinePayment ? onlinePayment.paidAt : null,
         ...paymentExtra,
       },
     });
@@ -1368,16 +1422,80 @@ exports.getDisabledDays = async (req, res) => {
 };
 
 exports.getBookingC = async (req, res) => {
-  const { companyId } = req.params;
+  try {
+    const { companyId } = req.params;
 
-  const doc = await Booking.find({
-    company: companyId,
-    status: { $ne: "canceled" },
-  });
+    // ── FAILLE CRITIQUE CORRIGÉE (endpoint PUBLIC, sans auth) ─────────────
+    // Avant, cette route renvoyait les documents COMPLETS de tous les RDV
+    // d'un établissement : PII client (nom/email/téléphone/message) ET
+    // métadonnées de paiement (cardLast4, cardBrand, stripeCustomerId…).
+    // Énumérer les companyId exfiltrait toute la clientèle. Le widget de
+    // réservation n'a besoin QUE de la date + du créneau pour calculer le
+    // taux de remplissage → projection minimale, aucune donnée sensible.
+    // On borne aussi aux RDV futurs (les seuls réservables) + une limite.
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
 
-  res.json(doc);
+    const doc = await Booking.find({
+      company: companyId,
+      status: { $ne: "canceled" },
+      date: { $gte: startOfToday },
+    })
+      .select("date startTime endTime slotTime -_id")
+      .limit(2000)
+      .lean();
+
+    res.json(doc);
+  } catch (err) {
+    console.error("getBookingC error:", err.message);
+    res.status(500).json([]);
+  }
 };
 
+// ── GET : page interstitielle de confirmation (ne modifie RIEN) ───────────────
+// FAILLE CORRIGÉE : l'ancien GET annulait (et prélevait des frais Stripe !) dès
+// le chargement du lien. Les aperçus de liens des messageries (Outlook, WhatsApp,
+// antivirus) préchargent les URL → annulations/prélèvements fantômes. Le GET se
+// contente désormais d'AFFICHER une page de confirmation ; l'annulation réelle
+// n'a lieu qu'après un POST explicite (exports.cancelBooking ci-dessous).
+exports.cancelBookingPage = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { token } = req.query;
+
+    const booking = await Booking.findOne({ _id: userId, cancelToken: token })
+      .select("name surname date startTime endTime serviceName status company payment")
+      .lean();
+
+    if (!booking) {
+      return res.status(404).render("client/404.pug", {
+        message: "Lien d'annulation invalide ou déjà utilisé.",
+      });
+    }
+    if (booking.status === "canceled") {
+      return res.render("client/cancel-confirm", { alreadyCanceled: true, booking, token, feeInfo: null });
+    }
+
+    // Frais éventuels affichés AVANT confirmation (transparence).
+    const company = await Company.findById(booking.company).select("cancellationPolicy").lean();
+    const rule = company?.cancellationPolicy?.rule || "free";
+    const hrs = hoursUntil(booking.date, booking.startTime);
+    const price = booking.payment?.amount || 0;
+    let feePct = 0;
+    if (rule === "half_24h") feePct = hrs < 24 ? 0.5 : 0;
+    else if (rule === "full_12h") feePct = hrs < 12 ? 1 : (hrs < 24 ? 0.5 : 0);
+    const feeInfo = (feePct > 0 && price > 0 && ["authorized", "paid"].includes(booking.payment?.status))
+      ? { pct: Math.round(feePct * 100), amount: (price * feePct).toFixed(2) }
+      : null;
+
+    return res.render("client/cancel-confirm", { alreadyCanceled: false, booking, token, feeInfo });
+  } catch (err) {
+    console.error("cancelBookingPage error:", err.message);
+    return res.status(500).render("client/404.pug", { message: "Une erreur est survenue." });
+  }
+};
+
+// ── POST : annulation réelle (mutation, prélèvements, emails) ──────────────────
 exports.cancelBooking = async (req, res) => {
   const { userId } = req.params;
   const { token } = req.query;

@@ -664,6 +664,14 @@ exports.updateCollaboratorGrade = async (req, res) => {
     const grade = await CompanyGrade.findOne({ _id: req.body.gradeId, company: company._id });
     if (!grade) return res.status(400).json({ error: "Grade introuvable." });
 
+    // Anti auto-escalade : on ne peut pas modifier son propre grade (sinon on
+    // s'octroie soi-même un grade plus puissant). Seul le patron reste libre.
+    const target = await CompanyMembership.findOne({ _id: req.params.membershipId, company: company._id }).select("user").lean();
+    const isOwner = String(company.owner) === String(req.user._id);
+    if (target && !isOwner && String(target.user) === String(req.user._id)) {
+      return res.status(403).json({ error: "Vous ne pouvez pas modifier votre propre grade." });
+    }
+
     const membership = await CompanyMembership.findOneAndUpdate(
       { _id: req.params.membershipId, company: company._id, status: "accepted" },
       { grade: grade._id },
@@ -831,6 +839,115 @@ exports.switchActiveCompany = async (req, res) => {
   } catch (err) {
     console.error("switchActiveCompany error:", err.message);
     return res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// ── Démarrage express (« 3 clics ») ─────────────────────────────────────────
+// Parcours ultra-court pour convertir un compte « espace client » (sans
+// établissement) en pro : nom + logo + métier → dispos → lien partageable.
+// Réutilise la même création que createEstablishment mais en une seule passe,
+// avec upload de logo et horaires choisis, puis renvoie le lien de réservation.
+
+// Libellés courts des jours pour l'écran de dispos (index Date.getDay()).
+const QS_DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+
+exports.quickStartPage = async (req, res) => {
+  if (!req.user) return res.redirect("/login");
+  try {
+    // Déjà un établissement → pas de raison de repasser par l'express.
+    const existing = await Company.countDocuments({ owner: req.user._id, isDeleted: { $ne: true } });
+    if (existing > 0) return res.redirect("/panel");
+  } catch (_) { /* on laisse passer, le POST re-vérifie de toute façon */ }
+
+  return res.render("client/quick-start", {
+    title: "Créer mon établissement en 1 minute — BranShee",
+    prefillName: (req.user.businessName || "").trim(),
+    prefillType: (req.user.businessType || "").trim(),
+    dayLabels: QS_DAY_LABELS,
+  });
+};
+
+exports.quickStartCreate = async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Vous devez être connecté." });
+    const owner = req.user;
+
+    // Un compte gratuit ne peut avoir qu'un établissement — garde-fou (le
+    // parcours n'est proposé qu'aux comptes sans établissement, mais on
+    // revérifie côté serveur pour ne jamais créer de doublon).
+    const ownedCount = await Company.countDocuments({ owner: owner._id, isDeleted: { $ne: true } });
+    const limit = getLimit("companies", owner);
+    if (ownedCount >= limit) {
+      return res.status(403).json({ error: "Vous avez déjà un établissement.", redirect: "/panel" });
+    }
+
+    const name = (req.body.name || "").trim();
+    if (!name) return res.status(400).json({ error: "Indiquez le nom de votre établissement." });
+    const businessType = (req.body.businessType || "").trim();
+
+    // Logo (optionnel) — déjà converti/écrit sur disque par processSingleImage.
+    let photoPath = "";
+    if (req.file && req.file.filename) {
+      photoPath = `/uploads/profiles/${req.file.filename}`;
+    }
+
+    // ── Disponibilités : jours ouverts + plage horaire commune ──────────────
+    const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
+    const start = timeRe.test(req.body.start || "") ? req.body.start : "09:00";
+    const end   = timeRe.test(req.body.end || "")   ? req.body.end   : "18:00";
+    const daysRaw = String(req.body.days || "1,2,3,4,5")
+      .split(",")
+      .map((s) => parseInt(s, 10))
+      .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
+    const openDays = new Set(daysRaw.length ? daysRaw : [1, 2, 3, 4, 5]);
+    // Sécurité : si l'heure de fin ≤ heure de début, on retombe sur 09-18.
+    const [sh, sm] = start.split(":").map(Number);
+    const [eh, em] = end.split(":").map(Number);
+    const validRange = eh * 60 + em > sh * 60 + sm;
+    const S = validRange ? start : "09:00";
+    const E = validRange ? end : "18:00";
+    const schedule = [0, 1, 2, 3, 4, 5, 6].map((idx) =>
+      openDays.has(idx)
+        ? { weekdayIndex: idx, workingHours: [{ start: S, end: E }] }
+        : { weekdayIndex: idx, dayOff: true },
+    );
+
+    const company = await Company.create({
+      owner: owner._id,
+      name,
+      businessType,
+      photo: photoPath || "/images/no-user.webp",
+      schedule,
+    });
+
+    // Le compte devient pro : businessName/Type/Picture alimentent la page
+    // publique, la recherche et la checklist d'onboarding du dashboard.
+    const userUpdate = { company: company._id, accountIntent: "pro", businessName: name, businessType };
+    if (photoPath) userUpdate.businessPicture = photoPath;
+    // Lien réputé « partagé » dès l'express : l'écran final le met en avant.
+    userUpdate["onboarding.linkShared"] = true;
+    await User.findByIdAndUpdate(owner._id, userUpdate);
+
+    logActivity({
+      company: company._id,
+      user: owner,
+      role: "owner",
+      action: "establishment.create",
+      description: `a créé l'établissement "${name}" (démarrage express)`,
+    });
+
+    const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
+    const bookingPath = "/" + (company.slug || company._id);
+    return res.json({
+      success: true,
+      bookingUrlDisplay: "branshee.com" + bookingPath,
+      bookingUrlFull: (env.appBaseUrl || "https://www.branshee.com") + bookingPath,
+      servicesUrl: "/services",
+      dashboardUrl: "/panel",
+    });
+  } catch (err) {
+    console.error("quickStartCreate error:", err.message);
+    return res.status(500).json({ error: "Une erreur est survenue. Réessayez." });
   }
 };
 
