@@ -45,6 +45,9 @@ html(lang="fr")
             /* Edit btn */
             .edit-btn { background: none; border: 1px solid #2a2a2a; border-radius: 7px; color: #555; padding: 5px 9px; cursor: pointer; transition: color .15s, border-color .15s; display: inline-flex; align-items: center; }
             .edit-btn:hover { color: #fff; border-color: #444; }
+            .del-btn { background: none; border: 1px solid #3a1f1f; border-radius: 7px; color: #a45; padding: 5px 9px; cursor: pointer; transition: color .15s, border-color .15s, background .15s; display: inline-flex; align-items: center; }
+            .del-btn:hover { color: #fff; background: #dc2626; border-color: #dc2626; }
+            .del-btn:disabled { opacity: .5; cursor: default; }
             /* Impersonation btns */
             .imp-btn { font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 6px; border: 1px solid #2a2a2a; cursor: pointer; transition: all .15s; white-space: nowrap; }
             .imp-btn--discrete { background: none; color: #555; }
@@ -176,6 +179,14 @@ html(lang="fr")
                                 )
                                     svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
                                         path(d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z")
+                                button.del-btn(
+                                    type="button"
+                                    title="Supprimer l'établissement"
+                                    data-del-id=String(c._id)
+                                    data-name=estabName || 'cet établissement'
+                                )
+                                    svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
+                                        path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
 
     //- ── Modale édition établissement ────────────────────────────────────────
     .sa-modal-overlay#editEstabOverlay(style="display:none")
@@ -200,8 +211,33 @@ html(lang="fr")
                 button.sa-btn.sa-btn--primary#editEstabSave(type="button") Enregistrer
                 button.sa-btn.sa-btn--ghost#editEstabCancel(type="button") Annuler
 
+    script(src="/js/utils/confirm-modal.js")
     script.
         (function () {
+            // ── Suppression d'un établissement ─────────────────────────────────
+            document.querySelectorAll('.del-btn').forEach(function (btn) {
+                btn.addEventListener('click', async function () {
+                    var id = this.dataset.delId;
+                    var name = this.dataset.name || 'cet établissement';
+                    var confirmed = await window.confirmModal(
+                        'Supprimer "' + name + '" ?',
+                        "Toutes ses données (réservations, services, employés...) seront définitivement supprimées. Cette action est irréversible. Le compte propriétaire, lui, est conservé.",
+                        { confirmLabel: 'Supprimer', danger: true }
+                    );
+                    if (!confirmed) return;
+                    this.disabled = true;
+                    try {
+                        var res = await fetch('/superadmin/establishments/' + id, { method: 'DELETE', headers: { 'Content-Type': 'application/json' } });
+                        var data = await res.json();
+                        if (!data.success) throw new Error(data.error || 'Échec');
+                        this.closest('tr').remove();
+                    } catch (e) {
+                        this.disabled = false;
+                        await window.alertModal(e.message && e.message !== 'Échec' ? e.message : "Erreur lors de la suppression de l'établissement.");
+                    }
+                });
+            });
+
             // ── Plan select ───────────────────────────────────────────────────
             document.querySelectorAll('.plan-select').forEach(function (sel) {
                 sel.addEventListener('change', function () {

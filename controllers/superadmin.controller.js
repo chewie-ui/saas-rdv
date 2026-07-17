@@ -767,6 +767,47 @@ exports.deleteUserAccount = async (req, res) => {
   }
 };
 
+// ── Suppression d'UN établissement (superadmin) ─────────────────────────────
+// Hard delete de la Company + toutes ses données liées (services, employés,
+// réservations, avis, formulaires, jours off, adhésions, grades). Le compte
+// propriétaire, lui, est CONSERVÉ (il peut être client ou avoir d'autres
+// établissements) — on détache juste l'établissement s'il y pointait.
+exports.deleteEstablishment = async (req, res) => {
+  try {
+    const { companyId } = req.params;
+    const company = await Company.findById(companyId).select("_id owner name").lean();
+    if (!company) return res.status(404).json({ error: "Établissement introuvable." });
+
+    const CompanyMembership = require("../db/models/company/companyMembership.model");
+    const CompanyGrade = require("../db/models/company/companyGrade.model");
+
+    await Promise.all([
+      Service.deleteMany({ company: companyId }),
+      Employee.deleteMany({ company: companyId }),
+      DaysOff.deleteMany({ company: companyId }),
+      Form.deleteMany({ company: companyId }),
+      Review.deleteMany({ company: companyId }),
+      Booking.deleteMany({ company: companyId }),
+      CompanyMembership.deleteMany({ company: companyId }),
+      CompanyGrade.deleteMany({ company: companyId }),
+    ]);
+    await Company.deleteOne({ _id: companyId });
+
+    // Détache l'établissement de son propriétaire s'il y faisait référence.
+    if (company.owner) {
+      await User.updateOne(
+        { _id: company.owner, company: companyId },
+        { $unset: { company: "" } },
+      );
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("deleteEstablishment (superadmin) error:", err);
+    return res.status(500).json({ error: err.message || "Erreur serveur." });
+  }
+};
+
 // ── Pages / fonctionnalités (maintenance, erreur, désactivation) ─────────────
 exports.featuresPage = async (req, res) => {
   const docs = await FeatureFlag.find({}).lean();

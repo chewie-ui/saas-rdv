@@ -25,6 +25,7 @@ const upload = require("../config/multer");
 const { processSingleImage } = require("../middlewares/processImageUpload");
 
 router.get("/superadmin/establishments", isSuperAdmin, ctrl.establishmentsPage);
+router.delete("/superadmin/establishments/:companyId", isSuperAdmin, ctrl.deleteEstablishment);
 router.patch("/superadmin/establishments/:companyId/plan", isSuperAdmin, ctrl.setPlanForCompany);
 router.patch(
   "/superadmin/establishments/:companyId/info",
