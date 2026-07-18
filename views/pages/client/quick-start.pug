@@ -185,22 +185,54 @@ block scripts
                 createBtn.disabled = true;
                 loading.hidden = false;
 
-                var fd = new FormData();
-                fd.append('name', nameInput.value.trim());
-                fd.append('businessType', document.getElementById('qsType').value.trim());
-                fd.append('days', Array.from(state.days).join(','));
-                fd.append('start', document.getElementById('qsStart').value || '09:00');
-                fd.append('end', document.getElementById('qsEnd').value || '18:00');
-                if (state.photoFile) fd.append('photo', state.photoFile);
+                var payload = {
+                    name: nameInput.value.trim(),
+                    businessType: document.getElementById('qsType').value.trim(),
+                    days: Array.from(state.days).join(','),
+                    start: document.getElementById('qsStart').value || '09:00',
+                    end: document.getElementById('qsEnd').value || '18:00'
+                };
 
-                fetch('/demarrer/creer', { method: 'POST', body: fd })
-                    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                // Sans logo → requête JSON simple (plus robuste : évite tout souci
+                // de multipart derrière un proxy de prod). Avec logo → multipart.
+                var fetchOpts;
+                if (state.photoFile) {
+                    var fd = new FormData();
+                    Object.keys(payload).forEach(function (k) { fd.append(k, payload[k]); });
+                    fd.append('photo', state.photoFile);
+                    fetchOpts = { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'Accept': 'application/json' } };
+                } else {
+                    fetchOpts = { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(payload) };
+                }
+
+                fetch('/demarrer/creer', fetchOpts)
+                    .then(function (r) {
+                        // On lit d'abord en TEXTE puis on tente le JSON : ainsi une
+                        // réponse HTML (session expirée, 404, erreur serveur) ne casse
+                        // plus tout en « Connexion interrompue » — on sait pourquoi.
+                        return r.text().then(function (txt) {
+                            var j = null; try { j = JSON.parse(txt); } catch (e) {}
+                            return { status: r.status, ok: r.ok, redirected: r.redirected, url: r.url || '', j: j, txt: txt };
+                        });
+                    })
                     .then(function (res) {
                         loading.hidden = true;
                         createBtn.disabled = false;
+                        // Session expirée / redirigé vers une page de connexion
+                        var looksLikeLogin = (res.redirected && /login|connexion/i.test(res.url)) ||
+                            (!res.j && /name=["']?password|se connecter|mot de passe/i.test(res.txt));
+                        if (res.status === 401 || res.status === 403 || looksLikeLogin) {
+                            alert('Votre session a expiré. Reconnectez-vous, puis réessayez.');
+                            window.location = '/login';
+                            return;
+                        }
+                        if (!res.j) {
+                            alert('Erreur ' + res.status + " : le serveur n'a pas répondu correctement. Réessayez, et si ça persiste contactez le support.");
+                            return;
+                        }
                         if (!res.ok || !res.j.success) {
-                            if (res.j && res.j.redirect) { window.location = res.j.redirect; return; }
-                            alert((res.j && res.j.error) || 'Une erreur est survenue. Réessayez.');
+                            if (res.j.redirect) { window.location = res.j.redirect; return; }
+                            alert(res.j.error || ('Erreur ' + res.status + '. Réessayez.'));
                             return;
                         }
                         document.getElementById('qsLinkUrl').textContent = res.j.bookingUrlDisplay;
@@ -223,10 +255,10 @@ block scripts
                         });
                         goTo(3);
                     })
-                    .catch(function () {
+                    .catch(function (e) {
                         loading.hidden = true;
                         createBtn.disabled = false;
-                        alert('Connexion interrompue. Réessayez.');
+                        alert('Erreur réseau : ' + ((e && e.message) ? e.message : 'connexion interrompue') + '. Réessayez.');
                     });
             });
         })();
