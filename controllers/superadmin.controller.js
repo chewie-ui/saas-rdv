@@ -55,7 +55,7 @@ exports.establishmentsPage = async (req, res) => {
     const regex = { $regex: search, $options: "i" };
     query = { $or: [{ name: regex }, { slug: regex }, { businessType: regex }] };
   }
-  const [companies, totalBookings] = await Promise.all([
+  const [companiesRaw, totalBookings] = await Promise.all([
     Company.find(query)
       .populate("owner", "fullName email isPremium manualPremium subscription businessName businessPicture")
       .select("name slug businessType createdAt isPaused photo description")
@@ -63,6 +63,15 @@ exports.establishmentsPage = async (req, res) => {
       .lean(),
     Booking.countDocuments({}),
   ]);
+
+  // Ne lister que les VRAIS établissements : ceux qui ont un nom affichable.
+  // Un compte pro inscrit mais jamais configuré crée une Company vide (name ""),
+  // affichée « — / — » — on l'exclut (même critère que l'affichage dans la vue).
+  const companies = companiesRaw.filter((c) => {
+    const displayName = (c.name || (c.owner && c.owner.businessName) || "").trim();
+    return displayName !== "";
+  });
+
   // Ajouter le nb de RDV par company
   const bookingCounts = await Booking.aggregate([
     { $group: { _id: "$company", count: { $sum: 1 } } },

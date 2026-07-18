@@ -1,0 +1,74 @@
+-
+  var _year = new Date().getFullYear()
+  var _name = (firstName && firstName.length) ? firstName : 'à vous'
+  var _url = ctaUrl || 'https://www.branshee.com/demarrer'
+
+div(style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;")
+  style.
+    @media (max-width: 600px) {
+      .email-card-header { padding: 28px 20px !important; }
+      .email-card-body { padding: 24px 20px 28px !important; }
+    }
+  table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0;padding:0;background-color:#f0f4f8;")
+    tr
+      td(align="center" style="padding:40px 16px;")
+        table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;margin:0 auto;")
+
+          //- ── Logo ─────────────────────────────────────────────────────────
+          tr
+            td(align="center" style="padding:0 0 24px;")
+              a(href="https://www.branshee.com" style="display:inline-block;text-decoration:none;")
+                table(cellpadding="0" cellspacing="0" role="presentation" style="display:inline-table;")
+                  tr
+                    td(valign="middle" style="padding-right:8px;")
+                      span(style="display:block;width:32px;height:32px;background:#1a7a4a;border-radius:9px;font-size:16px;font-weight:800;color:#ffffff;text-align:center;line-height:32px;") B
+                    td(valign="middle")
+                      span(style="font-size:15px;font-weight:700;color:#1e2923;letter-spacing:-0.2px;") BranShee
+
+          //- ── Carte principale ─────────────────────────────────────────────
+          tr
+            td(style="background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);border:1px solid #e2e8f0;")
+
+              //- Header vert
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td.email-card-header(style="background:linear-gradient(135deg,#1a7a4a 0%,#15803d 100%);padding:36px 40px;text-align:center;")
+                    p(style="margin:0 0 6px;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;") Vous êtes un professionnel ? 🚀
+                    p(style="margin:0;font-size:14px;color:rgba(255,255,255,0.85);") Créez votre page de réservation en 1 minute — et laissez vos clients réserver seuls.
+
+              //- Corps
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td.email-card-body(style="padding:32px 40px;")
+
+                    p(style="margin:0 0 18px;font-size:15px;color:#374151;line-height:1.6;")
+                      | Bonjour&nbsp;
+                      strong(style="color:#1e2923;")= _name
+                      | , vous avez un compte BranShee mais pas encore de page de réservation. En quelques clics, vos clients pourront prendre rendez-vous en ligne, 24h/24, pendant que vous travaillez.
+
+                    //- 3 bénéfices rapides
+                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:26px;")
+                      tr
+                        td(style="padding:14px 18px;border-bottom:1px solid #f1f5f9;")
+                          p(style="margin:0;font-size:14px;color:#1e2923;font-weight:600;") ✅ En ligne en 1 minute — nom, logo, horaires, c'est prêt
+                      tr
+                        td(style="padding:14px 18px;border-bottom:1px solid #f1f5f9;")
+                          p(style="margin:0;font-size:14px;color:#1e2923;font-weight:600;") ✅ Gratuit pour commencer — sans carte bancaire
+                      tr
+                        td(style="padding:14px 18px;")
+                          p(style="margin:0;font-size:14px;color:#1e2923;font-weight:600;") ✅ 0 % de commission — vos réservations vous appartiennent
+
+                    //- ── CTA ─────────────────────────────────────────────────
+                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                      tr
+                        td(align="center")
+                          a(href=_url style="display:inline-block;background:#1a7a4a;color:#ffffff;padding:15px 40px;border-radius:11px;text-decoration:none;font-size:15px;font-weight:700;") Créer mon établissement →
+                          p(style="margin:16px 0 0;font-size:12.5px;color:#9ca3af;") Vous vouliez juste réserver chez un pro ? Ignorez simplement cet email.
+
+          //- ── Footer ───────────────────────────────────────────────────────
+          tr
+            td(style="padding:24px 0 0;text-align:center;")
+              p(style="margin:0 0 6px;font-size:12px;color:#94a3b8;") Une question ? Répondez simplement à cet email.
+              p(style="margin:0;font-size:12px;color:#94a3b8;")
+                a(href="https://www.branshee.com" style="color:#94a3b8;text-decoration:underline;") branshee.com
+              p(style="margin:8px 0 0;font-size:11px;color:#cbd5e1;") © #{_year} BranShee. Tous droits réservés.

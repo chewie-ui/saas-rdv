@@ -323,6 +323,9 @@ const userSchema = schema(
       // 0 = aucune relance envoyée · 1 = relance J+1 envoyée · 2 = relance J+3 envoyée.
       // Garde anti-spam pour le scheduler de relances (utils/reminderScheduler.js).
       nudgeStage: { type: Number, default: 0 },
+      // Email « créez votre établissement » (comptes pro/indécis sans
+      // établissement) déjà envoyé — un seul, jamais répété.
+      createEstabNudged: { type: Boolean, default: false },
     },
 
     // Compte désactivé par le superadmin (masqué de /search + URL bloquée)

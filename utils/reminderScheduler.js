@@ -335,6 +335,78 @@ async function sendOnboardingNudges() {
 }
 
 /**
+ * Email « créez votre établissement » — UNE seule fois — aux comptes inscrits
+ * avec l'intention « pro » ou « indécis » qui n'ont JAMAIS créé d'établissement.
+ * On épargne les comptes « client » (venus juste réserver). Garde anti-doublon :
+ * `user.onboarding.createEstabNudged`. Fenêtre : inscrits il y a 1 à 30 jours.
+ */
+async function sendCreateEstablishmentNudges() {
+  const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
+  const now = Date.now();
+  const H = 60 * 60 * 1000;
+  const notOlderThan = new Date(now - 30 * 24 * H);
+  const atLeastOneDay = new Date(now - 24 * H);
+
+  let candidates;
+  try {
+    candidates = await User.find({
+      accountIntent: { $in: ["pro", "undecided"] },
+      createdAt: { $gte: notOlderThan, $lte: atLeastOneDay },
+      "onboarding.createEstabNudged": { $ne: true },
+      isDisabled: { $ne: true },
+      email: { $exists: true, $ne: "" },
+    })
+      .select("_id fullName email")
+      .lean();
+  } catch (err) {
+    console.error("[createEstabNudge] Erreur lecture DB ❌", err);
+    return;
+  }
+  if (!candidates.length) return;
+
+  // Exclure ceux qui possèdent DÉJÀ un établissement.
+  let ownersWithCompany = new Set();
+  try {
+    const ids = candidates.map((u) => u._id);
+    const owners = await Company.find({ owner: { $in: ids }, isDeleted: { $ne: true } }).distinct("owner");
+    ownersWithCompany = new Set(owners.map((o) => String(o)));
+  } catch (err) {
+    console.error("[createEstabNudge] Erreur pré-fetch companies ❌", err);
+    return;
+  }
+
+  const templatePath = path.join(
+    __dirname,
+    "../views/templates/emails/create-establishment-nudge.pug",
+  );
+
+  for (const user of candidates) {
+    if (ownersWithCompany.has(String(user._id))) continue; // a déjà un établissement
+    try {
+      const firstName = (user.fullName || "").trim().split(" ")[0] || "";
+      const html = pug.renderFile(templatePath, {
+        firstName,
+        ctaUrl: `${env.appBaseUrl}/demarrer`,
+      });
+      const ok = await sendEmail(
+        user.email,
+        "Créez votre page de réservation BranShee en 1 minute 🚀",
+        html,
+      );
+      if (ok) {
+        await User.updateOne(
+          { _id: user._id },
+          { $set: { "onboarding.createEstabNudged": true } },
+        );
+        console.log(`[createEstabNudge] Email « créez votre établissement » → ${user.email}`);
+      }
+    } catch (err) {
+      console.error(`[createEstabNudge] Erreur envoi ${user && user.email} ❌`, err);
+    }
+  }
+}
+
+/**
  * Démarre le cron : on tourne toutes les 15 minutes. Le flag
  * `reminderSent` empêche tout doublon si le serveur redémarre.
  */
@@ -360,6 +432,14 @@ function start() {
     );
   });
 
+  // Chaque jour à 10h30 : email « créez votre établissement » (comptes
+  // pro/indécis sans établissement) — un seul envoi par compte.
+  cron.schedule("30 10 * * *", () => {
+    sendCreateEstablishmentNudges().catch((err) =>
+      console.error("[createEstabNudge] Erreur tâche ❌", err),
+    );
+  });
+
   // Un premier run au démarrage pour rattraper un éventuel retard
   sendDueReminders().catch((err) =>
     console.error("[reminderScheduler] Erreur run initial ❌", err),
@@ -368,4 +448,4 @@ function start() {
   console.log("[reminderScheduler] Démarré (rappels toutes les 15 min, purge gratuits à 03h00)");
 }
 
-module.exports = { start, sendDueReminders, purgeFreePlanHistory, sendOnboardingNudges };
+module.exports = { start, sendDueReminders, purgeFreePlanHistory, sendOnboardingNudges, sendCreateEstablishmentNudges };
