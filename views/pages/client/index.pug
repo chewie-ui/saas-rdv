@@ -509,6 +509,8 @@ block scripts
         window.__prepayment     = !{JSON.stringify(prepaymentConfig || { enabled: false, required: false })};
         window.__stripeKey      = '!{stripePublishableKey || ""}';
         window.__bookingQuestion = !{JSON.stringify((company && company.bookingQuestion) || { enabled: false, question: '', newLabel: '', existingLabel: '' })};
+        //- Questionnaire unifié (nouveau multi-questions, ou ancien converti) — pilote le filtrage des services côté client.
+        window.__questionnaire  = !{questionnaireJson || '{"enabled":false,"questions":[]}'};
         window.__bkTexts        = !{jsonForScript(bkTexts)};
     if clientUser
         script.

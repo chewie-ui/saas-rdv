@@ -13,18 +13,32 @@ const STRIPE_KEY = window.__stripeKey  || "";
 const BOOKING_QUESTION = window.__bookingQuestion || { enabled: false, question: "", newLabel: "", existingLabel: "" };
 const BK_TEXTS = window.__bkTexts || { calendarHelp: "", slotHeading: "", timezone: "" };
 
-/* ── Question préalable ("Première fois ?" etc.) ───────────────────────────
-   Posée AVANT le choix du service si l'admin l'a activée. Deux réponses
-   fixes : "new" (nouveau) / "existing" (déjà venu). Chaque service peut être
-   limité à l'une des deux (service.answerVisibility) — "all" (par défaut)
-   reste visible quelle que soit la réponse choisie. ──────────────────────── */
+/* ── Questionnaire de réservation (multi-questions) ────────────────────────
+   Posé AVANT le choix du service si l'admin l'a activé. Une ou plusieurs
+   questions, chacune avec ses réponses. Chaque service peut être limité à
+   certaines réponses (service.questionRules) — sans règle pour une question,
+   il reste proposé quelle que soit la réponse. Le serveur désactive le
+   questionnaire s'il n'y a aucun service actif. ──────────────────────────── */
+const QUESTIONNAIRE = window.__questionnaire || { enabled: false, questions: [] };
 function questionStepNeeded() {
-  return !!BOOKING_QUESTION.enabled;
+  return !!(QUESTIONNAIRE.enabled && QUESTIONNAIRE.questions && QUESTIONNAIRE.questions.length && SERVICES.length > 0);
 }
+// Un service correspond si, pour CHAQUE question déjà répondue, il n'a pas de
+// règle pour cette question (→ visible) OU la réponse choisie fait partie de
+// ses réponses autorisées. Les questions non répondues ne filtrent pas encore.
 function matchesAnswer(s) {
-  if (!questionStepNeeded() || !STATE.answer) return true;
-  const vis = s.answerVisibility || "all";
-  return vis === "all" || vis === STATE.answer;
+  if (!questionStepNeeded()) return true;
+  return QUESTIONNAIRE.questions.every(function (q) {
+    var ans = STATE.answers[q.id];
+    if (!ans) return true;
+    var rule = (s.questionRules || []).find(function (r) { return r.questionId === q.id; });
+    if (!rule || !rule.optionIds || !rule.optionIds.length) return true;
+    return rule.optionIds.indexOf(ans) >= 0;
+  });
+}
+// Toutes les questions ont-elles reçu une réponse ?
+function allQuestionsAnswered() {
+  return QUESTIONNAIRE.questions.every(function (q) { return !!STATE.answers[q.id]; });
 }
 
 /* ── Popup "plus de créneaux ce mois-ci" (remplace l'alert() natif moche) ── */
@@ -107,7 +121,8 @@ function getStripe() {
 
 /* ── State ──────────────────────────────────────────────────────────────── */
 const STATE = {
-  answer:     null,      // réponse choisie à la question préalable (ex: "Nouveau patient")
+  answer:     null,      // (hérité) réponse unique — conservé pour compat
+  answers:    {},        // { questionId: optionId } — réponses au questionnaire multi-questions
   service:    null,      // { id, name, price, duration, desc }
   employee:   undefined, // undefined = not yet chosen; null = "no preference"
   date:       null,   // "yyyy-mm-dd"
@@ -378,38 +393,47 @@ function escHtml(s) {
    STEP 0 — QUESTION PRÉALABLE (ex: "Êtes-vous un nouveau patient ?")
    ═══════════════════════════════════════════════════════════════════════════ */
 function renderQuestionPane() {
-  const choices = [
-    { value: "new",      label: BOOKING_QUESTION.newLabel      || "Oui, je suis nouveau" },
-    { value: "existing", label: BOOKING_QUESTION.existingLabel || "Non, j'ai déjà consulté" },
-  ];
-  const optionsHtml = choices.map(c => `
-    <button class="bk-question-opt${STATE.answer === c.value ? " is-selected" : ""}" data-answer="${c.value}">
-      <span>${escHtml(c.label)}</span>
-      <svg width="16" height="16" viewBox="0 -960 960 960" fill="currentColor"><path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z"/></svg>
-    </button>`).join("");
+  const multi = QUESTIONNAIRE.questions.length > 1;
+
+  const questionsHtml = QUESTIONNAIRE.questions.map(function (q) {
+    const optsHtml = q.options.map(function (o) {
+      const sel = STATE.answers[q.id] === o.id ? " is-selected" : "";
+      return `<button class="bk-question-opt${sel}" data-qid="${escHtml(q.id)}" data-optid="${escHtml(o.id)}">
+        <span>${escHtml(o.label)}</span>
+        <svg width="16" height="16" viewBox="0 -960 960 960" fill="currentColor"><path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z"/></svg>
+      </button>`;
+    }).join("");
+    const labelHtml = multi ? `<h3 class="bk-question-label">${escHtml(q.question)}</h3>` : "";
+    return `<div class="bk-question-block">${labelHtml}<div class="bk-question-options">${optsHtml}</div></div>`;
+  }).join("");
+
+  const title = multi ? "Quelques questions avant de commencer" : (QUESTIONNAIRE.questions[0].question || "Une petite question avant de commencer");
+  const ready = allQuestionsAnswered();
+  const continueBtn = multi ? `<button class="bk-question-continue" ${ready ? "" : "disabled"} data-continue>Voir les services →</button>` : "";
 
   pane.innerHTML = `<div class="bk-pane">
-    <h2 class="bk-pane-title">${escHtml(BOOKING_QUESTION.question || "Une petite question avant de commencer")}</h2>
+    <h2 class="bk-pane-title">${escHtml(title)}</h2>
     <p class="bk-pane-sub">Cela nous permet de vous proposer les bonnes prestations.</p>
-    <div class="bk-question-options">${optionsHtml}</div>
+    ${questionsHtml}
+    ${continueBtn}
   </div>`;
 
-  pane.querySelectorAll("[data-answer]").forEach(btn => {
-    btn.onclick = () => {
-      STATE.answer = btn.dataset.answer;
-      // Si le service déjà sélectionné ne correspond plus à la réponse, on
-      // réinitialise pour éviter de réserver un service qui ne devrait plus
-      // être proposé (ex: "Intro kiné" alors qu'on vient de dire "pas nouveau").
+  pane.querySelectorAll("[data-optid]").forEach(function (btn) {
+    btn.onclick = function () {
+      STATE.answers[btn.dataset.qid] = btn.dataset.optid;
+      // Si le service déjà sélectionné ne correspond plus aux réponses, on le
+      // réinitialise pour ne pas réserver un service qui ne devrait plus être proposé.
       if (STATE.service) {
         const svc = SERVICES.find(s => s._id === STATE.service.id);
-        if (!svc || !matchesAnswer(svc)) {
-          STATE.service = null;
-          STATE.employee = undefined;
-        }
+        if (!svc || !matchesAnswer(svc)) { STATE.service = null; STATE.employee = undefined; }
       }
-      goToStep("service");
+      if (multi) { renderQuestionPane(); }   // met à jour la sélection + le bouton
+      else { goToStep("service"); }          // question unique → on avance direct
     };
   });
+
+  const cont = pane.querySelector("[data-continue]");
+  if (cont) cont.onclick = function () { if (allQuestionsAnswered()) goToStep("service"); };
 }
 
 /* ── Durée approximative ("30-40 min") — pour l'affichage uniquement. Tout
@@ -535,17 +559,28 @@ function getOrderedCats(list) {
 }
 
 function renderServicePane() {
-  // Ne garde que les services compatibles avec la réponse choisie à la
-  // question préalable (ou tous, si la question est désactivée / pas encore
-  // répondue / le service n'a aucune restriction).
-  const visibleServices = SERVICES.filter(matchesAnswer);
+  // Ne garde que les services compatibles avec les réponses au questionnaire
+  // (ou tous, si le questionnaire est désactivé / pas encore répondu / le
+  // service n'a aucune restriction).
+  let visibleServices = SERVICES.filter(matchesAnswer);
+  // Filet de sécurité : si AUCUNE prestation ne correspond aux réponses mais
+  // qu'il existe des prestations actives, on les montre toutes plutôt que de
+  // bloquer le client dans un cul-de-sac.
+  let noMatchFallback = false;
+  if (visibleServices.length === 0 && SERVICES.length > 0) {
+    visibleServices = SERVICES.slice();
+    noMatchFallback = true;
+  }
   const hasCategories = visibleServices.some(s => s.category && s.category.trim() !== "");
   const style = window.__bookingCategoryStyle || "pills";
+  const fallbackNote = noMatchFallback
+    ? `<div class="bk-svc-note">Aucune prestation ne correspond exactement à vos réponses — voici toutes nos prestations.</div>`
+    : "";
 
   let bodyHtml;
 
   if (visibleServices.length === 0) {
-    bodyHtml = `<div class="bk-svc-empty">Aucune prestation ne correspond à votre réponse pour le moment.</div>`;
+    bodyHtml = `<div class="bk-svc-empty">Aucune prestation disponible pour le moment.</div>`;
   } else if (!hasCategories) {
     // No categories → flat grid
     bodyHtml = `<div class="bk-svc-grid">${visibleServices.map(renderSvcCard).join("")}</div>`;
@@ -625,7 +660,7 @@ function renderServicePane() {
   pane.innerHTML = `<div class="bk-pane">
     <h2 class="bk-pane-title">Choisissez un service</h2>
     <p class="bk-pane-sub">Sélectionnez la prestation qui vous convient.</p>
-    ${bodyHtml}
+    ${fallbackNote}${bodyHtml}
   </div>`;
 
   bindSvcCards(pane);

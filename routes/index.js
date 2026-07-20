@@ -504,6 +504,54 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
   const teamById = new Map(team.map((m) => [m.id, m]));
   const activeEmployees = team;
 
+  // ── Questionnaire de réservation (unifié pour le client) ───────────────────
+  // Priorité au nouveau questionnaire multi-questions (serviceQuestionnaire +
+  // questionRules) ; sinon on convertit l'ancien (bookingQuestion +
+  // answerVisibility) au même format. Résultat : le client ne gère qu'un seul
+  // format. Désactivé s'il n'y a aucun service actif (évite le cul-de-sac).
+  const _sq = company.serviceQuestionnaire;
+  let clientQuestionnaire = { enabled: false, questions: [] };
+  const serviceRulesMap = {};
+  if (_sq && _sq.enabled && Array.isArray(_sq.questions) && _sq.questions.length) {
+    clientQuestionnaire = {
+      enabled: true,
+      questions: _sq.questions
+        .filter((q) => q && q._id && q.question && Array.isArray(q.options) && q.options.length)
+        .map((q) => ({
+          id: String(q._id),
+          question: q.question,
+          options: (q.options || []).filter((o) => o && o._id && o.label).map((o) => ({ id: String(o._id), label: o.label })),
+        }))
+        .filter((q) => q.options.length),
+    };
+    services.forEach((s) => {
+      serviceRulesMap[String(s._id)] = (s.questionRules || []).map((r) => ({
+        questionId: String(r.questionId),
+        optionIds: (r.optionIds || []).map(String),
+      }));
+    });
+  } else if (company.bookingQuestion && company.bookingQuestion.enabled) {
+    const bq = company.bookingQuestion;
+    clientQuestionnaire = {
+      enabled: true,
+      questions: [{
+        id: "legacy",
+        question: bq.question || "Une petite question avant de commencer",
+        options: [
+          { id: "new", label: bq.newLabel || "Oui, je suis nouveau" },
+          { id: "existing", label: bq.existingLabel || "Non, j'ai déjà consulté" },
+        ],
+      }],
+    };
+    services.forEach((s) => {
+      const vis = s.answerVisibility || "all";
+      serviceRulesMap[String(s._id)] = vis === "all" ? [] : [{ questionId: "legacy", optionIds: [vis] }];
+    });
+  }
+  // Aucun service actif (ou questionnaire vidé) → pas de question.
+  if (!services.length || !clientQuestionnaire.questions.length) clientQuestionnaire.enabled = false;
+  const questionnaireJson = JSON.stringify(clientQuestionnaire);
+
   // Pre-serialize services to avoid Pug interpolation issues with nested braces
   const servicesJson = JSON.stringify(
     services.map(function (s) {
@@ -516,6 +564,7 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
         durationMax: s.durationMax || null,
         category: s.category || "",
         answerVisibility: s.answerVisibility || "all",
+        questionRules: serviceRulesMap[String(s._id)] || [],
         // type/capacity/location manquaient ici — STATE.service.type retombait
         // TOUJOURS sur "individual" côté client (cf. public/js/layouts/index.js),
         // rendant tout le code "collectif" déjà écrit (saut étape employé,
@@ -677,6 +726,7 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
     activeEmployees,
     servicesJson,
     employeesJson,
+    questionnaireJson,
     clientUser,
     clientSession,
     hasReviewed,

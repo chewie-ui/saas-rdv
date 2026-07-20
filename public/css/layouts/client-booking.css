@@ -638,6 +638,41 @@ body.bk-embed #bkCart .bk-cart {
 }
 
 /* ── Question préalable ("Nouveau patient ?" etc.) ───────────────────────── */
+/* Questionnaire multi-questions : un bloc par question + bouton continuer */
+.bk-question-block { margin-bottom: 22px; }
+.bk-question-block:last-of-type { margin-bottom: 0; }
+.bk-question-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--bk-text, #141c25);
+  margin: 0 0 10px;
+}
+.bk-question-continue {
+  margin-top: 18px;
+  width: 100%;
+  padding: 14px 18px;
+  border: none;
+  border-radius: var(--bk-r-lg);
+  background: var(--bk-accent, #1e7a4e);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s, filter .15s;
+}
+.bk-question-continue:hover { filter: brightness(1.05); }
+.bk-question-continue:disabled { opacity: .45; cursor: not-allowed; }
+/* Note « aucune correspondance → toutes les prestations » (filet de sécurité) */
+.bk-svc-note {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 13px;
+  border-radius: var(--bk-r-lg, 12px);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+
 .bk-question-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
