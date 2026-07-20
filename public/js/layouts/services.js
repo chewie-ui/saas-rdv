@@ -992,4 +992,20 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Erreur réseau.");
     }
   });
+
+  // Ouverture automatique de la modale d'édition via ?edit=<id> (ancienne page
+  // /services-old). La nouvelle page /services gère l'édition en modale inline.
+  try {
+    const _p = new URLSearchParams(location.search);
+    const _editId = _p.get("edit");
+    if (_editId) {
+      const _eb = document.querySelector('.edit-service-btn[data-id="' + _editId + '"]');
+      if (_eb) _eb.click();
+      history.replaceState(null, "", location.pathname);
+    } else if (_p.get("new") === "1") {
+      const _ab = document.getElementById("addServiceBtn");
+      if (_ab) _ab.click();
+      history.replaceState(null, "", location.pathname);
+    }
+  } catch (e) {}
 });

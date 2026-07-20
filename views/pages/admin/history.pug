@@ -108,7 +108,7 @@ block content
                                         = statusLabel
                                 td.hist-td.hist-td--action
                                     .hist-row-actions
-                                        a.hist-action-btn(href=`/history/edit/${h._id}` title=(t.hist_page.view||'Voir'))
+                                        a.hist-action-btn(href=`/clients-hub/${h._id}?edit=1` title=(t.hist_page.view||'Voir'))
                                             span.material-symbols-outlined edit
                                         button.hist-action-btn.hist-action-btn--danger(type="button" data-del-id=h._id title=(t.hist.del||'Supprimer'))
                                             span.material-symbols-outlined delete
@@ -196,7 +196,7 @@ block content
                                 span.hist-card__lbl= t.hist.table.duration
                                 span= h.slotTime + ' min'
                     .hist-card__footer
-                        a.hist-open-btn(href=`/history/edit/${h._id}`)
+                        a.hist-open-btn(href=`/clients-hub/${h._id}?edit=1`)
                             = t.hist_page.view
                             span.material-symbols-outlined(style="font-size:13px") arrow_forward
 

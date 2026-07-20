@@ -1903,3 +1903,166 @@
   width: 42%;
   align-self: flex-end;
 }
+
+/* ============================================================
+   REFONTE « 1a » — chrome du builder : topbar plein largeur,
+   panneau de sections à gauche, stage/aperçu à droite.
+   Style BranShee (vert/arrondi/Material). Ce bloc prime (fin
+   de fichier) sur les règles ci-dessus.
+   ============================================================ */
+
+/* Grille : topbar en haut (toute la largeur), panneau + aperçu dessous */
+.ms-editor {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "topbar topbar"
+    "panel  preview";
+}
+.ms-topbar  { grid-area: topbar; }
+.ms-panel   { grid-area: panel; }
+.ms-preview { grid-area: preview; }
+
+/* ── Topbar ─────────────────────────────────────────────── */
+.ms-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 60px;
+  padding: 0 18px;
+  background: #fff;
+  border-bottom: 1px solid var(--border-light);
+}
+.ms-topbar__brand {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.ms-topbar__dot { color: var(--accent); }
+.ms-topbar__crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 0;
+}
+.ms-topbar__crumb > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+}
+.ms-topbar__crumb .material-symbols-outlined { font-size: 18px; opacity: 0.55; }
+.ms-topbar__spacer { flex: 1; }
+.ms-topbar__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding-right: 2px;
+}
+
+/* Segmented Bureau / Mobile */
+.ms-seg {
+  display: inline-flex;
+  border: 1px solid var(--border-light);
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.ms-seg .ms-device-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.ms-seg .ms-device-btn + .ms-device-btn { border-left: 1px solid var(--border-light); }
+.ms-seg .ms-device-btn .material-symbols-outlined { font-size: 17px; }
+.ms-seg .ms-device-btn:hover { color: var(--ink); background: var(--surface); }
+.ms-seg .ms-device-btn.active { background: var(--accent); color: #fff; }
+
+/* ── Panneau : entête sans lien retour (déplacé dans la topbar) ── */
+.ms-panel__top { padding: 16px 18px 0; }
+.ms-panel__title { margin-bottom: 12px; }
+
+/* ── Pied du panneau : indicateur d'enregistrement auto ── */
+.ms-panel__foot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 18px;
+  border-top: 1px solid var(--border-light);
+  background: #fff;
+}
+.ms-foot-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.ms-foot-label .material-symbols-outlined { font-size: 15px; color: var(--accent); }
+.ms-save-indicator { font-size: 11.5px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+.ms-save-indicator.pending { color: #b45309; }
+.ms-save-indicator.saved { color: var(--accent); }
+
+/* ── Badge « Sync » sur les sections synchronisées (services, RDV) ── */
+.ms-sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, #fff);
+  border-radius: 6px;
+  padding: 2px 6px;
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+.ms-sync-badge .material-symbols-outlined { font-size: 12px; }
+
+/* ── Stage : pastille d'URL dans la barre d'aperçu ── */
+.ms-preview__bar { justify-content: flex-start; }
+.ms-preview__spacer { flex: 1; }
+.ms-urlpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #fff;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  max-width: 340px;
+  overflow: hidden;
+}
+.ms-urlpill span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-urlpill .material-symbols-outlined { font-size: 13px; color: var(--accent); }
+.ms-preview__refresh { margin-left: 0; }

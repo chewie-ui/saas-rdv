@@ -47,6 +47,39 @@
     };
   }
 
+  // Nouvelle page /services : la modale (Service ou Cours collectif) s'ouvre en
+  // deux clics — le bouton « Nouveau » puis l'élément du menu. On reproduit ça.
+  function ensureNewModal(modalSel, newKind) {
+    return function () {
+      var modal = $(modalSel);
+      if (modal && !modal.classList.contains("show")) {
+        var nb = $("#sv2NewBtn"); if (nb) nb.click();
+        var it = $('.sv2-newmenu__item[data-new="' + newKind + '"]'); if (it) it.click();
+      }
+    };
+  }
+  // Ouvre la modale d'édition d'un service (clic sur le 1er crayon de la liste).
+  function ensureEditSvcModal() {
+    var modal = $("#serviceModal");
+    if (modal && !modal.classList.contains("show")) {
+      var ed = $(".sv2-edit"); if (ed) ed.click();
+    }
+  }
+  // Bascule sur un onglet de la fiche client (Aperçu / Rendez-vous / Dossier).
+  function ensureCdTab(tabName) {
+    return function () {
+      var t = $('.cd-tab[data-tab="' + tabName + '"]');
+      if (t && !t.classList.contains("is-active")) t.click();
+    };
+  }
+  // Ouvre la modale « Nouvelle note » du dossier client.
+  function ensureDosModal() {
+    var m = $("#cdDosModal");
+    if (m && m.hidden) { var b = $("#cdDosNew"); if (b) b.click(); }
+  }
+  var CLIENTS_PAGE = "/clients-hub";
+  function isClientDetail(path) { return /^\/clients-hub\/[^/]+$/.test(path); }
+
   var TOURS = {
     // ── Visite d'accueil (depuis /welcome) ────────────────────────────────
     onboarding: [
@@ -73,16 +106,16 @@
       },
       {
         page: "/services",
-        find: function () { return $("#addServiceBtn"); },
+        find: function () { return $("#sv2NewBtn"); },
         title: "Ajoutez votre premier service",
-        text: "Cliquez ici pour créer un service — une coupe, un massage, une consultation... ce que vous proposez à vos clients.",
+        text: "Cliquez sur « Nouveau » puis « Service » pour créer une prestation — une coupe, un massage, une consultation... ce que vous proposez à vos clients.",
         placement: "bottom",
         advanceOnEvent: "click",
         advanceDelay: 200,
       },
       {
         page: "/services",
-        preStep: ensureModalOpen("#serviceModal", "#addServiceBtn"),
+        preStep: ensureNewModal("#serviceModal", "service"),
         find: function () { return $("#serviceModalName"); },
         title: "Donnez-lui un nom",
         text: "Indiquez le nom de ce service, par exemple «Coupe homme».",
@@ -90,7 +123,7 @@
       },
       {
         page: "/services",
-        preStep: ensureModalOpen("#serviceModal", "#addServiceBtn"),
+        preStep: ensureNewModal("#serviceModal", "service"),
         find: function () { return $("#saveServiceBtn"); },
         title: "Enregistrez",
         text: "Cliquez ici pour enregistrer votre service.",
@@ -145,58 +178,135 @@
       },
     ],
 
-    // ── Assistance : créer un cours collectif ─────────────────────────────
-    groupSessions: [
+    // ── Assistance : créer un SERVICE (nouvelle page /services) ───────────
+    service: [
       {
-        page: "/group-sessions",
-        find: function () { return $("#addCourseBtn"); },
-        title: "Créez un cours collectif",
-        text: "Cliquez ici pour créer un cours avec plusieurs participants en même temps (yoga, sport, atelier, cours de cuisine...) — à la différence d'un rendez-vous classique qui n'accueille qu'une personne.",
+        page: "/services",
+        find: function () { return $("#sv2NewBtn"); },
+        title: "Créez un service",
+        text: "Sur la page Services, cliquez sur « Nouveau » : un petit menu vous propose « Service » (une prestation individuelle) ou « Cours collectif ». Choisissez « Service ».",
         placement: "bottom",
         advanceOnEvent: "click",
-        advanceDelay: 200,
+        advanceDelay: 250,
       },
       {
-        page: "/group-sessions",
-        preStep: ensureModalOpen("#courseModal", "#addCourseBtn"),
-        find: function () { return $("#courseName"); },
-        title: "Nom et description",
-        text: "Donnez un nom clair à votre cours, par exemple « Yoga débutant » ou « Atelier poterie ». Juste en dessous, le champ description vous permet de préciser le déroulement pour vos participants — par exemple « Cours adapté à tous les niveaux, tapis fournis sur place ».",
+        page: "/services",
+        preStep: ensureNewModal("#serviceModal", "service"),
+        find: function () { return $("#serviceModalName"); },
+        title: "Nom du service",
+        text: "Donnez un nom clair, par exemple « Coupe homme » ou « Massage dos ». Juste en dessous vous pouvez ajouter une image, une catégorie et une description (facultatifs).",
         placement: "bottom",
       },
       {
-        page: "/group-sessions",
-        preStep: ensureModalOpen("#courseModal", "#addCourseBtn"),
-        find: function () { return $("#coursePrice"); },
-        title: "Prix, durée et places",
-        text: "Vous pouvez indiquer le prix par participant (ex: 15€), la durée en minutes (ex: 60) et le nombre de places disponibles (ex: 10). Le prix n'est pas obligatoire à afficher — laissez le champ vide si vous préférez le communiquer autrement à vos participants.",
+        page: "/services",
+        preStep: ensureNewModal("#serviceModal", "service"),
+        find: function () { return $("#serviceModalPrice"); },
+        title: "Prix et durée",
+        text: "Indiquez le prix (ex : 25) et la durée en minutes (ex : 30). Vous pouvez laisser le prix vide si vous préférez ne pas l'afficher.",
         placement: "bottom",
       },
       {
-        page: "/group-sessions",
-        preStep: ensureModalOpen("#courseModal", "#addCourseBtn"),
-        find: function () { return $("#courseLocation"); },
-        title: "Lieu (si différent du vôtre)",
-        text: "Si ce cours se déroule à une autre adresse que celle de votre établissement, notez-la ici — par exemple « Parc municipal, 12 rue des Lilas ». Si vous laissez ce champ vide, c'est votre adresse habituelle qui sera utilisée.",
-        placement: "bottom",
+        page: "/services",
+        preStep: ensureNewModal("#serviceModal", "service"),
+        find: function () { return $("#svcColorPicker"); },
+        title: "Couleur du calendrier",
+        text: "Choisissez une couleur : elle identifie ce service dans votre agenda. Les couleurs déjà prises par d'autres services sont grisées, et le « + » permet une couleur personnalisée.",
+        placement: "top",
       },
       {
-        page: "/group-sessions",
-        preStep: ensureModalOpen("#courseModal", "#addCourseBtn"),
-        find: function () { return $("#courseModeOptions"); },
-        title: "Récurrent ou dates ponctuelles ?",
-        text: "Deux façons de planifier : « Cours récurrent » s'il revient chaque semaine aux mêmes jours et à la même heure — par exemple tous les lundis et mercredis à 18h00. Ou « Dates ponctuelles » si chaque séance a sa propre date — par exemple le 27 juin, puis le 30 juin — avec l'heure à indiquer pour chacune.",
-        placement: "bottom",
-      },
-      {
-        page: "/group-sessions",
-        preStep: ensureModalOpen("#courseModal", "#addCourseBtn"),
-        find: function () { return $("#saveCourseBtn"); },
+        page: "/services",
+        preStep: ensureNewModal("#serviceModal", "service"),
+        find: function () { return $("#saveServiceBtn"); },
         title: "Enregistrez",
-        text: "Cliquez ici pour créer votre cours collectif. Il apparaîtra immédiatement sur votre page de réservation, ouvert aux inscriptions.",
+        text: "Cliquez ici pour créer le service. Il apparaîtra dans la liste et sur votre page de réservation.",
         placement: "top",
         advanceOnEvent: "click",
         advanceDelay: 400,
+        isLast: true,
+      },
+    ],
+
+    // ── Assistance : créer un cours collectif (nouvelle page /services) ────
+    groupSessions: [
+      {
+        page: "/services",
+        find: function () { return $("#sv2NewBtn"); },
+        title: "Créez un cours collectif",
+        text: "Cliquez sur « Nouveau » puis choisissez « Cours collectif » : un cours accueille plusieurs participants en même temps (yoga, sport, atelier...), à la différence d'un service classique qui ne reçoit qu'une personne.",
+        placement: "bottom",
+        advanceOnEvent: "click",
+        advanceDelay: 250,
+      },
+      {
+        page: "/services",
+        preStep: ensureNewModal("#courseModal", "course"),
+        find: function () { return $("#crsName"); },
+        title: "Nom et description",
+        text: "Donnez un nom clair (« Yoga débutant »...) et, en dessous, une description du déroulement pour vos participants.",
+        placement: "bottom",
+      },
+      {
+        page: "/services",
+        preStep: ensureNewModal("#courseModal", "course"),
+        find: function () { return $("#crsCapacity"); },
+        title: "Prix, durée et places",
+        text: "Indiquez le prix par participant, la durée, et surtout le nombre de places (ex : 10). Le champ Lieu juste en dessous permet une autre adresse si le cours se déroule ailleurs.",
+        placement: "bottom",
+      },
+      {
+        page: "/services",
+        preStep: ensureNewModal("#courseModal", "course"),
+        find: function () { return $("#crsMode"); },
+        title: "Récurrent ou dates ponctuelles ?",
+        text: "« Cours récurrent » revient chaque semaine aux mêmes jours et heure. « Dates ponctuelles » si chaque séance a sa propre date. Vous pouvez aussi, plus bas, assigner un ou plusieurs employés à ce cours.",
+        placement: "left",
+      },
+      {
+        page: "/services",
+        preStep: ensureNewModal("#courseModal", "course"),
+        find: function () { return $("#crsSave"); },
+        title: "Enregistrez",
+        text: "Cliquez ici pour créer votre cours collectif. Il apparaîtra dans la liste et sur votre page de réservation, ouvert aux inscriptions.",
+        placement: "top",
+        advanceOnEvent: "click",
+        advanceDelay: 400,
+        isLast: true,
+      },
+    ],
+
+    // ── Assistance : proposer un service selon la réponse du client ───────
+    editServiceTargeting: [
+      {
+        page: "/services",
+        find: function () { return $("#sqEnabled") ? $("#sqEnabled").closest(".sq-block") : $(".sq-block"); },
+        title: "Un questionnaire avant la réservation",
+        text: "En haut de la page Services, activez le questionnaire et posez une question au client — par exemple « Homme ou femme ? » avec les réponses « Homme » et « Femme ». Enregistrez-le. Ensuite, chaque service peut être limité à certaines réponses.",
+        placement: "bottom",
+      },
+      {
+        page: "/services",
+        find: function () { return $(".sv2-edit"); },
+        title: "Modifiez un service",
+        text: "Cliquez sur le crayon d'un service pour l'ouvrir. C'est là qu'on choisit à quelles réponses il correspond.",
+        placement: "left",
+        advanceOnEvent: "click",
+        advanceDelay: 300,
+      },
+      {
+        page: "/services",
+        preStep: ensureEditSvcModal,
+        find: function () { return $("#svcTargetingField") && $("#svcTargetingField").style.display !== "none" ? $("#svcTargeting") : $("#serviceModalName"); },
+        title: "« Afficher ce service pour »",
+        text: "Dans la colonne de droite, pour chaque question, choisissez les réponses concernées : cliquez sur « Homme » pour ne le proposer qu'aux hommes, ou laissez « Tous » pour qu'il reste visible quelle que soit la réponse. (Cette zone n'apparaît que si un questionnaire est activé.)",
+        placement: "left",
+      },
+      {
+        page: "/services",
+        preStep: ensureEditSvcModal,
+        find: function () { return $("#saveServiceBtn"); },
+        title: "Enregistrez",
+        text: "Cliquez ici pour enregistrer. Désormais, ce service ne sera proposé au client que s'il correspond à sa réponse.",
+        placement: "top",
         isLast: true,
       },
     ],
@@ -455,53 +565,124 @@
       },
     ],
 
-    // ── Assistance : créer un dossier client ──────────────────────────────
-    clientDossier: [
+    // ── Assistance : voir la fiche complète d'un client ───────────────────
+    clientView: [
       {
-        page: "/clients",
-        find: function () { return $("#clientsSearchInput"); },
+        page: CLIENTS_PAGE,
+        find: function () { return $("#chSearch"); },
         title: "Retrouvez un client",
-        text: "Tapez le nom, l'email ou le téléphone d'un client pour le retrouver rapidement. Tous les clients ayant réservé apparaissent ici avec leur historique.",
+        text: "Dans la section Clients, tapez le nom, l'email, le téléphone ou même le praticien pour retrouver un client. Tous ceux qui ont réservé apparaissent ici.",
         placement: "bottom",
       },
       {
-        page: "/clients",
-        find: function () { return $(".client-card"); },
-        title: "Ouvrez un dossier client",
-        text: "Cliquez sur un client pour accéder à son dossier complet — ses rendez-vous passés et à venir, ses informations de contact, et les notes que vous avez prises sur lui.",
-        placement: "bottom",
-        advanceOnEvent: "click",
-        advanceDelay: 400,
-      },
-      {
-        page: "/clients",
-        pageMatch: function (path) { return /^\/clients\/.+/.test(path); },
-        find: function () { return $("#addEntryBtn"); },
-        title: "Ajoutez une note",
-        text: "Cliquez ici pour ajouter une note après la séance — observations, suivi, prochain objectif... Ces notes sont privées, visibles uniquement par vous et vos collaborateurs.",
+        page: CLIENTS_PAGE,
+        find: function () { return $(".ch-row"); },
+        title: "Ouvrez sa fiche",
+        text: "Cliquez sur la ligne d'un client pour ouvrir sa fiche complète.",
         placement: "bottom",
         advanceOnEvent: "click",
-        advanceDelay: 200,
+        advanceDelay: 500,
       },
       {
-        page: "/clients",
-        pageMatch: function (path) { return /^\/clients\/.+/.test(path); },
-        preStep: ensureModalOpen("#entryModal", "#addEntryBtn"),
-        find: function () { return $("#entryModalNote"); },
-        title: "Rédigez votre note",
-        text: "Écrivez votre observation ou compte-rendu ici. Vous pouvez aussi ajouter une tâche à faire au prochain rendez-vous dans le champ en dessous.",
-        placement: "top",
+        page: CLIENTS_PAGE,
+        pageMatch: isClientDetail,
+        find: function () { return $(".cd-tabs"); },
+        title: "Toutes ses informations",
+        text: "La fiche est organisée en 3 onglets : « Aperçu » (résumé + contact), « Rendez-vous » (tout son historique) et « Dossier » (vos notes de suivi). Cliquez sur un onglet pour naviguer.",
+        placement: "bottom",
       },
       {
-        page: "/clients",
-        pageMatch: function (path) { return /^\/clients\/.+/.test(path); },
-        preStep: ensureModalOpen("#entryModal", "#addEntryBtn"),
-        find: function () { return $("#saveEntryBtn"); },
-        title: "Enregistrez la note",
-        text: "Cliquez ici pour sauvegarder. La note apparaîtra dans la chronologie du dossier, horodatée automatiquement.",
+        page: CLIENTS_PAGE,
+        pageMatch: isClientDetail,
+        preStep: ensureCdTab("overview"),
+        find: function () { return $("#cdNotesArea"); },
+        title: "Notes générales",
+        text: "Dans l'Aperçu, cette zone contient des notes permanentes sur le client (allergies, préférences, client fidèle...). Elles restent toujours visibles, séparées des notes de suivi datées.",
         placement: "top",
+        isLast: true,
+      },
+    ],
+
+    // ── Assistance : écrire dans le dossier d'un client ───────────────────
+    clientNote: [
+      {
+        page: CLIENTS_PAGE,
+        find: function () { return $(".ch-row"); },
+        title: "Ouvrez la fiche d'un client",
+        text: "Cliquez sur la ligne du client dont vous voulez remplir le dossier de suivi.",
+        placement: "bottom",
+        advanceOnEvent: "click",
+        advanceDelay: 500,
+      },
+      {
+        page: CLIENTS_PAGE,
+        pageMatch: isClientDetail,
+        preStep: ensureCdTab("dossier"),
+        find: function () { return $("#cdDosNew"); },
+        title: "Ajoutez une note de suivi",
+        text: "Dans l'onglet « Dossier », cliquez ici pour créer une note datée — un compte-rendu de séance, une observation, une ordonnance en PDF... Ces notes sont privées.",
+        placement: "bottom",
         advanceOnEvent: "click",
         advanceDelay: 300,
+      },
+      {
+        page: CLIENTS_PAGE,
+        pageMatch: isClientDetail,
+        preStep: ensureDosModal,
+        find: function () { return $("#cdDosNote"); },
+        title: "Rédigez votre constat",
+        text: "Écrivez ce que vous avez constaté / fait. Vous pouvez ajouter un titre, une date, ce qu'il faudra faire au prochain rendez-vous, et joindre un PDF.",
+        placement: "top",
+      },
+      {
+        page: CLIENTS_PAGE,
+        pageMatch: isClientDetail,
+        preStep: ensureDosModal,
+        find: function () { return $("#cdDosSave"); },
+        title: "Enregistrez",
+        text: "Cliquez ici pour sauvegarder. La note apparaîtra dans le dossier, classée par date.",
+        placement: "top",
+        isLast: true,
+      },
+    ],
+
+    // ── Assistance : modifier le rendez-vous d'un client ──────────────────
+    clientEditRdv: [
+      {
+        page: CLIENTS_PAGE,
+        find: function () { return $(".ch-row"); },
+        title: "Ouvrez la fiche du client",
+        text: "Cliquez sur la ligne du client dont vous voulez modifier un rendez-vous.",
+        placement: "bottom",
+        advanceOnEvent: "click",
+        advanceDelay: 500,
+      },
+      {
+        page: CLIENTS_PAGE,
+        pageMatch: isClientDetail,
+        preStep: ensureCdTab("visits"),
+        find: function () { return $(".js-rdv-edit"); },
+        title: "Modifiez un rendez-vous",
+        text: "Dans l'onglet « Rendez-vous », chaque rendez-vous a un petit crayon. Cliquez dessus pour le modifier.",
+        placement: "left",
+        advanceOnEvent: "click",
+        advanceDelay: 350,
+      },
+      {
+        page: CLIENTS_PAGE,
+        pageMatch: isClientDetail,
+        find: function () { return $("#efDate"); },
+        title: "Changez la date et l'heure",
+        text: "Vous pouvez modifier la date, l'heure de début et l'heure de fin du rendez-vous. Le service et l'employé sont juste au-dessus.",
+        placement: "bottom",
+      },
+      {
+        page: CLIENTS_PAGE,
+        pageMatch: isClientDetail,
+        find: function () { return $("#cdEditSave"); },
+        title: "Enregistrez",
+        text: "Cliquez ici pour valider. Le rendez-vous est mis à jour immédiatement, et le client en est informé.",
+        placement: "top",
         isLast: true,
       },
     ],
@@ -628,6 +809,26 @@
     }
     tipTop = Math.max(8, Math.min(vh - tipH - 8, tipTop));
     tipLeft = Math.max(8, Math.min(vw - tipW - 8, tipLeft));
+
+    // Anti-chevauchement : si la bulle recouvre encore l'élément mis en avant
+    // (cas des éléments larges comme la palette de couleurs), on la déplace
+    // franchement au-dessus ou en dessous — jamais par-dessus le surlignage.
+    var overlaps = !(tipLeft + tipW < left || tipLeft > right || tipTop + tipH < top || tipTop > bottom);
+    if (overlaps) {
+      var spaceBelow = vh - bottom - 22;
+      var spaceAbove = top - 22;
+      if (spaceBelow >= tipH || spaceBelow >= spaceAbove) {
+        tipTop = Math.min(vh - tipH - 8, bottom + 14);
+      } else {
+        tipTop = Math.max(8, top - tipH - 14);
+      }
+      // Si vraiment aucune place verticale (petit écran), on décale sur le côté.
+      if (!(tipTop + tipH < top || tipTop > bottom)) {
+        var spaceRight = vw - right - 22;
+        tipLeft = spaceRight >= tipW ? Math.min(vw - tipW - 8, right + 14) : Math.max(8, left - tipW - 14);
+      }
+    }
+
     tip.style.top = tipTop + "px";
     tip.style.left = tipLeft + "px";
   }

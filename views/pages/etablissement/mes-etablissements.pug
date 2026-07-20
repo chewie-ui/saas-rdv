@@ -24,7 +24,7 @@ block content
                 a.sm-btn.sm-btn--ghost(href="/subscription")
                     span Passer à un forfait supérieur
             else
-                button.sm-btn.sm-btn--primary#createEstabBtn(type="button")
+                a.sm-btn.sm-btn--primary(href="/demarrer")
                     svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                         path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
                     span Créer un établissement
@@ -57,7 +57,7 @@ block content
                         span Supprimer
 
         if !atCompanyLimit
-            button.estab-card.estab-card--add#createEstabBtn2(type="button")
+            a.estab-card.estab-card--add(href="/demarrer")
                 svg(viewBox="0 -960 960 960" height="28" width="28" fill="currentColor")
                     path(d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z")
                 span Créer un nouvel établissement
@@ -351,10 +351,8 @@ block scripts
                 estabOverlay.style.display = 'flex';
             }
 
-            ['createEstabBtn', 'createEstabBtn2'].forEach(function (id) {
-                var btn = document.getElementById(id);
-                if (btn) btn.addEventListener('click', function () { openModal('create'); });
-            });
+            // La CRÉATION passe désormais par le wizard /demarrer (liens ci-dessus,
+            // flux unifié) — cette modale ne sert plus qu'à la MODIFICATION.
             document.querySelectorAll('.js-edit-estab').forEach(function (btn) {
                 btn.addEventListener('click', function () {
                     openModal('edit', { id: btn.dataset.id, name: btn.dataset.name, type: btn.dataset.type, photo: btn.dataset.photo });

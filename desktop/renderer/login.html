@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>BranShee — Connexion</title>
+  <link rel="stylesheet" href="shared.css" />
+  <link rel="stylesheet" href="login.css" />
+</head>
+<body>
+  <div class="login-screen">
+    <div class="login-card">
+      <div class="brand-row login-card__brand">
+        <img src="assets/icon.svg" alt="BranShee" />
+        <span>BranShee</span>
+      </div>
+
+      <div id="stepCredentials">
+        <h1 class="login-card__title">Connexion</h1>
+        <p class="login-card__sub">Connectez-vous avec votre compte BranShee.</p>
+
+        <form id="loginForm">
+          <div class="field">
+            <label for="email">Adresse e-mail</label>
+            <input type="email" id="email" autocomplete="username" required />
+          </div>
+          <div class="field">
+            <label for="password">Mot de passe</label>
+            <input type="password" id="password" autocomplete="current-password" required />
+          </div>
+          <p class="error" id="loginError" hidden></p>
+          <button type="submit" class="sm-btn sm-btn--primary login-card__submit" id="loginBtn">
+            <span>Se connecter</span>
+          </button>
+        </form>
+        <p class="login-card__switch">Pas encore de compte ? <a href="#" id="goRegister">Inscrivez-vous</a></p>
+      </div>
+
+      <div id="step2FA" hidden>
+        <h1 class="login-card__title">Vérification</h1>
+        <p class="login-card__sub">Entrez le code généré par votre application d'authentification.</p>
+
+        <form id="twoFAForm">
+          <div class="field">
+            <label for="code">Code à 6 chiffres</label>
+            <input type="text" id="code" inputmode="numeric" maxlength="7" autocomplete="one-time-code" required />
+          </div>
+          <p class="error" id="twoFAError" hidden></p>
+          <button type="submit" class="sm-btn sm-btn--primary login-card__submit" id="twoFABtn">
+            <span>Vérifier</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="login.js"></script>
+</body>
+</html>

@@ -100,12 +100,14 @@ block content
 
     .calendar__week-strip(class=(view === 'month' ? 'u-hidden-month' : ''))
             each weekday in weekDays
-                a.calendar__week-day(href=`/appointment?date=${weekday.isoDate}&employee=${employeeFilter}` class=[weekday.isToday && "today", weekday.isFocused && "focused", weekday.isDayOff && "off-day"])
+                a.calendar__week-day(href=`/appointment?date=${weekday.isoDate}&employee=${employeeFilter}` class=[weekday.isToday && "today", weekday.isFocused && "focused", weekday.isDayOff && "off-day", weekday.isTimeOff && "time-off", weekday.isSpecial && "special-day"])
                     span.calendar__week-day-label= weekday.initial
                     span.calendar__week-day-number= weekday.dayNumber
                     if weekday.fillStatus && !weekday.isDayOff
                         span.fill-dot(class=`fill-dot--${weekday.fillStatus}`)
-                    if weekday.isDayOff
+                    if weekday.isSpecial
+                        span.calendar__week-day-off.calendar__week-day-off--special(title=`Horaires spéciaux : ${weekday.specialLabel}`)= t.appt.week_day_off
+                    else if weekday.isDayOff
                         span.calendar__week-day-off= t.appt.week_day_off
 
     //- ── Vue Mois ─────────────────────────────────────────────────────────────
@@ -123,9 +125,11 @@ block content
                 each d in monthDays
                     a.cal-month__cell(
                         href=`/appointment?date=${d.iso}&employee=${employeeFilter}`
-                        class=[(d.isToday ? 'is-today' : ''), (!d.current ? 'is-other-month' : ''), (d.iso === focusedIso ? 'is-focused' : '')]
+                        class=[(d.isToday ? 'is-today' : ''), (!d.current ? 'is-other-month' : ''), (d.iso === focusedIso ? 'is-focused' : ''), (d.isDayOff ? 'is-off' : ''), (d.isTimeOff ? 'is-conge' : ''), (d.isSpecial ? 'is-special' : '')]
                     )
                         span.cal-month__day= d.day
+                        if d.isSpecial
+                            span.cal-month__conge.cal-month__conge--special(title=`Horaires spéciaux : ${d.specialLabel}`) OFF
                         if canManageAppt
                             button.cal-month__add-btn(type="button" data-iso=d.iso title="Nouveau rendez-vous ce jour-là")
                                 span.material-symbols-outlined(style="font-size:14px") add
@@ -142,11 +146,12 @@ block content
                 .timeline-circle
             .cell.time-header GMT+1
             each weekday in weekDays
-                .cell.day-header(data-iso=weekday.isoDate class=[weekday.isToday && "today", weekday.isFocused && "focused", weekday.isDayOff && "off-day"])
-                    .dh-inner
-                        span.dh-name= weekday.label
-                        span.dh-num= weekday.dayNumber
-                    if weekday.isDayOff
+                .cell.day-header(data-iso=weekday.isoDate class=[weekday.isToday && "today", weekday.isFocused && "focused", weekday.isDayOff && "off-day", weekday.isTimeOff && "time-off", weekday.isSpecial && "special-day"])
+                    span.dh-name= weekday.label
+                    span.dh-date= weekday.date
+                    if weekday.isSpecial
+                        span.dh-off.dh-off--special(title=`Horaires spéciaux : ${weekday.specialLabel}`) Off
+                    else if weekday.isDayOff
                         span.dh-off Off
 
             //- ── Grille de fond (purement visuelle, pas de RDV à l'intérieur) ──
@@ -156,7 +161,7 @@ block content
                     if !isHalf
                         = hour
                 each day, dayIndex in weekDays
-                    .cell.day(class=[day.isFocused && "focused", isHalf && "day--half", day.isDayOff && "off-day"] data-iso=day.isoDate data-time=hour)
+                    .cell.day(class=[day.isFocused && "focused", isHalf && "day--half", day.isDayOff && "off-day", day.isTimeOff && "time-off", day.isSpecial && "special-day", day.isToday && "today"] data-iso=day.isoDate data-time=hour)
 
             //- ── RDV positionnés en continu par-dessus la grille ────────────
             //- Une colonne par jour, positionnée en JS (top/left/width/height
@@ -184,7 +189,7 @@ block content
                                 //- Données du groupe (cachées) — clonées dans la modale au clic
                                 .appt-group-data(hidden)
                                     each appt in box.items
-                                        a.appt-group__row(href=`/history/edit/${appt._id}` class=(appt.status === 'canceled' ? 'is-canceled' : ''))
+                                        a.appt-group__row(href=`/clients-hub/${appt._id}?edit=1` class=(appt.status === 'canceled' ? 'is-canceled' : ''))
                                             span.appt-group__time= appt.startHour
                                             span.appt-group__main
                                                 span.appt-group__name= appt.name + ' ' + (appt.surname || '')
@@ -231,7 +236,7 @@ block content
                                 div.appt-pill(
                                     role="button" tabindex="0"
                                     class={ 'appt-pill--canceled': appointment.status === 'canceled' }
-                                    style=`left:calc(${leftPct}% + 3px);width:calc(${widthPct}% - 6px);` + (canColor ? `background:${appointment.serviceColor}` : '')
+                                    style=`left:calc(${leftPct}% + 3px);width:calc(${widthPct}% - 6px);` + (canColor ? `--pill-color:${appointment.serviceColor}` : '')
                                     data-start-minutes=box.startMin
                                     data-slot-minutes=(box.endMin - box.startMin)
                                     data-id=String(appointment._id)
@@ -337,7 +342,7 @@ block content
                         .field-container.flex.col
                             label= t.appt.label_employee
                             select.input#newApptEmployee
-                                option(value="")= t.appt.no_employee
+                                option(value="")= t.appt.random_employee
                                 each emp in employees
                                     - var empLabel = emp.firstName + ' ' + emp.lastName
                                     option(value=String(emp._id))= empLabel.length > 40 ? empLabel.slice(0, 40) + '…' : empLabel

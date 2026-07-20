@@ -1112,16 +1112,17 @@
   .calendar-section .grid-section .cell.time-header,
   .calendar-section .grid-section .cell.day-header {
     display: flex;
-    flex-direction: column;
-    height: 84px;
-    padding: 8px 8px;
+    flex-direction: row;
+    height: 48px;
+    padding: 0 12px;
     box-sizing: border-box;
-    justify-content: center;
     align-items: center;
-    gap: 3px;
-    font-size: 13px;
+    justify-content: flex-start;
+    gap: 5px;
+    font-size: 12.5px;
     font-weight: 600;
-    color: var(--text-muted);
+    /* Jour « ON » (ouvré) : couleur demandée. */
+    color: #344051;
     border-bottom: 1px solid var(--border-light);
     position: sticky;
     top: 0;
@@ -1133,35 +1134,28 @@
     font-size: 10px;
     font-weight: 500;
     color: var(--text-muted);
-    flex-direction: row;
-    height: 84px;
+    height: 48px;
   }
 
-  /* Day header inner layout */
-  .dh-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1px;
-  }
-
+  /* En-tête jour façon « image 1 » : une seule ligne « Lun. 16 juin »,
+     alignée à gauche. Le nom et la date héritent de la couleur de la cellule
+     (ON / OFF / aujourd'hui gérées plus bas). */
   .dh-name {
-    font-size: 11px;
+    font-size: 12.5px;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-muted);
-    line-height: 1;
-  }
-
-  .dh-num {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-primary);
+    text-transform: capitalize;
+    color: inherit;
     line-height: 1.1;
   }
 
-  /* "Off" badge on Sunday headers */
+  .dh-date {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: inherit;
+    line-height: 1.1;
+  }
+
+  /* Badge "Off" (jour fermé) — discret, à droite du libellé */
   .dh-off {
     font-size: 9px;
     font-weight: 700;
@@ -1171,12 +1165,11 @@
     background: #f3f4f6;
     border-radius: 4px;
     padding: 1px 5px;
-    margin-top: 1px;
+    margin-left: 2px;
   }
 
-  /* Sunday column — faded */
-  .calendar-section .grid-section .cell.day-header.off-day .dh-name,
-  .calendar-section .grid-section .cell.day-header.off-day .dh-num {
+  /* Jour OFF → gris (celui déjà utilisé) */
+  .calendar-section .grid-section .cell.day-header.off-day {
     color: #c4c9d4;
   }
 
@@ -1184,26 +1177,10 @@
     background: rgba(0, 0, 0, 0.015);
   }
 
-  /* "focused" = jour sélectionné par la navigation → highlighted number */
-  .calendar-section .grid-section .cell.day-header.focused:not(.today) .dh-num {
-    color: var(--text-primary);
-  }
-
-  /* "today" = la vraie date du jour → accent circle on number */
-  .calendar-section .grid-section .cell.day-header.today .dh-name {
-    color: var(--accent);
-  }
-
-  .calendar-section .grid-section .cell.day-header.today .dh-num {
-    background: var(--accent);
-    color: #fff;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
+  /* Jour courant → en-tête vert + colonne teintée en vert léger */
+  .calendar-section .grid-section .cell.day-header.today {
+    color: #1e7a4e;
+    font-weight: 700;
   }
 
   .calendar-section .grid-section .cell {
@@ -1854,7 +1831,10 @@ body:has(.cal-month) .cal-month {
 
 .appt-time-panel {
   position: fixed;
-  z-index: 10000;
+  /* Au-dessus de l'overlay des modals (.new-appt-overlay = 99999) : le panneau
+     est rattaché au <body>, donc s'il passe sous l'overlay il devient invisible
+     et on ne peut plus choisir l'heure depuis « Nouveau rendez-vous ». */
+  z-index: 100001;
   width: 190px;
   background: var(--surface-card, #fff);
   border: 1px solid var(--border-light);
@@ -2048,4 +2028,183 @@ body.appt-group-open { overflow: hidden; }
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid var(--border-light, #e5e7eb);
+}
+
+/* ============================================================
+   REDESIGN « agenda clair » (réf. maquette santé) — fond blanc,
+   grille plate, cellules teintées avec barre de couleur à gauche.
+   Ce bloc est en fin de fichier pour primer sur les règles ci-dessus,
+   et ce fichier n'est chargé QUE sur la page Rendez-vous.
+   ============================================================ */
+
+/* 1. Fond de page blanc (plus de gris) + conteneurs plats (pas d'arrondi/ombre) */
+.main { background: #fff; }
+.calendar-section {
+  border-radius: 0;
+  box-shadow: none;
+  padding-bottom: 12px;
+}
+.calendar .calendar__menu {
+  box-shadow: none;
+  border: 1px solid var(--border-light);
+}
+
+/* 2. Pilule RDV : fond teinté clair + barre de couleur à gauche + texte foncé.
+      --pill-color = couleur du service (posée en style inline dans la vue),
+      défaut vert. On « baisse l'opacité » de la couleur en la mélangeant au
+      blanc (color-mix) pour le fond, tout en gardant la couleur pleine sur la
+      barre de gauche. */
+.appt-pill,
+.appt-pill[data-status="confirmed"],
+.appt-pill[data-status="pending"],
+.appt-pill:not([data-status]),
+.appt-pill[data-status=""] {
+  --pill-color: #16a34a;
+  background-color: color-mix(in srgb, var(--pill-color) 13%, #fff);
+  color: #1f2937;
+  border: 1px solid color-mix(in srgb, var(--pill-color) 26%, #fff);
+  border-left: 3px solid var(--pill-color);
+  border-radius: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: center;
+  padding: 3px 8px;
+  gap: 1px 6px;
+}
+.appt-pill:hover {
+  filter: none;
+  background-color: color-mix(in srgb, var(--pill-color) 20%, #fff);
+}
+.appt-pill__name {
+  color: #1f2937;
+  font-weight: 700;
+  order: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* Heure : grise, sur sa propre ligne sous le nom (comme la maquette). */
+.appt-pill__time {
+  color: #6b7280;
+  opacity: 1;
+  font-weight: 600;
+  order: 3;
+  flex: 0 0 100%;
+}
+.appt-pill__emp {
+  order: 2;
+  flex: 0 0 auto;
+  background: color-mix(in srgb, var(--pill-color) 16%, #fff);
+  color: #374151;
+  opacity: 1;
+}
+.appt-pill__photo {
+  order: 0;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Annulé : gris, nom barré */
+.appt-pill--canceled {
+  --pill-color: #9ca3af;
+  background-color: #f3f4f6 !important;
+  border: 1px solid #e5e7eb !important;
+  border-left: 3px solid #cbd5e1 !important;
+}
+.appt-pill--canceled .appt-pill__name {
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+.appt-pill--canceled .appt-pill__time { color: #b0b7c0; }
+
+/* Absence (no-show) : ambre */
+.appt-pill[data-status="no-show"] { --pill-color: #f59e0b; }
+.appt-pill[data-status="no-show"] .appt-pill__name { color: #92400e; }
+
+/* Pilule « résumé » (4+ RDV sur un même créneau) : même logique teintée */
+.appt-pill--summary {
+  --pill-color: #16a34a;
+  background-color: color-mix(in srgb, var(--pill-color) 13%, #fff);
+  color: #1f2937;
+  border: 1px solid color-mix(in srgb, var(--pill-color) 26%, #fff);
+  border-left: 3px solid var(--pill-color);
+  border-radius: 4px;
+}
+.appt-pill--summary:hover {
+  filter: none;
+  color: #1f2937;
+  background-color: color-mix(in srgb, var(--pill-color) 20%, #fff);
+}
+.appt-pill__label { color: #1f2937; }
+.appt-pill__extra { background: rgba(0, 0, 0, 0.08); color: #374151; }
+
+/* Libellés d'heure de la colonne de gauche : couleur foncée demandée. */
+.calendar-section .grid-section .cell.time { color: #141C25; }
+
+/* ══════════ Congés (jour off complet) = mêmes gris que les jours de fermeture ══
+   Un congé complet réutilise le style « OFF » gris (classe .off-day déjà posée)
+   et affiche « OFF » comme les autres jours fermés. ═════════════════════════════ */
+.cal-month__cell.is-off,
+.cal-month__cell.is-conge {
+  background: rgba(0, 0, 0, 0.025);
+}
+/* Petit badge gris réutilisé en vue Mois (jours à horaires spéciaux). */
+.cal-month__conge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ca3af;
+  background: #f3f4f6;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* ══════════ Jour actuel (aujourd'hui) — colonne teintée en vert léger ══════════
+   L'en-tête passe en vert et toute la colonne du jour prend un fond vert très
+   léger pour repérer « aujourd'hui » d'un coup d'œil. ═══════════════════════════ */
+.calendar-section .grid-section .cell.day-header.today {
+  color: #1e7a4e;
+  font-weight: 700;
+}
+.calendar-section .grid-section .cell.day.today {
+  background: rgba(30, 122, 78, 0.06);
+}
+/* Le survol reste visible par-dessus la teinte du jour. */
+.calendar-section .grid-section .cell.day.today:hover {
+  background: rgba(30, 122, 78, 0.11);
+}
+/* Bandeau semaine (sélecteur en haut) : numéro du jour actuel en vert aussi. */
+.calendar__week-day.today .calendar__week-day-number {
+  color: #1e7a4e;
+}
+
+/* ══════════ Jours à horaires spéciaux = même gris que les jours OFF, + horaires ══
+   Journée avec des horaires ponctuels différents : même gris que « OFF », mais le
+   badge affiche l'horaire (ex : 09:00–18:00) au lieu de « OFF ». ════════════════ */
+.calendar__week-day.special-day .calendar__week-day-label,
+.calendar__week-day.special-day .calendar__week-day-number {
+  color: #c4c9d4;
+}
+.calendar__week-day-off--special {
+  color: #bbbfc8;
+  background: #f1f2f4;
+}
+.calendar-section .grid-section .cell.day-header.special-day {
+  color: #c4c9d4;
+}
+.dh-off--special {
+  color: #9ca3af !important;
+  background: #f3f4f6 !important;
+}
+.calendar-section .grid-section .cell.day.special-day {
+  background: rgba(0, 0, 0, 0.015);
+}
+.cal-month__cell.is-special {
+  background: rgba(0, 0, 0, 0.02);
+}
+.cal-month__conge--special {
+  color: #9ca3af;
+  background: #f3f4f6;
 }

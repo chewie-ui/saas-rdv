@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>BranShee — Inscription</title>
+  <link rel="stylesheet" href="shared.css" />
+  <link rel="stylesheet" href="login.css" />
+  <link rel="stylesheet" href="register.css" />
+</head>
+<body>
+  <div class="login-screen">
+    <div class="login-card register-card">
+      <div class="brand-row login-card__brand">
+        <img src="assets/icon.svg" alt="BranShee" />
+        <span>BranShee</span>
+      </div>
+
+      <h1 class="login-card__title">Créer un compte</h1>
+      <p class="login-card__sub">Quelques infos pour démarrer.</p>
+
+      <form id="registerForm">
+        <div class="field">
+          <label for="fullname">Nom complet</label>
+          <input type="text" id="fullname" autocomplete="name" required />
+        </div>
+        <div class="field">
+          <label for="regEmail">Adresse e-mail</label>
+          <input type="email" id="regEmail" autocomplete="username" required />
+        </div>
+        <div class="field business-field">
+          <label for="businessTypeSearch">Votre métier</label>
+          <input type="text" id="businessTypeSearch" placeholder="Rechercher votre métier…" autocomplete="off" required />
+          <input type="hidden" id="businessTypeValue" />
+          <div class="business-results" id="businessResults" hidden></div>
+        </div>
+        <div class="field">
+          <label for="regPassword">Mot de passe</label>
+          <input type="password" id="regPassword" autocomplete="new-password" required />
+        </div>
+        <div class="field">
+          <label for="regPasswordConfirm">Confirmer le mot de passe</label>
+          <input type="password" id="regPasswordConfirm" autocomplete="new-password" required />
+        </div>
+        <p class="error" id="registerError" hidden></p>
+        <button type="submit" class="sm-btn sm-btn--primary login-card__submit" id="registerBtn">
+          <span>Créer mon compte</span>
+        </button>
+      </form>
+      <p class="login-card__switch">Déjà un compte ? <a href="#" id="goLogin">Connectez-vous</a></p>
+    </div>
+  </div>
+
+  <script src="register.js"></script>
+</body>
+</html>

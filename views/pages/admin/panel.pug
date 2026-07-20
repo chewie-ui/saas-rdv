@@ -92,7 +92,7 @@ block content
                                     .dash-appt-row__svc= a.serviceName || '—'
                                 span.dash-status-pill(class=a.status === 'confirmed' ? 'dash-status-pill--confirmed' : 'dash-status-pill--canceled')
                                     = a.status === 'confirmed' ? 'Confirmé' : 'Annulé'
-                                a.sm-btn.sm-btn--ghost.sm-btn--xs(href=`/history/edit/${a._id}`) Ouvrir
+                                a.sm-btn.sm-btn--ghost.sm-btn--xs(href=`/clients-hub/${a._id}?edit=1`) Ouvrir
                     else
                         .dash-empty
                             span.material-symbols-outlined(style="font-size:32px;opacity:.25;margin-bottom:8px;display:block") calendar_month
@@ -123,7 +123,7 @@ block content
                     .dash-card__hd-left
                         span.material-symbols-outlined(style=`font-size:17px`) receipt_long
                         h3 Dernières réservations
-                    a.dash-card__more(href="/history") Historique →
+                    a.dash-card__more(href="/clients-hub") Clients →
                 .dash-card__body
                     if recentBookings && recentBookings.length
                         each b in recentBookings

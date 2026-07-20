@@ -470,3 +470,129 @@
   border-color: #fca5a5 !important;
   color: #dc2626 !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   « Personnaliser » — surface blanche unifiée (style réglages / Beyond UI).
+   Fini le fond gris et les cartes flottantes : une seule surface blanche où les
+   sections sont séparées par de fins filets. Scopé à cette page — customize.css
+   n'est chargé que sur /customize-calendar.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 1. Tout en blanc : le gris venait de .main (var(--bg-app)). */
+.main { background: #fff; }
+
+/* 2. Une seule colonne, alignée à gauche (plus de colonne étroite flottante au
+   centre), largeur IDENTIQUE pour tous les onglets, plafonnée pour ne pas
+   s'étirer à l'infini sur les grands écrans. Comme .cz-page est un flex-item
+   étiré de .main-wrapper, la max-width le borne et align-self le colle à
+   gauche — chaque onglet occupe donc exactement la même largeur. */
+.cz-page {
+  gap: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-bottom: 24px;
+}
+/* Les panneaux (Rappels / Design / Intégration) ne débordent jamais la colonne
+   commune : ils épousent exactement la même largeur que l'onglet Général. */
+.cz-page > .cz-panel { width: 100%; max-width: 100%; }
+.cz-page .cz-design { max-width: 100%; }
+
+/* 3. Chaque section = 2 colonnes (style Untitled UI) : le LIBELLÉ (icône +
+   titre + description) à gauche, les CHAMPS à droite, séparés par un filet.
+   On ne touche pas au pug : l'en-tête va en colonne 1, TOUT le reste
+   (bannières, champs, boutons) en colonne 2. */
+.cz-page .info-card {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  column-gap: 56px;
+  row-gap: 16px;
+  align-items: start;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 28px 0;
+  margin: 0 !important;
+}
+.cz-page .info-card__header { grid-column: 1; align-self: start; }
+.cz-page .info-card > :not(.info-card__header) { grid-column: 2; min-width: 0; }
+/* Filet ENTRE les sections (border-top). Pas de :last/:first-of-type : ces
+   pseudo-classes visent le type <div>, or des .cz-panel (divs) suivent les
+   sections. On pose un filet en haut de chaque carte générale et on le retire
+   sur la première (celle qui suit le panneau vide #czPanelGeneral). */
+.cz-page > .info-card { border-top: 1px solid var(--border-light); border-bottom: none; }
+#czPanelGeneral + .info-card { border-top: none; }
+
+/* 4. En-tête de section : icône + titre + description empilés à gauche ; les
+   pastilles de visibilité passent SOUS la description. */
+.cz-page .info-card__header,
+.cz-page .info-card__header--with-cb {
+  padding-bottom: 0;
+  border: none;
+}
+.cz-page .info-card__header--with-cb {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+.cz-page .info-card__header__cbs { display: flex; flex-wrap: wrap; gap: 8px; }
+.cz-page .info-card__header h3 { font-size: 15px; }
+
+/* Grille 2 colonnes → l'icône (col 1) s'étend sur les 2 lignes (titre + desc).
+   Appliquée aux en-têtes SIMPLES et au bloc __left des en-têtes à pastille. */
+.cz-page .info-card__header:not(.info-card__header--with-cb),
+.cz-page .info-card__header__left {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 12px;
+  align-items: center;
+}
+.cz-page .info-card__ic {
+  grid-row: 1 / span 2;
+  align-self: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--accent-soft, #ecfdf3);
+  color: var(--accent, #16a34a);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.cz-page .info-card__ic .material-symbols-outlined { line-height: 1; }
+.cz-page .info-card__desc { font-size: 12.5px; margin-top: 3px; }
+
+/* 5. Actions / boutons « Enregistrer ». */
+.cz-page .info-card__actions { margin-top: 0; }
+.cz-page .info-card__actions .sm-btn { height: 36px; }
+
+/* Responsive : sous 900px, le libellé repasse AU-DESSUS des champs (1 colonne),
+   comme sur mobile dans la réf Untitled UI. */
+@media (max-width: 900px) {
+  .cz-page .info-card {
+    grid-template-columns: 1fr;
+    row-gap: 14px;
+    padding: 22px 0;
+  }
+  .cz-page .info-card__header,
+  .cz-page .info-card > :not(.info-card__header) { grid-column: 1; }
+}
+@media (max-width: 640px) {
+  .cz-page .biz-row { flex-direction: column; align-items: stretch; gap: 14px; }
+}
+
+/* ── Localisation : champs d'abord, aperçu carte compact EN DESSOUS ─────────
+   Avant : une carte géante 420px collée à côté des champs (moche + serré).
+   Maintenant : on remplit l'adresse, l'aperçu carte se cale dessous. ─────── */
+.cz-page .location-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 18px;
+}
+.cz-page .location-form { order: 1; gap: 18px; width: 100%; }
+.cz-page .location-map { order: 2; }
+.cz-page .location-map iframe { height: 260px; }

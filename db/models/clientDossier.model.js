@@ -7,8 +7,16 @@ const schema = mongoose.Schema;
 const dossierEntrySchema = new schema(
   {
     date: { type: Date, default: Date.now },
+    title: { type: String, default: "", trim: true },
     note: { type: String, default: "", trim: true },
     todo: { type: String, default: "", trim: true },
+    // Pièce jointe PDF (facultative). Stockée hors du dossier public (RGPD) —
+    // `path` est relatif à private_uploads/, téléchargée via une route protégée.
+    attachment: {
+      path: { type: String, default: "" },
+      filename: { type: String, default: "" },
+      size: { type: Number, default: 0 },
+    },
   },
   { timestamps: true }
 );
@@ -23,6 +31,12 @@ const clientDossierSchema = new schema(
     email: { type: String, required: true, lowercase: true, trim: true },
     fullName: { type: String, default: "", trim: true },
     phone: { type: String, default: "", trim: true },
+    // Contacts alternatifs ajoutés par l'admin (le client peut avoir 2 emails,
+    // 2 numéros, ou être connu sous un autre nom/surnom). Le nom principal reste
+    // celui défini par le client à la réservation — non modifiable ici.
+    altName: { type: String, default: "", trim: true },
+    altEmail: { type: String, default: "", trim: true },
+    altPhone: { type: String, default: "", trim: true },
     // Infos persistantes (antécédents, allergies, objectifs...) — contrairement
     // aux entrées, ce bloc ne change pas à chaque visite.
     generalInfo: { type: String, default: "" },

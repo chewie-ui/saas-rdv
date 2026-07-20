@@ -1,0 +1,451 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet", href="/css/layouts/clients-hub.css")
+    link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0")
+
+block content
+    .ch-page
+        //- Le titre « Clients » est déjà affiché par la barre du haut
+        //- (admin-nav__title). On garde juste le compteur de RDV ici.
+        .ch-head
+            span.ch-count #{totalClients} #{totalClients > 1 ? 'clients' : 'client'}
+
+        //- ── Barre d'outils + superposition « sélection » ──────────
+        //- La barre de sélection se superpose à la barre d'outils (même
+        //- hauteur) : rien ne se décale quand on coche une ligne.
+        .ch-toolbar-wrap
+            .ch-toolbar
+                .ch-search
+                    span.ch-search__icon.material-symbols-outlined search
+                    input#chSearch.ch-search__input(type="text" placeholder="Rechercher un client, service, praticien…" autocomplete="off")
+                .ch-toolbar__actions
+                    //- Plage de dates
+                    .ch-dd
+                        button.ch-tbtn#chDateBtn(type="button")
+                            span.material-symbols-outlined(style="font-size:18px") calendar_month
+                            span#chDateLabel Plage de dates
+                            span.material-symbols-outlined.ch-tbtn__caret(style="font-size:18px") expand_more
+                        .ch-dd__menu#chDateMenu(hidden)
+                            button.ch-dd__opt.is-active(type="button" data-range="all") Toutes les dates
+                            button.ch-dd__opt(type="button" data-range="upcoming") À venir
+                            button.ch-dd__opt(type="button" data-range="7") 7 derniers jours
+                            button.ch-dd__opt(type="button" data-range="30") 30 derniers jours
+                            button.ch-dd__opt(type="button" data-range="90") 90 derniers jours
+                    //- Filtres (statut)
+                    .ch-dd
+                        button.ch-tbtn#chFilterBtn(type="button")
+                            span.material-symbols-outlined(style="font-size:18px") filter_list
+                            span Filtres
+                            span.ch-tbtn__badge#chFilterBadge(hidden)
+                        .ch-dd__menu#chFilterMenu(hidden)
+                            .ch-dd__label Statut
+                            label.ch-dd__check
+                                input(type="checkbox" value="confirmed" checked)
+                                span Confirmé
+                            label.ch-dd__check
+                                input(type="checkbox" value="canceled" checked)
+                                span Annulé
+                            label.ch-dd__check
+                                input(type="checkbox" value="noshow" checked)
+                                span Absence
+                    a.sm-btn.sm-btn--primary(href="/appointment/new")
+                        span.material-symbols-outlined(style="font-size:18px") add
+                        span Nouveau RDV
+            .ch-bulkbar#chBulkbar(hidden)
+                span.ch-bulkbar__count
+                    strong#chSelCount 0
+                    |  sélectionné(s)
+                button.ch-bulkbar__clear#chClearSel(type="button") Tout désélectionner
+                button.sm-btn.sm-btn--danger#chBulkDelete(type="button")
+                    span.material-symbols-outlined(style="font-size:18px") delete
+                    span Supprimer
+
+        //- ── État vide ───────────────────────────────────────────
+        if !clients || clients.length === 0
+            .ch-empty
+                span.ch-empty__icon.material-symbols-outlined group
+                p.ch-empty__title Aucun client
+                p.ch-empty__sub Les clients ayant pris un rendez-vous apparaîtront ici.
+                a.sm-btn.sm-btn--primary(href="/appointment/new")
+                    span.material-symbols-outlined(style="font-size:18px") add
+                    span Nouveau RDV
+        else
+            //- ── Tableau (un client par ligne) ───────────────────
+            .ch-table-wrap
+                table.ch-table
+                    thead
+                        tr
+                            th.ch-th.ch-th--check
+                                input#chCheckAll.ch-check(type="checkbox" title="Tout sélectionner")
+                            th.ch-th Client
+                            th.ch-th Téléphone
+                            th.ch-th Praticien
+                            th.ch-th.ch-th--num RDV
+                            th.ch-th Dernier RDV
+                            th.ch-th Statut
+                            th.ch-th.ch-th--action
+                    tbody
+                        each c in clients
+                            - var cName = ((c.name || '') + ' ' + (c.surname || '')).trim() || 'Client'
+                            - var initials = ((c.name || '?').charAt(0) + (c.surname || '').charAt(0)).toUpperCase()
+                            - var colorIdx = (((c.name || 'A').charCodeAt(0) + (c.surname || 'A').charCodeAt(0)) % 8)
+                            - var d = c.lastDate ? new Date(c.lastDate) : null
+                            - var dateStr = d ? d.toLocaleDateString(lang, { year: 'numeric', month: 'short', day: '2-digit' }) : '—'
+                            - var isoDate = d ? d.toISOString().slice(0,10) : ''
+                            - var statusLabel = c.lastState === 'noshow' ? 'Absence' : c.lastState === 'canceled' ? 'Annulé' : 'Confirmé'
+                            tr.ch-row(
+                                data-ids=c.ids.join(',')
+                                data-nav=c.lastBookingId
+                                data-name=cName
+                                data-count=c.count
+                                data-state=c.lastState
+                                data-date=isoDate
+                                data-search=(cName + ' ' + (c.altName||'') + ' ' + (c.employeeName||'') + ' ' + (c.phone||'') + ' ' + (c.email||'')).toLowerCase()
+                            )
+                                td.ch-td.ch-td--check
+                                    input.ch-check.ch-rowcheck(type="checkbox" title="Sélectionner")
+                                td.ch-td.ch-td--client
+                                    .ch-client
+                                        span.ch-avatar(class=`av-${colorIdx}`)= initials
+                                        .ch-client-info
+                                            span.ch-client-name
+                                                = cName
+                                                if c.altName
+                                                    span.ch-alt-name  (#{c.altName})
+                                            if c.email
+                                                span.ch-client-sub= c.email
+                                td.ch-td= c.phone || '—'
+                                td.ch-td= c.employeeName || '—'
+                                td.ch-td.ch-td--num
+                                    span.ch-countpill= c.count
+                                td.ch-td.ch-td--date
+                                    span.ch-date= dateStr
+                                    span.ch-time= c.lastTime || ''
+                                td.ch-td
+                                    span.ch-pill(class=`ch-pill--${c.lastState}`)
+                                        span.ch-pill__dot
+                                        = statusLabel
+                                td.ch-td.ch-td--action
+                                    button.ch-kebab(type="button" title="Actions")
+                                        span.material-symbols-outlined(style="font-size:20px") more_vert
+
+            //- ── Pagination (remplie côté client selon la hauteur d'écran) ──
+            .ch-pagination#chPagination
+
+            .ch-empty.ch-empty--search#chNoResult(style="display:none")
+                span.ch-empty__icon.material-symbols-outlined search_off
+                p.ch-empty__title Aucun résultat
+                p.ch-empty__sub Aucun rendez-vous ne correspond à votre recherche ou à vos filtres.
+
+    //- ── Menu contextuel flottant (3 points) ────────────────────
+    .ch-menu#chMenu(hidden)
+        a.ch-menu__item#chMenuView(data-act="view")
+            span.material-symbols-outlined(style="font-size:18px") visibility
+            span Voir la fiche
+        a.ch-menu__item#chMenuEdit(data-act="edit")
+            span.material-symbols-outlined(style="font-size:18px") edit
+            span Modifier le dernier RDV
+        .ch-menu__sep
+        button.ch-menu__item.ch-menu__item--danger#chMenuDelete(type="button" data-act="delete")
+            span.material-symbols-outlined(style="font-size:18px") delete
+            span Supprimer le client
+
+block scripts
+    script(src="/js/utils/confirm-modal.js")
+    script.
+        (function () {
+            var rows = Array.prototype.slice.call(document.querySelectorAll('.ch-row'));
+            var searchInput = document.getElementById('chSearch');
+            var noResult = document.getElementById('chNoResult');
+            var checkAll = document.getElementById('chCheckAll');
+            var bulkbar = document.getElementById('chBulkbar');
+            var selCount = document.getElementById('chSelCount');
+            var clearSel = document.getElementById('chClearSel');
+            var bulkDelete = document.getElementById('chBulkDelete');
+
+            // ── État des filtres ──────────────────────────────────────
+            var state = { q: '', range: 'all', statuses: { confirmed: true, canceled: true, noshow: true } };
+
+            function rowVisibleByFilter(r) {
+                if (state.q && (r.dataset.search || '').indexOf(state.q) === -1) return false;
+                if (!state.statuses[r.dataset.state]) return false;
+                if (state.range !== 'all') {
+                    var iso = r.dataset.date;
+                    if (!iso) return false;
+                    var rowMs = new Date(iso + 'T00:00:00').getTime();
+                    var today = new Date(); today.setHours(0,0,0,0);
+                    var todayMs = today.getTime();
+                    if (state.range === 'upcoming') {
+                        if (rowMs < todayMs) return false;
+                    } else {
+                        var days = parseInt(state.range, 10);
+                        var floor = todayMs - days * 86400000;
+                        if (rowMs < floor || rowMs > todayMs) return false;
+                    }
+                }
+                return true;
+            }
+
+            // ── Pagination côté client (remplit l'écran, puis pages) ──────
+            var pageSize = 12;
+            var currentPage = 1;
+
+            function computePageSize() {
+                var wrap = document.querySelector('.ch-table-wrap');
+                var sample = rows[0];
+                var thead = document.querySelector('.ch-table thead');
+                if (!wrap || !sample) return 12;
+                var rowH = sample.getBoundingClientRect().height || 56;
+                var theadH = thead ? thead.getBoundingClientRect().height : 42;
+                var top = wrap.getBoundingClientRect().top;
+                var reserve = 92; // pagination + marges basses
+                var avail = window.innerHeight - top - theadH - reserve;
+                return Math.max(5, Math.min(60, Math.floor(avail / rowH)));
+            }
+
+            function renderPagination(totalItems, totalPages) {
+                var el = document.getElementById('chPagination');
+                if (!el) return;
+                if (totalPages <= 1) { el.innerHTML = ''; el.style.display = 'none'; return; }
+                el.style.display = '';
+                var start = (currentPage - 1) * pageSize + 1;
+                var end = Math.min(currentPage * pageSize, totalItems);
+                var chev = function (name) { return '<span class="material-symbols-outlined" style="font-size:18px">' + name + '</span>'; };
+                var c = ['<span class="ch-pag-info">' + start + '–' + end + ' sur ' + totalItems + '</span>', '<div class="ch-pag-center">'];
+                c.push('<button class="ch-pag-btn" data-goto="' + (currentPage - 1) + '"' + (currentPage === 1 ? ' disabled' : '') + '>' + chev('chevron_left') + '</button>');
+                var from = Math.max(1, currentPage - 2), to = Math.min(totalPages, currentPage + 2);
+                if (from > 1) { c.push('<button class="ch-pag-btn" data-goto="1">1</button>'); if (from > 2) c.push('<span class="ch-pag-dots">…</span>'); }
+                for (var p = from; p <= to; p++) c.push('<button class="ch-pag-btn' + (p === currentPage ? ' is-active' : '') + '" data-goto="' + p + '">' + p + '</button>');
+                if (to < totalPages) { if (to < totalPages - 1) c.push('<span class="ch-pag-dots">…</span>'); c.push('<button class="ch-pag-btn" data-goto="' + totalPages + '">' + totalPages + '</button>'); }
+                c.push('<button class="ch-pag-btn" data-goto="' + (currentPage + 1) + '"' + (currentPage === totalPages ? ' disabled' : '') + '>' + chev('chevron_right') + '</button>');
+                c.push('</div>');
+                c.push('<span class="ch-pag-info">' + totalPages + ' pages</span>');
+                el.innerHTML = c.join('');
+                el.querySelectorAll('.ch-pag-btn[data-goto]').forEach(function (b) {
+                    if (b.disabled) return;
+                    b.addEventListener('click', function () {
+                        var g = parseInt(b.dataset.goto, 10);
+                        if (g >= 1 && g <= totalPages && g !== currentPage) { currentPage = g; render(); }
+                    });
+                });
+            }
+
+            function render() {
+                var vis = rows.filter(rowVisibleByFilter);
+                var totalPages = Math.max(1, Math.ceil(vis.length / pageSize));
+                if (currentPage > totalPages) currentPage = totalPages;
+                if (currentPage < 1) currentPage = 1;
+                // Mémorise la page dans l'URL pour la retrouver après un refresh.
+                try {
+                    var _u = new URL(location.href);
+                    if (currentPage > 1) _u.searchParams.set('page', currentPage);
+                    else _u.searchParams.delete('page');
+                    history.replaceState(null, '', _u);
+                } catch (e) {}
+                var startIdx = (currentPage - 1) * pageSize;
+                var pageRows = vis.slice(startIdx, startIdx + pageSize);
+                rows.forEach(function (r) { r.style.display = 'none'; });
+                pageRows.forEach(function (r) { r.style.display = ''; });
+                // les lignes hors page sont décochées (cohérence de la sélection)
+                rows.forEach(function (r) { if (r.style.display === 'none') { var cb = r.querySelector('.ch-rowcheck'); if (cb) cb.checked = false; } });
+                var wrap = document.querySelector('.ch-table-wrap');
+                if (wrap) wrap.style.display = (vis.length === 0) ? 'none' : '';
+                if (noResult) noResult.style.display = (vis.length === 0) ? '' : 'none';
+                renderPagination(vis.length, totalPages);
+                syncSelection();
+            }
+
+            // Un changement de filtre/recherche remet en page 1.
+            function applyFilters() { currentPage = 1; render(); }
+
+            // ── Recherche ─────────────────────────────────────────────
+            if (searchInput) searchInput.addEventListener('input', function () {
+                state.q = searchInput.value.trim().toLowerCase();
+                applyFilters();
+            });
+
+            // ── Sélection / cases à cocher ────────────────────────────
+            function visibleChecks() {
+                return rows.filter(function (r) { return r.style.display !== 'none'; })
+                           .map(function (r) { return r.querySelector('.ch-rowcheck'); })
+                           .filter(Boolean);
+            }
+            function checkedRows() {
+                return rows.filter(function (r) {
+                    var cb = r.querySelector('.ch-rowcheck');
+                    return r.style.display !== 'none' && cb && cb.checked;
+                });
+            }
+            function checkedBookingIds() {
+                var ids = [];
+                checkedRows().forEach(function (r) {
+                    (r.dataset.ids || '').split(',').forEach(function (x) { if (x) ids.push(x); });
+                });
+                return ids;
+            }
+            function syncSelection() {
+                var checks = visibleChecks();
+                var checked = checks.filter(function (c) { return c.checked; });
+                var n = checked.length;
+                if (selCount) selCount.textContent = n;
+                if (bulkbar) bulkbar.hidden = (n === 0);
+                if (checkAll) {
+                    checkAll.checked = (n > 0 && n === checks.length);
+                    checkAll.indeterminate = (n > 0 && n < checks.length);
+                }
+            }
+            rows.forEach(function (r) {
+                var cb = r.querySelector('.ch-rowcheck');
+                if (cb) cb.addEventListener('change', syncSelection);
+            });
+
+            // Clic sur une ligne (hors case à cocher / menu) → fiche client.
+            var tableEl = document.querySelector('.ch-table');
+            if (tableEl) tableEl.addEventListener('click', function (e) {
+                if (e.target.closest('.ch-td--check') || e.target.closest('.ch-kebab') || e.target.closest('input')) return;
+                var row = e.target.closest('.ch-row');
+                if (row && row.dataset.nav) location.href = '/clients-hub/' + row.dataset.nav;
+            });
+            if (checkAll) checkAll.addEventListener('change', function () {
+                visibleChecks().forEach(function (c) { c.checked = checkAll.checked; });
+                syncSelection();
+            });
+            if (clearSel) clearSel.addEventListener('click', function () {
+                visibleChecks().forEach(function (c) { c.checked = false; });
+                syncSelection();
+            });
+
+            // ── Suppression ───────────────────────────────────────────
+            async function deleteIds(ids) {
+                var res = await fetch('/clients-hub/bookings', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids: ids })
+                });
+                if (!res.ok) throw new Error('delete failed');
+                return res.json();
+            }
+            function updateCount() {
+                var badge = document.querySelector('.ch-count');
+                if (badge) badge.textContent = rows.length + (rows.length > 1 ? ' clients' : ' client');
+            }
+            function removeRowEls(rowEls) {
+                rowEls.forEach(function (r) { r.remove(); });
+                rows = Array.prototype.slice.call(document.querySelectorAll('.ch-row'));
+                updateCount();
+                render();
+            }
+            if (bulkDelete) bulkDelete.addEventListener('click', async function () {
+                var selRows = checkedRows();
+                if (!selRows.length) return;
+                var ids = checkedBookingIds();
+                var ok = await window.confirmModal(
+                    'Supprimer ' + selRows.length + (selRows.length > 1 ? ' clients ?' : ' client ?'),
+                    'Cela supprimera définitivement ' + ids.length + ' rendez-vous. Cette action est irréversible.'
+                );
+                if (!ok) return;
+                try { await deleteIds(ids); removeRowEls(selRows); }
+                catch (e) { window.confirmModal && window.confirmModal('Erreur', 'La suppression a échoué. Réessayez.', { alertOnly: true }); }
+            });
+
+            // ── Menu contextuel « 3 points » ──────────────────────────
+            var menu = document.getElementById('chMenu');
+            var menuRow = null;
+            function closeMenu() { if (menu) { menu.hidden = true; menuRow = null; } }
+            function openMenu(btn) {
+                menuRow = btn.closest('.ch-row');
+                menu.hidden = false;
+                var rect = btn.getBoundingClientRect();
+                var mw = menu.offsetWidth || 168;
+                var mh = menu.offsetHeight || 130;
+                var left = rect.right - mw;
+                var top = rect.bottom + 6;
+                if (top + mh > window.innerHeight - 8) top = rect.top - mh - 6;
+                if (left < 8) left = 8;
+                menu.style.left = left + 'px';
+                menu.style.top = top + 'px';
+            }
+            document.addEventListener('click', function (e) {
+                var kb = e.target.closest('.ch-kebab');
+                if (kb) { e.stopPropagation(); var row = kb.closest('.ch-row'); if (menuRow === row && !menu.hidden) { closeMenu(); } else { openMenu(kb); } return; }
+                if (menu && !menu.contains(e.target)) closeMenu();
+            });
+            window.addEventListener('resize', closeMenu);
+            window.addEventListener('scroll', closeMenu, true);
+
+            var mView = document.getElementById('chMenuView');
+            var mEdit = document.getElementById('chMenuEdit');
+            var mDel = document.getElementById('chMenuDelete');
+            if (mView) mView.addEventListener('click', function () { if (menuRow) location.href = '/clients-hub/' + menuRow.dataset.nav; });
+            if (mEdit) mEdit.addEventListener('click', function () { if (menuRow) location.href = '/clients-hub/' + menuRow.dataset.nav + '?edit=1'; });
+            if (mDel) mDel.addEventListener('click', async function () {
+                var row = menuRow;
+                closeMenu();
+                if (!row) return;
+                var ids = (row.dataset.ids || '').split(',').filter(Boolean);
+                var ok = await window.confirmModal('Supprimer ce client ?', 'Cela supprimera ses ' + ids.length + ' rendez-vous. Cette action est irréversible.');
+                if (!ok) return;
+                try { await deleteIds(ids); removeRowEls([row]); }
+                catch (e) { window.confirmModal && window.confirmModal('Erreur', 'La suppression a échoué. Réessayez.', { alertOnly: true }); }
+            });
+
+            // ── Dropdowns (plage de dates + filtres) ──────────────────
+            function wireDropdown(btnId, menuId, onOpen) {
+                var btn = document.getElementById(btnId);
+                var dd = document.getElementById(menuId);
+                if (!btn || !dd) return;
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var willOpen = dd.hidden;
+                    document.querySelectorAll('.ch-dd__menu').forEach(function (m) { m.hidden = true; });
+                    dd.hidden = !willOpen;
+                    btn.classList.toggle('is-open', !dd.hidden);
+                });
+                document.addEventListener('click', function (e) {
+                    if (!dd.contains(e.target) && e.target !== btn) { dd.hidden = true; btn.classList.remove('is-open'); }
+                });
+            }
+            wireDropdown('chDateBtn', 'chDateMenu');
+            wireDropdown('chFilterBtn', 'chFilterMenu');
+
+            // Plage de dates
+            var dateLabel = document.getElementById('chDateLabel');
+            document.querySelectorAll('#chDateMenu .ch-dd__opt').forEach(function (opt) {
+                opt.addEventListener('click', function () {
+                    document.querySelectorAll('#chDateMenu .ch-dd__opt').forEach(function (o) { o.classList.remove('is-active'); });
+                    opt.classList.add('is-active');
+                    state.range = opt.dataset.range;
+                    if (dateLabel) dateLabel.textContent = (state.range === 'all') ? 'Plage de dates' : opt.textContent.trim();
+                    document.getElementById('chDateMenu').hidden = true;
+                    document.getElementById('chDateBtn').classList.remove('is-open');
+                    applyFilters();
+                });
+            });
+
+            // Filtres statut
+            var filterBadge = document.getElementById('chFilterBadge');
+            document.querySelectorAll('#chFilterMenu input[type="checkbox"]').forEach(function (cb) {
+                cb.addEventListener('change', function () {
+                    state.statuses[cb.value] = cb.checked;
+                    var active = Object.keys(state.statuses).filter(function (k) { return !state.statuses[k]; }).length;
+                    if (filterBadge) { filterBadge.hidden = (active === 0); filterBadge.textContent = active; }
+                    applyFilters();
+                });
+            });
+
+            // ── Init : mesurer la hauteur dispo → nb de lignes/page, puis rendre ──
+            pageSize = computePageSize();
+            // Restaure la page depuis l'URL (?page=N) après un refresh.
+            var _initPage = parseInt(new URLSearchParams(location.search).get('page'), 10);
+            if (_initPage > 1) currentPage = _initPage;
+            render();
+            var rTimer;
+            window.addEventListener('resize', function () {
+                clearTimeout(rTimer);
+                rTimer = setTimeout(function () {
+                    var ps = computePageSize();
+                    if (ps !== pageSize) { pageSize = ps; render(); }
+                }, 150);
+            });
+        })();

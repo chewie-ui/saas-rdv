@@ -9,7 +9,7 @@ document.addEventListener("click", async (event) => {
   const rowShow    = event.target.closest(".history__actions-row.show");
   const inlineDelete = event.target.closest(".hist-action-btn--danger");
 
-  if (rowEdit)  { location.href = `/history/edit/${idTransfer}`; return; }
+  if (rowEdit)  { location.href = `/clients-hub/${idTransfer}?edit=1`; return; }
   if (rowShow)  { location.href = `/appointement/${idTransfer}`; return; }
 
   const deleteId = inlineDelete ? inlineDelete.dataset.delId : (rowDelete ? idTransfer : null);
@@ -146,7 +146,7 @@ function renderData(appointments) {
         </td>
         <td class="hist-td hist-td--action">
           <div class="hist-row-actions">
-            <a class="hist-action-btn" href="/history/edit/${h._id}" title="Voir">
+            <a class="hist-action-btn" href="/clients-hub/${h._id}?edit=1" title="Voir">
               <span class="material-symbols-outlined">edit</span>
             </a>
             <button class="hist-action-btn hist-action-btn--danger" type="button" data-del-id="${h._id}" title="Supprimer">

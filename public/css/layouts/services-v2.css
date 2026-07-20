@@ -1,0 +1,515 @@
+/* ============================================================
+   Services V2 (refonte en cours) — tableau de services.
+   La barre d'outils et l'état vide réutilisent clients-hub.css.
+   ============================================================ */
+
+.sv2-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 24px;
+}
+
+.sv2-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+/* En-tête : libellés gris, discret, une seule règle sous la ligne */
+.sv2-table thead th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted, #637083);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-light);
+  white-space: nowrap;
+}
+.sv2-th--act { text-align: right; }
+
+/* Lignes : fin filet, hover doux */
+.sv2-row td {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--ink, #141c25);
+  vertical-align: middle;
+}
+.sv2-row:hover td { background: var(--surface, #f8f7f4); }
+.sv2-row--inactive td { color: var(--text-muted); }
+.sv2-row--inactive .sv2-name { color: var(--text-muted); }
+
+/* Nom du service + pastille couleur (comme l'ancienne page) */
+.sv2-td--name { min-width: 240px; }
+.sv2-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 10px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.sv2-name {
+  font-weight: 600;
+  vertical-align: middle;
+}
+.sv2-tag {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  border-radius: 6px;
+  padding: 1px 6px;
+  vertical-align: middle;
+}
+
+.sv2-td--dur, .sv2-td--price { white-space: nowrap; }
+.sv2-td--price { font-weight: 600; }
+
+/* Employés autorisés : bulles empilées (photo, sinon initiales) */
+.sv2-emps {
+  display: inline-flex;
+  align-items: center;
+}
+.sv2-av {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--surface-card, #fff);
+  background: var(--surface, #eef0f2);
+  margin-left: -8px;
+  flex-shrink: 0;
+}
+.sv2-emps .sv2-av:first-child { margin-left: 0; }
+.sv2-av--txt,
+.sv2-av--more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted, #637083);
+  text-transform: uppercase;
+}
+.sv2-av--more {
+  color: var(--ink, #141c25);
+  background: var(--surface, #e9ebee);
+}
+.sv2-all {
+  font-size: 12.5px;
+  color: var(--text-muted, #637083);
+}
+
+/* Statut : pastille + libellé (vert actif / gris inactif) */
+.sv2-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.sv2-status__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.sv2-status.is-on { color: var(--accent, #1e7a4e); }
+.sv2-status.is-on .sv2-status__dot { background: var(--accent, #1e7a4e); }
+.sv2-status.is-off { color: #9ca3af; }
+.sv2-status.is-off .sv2-status__dot { background: #cbd5e1; }
+
+/* Actions : icônes modifier / supprimer */
+.sv2-td--act { text-align: right; white-space: nowrap; }
+.sv2-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  /* Icônes nues : pas de bordure/fond par défaut (les <button> en ont un). */
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  color: var(--text-muted, #637083);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+}
+.sv2-iconbtn:hover { background: var(--surface, #f1f0ec); color: var(--ink, #141c25); }
+.sv2-iconbtn--danger:hover { background: #fef2f2; color: #dc2626; }
+.sv2-iconbtn .material-symbols-outlined { font-size: 19px; }
+
+/* ── Modale « Modifier le service » ─────────────────────────── */
+.sv2-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 25, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 9000;
+}
+.sv2-modal-overlay[hidden] { display: none; }
+.sv2-modal {
+  width: 100%;
+  max-width: 460px;
+  background: var(--surface-card, #fff);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+.sv2-modal__hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-light);
+}
+.sv2-modal__title { font-size: 15px; font-weight: 700; color: var(--ink, #141c25); }
+.sv2-modal__close {
+  border: 0;
+  background: transparent;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--text-muted, #637083);
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+.sv2-modal__close:hover { background: var(--surface, #f1f0ec); color: var(--ink); }
+.sv2-modal__body { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+.sv2-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.sv2-field { display: flex; flex-direction: column; gap: 6px; }
+.sv2-lb { font-size: 12px; font-weight: 600; color: var(--text-muted, #637083); }
+.sv2-input {
+  height: 38px;
+  border: 1px solid var(--border-light);
+  border-radius: 9px;
+  padding: 0 11px;
+  font-size: 13.5px;
+  color: var(--ink, #141c25);
+  background: #fff;
+  width: 100%;
+  box-sizing: border-box;
+}
+.sv2-input:focus { outline: none; border-color: var(--accent, #1e7a4e); }
+select.sv2-input { cursor: pointer; }
+.sv2-color {
+  width: 100%;
+  height: 38px;
+  border: 1px solid var(--border-light);
+  border-radius: 9px;
+  padding: 3px;
+  background: #fff;
+  cursor: pointer;
+}
+.sv2-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink, #141c25);
+  height: 38px;
+  cursor: pointer;
+}
+.sv2-check input { width: 16px; height: 16px; accent-color: var(--accent, #1e7a4e); }
+.sv2-modal-err { font-size: 12.5px; color: #dc2626; font-weight: 600; margin: 0; }
+.sv2-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border-light);
+}
+
+/* ── Constructeur de questionnaire de réservation ───────────── */
+.sq-block {
+  background: var(--surface-card, #fff);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+}
+.sq-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.sq-head__l { display: flex; align-items: flex-start; gap: 11px; }
+.sq-head__ic { color: var(--accent, #1e7a4e); font-size: 22px; margin-top: 1px; }
+.sq-title { font-size: 15px; font-weight: 700; color: var(--ink, #141c25); }
+.sq-sub { font-size: 12.5px; color: var(--text-muted, #637083); line-height: 1.55; max-width: 640px; margin-top: 2px; }
+/* Les mots en gras gardent la même taille que le texte autour (juste plus gras). */
+.sq-sub b, .sq-sub strong { font-size: inherit; font-weight: 600; color: inherit; }
+.sq-switch { flex-shrink: 0; position: relative; width: 40px; height: 23px; cursor: pointer; }
+.sq-switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.sq-switch__track {
+  position: absolute; inset: 0; border-radius: 999px;
+  background: var(--border-light, #d9d7d3); transition: background 0.15s;
+}
+.sq-switch__track::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 19px; height: 19px;
+  border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform 0.15s;
+}
+.sq-switch input:checked + .sq-switch__track { background: var(--accent, #1e7a4e); }
+.sq-switch input:checked + .sq-switch__track::after { transform: translateX(17px); }
+
+.sq-body { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-light); }
+.sq-block.is-off .sq-body { display: none; }
+
+.sq-list { display: flex; flex-direction: column; gap: 12px; }
+.sq-question {
+  background: var(--surface, #f8f7f4);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.sq-question__hd { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.sq-qinput {
+  flex: 1;
+  height: 38px;
+  border: 1px solid var(--border-light);
+  border-radius: 9px;
+  padding: 0 11px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink, #141c25);
+  background: #fff;
+}
+.sq-qinput:focus { outline: none; border-color: var(--accent, #1e7a4e); }
+.sq-qdel {
+  flex-shrink: 0; border: none; background: transparent; cursor: pointer;
+  color: var(--text-muted, #637083); width: 32px; height: 32px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.sq-qdel:hover { background: #fef2f2; color: #dc2626; }
+
+/* Réponses = liste verticale d'inputs (1 par réponse) */
+.sq-options { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.sq-optrow { display: flex; align-items: center; gap: 8px; }
+.sq-optinput {
+  flex: 1;
+  height: 36px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 13.5px;
+  background: #fff;
+  color: var(--ink, #141c25);
+  min-width: 0;
+}
+.sq-optinput::placeholder { color: var(--text-muted, #9ca3af); }
+.sq-optinput:focus { outline: none; border-color: var(--accent, #1e7a4e); }
+.sq-optdel {
+  flex-shrink: 0;
+  width: 34px; height: 34px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: transparent;
+  color: var(--text-muted, #637083);
+  border-radius: 8px; cursor: pointer;
+}
+.sq-optdel:hover { background: #fef2f2; color: #dc2626; }
+.sq-optdel .material-symbols-outlined { font-size: 18px; }
+/* Bouton « Ajouter une réponse » */
+.sq-addopt-btn {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px dashed var(--border-strong, #c7c5bf);
+  background: transparent;
+  color: var(--accent, #1e7a4e);
+  font-size: 12.5px; font-weight: 600;
+  border-radius: 8px; padding: 7px 12px; cursor: pointer;
+  margin-top: 2px;
+}
+.sq-addopt-btn:hover { border-color: var(--accent, #1e7a4e); background: var(--accent-soft, #e7f2ec); }
+.sq-addopt-btn .material-symbols-outlined { font-size: 17px; }
+
+.sq-addq {
+  margin-top: 12px;
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px dashed var(--border-strong, #c7c5bf); background: transparent;
+  color: var(--ink, #141c25); font-size: 13px; font-weight: 600;
+  border-radius: 10px; padding: 9px 14px; cursor: pointer;
+}
+.sq-addq:hover { border-color: var(--accent, #1e7a4e); color: var(--accent, #1e7a4e); }
+.sq-addq .material-symbols-outlined { font-size: 18px; }
+
+.sq-foot { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 16px; }
+.sq-saveind { font-size: 12.5px; font-weight: 700; }
+.sq-saveind.is-ok { color: var(--accent, #1e7a4e); }
+.sq-saveind.is-err { color: #dc2626; }
+
+/* ── Colonne Type (Service / Cours collectif) ───────────────── */
+.sv2-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted, #637083);
+  white-space: nowrap;
+}
+.sv2-type .material-symbols-outlined { font-size: 16px; }
+.sv2-type--group { color: #7c3aed; }
+
+/* ── Bouton « Nouveau » + menu (Service / Cours collectif) ───── */
+.sv2-newwrap { position: relative; }
+.sv2-newmenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  width: 260px;
+  background: var(--surface-card, #fff);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px -8px rgba(15, 23, 25, 0.18), 0 4px 8px rgba(15, 23, 25, 0.06);
+  padding: 6px;
+  z-index: 60;
+}
+.sv2-newmenu[hidden] { display: none; }
+.sv2-newmenu__item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 10px 11px;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  text-align: left;
+  font: inherit;
+  color: var(--ink, #141c25);
+  text-decoration: none;
+  cursor: pointer;
+}
+.sv2-newmenu__item:hover { background: var(--surface, #f1f0ec); }
+.sv2-newmenu__ic {
+  font-size: 22px;
+  color: var(--accent, #1e7a4e);
+  flex-shrink: 0;
+}
+.sv2-newmenu__item:last-child .sv2-newmenu__ic { color: #7c3aed; }
+.sv2-newmenu__t { display: block; font-size: 13.5px; font-weight: 600; }
+.sv2-newmenu__d { display: block; font-size: 11.5px; color: var(--text-muted, #637083); margin-top: 1px; }
+
+/* Mobile : le menu « Nouveau » ne doit jamais dépasser l'écran. Ancré à droite,
+   on borne sa largeur pour que son bord gauche reste visible. */
+@media (max-width: 480px) {
+  .sv2-newmenu { width: 210px; }
+}
+
+/* ── Compteur de plan + bannière de limite ──────────────────── */
+.sv2-plan {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted, #637083);
+  background: var(--surface, #f1f0ec);
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+.sv2-plan.is-full {
+  color: #b45309;
+  background: #fef3c7;
+  border-color: #fde68a;
+}
+.sv2-limit {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 4px 0 14px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.sv2-limit .material-symbols-outlined { font-size: 19px; flex-shrink: 0; }
+
+/* Bouton « Nouveau » désactivé (limite atteinte) */
+#sv2NewBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Modales de création (champs additionnels) ──────────────── */
+.sv2-modal--lg { max-width: 620px; }
+.sv2-modal__body { max-height: 72vh; overflow-y: auto; }
+.sv2-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+/* Segmented : mode de planification */
+.sv2-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sv2-segbtn {
+  text-align: left;
+  border: 1px solid var(--border-light);
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sv2-segbtn.is-active { border-color: var(--accent, #1e7a4e); background: var(--accent-soft, #e7f2ec); }
+.sv2-segbtn__t { font-size: 13px; font-weight: 600; color: var(--ink, #141c25); }
+.sv2-segbtn__d { font-size: 11.5px; color: var(--text-muted, #637083); }
+
+/* Jours de la semaine */
+.sv2-weekdays { display: flex; flex-wrap: wrap; gap: 7px; }
+.sv2-wd {
+  width: 42px; height: 38px;
+  border: 1px solid var(--border-light);
+  background: #fff;
+  border-radius: 9px;
+  font-size: 13px; font-weight: 600;
+  color: var(--ink, #141c25);
+  cursor: pointer;
+}
+.sv2-wd.is-active { border-color: var(--accent, #1e7a4e); background: var(--accent, #1e7a4e); color: #fff; }
+
+/* Dates ponctuelles */
+.sv2-sessions { display: flex; flex-direction: column; gap: 7px; margin-bottom: 8px; }
+.sv2-session {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--accent-soft, #e7f2ec);
+  border-radius: 9px; padding: 7px 8px 7px 12px;
+  font-size: 13px; font-weight: 600; color: var(--accent, #1e7a4e);
+}
+.sv2-session__x { border: none; background: transparent; cursor: pointer; color: var(--accent, #1e7a4e); font-size: 13px; opacity: .7; }
+.sv2-session__x:hover { opacity: 1; }
+.sv2-addsession { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: center; }
+
+@media (max-width: 560px) {
+  .sv2-row3 { grid-template-columns: 1fr; }
+  .sv2-seg { grid-template-columns: 1fr; }
+  .sv2-addsession { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── Ciblage par question dans la modale service ("Afficher ce service pour") ── */
+.svc-targeting { display: flex; flex-direction: column; gap: 12px; }
+.svc-targeting-q { display: flex; flex-direction: column; gap: 6px; }
+.svc-targeting-q__label { font-size: 13px; font-weight: 600; color: #344051; }
+.svc-targeting .svc-answer-options { flex-wrap: wrap; }
+
+/* ── Assignation d'employés (modale cours collectif) ── */
+.crs-emp-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.crs-emp-chip { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border: 1px solid var(--border-light); border-radius: 9px; cursor: pointer; transition: background .12s, border-color .12s; }
+.crs-emp-chip:hover { background: #f7f9fb; }
+.crs-emp-chip input { accent-color: #1e7a4e; width: 16px; height: 16px; flex: none; }
+.crs-emp-chip__av { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex: none; background: #e6ebf1; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #344051; }
+.crs-emp-chip__name { font-size: 13px; color: #141c25; }
+
+/* ── Statut : interrupteur activer/désactiver directement dans la liste ── */
+.sv2-statuscell { display: flex; align-items: center; gap: 10px; }
+.sv2-statuscell .sv2-toggle { flex: none; }

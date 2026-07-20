@@ -1,0 +1,30 @@
+{
+  "name": "branshee-desktop",
+  "version": "0.1.0",
+  "description": "BranShee — application de bureau (Windows/Mac/Linux)",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^31.3.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.branshee.desktop",
+    "productName": "BranShee",
+    "win": {
+      "target": "nsis",
+      "icon": "renderer/assets/icon.png"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "renderer/**/*",
+      "package.json"
+    ]
+  }
+}

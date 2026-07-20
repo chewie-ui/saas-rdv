@@ -191,38 +191,25 @@
 .qs-field--inline .qs-label { margin-bottom: 0; }
 
 /* ── Boutons ───────────────────────────────────────────────── */
-.qs-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 22px;
-  font-size: 15px;
-  font-weight: 700;
-  border-radius: 12px;
-  border: 1.5px solid transparent;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all .15s ease;
-}
-.qs-btn .material-symbols-outlined { font-size: 18px; }
-.qs-btn--primary {
-  width: 100%;
-  background: var(--accent, #16a34a);
-  color: #fff;
-  margin-top: 6px;
-}
-.qs-btn--primary:hover { filter: brightness(1.05); }
-.qs-btn--primary:disabled { opacity: .6; cursor: default; }
-.qs-btn--ghost {
-  background: var(--surface, #f3f4f6);
-  color: var(--ink-2, #374151);
-  border-color: var(--border-light, #e5e7eb);
-}
-.qs-btn--ghost:hover { background: var(--surface-soft, #eef0f2); }
+/* On utilise les boutons PARTAGÉS `.sm-btn` (public/css/classes.css) — pas de
+   classe de bouton custom (cf. CONVENTIONS.md). Le CTA plein largeur d'étape
+   utilise `.sm-btn--full`. */
+.sm-btn--full { margin-top: 6px; }
 
 .qs-actions { display: flex; gap: 10px; margin-top: 8px; }
-.qs-actions .qs-btn { flex: 1; }
+/* Les .sm-btn de la rangée partagent la largeur ; min-width:0 + white-space
+   normal permettent à un libellé long (« Créer mon calendrier ») de s'enrouler
+   au lieu de déborder sur petit écran (les .sm-btn sont nowrap par défaut). */
+.qs-actions .sm-btn {
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+  height: auto;
+  min-height: 42px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  line-height: 1.25;
+}
 
 /* ── Écran de succès ───────────────────────────────────────── */
 .qs-success { text-align: center; }
@@ -321,7 +308,80 @@
   .qs-card { padding: 22px 20px 26px; border-radius: 18px; }
   .qs-title { font-size: 20px; }
   .qs-day { padding: 11px 0; font-size: 12px; }
+  /* Horaires : les deux champs (De / à) rétrécissent pour tenir sur une ligne
+     même sur petit téléphone (avant : min-width:120px fixe → débordement). */
+  .qs-hours { gap: 10px; }
+  .qs-hours .qs-field--inline { flex: 1; min-width: 0; }
+  .qs-input--time { min-width: 0; width: 100%; }
 }
 
 /* ── Thème sombre ──────────────────────────────────────────── */
 :root[data-theme="dark"] .qs-body { background: var(--surface, #0f1115); }
+
+/* ── Autocomplétion métier + saisie libre signalée ───────────────────────── */
+.qs-type-wrap { position: relative; }
+
+/* Dropdown de suggestions métiers */
+.qs-dd {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: none;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--surface-card, #fff);
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.2);
+  padding: 6px;
+}
+.qs-dd.is-open { display: block; animation: qsFade 0.16s ease both; }
+.qs-dd__item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--ink-2, #374151);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.1s;
+}
+.qs-dd__item:hover { background: var(--accent-soft, #f0fdf4); color: var(--accent-strong, #15803d); }
+
+/* Métier non reconnu : liseré orange sur le champ + message */
+.qs-input--custom {
+  border-color: #f97316 !important;
+  background: rgba(249, 115, 22, 0.05) !important;
+}
+.qs-type-warn {
+  display: none;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 8px 2px 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #b45309;
+}
+.qs-type-warn.is-visible { display: flex; }
+.qs-type-warn svg { flex-shrink: 0; margin-top: 1px; fill: #f97316; }
+
+/* Corps de l'avertissement métier : message + bouton de demande d'indexation */
+.qs-type-warn__body { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; min-width: 0; }
+.qs-type-req {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #ea580c;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-align: left;
+}
+.qs-type-req:hover { color: #c2410c; }
+.qs-type-req:disabled { color: #16a34a; text-decoration: none; cursor: default; font-weight: 700; }

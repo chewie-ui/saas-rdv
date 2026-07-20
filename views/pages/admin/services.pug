@@ -1,269 +1,313 @@
 extends ../../layouts/admin
 
 block links
+    //- On réutilise le CSS de « Clients » pour la barre d'outils + l'état vide
+    //- (rendu identique demandé), le CSS de l'ancienne page pour la modale riche
+    //- (palette de couleurs, image, catégories) + un petit CSS propre au tableau.
+    link(rel="stylesheet" href="/css/layouts/clients-hub.css")
     link(rel="stylesheet" href="/css/layouts/services.css")
+    link(rel="stylesheet" href="/css/layouts/services-v2.css")
 
 block content
-    - const canManageSvc = !!(permissions && permissions.services && permissions.services.manage)
-    .services-page
-        .services-page__header
-            .services-page__header-left
-                h2= t.services.title
-                p.services-page__subtitle= t.services.subtitle
-            .services-page__header-right
-                if maxServices > 0 && isFinite(maxServices)
-                    span.services-counter#svcCounter(class=(services.length >= maxServices ? 'services-counter--full' : '')) #{services.length} / #{maxServices}
-                if canManageSvc
-                    if services.length > 0 && maxServices > 0
-                        button.sm-btn.sm-btn--ghost#deactivateAllBtn
-                            span.material-symbols-outlined toggle_off
-                            span= t.services.deactivate_all || 'Désactiver tout'
-                    button.sm-btn.sm-btn--primary#addServiceBtn(disabled=(maxServices === 0 || services.length >= maxServices))
-                        if maxServices === 0
-                            span.material-symbols-outlined lock
-                        else
-                            span.material-symbols-outlined add
-                        span= t.services.add_btn
+    - var _count = (services && services.length) || 0
+    - var _max = (typeof maxServices !== 'undefined' && maxServices !== null) ? maxServices : Infinity
+    - var _atLimit = (_max === 0) || (isFinite(_max) && _count >= _max)
+    -
+        // Sérialisation JSON sûre pour <script> inline (échappe </script>, &, U+2028/2029).
+        function safeJson(o) { var BS = String.fromCharCode(92); return JSON.stringify(o).replace(new RegExp('[<>&' + String.fromCharCode(0x2028) + String.fromCharCode(0x2029) + ']', 'g'), function (c) { return BS + 'u' + ('000' + c.charCodeAt(0).toString(16)).slice(-4); }); }
+        // Données complètes de chaque service, pour pré-remplir la modale d'édition
+        // directement sur cette page (aucune redirection vers l'ancienne page).
+        var SVC_MAP = {};
+        (services || []).forEach(function (s) {
+            var sess = (s.sessions || []).map(function (ss) {
+                var iso = '';
+                try { iso = new Date(ss.date).toISOString().slice(0, 10); } catch (e) {}
+                return { date: iso, startTime: ss.startTime || '', endTime: ss.endTime || '' };
+            });
+            var rules = (s.questionRules || []).map(function (r) {
+                return { questionId: String(r.questionId || ''), optionIds: (r.optionIds || []).map(String) };
+            });
+            SVC_MAP[String(s._id)] = {
+                name: s.name || '', description: s.description || '', category: s.category || '',
+                price: (s.price !== null && s.price !== undefined) ? s.price : '',
+                duration: s.duration || 30, durationMax: s.durationMax || '',
+                color: s.color || '#1e7a4e', type: s.type || 'individual',
+                capacity: s.capacity || '', active: !!s.active, location: s.location || '',
+                image: s.image || '',
+                employees: (s.employees || []).map(function (e) { return String(e._id || e); }),
+                fee: s.cancellationFee || { enabled: false, type: 'percent', value: '' },
+                recurring: s.recurring || { enabled: false, weekdays: [], startTime: '' },
+                sessions: sess,
+                questionRules: rules
+            };
+        });
+        // Questionnaire (questions + réponses avec leurs _id) pour le ciblage.
+        var QUESTIONNAIRE = { enabled: !!(questionnaire && questionnaire.enabled), questions: [] };
+        ((questionnaire && questionnaire.questions) || []).forEach(function (q) {
+            if (!q._id) return; // sans _id stable (question migrée non enregistrée) → pas de ciblage
+            QUESTIONNAIRE.questions.push({
+                id: String(q._id), question: q.question || '',
+                options: (q.options || []).filter(function (o) { return o._id; }).map(function (o) {
+                    return { id: String(o._id), label: o.label || '' };
+                })
+            });
+        });
+        // Colonnes masquées par l'utilisateur (préférence persistée) — rendu direct.
+        var _hiddenCols = (typeof hiddenCols !== 'undefined' && Array.isArray(hiddenCols)) ? hiddenCols : [];
+        function _hid(c) { return _hiddenCols.indexOf(c) >= 0; }
+    .ch-page
+        .ch-head
+            span.ch-count #{_count} #{_count > 1 ? 'services' : 'service'}
+            if isFinite(_max) && _max > 0
+                span.sv2-plan(class=(_atLimit ? 'is-full' : '')) #{_count} / #{_max}
 
-        //- ── Plan limit banner ────────────────────────────────────
-        - var svcAtLimit = maxServices > 0 && services.length >= maxServices
-        if currentPlan === 'basic' && maxServices > 0
-            .plan-gate#serviceLimitBanner(style=!svcAtLimit ? 'display:none' : '')
-                span.plan-gate__lock 🔒
-                .plan-gate__body
-                    strong.plan-gate__title Limite atteinte — #{maxServices}/#{maxServices} services
-                    span.plan-gate__sub Disponible uniquement dans les plans Pro & Business.
-                a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
-        else if currentPlan === 'pro' && maxServices > 0
-            .plan-gate#serviceLimitBanner(style=!svcAtLimit ? 'display:none' : '')
-                span.plan-gate__lock 🔒
-                .plan-gate__body
-                    strong.plan-gate__title Limite Pro atteinte — #{maxServices}/#{maxServices} services
-                    span.plan-gate__sub Disponible uniquement dans le plan Business.
-                a.btn-upgrade-business.plan-gate__cta(href="/subscription") Passer au Business →
-        else if currentPlan === 'business' && maxServices > 0
-            .plan-gate#serviceLimitBanner(style=!svcAtLimit ? 'display:none' : '')
-                span.plan-gate__lock 🔒
-                .plan-gate__body
-                    strong.plan-gate__title Limite maximale atteinte — #{maxServices}/#{maxServices} services
-                    span.plan-gate__sub Vous avez atteint la limite de votre plan Business.
+        //- ── Limite du plan atteinte ─────────────────────────────────
+        if _atLimit
+            .sv2-limit
+                span.material-symbols-outlined info
+                if _max === 0
+                    span Votre plan ne permet pas de créer des services. Passez à un plan supérieur pour en ajouter.
+                else
+                    span Limite de votre plan atteinte (#{_max} services). Passez à un plan supérieur pour en ajouter davantage.
 
-        if services.length === 0
-            .services-empty
-                span.material-symbols-outlined(style="font-size:48px") list_alt
-                p= t.services.empty
-                if maxServices === 0
-                    .plan-gate
-                        span.plan-gate__lock 🔒
-                        .plan-gate__body
-                            strong.plan-gate__title Services
-                            span.plan-gate__sub Disponible uniquement dans les plans Pro & Business.
-                        a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
-                else if svcAtLimit
-                    .plan-gate
-                        span.plan-gate__lock 🔒
-                        .plan-gate__body
-                            strong.plan-gate__title Limite gratuit atteinte — #{services.length}/#{maxServices} services
-                            span.plan-gate__sub Passez au plan Pro pour créer jusqu'à 20 services.
-                        a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
-
-        //- ── Passerelle vers "Cours collectifs" — un service ici reste un
-        //- rendez-vous individuel classique. Pour un atelier/cours à plusieurs
-        //- dates et places limitées (1/7 19h-20h, 5/7 12h-13h, max 5 places...),
-        //- c'est une page dédiée qui gère ça (planning récurrent OU dates
-        //- ponctuelles) — sans ce lien, on ne la trouve pas en partant d'ici.
-        if !adminFeatures || adminFeatures.group_sessions !== false
-            a.svc-gs-banner(href="/group-sessions")
-                .svc-gs-banner__icon
-                    span.material-symbols-outlined groups
-                .svc-gs-banner__text
-                    strong= t.services.gs_banner_title
-                    span= t.services.gs_banner_sub
-                span.material-symbols-outlined.svc-gs-banner__arrow arrow_forward
-
-        //- ── Question préalable au choix du service ──────────────────────────
-        .bq-card
-            .bq-card__hd
-                .bq-card__title-row
-                    span.material-symbols-outlined.bq-card__icon help
-                    span.bq-card__title= t.services.bq_title
-                label.sa-toggle
-                    input#bqEnabled(type="checkbox" checked=(bookingQuestion && bookingQuestion.enabled))
-                    .sa-toggle__track
-            p.bq-card__sub
-                | !{t.services.bq_card_sub.replace('{clientTermPlural}', clientTermPlural || 'clients')}
-            - var bq = bookingQuestion || {}
-            #bqRow(style=(bq.enabled ? '' : 'display:none'))
-                .field
-                    label= t.services.bq_question_label
-                    input.input#bqQuestionInput(type="text" maxlength="200" placeholder="Ex: Est-ce la première fois que vous nous consultez ?" value=bq.question)
-                .field-row
-                    .field
-                        label= t.services.bq_new_label
-                        input.input#bqNewLabelInput(type="text" maxlength="80" placeholder="Ex: Oui, je suis nouveau" value=bq.newLabel)
-                    .field
-                        label= t.services.bq_existing_label
-                        input.input#bqExistingLabelInput(type="text" maxlength="80" placeholder="Ex: Non, j'ai déjà consulté" value=bq.existingLabel)
-
-        .services-list#servicesList
-            each svc in services
-                -
-                    var _catObj = svc.category ? categories.find(function(c){ return c.name === svc.category; }) : null
-                    var _catIcon = _catObj && _catObj.icon ? _catObj.icon : ''
-                .service-card(data-id=String(svc._id) data-category=svc.category || '' data-type=(svc.type || 'individual') data-capacity=(svc.capacity || '') data-color=(svc.color || '') data-fee-enabled=(svc.cancellationFee && svc.cancellationFee.enabled ? '1' : '0') data-fee-type=(svc.cancellationFee && svc.cancellationFee.type || 'percent') data-fee-value=(svc.cancellationFee && svc.cancellationFee.value !== null && svc.cancellationFee.value !== undefined ? svc.cancellationFee.value : '') data-answer-visibility=(svc.answerVisibility || 'all') data-duration-max=(svc.durationMax || '') data-image=(svc.image || '') class=(!svc.active ? 'service-card--inactive' : ''))
-                    if svc.image
-                        .service-card__img
-                            img(src=`/uploads/profiles/${svc.image}` alt=svc.name loading="lazy")
-                    .service-card__header
-                        .service-card__name-row
-                            h3.service-card__name
-                                span.service-card__color-dot(style=`background:${svc.color || '#1e7a4e'}`)
-                                = svc.name
-                            .service-card__badges
-                                if svc.category
-                                    span.badge.badge--category
-                                        if _catIcon
-                                            span.badge-cat-icon= _catIcon + ' '
-                                        = svc.category
-                                if svc.price !== null && svc.price !== undefined
-                                    span.badge.badge--price #{svc.price}€
-                                span.badge.badge--duration #{svc.durationMax && svc.durationMax > svc.duration ? `${svc.duration}-${svc.durationMax} min` : `${svc.duration} min`}
-                                if svc.type === 'group'
-                                    span.badge.badge--group #{svc.capacity} places
-                                if svc.cancellationFee && svc.cancellationFee.enabled
-                                    span.badge.badge--fee
-                                        = svc.cancellationFee.type === 'amount' ? `Annulation: ${svc.cancellationFee.value}€` : `Annulation: ${svc.cancellationFee.value}%`
-                                if svc.answerVisibility && svc.answerVisibility !== 'all'
-                                    span.badge.badge--category(title=t.services.visibility_hint)
-                                        = svc.answerVisibility === 'new' ? ((bookingQuestion && bookingQuestion.newLabel) || 'Nouveau') : ((bookingQuestion && bookingQuestion.existingLabel) || 'Déjà venu')
-                        .service-card__actions
-                            if canManageSvc
-                                label.sa-toggle(title=(svc.active ? t.services.deactivate : t.services.activate))
-                                    input.toggle-active(type="checkbox" checked=svc.active data-id=String(svc._id))
-                                    .sa-toggle__track
-                                button.btn.btn--icon.edit-service-btn(data-id=String(svc._id) title=t.services.modal_edit)
-                                    span.material-symbols-outlined edit
-                                button.btn.btn--icon.btn--danger.delete-service-btn(data-id=String(svc._id) title=t.services.delete)
+        //- ── Questionnaire de réservation (multi-questions) ──────────
+        - var _q = questionnaire || { enabled: false, questions: [] }
+        .sq-block(class=(_q.enabled ? '' : 'is-off'))
+            .sq-head
+                .sq-head__l
+                    span.sq-head__ic.material-symbols-outlined quiz
+                    div
+                        .sq-title Questionnaire de réservation
+                        .sq-sub Posez une ou plusieurs questions au client avant qu'il choisisse. Ensuite, ouvrez un service (bouton #[b Modifier]) puis, dans #[b « Afficher ce service pour »], choisissez les réponses qui lui correspondent (ex : « Femme »). « Tous » = visible quelle que soit la réponse.
+                label.sq-switch
+                    input#sqEnabled(type="checkbox" checked=_q.enabled)
+                    span.sq-switch__track
+            .sq-body
+                .sq-list#sqList
+                    each q in (_q.questions || [])
+                        .sq-question(data-qid=(q._id || ''))
+                            .sq-question__hd
+                                input.sq-qinput(type="text" value=q.question placeholder="Votre question… (ex : Êtes-vous déjà venu ?)")
+                                button.sq-qdel(type="button" title="Supprimer la question")
                                     span.material-symbols-outlined delete
-                    hr.service-card__divider
-                    if svc.description
-                        p.service-card__desc= svc.description
-                    .service-card__employees
-                        .service-card__employees-label
-                            span.material-symbols-outlined group
-                            span.service-card__employees-title= t.services.employees_label
-                        .service-card__employees-list
-                            if svc.employees && svc.employees.length > 0
-                                each emp in svc.employees
-                                    .emp-chip
-                                        - var empName = emp.fullName || ''
-                                        img(src=emp.profilePicture alt=empName)
-                                        span= empName
-                            else
-                                span.service-card__employees-none= t.services.employees_all
-                        if canManageSvc
-                            button.sm-btn.sm-btn--ghost.manage-employees-btn(data-id=String(svc._id) data-name=svc.name)
-                                span= t.services.employees_manage
+                            .sq-options
+                                each o in (q.options || [])
+                                    .sq-optrow(data-oid=(o._id || ''))
+                                        input.sq-optinput(type="text" value=o.label placeholder="Réponse…")
+                                        button.sq-optdel(type="button" title="Retirer cette réponse")
+                                            span.material-symbols-outlined close
+                                button.sq-addopt-btn(type="button")
+                                    span.material-symbols-outlined add
+                                    | Ajouter une réponse
+                button.sq-addq#sqAddQ(type="button")
+                    span.material-symbols-outlined add
+                    | Ajouter une question
+                .sq-foot
+                    span.sq-saveind#sqSaveInd
+                    button.sm-btn.sm-btn--primary#sqSave(type="button") Enregistrer le questionnaire
 
-            //- ── Add service card ──────────────────────────────────────────────
-            if canManageSvc
-                - var atLimit = maxServices === 0 || services.length >= maxServices
-                button.svc-card.svc-card--invite#addServiceCardBtn(type="button" class=atLimit ? 'svc-card--locked-invite' : '')
-                    .emp-invite__icon
-                        if maxServices === 0
-                            span.material-symbols-outlined lock
-                        else
+            //- Gabarits clonés par le JS. Une nouvelle question part avec 2 réponses vides.
+            template#sqQTpl
+                .sq-question(data-qid="")
+                    .sq-question__hd
+                        input.sq-qinput(type="text" placeholder="Votre question… (ex : Êtes-vous déjà venu ?)")
+                        button.sq-qdel(type="button" title="Supprimer la question")
+                            span.material-symbols-outlined delete
+                    .sq-options
+                        .sq-optrow(data-oid="")
+                            input.sq-optinput(type="text" placeholder="Réponse…")
+                            button.sq-optdel(type="button" title="Retirer cette réponse")
+                                span.material-symbols-outlined close
+                        .sq-optrow(data-oid="")
+                            input.sq-optinput(type="text" placeholder="Réponse…")
+                            button.sq-optdel(type="button" title="Retirer cette réponse")
+                                span.material-symbols-outlined close
+                        button.sq-addopt-btn(type="button")
                             span.material-symbols-outlined add
-                    .emp-invite__title= t.services.add_btn || 'Ajouter un service'
-                    if maxServices === 0
-                        .emp-invite__upgrade
-                            a.btn-upgrade-pro(href="/subscription")= t.services.upgrade_cta
-                    else if services.length >= maxServices
-                        p.emp-invite__desc= t.services.limit_reached_desc
-                    else
-                        p.emp-invite__desc= t.services.invite_desc
+                            | Ajouter une réponse
+            template#sqOptTpl
+                .sq-optrow(data-oid="")
+                    input.sq-optinput(type="text" placeholder="Réponse…")
+                    button.sq-optdel(type="button" title="Retirer cette réponse")
+                        span.material-symbols-outlined close
 
-    //- ── Panneau : Gérer les catégories ──────────────────────────────────────
-    if categories && categories.length > 0
-        .cat-manage-panel#catManagePanel
-            .cat-manage-panel__header
-                .cat-manage-panel__title
-                    span.material-symbols-outlined category
-                    span= t.services.categories_title
-                span.cat-manage-panel__hint= t.services.categories_hint
+        //- ── Barre d'outils (façon Clients / image de réf.) ──────────
+        .ch-toolbar-wrap
+            .ch-toolbar
+                .ch-search
+                    span.ch-search__icon.material-symbols-outlined search
+                    input#sv2Search.ch-search__input(type="text" placeholder="Rechercher un service…" autocomplete="off")
+                .ch-toolbar__actions
+                    //- Affichage : colonnes visibles
+                    .ch-dd
+                        button.ch-tbtn#sv2DispBtn(type="button")
+                            span.material-symbols-outlined(style="font-size:18px") grid_view
+                            span Affichage
+                            span.material-symbols-outlined.ch-tbtn__caret(style="font-size:18px") expand_more
+                        .ch-dd__menu#sv2DispMenu(hidden)
+                            .ch-dd__label Colonnes affichées
+                            label.ch-dd__check
+                                input(type="checkbox" data-col="type" checked=!_hid('type'))
+                                span Type
+                            label.ch-dd__check
+                                input(type="checkbox" data-col="emp" checked=!_hid('emp'))
+                                span Employé autorisé
+                            label.ch-dd__check
+                                input(type="checkbox" data-col="dur" checked=!_hid('dur'))
+                                span Durée
+                            label.ch-dd__check
+                                input(type="checkbox" data-col="price" checked=!_hid('price'))
+                                span Prix
+                            label.ch-dd__check
+                                input(type="checkbox" data-col="status" checked=!_hid('status'))
+                                span Statut
+                    //- Trier
+                    .ch-dd
+                        button.ch-tbtn#sv2SortBtn(type="button")
+                            span.material-symbols-outlined(style="font-size:18px") swap_vert
+                            span Trier
+                            span.material-symbols-outlined.ch-tbtn__caret(style="font-size:18px") expand_more
+                        .ch-dd__menu#sv2SortMenu(hidden)
+                            button.ch-dd__opt.is-active(type="button" data-sort="default") Ordre par défaut
+                            button.ch-dd__opt(type="button" data-sort="name-asc") Nom (A → Z)
+                            button.ch-dd__opt(type="button" data-sort="name-desc") Nom (Z → A)
+                            button.ch-dd__opt(type="button" data-sort="price-asc") Prix (croissant)
+                            button.ch-dd__opt(type="button" data-sort="price-desc") Prix (décroissant)
+                            button.ch-dd__opt(type="button" data-sort="dur-asc") Durée (courte → longue)
+                            button.ch-dd__opt(type="button" data-sort="dur-desc") Durée (longue → courte)
+                    //- Filtres
+                    .ch-dd
+                        button.ch-tbtn#sv2FilterBtn(type="button")
+                            span.material-symbols-outlined(style="font-size:18px") filter_list
+                            span Filtres
+                            span.ch-tbtn__badge#sv2FilterBadge(hidden)
+                        .ch-dd__menu#sv2FilterMenu(hidden)
+                            .ch-dd__label Type
+                            label.ch-dd__check
+                                input(type="checkbox" data-ftype="service" checked)
+                                span Service
+                            label.ch-dd__check
+                                input(type="checkbox" data-ftype="group" checked)
+                                span Cours collectif
+                            .ch-dd__label Statut
+                            label.ch-dd__check
+                                input(type="checkbox" data-fstatus="active" checked)
+                                span Actif
+                            label.ch-dd__check
+                                input(type="checkbox" data-fstatus="inactive" checked)
+                                span Inactif
+                    .sv2-newwrap
+                        button.sm-btn.sm-btn--primary#sv2NewBtn(type="button" disabled=_atLimit title=(_atLimit ? 'Limite de votre plan atteinte' : ''))
+                            span.material-symbols-outlined(style="font-size:18px") add
+                            span Nouveau
+                            span.material-symbols-outlined(style="font-size:18px") expand_more
+                        .sv2-newmenu#sv2NewMenu(hidden)
+                            button.sv2-newmenu__item(type="button" data-new="service")
+                                span.sv2-newmenu__ic.material-symbols-outlined sell
+                                span
+                                    span.sv2-newmenu__t Service
+                                    span.sv2-newmenu__d Prestation individuelle
+                            button.sv2-newmenu__item(type="button" data-new="course")
+                                span.sv2-newmenu__ic.material-symbols-outlined groups
+                                span
+                                    span.sv2-newmenu__t Cours collectif
+                                    span.sv2-newmenu__d Plusieurs participants, récurrent ou par dates
 
-            //- Style picker
-            .cat-style-picker
-                button.cat-style-opt#styleOptPills(type="button" data-style="pills")
-                    span.material-symbols-outlined stadium
-                    span= t.services.style_pills
-                button.cat-style-opt#styleOptAccordion(type="button" data-style="accordion")
-                    span.material-symbols-outlined view_agenda
-                    span= t.services.style_accordion
-                button.cat-style-opt#styleOptGrid(type="button" data-style="grid")
-                    span.material-symbols-outlined grid_view
-                    span= t.services.style_sections
+        //- ── État vide (IDENTIQUE à la page Clients) ─────────────────
+        if !services || services.length === 0
+            .ch-empty
+                span.ch-empty__icon.material-symbols-outlined design_services
+                p.ch-empty__title Aucun service
+                p.ch-empty__sub Ajoutez votre premier service pour commencer.
+                a.sm-btn.sm-btn--primary(href="/services")
+                    span.material-symbols-outlined(style="font-size:18px") add
+                    span Ajouter un service
+        else
+            //- ── Tableau des services ────────────────────────────────
+            .sv2-table-wrap
+                table.sv2-table
+                    thead
+                        tr
+                            th.sv2-th--name Service
+                            th(data-col="type" style=(_hid('type') ? 'display:none' : null)) Type
+                            th(data-col="emp" style=(_hid('emp') ? 'display:none' : null)) Employé autorisé
+                            th(data-col="dur" style=(_hid('dur') ? 'display:none' : null)) Durée
+                            th(data-col="price" style=(_hid('price') ? 'display:none' : null)) Prix
+                            th(data-col="status" style=(_hid('status') ? 'display:none' : null)) Statut
+                            th.sv2-th--act Actions
+                    tbody#sv2Body
+                        each svc in services
+                            - var _dur = svc.duration ? (svc.durationMax && svc.durationMax > svc.duration ? (svc.duration + '–' + svc.durationMax + ' min') : (svc.duration + ' min')) : '—'
+                            tr.sv2-row(data-name=(svc.name || '').toLowerCase() data-type=(svc.type === 'group' ? 'group' : 'service') data-active=(svc.active ? '1' : '0') data-price=(svc.price !== null && svc.price !== undefined ? svc.price : '') data-dur=(svc.duration || 0) class=(!svc.active ? 'sv2-row--inactive' : ''))
+                                td.sv2-td--name
+                                    span.sv2-dot(style=`background:${svc.color || '#1e7a4e'}`)
+                                    span.sv2-name= svc.name
+                                    if svc.type === 'group'
+                                        span.sv2-tag.sv2-tag--group #{svc.capacity} places
+                                td(data-col="type" style=(_hid('type') ? 'display:none' : null))
+                                    if svc.type === 'group'
+                                        span.sv2-type.sv2-type--group
+                                            span.material-symbols-outlined groups
+                                            | Cours collectif
+                                    else
+                                        span.sv2-type
+                                            span.material-symbols-outlined sell
+                                            | Service
+                                td(data-col="emp" style=(_hid('emp') ? 'display:none' : null))
+                                    if svc.employees && svc.employees.length
+                                        .sv2-emps
+                                            each emp, i in svc.employees
+                                                if i < 5
+                                                    - var _ini = (emp.fullName || '?').trim().split(/\s+/).map(function (w) { return w.charAt(0); }).slice(0, 2).join('').toUpperCase()
+                                                    if emp.profilePicture
+                                                        img.sv2-av(src=`/uploads/profiles/${emp.profilePicture}` alt=emp.fullName title=emp.fullName loading="lazy")
+                                                    else
+                                                        span.sv2-av.sv2-av--txt(title=emp.fullName)= _ini
+                                            if svc.employees.length > 5
+                                                span.sv2-av.sv2-av--more +#{svc.employees.length - 5}
+                                    else
+                                        span.sv2-all Tous les employés
+                                td.sv2-td--dur(data-col="dur" style=(_hid('dur') ? 'display:none' : null))= _dur
+                                td.sv2-td--price(data-col="price" style=(_hid('price') ? 'display:none' : null))
+                                    if svc.price !== null && svc.price !== undefined
+                                        = svc.price + '€'
+                                    else
+                                        = '—'
+                                td(data-col="status" style=(_hid('status') ? 'display:none' : null))
+                                    .sv2-statuscell
+                                        label.sa-toggle.sv2-toggle(title="Activer / désactiver ce service")
+                                            input.sv2-toggle-cb(type="checkbox" checked=svc.active data-id=String(svc._id))
+                                            .sa-toggle__track
+                                        span.sv2-status(class=svc.active ? 'is-on' : 'is-off')
+                                            span.sv2-status__dot
+                                            = svc.active ? 'Actif' : 'Inactif'
+                                td.sv2-td--act
+                                    button.sv2-iconbtn.sv2-edit(type="button" title="Modifier" data-id=String(svc._id) data-type=(svc.type === 'group' ? 'group' : 'service'))
+                                        span.material-symbols-outlined edit
+                                    button.sv2-iconbtn.sv2-iconbtn--danger.sv2-del(type="button" title="Supprimer" data-id=String(svc._id) data-name=svc.name data-type=(svc.type || 'individual'))
+                                        span.material-symbols-outlined delete
+            .ch-empty.ch-empty--search#sv2NoResult(style="display:none")
+                span.ch-empty__icon.material-symbols-outlined search_off
+                p.ch-empty__title Aucun résultat
+                p.ch-empty__sub Aucun service ne correspond à votre recherche.
 
-            //- Category list (reorderable)
-            ul.cat-order-list#catOrderList
-                each cat in categories
-                    li.cat-order-item(data-name=cat.name)
-                        span.cat-order-item__grip
-                            span.material-symbols-outlined(style="font-size:18px") drag_indicator
-                        if cat.icon
-                            span.cat-order-item__icon= cat.icon
-                        span.cat-order-item__name= cat.name
-                        .cat-order-item__btns
-                            button.cat-order-btn(type="button" data-dir="up" title=t.services.cat_btn_up)
-                                span.material-symbols-outlined arrow_upward
-                            button.cat-order-btn(type="button" data-dir="down" title=t.services.cat_btn_down)
-                                span.material-symbols-outlined arrow_downward
-                            button.cat-order-btn.cat-edit-btn(type="button" title=t.services.cat_btn_edit)
-                                span.material-symbols-outlined edit
-                            button.cat-order-btn.cat-delete-btn(type="button" title=t.services.cat_btn_delete)
-                                span.material-symbols-outlined delete
-
-            .cat-manage-panel__footer
-                button.sm-btn.sm-btn--primary#saveCatSettingsBtn(type="button")
-                    span.material-symbols-outlined check
-                    span= t.services.save
-                span.cat-manage-panel__status#catSaveStatus
-
-    //- ── Modal : Modifier une catégorie ─────────────────────────────────────
-    .modal-overlay#editCatModalOverlay
-    .service-modal#editCatModal
-        .service-modal__header
-            h2.service-modal__title= t.services.edit_category_title
-            button.service-modal__close#closeEditCatModal(type="button")
-                span.material-symbols-outlined close
-        .service-modal__body
-            input(type="hidden" id="editCatOldName")
-            .form-group
-                label(for="editCatName")= t.services.new_category_name
-                input.form-input#editCatName(type="text" placeholder="Ex: Coiffure" autocomplete="off")
-            .form-group
-                label= t.services.cat_icon_label
-                input(type="hidden" id="editCatIconInput")
-                .cat-icon-picker#editCatIconPicker
-        .service-modal__footer
-            button.sm-btn.sm-btn--ghost#cancelEditCatModal(type="button")= t.services.cancel
-            button.sm-btn.sm-btn--primary#saveEditCatBtn(type="button")
-                span.material-symbols-outlined check
-                span= t.services.save
-
-    //- ── Modal : Créer / Modifier un service ──────────────────────────────────
+    //- ══════════ Modale « Nouveau service » ══════════
+    //- Modale « Service » riche (image, catégorie+emoji, palette de couleurs,
+    //- ciblage par question, frais) — reprend l'ancienne, inline sur cette page.
     .modal-overlay#serviceModalOverlay
     .service-modal#serviceModal
         .service-modal__header
             h3#serviceModalTitle= t.services.modal_new
-            button.modal-close#closeServiceModal
+            button.modal-close#closeServiceModal(type="button")
                 span.material-symbols-outlined close
         .service-modal__body
             input(type="hidden" id="serviceModalId")
             .service-modal__cols
                 //- ── Colonne gauche : identité du service ────────────────────
                 .service-modal__col
-                    //- Image optionnelle
+                    .field
+                        label= t.services.service_name
+                        input.input#serviceModalName(placeholder="Ex : Coupe simple, Massage détente…")
                     .field
                         label Image du service #[span.xs-comment= t.services.img_optional]
                         .svc-img-upload#svcImgUpload
@@ -274,54 +318,54 @@ block content
                             input.svc-img-upload__input#svcImgInput(type="file" accept="image/*" style="display:none")
                             button.svc-img-upload__remove#svcImgRemove(type="button" style="display:none")= t.services.img_remove
                     .field
-                        label= t.services.service_name
-                        input.input#serviceModalName(placeholder="Ex: Coupe simple, Massage détente...")
-                    .field
                         label= t.services.service_category
                         select.input#serviceModalCategory
-                            //- Populated by JS from window.__categories
                     #newCategorySection(style="display:none")
                         .field
                             label= t.services.new_category_name
-                            input.input#newCategoryName(type="text" placeholder="Ex: Cheveux, Corps, Visage...")
+                            input.input#newCategoryName(type="text" placeholder="Ex : Cheveux, Corps, Visage…")
                         .field
                             label= t.services.new_category_icon
                             input(type="hidden" id="newCategoryIconInput")
                             .cat-icon-picker#catIconPicker
                     .field
                         label= t.services.service_desc
-                        textarea.textarea#serviceModalDesc(placeholder="..." rows=3)
+                        textarea.textarea#serviceModalDesc(rows=3 placeholder="…")
                     .field-row
                         .field
                             label= t.services.service_price
-                            input.input#serviceModalPrice(type="number" min="0" step="0.5" placeholder="Ex: 25")
+                            input.input#serviceModalPrice(type="number" min="0" step="0.5" placeholder="Ex : 25")
                         .field
                             label= t.services.service_duration
                             input.input#serviceModalDuration(type="number" min="5" step="5" placeholder="30")
                     .field
                         label.svc-fee-label
                             span= t.services.duration_range_label
-                                |  
+                                |
                                 span.xs-comment= t.services.duration_range_hint
                             label.sa-toggle
                                 input#serviceModalDurationRangeEnabled(type="checkbox")
                                 .sa-toggle__track
                         #svcDurationMaxRow(style="display:none")
                             label= t.services.duration_max_label
-                            input.input#serviceModalDurationMax(type="number" min="5" step="5" placeholder="Ex: 40")
+                            input.input#serviceModalDurationMax(type="number" min="5" step="5" placeholder="Ex : 40")
                     .field
                         label= t.services.color_label
                         input(type="hidden" id="serviceModalColor")
                         .svc-color-picker#svcColorPicker
-
-                //- ── Colonne droite : réservation & frais ─────────────────────
+                //- ── Colonne droite : statut + ciblage + frais ────────────────
                 .service-modal__col
-                    .field#svcAnswerVisibilityField(style=((bookingQuestion && bookingQuestion.enabled) ? '' : 'display:none'))
-                        label= t.services.answer_visibility_label
-                        .svc-answer-options#svcAnswerOptions
-                            button.svc-answer-opt.is-active(type="button" data-value="all")= t.services.answer_all
-                            button.svc-answer-opt(type="button" data-value="new")= (bookingQuestion && bookingQuestion.newLabel) || t.services.answer_opt_new_default
-                            button.svc-answer-opt(type="button" data-value="existing")= (bookingQuestion && bookingQuestion.existingLabel) || t.services.answer_opt_existing_default
+                    .field
+                        label.svc-fee-label
+                            span Statut du service
+                            label.sa-toggle
+                                input#serviceModalActive(type="checkbox" checked)
+                                .sa-toggle__track
+                        p.xs-comment#svcActiveHint Service actif — visible et réservable par les clients.
+                    .field#svcTargetingField(style="display:none")
+                        label Afficher ce service pour
+                        p.xs-comment Selon la réponse du client au questionnaire, ce service lui est proposé ou non. « Tous » = visible quelle que soit la réponse.
+                        .svc-targeting#svcTargeting
                     .field
                         label.svc-fee-label
                             span= t.services.fee_label
@@ -338,42 +382,717 @@ block content
                                     span.svc-type-option__title €
                                     span.svc-type-option__desc= t.services.fee_amount_desc
                             .field
-                                input.input#serviceModalFeeValue(type="number" min="0" step="0.5" placeholder="Ex: 30")
+                                input.input#serviceModalFeeValue(type="number" min="0" step="0.5" placeholder="Ex : 30")
+            p.sv2-modal-err#svcErr(hidden)
         .service-modal__footer
-            button.sm-btn.sm-btn--ghost#cancelServiceModal
+            button.sm-btn.sm-btn--ghost#cancelServiceModal(type="button")
                 span= t.services.cancel
-            button.sm-btn.sm-btn--primary#saveServiceBtn
+            button.sm-btn.sm-btn--primary#saveServiceBtn(type="button")
                 span= t.services.save
 
-    //- ── Modal : Gérer les employés d'un service ─────────────────────────────
-    .modal-overlay#empModalOverlay
-    .service-modal#empModal
+    //- ══════════ Modale « Cours collectif » (riche, 2 colonnes) ══════════
+    .modal-overlay#courseModalOverlay
+    .service-modal#courseModal
         .service-modal__header
-            h3#empModalTitle= t.services.employees_modal_title
-                |  —
-                span#empModalServiceName
-            button.modal-close#closeEmpModal.btn--icon
+            h3#crsModalTitle Nouveau cours collectif
+            button.modal-close#closeCourseModal(type="button")
                 span.material-symbols-outlined close
         .service-modal__body
-            p.xs-comment= t.services.employees_modal_sub
-            #empList.emp-select-list
-                //- Injecté par JS
+            .service-modal__cols
+                //- ── Colonne gauche : identité ────────────────────────────
+                .service-modal__col
+                    .field
+                        label Nom du cours *
+                        input.input#crsName(type="text" placeholder="Ex : Yoga, Pilates, Cross-training…")
+                    .field
+                        label Description
+                        textarea.input.textarea#crsDesc(rows="3" placeholder="Quelques mots pour décrire le cours…")
+                    .field-row
+                        .field
+                            label Prix (€)
+                            input.input#crsPrice(type="number" min="0" step="0.5" placeholder="Ex : 15")
+                        .field
+                            label Durée (min) *
+                            input.input#crsDuration(type="number" min="5" step="5" value="60")
+                        .field
+                            label Places *
+                            input.input#crsCapacity(type="number" min="1" max="500" value="10")
+                    .field
+                        label Lieu (optionnel)
+                        input.input#crsLocation(type="text" placeholder="Laissez vide pour utiliser votre adresse habituelle")
+                    if employees && employees.length > 0
+                        .field
+                            label.svc-fee-label
+                                span CE COURS A UN OU PLUSIEURS EMPLOYÉS ASSIGNÉS ?
+                                label.sa-toggle
+                                    input#crsHasEmployees(type="checkbox")
+                                    .sa-toggle__track
+                            p.xs-comment Si activé, seuls les employés cochés seront indisponibles pour d'autres RDV sur ce créneau — les autres restent réservables normalement.
+                            #crsEmployeesField(style="display:none")
+                                .crs-emp-list#crsEmployeeList
+                                    each emp in employees
+                                        - var _en = ((emp.firstName || '') + ' ' + (emp.lastName || '')).trim() || emp.fullName || 'Employé'
+                                        - var _ei = _en.split(/\s+/).map(function(w){ return w.charAt(0); }).slice(0,2).join('').toUpperCase()
+                                        label.crs-emp-chip
+                                            input(type="checkbox" value=String(emp._id))
+                                            if emp.profilePicture
+                                                img.crs-emp-chip__av(src=emp.profilePicture alt="" loading="lazy")
+                                            else
+                                                span.crs-emp-chip__av.crs-emp-chip__av--txt= _ei
+                                            span.crs-emp-chip__name= _en
+                    else
+                        p.xs-comment Ajoutez des collaborateurs (page Collaborateurs) pour pouvoir les assigner à un cours.
+                //- ── Colonne droite : planification ───────────────────────
+                .service-modal__col
+                    .field
+                        label Mode de planification
+                        .svc-type-options#crsMode
+                            button.svc-type-option.is-active(type="button" data-mode="recurring")
+                                span.svc-type-option__title Cours récurrent
+                                span.svc-type-option__desc Se répète chaque semaine, mêmes jours et heure
+                            button.svc-type-option(type="button" data-mode="fixed")
+                                span.svc-type-option__title Dates ponctuelles
+                                span.svc-type-option__desc Chaque séance a sa propre date et son horaire
+                    #crsRecurring
+                        .field
+                            label Jour(s) de la semaine *
+                            .sv2-weekdays#crsWeekdays
+                                button.sv2-wd(type="button" data-day="1") Lu
+                                button.sv2-wd(type="button" data-day="2") Ma
+                                button.sv2-wd(type="button" data-day="3") Me
+                                button.sv2-wd(type="button" data-day="4") Je
+                                button.sv2-wd(type="button" data-day="5") Ve
+                                button.sv2-wd(type="button" data-day="6") Sa
+                                button.sv2-wd(type="button" data-day="0") Di
+                        .field
+                            label Heure *
+                            input.input#crsTime(type="time")
+                    #crsFixed(style="display:none")
+                        .field
+                            label Dates programmées *
+                            .sv2-sessions#crsSessions
+                            .sv2-addsession
+                                input.input#crsSesDate(type="date")
+                                input.input#crsSesStart(type="time")
+                                input.input#crsSesEnd(type="time")
+                                button.sm-btn.sm-btn--ghost#crsAddSession(type="button") + Ajouter
+                            p.xs-comment Ajoutez une ou plusieurs dates — vos clients choisiront parmi ces dates.
+            p.sv2-modal-err#crsErr(hidden)
         .service-modal__footer
-            button.sm-btn.sm-btn--ghost#cancelEmpModal
-                span= t.services.cancel
-            button.sm-btn.sm-btn--primary#saveEmpBtn
-                span= t.services.save
+            button.sm-btn.sm-btn--ghost#cancelCourseModal(type="button") Annuler
+            button.sm-btn.sm-btn--primary#crsSave(type="button") Créer le cours
 
-block scripts
-    script.
-        window.__maxServices    = !{maxServices || 0};
-        window.__svcCount       = !{services.length || 0};
-        window.__serviceColors  = !{JSON.stringify(services.map(function(s){ return { id: String(s._id), color: s.color || '' }; }))};
-        window.__categories     = !{JSON.stringify(categories || [])};
-        window.__t_no_category      = !{JSON.stringify(t.services.no_category     || 'Aucune catégorie')};
-        window.__t_create_category  = !{JSON.stringify(t.services.create_category || '+ Créer une catégorie')};
-        window.__t_new_cat_name     = !{JSON.stringify(t.services.new_category_name || 'Nom de la catégorie')};
-        window.__bookingCategoryStyle = !{JSON.stringify(bookingCategoryStyle || 'pills')};
-        window.__bookingQuestion = !{JSON.stringify(bookingQuestion || { enabled: false, question: '', options: [] })};
     script(src="/js/utils/confirm-modal.js")
-    script(src="/js/layouts/services.js")
+    script.
+        (function () {
+            // ── Recherche + Filtres + Tri + Affichage (colonnes) ──────
+            var search = document.getElementById('sv2Search');
+            var body = document.getElementById('sv2Body');
+            var noRes = document.getElementById('sv2NoResult');
+            var wrap = document.querySelector('.sv2-table-wrap');
+            var countEl = document.querySelector('.ch-count');
+            function rowsNow() { return body ? Array.prototype.slice.call(body.querySelectorAll('.sv2-row')) : []; }
+
+            // Ouverture/fermeture propre des menus de la barre d'outils.
+            function closeToolMenus(except) {
+                document.querySelectorAll('.ch-toolbar__actions .ch-dd__menu').forEach(function (m) { if (m !== except) m.hidden = true; });
+            }
+            document.querySelectorAll('.ch-toolbar__actions .ch-dd').forEach(function (dd) {
+                var btn = dd.querySelector('.ch-tbtn'), menu = dd.querySelector('.ch-dd__menu');
+                if (!btn || !menu) return;
+                btn.addEventListener('click', function (e) { e.stopPropagation(); var open = menu.hidden; closeToolMenus(open ? menu : null); menu.hidden = !open; });
+                menu.addEventListener('click', function (e) { e.stopPropagation(); });
+            });
+            document.addEventListener('click', function () { closeToolMenus(null); });
+
+            // Recherche + filtres → visibilité des lignes + état vide + badge.
+            function applyView() {
+                var q = search ? search.value.trim().toLowerCase() : '';
+                var types = {}, stats = {}, off = 0;
+                document.querySelectorAll('#sv2FilterMenu input[data-ftype]').forEach(function (c) { types[c.dataset.ftype] = c.checked; if (!c.checked) off++; });
+                document.querySelectorAll('#sv2FilterMenu input[data-fstatus]').forEach(function (c) { stats[c.dataset.fstatus] = c.checked; if (!c.checked) off++; });
+                var badge = document.getElementById('sv2FilterBadge');
+                if (badge) { badge.hidden = off === 0; badge.textContent = off; }
+                var n = 0;
+                rowsNow().forEach(function (r) {
+                    var okQ = !q || (r.dataset.name || '').indexOf(q) !== -1;
+                    var okType = types[r.dataset.type] !== false;
+                    var okStat = (r.dataset.active === '1' ? stats.active : stats.inactive) !== false;
+                    var ok = okQ && okType && okStat;
+                    r.style.display = ok ? '' : 'none';
+                    if (ok) n++;
+                });
+                if (noRes) noRes.style.display = n === 0 ? '' : 'none';
+                if (wrap) wrap.style.display = n === 0 ? 'none' : '';
+            }
+            // Tri → réordonne les lignes (l'ordre serveur = « défaut »).
+            var sortMode = 'default';
+            function applySort() {
+                if (!body || sortMode === 'default') return;
+                rowsNow().sort(function (a, b) {
+                    if (sortMode === 'name-asc') return a.dataset.name.localeCompare(b.dataset.name);
+                    if (sortMode === 'name-desc') return b.dataset.name.localeCompare(a.dataset.name);
+                    var pa = parseFloat(a.dataset.price) || 0, pb = parseFloat(b.dataset.price) || 0;
+                    var da = parseInt(a.dataset.dur, 10) || 0, db = parseInt(b.dataset.dur, 10) || 0;
+                    if (sortMode === 'price-asc') return pa - pb;
+                    if (sortMode === 'price-desc') return pb - pa;
+                    if (sortMode === 'dur-asc') return da - db;
+                    if (sortMode === 'dur-desc') return db - da;
+                    return 0;
+                }).forEach(function (r) { body.appendChild(r); });
+            }
+            if (search) search.addEventListener('input', applyView);
+            document.querySelectorAll('#sv2FilterMenu input').forEach(function (c) { c.addEventListener('change', applyView); });
+            document.querySelectorAll('#sv2SortMenu .ch-dd__opt').forEach(function (opt) {
+                opt.addEventListener('click', function () {
+                    sortMode = opt.dataset.sort;
+                    document.querySelectorAll('#sv2SortMenu .ch-dd__opt').forEach(function (o) { o.classList.toggle('is-active', o === opt); });
+                    closeToolMenus(null);
+                    applySort();
+                });
+            });
+            // Sauvegarde de la préférence de colonnes (persistée par utilisateur).
+            var _colSaveTimer = null;
+            function saveCols() {
+                var hidden = [];
+                document.querySelectorAll('#sv2DispMenu input[data-col]').forEach(function (c) { if (!c.checked) hidden.push(c.dataset.col); });
+                clearTimeout(_colSaveTimer);
+                _colSaveTimer = setTimeout(function () {
+                    fetch('/api/services/columns', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hidden: hidden }) }).catch(function () {});
+                }, 250);
+            }
+            document.querySelectorAll('#sv2DispMenu input[data-col]').forEach(function (c) {
+                c.addEventListener('change', function () {
+                    document.querySelectorAll('.sv2-table [data-col="' + c.dataset.col + '"]').forEach(function (cell) { cell.style.display = c.checked ? '' : 'none'; });
+                    saveCols();
+                });
+            });
+            function updateCount() {
+                if (!countEl) return;
+                var n = rowsNow().length;
+                countEl.textContent = n + ' ' + (n > 1 ? 'services' : 'service');
+            }
+
+            // ── Suppression ───────────────────────────────────────────
+            body && body.addEventListener('click', function (e) {
+                var del = e.target.closest('.sv2-del');
+                if (!del) return;
+                var id = del.dataset.id, name = del.dataset.name || 'ce service';
+                // Services ET cours collectifs vivent dans la même collection Service :
+                // on supprime toujours via /api/services/:id (permission services.manage,
+                // déjà requise pour cette page) — évite d'exiger une permission « cours
+                // collectifs » distincte juste pour supprimer depuis ici.
+                (window.confirmModal
+                    ? window.confirmModal('Supprimer « ' + name + ' » ?', 'Cette action est définitive.')
+                    : Promise.resolve(confirm('Supprimer « ' + name + ' » ?'))
+                ).then(function (ok) {
+                    if (!ok) return;
+                    fetch('/api/services/' + id, { method: 'DELETE' }).then(function (r) { return r.json(); }).then(function (d) {
+                        if (d && d.success) {
+                            var row = del.closest('.sv2-row');
+                            if (row) row.remove();
+                            updateCount();
+                            if (rowsNow().length === 0) location.reload(); // repasse à l'état vide
+                        } else { alert('La suppression a échoué.'); }
+                    }).catch(function () { alert('La suppression a échoué.'); });
+                });
+            });
+
+            // ── Activer / désactiver depuis la liste (sans ouvrir « Modifier ») ──
+            body && body.addEventListener('change', function (e) {
+                var cb = e.target.closest('.sv2-toggle-cb');
+                if (!cb) return;
+                var id = cb.dataset.id;
+                var wanted = cb.checked;          // état visé
+                cb.disabled = true;
+                fetch('/api/services/' + id + '/toggle', { method: 'PATCH' })
+                    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+                    .then(function (res) {
+                        if (!res.ok || !res.d || !res.d.success) throw new Error('fail');
+                        var active = !!res.d.active; // état réel renvoyé par le serveur
+                        cb.checked = active;
+                        var row = cb.closest('.sv2-row');
+                        if (row) {
+                            row.dataset.active = active ? '1' : '0';
+                            row.classList.toggle('sv2-row--inactive', !active);
+                            var st = row.querySelector('.sv2-status');
+                            if (st) { st.classList.toggle('is-on', active); st.classList.toggle('is-off', !active); st.lastChild.textContent = active ? 'Actif' : 'Inactif'; }
+                        }
+                    })
+                    .catch(function () {
+                        cb.checked = !wanted; // revert visuel en cas d'échec
+                        alert("Le changement de statut a échoué.");
+                    })
+                    .finally(function () { cb.disabled = false; });
+            });
+
+            // ── Bouton « Nouveau » (Service / Cours collectif) ────────
+            var newBtn = document.getElementById('sv2NewBtn');
+            var newMenu = document.getElementById('sv2NewMenu');
+            if (newBtn && newMenu) {
+                newBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    newMenu.hidden = !newMenu.hidden;
+                });
+                document.addEventListener('click', function (e) {
+                    if (!newMenu.hidden && !newMenu.contains(e.target) && e.target !== newBtn) newMenu.hidden = true;
+                });
+            }
+
+            // ── Modales Création / Édition (Service / Cours collectif) ─
+            // Tout se passe SUR CETTE PAGE : le crayon ouvre la modale pré-remplie
+            // (aucune redirection vers l'ancienne page). SVC_DATA = données complètes.
+            var SVC_DATA = !{safeJson(SVC_MAP)};
+            var SERVICE_COLORS = !{safeJson(serviceColors || [])};
+            var CATEGORIES = !{safeJson(categories || [])};
+            var Q_DATA = !{safeJson(QUESTIONNAIRE)};
+            var byId = function (id) { return document.getElementById(id); };
+            function openModal(m) { if (m) m.hidden = false; }
+            function closeModal(m) { if (m) m.hidden = true; }
+            document.querySelectorAll('.sv2-modal-overlay').forEach(function (ov) {
+                ov.addEventListener('click', function (e) {
+                    if (e.target === ov || e.target.closest('[data-close]')) closeModal(ov);
+                });
+            });
+            // Envoi (POST = création, PATCH = édition) — robuste aux erreurs 4xx.
+            function submitForm(url, method, payload, err, btn) {
+                btn.disabled = true; err.hidden = true;
+                fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+                    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+                    .then(function (res) {
+                        if (res.ok && !(res.d && res.d.error)) { location.reload(); }
+                        else { err.textContent = (res.d && (res.d.message || res.d.error)) || 'Enregistrement impossible.'; err.hidden = false; btn.disabled = false; }
+                    })
+                    .catch(function () { err.textContent = 'Erreur réseau.'; err.hidden = false; btn.disabled = false; });
+            }
+
+            var svcEditId = null, crsEditId = null, crsMode = 'recurring', openSvc = null, openCrs = null;
+
+            // — Service (création + édition) : modale riche (image, palette de
+            //   couleurs, catégorie+emoji, ciblage par question, frais) —
+            if (byId('serviceModal')) {
+                var svcOverlay = byId('serviceModalOverlay'), svcModalEl = byId('serviceModal');
+                function openSvcModal() { svcOverlay.classList.add('show'); svcModalEl.classList.add('show'); }
+                function closeSvcModal() { svcOverlay.classList.remove('show'); svcModalEl.classList.remove('show'); }
+                byId('closeServiceModal').addEventListener('click', closeSvcModal);
+                byId('cancelServiceModal').addEventListener('click', closeSvcModal);
+                svcOverlay.addEventListener('click', function (e) { if (e.target === svcOverlay) closeSvcModal(); });
+
+                // ── Palette de couleurs (reprise à l'identique) ───────────
+                var PALETTE = ['#1e7a4e','#2563eb','#7c3aed','#db2777','#ea580c','#0891b2','#ca8a04','#dc2626','#4f46e5','#0d9488'];
+                function hslToHex(h, s, l) { s/=100; l/=100; var k=function(n){return (n+h/30)%12;}; var a=s*Math.min(l,1-l); var f=function(n){return l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));}; var toHex=function(n){return Math.round(255*f(n)).toString(16).padStart(2,'0');}; return '#'+toHex(0)+toHex(8)+toHex(4); }
+                function colorAt(i) { if (i < PALETTE.length) return PALETTE[i]; var hue=((i-PALETTE.length)*137.508)%360; return hslToHex(hue,65,42); }
+                function takenColors() { return (SERVICE_COLORS||[]).filter(function(s){return s.color && s.id!==svcEditId;}).map(function(s){return s.color.toLowerCase();}); }
+                function nextColor() { var t=new Set(takenColors()); for (var i=0;i<1000;i++){var c=colorAt(i); if(!t.has(c.toLowerCase()))return c;} return colorAt(0); }
+                function getSvcColor() { var h=byId('serviceModalColor'); return (h && h.value) || PALETTE[0]; }
+                function setSvcColor(c) { byId('serviceModalColor').value=c; byId('svcColorPicker').querySelectorAll('.svc-color-swatch').forEach(function(b){b.classList.toggle('is-active', b.dataset.color===c);}); }
+                function buildColorPicker(selected) {
+                    var picker=byId('svcColorPicker'); if(!picker) return;
+                    var taken=new Set(takenColors()); var total=(SERVICE_COLORS||[]).length;
+                    var count=Math.max(PALETTE.length, total+4); var sw=[];
+                    for (var i=0;i<count;i++) sw.push(colorAt(i));
+                    var selLower=(selected||'').toLowerCase();
+                    if (selLower && !sw.some(function(c){return c.toLowerCase()===selLower;})) sw.push(selected);
+                    var html=sw.map(function(c){
+                        var isTaken=taken.has(c.toLowerCase()) && c.toLowerCase()!==selLower;
+                        var isActive=c.toLowerCase()===selLower;
+                        return '<button type="button" class="svc-color-swatch'+(isTaken?' is-taken':'')+(isActive?' is-active':'')+'" data-color="'+c+'" style="background:'+c+'" '+(isTaken?'disabled title="Déjà utilisée par un autre service"':'')+'></button>';
+                    }).join('');
+                    picker.innerHTML=html+'<button type="button" class="svc-color-swatch--add" id="svcColorAddBtn" title="Couleur personnalisée">+</button><input type="color" id="svcColorCustomInput" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;">';
+                }
+                byId('svcColorPicker').addEventListener('click', function (e) {
+                    if (e.target.closest('#svcColorAddBtn')) { var inp=byId('svcColorCustomInput'); if(inp){inp.value=getSvcColor(); inp.click();} return; }
+                    var btn=e.target.closest('.svc-color-swatch'); if(!btn||btn.disabled) return; setSvcColor(btn.dataset.color);
+                });
+                byId('svcColorPicker').addEventListener('change', function (e) {
+                    if (e.target.id!=='svcColorCustomInput') return;
+                    var color=e.target.value; if (new Set(takenColors()).has(color.toLowerCase())) { alert('Cette couleur est déjà utilisée par un autre service — choisissez-en une autre.'); return; }
+                    setSvcColor(color); buildColorPicker(color);
+                });
+
+                // ── Catégories (sélecteur avec emoji + création) ──────────
+                var CAT_ICONS = ['✂️','💅','🧖','🌿','💪','👁️','🌸','⚡','💎','❤️','🎨','🔥','☀️','💆','🧴','⭐'];
+                function buildIconPicker() {
+                    var p=byId('catIconPicker'); if(!p) return;
+                    p.innerHTML=CAT_ICONS.map(function(ic){return '<button type="button" class="cat-icon-btn" data-icon="'+ic+'">'+ic+'</button>';}).join('');
+                }
+                byId('catIconPicker').addEventListener('click', function (e) {
+                    var b=e.target.closest('.cat-icon-btn'); if(!b) return;
+                    byId('catIconPicker').querySelectorAll('.cat-icon-btn').forEach(function(x){x.classList.remove('selected');});
+                    b.classList.add('selected'); byId('newCategoryIconInput').value=b.dataset.icon;
+                });
+                function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+                function buildCatSelect(current) {
+                    var sel=byId('serviceModalCategory'); if(!sel) return;
+                    var opts='<option value="">Aucune catégorie</option>';
+                    (CATEGORIES||[]).forEach(function(c){ opts+='<option value="'+esc(c.name)+'"'+(current===c.name?' selected':'')+'>'+(c.icon?esc(c.icon)+' ':'')+esc(c.name)+'</option>'; });
+                    opts+='<option value="__create__">+ Créer une catégorie</option>';
+                    sel.innerHTML=opts;
+                    if (current && !(CATEGORIES||[]).some(function(c){return c.name===current;})) sel.insertAdjacentHTML('beforeend','<option value="'+esc(current)+'" selected>'+esc(current)+'</option>');
+                }
+                byId('serviceModalCategory').addEventListener('change', function () {
+                    byId('newCategorySection').style.display = this.value==='__create__' ? '' : 'none';
+                });
+
+                // ── Image ─────────────────────────────────────────────────
+                var _imgFile=null, _imgRemove=false;
+                function setImgPreview(src) {
+                    var p=byId('svcImgPreview'), ph=byId('svcImgPlaceholder'), rm=byId('svcImgRemove');
+                    if (src) { p.src=src; p.style.display='block'; ph.style.display='none'; rm.style.display='inline-flex'; }
+                    else { p.src=''; p.style.display='none'; ph.style.display='flex'; rm.style.display='none'; }
+                }
+                byId('svcImgUpload').addEventListener('click', function (e) {
+                    if (e.target===byId('svcImgRemove') || byId('svcImgRemove').contains(e.target)) return;
+                    byId('svcImgInput').click();
+                });
+                byId('svcImgInput').addEventListener('change', function () {
+                    var f=this.files[0]; if(!f) return; _imgFile=f; _imgRemove=false;
+                    var r=new FileReader(); r.onload=function(){ setImgPreview(r.result); }; r.readAsDataURL(f);
+                });
+                byId('svcImgRemove').addEventListener('click', function (e) {
+                    e.stopPropagation(); _imgFile=null; _imgRemove=true; byId('svcImgInput').value=''; setImgPreview('');
+                });
+
+                // ── Frais + durée approximative ───────────────────────────
+                function setFeeType(t) { byId('svcFeeTypeOptions').querySelectorAll('.svc-type-option').forEach(function(b){b.classList.toggle('is-active', b.dataset.feeType===t);}); }
+                function getFeeType() { var a=byId('svcFeeTypeOptions').querySelector('.svc-type-option.is-active'); return a?a.dataset.feeType:'percent'; }
+                byId('svcFeeTypeOptions').addEventListener('click', function (e) { var b=e.target.closest('.svc-type-option'); if(b) setFeeType(b.dataset.feeType); });
+                byId('serviceModalFeeEnabled').addEventListener('change', function () { byId('svcFeeFields').style.display=this.checked?'':'none'; });
+                byId('serviceModalDurationRangeEnabled').addEventListener('change', function () { byId('svcDurationMaxRow').style.display=this.checked?'':'none'; });
+                // Statut actif/inactif du service (dans la modale)
+                function updateActiveHint(on) {
+                    var h = byId('svcActiveHint'); if (!h) return;
+                    h.textContent = on ? 'Service actif — visible et réservable par les clients.' : 'Service désactivé — masqué de la réservation en ligne.';
+                }
+                byId('serviceModalActive').addEventListener('change', function () { updateActiveHint(this.checked); });
+
+                // ── Ciblage par question (image 3) ────────────────────────
+                function buildTargeting(rules) {
+                    var wrap=byId('svcTargeting'), field=byId('svcTargetingField');
+                    var qs=(Q_DATA && Q_DATA.enabled) ? (Q_DATA.questions||[]) : [];
+                    if (!qs.length) { field.style.display='none'; wrap.innerHTML=''; return; }
+                    field.style.display='';
+                    var byQ={}; (rules||[]).forEach(function(r){ byQ[r.questionId]=r.optionIds||[]; });
+                    wrap.innerHTML = qs.map(function(q){
+                        var sel=byQ[q.id]||[]; var allActive = sel.length===0;
+                        var btns='<button type="button" class="svc-answer-opt'+(allActive?' is-active':'')+'" data-opt="__all__">Tous</button>';
+                        btns += (q.options||[]).map(function(o){ return '<button type="button" class="svc-answer-opt'+(sel.indexOf(o.id)>=0?' is-active':'')+'" data-opt="'+o.id+'">'+esc(o.label)+'</button>'; }).join('');
+                        return '<div class="svc-targeting-q" data-qid="'+q.id+'"><div class="svc-targeting-q__label">'+esc(q.question)+'</div><div class="svc-answer-options">'+btns+'</div></div>';
+                    }).join('');
+                }
+                byId('svcTargeting').addEventListener('click', function (e) {
+                    var b=e.target.closest('.svc-answer-opt'); if(!b) return;
+                    var group=b.closest('.svc-answer-options');
+                    if (b.dataset.opt==='__all__') {
+                        group.querySelectorAll('.svc-answer-opt').forEach(function(x){x.classList.remove('is-active');});
+                        b.classList.add('is-active');
+                    } else {
+                        var all=group.querySelector('[data-opt="__all__"]'); if(all) all.classList.remove('is-active');
+                        b.classList.toggle('is-active');
+                        if (!group.querySelector('.svc-answer-opt.is-active') && all) all.classList.add('is-active');
+                    }
+                });
+                function collectRules() {
+                    var out=[];
+                    byId('svcTargeting').querySelectorAll('.svc-targeting-q').forEach(function(row){
+                        var opts=[];
+                        row.querySelectorAll('.svc-answer-opt.is-active').forEach(function(b){ if(b.dataset.opt!=='__all__') opts.push(b.dataset.opt); });
+                        if (opts.length) out.push({ questionId: row.dataset.qid, optionIds: opts });
+                    });
+                    return out;
+                }
+
+                buildIconPicker();
+
+                openSvc = function (id) {
+                    svcEditId = id || null;
+                    var d = id ? SVC_DATA[id] : null;
+                    byId('serviceModalId').value = id || '';
+                    byId('serviceModalName').value = d ? d.name : '';
+                    buildCatSelect(d ? d.category : '');
+                    byId('newCategorySection').style.display='none';
+                    if (byId('newCategoryName')) byId('newCategoryName').value='';
+                    if (byId('newCategoryIconInput')) byId('newCategoryIconInput').value='';
+                    if (byId('catIconPicker')) byId('catIconPicker').querySelectorAll('.cat-icon-btn').forEach(function(b){b.classList.remove('selected');});
+                    byId('serviceModalDesc').value = d ? d.description : '';
+                    byId('serviceModalPrice').value = d ? d.price : '';
+                    byId('serviceModalDuration').value = d ? d.duration : '';
+                    var hasMax = d && d.durationMax && d.durationMax > d.duration;
+                    byId('serviceModalDurationRangeEnabled').checked = !!hasMax;
+                    byId('svcDurationMaxRow').style.display = hasMax ? '' : 'none';
+                    byId('serviceModalDurationMax').value = hasMax ? d.durationMax : '';
+                    var color = d ? d.color : nextColor();
+                    byId('serviceModalColor').value = color; buildColorPicker(color);
+                    _imgFile=null; _imgRemove=false;
+                    setImgPreview(d && d.image ? '/uploads/profiles/' + d.image : '');
+                    var feeOn = d && d.fee && d.fee.enabled;
+                    byId('serviceModalFeeEnabled').checked = !!feeOn;
+                    byId('svcFeeFields').style.display = feeOn ? '' : 'none';
+                    setFeeType((d && d.fee && d.fee.type) || 'percent');
+                    byId('serviceModalFeeValue').value = (d && d.fee && d.fee.value != null) ? d.fee.value : '';
+                    var isActive = d ? !!d.active : true;
+                    byId('serviceModalActive').checked = isActive;
+                    updateActiveHint(isActive);
+                    buildTargeting(d ? d.questionRules : []);
+                    byId('svcErr').hidden = true;
+                    byId('serviceModalTitle').textContent = id ? 'Modifier le service' : 'Nouveau service';
+                    byId('saveServiceBtn').disabled = false;
+                    openSvcModal();
+                };
+
+                byId('saveServiceBtn').addEventListener('click', async function () {
+                    var err=byId('svcErr'); var btn=this;
+                    var name=byId('serviceModalName').value.trim();
+                    if (!name) { err.textContent='Le nom est obligatoire.'; err.hidden=false; byId('serviceModalName').focus(); return; }
+                    // Catégorie (avec création éventuelle)
+                    var categoryValue = byId('serviceModalCategory').value;
+                    if (categoryValue==='__create__') {
+                        var newName=byId('newCategoryName').value.trim();
+                        if (!newName) { byId('newCategoryName').focus(); return; }
+                        var icon=byId('newCategoryIconInput').value || '';
+                        if (!CATEGORIES.some(function(c){return c.name.toLowerCase()===newName.toLowerCase();})) {
+                            CATEGORIES.push({ name:newName, icon:icon });
+                            try { await fetch('/account/categories', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ categories: CATEGORIES }) }); } catch(_){}
+                        }
+                        categoryValue=newName;
+                    }
+                    var payload = {
+                        name: name, description: byId('serviceModalDesc').value.trim(),
+                        price: byId('serviceModalPrice').value, duration: Number(byId('serviceModalDuration').value) || 30,
+                        durationMax: (byId('serviceModalDurationRangeEnabled').checked && byId('serviceModalDurationMax').value) ? Number(byId('serviceModalDurationMax').value) : '',
+                        category: categoryValue, type: 'individual', color: getSvcColor(),
+                        cancellationFee: byId('serviceModalFeeEnabled').checked ? { enabled:true, type:getFeeType(), value:Number(byId('serviceModalFeeValue').value)||0 } : { enabled:false },
+                        questionRules: collectRules(),
+                        active: byId('serviceModalActive').checked,
+                    };
+                    btn.disabled=true; err.hidden=true;
+                    try {
+                        var url = svcEditId ? '/api/services/'+svcEditId : '/api/services';
+                        var res = await fetch(url, { method: svcEditId?'PATCH':'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+                        var data = await res.json();
+                        if (res.ok && data.success) {
+                            var savedId = svcEditId || (data.service && String(data.service._id));
+                            if (savedId) {
+                                if (_imgRemove) { try { await fetch('/api/services/'+savedId+'/image', { method:'DELETE' }); } catch(_){} }
+                                else if (_imgFile) { try { var fd=new FormData(); fd.append('image', _imgFile); await fetch('/api/services/'+savedId+'/image', { method:'PATCH', body:fd }); } catch(_){} }
+                            }
+                            location.reload();
+                        } else { err.textContent=(data && (data.message||data.error))||'Enregistrement impossible.'; err.hidden=false; btn.disabled=false; }
+                    } catch(e) { err.textContent='Erreur réseau.'; err.hidden=false; btn.disabled=false; }
+                });
+            }
+
+            // — Cours collectif (création + édition) : modale riche 2 colonnes —
+            if (byId('courseModal')) {
+                var crsOverlay = byId('courseModalOverlay'), crsModalEl = byId('courseModal');
+                function openCrsModal() { crsOverlay.classList.add('show'); crsModalEl.classList.add('show'); }
+                function closeCrsModal() { crsOverlay.classList.remove('show'); crsModalEl.classList.remove('show'); }
+                byId('closeCourseModal').addEventListener('click', closeCrsModal);
+                byId('cancelCourseModal').addEventListener('click', closeCrsModal);
+                crsOverlay.addEventListener('click', function (e) { if (e.target === crsOverlay) closeCrsModal(); });
+
+                function setCrsMode(mode) {
+                    crsMode = mode;
+                    byId('crsMode').querySelectorAll('.svc-type-option').forEach(function (x) { x.classList.toggle('is-active', x.dataset.mode === mode); });
+                    byId('crsRecurring').style.display = mode === 'recurring' ? '' : 'none';
+                    byId('crsFixed').style.display = mode === 'fixed' ? '' : 'none';
+                }
+                byId('crsMode').addEventListener('click', function (e) {
+                    var b = e.target.closest('.svc-type-option'); if (b) setCrsMode(b.dataset.mode);
+                });
+                byId('crsWeekdays').addEventListener('click', function (e) {
+                    var b = e.target.closest('.sv2-wd'); if (b) b.classList.toggle('is-active');
+                });
+                // Employés assignés (optionnel) — la liste n'existe que s'il y a une équipe.
+                var crsHasEmp = byId('crsHasEmployees'), crsEmpField = byId('crsEmployeesField');
+                if (crsHasEmp) crsHasEmp.addEventListener('change', function () { crsEmpField.style.display = this.checked ? '' : 'none'; });
+                function addSessionRow(date, s, en) {
+                    var row = document.createElement('div');
+                    row.className = 'sv2-session'; row.dataset.date = date; row.dataset.start = s; row.dataset.end = en;
+                    var span = document.createElement('span'); span.textContent = date + ' · ' + s + ' – ' + en; // textContent = sûr
+                    var x = document.createElement('button'); x.type = 'button'; x.className = 'sv2-session__x'; x.textContent = '✕';
+                    row.appendChild(span); row.appendChild(x);
+                    byId('crsSessions').appendChild(row);
+                }
+                byId('crsAddSession').addEventListener('click', function () {
+                    var date = byId('crsSesDate').value, s = byId('crsSesStart').value, en = byId('crsSesEnd').value;
+                    if (!date || !s || !en) return;
+                    addSessionRow(date, s, en);
+                    byId('crsSesDate').value = ''; byId('crsSesStart').value = ''; byId('crsSesEnd').value = '';
+                });
+                byId('crsSessions').addEventListener('click', function (e) {
+                    if (e.target.closest('.sv2-session__x')) e.target.closest('.sv2-session').remove();
+                });
+                openCrs = function (id) {
+                    crsEditId = id || null;
+                    var d = id ? SVC_DATA[id] : null;
+                    byId('crsName').value = d ? d.name : '';
+                    byId('crsDesc').value = d ? d.description : '';
+                    byId('crsPrice').value = d ? d.price : '';
+                    byId('crsDuration').value = d ? d.duration : 60;
+                    byId('crsCapacity').value = d ? (d.capacity || 10) : 10;
+                    byId('crsLocation').value = d ? d.location : '';
+                    byId('crsWeekdays').querySelectorAll('.sv2-wd').forEach(function (b) { b.classList.remove('is-active'); });
+                    byId('crsTime').value = '';
+                    byId('crsSessions').innerHTML = '';
+                    byId('crsSesDate').value = ''; byId('crsSesStart').value = ''; byId('crsSesEnd').value = '';
+                    // Employés assignés
+                    if (crsHasEmp) {
+                        var assigned = (d && d.employees) || [];
+                        crsHasEmp.checked = assigned.length > 0;
+                        crsEmpField.style.display = assigned.length > 0 ? '' : 'none';
+                        byId('crsEmployeeList').querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = assigned.indexOf(cb.value) >= 0; });
+                    }
+                    if (d && d.recurring && d.recurring.enabled) {
+                        setCrsMode('recurring');
+                        (d.recurring.weekdays || []).forEach(function (wd) { var b = byId('crsWeekdays').querySelector('.sv2-wd[data-day="' + wd + '"]'); if (b) b.classList.add('is-active'); });
+                        byId('crsTime').value = d.recurring.startTime || '';
+                    } else if (d && d.sessions && d.sessions.length) {
+                        setCrsMode('fixed');
+                        d.sessions.forEach(function (ss) { addSessionRow(ss.date, ss.startTime, ss.endTime); });
+                    } else {
+                        setCrsMode('recurring');
+                    }
+                    byId('crsErr').hidden = true;
+                    byId('crsModalTitle').textContent = id ? 'Modifier le cours collectif' : 'Nouveau cours collectif';
+                    byId('crsSave').textContent = id ? 'Enregistrer' : 'Créer le cours';
+                    byId('crsSave').disabled = false;
+                    openCrsModal();
+                };
+                byId('crsSave').addEventListener('click', function () {
+                    var err = byId('crsErr');
+                    var name = byId('crsName').value.trim();
+                    if (!name) { err.textContent = 'Le nom du cours est obligatoire.'; err.hidden = false; return; }
+                    var employees = [];
+                    if (crsHasEmp && crsHasEmp.checked) {
+                        byId('crsEmployeeList').querySelectorAll('input[type="checkbox"]:checked').forEach(function (cb) { employees.push(cb.value); });
+                    }
+                    var payload = {
+                        name: name, description: byId('crsDesc').value.trim(), price: byId('crsPrice').value,
+                        duration: Number(byId('crsDuration').value) || 60, capacity: Number(byId('crsCapacity').value) || 1,
+                        location: byId('crsLocation').value.trim(), mode: crsMode, employees: employees,
+                    };
+                    if (crsMode === 'fixed') {
+                        var sessions = [];
+                        byId('crsSessions').querySelectorAll('.sv2-session').forEach(function (r) {
+                            sessions.push({ date: r.dataset.date, startTime: r.dataset.start, endTime: r.dataset.end });
+                        });
+                        if (!sessions.length) { err.textContent = 'Ajoutez au moins une date.'; err.hidden = false; return; }
+                        payload.sessions = sessions;
+                    } else {
+                        var wds = [];
+                        byId('crsWeekdays').querySelectorAll('.sv2-wd.is-active').forEach(function (b) { wds.push(Number(b.dataset.day)); });
+                        if (!wds.length) { err.textContent = 'Choisissez au moins un jour de la semaine.'; err.hidden = false; return; }
+                        if (!byId('crsTime').value) { err.textContent = 'Indiquez une heure.'; err.hidden = false; return; }
+                        payload.weekdays = wds; payload.startTime = byId('crsTime').value;
+                    }
+                    // submitForm gère POST/PATCH + reload ; on garde le bouton comme cible.
+                    if (crsEditId) submitForm('/api/courses/' + crsEditId, 'PATCH', payload, err, this);
+                    else submitForm('/api/courses', 'POST', payload, err, this);
+                });
+            }
+
+            // Menu « Nouveau » → création. Crayon d'une ligne → édition (sur la page).
+            if (newMenu) newMenu.addEventListener('click', function (e) {
+                var it = e.target.closest('[data-new]');
+                if (!it) return;
+                newMenu.hidden = true;
+                if (it.dataset.new === 'service') { if (openSvc) openSvc(null); }
+                else { if (openCrs) openCrs(null); }
+            });
+            if (body) body.addEventListener('click', function (e) {
+                var ed = e.target.closest('.sv2-edit');
+                if (!ed) return;
+                if (ed.dataset.type === 'group') { if (openCrs) openCrs(ed.dataset.id); }
+                else { if (openSvc) openSvc(ed.dataset.id); }
+            });
+
+            // ── Constructeur de questionnaire ─────────────────────────
+            var sqBlock = document.querySelector('.sq-block');
+            if (sqBlock) {
+                var sqList = document.getElementById('sqList');
+                var qTpl = document.getElementById('sqQTpl');
+                var optTpl = document.getElementById('sqOptTpl');
+                var enabledEl = document.getElementById('sqEnabled');
+                var saveInd = document.getElementById('sqSaveInd');
+
+                enabledEl.addEventListener('change', function () {
+                    sqBlock.classList.toggle('is-off', !enabledEl.checked);
+                });
+
+                document.getElementById('sqAddQ').addEventListener('click', function () {
+                    var node = qTpl.content.firstElementChild.cloneNode(true);
+                    sqList.appendChild(node);
+                    node.querySelector('.sq-qinput').focus();
+                });
+
+                // Ajoute une ligne de réponse (un input) dans une question.
+                function addOptionRow(optionsEl) {
+                    var row = optTpl.content.firstElementChild.cloneNode(true);
+                    optionsEl.querySelector('.sq-addopt-btn').before(row);
+                    row.querySelector('.sq-optinput').focus();
+                }
+
+                sqList.addEventListener('click', function (e) {
+                    if (e.target.closest('.sq-addopt-btn')) { addOptionRow(e.target.closest('.sq-options')); return; }
+                    if (e.target.closest('.sq-optdel')) { e.target.closest('.sq-optrow').remove(); return; }
+                    if (e.target.closest('.sq-qdel')) { e.target.closest('.sq-question').remove(); return; }
+                });
+                // Entrée dans une réponse → ajoute une nouvelle ligne (pour enchaîner vite).
+                sqList.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' && e.target.classList.contains('sq-optinput')) {
+                        e.preventDefault();
+                        addOptionRow(e.target.closest('.sq-options'));
+                    }
+                });
+
+                // Lit le DOM → payload + liste PARALLÈLE des lignes incluses, pour
+                // réinjecter les _id sur les BONNES lignes après sauvegarde (les
+                // réponses vides / en double sont ignorées : pas de mapping par index).
+                function collect() {
+                    var questions = [], els = [];
+                    sqList.querySelectorAll('.sq-question').forEach(function (qEl) {
+                        var question = qEl.querySelector('.sq-qinput').value.trim();
+                        var options = [], optEls = [], seen = {};
+                        qEl.querySelectorAll('.sq-optrow').forEach(function (row) {
+                            var label = row.querySelector('.sq-optinput').value.trim();
+                            var key = label.toLowerCase();
+                            if (label && !seen[key]) { seen[key] = 1; options.push({ _id: row.dataset.oid || undefined, label: label }); optEls.push(row); }
+                        });
+                        if (question && options.length) {
+                            questions.push({ _id: qEl.dataset.qid || undefined, question: question, options: options });
+                            els.push({ qEl: qEl, chipEls: optEls });
+                        }
+                    });
+                    return { payload: { enabled: enabledEl.checked, questions: questions }, els: els };
+                }
+
+                document.getElementById('sqSave').addEventListener('click', function () {
+                    var btn = this; btn.disabled = true;
+                    if (saveInd) { saveInd.textContent = 'Enregistrement…'; saveInd.className = 'sq-saveind'; }
+                    var c = collect();
+                    fetch('/api/services/questionnaire', {
+                        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(c.payload)
+                    }).then(function (r) { return r.json(); }).then(function (d) {
+                        btn.disabled = false;
+                        if (d && d.success) {
+                            // Réinjecte les _id renvoyés sur les mêmes lignes/chips qu'envoyées.
+                            var qs = (d.questionnaire && d.questionnaire.questions) || [];
+                            qs.forEach(function (q, i) {
+                                var ref = c.els[i]; if (!ref) return;
+                                ref.qEl.dataset.qid = q._id;
+                                (q.options || []).forEach(function (o, j) { if (ref.chipEls[j]) ref.chipEls[j].dataset.oid = o._id; });
+                            });
+                            if (saveInd) {
+                                saveInd.textContent = '✓ Enregistré';
+                                saveInd.className = 'sq-saveind is-ok';
+                                clearTimeout(saveInd._t);
+                                saveInd._t = setTimeout(function () { saveInd.textContent = ''; saveInd.className = 'sq-saveind'; }, 2500);
+                            }
+                        } else {
+                            if (saveInd) { saveInd.textContent = d && d.error ? d.error : 'Échec'; saveInd.className = 'sq-saveind is-err'; }
+                        }
+                    }).catch(function () { btn.disabled = false; if (saveInd) { saveInd.textContent = 'Erreur réseau'; saveInd.className = 'sq-saveind is-err'; } });
+                });
+            }
+        })();

@@ -11,7 +11,7 @@ block links
 block content
     - var cs = calendarSettings || {}
 
-    .info-page
+    .info-page.cz-page
 
         //- ── Header avec onglets ────────────────────────────────────────────────
         .cz-header
@@ -39,6 +39,8 @@ block content
         - var _missingProfile = !user.businessPicture || !user.businessName
         .info-card
             .info-card__header
+                span.info-card__ic
+                    span.material-symbols-outlined(style="font-size:19px") storefront
                 h3 Profil de l'établissement
                 p.info-card__desc Ces informations sont affichées en haut de votre page de réservation.
             if _missingProfile
@@ -87,6 +89,8 @@ block content
         .info-card.section-card(class=(cs.showSectionAbout === false ? 'section-card--off' : ''))
             .info-card__header.info-card__header--with-cb
                 .info-card__header__left
+                    span.info-card__ic
+                        span.material-symbols-outlined(style="font-size:19px") article
                     h3 À propos
                     p.info-card__desc Présentez votre activité en détail — votre histoire, votre approche, ce qui vous distingue. Ce texte enrichi s'affiche dans la section « À propos » de votre page publique.
                 label.section-cb-label(for="toggleSectionAbout" title="Afficher la section « À propos » sur la page publique")
@@ -122,6 +126,8 @@ block content
         .info-card
             .info-card__header.info-card__header--with-cb
                 .info-card__header__left
+                    span.info-card__ic
+                        span.material-symbols-outlined(style="font-size:19px") location_on
                     h3 Localisation
                     p.info-card__desc Votre adresse est affichée sur la carte de votre page publique.
                 .info-card__header__cbs
@@ -251,6 +257,8 @@ block content
         .info-card.section-card(class=(!cs.showSectionGallery ? 'section-card--off' : ''))
             .info-card__header.info-card__header--with-cb
                 .info-card__header__left
+                    span.info-card__ic
+                        span.material-symbols-outlined(style="font-size:19px") photo_library
                     h3 Galerie photos
                     p.info-card__desc Ajoutez jusqu'à 12 photos pour illustrer votre espace.
                 label.section-cb-label(for="toggleSectionGallery" title="Afficher la galerie sur la page publique")
@@ -310,6 +318,8 @@ block content
         //- ── URL personnalisée ────────────────────────────────────────────────
         .info-card#partage-lien
             .info-card__header
+                span.info-card__ic
+                    span.material-symbols-outlined(style="font-size:19px") link
                 h3= t.info.custom_url_title || 'URL personnalisée'
                 p.info-card__desc= t.info.custom_url_desc || 'Choisissez une URL unique pour votre page de réservation publique.'
             if !canUseCustomUrl
@@ -355,6 +365,8 @@ block content
         //- ── Ordre des sections ──────────────────────────────────────────────
         .info-card
             .info-card__header
+                span.info-card__ic
+                    span.material-symbols-outlined(style="font-size:19px") swap_vert
                 h3 Ordre des sections
                 p.info-card__desc Glissez les sections pour définir l'ordre d'affichage sur votre page publique.
             -
@@ -402,6 +414,8 @@ block content
         //- ── Réseaux sociaux ─────────────────────────────────────────────────
         .info-card
             .info-card__header
+                span.info-card__ic
+                    span.material-symbols-outlined(style="font-size:19px") share
                 h3= t.profile.social_title || 'Réseaux sociaux'
                 p.info-card__desc= t.info.social_desc || 'Affichez vos coordonnées sur votre page publique.'
             .social-grid
@@ -466,6 +480,8 @@ block content
                         .cz-reminder-header-icon
                             span.material-symbols-outlined(style="font-size:18px") notifications
                         .info-card__header__left
+                            span.info-card__ic
+                                span.material-symbols-outlined(style="font-size:19px") notifications
                             h3 Rappels automatiques
                             p.info-card__desc Un email est envoyé automatiquement à votre client avant son rendez-vous. Vous pouvez choisir le délai et personnaliser le message.
 

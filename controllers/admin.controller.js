@@ -619,12 +619,22 @@ exports.appointment = async (req, res) => {
       else                    fillStatus = "green";
     }
 
-    // A day is "off" when there is no special override and the schedule marks it dayOff
-    // (or there is simply no schedule entry for this weekday at all)
+    // Congé = jour spécial marqué "dayOff" (ou sans aucune plage horaire) — c'est
+    // un jour posé en congé, à distinguer d'un jour de fermeture hebdomadaire.
+    const specialIsOff = !!specialDay && (specialDay.dayOff === true || !(specialDay.workingHours || []).some((w) => w && w.start && w.end));
+    // Jour spécial AVEC horaires personnalisés (pas un congé complet, mais un jour
+    // dont les horaires diffèrent du planning habituel) — à signaler aussi.
+    const isSpecial = !!specialDay && !specialIsOff;
+    const specialLabel = isSpecial
+      ? (specialDay.workingHours || []).filter((w) => w && w.start && w.end).map((w) => `${w.start}–${w.end}`).join(", ")
+      : "";
+    // A day is "off" when it's a congé, or (no special override) the weekly schedule
+    // marks it dayOff / has no entry for this weekday.
     const dayConfig2 = (rowTime.schedule || []).find((s) => s.weekdayIndex === jsWeekday);
-    const isDayOff = !specialDay && (!dayConfig2 || dayConfig2.dayOff === true);
+    const isDayOff = specialIsOff || (!specialDay && (!dayConfig2 || dayConfig2.dayOff === true));
+    const isTimeOff = specialIsOff;
 
-    return { ...d, fillStatus, isDayOff };
+    return { ...d, fillStatus, isDayOff, isTimeOff, isSpecial, specialLabel };
   });
 
   // ── Données vue mois ────────────────────────────────────────────────────
@@ -667,6 +677,21 @@ exports.appointment = async (req, res) => {
       color: k === "__default__" ? null : k,
       count: map[k],
     }));
+    // Jours off / congés pour la vue Mois — même logique que la vue Semaine.
+    const dd = new Date(d.iso + "T12:00:00");
+    const jsWeekday = dd.getDay();
+    const special = (daysOffDoc?.dates || []).find((sd) => {
+      const s = new Date(sd.date);
+      return `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, "0")}-${String(s.getDate()).padStart(2, "0")}` === d.iso;
+    });
+    const specialIsOff = !!special && (special.dayOff === true || !(special.workingHours || []).some((w) => w && w.start && w.end));
+    const dayConfig = (rowTime.schedule || []).find((s) => s.weekdayIndex === jsWeekday);
+    d.isTimeOff = specialIsOff;
+    d.isDayOff = specialIsOff || (!special && (!dayConfig || dayConfig.dayOff === true));
+    d.isSpecial = !!special && !specialIsOff;
+    d.specialLabel = d.isSpecial
+      ? (special.workingHours || []).filter((w) => w && w.start && w.end).map((w) => `${w.start}–${w.end}`).join(", ")
+      : "";
   });
   const monthLabel = mFirst.toLocaleDateString(locale, { month: "long", year: "numeric" });
 
@@ -828,7 +853,7 @@ exports.createAdminBooking = async (req, res) => {
     // d'employé, puisqu'il s'agit précisément DU cours que l'admin inscrit.
     // Permet à l'admin d'ajouter Caroline à un atelier qu'il a lui-même
     // bloqué, tant qu'il reste des places (cf. bug rapporté par Cecile). ────
-    const isGroup = !!(serviceDoc && serviceDoc.type === "group");
+    let isGroup = !!(serviceDoc && serviceDoc.type === "group");
     if (isGroup) {
       const bookingDateObj = new Date(date);
       const occurrenceValid = serviceDoc.recurring?.enabled
@@ -840,16 +865,20 @@ exports.createAdminBooking = async (req, res) => {
               && sDate.getDate() === bookingDateObj.getDate()
               && s.startTime === startTime;
           });
-      if (!occurrenceValid) {
-        return res.json({ success: false, error: "invalid_session", message: "Cette session n'existe plus, merci de rafraîchir la page." });
-      }
-
-      const capacity = serviceDoc.capacity || 1;
-      const participantCount = await Booking.countDocuments({
-        company: currentCompany, service: serviceId, date: bookingDateObj, startTime, status: "confirmed",
-      });
-      if (participantCount >= capacity) {
-        return res.json({ success: false, error: "session_full", message: "Cette session est complète, merci de choisir un autre horaire." });
+      if (occurrenceValid) {
+        // Séance planifiée : on vérifie la capacité restante (inscription à la séance).
+        const capacity = serviceDoc.capacity || 1;
+        const participantCount = await Booking.countDocuments({
+          company: currentCompany, service: serviceId, date: bookingDateObj, startTime, status: "confirmed",
+        });
+        if (participantCount >= capacity) {
+          return res.json({ success: false, error: "session_full", message: "Cette session est complète, merci de choisir un autre horaire." });
+        }
+      } else {
+        // Horaire hors des séances planifiées : l'admin crée un RDV ponctuel avec
+        // ce service collectif → on le traite comme un rendez-vous individuel
+        // (assignation d'un praticien + vérif de chevauchement) au lieu de bloquer.
+        isGroup = false;
       }
     }
 
@@ -861,7 +890,11 @@ exports.createAdminBooking = async (req, res) => {
       const team = await getBookableTeam(currentCompany);
       if (employeeId) {
         const emp = team.find((m) => m.id === String(employeeId));
+        // Praticien inconnu de cette équipe (id falsifié / autre établissement) →
+        // on n'enregistre PAS cet id : le RDV devient non assigné plutôt que de
+        // référencer un employé d'un autre établissement.
         if (emp) employeeName = `${emp.firstName} ${emp.lastName}`.trim();
+        else employeeId = null;
       } else if (team.length >= 1) {
         // Plusieurs employés : auto-assigner au premier disponible sur ce créneau
         const [h, m] = startTime.split(":").map(Number);
@@ -1752,6 +1785,430 @@ exports.historyInit = async (req, res) => {
   }
 };
 
+// ── Clients (nouvelle page unifiée) ─────────────────────────────────────────
+// À terme : fusion de l'Historique et des Dossiers clients dans une seule page
+// (cf. maquettes healthcare). On affiche la liste des CLIENTS uniques ayant pris
+// au moins un RDV (regroupés par email, sinon téléphone, sinon nom), pas un RDV
+// par ligne. On ne touche pas aux pages /history et /clients existantes.
+exports.clientsHubInit = async (req, res) => {
+  try {
+    const query = {
+      company: res.locals.currentCompany._id,
+      isBlock: { $ne: true },
+    };
+
+    // date décroissante → le RDV le plus récent d'abord (pour « dernier RDV »).
+    const bookings = await Booking.find(query)
+      .sort({ date: -1, startTime: -1 })
+      .lean();
+
+    const stateOf = (b) => {
+      const s = (b.status || "confirmed").toLowerCase();
+      return b.noShow ? "noshow" : (s === "canceled" || s === "cancelled") ? "canceled" : "confirmed";
+    };
+
+    // Regroupement par client.
+    const map = new Map();
+    for (const b of bookings) {
+      const key =
+        (b.email && b.email.trim().toLowerCase()) ||
+        (b.phone && b.phone.trim()) ||
+        (((b.name || "") + " " + (b.surname || "")).trim().toLowerCase()) ||
+        String(b._id);
+
+      let c = map.get(key);
+      if (!c) {
+        // 1er RDV rencontré = le plus récent (tri desc) → sert de « dernier RDV ».
+        c = {
+          name: b.name || "",
+          surname: b.surname || "",
+          email: b.email || "",
+          phone: b.phone || "",
+          ids: [],
+          count: 0,
+          lastDate: b.date,
+          lastTime: b.startTime || "",
+          lastState: stateOf(b),
+          lastBookingId: String(b._id),
+          empCounts: {},
+        };
+        map.set(key, c);
+      }
+      c.ids.push(String(b._id));
+      c.count++;
+      if (b.employeeName) c.empCounts[b.employeeName] = (c.empCounts[b.employeeName] || 0) + 1;
+      // Compléter les infos manquantes à partir d'un RDV plus ancien si besoin.
+      if (!c.name && b.name) c.name = b.name;
+      if (!c.surname && b.surname) c.surname = b.surname;
+      if (!c.email && b.email) c.email = b.email;
+      if (!c.phone && b.phone) c.phone = b.phone;
+    }
+
+    const clients = Array.from(map.values()).map((c) => {
+      let emp = "", max = 0;
+      for (const [k, v] of Object.entries(c.empCounts)) if (v > max) { max = v; emp = k; }
+      return {
+        name: c.name,
+        surname: c.surname,
+        email: c.email,
+        phone: c.phone,
+        ids: c.ids,
+        count: c.count,
+        lastDate: c.lastDate,
+        lastTime: c.lastTime,
+        lastState: c.lastState,
+        lastBookingId: c.lastBookingId,
+        employeeName: emp,
+      };
+    });
+    // Surnoms (altName) des dossiers, pour les afficher à côté du nom.
+    const emails = clients.map((c) => (c.email || "").trim().toLowerCase()).filter(Boolean);
+    if (emails.length) {
+      const ClientDossier = require("../db/models/clientDossier.model");
+      const dossiers = await ClientDossier.find({ company: res.locals.currentCompany._id, email: { $in: emails } })
+        .select("email altName").lean();
+      const altMap = {};
+      dossiers.forEach((d) => { if (d.altName) altMap[d.email] = d.altName; });
+      clients.forEach((c) => { c.altName = altMap[(c.email || "").trim().toLowerCase()] || ""; });
+    }
+
+    // Tri : dernier RDV le plus récent d'abord.
+    clients.sort((a, b) => new Date(b.lastDate) - new Date(a.lastDate));
+
+    return res.render("admin/clients-hub", {
+      pageName: "ClientsHub",
+      title: "Clients",
+      clients,
+      totalClients: clients.length,
+    });
+  } catch (err) {
+    console.error("clientsHubInit error:", err.message);
+    return res.status(500).send("Erreur serveur");
+  }
+};
+
+// Suppression (unitaire ou groupée) des RDV depuis la page Clients. Scopé à
+// l'établissement courant (anti-IDOR) — on ne supprime que ses propres RDV.
+exports.clientsHubBulkDelete = async (req, res) => {
+  try {
+    let { ids } = req.body;
+    if (!Array.isArray(ids)) ids = ids ? [ids] : [];
+    ids = ids.filter(Boolean);
+    if (!ids.length) return res.status(400).json({ success: false, error: "no_ids" });
+
+    const result = await Booking.deleteMany({
+      _id: { $in: ids },
+      company: res.locals.currentCompany?._id,
+    });
+    return res.json({ success: true, deleted: result.deletedCount });
+  } catch (err) {
+    console.error("clientsHubBulkDelete error:", err.message);
+    return res.status(500).json({ success: false });
+  }
+};
+
+// Fiche client (nouvelle page façon « dossier patient »). Pour l'instant :
+// onglet Aperçu uniquement. On part d'un RDV (id), on charge le client et
+// TOUS ses RDV (regroupés par email/téléphone) pour l'aperçu. Scopé à
+// l'établissement courant (anti-IDOR). On ne touche pas à /history/edit.
+exports.clientsHubDetail = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!/^[a-f0-9]{24}$/i.test(id)) return res.redirect("/clients-hub");
+    const companyId = res.locals.currentCompany._id;
+
+    const booking = await Booking.findOne({ _id: id, company: companyId }).populate("user").lean();
+    if (!booking) return res.redirect("/clients-hub");
+
+    // Autres RDV du même client (même email OU même téléphone).
+    const or = [];
+    if (booking.email) or.push({ email: booking.email });
+    if (booking.phone) or.push({ phone: booking.phone });
+    let clientBookings = [booking];
+    if (or.length) {
+      clientBookings = await Booking.find({
+        company: companyId,
+        isBlock: { $ne: true },
+        $or: or,
+      }).sort({ date: -1, startTime: -1 }).lean();
+      if (!clientBookings.length) clientBookings = [booking];
+    }
+
+    // Services + équipe pour les sélecteurs d'édition inline (comme history-edit).
+    const Service = require("../db/models/company/service.model");
+    const ClientDossier = require("../db/models/clientDossier.model");
+    const [services, employees, dossier] = await Promise.all([
+      Service.find({ company: companyId, active: true }).select("_id name duration price").lean(),
+      getBookableTeam(companyId),
+      booking.email
+        ? ClientDossier.findOne({ company: companyId, email: booking.email.trim().toLowerCase() }).lean()
+        : null,
+    ]);
+
+    // Entrées du dossier, plus récentes d'abord.
+    const dossierEntries = ((dossier && dossier.entries) || [])
+      .slice()
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    return res.render("admin/client-detail", {
+      pageName: "ClientsHub",
+      title: "Clients",
+      booking,
+      clientBookings,
+      services,
+      employees,
+      generalNotes: (dossier && dossier.generalInfo) || "",
+      hasEmailForNotes: !!booking.email,
+      dossierEntries,
+      defaultDuration: (res.locals.currentCompany && res.locals.currentCompany.slotTime) || 30,
+      hasServices: services.length > 0,
+      altContact: {
+        altName: (dossier && dossier.altName) || "",
+        altEmail: (dossier && dossier.altEmail) || "",
+        altPhone: (dossier && dossier.altPhone) || "",
+      },
+    });
+  } catch (err) {
+    console.error("clientsHubDetail error:", err.message);
+    return res.redirect("/clients-hub");
+  }
+};
+
+// Bloquer un client depuis sa fiche : upsert d'un ClientDossier (par email)
+// avec blocked=true. Le flux de réservation publique rejette déjà les emails
+// bloqués (cf. booking.controller). Scopé à l'établissement courant.
+exports.clientsHubBlock = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!/^[a-f0-9]{24}$/i.test(id)) return res.status(400).json({ success: false });
+    const companyId = res.locals.currentCompany._id;
+
+    const booking = await Booking.findOne({ _id: id, company: companyId }).lean();
+    if (!booking) return res.status(404).json({ success: false });
+
+    const email = (booking.email || "").trim().toLowerCase();
+    if (!email) return res.status(400).json({ success: false, error: "no_email" });
+
+    const ClientDossier = require("../db/models/clientDossier.model");
+    const fullName = ((booking.name || "") + " " + (booking.surname || "")).trim();
+    await ClientDossier.findOneAndUpdate(
+      { company: companyId, email },
+      {
+        $set: { blocked: true, blockedAt: new Date(), blockedReason: (req.body.reason || "").trim().slice(0, 200) },
+        $setOnInsert: { company: companyId, email, fullName, phone: booking.phone || "" },
+      },
+      { new: true, upsert: true }
+    );
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("clientsHubBlock error:", err.message);
+    return res.status(500).json({ success: false });
+  }
+};
+
+// Notes générales sur le client (persistantes, niveau client). Stockées dans
+// ClientDossier.generalInfo (clé = email), upsert. Scopé à l'établissement.
+exports.clientsHubSaveNotes = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!/^[a-f0-9]{24}$/i.test(id)) return res.status(400).json({ success: false });
+    const companyId = res.locals.currentCompany._id;
+
+    const booking = await Booking.findOne({ _id: id, company: companyId }).lean();
+    if (!booking) return res.status(404).json({ success: false });
+
+    const email = (booking.email || "").trim().toLowerCase();
+    if (!email) return res.status(400).json({ success: false, error: "no_email" });
+
+    const ClientDossier = require("../db/models/clientDossier.model");
+    const notes = String(req.body.notes || "").slice(0, 5000);
+    const fullName = ((booking.name || "") + " " + (booking.surname || "")).trim();
+    await ClientDossier.findOneAndUpdate(
+      { company: companyId, email },
+      { $set: { generalInfo: notes }, $setOnInsert: { company: companyId, email, fullName, phone: booking.phone || "" } },
+      { new: true, upsert: true }
+    );
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("clientsHubSaveNotes error:", err.message);
+    return res.status(500).json({ success: false });
+  }
+};
+
+// ── Dossier client : entrées de suivi (notes datées + PDF) ──────────────────
+const _dossierRoot = () => require("path").join(__dirname, "..", "private_uploads");
+async function _getOrCreateDossier(bookingId, companyId) {
+  const booking = await Booking.findOne({ _id: bookingId, company: companyId }).lean();
+  if (!booking) return { error: "not_found" };
+  const email = (booking.email || "").trim().toLowerCase();
+  if (!email) return { error: "no_email" };
+  const ClientDossier = require("../db/models/clientDossier.model");
+  let dossier = await ClientDossier.findOne({ company: companyId, email });
+  if (!dossier) {
+    dossier = await ClientDossier.create({
+      company: companyId, email,
+      fullName: ((booking.name || "") + " " + (booking.surname || "")).trim(),
+      phone: booking.phone || "",
+    });
+  }
+  return { booking, dossier };
+}
+function _saveDossierPdf(file, companyId) {
+  const fs = require("fs"), path = require("path"), crypto = require("crypto");
+  const isPdf = file.mimetype === "application/pdf" || (file.originalname || "").toLowerCase().endsWith(".pdf");
+  if (!isPdf) return { error: "not_pdf" };
+  const rel = path.join("dossiers", String(companyId));
+  const dir = path.join(_dossierRoot(), rel);
+  fs.mkdirSync(dir, { recursive: true });
+  const fname = crypto.randomBytes(16).toString("hex") + ".pdf";
+  fs.writeFileSync(path.join(dir, fname), file.buffer);
+  return { attachment: { path: path.join(rel, fname), filename: (file.originalname || "document.pdf").slice(0, 200), size: file.size || file.buffer.length } };
+}
+function _deleteDossierFile(relPath) {
+  if (!relPath) return;
+  try {
+    const fs = require("fs"), path = require("path");
+    const full = path.join(_dossierRoot(), relPath);
+    if (full.startsWith(_dossierRoot()) && fs.existsSync(full)) fs.unlinkSync(full);
+  } catch (e) { /* silencieux */ }
+}
+
+// Contacts alternatifs du client (surnom/autre nom, autre email, autre tél).
+// Stockés au niveau client (ClientDossier), pas sur le RDV.
+exports.clientsHubDossierContact = async (req, res) => {
+  try {
+    if (!/^[a-f0-9]{24}$/i.test(req.params.id)) return res.status(400).json({ success: false });
+    const companyId = res.locals.currentCompany._id;
+    const { dossier, error } = await _getOrCreateDossier(req.params.id, companyId);
+    if (error === "no_email") return res.status(400).json({ success: false, error: "no_email" });
+    if (error) return res.status(404).json({ success: false });
+
+    dossier.altName = String(req.body.altName || "").trim().slice(0, 120);
+    dossier.altEmail = String(req.body.altEmail || "").trim().slice(0, 160);
+    dossier.altPhone = String(req.body.altPhone || "").trim().slice(0, 40);
+    await dossier.save();
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("clientsHubDossierContact error:", err.message);
+    return res.status(500).json({ success: false });
+  }
+};
+
+exports.clientsHubDossierAdd = async (req, res) => {
+  try {
+    if (!/^[a-f0-9]{24}$/i.test(req.params.id)) return res.status(400).json({ success: false });
+    const companyId = res.locals.currentCompany._id;
+    const { dossier, error } = await _getOrCreateDossier(req.params.id, companyId);
+    if (error === "no_email") return res.status(400).json({ success: false, error: "no_email" });
+    if (error) return res.status(404).json({ success: false });
+
+    const note = (req.body.note || "").trim();
+    const title = (req.body.title || "").trim();
+    if (!note && !title && !req.file) return res.status(400).json({ success: false, error: "empty" });
+
+    const entry = {
+      date: req.body.date ? new Date(req.body.date) : new Date(),
+      title: title.slice(0, 200),
+      note: note.slice(0, 5000),
+      todo: (req.body.todo || "").trim().slice(0, 2000),
+    };
+    if (req.file) {
+      const r = _saveDossierPdf(req.file, companyId);
+      if (r.error) return res.status(400).json({ success: false, error: r.error });
+      entry.attachment = r.attachment;
+    }
+    dossier.entries.push(entry);
+    await dossier.save();
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("clientsHubDossierAdd error:", err.message);
+    return res.status(500).json({ success: false });
+  }
+};
+
+exports.clientsHubDossierUpdate = async (req, res) => {
+  try {
+    if (!/^[a-f0-9]{24}$/i.test(req.params.id)) return res.status(400).json({ success: false });
+    const companyId = res.locals.currentCompany._id;
+    const { dossier, error } = await _getOrCreateDossier(req.params.id, companyId);
+    if (error) return res.status(404).json({ success: false });
+
+    const entry = dossier.entries.id(req.params.entryId);
+    if (!entry) return res.status(404).json({ success: false });
+
+    if (req.body.date) entry.date = new Date(req.body.date);
+    if (req.body.title !== undefined) entry.title = (req.body.title || "").trim().slice(0, 200);
+    if (req.body.note !== undefined) entry.note = (req.body.note || "").trim().slice(0, 5000);
+    if (req.body.todo !== undefined) entry.todo = (req.body.todo || "").trim().slice(0, 2000);
+
+    if (req.body.removeAttachment === "1" && entry.attachment && entry.attachment.path) {
+      _deleteDossierFile(entry.attachment.path);
+      entry.attachment = { path: "", filename: "", size: 0 };
+    }
+    if (req.file) {
+      const r = _saveDossierPdf(req.file, companyId);
+      if (r.error) return res.status(400).json({ success: false, error: r.error });
+      if (entry.attachment && entry.attachment.path) _deleteDossierFile(entry.attachment.path);
+      entry.attachment = r.attachment;
+    }
+    await dossier.save();
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("clientsHubDossierUpdate error:", err.message);
+    return res.status(500).json({ success: false });
+  }
+};
+
+exports.clientsHubDossierDelete = async (req, res) => {
+  try {
+    if (!/^[a-f0-9]{24}$/i.test(req.params.id)) return res.status(400).json({ success: false });
+    const companyId = res.locals.currentCompany._id;
+    const { dossier, error } = await _getOrCreateDossier(req.params.id, companyId);
+    if (error) return res.status(404).json({ success: false });
+
+    const entry = dossier.entries.id(req.params.entryId);
+    if (!entry) return res.status(404).json({ success: false });
+    if (entry.attachment && entry.attachment.path) _deleteDossierFile(entry.attachment.path);
+    entry.deleteOne();
+    await dossier.save();
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("clientsHubDossierDelete error:", err.message);
+    return res.status(500).json({ success: false });
+  }
+};
+
+// Téléchargement protégé du PDF (jamais servi en statique — RGPD).
+exports.clientsHubDossierDownload = async (req, res) => {
+  try {
+    if (!/^[a-f0-9]{24}$/i.test(req.params.id)) return res.status(400).send("Requête invalide");
+    const companyId = res.locals.currentCompany._id;
+    const booking = await Booking.findOne({ _id: req.params.id, company: companyId }).lean();
+    if (!booking || !booking.email) return res.status(404).send("Introuvable");
+    const ClientDossier = require("../db/models/clientDossier.model");
+    const dossier = await ClientDossier.findOne({ company: companyId, email: booking.email.trim().toLowerCase() });
+    if (!dossier) return res.status(404).send("Introuvable");
+    const entry = dossier.entries.id(req.params.entryId);
+    if (!entry || !entry.attachment || !entry.attachment.path) return res.status(404).send("Fichier introuvable");
+
+    const path = require("path"), fs = require("fs");
+    const full = path.join(_dossierRoot(), entry.attachment.path);
+    if (!full.startsWith(_dossierRoot()) || !fs.existsSync(full)) return res.status(404).send("Fichier introuvable");
+
+    // ?view=1 → affichage dans le navigateur (inline) ; sinon téléchargement.
+    if (req.query.view === "1") {
+      const safe = (entry.attachment.filename || "document.pdf").replace(/[^\w.\- ]/g, "_");
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", 'inline; filename="' + safe + '"');
+      return res.sendFile(full);
+    }
+    return res.download(full, entry.attachment.filename || "document.pdf");
+  } catch (err) {
+    console.error("clientsHubDossierDownload error:", err.message);
+    return res.status(500).send("Erreur serveur");
+  }
+};
+
 exports.historyDeleteRow = async (req, res) => {
   try {
     const { id } = req.body;
@@ -2046,8 +2503,31 @@ exports.historyEditRowPatch = async (req, res) => {
     }
     // Employee update (empty string = "no employee")
     if (employeeId !== undefined) {
-      updateFields.employee     = employeeId || null;
-      updateFields.employeeName = "";
+      if (employeeId) {
+        // On valide l'employé contre l'ÉQUIPE de l'établissement courant
+        // (jamais un simple User.findById non scopé) — sinon un admin pouvait
+        // référencer un praticien d'un autre établissement sur son RDV et
+        // récupérer son nom (fuite inter-locataires / IDOR).
+        const team = await getBookableTeam(res.locals.currentCompany._id);
+        const emp = team.find((m) => m.id === String(employeeId));
+        if (emp) {
+          updateFields.employee = employeeId;
+          updateFields.employeeName = `${emp.firstName || ""} ${emp.lastName || ""}`.trim() || emp.businessName || "";
+        } else {
+          // Employé inconnu de cette équipe → on n'assigne personne.
+          updateFields.employee = null;
+          updateFields.employeeName = "";
+        }
+      } else {
+        updateFields.employee = null;
+        updateFields.employeeName = "";
+      }
+    }
+    // Mode de paiement (défini/modifié manuellement par l'admin).
+    const { paymentMethod } = req.body;
+    if (paymentMethod !== undefined) {
+      const allowedPay = ["online", "on_site", "bank_transfer", "paypal", "cash", "none"];
+      if (allowedPay.includes(paymentMethod)) updateFields["payment.method"] = paymentMethod;
     }
 
     // ── Optional: force-delete conflicting bookings before saving ──────────────

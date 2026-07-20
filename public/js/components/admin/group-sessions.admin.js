@@ -339,4 +339,21 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
+
+  // Ouverture automatique depuis la page « Services 2 » : le bouton « Nouveau ›
+  // Cours collectif » renvoie ici avec ?new=1, et le crayon d'un cours avec
+  // ?edit=<id> — on déclenche la bonne modale (création / édition).
+  try {
+    const _p = new URLSearchParams(location.search);
+    const _editId = _p.get("edit");
+    if (_editId) {
+      const _eb = document.querySelector('.edit-course-btn[data-id="' + _editId + '"]');
+      if (_eb) _eb.click();
+      history.replaceState(null, "", location.pathname);
+    } else if (_p.get("new") === "1") {
+      const _ab = document.getElementById("addCourseBtn");
+      if (_ab) _ab.click();
+      history.replaceState(null, "", location.pathname);
+    }
+  } catch (e) {}
 });

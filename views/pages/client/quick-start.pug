@@ -39,25 +39,23 @@ block content
                     input#qsName.qs-input(type="text" placeholder="Ex : Studio Marie, Coach Paul…" maxlength="80" value=prefillName autocomplete="off")
                     p.qs-error#qsNameError Indiquez un nom pour continuer.
 
-                //- Métier
+                //- Métier — autocomplétion sur toute la liste + saisie libre autorisée
                 .qs-field
                     label.qs-label(for="qsType") Votre métier / activité
                         span.qs-opt (optionnel)
-                    input#qsType.qs-input(type="text" placeholder="Ex : Coiffure, Coaching, Massage…" maxlength="60" value=prefillType autocomplete="off" list="qsTypeList")
-                    datalist#qsTypeList
-                        option(value="Coiffure")
-                        option(value="Barbier")
-                        option(value="Massage / Bien-être")
-                        option(value="Coaching sportif")
-                        option(value="Onglerie")
-                        option(value="Esthétique")
-                        option(value="Thérapie / Psychologie")
-                        option(value="Tatouage")
-                        option(value="Photographe")
+                    .qs-type-wrap
+                        input#qsType.qs-input(type="text" placeholder="Ex : Coiffure, Coaching, Massage…" maxlength="60" value=prefillType autocomplete="off")
+                        .qs-dd#qsTypeDD
+                    .qs-type-warn#qsTypeWarn
+                        svg.qs-type-warn__ic(viewBox="0 -960 960 960" width="15" height="15" fill="currentColor")
+                            path(d="m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Z")
+                        .qs-type-warn__body
+                            span Ce métier n'est pas encore reconnu par BranShee. C'est accepté, mais vous serez moins mis en avant sur le site tant qu'il n'est pas dans notre liste.
+                            button.qs-type-req#qsTypeReq(type="button") Demander l'ajout de ce métier →
 
-                button.qs-btn.qs-btn--primary#qsNext1(type="button")
+                button.sm-btn.sm-btn--primary.sm-btn--full#qsNext1(type="button")
                     span Continuer
-                    span.material-symbols-outlined arrow_forward
+                    span.material-symbols-outlined(style="font-size:18px") arrow_forward
 
             //- ══ ÉTAPE 2 — Vos disponibilités ════════════════════════════════
             section.qs-panel(data-panel="2")
@@ -80,12 +78,12 @@ block content
                 p.qs-error#qsDaysError Choisissez au moins un jour d'ouverture.
 
                 .qs-actions
-                    button.qs-btn.qs-btn--ghost#qsBack2(type="button")
-                        span.material-symbols-outlined arrow_back
+                    button.sm-btn.sm-btn--ghost#qsBack2(type="button")
+                        span.material-symbols-outlined(style="font-size:18px") arrow_back
                         span Retour
-                    button.qs-btn.qs-btn--primary#qsCreate(type="button")
+                    button.sm-btn.sm-btn--primary#qsCreate(type="button")
                         span Créer mon calendrier
-                        span.material-symbols-outlined arrow_forward
+                        span.material-symbols-outlined(style="font-size:18px") arrow_forward
 
             //- ══ ÉTAPE 3 — C'est prêt ! ══════════════════════════════════════
             section.qs-panel(data-panel="3")
@@ -106,10 +104,10 @@ block content
                         p.qs-services__q Voulez-vous ajouter vos prestations maintenant ?
                         p.qs-services__hint Ce que vos clients pourront réserver (coupe, séance, consultation…).
                         .qs-actions
-                            a.qs-btn.qs-btn--ghost#qsSkipServices(href="/panel")
+                            a.sm-btn.sm-btn--ghost#qsSkipServices(href="/panel")
                                 span Plus tard
-                            a.qs-btn.qs-btn--primary#qsAddServices(href="/services")
-                                span.material-symbols-outlined add
+                            a.sm-btn.sm-btn--primary#qsAddServices(href="/services")
+                                span.material-symbols-outlined(style="font-size:18px") add
                                 span Ajouter mes services
 
     //- Overlay de chargement pendant la création
@@ -119,8 +117,81 @@ block content
 
 block scripts
     script.
+        window.__qsServices = !{JSON.stringify(services || [])};
+    script.
         (function () {
             var state = { step: 1, days: new Set([1,2,3,4,5]), photoFile: null };
+
+            // ── Autocomplétion métier + saisie libre (avertissement orange) ──
+            (function () {
+                var input = document.getElementById('qsType');
+                var dd = document.getElementById('qsTypeDD');
+                var warn = document.getElementById('qsTypeWarn');
+                if (!input || !dd || !warn) return;
+                var SERVICES = window.__qsServices || [];
+                function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim(); }
+                var normSet = {}; SERVICES.forEach(function (s) { normSet[norm(s)] = true; });
+
+                // Métier tapé absent de la liste = accepté, mais signalé en orange.
+                function checkRecognized() {
+                    var v = input.value.trim();
+                    var custom = v !== '' && !normSet[norm(v)];
+                    input.classList.toggle('qs-input--custom', custom);
+                    warn.classList.toggle('is-visible', custom);
+                }
+                function renderDD() {
+                    var q = norm(input.value.trim());
+                    var list = q
+                        ? SERVICES.filter(function (s) { return norm(s).indexOf(q) !== -1; }).slice(0, 8)
+                        : SERVICES.slice(0, 8);
+                    dd.innerHTML = '';
+                    if (!list.length) { dd.classList.remove('is-open'); return; }
+                    list.forEach(function (s) {
+                        var row = document.createElement('div');
+                        row.className = 'qs-dd__item';
+                        row.textContent = s;
+                        row.addEventListener('mousedown', function (e) {
+                            e.preventDefault();
+                            input.value = s;
+                            dd.classList.remove('is-open');
+                            checkRecognized();
+                        });
+                        dd.appendChild(row);
+                    });
+                    dd.classList.add('is-open');
+                }
+                input.addEventListener('focus', renderDD);
+                input.addEventListener('input', function () { renderDD(); checkRecognized(); resetReqBtn(); });
+                input.addEventListener('blur', function () { setTimeout(function () { dd.classList.remove('is-open'); }, 160); });
+
+                // ── Bouton « Demander l'ajout de ce métier » ──
+                var reqBtn = document.getElementById('qsTypeReq');
+                function resetReqBtn() {
+                    if (reqBtn && !reqBtn.dataset.sent) { reqBtn.disabled = false; reqBtn.textContent = "Demander l'ajout de ce métier →"; }
+                }
+                if (reqBtn) {
+                    reqBtn.addEventListener('click', function () {
+                        var metier = input.value.trim();
+                        if (!metier) return;
+                        reqBtn.disabled = true;
+                        reqBtn.textContent = 'Envoi…';
+                        fetch('/demarrer/metier-request', {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                            body: JSON.stringify({ metier: metier })
+                        })
+                            .then(function (r) { return r.json().catch(function () { return {}; }); })
+                            .then(function (j) {
+                                if (j && j.success) { reqBtn.dataset.sent = '1'; reqBtn.textContent = '✓ Demande envoyée, merci !'; }
+                                else { reqBtn.disabled = false; reqBtn.textContent = 'Réessayer'; }
+                            })
+                            .catch(function () { reqBtn.disabled = false; reqBtn.textContent = 'Réessayer'; });
+                    });
+                }
+
+                checkRecognized();
+            })();
             var panels = document.querySelectorAll('.qs-panel');
             var steps  = document.querySelectorAll('.qs-step');
 

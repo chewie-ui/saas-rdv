@@ -1,0 +1,1132 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet", href="/css/layouts/client-detail.css")
+    link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0")
+
+block content
+    - var cb = clientBookings || []
+    - var cName = ((booking.name || '') + ' ' + (booking.surname || '')).trim() || 'Client'
+    - var initials = ((booking.name || '?').charAt(0) + (booking.surname || '').charAt(0)).toUpperCase()
+    - var colorIdx = (((booking.name || 'A').charCodeAt(0) + (booking.surname || 'A').charCodeAt(0)) % 8)
+    -
+        // Sérialisation JSON sûre pour injection dans un <script> inline : échappe
+        // </script>, & et les séparateurs de ligne U+2028/U+2029 — sinon un client
+        // qui réserve avec « </script>… » dans son nom/message casse toute la page
+        // (et pourrait injecter du script → XSS stocké dans la session de l'admin).
+        function safeJson(o) { var BS = String.fromCharCode(92); return JSON.stringify(o).replace(new RegExp('[<>&' + String.fromCharCode(0x2028) + String.fromCharCode(0x2029) + ']', 'g'), function (c) { return BS + 'u' + ('000' + c.charCodeAt(0).toString(16)).slice(-4); }); }
+        function stateOf(b) { return b.noShow ? 'noshow' : ((b.status || 'confirmed').toLowerCase() === 'canceled' || (b.status || '').toLowerCase() === 'cancelled') ? 'canceled' : 'confirmed'; }
+        function stateLabel(k) { return k === 'noshow' ? 'Absence' : k === 'canceled' ? 'Annulé' : 'Confirmé'; }
+        var total = cb.length;
+        var nConf = cb.filter(function (b) { return stateOf(b) === 'confirmed'; }).length;
+        var nCanceled = cb.filter(function (b) { return stateOf(b) === 'canceled'; }).length;
+        var nNoShow = cb.filter(function (b) { return stateOf(b) === 'noshow'; }).length;
+        var nowTs = Date.now();
+        var past = cb.filter(function (b) { return new Date(b.date).getTime() < nowTs; });
+        var futur = cb.filter(function (b) { return new Date(b.date).getTime() >= nowTs; });
+        var lastDone = past.length ? past[0] : null;                       // cb trié desc
+        var nextUp = futur.length ? futur[futur.length - 1] : null;        // le plus proche
+        function fmtDate(d) { return d ? new Date(d).toLocaleDateString(lang, { day: '2-digit', month: 'short', year: 'numeric' }) : '—'; }
+        function fmtLong(d) { return d ? new Date(d).toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—'; }
+        var payMethodLabels = { online: 'En ligne (carte)', on_site: 'Sur place', bank_transfer: 'Virement', paypal: 'PayPal', cash: 'Espèces', none: 'Aucun paiement en ligne' };
+        var payStatusLabels = { none: '—', authorized: 'Carte enregistrée', paid: 'Payé', refunded: 'Remboursé', partial: 'Remboursement partiel', penalty: 'Frais prélevés', failed: 'Échec' };
+        var pay = booking.payment || {};
+        var bState = stateOf(booking);
+
+    .cd-page
+        //- ── Fil d'ariane / retour ───────────────────────────────
+        a.cd-back(href="/clients-hub")
+            span.material-symbols-outlined(style="font-size:20px") arrow_back
+            span Retour
+
+        //- ── En-tête client ──────────────────────────────────────
+        .cd-header
+            .cd-header__id
+                span.cd-avatar(class=`av-${colorIdx}`)= initials
+                .cd-header__idtext
+                    h1.cd-name
+                        = cName
+                        if altContact && altContact.altName
+                            span.cd-alt-name  (#{altContact.altName})
+                    .cd-sub
+                        if booking.email
+                            span= booking.email
+                        if booking.email && booking.phone
+                            span.cd-sub__sep ·
+                        if booking.phone
+                            span= booking.phone
+                        span.cd-sub__sep ·
+                        span #{total} rendez-vous
+            .cd-header__actions
+                .cd-menu-wrap
+                    button.cd-iconbtn#cdKebab(type="button" title="Actions")
+                        span.material-symbols-outlined(style="font-size:20px") more_vert
+                    .cd-menu#cdMenu(hidden)
+                        button.cd-menu__item#cdBlock(type="button")
+                            span.material-symbols-outlined(style="font-size:18px") block
+                            span Bloquer le client
+                        .cd-menu__sep
+                        button.cd-menu__item.cd-menu__item--danger#cdDelete(type="button")
+                            span.material-symbols-outlined(style="font-size:18px") delete
+                            span Supprimer le client
+                if booking.email
+                    a.sm-btn.sm-btn--ghost(href=`mailto:${booking.email}`)
+                        span.material-symbols-outlined(style="font-size:18px") mail
+                        span Contacter le client
+                else if booking.phone
+                    a.sm-btn.sm-btn--ghost(href=`tel:${booking.phone}`)
+                        span.material-symbols-outlined(style="font-size:18px") call
+                        span Contacter le client
+                a.sm-btn.sm-btn--primary(href="/appointment/new")
+                    span.material-symbols-outlined(style="font-size:18px") calendar_add_on
+                    span Nouveau RDV
+
+        //- Ligne méta (téléphone / email / dernier RDV) ──────────
+        .cd-meta
+            if booking.phone
+                span.cd-meta__item
+                    span.material-symbols-outlined(style="font-size:16px") call
+                    = booking.phone
+            if booking.email
+                span.cd-meta__item
+                    span.material-symbols-outlined(style="font-size:16px") mail
+                    = booking.email
+            span.cd-meta__item
+                span.material-symbols-outlined(style="font-size:16px") event
+                | Dernier RDV : #{fmtDate(lastDone ? lastDone.date : booking.date)}
+
+        //- ── Onglets ─────────────────────────────────────────────
+        .cd-tabs
+            button.cd-tab.is-active(type="button" data-tab="overview") Aperçu
+            button.cd-tab(type="button" data-tab="visits") Rendez-vous
+            button.cd-tab(type="button" data-tab="dossier") Dossier
+
+        //- ── Panneau APERÇU ──────────────────────────────────────
+        .cd-panel.is-active#panel-overview
+            .cd-grid
+                //- Colonne principale
+                .cd-col
+                    //- Derniers rendez-vous (aperçu — la liste complète est dans l'onglet)
+                    .cd-card
+                        .cd-card__head
+                            h3.cd-card__title Derniers rendez-vous
+                            button.cd-card__action.js-goto-tab(type="button" data-tab="visits") Tout voir
+                        .cd-list
+                            each b in cb.slice(0, 5)
+                                - var st = stateOf(b)
+                                button.cd-list__item.js-goto-view(type="button" data-id=String(b._id))
+                                    .cd-list__main
+                                        span.cd-dot(style=`background:${b.serviceColor || '#cbd5e1'}`)
+                                        .cd-list__txt
+                                            span.cd-list__svc= b.serviceName || 'Rendez-vous'
+                                            span.cd-list__meta #{fmtDate(b.date)} · #{b.startTime || ''}#{b.employeeName ? ' · ' + b.employeeName : ''}
+                                    span.cd-pill(class=`cd-pill--${st}`)
+                                        span.cd-pill__dot
+                                        = stateLabel(st)
+                        if total > 5
+                            button.cd-list-more.js-goto-tab(type="button" data-tab="visits") Voir les #{total} rendez-vous
+
+                    //- Notes générales sur le client
+                    .cd-card
+                        .cd-card__head
+                            h3.cd-card__title Notes générales
+                            span.cd-notes-status#cdNotesStatus
+                        if hasEmailForNotes
+                            textarea.cd-input.cd-notes-area#cdNotesArea(rows="6" placeholder="Notes internes sur le client — ex : allergique aux arachides, préfère le matin, client fidèle…")= generalNotes || ''
+                            .cd-notes-actions
+                                button.sm-btn.sm-btn--primary#cdNotesSave(type="button")
+                                    span.material-symbols-outlined(style="font-size:18px") save
+                                    span Enregistrer
+                        else
+                            p.cd-muted(style="font-size:13px;margin:4px 0 0") Ajoutez une adresse email à ce client pour pouvoir enregistrer des notes.
+
+                //- Colonne latérale
+                .cd-col.cd-col--side
+                    //- Contacts alternatifs (surnom / 2ᵉ email / 2ᵉ numéro) — ajoutés par l'admin
+                    .cd-card
+                        .cd-card__head
+                            h3.cd-card__title Contacts alternatifs
+                            span.cd-notes-status#cdAltStatus
+                        if hasEmailForNotes
+                            p.cd-card__hint2 Le client a un autre nom, un 2ᵉ email ou numéro ? Ajoutez-les ici.
+                            .cd-field
+                                label Autre nom / surnom
+                                input.cd-input#cdAltName(type="text" value=(altContact && altContact.altName) || '' placeholder="Ex : surnom, nom de jeune fille…")
+                            .cd-field.cd-field--spaced
+                                label Autre email
+                                input.cd-input#cdAltEmail(type="email" value=(altContact && altContact.altEmail) || '' placeholder="2ᵉ adresse email…")
+                            .cd-field.cd-field--spaced
+                                label Autre téléphone
+                                input.cd-input#cdAltPhone(type="text" value=(altContact && altContact.altPhone) || '' placeholder="2ᵉ numéro…")
+                            .cd-notes-actions
+                                button.sm-btn.sm-btn--primary#cdAltSave(type="button")
+                                    span.material-symbols-outlined(style="font-size:18px") save
+                                    span Enregistrer
+                        else
+                            p.cd-muted(style="font-size:13px;margin:4px 0 0") Ajoutez une adresse email à ce client pour enregistrer des contacts alternatifs.
+
+                    //- Coordonnées
+                    .cd-card
+                        .cd-card__head
+                            h3.cd-card__title Coordonnées
+                        .cd-kv
+                            .cd-kv__row
+                                span.cd-kv__k Email
+                                span.cd-kv__v= booking.email || '—'
+                            .cd-kv__row
+                                span.cd-kv__k Téléphone
+                                span.cd-kv__v= booking.phone || '—'
+
+                    //- Paiement
+                    .cd-card
+                        .cd-card__head
+                            h3.cd-card__title Paiement
+                        .cd-kv
+                            .cd-kv__row
+                                span.cd-kv__k Mode
+                                span.cd-kv__v= payMethodLabels[pay.method || 'none'] || 'Aucun paiement en ligne'
+                            if pay.method && pay.method !== 'none'
+                                .cd-kv__row
+                                    span.cd-kv__k Statut
+                                    span.cd-kv__v= payStatusLabels[pay.status || 'none'] || '—'
+                                .cd-kv__row
+                                    span.cd-kv__k Montant
+                                    span.cd-kv__v= pay.amount ? (pay.amount + ' €') : '—'
+
+                    //- Statistiques
+                    .cd-card
+                        .cd-card__head
+                            h3.cd-card__title Résumé
+                        .cd-stats
+                            .cd-stat
+                                strong.cd-stat__num= total
+                                span.cd-stat__lbl Total
+                            .cd-stat
+                                strong.cd-stat__num.is-green= nConf
+                                span.cd-stat__lbl Confirmés
+                            .cd-stat
+                                strong.cd-stat__num.is-red= nCanceled
+                                span.cd-stat__lbl Annulés
+                            .cd-stat
+                                strong.cd-stat__num.is-orange= nNoShow
+                                span.cd-stat__lbl Absences
+
+        //- ── Panneau RENDEZ-VOUS (liste + vue/édition inline) ────
+        -
+            var svcMap = {}; var empMap = {};
+            cb.forEach(function (b) { if (b.serviceName) svcMap[b.serviceName] = (b.serviceColor || '#94a3b8'); if (b.employeeName) empMap[b.employeeName] = true; });
+            var svcById = {}; (services || []).forEach(function (s) { svcById[String(s._id)] = s; });
+            var payMethodLabels = { online: 'En ligne (carte)', on_site: 'Sur place', bank_transfer: 'Virement', paypal: 'PayPal', cash: 'Espèces', none: 'Aucun paiement en ligne' };
+            var payStatusLabels = { none: 'Aucun', authorized: 'Carte enregistrée (0 € prélevé)', paid: 'Payé', refunded: 'Remboursé', partial: 'Remboursement partiel', penalty: 'Frais prélevés', failed: 'Échec de paiement' };
+            function presenceOf(b) {
+                if (b.noShow) return { key: 'absent', label: 'Absent (no-show)' };
+                if ((b.status || '').toLowerCase() === 'canceled' || (b.status || '').toLowerCase() === 'cancelled') return { key: 'canceled', label: 'Annulé' };
+                if (new Date(b.date).getTime() < nowTs) return { key: 'done', label: 'Honoré' };
+                return { key: 'upcoming', label: 'À venir' };
+            }
+            var rdvData = {};
+            cb.forEach(function (b) { rdvData[String(b._id)] = {
+                name: b.name || '', surname: b.surname || '', email: b.email || '', phone: b.phone || '',
+                message: b.message || '', adminNotes: b.adminNotes || '',
+                date: b.date ? new Date(b.date).toISOString().slice(0, 10) : '',
+                startTime: b.startTime || '', endTime: b.endTime || '',
+                status: ((b.status || 'confirmed').toLowerCase() === 'canceled' ? 'canceled' : 'confirmed'),
+                serviceId: b.service ? String(b.service) : '', employeeId: b.employee ? String(b.employee) : '',
+                serviceName: b.serviceName || '', employeeName: b.employeeName || '',
+                paymentMethod: (b.payment && b.payment.method) || 'none'
+            }; });
+        - var yearsSet = {}; cb.forEach(function (b) { if (b.date) yearsSet[new Date(b.date).getFullYear()] = true; })
+        - var yearsList = Object.keys(yearsSet).sort(function (a, b) { return b - a; })
+        .cd-panel#panel-visits
+            //- ─────────── Vue LISTE ───────────
+            #cdVisMain
+                .cd-vis-toolbar
+                    .cd-vis-search
+                        span.cd-vis-search__icon.material-symbols-outlined search
+                        input#cdVisSearch(type="text" placeholder="Rechercher un rendez-vous…" autocomplete="off")
+                    .cd-vis-filters
+                        //- Recherche par date (jour / mois / année)
+                        .cd-datefilter
+                            button.cd-vis-datebtn#cdDateBtn(type="button")
+                                span.material-symbols-outlined(style="font-size:18px") calendar_month
+                                span#cdDateBtnLabel Recherche par date
+                                span.material-symbols-outlined(style="font-size:18px") expand_more
+                            .cd-datemenu#cdDateMenu(hidden)
+                                .cd-date-modes
+                                    button.cd-date-mode.is-active(type="button" data-mode="day") Jour
+                                    button.cd-date-mode(type="button" data-mode="month") Mois
+                                    button.cd-date-mode(type="button" data-mode="year") Année
+                                .cd-date-body
+                                    input.cd-input#cdDateDay(type="date")
+                                    input.cd-input#cdDateMonth(type="month" hidden)
+                                    select.cd-input#cdDateYear(hidden)
+                                        option(value="") — Choisir une année —
+                                        each y in yearsList
+                                            option(value=y)= y
+                                .cd-date-foot
+                                    button.cd-date-clear#cdDateClear(type="button") Effacer
+                        select.cd-vis-select#cdVisService
+                            option(value="") Tous les services
+                            each color, name in svcMap
+                                option(value=name)= name
+                        select.cd-vis-select#cdVisEmp
+                            option(value="") Tous les praticiens
+                            each _v, name in empMap
+                                option(value=name)= name
+                .cd-vis-list
+                    each b in cb
+                        - var st = stateOf(b)
+                        .cd-visit(
+                            data-id=String(b._id)
+                            data-service=(b.serviceName || '')
+                            data-emp=(b.employeeName || '')
+                            data-date=(b.date ? new Date(b.date).toISOString().slice(0,10) : '')
+                            data-search=((fmtLong(b.date) + ' ' + (b.serviceName || '') + ' ' + (b.employeeName || '') + ' ' + (b.message || '')).toLowerCase())
+                        )
+                            .cd-visit__left
+                                span.cd-visit__date
+                                    span.material-symbols-outlined(style="font-size:18px") event
+                                    | #{fmtLong(b.date)} · #{b.startTime || ''}#{b.endTime ? ' – ' + b.endTime : ''}
+                                span.cd-visit__desc
+                                    if b.serviceName
+                                        span.cd-dot(style=`background:${b.serviceColor || '#94a3b8'}`)
+                                        = b.serviceName
+                                    else
+                                        span.cd-muted Sans service
+                                    if b.message
+                                        span.cd-visit__msg  · #{b.message}
+                            .cd-visit__right
+                                span.cd-visit__emp= b.employeeName || '—'
+                                span.cd-pill(class=`cd-pill--${st}`)
+                                    span.cd-pill__dot
+                                    = stateLabel(st)
+                                .cd-visit__acts
+                                    button.cd-icon-act.js-rdv-view(type="button" data-id=String(b._id) title="Voir")
+                                        span.material-symbols-outlined(style="font-size:18px") visibility
+                                    button.cd-icon-act.js-rdv-edit(type="button" data-id=String(b._id) title="Modifier")
+                                        span.material-symbols-outlined(style="font-size:18px") edit
+                .cd-vis-empty#cdVisEmpty(style="display:none")
+                    span.cd-vis-empty__icon.material-symbols-outlined search_off
+                    p Aucun rendez-vous ne correspond.
+
+            //- ─────────── Vues DÉTAIL (une par RDV) ───────────
+            each b in cb
+                - var st = stateOf(b); var pres = presenceOf(b); var pay = b.payment || {}
+                - var svc = b.service ? svcById[String(b.service)] : null
+                - var price = (svc && svc.price != null && svc.price !== '') ? svc.price : (pay.amount || null)
+                .cd-rdv-view(id=`rdvView-${b._id}` hidden)
+                    .cd-rdv-top
+                        button.cd-rdv-back.js-rdv-back(type="button")
+                            span.material-symbols-outlined(style="font-size:19px") arrow_back
+                            span Retour à la liste
+                        .cd-rdv-top__acts
+                            button.sm-btn.sm-btn--ghost.js-rdv-edit(type="button" data-id=String(b._id))
+                                span.material-symbols-outlined(style="font-size:18px") edit
+                                span Modifier
+                            button.sm-btn.sm-btn--ghost.sm-btn--danger.js-rdv-del(type="button" data-id=String(b._id))
+                                span.material-symbols-outlined(style="font-size:18px") delete
+                                span Supprimer
+                    .cd-rdv-head
+                        .cd-rdv-head__date
+                            span.material-symbols-outlined(style="font-size:22px") event
+                            div
+                                strong= fmtLong(b.date)
+                                span.cd-rdv-head__time #{b.startTime || ''}#{b.endTime ? ' – ' + b.endTime : ''}
+                        span.cd-pill(class=`cd-pill--${st}`)
+                            span.cd-pill__dot
+                            = stateLabel(st)
+                    .cd-rdv-cards
+                        .cd-card
+                            h3.cd-card__title Détails du rendez-vous
+                            .cd-kv
+                                .cd-kv__row
+                                    span.cd-kv__k Service
+                                    span.cd-kv__v
+                                        if b.serviceName
+                                            span.cd-dot(style=`background:${b.serviceColor || '#94a3b8'}`)
+                                            = b.serviceName
+                                        else
+                                            span.cd-muted Aucun service
+                                .cd-kv__row
+                                    span.cd-kv__k Praticien
+                                    span.cd-kv__v= b.employeeName || '—'
+                                .cd-kv__row
+                                    span.cd-kv__k Durée
+                                    span.cd-kv__v= b.slotTime ? b.slotTime + ' min' : '—'
+                                .cd-kv__row
+                                    span.cd-kv__k Prix
+                                    span.cd-kv__v= (price != null && price !== '') ? (price + ' €') : '—'
+                        .cd-card
+                            h3.cd-card__title Paiement & présence
+                            .cd-kv
+                                .cd-kv__row
+                                    span.cd-kv__k Mode de paiement
+                                    span.cd-kv__v= payMethodLabels[pay.method || 'none'] || 'Aucun'
+                                .cd-kv__row
+                                    span.cd-kv__k Statut du paiement
+                                    span.cd-kv__v= payStatusLabels[pay.status || 'none'] || '—'
+                                if pay.amount
+                                    .cd-kv__row
+                                        span.cd-kv__k Montant
+                                        span.cd-kv__v= pay.amount + ' €'
+                                if pay.penaltyAmount
+                                    .cd-kv__row
+                                        span.cd-kv__k Frais prélevés
+                                        span.cd-kv__v= pay.penaltyAmount + ' €'
+                                .cd-kv__row
+                                    span.cd-kv__k Présence
+                                    span.cd-kv__v
+                                        span.cd-pres(class=`cd-pres--${pres.key}`)= pres.label
+                                if b.noShow && b.noShowReason
+                                    .cd-kv__row
+                                        span.cd-kv__k Motif d'absence
+                                        span.cd-kv__v= b.noShowReason === 'valid' ? 'Raison valable (aucun frais)' : 'Sans raison (frais)'
+                                if pres.key === 'canceled' && b.updatedAt
+                                    .cd-kv__row
+                                        span.cd-kv__k Annulé le
+                                        span.cd-kv__v= fmtDate(b.updatedAt)
+                        .cd-card
+                            h3.cd-card__title Client
+                            .cd-kv
+                                .cd-kv__row
+                                    span.cd-kv__k Nom
+                                    span.cd-kv__v= ((b.name || '') + ' ' + (b.surname || '')).trim() || '—'
+                                .cd-kv__row
+                                    span.cd-kv__k Email
+                                    span.cd-kv__v= b.email || '—'
+                                .cd-kv__row
+                                    span.cd-kv__k Téléphone
+                                    span.cd-kv__v= b.phone || '—'
+                                if b.message
+                                    .cd-kv__row
+                                        span.cd-kv__k Message
+                                        span.cd-kv__v= b.message
+                                if altContact && altContact.altName
+                                    .cd-kv__row
+                                        span.cd-kv__k Autre nom / surnom
+                                        span.cd-kv__v= altContact.altName
+                                if altContact && altContact.altEmail
+                                    .cd-kv__row
+                                        span.cd-kv__k Autre email
+                                        span.cd-kv__v= altContact.altEmail
+                                if altContact && altContact.altPhone
+                                    .cd-kv__row
+                                        span.cd-kv__k Autre téléphone
+                                        span.cd-kv__v= altContact.altPhone
+                        if b.formAnswers && b.formAnswers.length
+                            .cd-card
+                                h3.cd-card__title Réponses au formulaire
+                                .cd-kv
+                                    each fa in b.formAnswers
+                                        .cd-kv__row
+                                            span.cd-kv__k= fa.question
+                                            span.cd-kv__v= fa.answer || '—'
+                        if b.adminNotes
+                            .cd-card
+                                h3.cd-card__title Notes internes
+                                p.cd-rdv-notes= b.adminNotes
+                        //- Marquer absent (RDV passé, confirmé, pas déjà no-show)
+                        if pres.key === 'done'
+                            .cd-rdv-presence-actions
+                                span.cd-rdv-presence-actions__lbl Marquer l'absence du client :
+                                button.sm-btn.sm-btn--soft.js-noshow(type="button" data-id=String(b._id) data-reason="valid") Absent (raison valable)
+                                button.sm-btn.sm-btn--danger.js-noshow(type="button" data-id=String(b._id) data-reason="invalid") Absent (sans raison)
+
+            //- ─────────── Formulaire d'ÉDITION (partagé, même design que la vue) ─
+            #cdRdvEdit(hidden)
+                .cd-rdv-top
+                    button.cd-rdv-back#cdEditBack(type="button")
+                        span.material-symbols-outlined(style="font-size:19px") arrow_back
+                        span Retour à la liste
+                    .cd-rdv-top__acts
+                        button.sm-btn.sm-btn--ghost#cdEditCancel(type="button") Annuler
+                        button.sm-btn.sm-btn--primary#cdEditSave(type="button")
+                            span.material-symbols-outlined(style="font-size:18px") save
+                            span Enregistrer
+                form#cdEditForm(onsubmit="return false")
+                    .cd-rdv-cards
+                        .cd-card
+                            h3.cd-card__title Détails du rendez-vous
+                            .cd-form-grid.cd-form-grid--2
+                                .cd-field
+                                    label Date
+                                    input.cd-input#efDate(type="date")
+                                .cd-field
+                                    label Statut
+                                    select.cd-input#efStatus
+                                        option(value="confirmed") Confirmé
+                                        option(value="canceled") Annulé
+                                .cd-field
+                                    label Heure de début
+                                    input.cd-input#efStart(type="time")
+                                .cd-field
+                                    label Heure de fin
+                                    input.cd-input#efEnd(type="time")
+                                .cd-field
+                                    label Durée du rendez-vous (min)
+                                    input.cd-input#efDuree(type="number" min="5" step="5")
+                                .cd-field
+                                    label Service
+                                    select.cd-input#efService
+                                        option(value="") Aucun service
+                                        each svc in services
+                                            option(value=String(svc._id) data-duration=(svc.duration || '') data-price=(svc.price || ''))= svc.name
+                                .cd-field
+                                    label Praticien
+                                    select.cd-input#efEmployee
+                                        option(value="") Aucun praticien
+                                        each emp in employees
+                                            option(value=String(emp._id))= emp.firstName + ' ' + emp.lastName
+                                .cd-field.cd-field--full
+                                    label Type de paiement
+                                    select.cd-input#efPayMethod
+                                        option(value="none") Non défini
+                                        option(value="on_site") Sur place
+                                        option(value="cash") Espèces
+                                        option(value="bank_transfer") Virement
+                                        option(value="paypal") PayPal
+                                        option(value="online") En ligne (carte)
+                        .cd-card
+                            .cd-card__head
+                                h3.cd-card__title Client
+                            p.cd-card__hint
+                                span.material-symbols-outlined(style="font-size:15px") lock
+                                | Ces informations sont définies par le client — non modifiables ici.
+                            .cd-form-grid.cd-form-grid--2
+                                .cd-field
+                                    label Prénom
+                                    input.cd-input.cd-input--locked#efName(type="text" readonly)
+                                .cd-field
+                                    label Nom
+                                    input.cd-input.cd-input--locked#efSurname(type="text" readonly)
+                                .cd-field
+                                    label Email
+                                    input.cd-input.cd-input--locked#efEmail(type="email" readonly)
+                                .cd-field
+                                    label Téléphone
+                                    input.cd-input.cd-input--locked#efPhone(type="text" readonly)
+                            .cd-field.cd-field--spaced
+                                label Message du client
+                                textarea.cd-input.cd-input--locked#efMessage(rows="2" readonly)
+                        .cd-card.cd-card--full
+                            h3.cd-card__title Notes internes (non visibles par le client)
+                            .cd-field
+                                textarea.cd-input#efNotes(rows="3")
+
+        //- ── Panneau DOSSIER (suivi du client : notes datées + PDF) ──
+        .cd-panel#panel-dossier
+            if !hasEmailForNotes
+                .cd-soon
+                    span.cd-soon__icon.material-symbols-outlined folder_off
+                    p.cd-soon__title Dossier indisponible
+                    p.cd-soon__sub Ajoutez une adresse email à ce client pour tenir son dossier de suivi.
+            else
+                .cd-dos-toolbar
+                    .cd-vis-search
+                        span.cd-vis-search__icon.material-symbols-outlined search
+                        input#cdDosSearch(type="text" placeholder="Rechercher une note (titre, texte, date…)" autocomplete="off")
+                    button.sm-btn.sm-btn--primary#cdDosNew(type="button")
+                        span.material-symbols-outlined(style="font-size:18px") add
+                        span Nouvelle note
+                .cd-dos-list#cdDosList
+                    each e in dossierEntries
+                        - var eid = String(e._id)
+                        - var eDate = e.date ? new Date(e.date).toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : ''
+                        - var eIso = e.date ? new Date(e.date).toISOString().slice(0,10) : ''
+                        - var att = e.attachment && e.attachment.path ? e.attachment : null
+                        .cd-dos-entry(
+                            data-id=eid
+                            data-date=eIso
+                            data-title=(e.title || '')
+                            data-note=(e.note || '')
+                            data-todo=(e.todo || '')
+                            data-att=(att ? att.filename : '')
+                            data-search=((eDate + ' ' + (e.title||'') + ' ' + (e.note||'') + ' ' + (e.todo||'') + ' ' + (att?att.filename:'')).toLowerCase())
+                        )
+                            .cd-dos-entry__head
+                                .cd-dos-entry__meta
+                                    span.cd-dos-entry__date= eDate
+                                    if e.title
+                                        span.cd-dos-entry__title= e.title
+                                .cd-dos-entry__acts
+                                    button.cd-icon-act.js-dos-edit(type="button" data-id=eid title="Modifier")
+                                        span.material-symbols-outlined(style="font-size:18px") edit
+                                    button.cd-icon-act.js-dos-del(type="button" data-id=eid title="Supprimer")
+                                        span.material-symbols-outlined(style="font-size:18px") delete
+                            if e.note
+                                p.cd-dos-entry__note= e.note
+                            if e.todo
+                                .cd-dos-entry__todo
+                                    span.material-symbols-outlined(style="font-size:15px") flag
+                                    span À faire : #{e.todo}
+                            if att
+                                .cd-dos-file
+                                    span.material-symbols-outlined.cd-dos-file__ic(style="font-size:18px") picture_as_pdf
+                                    span.cd-dos-file__name= att.filename
+                                    a.cd-dos-file__btn(href=`/clients-hub/${booking._id}/dossier/entries/${eid}/file?view=1` target="_blank" rel="noopener" title="Ouvrir dans un nouvel onglet")
+                                        span.material-symbols-outlined(style="font-size:16px") open_in_new
+                                        span Ouvrir
+                                    a.cd-dos-file__btn(href=`/clients-hub/${booking._id}/dossier/entries/${eid}/file` title="Télécharger")
+                                        span.material-symbols-outlined(style="font-size:16px") download
+                                        span Télécharger
+                .cd-dos-empty#cdDosEmpty(style=(dossierEntries && dossierEntries.length ? 'display:none' : ''))
+                    span.cd-dos-empty__icon.material-symbols-outlined description
+                    p.cd-dos-empty__title Aucune note pour ce client
+                    p.cd-dos-empty__sub Ajoutez la première — constat, soin réalisé, document PDF…
+
+        //- ── Modale note (ajout / édition) ───────────────────────
+        if hasEmailForNotes
+            .cd-modal#cdDosModal(hidden)
+                .cd-modal__box
+                    .cd-modal__head
+                        h3.cd-modal__title#cdDosModalTitle Nouvelle note
+                        button.cd-modal__close#cdDosModalClose(type="button")
+                            span.material-symbols-outlined(style="font-size:20px") close
+                    form#cdDosForm(onsubmit="return false")
+                        input(type="hidden" id="cdDosEntryId")
+                        .cd-field
+                            label Date
+                            input.cd-input#cdDosDate(type="date")
+                        .cd-field
+                            label Titre (facultatif)
+                            input.cd-input#cdDosTitle(type="text" placeholder="Ex : Bilan initial, Ordonnance…")
+                        .cd-field
+                            label Constat / ce qui a été fait
+                            textarea.cd-input#cdDosNote(rows="3" placeholder="Ex : Douleur à l'épaule droite, mobilité réduite. Massage + étirements ciblés.")
+                        .cd-field
+                            label À faire au prochain rendez-vous (facultatif)
+                            textarea.cd-input#cdDosTodo(rows="2" placeholder="Ex : Continuer le renforcement, revoir la posture assise.")
+                        .cd-field
+                            label Document PDF (facultatif)
+                            .cd-file-picker
+                                input#cdDosPdf(type="file" accept="application/pdf,.pdf" style="display:none")
+                                button.sm-btn.sm-btn--ghost#cdDosPdfBtn(type="button")
+                                    span.material-symbols-outlined(style="font-size:18px") attach_file
+                                    span Joindre un PDF
+                                span.cd-file-picker__name#cdDosPdfName
+                                button.cd-file-picker__clear#cdDosPdfClear(type="button" hidden title="Retirer")
+                                    span.material-symbols-outlined(style="font-size:16px") close
+                            span.cd-file-picker__current#cdDosPdfCurrent(hidden)
+                        .cd-modal__actions
+                            button.sm-btn.sm-btn--ghost#cdDosCancel(type="button") Annuler
+                            button.sm-btn.sm-btn--primary#cdDosSave(type="button")
+                                span.material-symbols-outlined(style="font-size:18px") save
+                                span Enregistrer
+
+block scripts
+    script(src="/js/utils/confirm-modal.js")
+    script.
+        (function () {
+            // ── Onglets ───────────────────────────────────────────────
+            var tabs = document.querySelectorAll('.cd-tab');
+            var panels = document.querySelectorAll('.cd-panel');
+            function activateTab(name) {
+                tabs.forEach(function (x) { x.classList.toggle('is-active', x.dataset.tab === name); });
+                panels.forEach(function (p) { p.classList.toggle('is-active', p.id === 'panel-' + name); });
+            }
+            tabs.forEach(function (t) {
+                t.addEventListener('click', function () { activateTab(t.dataset.tab); });
+            });
+            // Après un enregistrement (reload), on revient sur le bon onglet.
+            try {
+                var _keep = sessionStorage.getItem('cdTab');
+                if (_keep) { sessionStorage.removeItem('cdTab'); activateTab(_keep); }
+            } catch (e) {}
+
+            // ── Menu « 3 points » ─────────────────────────────────────
+            var kebab = document.getElementById('cdKebab');
+            var menu = document.getElementById('cdMenu');
+            if (kebab && menu) {
+                kebab.addEventListener('click', function (e) { e.stopPropagation(); menu.hidden = !menu.hidden; });
+                document.addEventListener('click', function (e) { if (!menu.contains(e.target) && e.target !== kebab) menu.hidden = true; });
+            }
+
+            var CLIENT_IDS = !{safeJson((clientBookings || []).map(function (b) { return String(b._id); }))};
+
+            // ── Supprimer le client (tous ses RDV) ────────────────────
+            var del = document.getElementById('cdDelete');
+            if (del) del.addEventListener('click', async function () {
+                menu.hidden = true;
+                var ok = await window.confirmModal('Supprimer ce client ?', 'Cela supprimera définitivement ses ' + CLIENT_IDS.length + ' rendez-vous. Cette action est irréversible.');
+                if (!ok) return;
+                try {
+                    var res = await fetch('/clients-hub/bookings', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: CLIENT_IDS })
+                    });
+                    if (!res.ok) throw new Error('fail');
+                    location.href = '/clients-hub';
+                } catch (e) {
+                    window.confirmModal('Erreur', 'La suppression a échoué. Réessayez.', { alertOnly: true });
+                }
+            });
+
+            // ── Bloquer le client ─────────────────────────────────────
+            var blockBtn = document.getElementById('cdBlock');
+            if (blockBtn) blockBtn.addEventListener('click', async function () {
+                menu.hidden = true;
+                var ok = await window.confirmModal('Bloquer ce client ?', 'Il ne pourra plus prendre de rendez-vous en ligne. Vous pourrez le débloquer depuis son dossier.');
+                if (!ok) return;
+                try {
+                    var res = await fetch('/clients-hub/#{booking._id}/block', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+                    });
+                    var data = await res.json().catch(function () { return {}; });
+                    if (!res.ok || !data.success) {
+                        if (data && data.error === 'no_email') {
+                            window.confirmModal('Impossible', "Ce client n'a pas d'adresse email : le blocage se fait par email, il ne peut donc pas être bloqué.", { alertOnly: true });
+                            return;
+                        }
+                        throw new Error('fail');
+                    }
+                    window.confirmModal('Client bloqué', 'Ce client ne pourra plus réserver en ligne.', { alertOnly: true, danger: false });
+                } catch (e) {
+                    window.confirmModal('Erreur', 'Le blocage a échoué. Réessayez.', { alertOnly: true });
+                }
+            });
+
+            // ── Onglet Rendez-vous : recherche + filtres ──────────────
+            var vSearch = document.getElementById('cdVisSearch');
+            var vSvc = document.getElementById('cdVisService');
+            var vEmp = document.getElementById('cdVisEmp');
+            var vRows = Array.prototype.slice.call(document.querySelectorAll('.cd-visit'));
+            var vEmpty = document.getElementById('cdVisEmpty');
+            var dateFilter = { mode: 'day', value: '' }; // value = '' (inactif), 'YYYY-MM-DD', 'YYYY-MM' ou 'YYYY'
+            function matchesDate(rowDate) {
+                if (!dateFilter.value) return true;
+                if (!rowDate) return false;
+                if (dateFilter.mode === 'day') return rowDate === dateFilter.value;      // YYYY-MM-DD
+                if (dateFilter.mode === 'month') return rowDate.slice(0, 7) === dateFilter.value; // YYYY-MM
+                if (dateFilter.mode === 'year') return rowDate.slice(0, 4) === dateFilter.value;  // YYYY
+                return true;
+            }
+            function filterVisits() {
+                var q = (vSearch && vSearch.value || '').trim().toLowerCase();
+                var svc = vSvc ? vSvc.value : '';
+                var emp = vEmp ? vEmp.value : '';
+                var n = 0;
+                vRows.forEach(function (r) {
+                    var ok = (!q || (r.dataset.search || '').indexOf(q) !== -1)
+                          && (!svc || r.dataset.service === svc)
+                          && (!emp || r.dataset.emp === emp)
+                          && matchesDate(r.dataset.date || '');
+                    r.style.display = ok ? '' : 'none';
+                    if (ok) n++;
+                });
+                if (vEmpty) vEmpty.style.display = (n === 0) ? '' : 'none';
+            }
+            if (vSearch) vSearch.addEventListener('input', filterVisits);
+            if (vSvc) vSvc.addEventListener('change', filterVisits);
+            if (vEmp) vEmp.addEventListener('change', filterVisits);
+
+            // ── Recherche par date (jour / mois / année) ──────────────
+            (function () {
+                var btn = document.getElementById('cdDateBtn');
+                var menu = document.getElementById('cdDateMenu');
+                var label = document.getElementById('cdDateBtnLabel');
+                var inpDay = document.getElementById('cdDateDay');
+                var inpMonth = document.getElementById('cdDateMonth');
+                var inpYear = document.getElementById('cdDateYear');
+                var clearBtn = document.getElementById('cdDateClear');
+                if (!btn || !menu) return;
+                var MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+
+                btn.addEventListener('click', function (e) { e.stopPropagation(); menu.hidden = !menu.hidden; btn.classList.toggle('is-open', !menu.hidden); });
+                document.addEventListener('click', function (e) { if (!menu.contains(e.target) && e.target !== btn) { menu.hidden = true; btn.classList.remove('is-open'); } });
+
+                document.querySelectorAll('#cdDateMenu .cd-date-mode').forEach(function (m) {
+                    m.addEventListener('click', function () {
+                        document.querySelectorAll('#cdDateMenu .cd-date-mode').forEach(function (x) { x.classList.remove('is-active'); });
+                        m.classList.add('is-active');
+                        dateFilter.mode = m.dataset.mode;
+                        inpDay.hidden = (dateFilter.mode !== 'day');
+                        inpMonth.hidden = (dateFilter.mode !== 'month');
+                        inpYear.hidden = (dateFilter.mode !== 'year');
+                        // On repart d'un filtre vide quand on change de mode.
+                        dateFilter.value = ''; inpDay.value = ''; inpMonth.value = ''; inpYear.value = '';
+                        updateDateLabel(); filterVisits();
+                    });
+                });
+                function updateDateLabel() {
+                    if (!dateFilter.value) { label.textContent = 'Recherche par date'; btn.classList.remove('has-value'); return; }
+                    btn.classList.add('has-value');
+                    if (dateFilter.mode === 'day') { var p = dateFilter.value.split('-'); label.textContent = p[2] + '/' + p[1] + '/' + p[0]; }
+                    else if (dateFilter.mode === 'month') { var m = dateFilter.value.split('-'); label.textContent = MOIS[parseInt(m[1], 10) - 1] + ' ' + m[0]; }
+                    else { label.textContent = 'Année ' + dateFilter.value; }
+                }
+                inpDay.addEventListener('change', function () { dateFilter.value = inpDay.value; updateDateLabel(); filterVisits(); });
+                inpMonth.addEventListener('change', function () { dateFilter.value = inpMonth.value; updateDateLabel(); filterVisits(); });
+                inpYear.addEventListener('change', function () { dateFilter.value = inpYear.value; updateDateLabel(); filterVisits(); });
+                clearBtn.addEventListener('click', function () {
+                    dateFilter.value = ''; inpDay.value = ''; inpMonth.value = ''; inpYear.value = '';
+                    updateDateLabel(); filterVisits(); menu.hidden = true; btn.classList.remove('is-open');
+                });
+            })();
+
+            // ── RDV : vue / édition inline (sans changer de page) ─────
+            var RDV_DATA = !{safeJson(rdvData)};
+            var visMain = document.getElementById('cdVisMain');
+            var editForm = document.getElementById('cdRdvEdit');
+            var editingId = null;
+
+            function hideAllRdv() {
+                if (visMain) visMain.hidden = true;
+                if (editForm) editForm.hidden = true;
+                document.querySelectorAll('.cd-rdv-view').forEach(function (v) { v.hidden = true; });
+            }
+            function showList() { hideAllRdv(); if (visMain) visMain.hidden = false; window.scrollTo({ top: 0 }); }
+            function showView(id) {
+                hideAllRdv();
+                var v = document.getElementById('rdvView-' + id);
+                if (v) v.hidden = false;
+                window.scrollTo({ top: 0 });
+            }
+            var editingOrig = {};
+            var editDuration = 30;
+            var CONTACT = !{safeJson(altContact || { altName: '', altEmail: '', altPhone: '' })};
+            var HAS_SERVICES = !{JSON.stringify(!!hasServices)};
+            var DEFAULT_DUR = !{JSON.stringify(defaultDuration || 30)};
+            function ensureOption(sel, value, text) {
+                if (!sel || !value) return;
+                for (var i = 0; i < sel.options.length; i++) { if (sel.options[i].value === value) return; }
+                var o = document.createElement('option'); o.value = value; o.textContent = text || value; sel.appendChild(o);
+            }
+            function showEdit(id) {
+                var d = RDV_DATA[id];
+                if (!d) return;
+                editingId = id;
+                editingOrig = { serviceId: d.serviceId, employeeId: d.employeeId };
+                // Durée du créneau (préservée quand on change l'heure de début).
+                var _sm = (d.startTime || '0:0').split(':').map(Number);
+                var _em = (d.endTime || '0:0').split(':').map(Number);
+                editDuration = (_em[0] * 60 + _em[1]) - (_sm[0] * 60 + _sm[1]);
+                if (!(editDuration > 0)) editDuration = DEFAULT_DUR;
+                var g = function (x) { return document.getElementById(x); };
+                g('efDuree').value = editDuration;
+                g('efDate').value = d.date; g('efStart').value = d.startTime; g('efEnd').value = d.endTime;
+                g('efStatus').value = d.status; g('efPayMethod').value = d.paymentMethod;
+                // Les selects ne doivent jamais être vides : si le service/praticien du
+                // RDV n'est plus dans la liste (désactivé/supprimé), on ajoute une option.
+                ensureOption(g('efService'), d.serviceId, d.serviceName);
+                ensureOption(g('efEmployee'), d.employeeId, d.employeeName);
+                g('efService').value = d.serviceId; g('efEmployee').value = d.employeeId;
+                g('efName').value = d.name; g('efSurname').value = d.surname; g('efEmail').value = d.email;
+                g('efPhone').value = d.phone; g('efMessage').value = d.message; g('efNotes').value = d.adminNotes;
+                hideAllRdv();
+                if (editForm) editForm.hidden = false;
+                window.scrollTo({ top: 0 });
+            }
+
+            // ── Heures ↔ durée : tout reste cohérent, dans les 2 sens ─────
+            //   • changer le DÉBUT     → la FIN se recale (durée conservée)
+            //   • changer la FIN       → le DÉBUT se recale (durée conservée)
+            //   • changer la DURÉE     → la FIN se recale (début conservé)
+            //   • changer le SERVICE   → durée = durée du service → FIN recalée
+            var efStart = document.getElementById('efStart');
+            var efEnd = document.getElementById('efEnd');
+            var efService = document.getElementById('efService');
+            var efDuree = document.getElementById('efDuree');
+            function _toMin(t) { if (!t) return null; var p = t.split(':').map(Number); return p[0] * 60 + p[1]; }
+            function _toTime(m) { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+            function _setDuree(d) { editDuration = d; if (efDuree) efDuree.value = d; }
+            function _syncEndFromStart() { var s = _toMin(efStart.value); if (s != null) efEnd.value = _toTime(s + editDuration); }
+            function _syncStartFromEnd() { var e = _toMin(efEnd.value); if (e != null) efStart.value = _toTime(e - editDuration); }
+            if (efStart) efStart.addEventListener('change', _syncEndFromStart);
+            if (efEnd) efEnd.addEventListener('change', _syncStartFromEnd);
+            if (efDuree) efDuree.addEventListener('change', function () {
+                var d = parseInt(efDuree.value, 10);
+                if (d > 0) { editDuration = d; _syncEndFromStart(); }
+            });
+            if (efService) efService.addEventListener('change', function () {
+                var opt = efService.options[efService.selectedIndex];
+                var dur = opt ? parseInt(opt.dataset.duration, 10) : 0;
+                if (dur > 0) { _setDuree(dur); _syncEndFromStart(); }
+            });
+
+            document.querySelectorAll('.js-rdv-view').forEach(function (b) { b.addEventListener('click', function () { showView(b.dataset.id); }); });
+            document.querySelectorAll('.js-rdv-edit').forEach(function (b) { b.addEventListener('click', function () { showEdit(b.dataset.id); }); });
+            // Depuis l'Aperçu : « Modifier » → onglet Rendez-vous + édition inline.
+            document.querySelectorAll('.js-goto-edit').forEach(function (b) { b.addEventListener('click', function () { activateTab('visits'); showEdit(b.dataset.id); }); });
+            // Arrivée depuis la liste Clients (« Modifier le dernier RDV ») : ?edit=1
+            // → on ouvre directement l'onglet Rendez-vous en édition sur ce RDV,
+            // au lieu de l'ancienne page /history/edit/:id (supprimée du parcours).
+            try {
+                if (new URLSearchParams(location.search).get('edit') === '1') {
+                    activateTab('visits');
+                    showEdit('#{booking._id}');
+                    history.replaceState(null, '', location.pathname);
+                }
+            } catch (e) {}
+            // « Derniers rendez-vous » : une ligne → onglet Rendez-vous + vue détail.
+            document.querySelectorAll('.js-goto-view').forEach(function (b) { b.addEventListener('click', function () { activateTab('visits'); showView(b.dataset.id); }); });
+            // « Tout voir » → onglet Rendez-vous.
+            document.querySelectorAll('.js-goto-tab').forEach(function (b) { b.addEventListener('click', function () { activateTab(b.dataset.tab); window.scrollTo({ top: 0 }); }); });
+
+            // ── Notes générales sur le client ─────────────────────────
+            var notesSave = document.getElementById('cdNotesSave');
+            var notesArea = document.getElementById('cdNotesArea');
+            var notesStatus = document.getElementById('cdNotesStatus');
+            if (notesSave && notesArea) notesSave.addEventListener('click', async function () {
+                notesSave.classList.add('is-loading');
+                try {
+                    var res = await fetch('/clients-hub/#{booking._id}/notes', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ notes: notesArea.value })
+                    });
+                    var data = await res.json().catch(function () { return {}; });
+                    notesSave.classList.remove('is-loading');
+                    if (!res.ok || !data.success) { window.confirmModal('Erreur', 'Les notes n\'ont pas pu être enregistrées.', { alertOnly: true }); return; }
+                    if (notesStatus) { notesStatus.textContent = '✓ Enregistré'; setTimeout(function () { notesStatus.textContent = ''; }, 2500); }
+                } catch (e) {
+                    notesSave.classList.remove('is-loading');
+                    window.confirmModal('Erreur', 'Les notes n\'ont pas pu être enregistrées.', { alertOnly: true });
+                }
+            });
+            // ── Contacts alternatifs (Aperçu) ─────────────────────────
+            var altSave = document.getElementById('cdAltSave');
+            var altStatus = document.getElementById('cdAltStatus');
+            if (altSave) altSave.addEventListener('click', async function () {
+                altSave.classList.add('is-loading');
+                try {
+                    var res = await fetch('/clients-hub/#{booking._id}/dossier/contact', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            altName: document.getElementById('cdAltName').value,
+                            altEmail: document.getElementById('cdAltEmail').value,
+                            altPhone: document.getElementById('cdAltPhone').value
+                        })
+                    });
+                    var data = await res.json().catch(function () { return {}; });
+                    altSave.classList.remove('is-loading');
+                    if (!res.ok || !data.success) { window.confirmModal('Erreur', 'Les contacts n\'ont pas pu être enregistrés.', { alertOnly: true }); return; }
+                    if (altStatus) { altStatus.textContent = '✓ Enregistré'; setTimeout(function () { altStatus.textContent = ''; }, 2500); }
+                } catch (e) {
+                    altSave.classList.remove('is-loading');
+                    window.confirmModal('Erreur', 'Les contacts n\'ont pas pu être enregistrés.', { alertOnly: true });
+                }
+            });
+
+            document.querySelectorAll('.js-rdv-back').forEach(function (b) { b.addEventListener('click', showList); });
+            var eBack = document.getElementById('cdEditBack'); if (eBack) eBack.addEventListener('click', showList);
+            var eCancel = document.getElementById('cdEditCancel'); if (eCancel) eCancel.addEventListener('click', showList);
+
+            function reloadOnVisits() { try { sessionStorage.setItem('cdTab', 'visits'); } catch (e) {} location.reload(); }
+
+            // Enregistrer les modifications (réutilise PATCH /history/edit/:id).
+            var eSave = document.getElementById('cdEditSave');
+            async function doSave(payload) {
+                eSave.classList.add('is-loading');
+                try {
+                    var res = await fetch('/history/edit/' + editingId, {
+                        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                    });
+                    var data = await res.json().catch(function () { return {}; });
+                    if (!res.ok || data.success === false) {
+                        window.confirmModal('Erreur', (data && data.error) || 'L\'enregistrement a échoué.', { alertOnly: true });
+                        eSave.classList.remove('is-loading');
+                        return;
+                    }
+                    reloadOnVisits();
+                } catch (e) {
+                    eSave.classList.remove('is-loading');
+                    window.confirmModal('Erreur', 'L\'enregistrement a échoué. Réessayez.', { alertOnly: true });
+                }
+            }
+            if (eSave) eSave.addEventListener('click', async function () {
+                if (!editingId) return;
+                var g = function (x) { return document.getElementById(x); };
+                var svcSel = g('efService');
+                var dateV = g('efDate').value, startV = g('efStart').value, endV = g('efEnd').value;
+
+                // Garde-fou : l'heure de fin doit être après le début.
+                if (startV && endV && _toMin(endV) <= _toMin(startV)) {
+                    window.confirmModal('Horaire invalide', 'L\'heure de fin doit être après l\'heure de début.', { alertOnly: true });
+                    return;
+                }
+                // Service obligatoire s'il existe des services dans l'établissement.
+                if (HAS_SERVICES && !svcSel.value) {
+                    window.confirmModal('Service requis', 'Ce rendez-vous doit être associé à un service. Choisissez-en un dans la liste.', { alertOnly: true });
+                    return;
+                }
+
+                var payload = {
+                    date: dateV, startTime: startV, endTime: endV,
+                    status: g('efStatus').value,
+                    adminNotes: g('efNotes').value,
+                    paymentMethod: g('efPayMethod').value
+                };
+                if (svcSel.value !== editingOrig.serviceId) {
+                    payload.serviceId = svcSel.value;
+                    payload.serviceName = svcSel.value ? svcSel.options[svcSel.selectedIndex].textContent.trim() : '';
+                }
+                if (g('efEmployee').value !== editingOrig.employeeId) {
+                    payload.employeeId = g('efEmployee').value;
+                }
+
+                // Vérification de conflit (inutile si le RDV est annulé).
+                if (payload.status !== 'canceled' && dateV && startV && endV) {
+                    try {
+                        var q = new URLSearchParams({ date: dateV, startTime: startV, endTime: endV, employeeId: g('efEmployee').value || '' });
+                        var cr = await fetch('/history/edit/' + editingId + '/conflicts?' + q.toString());
+                        var cdata = await cr.json();
+                        if (cdata && cdata.hasConflict) {
+                            var c = (cdata.conflicts && cdata.conflicts[0]) || {};
+                            var who = c.name ? (' — ' + c.name) : '';
+                            var ok = await window.confirmModal(
+                                'Un rendez-vous existe déjà',
+                                'Un autre rendez-vous occupe déjà ce créneau (' + (c.time || '') + who + ').\n\nChoisissez un autre horaire, ou supprimez ce rendez-vous existant pour enregistrer.',
+                                { confirmLabel: 'Supprimer l\'autre & enregistrer', cancelLabel: 'Choisir un autre horaire' }
+                            );
+                            if (!ok) return; // reste en édition pour choisir un autre horaire
+                            payload.forceDeleteConflicts = true;
+                        }
+                    } catch (e) { /* si la vérif échoue, on tente quand même */ }
+                }
+                doSave(payload);
+            });
+
+            // Supprimer un RDV depuis sa vue détail.
+            document.querySelectorAll('.js-rdv-del').forEach(function (b) { b.addEventListener('click', async function () {
+                var id = b.dataset.id;
+                var ok = await window.confirmModal('Supprimer ce rendez-vous ?', 'Cette action est irréversible.');
+                if (!ok) return;
+                try {
+                    var res = await fetch('/clients-hub/bookings', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [id] }) });
+                    if (!res.ok) throw new Error('fail');
+                    reloadOnVisits();
+                } catch (e) { window.confirmModal('Erreur', 'La suppression a échoué.', { alertOnly: true }); }
+            }); });
+
+            // Marquer absent (no-show) — réutilise l'endpoint existant (Stripe-safe).
+            document.querySelectorAll('.js-noshow').forEach(function (b) { b.addEventListener('click', async function () {
+                var id = b.dataset.id, reason = b.dataset.reason;
+                var msg = reason === 'invalid'
+                    ? 'Le client sera marqué absent. Si une carte a été enregistrée, des frais peuvent être prélevés.'
+                    : 'Le client sera marqué absent, sans frais.';
+                var ok = await window.confirmModal('Marquer comme absent ?', msg);
+                if (!ok) return;
+                try {
+                    var res = await fetch('/appointment/' + id + '/no-show', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: reason }) });
+                    if (!res.ok) throw new Error('fail');
+                    reloadOnVisits();
+                } catch (e) { window.confirmModal('Erreur', 'L\'opération a échoué.', { alertOnly: true }); }
+            }); });
+
+            // ── Dossier : notes datées + PDF ──────────────────────────
+            (function () {
+                var bookingId = '#{booking._id}';
+                var modal = document.getElementById('cdDosModal');
+                if (!modal) return; // pas d'email → pas de dossier
+                var g = function (x) { return document.getElementById(x); };
+                var pdfInput = g('cdDosPdf'), pdfName = g('cdDosPdfName'), pdfClear = g('cdDosPdfClear'), pdfCurrent = g('cdDosPdfCurrent');
+                var removeAtt = false;
+                function openModal() { modal.hidden = false; document.body.style.overflow = 'hidden'; }
+                function closeModal() { modal.hidden = true; document.body.style.overflow = ''; }
+                function resetPdf() { pdfInput.value = ''; pdfName.textContent = ''; pdfClear.hidden = true; removeAtt = false; }
+                function todayIso() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+
+                function openNew() {
+                    g('cdDosModalTitle').textContent = 'Nouvelle note';
+                    g('cdDosEntryId').value = '';
+                    g('cdDosDate').value = todayIso();
+                    g('cdDosTitle').value = ''; g('cdDosNote').value = ''; g('cdDosTodo').value = '';
+                    resetPdf(); pdfCurrent.hidden = true;
+                    openModal();
+                }
+                function openEdit(entry) {
+                    g('cdDosModalTitle').textContent = 'Modifier la note';
+                    g('cdDosEntryId').value = entry.dataset.id;
+                    g('cdDosDate').value = entry.dataset.date || todayIso();
+                    g('cdDosTitle').value = entry.dataset.title || '';
+                    g('cdDosNote').value = entry.dataset.note || '';
+                    g('cdDosTodo').value = entry.dataset.todo || '';
+                    resetPdf();
+                    if (entry.dataset.att) {
+                        pdfCurrent.hidden = false;
+                        pdfCurrent.innerHTML = 'PDF actuel : <strong></strong> ';
+                        pdfCurrent.querySelector('strong').textContent = entry.dataset.att;
+                        var rm = document.createElement('button');
+                        rm.type = 'button'; rm.className = 'cd-file-picker__clear'; rm.title = 'Retirer le PDF';
+                        rm.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px">close</span>';
+                        rm.addEventListener('click', function () { removeAtt = true; pdfCurrent.hidden = true; });
+                        pdfCurrent.appendChild(rm);
+                    } else { pdfCurrent.hidden = true; }
+                    openModal();
+                }
+                g('cdDosNew').addEventListener('click', openNew);
+                g('cdDosModalClose').addEventListener('click', closeModal);
+                g('cdDosCancel').addEventListener('click', closeModal);
+                modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+
+                g('cdDosPdfBtn').addEventListener('click', function () { pdfInput.click(); });
+                pdfInput.addEventListener('change', function () {
+                    if (pdfInput.files && pdfInput.files[0]) {
+                        var f = pdfInput.files[0];
+                        if (f.type !== 'application/pdf' && !/\.pdf$/i.test(f.name)) { window.confirmModal('Fichier invalide', 'Seuls les fichiers PDF sont acceptés.', { alertOnly: true }); pdfInput.value = ''; return; }
+                        pdfName.textContent = f.name; pdfClear.hidden = false; removeAtt = false; pdfCurrent.hidden = true;
+                    }
+                });
+                pdfClear.addEventListener('click', resetPdf);
+
+                document.querySelectorAll('.js-dos-edit').forEach(function (b) { b.addEventListener('click', function () { openEdit(b.closest('.cd-dos-entry')); }); });
+                document.querySelectorAll('.js-dos-del').forEach(function (b) { b.addEventListener('click', async function () {
+                    var ok = await window.confirmModal('Supprimer cette note ?', 'Cette action est irréversible.');
+                    if (!ok) return;
+                    try {
+                        var res = await fetch('/clients-hub/' + bookingId + '/dossier/entries/' + b.dataset.id, { method: 'DELETE' });
+                        if (!res.ok) throw new Error();
+                        try { sessionStorage.setItem('cdTab', 'dossier'); } catch (e) {}
+                        location.reload();
+                    } catch (e) { window.confirmModal('Erreur', 'La suppression a échoué.', { alertOnly: true }); }
+                }); });
+
+                var save = g('cdDosSave');
+                save.addEventListener('click', async function () {
+                    var note = g('cdDosNote').value.trim(), title = g('cdDosTitle').value.trim();
+                    var hasPdf = pdfInput.files && pdfInput.files[0];
+                    var id = g('cdDosEntryId').value;
+                    if (!id && !note && !title && !hasPdf) { window.confirmModal('Note vide', 'Ajoutez un titre, un texte ou un PDF.', { alertOnly: true }); return; }
+                    var fd = new FormData();
+                    fd.append('date', g('cdDosDate').value);
+                    fd.append('title', title);
+                    fd.append('note', note);
+                    fd.append('todo', g('cdDosTodo').value.trim());
+                    if (hasPdf) fd.append('pdf', pdfInput.files[0]);
+                    if (removeAtt) fd.append('removeAttachment', '1');
+                    save.classList.add('is-loading');
+                    try {
+                        var url = id ? ('/clients-hub/' + bookingId + '/dossier/entries/' + id) : ('/clients-hub/' + bookingId + '/dossier/entries');
+                        var res = await fetch(url, { method: id ? 'PATCH' : 'POST', body: fd });
+                        var data = await res.json().catch(function () { return {}; });
+                        if (!res.ok || !data.success) {
+                            save.classList.remove('is-loading');
+                            window.confirmModal('Erreur', data.error === 'not_pdf' ? 'Seuls les fichiers PDF sont acceptés.' : 'L\'enregistrement a échoué.', { alertOnly: true });
+                            return;
+                        }
+                        try { sessionStorage.setItem('cdTab', 'dossier'); } catch (e) {}
+                        location.reload();
+                    } catch (e) { save.classList.remove('is-loading'); window.confirmModal('Erreur', 'L\'enregistrement a échoué.', { alertOnly: true }); }
+                });
+
+                var dosSearch = g('cdDosSearch');
+                var dosEntries = Array.prototype.slice.call(document.querySelectorAll('.cd-dos-entry'));
+                var dosEmpty = g('cdDosEmpty');
+                var dosEmptyTitle = dosEmpty ? dosEmpty.querySelector('.cd-dos-empty__title') : null;
+                var dosEmptySub = dosEmpty ? dosEmpty.querySelector('.cd-dos-empty__sub') : null;
+                var dosEmptyTxt = { title: dosEmptyTitle ? dosEmptyTitle.textContent : '', sub: dosEmptySub ? dosEmptySub.textContent : '' };
+                if (dosSearch) dosSearch.addEventListener('input', function () {
+                    var q = dosSearch.value.trim().toLowerCase(), n = 0;
+                    dosEntries.forEach(function (e) { var ok = !q || (e.dataset.search || '').indexOf(q) !== -1; e.style.display = ok ? '' : 'none'; if (ok) n++; });
+                    if (dosEmpty) {
+                        dosEmpty.style.display = (n === 0) ? '' : 'none';
+                        // Message adapté : « aucun résultat » pendant une recherche,
+                        // « aucune note » quand le dossier est réellement vide.
+                        if (n === 0 && dosEmptyTitle && dosEmptySub) {
+                            if (q) { dosEmptyTitle.textContent = 'Aucun résultat'; dosEmptySub.textContent = 'Aucune note ne correspond à « ' + dosSearch.value.trim() + ' ».'; }
+                            else { dosEmptyTitle.textContent = dosEmptyTxt.title; dosEmptySub.textContent = dosEmptyTxt.sub; }
+                        }
+                    }
+                });
+            })();
+        })();

@@ -648,6 +648,10 @@
   align-items: center;
   gap: 20px;
   overflow: hidden;
+  /* Le bandeau est un flex-item du conteneur (flex column). Avec overflow:hidden,
+     sa taille min de flex-item tombe à 0 → le parent le compressait (contenu
+     coupé en haut/bas). flex-shrink:0 l'empêche de rétrécir sous son contenu. */
+  flex-shrink: 0;
   padding: 24px 26px;
   margin-bottom: 24px;
   border-radius: 18px;

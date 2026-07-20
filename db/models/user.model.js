@@ -333,6 +333,13 @@ const userSchema = schema(
       type: Boolean,
       default: false,
     },
+
+    // Préférences d'interface propres à l'utilisateur (par navigateur/compte),
+    // persistées pour ne pas être perdues au rafraîchissement.
+    uiPrefs: {
+      // Colonnes masquées dans le tableau des services (clés : type, emp, dur, price, status).
+      servicesHiddenCols: { type: [String], default: [] },
+    },
   },
 
   { timestamps: true },

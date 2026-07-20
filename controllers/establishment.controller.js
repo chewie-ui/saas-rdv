@@ -854,9 +854,12 @@ const QS_DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 exports.quickStartPage = async (req, res) => {
   if (!req.user) return res.redirect("/login");
   try {
-    // Déjà un établissement → pas de raison de repasser par l'express.
+    // Le wizard est AUSSI le flux « Créer un nouvel établissement » (multi-
+    // établissements) : on ne redirige que si l'utilisateur a atteint la limite
+    // de son forfait — pas dès qu'il en a déjà un.
     const existing = await Company.countDocuments({ owner: req.user._id, isDeleted: { $ne: true } });
-    if (existing > 0) return res.redirect("/panel");
+    const limit = getLimit("companies", req.user);
+    if (existing >= limit) return res.redirect("/etablissement/mes-etablissements");
   } catch (_) { /* on laisse passer, le POST re-vérifie de toute façon */ }
 
   return res.render("client/quick-start", {
@@ -864,6 +867,7 @@ exports.quickStartPage = async (req, res) => {
     prefillName: (req.user.businessName || "").trim(),
     prefillType: (req.user.businessType || "").trim(),
     dayLabels: QS_DAY_LABELS,
+    services: getServices(res.locals.lang),
   });
 };
 
@@ -922,11 +926,20 @@ exports.quickStartCreate = async (req, res) => {
 
     // Le compte devient pro : businessName/Type/Picture alimentent la page
     // publique, la recherche et la checklist d'onboarding du dashboard.
-    const userUpdate = { company: company._id, accountIntent: "pro", businessName: name, businessType };
-    if (photoPath) userUpdate.businessPicture = photoPath;
+    const userUpdate = { company: company._id, accountIntent: "pro" };
     // Lien réputé « partagé » dès l'express : l'écran final le met en avant.
     userUpdate["onboarding.linkShared"] = true;
+    // Le profil « principal » (businessName/Type/Picture du compte) n'est
+    // renseigné qu'à la PREMIÈRE création — pour ne pas l'écraser quand on crée
+    // un établissement supplémentaire (multi-établissements). Le nom/type/photo
+    // propres à chaque établissement vivent de toute façon sur la Company.
+    if (!owner.businessName) userUpdate.businessName = name;
+    if (!owner.businessType && businessType) userUpdate.businessType = businessType;
+    if (photoPath && !owner.businessPicture) userUpdate.businessPicture = photoPath;
     await User.findByIdAndUpdate(owner._id, userUpdate);
+
+    // Le nouvel établissement devient l'établissement actif → /panel l'affiche.
+    if (req.session) req.session.activeCompanyId = String(company._id);
 
     logActivity({
       company: company._id,
@@ -948,6 +961,36 @@ exports.quickStartCreate = async (req, res) => {
   } catch (err) {
     console.error("quickStartCreate error:", err.message);
     return res.status(500).json({ error: "Une erreur est survenue. Réessayez." });
+  }
+};
+
+// ── Demande d'indexation d'un métier ────────────────────────────────────────
+// Un utilisateur qui saisit un métier absent de notre liste peut demander son
+// ajout : on prévient l'admin par email (le métier reste accepté entre-temps).
+exports.requestMetierIndex = async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Vous devez être connecté." });
+    const metier = (req.body.metier || "").toString().trim().slice(0, 80);
+    if (!metier) return res.status(400).json({ error: "Indiquez un métier." });
+
+    const { sendEmail } = require("../utils/mailer");
+    const esc = (s) => String(s).replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (adminEmail) {
+      const html = `
+        <div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#111;">
+          <h2 style="margin:0 0 12px;">Demande d'indexation de métier</h2>
+          <p style="margin:0 0 8px;">Métier demandé : <b style="color:#15803d;">${esc(metier)}</b></p>
+          <p style="margin:0 0 4px;color:#555;">Par : ${esc(req.user.fullName || "")} — ${esc(req.user.email || "")}</p>
+          <p style="margin:12px 0 0;color:#777;font-size:13px;">Ajoutez-le à <code>utils/services.js</code> s'il est pertinent.</p>
+        </div>`;
+      sendEmail(adminEmail, `[BranShee] Demande d'indexation métier : ${metier}`, html).catch(() => {});
+    }
+    console.log(`[metier-request] "${metier}" demandé par ${req.user.email}`);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("requestMetierIndex error:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
   }
 };
 

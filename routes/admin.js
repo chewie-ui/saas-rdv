@@ -156,6 +156,19 @@ router.get("/history", isVerified, requirePermission("appointments.view"), histo
 router.delete("/history", isAuth, injectCompany, requirePermission("appointments.cancelDelete"), historyDeleteRow);
 router.get("/history/search", isAuth, injectCompany, requirePermission("appointments.view"), historySearch);
 
+// ── Clients (page unifiée — pour l'instant : liste de tous les RDV) ──────────
+router.get("/clients-hub", isAuth, injectCompany, requirePermission("appointments.view"), adminController.clientsHubInit);
+router.delete("/clients-hub/bookings", isAuth, injectCompany, requirePermission("appointments.cancelDelete"), adminController.clientsHubBulkDelete);
+router.get("/clients-hub/:id", isAuth, injectCompany, requirePermission("appointments.view"), adminController.clientsHubDetail);
+router.post("/clients-hub/:id/block", isAuth, injectCompany, requirePermission("clients.manage"), adminController.clientsHubBlock);
+router.post("/clients-hub/:id/notes", isAuth, injectCompany, requirePermission("clients.manage"), adminController.clientsHubSaveNotes);
+// ── Dossier client : entrées de suivi (note datée + PDF facultatif) ──────────
+router.post("/clients-hub/:id/dossier/contact", isAuth, injectCompany, requirePermission("clients.manage"), adminController.clientsHubDossierContact);
+router.post("/clients-hub/:id/dossier/entries", isAuth, injectCompany, requirePermission("clients.manage"), upload.single("pdf"), adminController.clientsHubDossierAdd);
+router.patch("/clients-hub/:id/dossier/entries/:entryId", isAuth, injectCompany, requirePermission("clients.manage"), upload.single("pdf"), adminController.clientsHubDossierUpdate);
+router.delete("/clients-hub/:id/dossier/entries/:entryId", isAuth, injectCompany, requirePermission("clients.manage"), adminController.clientsHubDossierDelete);
+router.get("/clients-hub/:id/dossier/entries/:entryId/file", isAuth, injectCompany, requirePermission("clients.view"), adminController.clientsHubDossierDownload);
+
 router.post("/toggle-day", isAuth, injectCompany, requireScheduleEditPermission, toggleDay);
 router.post("/edit-availability", isAuth, injectCompany, requireScheduleEditPermission, editAvailabilty);
 

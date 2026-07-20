@@ -395,6 +395,7 @@ router.post(
   _qsProcessImage("photo"),
   establishmentController.quickStartCreate,
 );
+router.post("/demarrer/metier-request", isAuth, establishmentController.requestMetierIndex);
 
 router.get("/etablissement/mes-etablissements", isClientOrUserAuth, establishmentController.listMyEstablishments);
 // Page admin (sidebar.pug) — bascule l'établissement actif puis réutilise

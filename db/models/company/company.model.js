@@ -265,6 +265,22 @@ const companySchema = schema(
       newLabel:      { type: String, default: "Oui, je suis nouveau" },
       existingLabel: { type: String, default: "Non, j'ai déjà consulté" },
     },
+
+    // ── Questionnaire de réservation (nouvelle version, multi-questions) ──────
+    // Remplace `bookingQuestion` (une seule question oui/non) : une liste de
+    // questions, chacune avec ses propres réponses. Chaque question et chaque
+    // réponse a un _id stable, référencé par Service.questionRules pour cibler
+    // les services selon les réponses du client. L'ancien `bookingQuestion` est
+    // conservé pour la migration (cf. migrateQuestionnaire).
+    serviceQuestionnaire: {
+      enabled:   { type: Boolean, default: false },
+      questions: [
+        {
+          question: { type: String, default: "", trim: true },
+          options:  [{ label: { type: String, default: "", trim: true } }],
+        },
+      ],
+    },
   },
   { timestamps: true },
 );

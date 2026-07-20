@@ -1,0 +1,206 @@
+.agenda__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.week-nav__btn {
+  width: 38px;
+  padding: 0;
+}
+
+.week-nav__label {
+  font-size: 16px;
+  font-weight: 700;
+  min-width: 220px;
+  text-align: center;
+}
+
+.agenda__loading,
+.agenda__empty-global {
+  color: var(--muted);
+  font-size: 14px;
+  padding: 40px 0;
+  text-align: center;
+}
+
+/* ── Grille calendrier (heures × jours) ──────────────────────────────────── */
+.agenda__calendar {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.agenda__daynames {
+  display: grid;
+  grid-template-columns: 52px repeat(7, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+
+.agenda__day-head {
+  padding: 10px 4px;
+  text-align: center;
+  border-left: 1px solid var(--border);
+}
+
+.agenda__day-head.is-today {
+  background: var(--accent-soft);
+}
+
+.agenda__day-head__weekday {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.agenda__day-head__num {
+  font-size: 15px;
+  font-weight: 800;
+  margin-top: 1px;
+}
+
+.is-today .agenda__day-head__num { color: var(--accent); }
+
+.agenda__body-wrap {
+  position: relative;
+  overflow-y: auto;
+  max-height: calc(100vh - 220px);
+}
+
+.agenda__hours-bg {
+  display: grid;
+  grid-template-columns: 52px repeat(7, 1fr);
+}
+
+.agenda__hour-label {
+  font-size: 10.5px;
+  color: var(--muted);
+  text-align: right;
+  padding-right: 6px;
+  box-sizing: border-box;
+  position: relative;
+  top: -6px;
+}
+
+.agenda__hour-cell {
+  border-top: 1px solid #f0efec;
+  border-left: 1px solid var(--border);
+  box-sizing: border-box;
+}
+
+.agenda__overlay {
+  position: absolute;
+  top: 0;
+  left: 52px;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.agenda__day-overlay {
+  position: relative;
+}
+
+.agenda__appt {
+  position: absolute;
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 11px;
+  line-height: 1.3;
+  overflow: hidden;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.agenda__appt:hover {
+  filter: brightness(0.94);
+}
+
+.agenda__appt.is-canceled {
+  background: #d1d5db !important;
+  color: #4b5563;
+  text-decoration: line-through;
+}
+
+.agenda__appt.is-block {
+  background: repeating-linear-gradient(135deg, #9ca3af, #9ca3af 6px, #b0b6bd 6px, #b0b6bd 12px);
+}
+
+.agenda__appt__time {
+  font-weight: 700;
+  display: block;
+}
+
+.agenda__appt__title {
+  display: block;
+  white-space: nowrap;
+}
+
+/* ── Popup détail rendez-vous ────────────────────────────────────────────── */
+.appt-popup-overlay[hidden] {
+  display: none;
+}
+
+.appt-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.appt-popup {
+  background: var(--card);
+  border-radius: 16px;
+  width: 320px;
+  padding: 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.appt-popup__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.appt-popup__title {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 8px 0 2px;
+}
+
+.appt-popup__datetime {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.appt-popup__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+}
+
+.appt-popup__close {
+  width: 100%;
+  margin-top: 14px;
+}

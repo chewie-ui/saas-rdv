@@ -28,14 +28,35 @@ block content
 
     .ms-editor
 
+        //- ── TOPBAR (chrome du builder) ──────────────────────────────────
+        .ms-topbar
+            a.ms-topbar__brand(href="/panel" title="Retour au tableau de bord")
+                | branshee
+                span.ms-topbar__dot .
+            span.ms-topbar__crumb
+                span.material-symbols-outlined chevron_right
+                span= 'Site de ' + ((currentCompany && currentCompany.businessName) || companySlug)
+            .ms-topbar__spacer
+            .ms-seg
+                button.ms-device-btn.active(type="button" data-device="desktop" title="Bureau")
+                    span.material-symbols-outlined desktop_windows
+                    span Bureau
+                button.ms-device-btn(type="button" data-device="mobile" title="Mobile")
+                    span.material-symbols-outlined smartphone
+                    span Mobile
+            .ms-topbar__status
+                .ms-dot(id="publishDot" class=S.isPublished ? 'ms-dot--live' : '')
+                span#publishLabel= S.isPublished ? 'En ligne' : 'Hors ligne'
+            a.sm-btn.sm-btn--ghost(id="viewSiteBtn" href=siteUrl target="_blank" rel="noopener" class=S.isPublished ? '' : 'ms-view-btn--disabled' title=S.isPublished ? 'Voir le site' : 'Publiez d\'abord le site')
+                span.material-symbols-outlined visibility
+                | Voir le site
+            button.sm-btn(type="button" id="publishBtn" class=S.isPublished ? 'sm-btn--danger' : 'sm-btn--primary')= S.isPublished ? 'Désactiver' : 'Publier'
+
         //- ── LEFT PANEL ──────────────────────────────────────────────────
         .ms-panel
 
             .ms-panel__top
-                a.ms-back(href="/panel" title="Retour au tableau de bord")
-                    span.material-symbols-outlined arrow_back
-                    span Tableau de bord
-                .ms-panel__title Éditeur de site
+                .ms-panel__title Sections du site
                 .ms-tabs
                     button.ms-tab.active(type="button" data-tab="sections")
                         span.material-symbols-outlined view_agenda
@@ -46,22 +67,6 @@ block content
                     button.ms-tab(type="button" data-tab="settings")
                         span.material-symbols-outlined settings
                         | Paramètres
-
-            .ms-publish-strip
-                .ms-publish-strip__row1
-                    .ms-publish-strip__status
-                        .ms-dot(id="publishDot" class=S.isPublished ? 'ms-dot--live' : '')
-                        span#publishLabel= S.isPublished ? 'En ligne' : 'Hors ligne'
-                    span.ms-save-indicator(id="saveIndicator")
-                .ms-publish-strip__row2
-                    a.sm-btn.sm-btn--ghost.sm-btn--full(id="viewSiteBtn" href=siteUrl target="_blank" rel="noopener" class=S.isPublished ? '' : 'ms-view-btn--disabled' title=S.isPublished ? 'Voir le site' : 'Publiez d\'abord le site')
-                        span.material-symbols-outlined visibility
-                        | Voir le site
-                    button.sm-btn.sm-btn--full(
-                        type="button"
-                        id="publishBtn"
-                        class=S.isPublished ? 'sm-btn--danger' : 'sm-btn--primary'
-                    )= S.isPublished ? 'Désactiver' : 'Publier'
 
             .ms-panel__body
 
@@ -76,6 +81,10 @@ block content
                                     .ms-section-item__icon
                                         span.material-symbols-outlined= sectionIcons[section.type] || sectionIcons.contact
                                     span.ms-section-item__name(title=sectionLabels[section.type] || section.type)= sectionLabels[section.type] || section.type
+                                    if section.type === 'services' || section.type === 'booking'
+                                        span.ms-sync-badge(title="Synchronisé depuis votre compte BranShee — services & disponibilités en temps réel")
+                                            span.material-symbols-outlined sync
+                                            | Sync
                                     .ms-section-item__actions
                                         button.ms-toggle-btn(type="button" class=section.enabled ? 'on' : '' title="Afficher/masquer")
                                         .ms-section-menu-wrap
@@ -537,14 +546,19 @@ block content
                             textarea#seoDesc.ms-input.ms-input--textarea(placeholder="Décrivez votre établissement en 1-2 phrases..." rows="3")= (S.seo && S.seo.description) || ''
                             p.ms-hint Apparaît sous votre lien dans les résultats Google.
 
-        //- ── RIGHT PANEL — PREVIEW ──────────────────────────────────
+            .ms-panel__foot
+                span.ms-foot-label
+                    span.material-symbols-outlined bolt
+                    span Enregistrement automatique
+                span.ms-save-indicator#saveIndicator
+
+        //- ── RIGHT PANEL — STAGE / APERÇU ────────────────────────────
         .ms-preview
             .ms-preview__bar
-                span.ms-preview__label Aperçu
-                button.ms-device-btn.active(type="button" data-device="desktop" title="Bureau")
-                    span.material-symbols-outlined desktop_windows
-                button.ms-device-btn(type="button" data-device="mobile" title="Mobile")
-                    span.material-symbols-outlined smartphone
+                .ms-urlpill
+                    span.material-symbols-outlined lock
+                    span= 'branshee.com/' + companySlug
+                .ms-preview__spacer
                 button.ms-preview__refresh(type="button" id="refreshPreview" title="Rafraîchir l'aperçu")
                     span.material-symbols-outlined refresh
                 a.ms-preview__open(href=previewUrl target="_blank" rel="noopener" title="Ouvrir l'aperçu dans un nouvel onglet")

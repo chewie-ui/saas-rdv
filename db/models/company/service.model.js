@@ -130,6 +130,18 @@ const serviceSchema = new mongoose.Schema(
       enum: ["all", "new", "existing"],
       default: "all",
     },
+
+    // Ciblage par le questionnaire de réservation (Company.serviceQuestionnaire).
+    // Pour chaque question, la liste des réponses (optionIds) pour lesquelles ce
+    // service est proposé. Pas de règle pour une question, ou optionIds vide =
+    // « toutes les réponses » pour cette question. Un service est proposé s'il
+    // correspond à TOUTES les questions (logique ET).
+    questionRules: [
+      {
+        questionId: { type: mongoose.Schema.Types.ObjectId },
+        optionIds:  [{ type: mongoose.Schema.Types.ObjectId }],
+      },
+    ],
   },
   { timestamps: true }
 );

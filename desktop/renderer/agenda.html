@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>BranShee — Rendez-vous</title>
+  <link rel="stylesheet" href="shared.css" />
+  <link rel="stylesheet" href="sidebar.css" />
+  <link rel="stylesheet" href="agenda.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <div id="sidebarMount"></div>
+
+    <main class="app-main">
+      <div class="agenda__toolbar">
+        <div class="week-nav">
+          <button class="sm-btn sm-btn--ghost week-nav__btn" id="prevWeek" aria-label="Semaine précédente">‹</button>
+          <span class="week-nav__label" id="weekLabel">…</span>
+          <button class="sm-btn sm-btn--ghost week-nav__btn" id="nextWeek" aria-label="Semaine suivante">›</button>
+        </div>
+        <button class="sm-btn sm-btn--ghost" id="todayBtn">Aujourd'hui</button>
+      </div>
+
+      <div id="agendaContent">
+        <p class="agenda__loading">Chargement de vos rendez-vous…</p>
+      </div>
+    </main>
+  </div>
+
+  <div class="appt-popup-overlay" id="apptPopupOverlay" hidden>
+    <div class="appt-popup">
+      <span class="appt-popup__dot" id="apptPopupDot"></span>
+      <h3 class="appt-popup__title" id="apptPopupTitle"></h3>
+      <p class="appt-popup__datetime" id="apptPopupDatetime"></p>
+      <div class="appt-popup__row" id="apptPopupServiceRow">
+        <span id="apptPopupService"></span>
+      </div>
+      <div class="appt-popup__row" id="apptPopupEmployeeRow">
+        <span id="apptPopupEmployee"></span>
+      </div>
+      <button class="sm-btn sm-btn--ghost appt-popup__close" id="apptPopupClose">Fermer</button>
+    </div>
+  </div>
+
+  <script src="sidebar.js"></script>
+  <script src="agenda.js"></script>
+</body>
+</html>

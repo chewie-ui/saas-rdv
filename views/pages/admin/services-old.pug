@@ -1,0 +1,379 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet" href="/css/layouts/services.css")
+
+block content
+    - const canManageSvc = !!(permissions && permissions.services && permissions.services.manage)
+    .services-page
+        .services-page__header
+            .services-page__header-left
+                h2= t.services.title
+                p.services-page__subtitle= t.services.subtitle
+            .services-page__header-right
+                if maxServices > 0 && isFinite(maxServices)
+                    span.services-counter#svcCounter(class=(services.length >= maxServices ? 'services-counter--full' : '')) #{services.length} / #{maxServices}
+                if canManageSvc
+                    if services.length > 0 && maxServices > 0
+                        button.sm-btn.sm-btn--ghost#deactivateAllBtn
+                            span.material-symbols-outlined toggle_off
+                            span= t.services.deactivate_all || 'Désactiver tout'
+                    button.sm-btn.sm-btn--primary#addServiceBtn(disabled=(maxServices === 0 || services.length >= maxServices))
+                        if maxServices === 0
+                            span.material-symbols-outlined lock
+                        else
+                            span.material-symbols-outlined add
+                        span= t.services.add_btn
+
+        //- ── Plan limit banner ────────────────────────────────────
+        - var svcAtLimit = maxServices > 0 && services.length >= maxServices
+        if currentPlan === 'basic' && maxServices > 0
+            .plan-gate#serviceLimitBanner(style=!svcAtLimit ? 'display:none' : '')
+                span.plan-gate__lock 🔒
+                .plan-gate__body
+                    strong.plan-gate__title Limite atteinte — #{maxServices}/#{maxServices} services
+                    span.plan-gate__sub Disponible uniquement dans les plans Pro & Business.
+                a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
+        else if currentPlan === 'pro' && maxServices > 0
+            .plan-gate#serviceLimitBanner(style=!svcAtLimit ? 'display:none' : '')
+                span.plan-gate__lock 🔒
+                .plan-gate__body
+                    strong.plan-gate__title Limite Pro atteinte — #{maxServices}/#{maxServices} services
+                    span.plan-gate__sub Disponible uniquement dans le plan Business.
+                a.btn-upgrade-business.plan-gate__cta(href="/subscription") Passer au Business →
+        else if currentPlan === 'business' && maxServices > 0
+            .plan-gate#serviceLimitBanner(style=!svcAtLimit ? 'display:none' : '')
+                span.plan-gate__lock 🔒
+                .plan-gate__body
+                    strong.plan-gate__title Limite maximale atteinte — #{maxServices}/#{maxServices} services
+                    span.plan-gate__sub Vous avez atteint la limite de votre plan Business.
+
+        if services.length === 0
+            .services-empty
+                span.material-symbols-outlined(style="font-size:48px") list_alt
+                p= t.services.empty
+                if maxServices === 0
+                    .plan-gate
+                        span.plan-gate__lock 🔒
+                        .plan-gate__body
+                            strong.plan-gate__title Services
+                            span.plan-gate__sub Disponible uniquement dans les plans Pro & Business.
+                        a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
+                else if svcAtLimit
+                    .plan-gate
+                        span.plan-gate__lock 🔒
+                        .plan-gate__body
+                            strong.plan-gate__title Limite gratuit atteinte — #{services.length}/#{maxServices} services
+                            span.plan-gate__sub Passez au plan Pro pour créer jusqu'à 20 services.
+                        a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
+
+        //- ── Passerelle vers "Cours collectifs" — un service ici reste un
+        //- rendez-vous individuel classique. Pour un atelier/cours à plusieurs
+        //- dates et places limitées (1/7 19h-20h, 5/7 12h-13h, max 5 places...),
+        //- c'est une page dédiée qui gère ça (planning récurrent OU dates
+        //- ponctuelles) — sans ce lien, on ne la trouve pas en partant d'ici.
+        if !adminFeatures || adminFeatures.group_sessions !== false
+            a.svc-gs-banner(href="/group-sessions")
+                .svc-gs-banner__icon
+                    span.material-symbols-outlined groups
+                .svc-gs-banner__text
+                    strong= t.services.gs_banner_title
+                    span= t.services.gs_banner_sub
+                span.material-symbols-outlined.svc-gs-banner__arrow arrow_forward
+
+        //- ── Question préalable au choix du service ──────────────────────────
+        .bq-card
+            .bq-card__hd
+                .bq-card__title-row
+                    span.material-symbols-outlined.bq-card__icon help
+                    span.bq-card__title= t.services.bq_title
+                label.sa-toggle
+                    input#bqEnabled(type="checkbox" checked=(bookingQuestion && bookingQuestion.enabled))
+                    .sa-toggle__track
+            p.bq-card__sub
+                | !{t.services.bq_card_sub.replace('{clientTermPlural}', clientTermPlural || 'clients')}
+            - var bq = bookingQuestion || {}
+            #bqRow(style=(bq.enabled ? '' : 'display:none'))
+                .field
+                    label= t.services.bq_question_label
+                    input.input#bqQuestionInput(type="text" maxlength="200" placeholder="Ex: Est-ce la première fois que vous nous consultez ?" value=bq.question)
+                .field-row
+                    .field
+                        label= t.services.bq_new_label
+                        input.input#bqNewLabelInput(type="text" maxlength="80" placeholder="Ex: Oui, je suis nouveau" value=bq.newLabel)
+                    .field
+                        label= t.services.bq_existing_label
+                        input.input#bqExistingLabelInput(type="text" maxlength="80" placeholder="Ex: Non, j'ai déjà consulté" value=bq.existingLabel)
+
+        .services-list#servicesList
+            each svc in services
+                -
+                    var _catObj = svc.category ? categories.find(function(c){ return c.name === svc.category; }) : null
+                    var _catIcon = _catObj && _catObj.icon ? _catObj.icon : ''
+                .service-card(data-id=String(svc._id) data-category=svc.category || '' data-type=(svc.type || 'individual') data-capacity=(svc.capacity || '') data-color=(svc.color || '') data-fee-enabled=(svc.cancellationFee && svc.cancellationFee.enabled ? '1' : '0') data-fee-type=(svc.cancellationFee && svc.cancellationFee.type || 'percent') data-fee-value=(svc.cancellationFee && svc.cancellationFee.value !== null && svc.cancellationFee.value !== undefined ? svc.cancellationFee.value : '') data-answer-visibility=(svc.answerVisibility || 'all') data-duration-max=(svc.durationMax || '') data-image=(svc.image || '') class=(!svc.active ? 'service-card--inactive' : ''))
+                    if svc.image
+                        .service-card__img
+                            img(src=`/uploads/profiles/${svc.image}` alt=svc.name loading="lazy")
+                    .service-card__header
+                        .service-card__name-row
+                            h3.service-card__name
+                                span.service-card__color-dot(style=`background:${svc.color || '#1e7a4e'}`)
+                                = svc.name
+                            .service-card__badges
+                                if svc.category
+                                    span.badge.badge--category
+                                        if _catIcon
+                                            span.badge-cat-icon= _catIcon + ' '
+                                        = svc.category
+                                if svc.price !== null && svc.price !== undefined
+                                    span.badge.badge--price #{svc.price}€
+                                span.badge.badge--duration #{svc.durationMax && svc.durationMax > svc.duration ? `${svc.duration}-${svc.durationMax} min` : `${svc.duration} min`}
+                                if svc.type === 'group'
+                                    span.badge.badge--group #{svc.capacity} places
+                                if svc.cancellationFee && svc.cancellationFee.enabled
+                                    span.badge.badge--fee
+                                        = svc.cancellationFee.type === 'amount' ? `Annulation: ${svc.cancellationFee.value}€` : `Annulation: ${svc.cancellationFee.value}%`
+                                if svc.answerVisibility && svc.answerVisibility !== 'all'
+                                    span.badge.badge--category(title=t.services.visibility_hint)
+                                        = svc.answerVisibility === 'new' ? ((bookingQuestion && bookingQuestion.newLabel) || 'Nouveau') : ((bookingQuestion && bookingQuestion.existingLabel) || 'Déjà venu')
+                        .service-card__actions
+                            if canManageSvc
+                                label.sa-toggle(title=(svc.active ? t.services.deactivate : t.services.activate))
+                                    input.toggle-active(type="checkbox" checked=svc.active data-id=String(svc._id))
+                                    .sa-toggle__track
+                                button.btn.btn--icon.edit-service-btn(data-id=String(svc._id) title=t.services.modal_edit)
+                                    span.material-symbols-outlined edit
+                                button.btn.btn--icon.btn--danger.delete-service-btn(data-id=String(svc._id) title=t.services.delete)
+                                    span.material-symbols-outlined delete
+                    hr.service-card__divider
+                    if svc.description
+                        p.service-card__desc= svc.description
+                    .service-card__employees
+                        .service-card__employees-label
+                            span.material-symbols-outlined group
+                            span.service-card__employees-title= t.services.employees_label
+                        .service-card__employees-list
+                            if svc.employees && svc.employees.length > 0
+                                each emp in svc.employees
+                                    .emp-chip
+                                        - var empName = emp.fullName || ''
+                                        img(src=emp.profilePicture alt=empName)
+                                        span= empName
+                            else
+                                span.service-card__employees-none= t.services.employees_all
+                        if canManageSvc
+                            button.sm-btn.sm-btn--ghost.manage-employees-btn(data-id=String(svc._id) data-name=svc.name)
+                                span= t.services.employees_manage
+
+            //- ── Add service card ──────────────────────────────────────────────
+            if canManageSvc
+                - var atLimit = maxServices === 0 || services.length >= maxServices
+                button.svc-card.svc-card--invite#addServiceCardBtn(type="button" class=atLimit ? 'svc-card--locked-invite' : '')
+                    .emp-invite__icon
+                        if maxServices === 0
+                            span.material-symbols-outlined lock
+                        else
+                            span.material-symbols-outlined add
+                    .emp-invite__title= t.services.add_btn || 'Ajouter un service'
+                    if maxServices === 0
+                        .emp-invite__upgrade
+                            a.btn-upgrade-pro(href="/subscription")= t.services.upgrade_cta
+                    else if services.length >= maxServices
+                        p.emp-invite__desc= t.services.limit_reached_desc
+                    else
+                        p.emp-invite__desc= t.services.invite_desc
+
+    //- ── Panneau : Gérer les catégories ──────────────────────────────────────
+    if categories && categories.length > 0
+        .cat-manage-panel#catManagePanel
+            .cat-manage-panel__header
+                .cat-manage-panel__title
+                    span.material-symbols-outlined category
+                    span= t.services.categories_title
+                span.cat-manage-panel__hint= t.services.categories_hint
+
+            //- Style picker
+            .cat-style-picker
+                button.cat-style-opt#styleOptPills(type="button" data-style="pills")
+                    span.material-symbols-outlined stadium
+                    span= t.services.style_pills
+                button.cat-style-opt#styleOptAccordion(type="button" data-style="accordion")
+                    span.material-symbols-outlined view_agenda
+                    span= t.services.style_accordion
+                button.cat-style-opt#styleOptGrid(type="button" data-style="grid")
+                    span.material-symbols-outlined grid_view
+                    span= t.services.style_sections
+
+            //- Category list (reorderable)
+            ul.cat-order-list#catOrderList
+                each cat in categories
+                    li.cat-order-item(data-name=cat.name)
+                        span.cat-order-item__grip
+                            span.material-symbols-outlined(style="font-size:18px") drag_indicator
+                        if cat.icon
+                            span.cat-order-item__icon= cat.icon
+                        span.cat-order-item__name= cat.name
+                        .cat-order-item__btns
+                            button.cat-order-btn(type="button" data-dir="up" title=t.services.cat_btn_up)
+                                span.material-symbols-outlined arrow_upward
+                            button.cat-order-btn(type="button" data-dir="down" title=t.services.cat_btn_down)
+                                span.material-symbols-outlined arrow_downward
+                            button.cat-order-btn.cat-edit-btn(type="button" title=t.services.cat_btn_edit)
+                                span.material-symbols-outlined edit
+                            button.cat-order-btn.cat-delete-btn(type="button" title=t.services.cat_btn_delete)
+                                span.material-symbols-outlined delete
+
+            .cat-manage-panel__footer
+                button.sm-btn.sm-btn--primary#saveCatSettingsBtn(type="button")
+                    span.material-symbols-outlined check
+                    span= t.services.save
+                span.cat-manage-panel__status#catSaveStatus
+
+    //- ── Modal : Modifier une catégorie ─────────────────────────────────────
+    .modal-overlay#editCatModalOverlay
+    .service-modal#editCatModal
+        .service-modal__header
+            h2.service-modal__title= t.services.edit_category_title
+            button.service-modal__close#closeEditCatModal(type="button")
+                span.material-symbols-outlined close
+        .service-modal__body
+            input(type="hidden" id="editCatOldName")
+            .form-group
+                label(for="editCatName")= t.services.new_category_name
+                input.form-input#editCatName(type="text" placeholder="Ex: Coiffure" autocomplete="off")
+            .form-group
+                label= t.services.cat_icon_label
+                input(type="hidden" id="editCatIconInput")
+                .cat-icon-picker#editCatIconPicker
+        .service-modal__footer
+            button.sm-btn.sm-btn--ghost#cancelEditCatModal(type="button")= t.services.cancel
+            button.sm-btn.sm-btn--primary#saveEditCatBtn(type="button")
+                span.material-symbols-outlined check
+                span= t.services.save
+
+    //- ── Modal : Créer / Modifier un service ──────────────────────────────────
+    .modal-overlay#serviceModalOverlay
+    .service-modal#serviceModal
+        .service-modal__header
+            h3#serviceModalTitle= t.services.modal_new
+            button.modal-close#closeServiceModal
+                span.material-symbols-outlined close
+        .service-modal__body
+            input(type="hidden" id="serviceModalId")
+            .service-modal__cols
+                //- ── Colonne gauche : identité du service ────────────────────
+                .service-modal__col
+                    //- Image optionnelle
+                    .field
+                        label Image du service #[span.xs-comment= t.services.img_optional]
+                        .svc-img-upload#svcImgUpload
+                            img.svc-img-upload__preview#svcImgPreview(src="" alt="" style="display:none")
+                            .svc-img-upload__placeholder#svcImgPlaceholder
+                                span.material-symbols-outlined(style="font-size:28px;opacity:.35") image
+                                p= t.services.img_click
+                            input.svc-img-upload__input#svcImgInput(type="file" accept="image/*" style="display:none")
+                            button.svc-img-upload__remove#svcImgRemove(type="button" style="display:none")= t.services.img_remove
+                    .field
+                        label= t.services.service_name
+                        input.input#serviceModalName(placeholder="Ex: Coupe simple, Massage détente...")
+                    .field
+                        label= t.services.service_category
+                        select.input#serviceModalCategory
+                            //- Populated by JS from window.__categories
+                    #newCategorySection(style="display:none")
+                        .field
+                            label= t.services.new_category_name
+                            input.input#newCategoryName(type="text" placeholder="Ex: Cheveux, Corps, Visage...")
+                        .field
+                            label= t.services.new_category_icon
+                            input(type="hidden" id="newCategoryIconInput")
+                            .cat-icon-picker#catIconPicker
+                    .field
+                        label= t.services.service_desc
+                        textarea.textarea#serviceModalDesc(placeholder="..." rows=3)
+                    .field-row
+                        .field
+                            label= t.services.service_price
+                            input.input#serviceModalPrice(type="number" min="0" step="0.5" placeholder="Ex: 25")
+                        .field
+                            label= t.services.service_duration
+                            input.input#serviceModalDuration(type="number" min="5" step="5" placeholder="30")
+                    .field
+                        label.svc-fee-label
+                            span= t.services.duration_range_label
+                                |  
+                                span.xs-comment= t.services.duration_range_hint
+                            label.sa-toggle
+                                input#serviceModalDurationRangeEnabled(type="checkbox")
+                                .sa-toggle__track
+                        #svcDurationMaxRow(style="display:none")
+                            label= t.services.duration_max_label
+                            input.input#serviceModalDurationMax(type="number" min="5" step="5" placeholder="Ex: 40")
+                    .field
+                        label= t.services.color_label
+                        input(type="hidden" id="serviceModalColor")
+                        .svc-color-picker#svcColorPicker
+
+                //- ── Colonne droite : réservation & frais ─────────────────────
+                .service-modal__col
+                    .field#svcAnswerVisibilityField(style=((bookingQuestion && bookingQuestion.enabled) ? '' : 'display:none'))
+                        label= t.services.answer_visibility_label
+                        .svc-answer-options#svcAnswerOptions
+                            button.svc-answer-opt.is-active(type="button" data-value="all")= t.services.answer_all
+                            button.svc-answer-opt(type="button" data-value="new")= (bookingQuestion && bookingQuestion.newLabel) || t.services.answer_opt_new_default
+                            button.svc-answer-opt(type="button" data-value="existing")= (bookingQuestion && bookingQuestion.existingLabel) || t.services.answer_opt_existing_default
+                    .field
+                        label.svc-fee-label
+                            span= t.services.fee_label
+                            label.sa-toggle
+                                input#serviceModalFeeEnabled(type="checkbox")
+                                .sa-toggle__track
+                        p.xs-comment= t.services.fee_desc
+                        #svcFeeFields(style="display:none")
+                            .svc-fee-type-options#svcFeeTypeOptions
+                                button.svc-type-option.is-active(type="button" data-fee-type="percent")
+                                    span.svc-type-option__title %
+                                    span.svc-type-option__desc= t.services.fee_percent_desc
+                                button.svc-type-option(type="button" data-fee-type="amount")
+                                    span.svc-type-option__title €
+                                    span.svc-type-option__desc= t.services.fee_amount_desc
+                            .field
+                                input.input#serviceModalFeeValue(type="number" min="0" step="0.5" placeholder="Ex: 30")
+        .service-modal__footer
+            button.sm-btn.sm-btn--ghost#cancelServiceModal
+                span= t.services.cancel
+            button.sm-btn.sm-btn--primary#saveServiceBtn
+                span= t.services.save
+
+    //- ── Modal : Gérer les employés d'un service ─────────────────────────────
+    .modal-overlay#empModalOverlay
+    .service-modal#empModal
+        .service-modal__header
+            h3#empModalTitle= t.services.employees_modal_title
+                |  —
+                span#empModalServiceName
+            button.modal-close#closeEmpModal.btn--icon
+                span.material-symbols-outlined close
+        .service-modal__body
+            p.xs-comment= t.services.employees_modal_sub
+            #empList.emp-select-list
+                //- Injecté par JS
+        .service-modal__footer
+            button.sm-btn.sm-btn--ghost#cancelEmpModal
+                span= t.services.cancel
+            button.sm-btn.sm-btn--primary#saveEmpBtn
+                span= t.services.save
+
+block scripts
+    script.
+        window.__maxServices    = !{maxServices || 0};
+        window.__svcCount       = !{services.length || 0};
+        window.__serviceColors  = !{JSON.stringify(services.map(function(s){ return { id: String(s._id), color: s.color || '' }; }))};
+        window.__categories     = !{JSON.stringify(categories || [])};
+        window.__t_no_category      = !{JSON.stringify(t.services.no_category     || 'Aucune catégorie')};
+        window.__t_create_category  = !{JSON.stringify(t.services.create_category || '+ Créer une catégorie')};
+        window.__t_new_cat_name     = !{JSON.stringify(t.services.new_category_name || 'Nom de la catégorie')};
+        window.__bookingCategoryStyle = !{JSON.stringify(bookingCategoryStyle || 'pills')};
+        window.__bookingQuestion = !{JSON.stringify(bookingQuestion || { enabled: false, question: '', options: [] })};
+    script(src="/js/utils/confirm-modal.js")
+    script(src="/js/layouts/services.js")
