@@ -390,7 +390,7 @@
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(16, 24, 40, .05);
 }
-.cd-visit__left { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cd-visit__left { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 auto; }
 .cd-visit__date {
   display: inline-flex;
   align-items: center;
@@ -402,14 +402,24 @@
 }
 .cd-visit__date .material-symbols-outlined { color: var(--accent, #16a34a); }
 .cd-visit__desc {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 7px;
   font-size: 13px;
   color: var(--text-secondary, #637083);
   padding-left: 26px;
+  min-width: 0;
+  max-width: 100%;
 }
-.cd-visit__msg { color: var(--text-muted, #9ca3af); }
+/* Message potentiellement très long (ex : chaîne sans espaces) : on le tronque
+   proprement sur une ligne avec « … » plutôt que de casser la mise en page. */
+.cd-visit__msg {
+  color: var(--text-muted, #9ca3af);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .cd-visit__right { display: flex; align-items: center; gap: 18px; flex-shrink: 0; }
 .cd-visit__emp { font-size: 13px; color: var(--text-secondary, #4b5563); }
 .cd-visit__acts { display: flex; gap: 4px; }

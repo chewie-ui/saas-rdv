@@ -1219,7 +1219,7 @@ exports.availability = async (req, res) => {
     canEditSchedule = canManageOthersSchedule;
   }
 
-  res.render("admin/availability", {
+  res.render(res.locals._availView || "admin/availability", {
     daysOff,
     employees: activeEmployees,
     currentCompany: renderedCompany,
@@ -1240,6 +1240,14 @@ exports.availability = async (req, res) => {
     smartGrouping: Object.assign({ enabled: false, windowHours: 3, weekdays: [] }, companyDoc?.smartGrouping || {}),
     minBookingLeadTime: companyDoc?.minBookingLeadTime || { enabled: false, minutes: 60 },
   });
+};
+
+// Ancienne page Disponibilités, conservée « dans l'ombre » sur /availability-old
+// au cas où : mêmes données, seul le template (et son CSS) diffère. Le design
+// actuel est servi par exports.availability ci-dessus (admin/availability).
+exports.availabilityOld = async (req, res) => {
+  res.locals._availView = "admin/availability-old";
+  return exports.availability(req, res);
 };
 
 function generateHours(step = 60) {
@@ -2403,7 +2411,8 @@ exports.settingsInit = async (req, res) => {
 
   return res.render("admin/settings", {
     pageName: "Settings",
-    title: res.locals.t?.titles?.infos || "Paramètres",
+    // Topbar = « Paramètres » (le titre de section, lui, suit l'onglet actif).
+    title: res.locals.t?.titles?.settings || "Paramètres",
     success: req.query.success,
     maskEmail,
     currentCompany: res.locals.currentCompany,

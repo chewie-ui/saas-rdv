@@ -166,6 +166,39 @@ exports.servicesV2 = async (req, res) => {
   });
 };
 
+// ── API : ordre des services (glisser-déposer) ────────────────────────────────
+// Le client envoie la liste ORDONNÉE des services tels qu'affichés :
+// [{ id, category }]. On écrit `order` = index dans cette liste, et on met à
+// jour `category` quand un service a été déposé dans un autre groupe.
+// Le filtre inclut toujours `company` : impossible de toucher les services d'un
+// autre établissement, même en falsifiant les identifiants.
+exports.reorderServices = async (req, res) => {
+  try {
+    const { items } = req.body;
+    if (!Array.isArray(items)) {
+      return res.status(400).json({ success: false, error: "items manquant" });
+    }
+    const companyId = res.locals.currentCompany._id;
+    const ops = items
+      .filter((it) => it && it.id)
+      .map((it, idx) => {
+        const set = { order: idx };
+        if (typeof it.category === "string") set.category = it.category;
+        return {
+          updateOne: {
+            filter: { _id: it.id, company: companyId },
+            update: { $set: set },
+          },
+        };
+      });
+    if (ops.length) await Service.bulkWrite(ops);
+    return res.json({ success: true, count: ops.length });
+  } catch (err) {
+    console.error("reorderServices:", err.message);
+    return res.status(500).json({ success: false });
+  }
+};
+
 // ── API : enregistrer les colonnes masquées du tableau des services ───────────
 // Préférence purement personnelle (par utilisateur), sans impact sur les données
 // métier — on ne valide donc que le format (liste de clés connues).

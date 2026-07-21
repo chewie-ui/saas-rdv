@@ -303,6 +303,7 @@ document.addEventListener("click", async (event) => {
   const dayOffBtnDelete = event.target.closest(".days-off__button.delete-btn");
 
   if (dayOffBtnDelete) {
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce jour de congé ?")) return;
     const row = dayOffBtnDelete.closest(".days-off__row");
     let id, dateKey;
     try {
@@ -518,6 +519,52 @@ const holidaysBody = document.getElementById("holidaysBody");
 const calendar = document.querySelector(".calendar");
 let daysOffArray = [];
 
+function markSlotError(ts) {
+  ts.querySelectorAll(".hour-container").forEach((b) => b.classList.add("avail-time-box--error"));
+}
+
+// Persiste TOUS les créneaux d'une ligne de congé (multi-créneaux) : le client
+// est la source de vérité, le serveur remplace le tableau workingHours entier.
+// Valide avant d'envoyer : chaque créneau début<fin ET aucun chevauchement.
+async function persistDayOffSlots(container, dateId) {
+  const slots = [];
+  container.querySelectorAll(".time-slot").forEach((ts) => {
+    const s = ts.querySelector(".start-hour .hour-container")?.textContent.trim();
+    const e = ts.querySelector(".end-hour .hour-container")?.textContent.trim();
+    if (s && e) slots.push({ el: ts, start: s, end: e });
+  });
+
+  // Reset des erreurs visuelles
+  container.querySelectorAll(".hour-container.avail-time-box--error")
+    .forEach((b) => b.classList.remove("avail-time-box--error"));
+
+  // 1) Chaque créneau : début < fin
+  for (const s of slots) {
+    if (timeToMinutes(s.start) >= timeToMinutes(s.end)) {
+      markSlotError(s.el);
+      showTimeError("L'heure de fin doit être supérieure à l'heure de début.");
+      return { ok: false };
+    }
+  }
+  // 2) Aucun chevauchement entre créneaux
+  const sorted = [...slots].sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+  for (let i = 1; i < sorted.length; i++) {
+    if (timeToMinutes(sorted[i].start) < timeToMinutes(sorted[i - 1].end)) {
+      markSlotError(sorted[i].el);
+      markSlotError(sorted[i - 1].el);
+      showTimeError("Deux créneaux se chevauchent — corrigez les horaires.");
+      return { ok: false };
+    }
+  }
+
+  await fetch(`/company/schedule-day-off`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dateId, slots: slots.map((s) => ({ start: s.start, end: s.end })) }),
+  });
+  return { ok: true };
+}
+
 if (holidaysBody) {
   holidaysBody.addEventListener("click", async (e) => {
     const deleteTimeSlot = e.target.closest(".delete-time-slot");
@@ -556,16 +603,21 @@ if (holidaysBody) {
     }
 
     if (deleteTimeSlot) {
-      const dayOffLabel = document.querySelector('#dayOffRow')?.content?.querySelector('.schedule-status')?.textContent || 'Congé';
-      container.innerHTML = `<div class="day-card__badge"><svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg><span>${dayOffLabel}</span></div>`;
-      await fetch(`/company/schedule-day-off`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dateId,
-          schedule: [],
-        }),
-      });
+      // Multi-créneaux : on retire uniquement le créneau cliqué.
+      const ts = deleteTimeSlot.closest(".time-slot");
+      if (ts) ts.remove();
+      if (!container.querySelector(".time-slot")) {
+        // Plus aucun créneau → congé total (badge).
+        const dayOffLabel = document.querySelector('#dayOffRow')?.content?.querySelector('.schedule-status')?.textContent || 'Congé';
+        container.innerHTML = `<div class="day-card__badge"><svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg><span>${dayOffLabel}</span></div>`;
+        await fetch(`/company/schedule-day-off`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dateId, slots: [] }),
+        });
+      } else {
+        await persistDayOffSlots(container, dateId);
+      }
       return;
     }
 
@@ -608,16 +660,9 @@ if (holidaysBody) {
       // celle qu'on vient de cliquer : si l'autre heure avait été rejetée
       // plus tôt (paire alors invalide) et attend toujours d'être
       // persistée, ce recalcul la sauvegarde maintenant qu'elle est valide.
-      await fetch(`/company/set-schedule-day-off`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "start", dateId, time: startText }),
-      });
-      await fetch(`/company/set-schedule-day-off`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "end", dateId, time: endText }),
-      });
+      // Multi-créneaux : on renvoie la liste complète des créneaux de la ligne
+      // (la valeur qu'on vient de choisir est déjà affichée dans le DOM).
+      await persistDayOffSlots(container, dateId);
 
       return;
     }
@@ -627,14 +672,30 @@ if (holidaysBody) {
 
       const template = document.querySelector("#plageTemplate");
       const clone = template.content.cloneNode(true);
-      container.innerHTML = ``;
-      container.appendChild(clone);
 
-      // Use template defaults directly — never read from DOM (avoids interference
-      // from open time-picker panels elsewhere on the page)
-      const startHour = "09:00";
-      const endHour   = "18:00";
-      const schedule  = { start: startHour, end: endHour };
+      // Heure de départ intelligente : 1h après la fin du dernier créneau
+      // existant (au lieu de recopier 09:00–18:00, ce qui fait doublon).
+      const existing = container.querySelectorAll(".time-slot");
+      if (existing.length) {
+        const lastEnd = existing[existing.length - 1]
+          .querySelector(".end-hour .hour-container")?.textContent.trim() || "18:00";
+        const fmt = (m) =>
+          String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+        let startMin = timeToMinutes(lastEnd) + 60;
+        let endMin = startMin + 60;
+        const DAY_MAX = 23 * 60 + 59; // 23:59
+        if (endMin > DAY_MAX) endMin = DAY_MAX;
+        if (startMin >= endMin) startMin = Math.max(0, endMin - 60);
+        const sBox = clone.querySelector(".start-hour .hour-container");
+        const eBox = clone.querySelector(".end-hour .hour-container");
+        if (sBox) sBox.textContent = fmt(startMin);
+        if (eBox) eBox.textContent = fmt(endMin);
+      }
+
+      // Multi-créneaux : si le corps affiche le badge "congé total" (aucun
+      // créneau), on le vide ; sinon on AJOUTE ce créneau à la suite.
+      if (!container.querySelector(".time-slot")) container.innerHTML = ``;
+      container.appendChild(clone);
 
       // Observe new panels so the compact time picker (search/type-in) works here too
       container.querySelectorAll('.panel-availability').forEach(function(p) {
@@ -642,11 +703,9 @@ if (holidaysBody) {
         injectPanelSearch(p);
       });
 
-      await fetch(`/company/schedule-day-off`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dateId, schedule }),
-      });
+      // Le nouveau créneau utilise les valeurs par défaut du template (09:00–18:00) ;
+      // on persiste la liste complète (anciens + nouveau).
+      await persistDayOffSlots(container, dateId);
 
       return;
     }
@@ -800,7 +859,7 @@ function updateMultiSelectUI() {
         <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/>
       </svg>
       <span></span>
-      <button id="multiDayOffCancel" type="button" style="background:rgba(255,255,255,0.25);border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:16px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;">×</button>
+      <button id="multiDayOffCancel" type="button" style="background:rgba(0,0,0,0.22);border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:16px;font-weight:700;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;">×</button>
     `;
     document.body.appendChild(floatBtn);
 
@@ -969,6 +1028,9 @@ function findCardByDateKey(dateKey) {
 
 // ── ADD: save a new day-off ───────────────────────────────────────────────
 async function saveDayOff(dayEl, dateKey, employeeIds) {
+  // Fermer le calendrier une fois le congé confirmé (tous les chemins de
+  // sauvegarde passent ici : ajout simple, multi-dates, avec/sans employés).
+  document.querySelector("#renderCalendar")?.classList.remove("show");
   const [year, month, day] = dateKey.split("-");
 
   const response = await fetch("/company/add-days-off", {
@@ -1243,7 +1305,8 @@ async function ltSaveMinutes(minutes) {
   await fetch("/company/booking-lead-time", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ minutes }),
+    // On envoie aussi enabled : « Aucun » (0) désactive, toute valeur > 0 active.
+    body: JSON.stringify({ minutes, enabled: minutes > 0 }),
   }).catch(() => {});
 }
 

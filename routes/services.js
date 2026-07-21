@@ -25,6 +25,8 @@ router.patch("/api/services/questionnaire", ...guardManage, ctrl.updateQuestionn
 router.get("/api/services/employees", ...guardView, ctrl.getCompanyEmployees);
 // Préférence d'affichage personnelle (colonnes masquées) — avant /:id.
 router.patch("/api/services/columns", ...guardView, ctrl.updateServicesColumns);
+// Ordre des services (glisser-déposer) — avant /:id pour ne pas être capturé.
+router.patch("/api/services/reorder", ...guardManage, ctrl.reorderServices);
 router.patch("/api/services/:id", ...guardManage, ctrl.updateService);
 router.patch("/api/services/:id/toggle", ...guardManage, ctrl.toggleService);
 router.delete("/api/services/:id", ...guardManage, ctrl.deleteService);

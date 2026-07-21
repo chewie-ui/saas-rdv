@@ -306,8 +306,9 @@ exports.createBooking = async (req, res) => {
     // ── Délai minimum de réservation — revalidé côté serveur : la liste de
     // créneaux affichée au client respecte déjà ce délai, mais on ne fait
     // jamais confiance uniquement au frontend pour une règle métier. ───────
-    if (response.minBookingLeadTime?.enabled) {
-      const leadMinutes = Math.max(0, Number(response.minBookingLeadTime.minutes) || 0);
+    const _leadMinutes = Math.max(0, Number(response.minBookingLeadTime?.minutes) || 0);
+    if (_leadMinutes > 0) {
+      const leadMinutes = _leadMinutes;
       const slotDateTime = new Date(date);
       const [slotH, slotM] = startTime.split(":").map(Number);
       slotDateTime.setHours(slotH, slotM, 0, 0);
@@ -854,7 +855,11 @@ exports.getGroupSessions = async (req, res) => {
 
     const company = await Company.findById(service.company).select("minBookingLeadTime owner").lean();
     const leadConfig = company?.minBookingLeadTime;
-    const leadCutoffMs = Date.now() + (leadConfig?.enabled ? Math.max(0, Number(leadConfig.minutes) || 0) * 60000 : 0);
+    // Actif dès que minutes > 0 (« Aucun » = 0 min). On se base sur les minutes,
+    // pas sur le flag enabled qui pouvait rester à false sur d'anciennes données
+    // (bug de sauvegarde) — sinon le délai n'était jamais appliqué.
+    const _leadMin = Math.max(0, Number(leadConfig?.minutes) || 0);
+    const leadCutoffMs = Date.now() + _leadMin * 60000;
 
     let occurrences = service.recurring?.enabled
       ? generateRecurringOccurrences(service.recurring, service.duration, GROUP_SESSIONS_MAX_OCCURRENCES, GROUP_SESSIONS_HORIZON_DAYS)
@@ -944,7 +949,8 @@ exports.getBooking = async (req, res) => {
   // délai dépasse 24h). On exprime ce seuil en minutes depuis minuit DU JOUR
   // DEMANDÉ pour pouvoir le combiner avec les boucles de blocage existantes.
   const leadConfig = companyDoc?.minBookingLeadTime;
-  const leadMinutesConfig = leadConfig?.enabled ? Math.max(0, Number(leadConfig.minutes) || 0) : 0;
+  // Actif dès que minutes > 0 (indépendant du flag enabled — cf. plus haut).
+  const leadMinutesConfig = Math.max(0, Number(leadConfig?.minutes) || 0);
   const leadCutoffMs = now.getTime() + leadMinutesConfig * 60000;
   const requestedMidnightMs = new Date(requestedDate.getFullYear(), requestedDate.getMonth(), requestedDate.getDate()).getTime();
   const leadCutoffMinutesForDay = Math.ceil((leadCutoffMs - requestedMidnightMs) / 60000);

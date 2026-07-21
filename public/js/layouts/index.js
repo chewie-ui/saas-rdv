@@ -241,6 +241,48 @@ function renderStepper() {
   }).join("");
 }
 
+/* Échec d'une connexion Google : le serveur nous renvoie sur CETTE page avec
+   ?authError=… (au lieu d'éjecter le visiteur vers /login sans rien dire).
+   On mémorise le code, puis on nettoie l'URL pour qu'un rafraîchissement
+   n'affiche pas éternellement le message. */
+let AUTH_ERROR = "";
+(function () {
+  try {
+    const p = new URLSearchParams(window.location.search);
+    const code = p.get("authError");
+    if (!code) return;
+    AUTH_ERROR = code;
+    p.delete("authError");
+    const qs = p.toString();
+    history.replaceState(null, "", window.location.pathname + (qs ? "?" + qs : "") + window.location.hash);
+  } catch (_) {}
+})();
+
+function authErrorMessage(code) {
+  if (code === "google_email_taken") {
+    return "Cette adresse Google est déjà utilisée par un compte professionnel BranShee. Connectez-vous avec votre e-mail et mot de passe, ou réservez directement sans compte ci-dessous.";
+  }
+  return "La connexion Google n'a pas abouti. Réessayez, ou réservez directement sans compte ci-dessous — aucun compte n'est nécessaire.";
+}
+
+/* Explique précisément pourquoi « Confirmer » n'est pas encore actif.
+   Un bouton grisé sans explication faisait chercher l'erreur au client
+   (retour terrain : « je cherchais ce qui n'allait pas »). */
+function detailsHint() {
+  if (CLIENT) return "";
+  const guest = document.getElementById("bkGuestForm");
+  if (guest && !guest.offsetParent) {
+    return "Terminez la connexion, ou revenez en arrière pour réserver sans compte.";
+  }
+  const f = STATE.form || {};
+  const miss = [];
+  if (!f.firstName) miss.push("prénom");
+  if (!f.lastName)  miss.push("nom");
+  if (!f.email)     miss.push("e-mail");
+  if (!miss.length) return "";
+  return "Il ne manque que votre " + miss.join(", ") + " pour confirmer.";
+}
+
 /* ── Cart render ────────────────────────────────────────────────────────── */
 function renderCart() {
   if (stepIdx === STEPS.length - 1) { cart.innerHTML = ""; return; }
@@ -298,6 +340,7 @@ function renderCart() {
         <path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z"/>
       </svg>
     </button>
+    ${(isDetails && !canNext) ? `<p class="bk-cart__hint">${escHtml(detailsHint())}</p>` : ""}
   </div>`;
 
   const next = document.getElementById("cartNext");
@@ -844,7 +887,9 @@ async function loadCalendarData() {
   const info          = await infoRes.json();
   _slotTime           = info.slotTime || 30;
   const lead          = info.minBookingLeadTime;
-  _leadTimeMinutes    = (lead && lead.enabled) ? Math.max(0, Number(lead.minutes) || 0) : 0;
+  // Actif dès que minutes > 0 (« Aucun » = 0). Indépendant du flag enabled, qui
+  // pouvait rester à false sur d'anciennes données (bug de sauvegarde).
+  _leadTimeMinutes    = Math.max(0, Number(lead && lead.minutes) || 0);
   _calDataLoaded      = true;
 }
 
@@ -1155,7 +1200,24 @@ async function renderTimePane() {
     </div>
   </div>`;
 
-  await loadCalendarData();
+  // Sans ce garde-fou, un échec réseau laissait le visiteur bloqué sur
+  // « Chargement… » indéfiniment, sans la moindre explication.
+  try {
+    await loadCalendarData();
+  } catch (err) {
+    console.error("Chargement du calendrier impossible:", err);
+    pane.innerHTML = `<div class="bk-pane">
+      <h2 class="bk-pane-title">${escHtml(BK_TEXTS.slotHeading || "Choisissez votre créneau")}</h2>
+      <div class="bk-load-error">
+        <p><strong>Impossible de charger les disponibilités.</strong></p>
+        <p>Vérifiez votre connexion internet, puis réessayez.</p>
+        <button class="bk-retry-btn" id="bkRetryCal" type="button">Réessayer</button>
+      </div>
+    </div>`;
+    const retry = document.getElementById("bkRetryCal");
+    if (retry) retry.onclick = () => { _calDataLoaded = false; renderTimePane(); };
+    return;
+  }
 
   // Si le mois courant n'a plus de jours disponibles, avancer au prochain mois disponible
   // (max 12 mois pour ne pas boucler infiniment)
@@ -1168,6 +1230,16 @@ async function renderTimePane() {
   }
 
   refreshTimePane();
+
+  // Retour en arrière avec une date déjà choisie : le jour restait surligné
+  // mais le panneau affichait « 0 créneau » (les créneaux ne sont gardés qu'en
+  // mémoire, pas rechargés). Le client croyait à un bug et devait recliquer sur
+  // le jour déjà sélectionné → on les recharge nous-mêmes.
+  if (STATE.date) {
+    const slotWrap = pane.querySelector(".bk-slots");
+    if (slotWrap) slotWrap.innerHTML = `<div class="bk-loading"><div class="bk-spinner"></div> Chargement…</div>`;
+    await fetchSlots();
+  }
 }
 
 function refreshTimePane() {
@@ -1278,17 +1350,40 @@ async function fetchSlots() {
   const serviceId  = STATE.service ? STATE.service.id : "";
   const isGroupService = STATE.service && STATE.service.type === "group";
 
-  const [slotsRes, bookedRes] = await Promise.all([
-    fetch("/get-schedule", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ index: dayOfWeek, COMPANY_ID, date: STATE.date, serviceDuration: serviceDur, employeeId: empId, serviceId }),
-    }),
-    fetch(`/get-booking?date=${STATE.date}&companyId=${COMPANY_ID}&employeeId=${empId}${serviceDur ? `&serviceDuration=${serviceDur}` : ""}${serviceId ? `&serviceId=${serviceId}` : ""}`),
-  ]);
-
-  const slotsData  = await slotsRes.json();
-  const bookedData = await bookedRes.json();
+  let slotsData, bookedData;
+  try {
+    const [slotsRes, bookedRes] = await Promise.all([
+      fetch("/get-schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ index: dayOfWeek, COMPANY_ID, date: STATE.date, serviceDuration: serviceDur, employeeId: empId, serviceId }),
+      }),
+      fetch(`/get-booking?date=${STATE.date}&companyId=${COMPANY_ID}&employeeId=${empId}${serviceDur ? `&serviceDuration=${serviceDur}` : ""}${serviceId ? `&serviceId=${serviceId}` : ""}`),
+    ]);
+    slotsData  = await slotsRes.json();
+    bookedData = await bookedRes.json();
+  } catch (err) {
+    // Idem : sans ça, le panneau restait sur « Chargement… » pour toujours.
+    console.error("Chargement des créneaux impossible:", err);
+    const wrap = pane.querySelector(".bk-slots, .bk-loading");
+    if (wrap) {
+      wrap.outerHTML = `<div class="bk-slots">
+        <h3>Créneaux disponibles</h3>
+        <div class="bk-load-error">
+          <p><strong>Impossible de charger les créneaux.</strong></p>
+          <p>Vérifiez votre connexion, puis réessayez.</p>
+          <button class="bk-retry-btn" id="bkRetrySlots" type="button">Réessayer</button>
+        </div>
+      </div>`;
+      const r = document.getElementById("bkRetrySlots");
+      if (r) r.onclick = () => {
+        const w = pane.querySelector(".bk-slots");
+        if (w) w.innerHTML = `<div class="bk-loading"><div class="bk-spinner"></div> Chargement…</div>`;
+        fetchSlots();
+      };
+    }
+    return;
+  }
   const booked     = new Set(bookedData.bookedTimes || []);
   const groupAvailability = bookedData.groupAvailability || {};
   const groupCapacity     = bookedData.capacity || (STATE.service ? STATE.service.capacity : null);
@@ -1300,19 +1395,18 @@ async function fetchSlots() {
   _smartGrouping.active = Array.isArray(recommendedTimes) && recommendedTimes.length > 0;
   _smartGrouping.recommended = new Set(recommendedTimes || []);
 
-  // Calculer l'heure actuelle locale (pour masquer les créneaux passés si c'est aujourd'hui)
-  const nowLocal    = new Date();
-  const todayIso    = nowLocal.getFullYear() + "-"
-    + String(nowLocal.getMonth() + 1).padStart(2, "0") + "-"
-    + String(nowLocal.getDate()).padStart(2, "0");
-  const isToday     = STATE.date === todayIso;
-  const nowMinutes  = nowLocal.getHours() * 60 + nowLocal.getMinutes();
+  // Minute-du-jour avant laquelle aucun créneau n'est réservable pour la date
+  // choisie : combine « déjà passé » (si c'est aujourd'hui) ET le délai minimum
+  // de réservation (ex : 24h). Même calcul que le calendrier (cutoffMinutesForDate)
+  // et que le serveur, pour ne jamais afficher un créneau trop proche.
+  const _slotDate = new Date(STATE.date + "T12:00:00");
+  const _cutoffMin = cutoffMinutesForDate(_slotDate);
 
   _currentSlots = (slotsData.slots || []).map(t => {
     const [h, m]    = t.split(":").map(Number);
     const slotMin   = h * 60 + m;
-    // Créneau passé si c'est aujourd'hui ET que l'heure est déjà dépassée
-    const isPast    = isToday && slotMin <= nowMinutes;
+    // Créneau indisponible s'il est avant le cutoff (passé ou trop proche = délai mini).
+    const isPast    = slotMin < _cutoffMin;
     const slot = { time: t, taken: booked.has(t) || isPast, isPast, recommended: _smartGrouping.recommended.has(t) };
     if (isGroupService && groupCapacity) {
       const booked2 = groupAvailability[t] ? groupAvailability[t].booked : 0;
@@ -1391,7 +1485,19 @@ async function renderDetailsPane() {
             <div class="bk-client-info__name">${escHtml((CLIENT.firstName||"") + " " + (CLIENT.lastName||""))}</div>
             <div class="bk-client-info__email">${escHtml(CLIENT.email||"")}</div>
           </div>
+        </div>
+        <!-- Le téléphone reste demandé même connecté : beaucoup de comptes n'en
+             ont pas (et l'inscription n'en demande pas), le pro se retrouvait
+             alors sans aucun numéro pour joindre le client. -->
+        <div class="bk-field">
+          <label class="bk-label">Téléphone${CLIENT.phone ? "" : " <span class='bk-label-hint'>— pour vous joindre en cas d'imprévu</span>"}</label>
+          <input class="bk-input" id="bkPhone" type="tel" maxlength="30" placeholder="+32 …" value="${escHtml(f.phone || CLIENT.phone || "")}" />
         </div>` : `
+
+        ${AUTH_ERROR ? `<div class="bk-auth-error">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>${escHtml(authErrorMessage(AUTH_ERROR))}</span>
+        </div>` : ""}
 
         <!-- Connexion client inline -->
         <div class="bk-login-section" id="bkLoginSection">
@@ -1400,8 +1506,8 @@ async function renderDetailsPane() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
             <div>
-              <p class="bk-login-title">Déjà un compte ?</p>
-              <p class="bk-login-sub">Connectez-vous pour pré-remplir vos informations.</p>
+              <p class="bk-login-title">Déjà un compte ? <span class="bk-login-opt">(facultatif)</span></p>
+              <p class="bk-login-sub">Connectez-vous pour pré-remplir vos informations — sinon, remplissez simplement le formulaire ci-dessous.</p>
             </div>
           </div>
           <!-- Connexion -->
@@ -1457,7 +1563,7 @@ async function renderDetailsPane() {
             </div>
             <div class="bk-field">
               <label class="bk-label">Mot de passe *</label>
-              <input class="bk-input" id="bkRegPwd" type="password" placeholder="8 caractères minimum" autocomplete="new-password" />
+              <input class="bk-input" id="bkRegPwd" type="password" placeholder="8 caractères, 1 chiffre, 1 caractère spécial" autocomplete="new-password" />
             </div>
             <p class="bk-login-error" id="bkRegError" style="display:none"></p>
             <button class="bk-login-submit" id="bkRegSubmit" type="button">Créer mon compte et réserver</button>
@@ -1474,12 +1580,16 @@ async function renderDetailsPane() {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
               Créer un compte
             </button>
-            <button class="bk-login-toggle-btn bk-login-toggle-btn--ghost" id="bkShowGuest" type="button">Continuer sans compte</button>
           </div>
         </div>
 
-        <!-- Formulaire invité (masqué par défaut) -->
-        <div id="bkGuestForm" style="display:none">
+        <!-- Coordonnées : VISIBLES d'emblée. Réserver ne demande aucun compte ;
+             la connexion n'est qu'un raccourci pour pré-remplir. Auparavant ce
+             bloc était masqué tant qu'on n'avait pas cliqué « Continuer sans
+             compte », et le bouton Confirmer restait désactivé sans explication
+             (retour client : « je cherchais ce qui n'allait pas »). -->
+        <div id="bkGuestForm">
+          <p class="bk-guest-title">Vos coordonnées <span class="bk-guest-note">— aucun compte nécessaire</span></p>
           <div class="bk-form-row">
             <div class="bk-field">
               <label class="bk-label">Prénom *</label>
@@ -1535,16 +1645,22 @@ function bindDetailsPane() {
     btn.addEventListener("click", () => saveStateForOAuth());
   });
 
+  // Les coordonnées invité sont le mode par défaut : ouvrir un formulaire de
+  // connexion/inscription les masque, et « ← Retour » les rétablit.
   function showChoices() {
     if (loginForm)    loginForm.style.display    = "none";
     if (registerForm) registerForm.style.display = "none";
     if (loginChoices) loginChoices.style.display = "flex";
+    if (guestForm)    guestForm.style.display    = "";
+    renderCart();
   }
 
   if (showLoginBtn) {
     showLoginBtn.addEventListener("click", () => {
       loginChoices.style.display = "none";
       loginForm.style.display    = "flex";
+      if (guestForm) guestForm.style.display = "none";
+      renderCart();
       document.getElementById("bkLoginEmail")?.focus();
     });
   }
@@ -1552,6 +1668,8 @@ function bindDetailsPane() {
   document.getElementById("bkShowRegister")?.addEventListener("click", () => {
     loginChoices.style.display  = "none";
     registerForm.style.display  = "flex";
+    if (guestForm) guestForm.style.display = "none";
+    renderCart();
     document.getElementById("bkRegFirst")?.focus();
   });
 
@@ -1589,12 +1707,23 @@ function bindDetailsPane() {
           // Fetch client info from session
           const meRes  = await fetch("/client/me", { headers: { "X-Requested-With": "fetch" } });
           const meData = await meRes.json();
+          if (!meData.client) {
+            // Connexion acceptée mais session illisible : sans ce garde-fou,
+            // rien ne se passait à l'écran et le visiteur restait bloqué.
+            loginError.textContent = "Connexion établie mais session illisible. Rechargez la page, ou réservez sans compte.";
+            loginError.style.display = "block";
+            loginSubmit.disabled = false;
+            loginSubmit.textContent = "Se connecter";
+            return;
+          }
           if (meData.client) {
             CLIENT = meData.client;
             STATE.form.firstName = CLIENT.firstName || "";
             STATE.form.lastName  = CLIENT.lastName  || "";
             STATE.form.email     = CLIENT.email     || "";
-            STATE.form.phone     = CLIENT.phone     || "";
+            AUTH_ERROR = ""; // la connexion a réussi : on retire le message d'échec
+            // Ne jamais effacer un numéro déjà saisi si le compte n'en a pas.
+            STATE.form.phone     = CLIENT.phone     || STATE.form.phone || "";
           }
           renderDetailsPane(); // re-render showing logged-in state
         } else {
@@ -1648,7 +1777,11 @@ function bindDetailsPane() {
         });
         const data = await res.json();
         if (data.success) {
-          CLIENT = { firstName: first, lastName: last, email, phone: "" };
+          // L'inscription ne demande pas de téléphone : on conserve celui que le
+          // client aurait déjà saisi, et le champ reste affiché ensuite pour
+          // qu'il puisse le renseigner (sinon le pro n'a aucun numéro).
+          AUTH_ERROR = ""; // inscription réussie : on retire le message d'échec
+          CLIENT = { firstName: first, lastName: last, email, phone: STATE.form.phone || "" };
           STATE.form.firstName = first;
           STATE.form.lastName  = last;
           STATE.form.email     = email;
@@ -2242,7 +2375,10 @@ async function submitBooking() {
   const firstName = CLIENT ? CLIENT.firstName : STATE.form.firstName;
   const lastName  = CLIENT ? CLIENT.lastName  : STATE.form.lastName;
   const email     = CLIENT ? CLIENT.email     : STATE.form.email;
-  const phone     = CLIENT ? CLIENT.phone     : STATE.form.phone;
+  // Téléphone : on privilégie ce que le client vient de saisir (le champ est
+  // affiché même connecté), et on retombe sur celui du compte s'il n'a rien
+  // retouché. Sinon un compte sans numéro partait avec un téléphone vide.
+  const phone     = (STATE.form.phone || (CLIENT ? CLIENT.phone : "") || "").trim();
   const message   = STATE.form.message;
 
   // Show loading in cart
@@ -2303,7 +2439,29 @@ async function submitBooking() {
         showLimitReachedModal();
         goToStep("service");
       } else {
-        showBookingErrorModal("Erreur", "Une erreur est survenue. Veuillez réessayer.");
+        // Tous les autres motifs renvoyés par le serveur sont explicites : on
+        // affiche SON message (jamais un « une erreur est survenue » muet) et
+        // on ramène le visiteur à l'étape qu'il doit corriger.
+        const KNOWN = {
+          lead_time_not_met:  { title: "Créneau trop proche",    step: "time",    msg: "Ce créneau est trop proche pour être réservé. Merci de choisir un horaire plus tard." },
+          invalid_session:    { title: "Séance indisponible",    step: "time",    msg: "Cette séance n'est plus disponible. Merci d'en choisir une autre." },
+          service_not_found:  { title: "Service indisponible",   step: "service", msg: "Ce service n'est plus disponible. Merci d'en choisir un autre." },
+          payment_unverified: { title: "Paiement non confirmé",  step: null,      msg: "Le paiement n'a pas pu être vérifié. Réessayez ou contactez l'établissement." },
+          client_blocked:     { title: "Réservation impossible", step: null,      msg: "Ce professionnel n'accepte plus de réservation de votre part. Merci de le contacter directement." },
+        };
+        const info = KNOWN[data.error] || {};
+        showBookingErrorModal(
+          info.title || "Erreur",
+          data.message || info.msg || "Une erreur est survenue. Veuillez réessayer."
+        );
+        if (info.step === "time") {
+          _currentSlots = [];
+          STATE.date = null;
+          STATE.time = null;
+          goToStep("time");
+        } else if (info.step) {
+          goToStep(info.step);
+        }
       }
       return;
     }
@@ -2634,6 +2792,13 @@ function restoreStateFromOAuth() {
   });
   requestAnimationFrame(sendHeight);
 })();
+
+/* Le lien « Se connecter » de l'en-tête quitte la page : on mémorise l'état du
+   tunnel avant de partir, pour le retrouver intact au retour (retour client :
+   « une fois mon compte créé j'ai dû repartir de 0 »). */
+document.querySelectorAll(".bk-sign-btn").forEach((a) => {
+  a.addEventListener("click", () => { try { saveStateForOAuth(); } catch (e) {} });
+});
 
 /* ── Init ───────────────────────────────────────────────────────────────── */
 const _hadSavedState = restoreStateFromOAuth();

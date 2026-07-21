@@ -1,0 +1,375 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   availability-v2.css — Nouvelle page Disponibilités
+   Surcharge purement visuelle de availability.admin.css (mêmes hooks JS).
+   • Fond 100% blanc, pleine largeur
+   • Navigation par onglets (comme Paramètres / fiche client)
+   • Pas d'encadrés : sections séparées par un simple filet fin
+   Toutes les règles sont scopées sous .av2 → /availability n'est jamais touchée.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Fond de page entièrement blanc + pleine largeur */
+body:has(.avail-page.av2) .main { background: #fff; }
+body:has(.avail-page.av2) .main-wrapper { gap: 0; }
+
+.avail-page.av2 {
+  max-width: none;
+  width: 100%;
+  padding: 4px 0 64px;
+}
+
+/* ── En-tête ───────────────────────────────────────────────────────── */
+.av2 .av2-head { padding: 2px 0 12px; }
+.av2 .av2-head__sub {
+  font-size: 13.5px;
+  color: var(--text-muted, #6b7280);
+  margin: 0;
+}
+
+/* ── Onglets (soulignement foncé, comme la fiche client) ───────────── */
+.av2 .av2-tabs {
+  display: flex;
+  gap: 26px;
+  border-bottom: 1px solid var(--border-light, #e5e7eb);
+  margin: 2px 0 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.av2 .av2-tabs::-webkit-scrollbar { display: none; }
+.av2 .av2-tab {
+  padding: 11px 2px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted, #637083);
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: color .12s, border-color .12s;
+}
+.av2 .av2-tab:hover { color: var(--text-primary, #141c25); }
+.av2 .av2-tab.is-active {
+  color: var(--text-primary, #141c25);
+  border-bottom-color: var(--text-primary, #141c25);
+  font-weight: 600;
+}
+
+/* ── Sections (onglets) ────────────────────────────────────────────── */
+.av2 .av2-section { display: none; }
+.av2 .av2-section.is-active { display: block; }
+
+/* Une seule colonne pleine largeur (plus de grille 2 colonnes) */
+.av2 .avail-layout { display: block; gap: 0; }
+.av2 .avail-main,
+.av2 .avail-side { display: block; gap: 0; position: static; width: auto; top: auto; }
+
+/* ── Cartes → blocs SANS encadré, séparés par un filet fin ─────────── */
+.av2 .avail-card {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 24px 0;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-light, #eceae6);
+  display: flex;
+  flex-direction: column;
+}
+.av2 .avail-card:hover { box-shadow: none; border-color: var(--border-light, #eceae6); }
+.av2 .av2-section > .avail-card:last-child { border-bottom: none; }
+.av2 .avail-card--readonly,
+.av2 .avail-card--locked { opacity: 1; }
+
+.av2 .avail-card__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary, #111);
+  letter-spacing: -.01em;
+}
+.av2 .avail-card__sub { font-size: 12.5px; color: var(--text-muted, #6b7280); }
+.av2 .avail-tz { font-size: 11.5px; color: #9ca3af; }
+
+/* Largeur de lecture confortable pour les blocs "étroits" (créneaux/règles) */
+.av2 #av2-creneaux .avail-card__sub,
+.av2 #av2-regles .avail-card__sub { max-width: 640px; }
+
+/* ── Sélecteur mode horaire — contrôle segmenté propre ─────────────── */
+.av2 .avail-schedule-mode {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: #fff;
+  border: 1.5px solid var(--border-light, #e5e7eb);
+  border-radius: 12px;
+  width: auto;
+  max-width: none;
+}
+.av2 .avail-schedule-mode__option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-muted, #6b7280);
+  background: transparent;
+  opacity: 1;
+  width: auto;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.av2 .avail-schedule-mode__option input { display: none; }
+.av2 .avail-schedule-mode__option:hover { color: var(--text-primary, #111); background: #f6fef9; }
+.av2 .avail-schedule-mode__option.is-muted { opacity: 1; }
+.av2 .avail-schedule-mode__option.is-active {
+  background: var(--main-color, #16a34a);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .14);
+}
+
+/* ── Sélecteur d'employé ───────────────────────────────────────────── */
+.av2 .avail-employee-select {
+  background: #fff;
+  border: 1.5px solid var(--border-medium, #e5e7eb);
+  border-radius: 10px;
+  max-width: 340px;
+}
+
+/* ── Lignes de jour (horaire hebdo) ────────────────────────────────── */
+.av2 .avail-day-row { border-bottom: 1px solid var(--border-light, #f1f3f5); }
+.av2 .avail-rows .avail-day-row:last-child { border-bottom: none; }
+
+.av2 .avail-time-box {
+  background: #fff;
+  border: 1.5px solid var(--border-medium, #e5e7eb);
+  border-radius: 9px;
+}
+.av2 .avail-time-box:hover { border-color: #d1d5db; }
+
+.av2 .avail-range-btn {
+  background: #fff;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 8px;
+  color: var(--main-color, #16a34a);
+}
+.av2 .avail-range-btn:hover { background: var(--main-color-pale, #f0fdf4); border-color: var(--main-color, #16a34a); }
+
+/* ── Boutons + / add ───────────────────────────────────────────────── */
+.av2 .avail-add-btn {
+  background: #fff;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 8px;
+  color: var(--text-primary, #111);
+}
+.av2 .avail-add-btn:hover { background: var(--main-color-pale, #f0fdf4); border-color: var(--main-color, #16a34a); color: var(--main-color, #16a34a); }
+
+/* ═══ Congés — refonte "carte-billet" avec bandeau de date vert ═══════ */
+.av2 .avail-days-grid {
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(236px, 1fr));
+}
+
+.av2 .avail-doff-card {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--border-light, #eaf0ec);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 6px 16px -8px rgba(16, 24, 40, .10);
+  transition: box-shadow .22s ease, transform .22s ease, border-color .22s ease;
+}
+.av2 .avail-doff-card::before { content: none; }
+.av2 .avail-doff-card:hover {
+  box-shadow: 0 18px 40px -12px rgba(22, 163, 74, .34);
+  transform: translateY(-4px);
+  border-color: #bbf7d0;
+}
+
+/* En-tête = bandeau vert dégradé avec pastille calendrier + date en blanc */
+.av2 .avail-doff-top {
+  position: relative;
+  background: linear-gradient(135deg, #12894a 0%, #16a34a 45%, #22c55e 100%);
+  border-bottom: none;
+  padding: 14px 15px;
+  overflow: hidden;
+}
+/* halo décoratif discret */
+.av2 .avail-doff-top::after {
+  content: '';
+  position: absolute;
+  top: -40px; right: -30px;
+  width: 110px; height: 110px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .12);
+  pointer-events: none;
+}
+.av2 .avail-doff-date { display: flex; align-items: center; gap: 9px; position: relative; z-index: 1; }
+.av2 .avail-doff-date::before {
+  content: '\e878'; /* Material Symbols : event */
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-size: 20px;
+  line-height: 1;
+  color: #fff;
+  opacity: .95;
+  flex-shrink: 0;
+}
+.av2 .avail-doff-date-label {
+  font-size: .92rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  color: #fff;
+}
+.av2 .avail-doff-top .avail-doff-del {
+  position: relative;
+  z-index: 1;
+  color: rgba(255, 255, 255, .88);
+  border-radius: 8px;
+  transition: color .12s, background .12s;
+}
+.av2 .avail-doff-top .avail-doff-del:hover { color: #fff; background: rgba(255, 255, 255, .22); }
+
+/* Corps — plusieurs créneaux empilés proprement */
+.av2 .avail-doff-body { padding: 15px 15px 8px; gap: 8px; }
+.av2 .avail-doff-body .time-slot { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+.av2 .avail-doff-body .avail-sep { color: #9ca3af; }
+.av2 .avail-doff-body .avail-del-slot {
+  color: #9ca3af; border-radius: 8px; transition: color .12s, background .12s;
+}
+.av2 .avail-doff-body .avail-del-slot:hover { color: #dc2626; background: #fef2f2; }
+/* Icône du créneau = croix (au lieu d'une 2e corbeille identique à celle du jour) */
+.av2 .avail-doff-body .avail-del-slot .material-symbols-outlined { font-size: 0; }
+.av2 .avail-doff-body .avail-del-slot .material-symbols-outlined::after {
+  content: 'close';
+  font-size: 18px;
+}
+.av2 .avail-doff-type {
+  background: var(--main-color-pale, #f0fdf4);
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  border-radius: 999px;
+}
+
+/* Chips employés */
+.av2 .avail-doff-emps { padding: 2px 15px 12px; }
+.av2 .emp-chip {
+  background: #fff;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 999px;
+  font-weight: 600;
+}
+.av2 .emp-chip--all {
+  background: var(--main-color-pale, #f0fdf4);
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+/* Pied : "+ Ajouter un horaire" */
+.av2 .day-card__footer { border-top: 1px solid var(--border-light, #f1f3f5); padding: 8px 12px; }
+.av2 .avail-doff-addtime { color: var(--main-color, #16a34a); border-radius: 8px; font-weight: 600; }
+.av2 .avail-doff-addtime:hover { background: var(--main-color-pale, #f0fdf4); }
+
+/* ── Tuile "Ajouter un congé" — bouton flottant dégradé ────────────── */
+.av2 .avail-doff-add {
+  background: #fff;
+  border: 2px dashed #c9d6cd;
+  border-radius: 18px;
+  color: var(--main-color, #16a34a);
+  gap: 14px;
+  min-height: 100%;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.av2 .avail-doff-add:hover {
+  border-color: var(--main-color, #16a34a);
+  background: #f0fdf4;
+}
+.av2 .avail-doff-add__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: #16a34a;
+  color: #fff;
+  box-shadow: 0 6px 14px -4px rgba(22, 163, 74, .40);
+  transition: transform .22s ease, box-shadow .22s ease, background .18s ease;
+}
+.av2 .avail-doff-add__icon .material-symbols-outlined { font-size: 28px; font-weight: 500; }
+.av2 .avail-doff-add:hover .avail-doff-add__icon {
+  background: #15803d;
+  transform: translateY(-3px) scale(1.07);
+  box-shadow: 0 12px 24px -6px rgba(22, 163, 74, .52);
+}
+.av2 .avail-doff-add__label { color: var(--main-color, #16a34a); font-weight: 700; font-size: 14px; }
+
+/* ── Pills (créneaux, smart grouping, délai) ───────────────────────── */
+.av2 .slot-pill,
+.av2 .sg-window-pill {
+  background: #fff;
+  border: 1.5px solid var(--border-light, #e5e7eb);
+  border-radius: 9px;
+  color: var(--text-secondary, #4b5563);
+}
+.av2 .slot-pill:hover,
+.av2 .sg-window-pill:hover { border-color: #d1d5db; }
+.av2 .slot-pill.active,
+.av2 .sg-window-pill.active {
+  background: var(--main-color, #16a34a);
+  border-color: var(--main-color, #16a34a);
+  color: #fff;
+}
+
+/* ── Options mode de créneau ───────────────────────────────────────── */
+.av2 .slot-mode-options { max-width: 640px; }
+.av2 .slot-mode-option {
+  background: #fff;
+  border: 1.5px solid var(--border-light, #e5e7eb);
+  border-radius: 10px;
+}
+.av2 .slot-mode-option:hover { border-color: #d1d5db; }
+.av2 .slot-mode-option.active {
+  border-color: var(--main-color, #16a34a);
+  background: var(--main-color-pale, #f0fdf4);
+}
+
+/* ── Encarts d'information / notices → blancs ──────────────────────── */
+.av2 .avail-shared-notice,
+.av2 .avail-readonly-notice,
+.av2 .slot-managed-info,
+.av2 .sg-example {
+  background: #fff;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 10px;
+}
+
+/* ── Champs divers ─────────────────────────────────────────────────── */
+.av2 .lt-custom__input,
+.av2 .slot-interval-input,
+.av2 .lt-custom__unit {
+  background: #fff;
+  border: 1.5px solid var(--border-medium, #e5e7eb);
+  border-radius: 9px;
+}
+
+/* ── Hint entre parenthèses au même format que son libellé ─────────── */
+.av2 .sg-window-label .xs-comment {
+  font-size: inherit;
+  font-weight: inherit;
+  color: var(--text-muted, #6b7280);
+}
+
+/* ── Curseurs buffer ───────────────────────────────────────────────── */
+.av2 .avail-buffer-group { max-width: 640px; }
+.av2 .avail-buffer__val { color: var(--main-color, #16a34a); font-weight: 600; }
+
+/* ── Upsell (blocs Pro) ────────────────────────────────────────────── */
+.av2 .avail-upsell {
+  background: #fffdf5;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+}

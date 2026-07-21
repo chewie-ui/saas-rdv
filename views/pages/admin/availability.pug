@@ -5,22 +5,31 @@ include ../../templates/calendar
 block links
     link(rel="stylesheet", href="/css/components/admin/availability.admin.css")
     link(rel="stylesheet", href="/css/components/index/calendar.index.css")
+    link(rel="stylesheet", href="/css/layouts/availability-v2.css")
 
 block content
     - const weekday = [t.days.sunday, t.days.monday, t.days.tuesday, t.days.wednesday, t.days.thursday, t.days.friday, t.days.saturday]
     - const sortedSchedule = [...currentCompany.schedule].sort((a, b) => { const order = i => i === 0 ? 7 : i; return order(a.weekdayIndex) - order(b.weekdayIndex); })
     - const activeDays = sortedSchedule.filter(d => !d.dayOff && d.workingHours && d.workingHours.length > 0)
 
-    .avail-page
+    .avail-page.av2
+
+        .av2-head
+            p.av2-head__sub= t.avail.subtitle_v2
+
+        .av2-tabs
+            button.av2-tab.is-active(type="button" data-target="av2-horaires")= t.avail.tab_schedule
+            button.av2-tab(type="button" data-target="av2-regles")= t.avail.tab_rules
+            button.av2-tab(type="button" data-target="av2-creneaux")= t.avail.tab_slots
 
         .avail-layout
 
-            //- ── LEFT: main column ───────────────────────────────────
-            .avail-main
+            //- ── Onglet Horaires ───────────────────────────────────
+            #av2-horaires.av2-section.is-active
 
                 //- Horaire commun VS horaire individuel par employé (cf. système
                 //- de grades/permissions) — gardé par availability.manageShared.
-                if permissions.availability.manageShared
+                if permissions.availability.manageShared && employees && employees.length > 1
                     .avail-card.avail-schedule-mode-card
                         .avail-card__hd
                             span.avail-card__title= t.avail.schedules_title
@@ -49,7 +58,7 @@ block content
                         .avail-readonly-notice
                             span.material-symbols-outlined(style=`font-size:15px`) lock
                             span= t.avail.no_permission
-                    if scheduleMode === 'shared'
+                    if scheduleMode === 'shared' && employees && employees.length > 1
                         .avail-shared-notice
                             span.material-symbols-outlined schedule
                             div
@@ -153,20 +162,21 @@ block content
                                             span.material-symbols-outlined delete
                                     .avail-doff-body.days-off__schedule.flex-c
                                         if day.workingHours && day.workingHours.length > 0 && day.workingHours[0].start
-                                            .time-slot.flex-c
-                                                .start-hour.slot-hour
-                                                    .avail-time-box.hour-container.start-hour-(data-hours="start")= day.workingHours[0].start
-                                                    .panel-availability
-                                                        each hour in hours
-                                                            .hour= hour
-                                                span.avail-sep —
-                                                .end-hour.slot-hour
-                                                    .avail-time-box.hour-container.end-hour-(data-hours="end")= day.workingHours[0].end
-                                                    .panel-availability
-                                                        each hour in hours
-                                                            .hour= hour
-                                                button.avail-del-slot.delete-time-slot(type="button" title=t.avail.remove_schedule)
-                                                    span.material-symbols-outlined delete
+                                            each slot in day.workingHours
+                                                .time-slot.flex-c
+                                                    .start-hour.slot-hour
+                                                        .avail-time-box.hour-container.start-hour-(data-hours="start")= slot.start
+                                                        .panel-availability
+                                                            each hour in hours
+                                                                .hour= hour
+                                                    span.avail-sep —
+                                                    .end-hour.slot-hour
+                                                        .avail-time-box.hour-container.end-hour-(data-hours="end")= slot.end
+                                                        .panel-availability
+                                                            each hour in hours
+                                                                .hour= hour
+                                                    button.avail-del-slot.delete-time-slot(type="button" title=t.avail.remove_schedule)
+                                                        span.material-symbols-outlined delete
                                         else
                                             .avail-doff-type= t.avail.all_day
                                     if day.label
@@ -196,6 +206,8 @@ block content
                                 span.avail-upsell__sub= t.avail.upsell_ranges_sub
                                 a.avail-upsell__cta(href="/subscription")= t.avail.upgrade_cta
 
+            //- ── Onglet Règles de réservation ──────────────────────
+            #av2-regles.av2-section
                 //- Regroupement des rendez-vous ("smart grouping")
                 .avail-card.sg-card
                     .avail-card__hd
@@ -267,8 +279,8 @@ block content
                                 option(value="days" selected=(ltUnit === 'days'))= t.avail.lt_unit_days
                             span.lt-custom__label= t.avail.lt_before_label
 
-            //- ── RIGHT: sidebar ──────────────────────────────────────
-            .avail-side
+            //- ── Onglet Créneaux ──────────────────────────────────────
+            #av2-creneaux.av2-section
 
                 //- Slot duration
                 .avail-card(class=(!availFeatures || !availFeatures.slotDuration) ? 'avail-card--locked' : '')
@@ -437,4 +449,20 @@ block scripts
                     window.location.href = url.toString();
                 });
             }
+        })();
+
+        //- Navigation par onglets (comme Paramètres / fiche client)
+        (function () {
+            var tabs = document.querySelectorAll('.av2-tab');
+            var secs = document.querySelectorAll('.av2-section');
+            function activate(id) {
+                tabs.forEach(function (t) { t.classList.toggle('is-active', t.dataset.target === id); });
+                secs.forEach(function (s) { s.classList.toggle('is-active', s.id === id); });
+                try { sessionStorage.setItem('av2Tab', id); } catch (e) {}
+            }
+            tabs.forEach(function (t) { t.addEventListener('click', function () { activate(t.dataset.target); }); });
+            try {
+                var keep = sessionStorage.getItem('av2Tab');
+                if (keep && document.getElementById(keep)) activate(keep);
+            } catch (e) {}
         })();

@@ -3573,3 +3573,92 @@ body.bk-embed #bkCart .bk-cart {
   transition: opacity 0.15s;
 }
 .bk-limit-modal__btn:hover { opacity: 0.88; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Réservation sans compte — clarté du parcours
+   Le formulaire de coordonnées est affiché d'emblée (aucun compte requis) et
+   le bouton « Confirmer » explique toujours ce qui lui manque.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.bk-guest-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink, #111827);
+  margin: 18px 0 10px;
+}
+.bk-guest-note {
+  font-weight: 500;
+  font-size: 12.5px;
+  color: var(--main-color, #16a34a);
+}
+.bk-login-opt {
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--text-muted, #6b7280);
+}
+/* Le message flotte AU-DESSUS de la barre : la barre est un flex sans
+   retour à la ligne, un enfant en flux y écrasait le récap et le bouton. */
+.bk-cart { position: relative; }
+.bk-cart__hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 10px);
+  margin: 0;
+  padding: 8px 14px;
+  font: 500 12.5px/1.4 var(--bk-font);
+  text-align: center;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .10);
+  pointer-events: none;
+}
+
+/* Indice discret à côté d'un libellé (ex. téléphone demandé même connecté) */
+.bk-label-hint {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--bk-muted, #6b7280);
+}
+
+/* Échec d'une connexion Google : message affiché SUR la page de réservation
+   (le visiteur était auparavant éjecté vers /login sans aucune explication). */
+.bk-auth-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.bk-auth-error svg { flex-shrink: 0; margin-top: 1px; }
+
+/* Échec de chargement (calendrier / créneaux) : on explique et on propose de
+   réessayer, au lieu de laisser un « Chargement… » tourner indéfiniment. */
+.bk-load-error {
+  padding: 22px 18px;
+  text-align: center;
+  color: var(--bk-muted, #6b7280);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.bk-load-error p { margin: 0 0 6px; }
+.bk-load-error strong { color: var(--bk-ink, #111827); }
+.bk-retry-btn {
+  margin-top: 12px;
+  padding: 9px 20px;
+  border-radius: 999px;
+  border: 1.5px solid var(--bk-ink, #111827);
+  background: #fff;
+  color: var(--bk-ink, #111827);
+  font: 600 13px var(--bk-font);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.bk-retry-btn:hover { background: var(--bk-ink, #111827); color: #fff; }

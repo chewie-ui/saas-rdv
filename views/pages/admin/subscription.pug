@@ -93,11 +93,21 @@ block content
                 button.sub-upgrade-strip__cta#getProPlanStrip(type="button")
                     | Essayer Pro gratuitement →
 
+        //- ── Sélecteur d'audience : Individuel / Équipe ──────────────
+        //- Individuel = Free / Essentiel / Pro · Équipe = Business / Sur mesure.
+        .sub-segment#audienceToggle
+            button.sub-segment__btn.is-active(type="button" data-aud="individuel")
+                span.material-symbols-outlined person
+                span Individuel
+            button.sub-segment__btn(type="button" data-aud="equipe")
+                span.material-symbols-outlined groups
+                span Équipe
+
         //- ── Plan cards ──────────────────────────────────────────────
-        .sub-plans
+        .sub-plans#subPlans(data-active="individuel")
 
             //- ─── Starter (Free) ────────────────────────────────────
-            .sub-plan.sub-plan--starter(class=(!isPro && currentPlan === 'basic') ? 'sub-plan--current' : '')
+            .sub-plan.sub-plan--starter(data-group="individuel" class=(!isPro && currentPlan === 'basic') ? 'sub-plan--current' : '')
                 .sub-plan__header
                     .sub-plan__name-wrap
                         h2.sub-plan__name= t.subscription.plan_1
@@ -122,7 +132,7 @@ block content
                         button.sub-btn.sub-btn--outline#getFreePlan= t.subscription.btn_downgrade
 
             //- ─── Essentiel ─────────────────────────────────────────
-            .sub-plan.sub-plan--essentiel(class=(currentPlan === 'essentiel') ? 'sub-plan--current' : '')
+            .sub-plan.sub-plan--essentiel(data-group="individuel" class=(currentPlan === 'essentiel') ? 'sub-plan--current' : '')
                 .sub-plan__header
                     .sub-plan__name-wrap
                         h2.sub-plan__name= t.subscription.plan_ess || 'Essentiel'
@@ -181,7 +191,7 @@ block content
                 var _bizOffer  = _offerFor('business', defaultOffers);
 
             //- ─── Pro ───────────────────────────────────────────────
-            .sub-plan.sub-plan--premium(class=(currentPlan === 'pro' && isPro) ? 'sub-plan--current' : '')
+            .sub-plan.sub-plan--premium(data-group="individuel" class=(currentPlan === 'pro' && isPro) ? 'sub-plan--current' : '')
                 .sub-plan__popular= t.sub_extra.popular || 'Le plus populaire'
                 .sub-plan__header
                     .sub-plan__name-wrap
@@ -240,7 +250,7 @@ block content
                                 | &nbsp;#{_offerLabel(_proOffer)} (code #{_proOffer.code})
 
             //- ─── Business ──────────────────────────────────────────
-            .sub-plan.sub-plan--studio(class=(currentPlan === 'business' && isPro) ? 'sub-plan--current' : '')
+            .sub-plan.sub-plan--studio(data-group="equipe" class=(currentPlan === 'business' && isPro) ? 'sub-plan--current' : '')
                 .sub-plan__badge-business= t.subscription.plan_3_badge || 'Pour les équipes'
                 .sub-plan__header
                     .sub-plan__name-wrap
@@ -301,6 +311,29 @@ block content
                             )
                                 span.material-symbols-outlined(style=`font-size:15px`) card_giftcard
                                 | &nbsp;#{_offerLabel(_bizOffer)} (code #{_bizOffer.code})
+
+            //- ─── Sur mesure (grandes entreprises) ──────────────────
+            .sub-plan.sub-plan--custom(data-group="equipe")
+                .sub-plan__badge-business Sur mesure
+                .sub-plan__header
+                    .sub-plan__name-wrap
+                        h2.sub-plan__name Sur mesure
+                        p.sub-plan__desc Pour les grandes entreprises & réseaux
+                    .sub-plan__pricing
+                        span.sub-plan__price--custom Sur devis
+                .sub-plan__divider
+                .sub-plan__features
+                    .sub-plan__feature.sub-plan__feature--includes
+                        span.material-symbols-outlined check_circle
+                        em Tout ce que Business offre, sans limite
+                    each feature in ['Nombre de services au choix', 'Employés & établissements illimités', "Volume d'appels API défini avec vous", 'Fonctionnalités activées à la carte', 'Account manager dédié', 'SLA & sécurité renforcée']
+                        .sub-plan__feature
+                            span.material-symbols-outlined.feat-check.feat-check--business check
+                            span= feature
+                .sub-plan__cta
+                    a.sub-btn.sub-btn--contact(href="/support")
+                        span.material-symbols-outlined(style="font-size:18px") mail
+                        | &nbsp;Contactez-nous
 
         //- ── Comparison table ────────────────────────────────────────
         mixin cmpYes
@@ -461,4 +494,22 @@ block scripts
             if (p2 && p1) p2.addEventListener('click', function() { p1.click(); });
             if (b2 && b1) b2.addEventListener('click', function() { b1.click(); });
             if (ps && p1) ps.addEventListener('click', function() { p1.click(); });
+
+            // ── Sélecteur Individuel / Équipe : filtre les cartes de plan ──
+            var seg = document.getElementById('audienceToggle');
+            var plansEl = document.getElementById('subPlans');
+            if (seg && plansEl) {
+                function setAudience(aud) {
+                    plansEl.setAttribute('data-active', aud);
+                    seg.querySelectorAll('.sub-segment__btn').forEach(function (b) {
+                        b.classList.toggle('is-active', b.dataset.aud === aud);
+                    });
+                }
+                seg.addEventListener('click', function (e) {
+                    var btn = e.target.closest('.sub-segment__btn');
+                    if (btn) setAudience(btn.dataset.aud);
+                });
+                // Par défaut, on met en avant le groupe du plan actuel de l'utilisateur.
+                if (plansEl.querySelector('.sub-plan--current[data-group="equipe"]')) setAudience('equipe');
+            }
         });

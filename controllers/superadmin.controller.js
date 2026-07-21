@@ -57,7 +57,7 @@ exports.establishmentsPage = async (req, res) => {
   }
   const [companiesRaw, totalBookings] = await Promise.all([
     Company.find(query)
-      .populate("owner", "fullName email isPremium manualPremium subscription businessName businessPicture")
+      .populate("owner", "fullName email isPremium manualPremium manualPremiumExpiry subscription businessName businessPicture")
       .select("name slug businessType createdAt isPaused photo description")
       .sort("-createdAt")
       .lean(),
@@ -77,7 +77,18 @@ exports.establishmentsPage = async (req, res) => {
     { $group: { _id: "$company", count: { $sum: 1 } } },
   ]);
   const countMap = new Map(bookingCounts.map((b) => [String(b._id), b.count]));
-  companies.forEach((c) => { c.bookingCount = countMap.get(String(c._id)) || 0; });
+  const nowMs = Date.now();
+  companies.forEach((c) => {
+    c.bookingCount = countMap.get(String(c._id)) || 0;
+    // Jours restants d'un octroi manuel avec durée. null = infini / pas d'octroi.
+    const o = c.owner;
+    if (o && (o.manualPremium || o.isPremium) && o.manualPremiumExpiry) {
+      const ms = new Date(o.manualPremiumExpiry).getTime() - nowMs;
+      c.trialDaysLeft = ms > 0 ? Math.ceil(ms / 86400000) : 0;
+    } else {
+      c.trialDaysLeft = null;
+    }
+  });
   res.render("superadmin/establishments", { companies, search: search || "", totalBookings });
 };
 
@@ -193,6 +204,24 @@ exports.setPlan = async (req, res) => {
   }
 };
 
+// Calcule la date d'expiration d'un octroi manuel depuis une durée choisie.
+// Renvoie : null = infini · Date = expiration · undefined = valeur invalide.
+function computeTrialExpiry(duration, customDays) {
+  const daysMap = { "1d": 1, "7d": 7, "14d": 14, "30d": 30, "90d": 90 };
+  if (!duration || duration === "infinite") return null;
+  let days;
+  if (duration === "custom") {
+    days = Number(customDays);
+    if (!Number.isFinite(days) || days <= 0 || days > 3650) return undefined;
+  } else {
+    days = daysMap[duration];
+    if (!days) return undefined;
+  }
+  const d = new Date();
+  d.setDate(d.getDate() + Math.round(days));
+  return d;
+}
+
 // ── Gestion plan par établissement ──────────────────────────────────────────
 // Le plan vit sur le User (owner). Changer le plan d'un établissement =
 // changer le plan de son propriétaire (qui peut posséder plusieurs établissements,
@@ -206,19 +235,31 @@ exports.setPlanForCompany = async (req, res) => {
     const validPlans = ["free", "essentiel", "pro", "business"];
     if (!validPlans.includes(plan)) return res.status(400).json({ error: "Plan invalide." });
 
+    const { duration, customDays } = req.body; // "infinite" | "7d" | "30d"… | "custom" | undefined
     const isFree = plan === "free";
     const update = {
       manualPremium: !isFree,
       isPremium: !isFree,
-      manualPremiumExpiry: null,
       "subscription.plan": isFree ? "basic" : plan,
       "subscription.status": isFree ? "inactive" : "active",
     };
+    if (isFree) {
+      // Free → pas d'octroi manuel, on efface la durée.
+      update.manualPremiumExpiry = null;
+    } else if (duration !== undefined) {
+      // Une durée a été choisie → on (re)calcule l'expiration.
+      const expiry = computeTrialExpiry(duration, customDays);
+      if (expiry === undefined) return res.status(400).json({ error: "Durée invalide (1 à 3650 jours)." });
+      update.manualPremiumExpiry = expiry; // null = infini, ou Date
+    }
+    // Si plan payant SANS durée fournie → on ne touche pas à l'expiry (on
+    // préserve une durée déjà en place au lieu de l'effacer).
     const userId = String(company.owner);
     await User.findByIdAndUpdate(userId, update);
     const { enforcePlanLimits } = require("./account.controller");
     enforcePlanLimits(userId, isFree ? "basic" : plan).catch(() => {});
-    res.json({ success: true, plan });
+    const fresh = await User.findById(userId).select("manualPremiumExpiry").lean();
+    res.json({ success: true, plan, expiry: fresh ? fresh.manualPremiumExpiry : null });
   } catch (err) {
     console.error("setPlanForCompany error:", err);
     res.status(500).json({ error: "Erreur serveur." });

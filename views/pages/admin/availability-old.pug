@@ -1,0 +1,440 @@
+extends ../../layouts/admin
+
+include ../../templates/calendar
+
+block links
+    link(rel="stylesheet", href="/css/components/admin/availability.admin.css")
+    link(rel="stylesheet", href="/css/components/index/calendar.index.css")
+
+block content
+    - const weekday = [t.days.sunday, t.days.monday, t.days.tuesday, t.days.wednesday, t.days.thursday, t.days.friday, t.days.saturday]
+    - const sortedSchedule = [...currentCompany.schedule].sort((a, b) => { const order = i => i === 0 ? 7 : i; return order(a.weekdayIndex) - order(b.weekdayIndex); })
+    - const activeDays = sortedSchedule.filter(d => !d.dayOff && d.workingHours && d.workingHours.length > 0)
+
+    .avail-page
+
+        .avail-layout
+
+            //- ── LEFT: main column ───────────────────────────────────
+            .avail-main
+
+                //- Horaire commun VS horaire individuel par employé (cf. système
+                //- de grades/permissions) — gardé par availability.manageShared.
+                if permissions.availability.manageShared
+                    .avail-card.avail-schedule-mode-card
+                        .avail-card__hd
+                            span.avail-card__title= t.avail.schedules_title
+                        .avail-schedule-mode
+                            label.avail-schedule-mode__option(class=scheduleMode === 'shared' ? 'is-active' : 'is-muted')
+                                input#scheduleModeShared(type="radio" name="scheduleMode" value="shared" checked=scheduleMode === 'shared')
+                                span= t.avail.mode_shared
+                            label.avail-schedule-mode__option(class=scheduleMode === 'perEmployee' ? 'is-active' : 'is-muted')
+                                input#scheduleModePerEmployee(type="radio" name="scheduleMode" value="perEmployee" checked=scheduleMode === 'perEmployee')
+                                span= t.avail.mode_per_employee
+
+                if scheduleMode === 'perEmployee' && employees && employees.length > 1 && (permissions.availability.manageShared || permissions.availability.manageOthersSchedule)
+                    .avail-card.avail-employee-picker-card
+                        .avail-card__hd
+                            span.avail-card__title= t.avail.schedule_of
+                        select#availEmployeeSelect.avail-employee-select
+                            each emp in employees
+                                option(value=emp.id selected=selectedEmployeeId === emp.id)= (emp.firstName + ' ' + emp.lastName).trim()
+
+                //- Weekly schedule card
+                .avail-card(class=!canEditSchedule ? 'avail-card--readonly' : '')
+                    .avail-card__hd
+                        span.avail-card__title= t.avail.t1
+                        span.avail-tz= t.avail.timezone_note
+                    if !canEditSchedule
+                        .avail-readonly-notice
+                            span.material-symbols-outlined(style=`font-size:15px`) lock
+                            span= t.avail.no_permission
+                    if scheduleMode === 'shared'
+                        .avail-shared-notice
+                            span.material-symbols-outlined schedule
+                            div
+                                strong= t.avail.shared_notice_title
+                                if permissions.availability.manageShared
+                                    span= t.avail.shared_notice_switch_pre
+                                    strong= t.avail.mode_per_employee
+                                    span= ' ' + t.avail.shared_notice_switch_suffix
+                                else
+                                    span= t.avail.shared_notice_request_pre
+                                    strong= t.avail.mode_per_employee
+                                    span= ' ' + t.avail.shared_notice_request_suffix
+                    .avail-rows.body-weekly-hour
+                        each day in sortedSchedule
+                            .avail-day-row.row-weekday(class=day.dayOff ? 'day-off' : '')
+                                //- Toggle
+                                label.avail-switch(class=!canEditSchedule ? 'avail-switch--disabled' : '')
+                                    input.input-weekday(
+                                        type="checkbox"
+                                        data-weekday-index=day.weekdayIndex
+                                        data-company=currentCompany._id
+                                        data-employee-id=selectedEmployeeId
+                                        checked=!day.dayOff
+                                        disabled=!canEditSchedule
+                                    )
+                                    span.avail-switch__track
+                                        span.avail-switch__thumb
+
+                                //- Day name
+                                span.avail-day-name= weekday[day.weekdayIndex]
+
+                                //- Time slots
+                                .avail-day-times.weekly-hour__time
+                                    if day.dayOff
+                                        span.avail-dash —
+                                        span.avail-dash —
+                                        span.avail-dash —
+                                    else if day.workingHours && day.workingHours.length > 0
+                                        each slot, index in day.workingHours
+                                            .time-slot.flex-c(data-weekday-index=day.weekdayIndex)
+                                                .start-hour.slot-hour
+                                                    .avail-time-box.hour-container.start-hour-(data-hours="start")= slot.start || "09:00"
+                                                    .panel-availability
+                                                        each hour in hours
+                                                            .hour= hour
+                                                span.avail-sep —
+                                                .end-hour.slot-hour
+                                                    .avail-time-box.hour-container.end-hour-(data-hours="end")= slot.end || "18:00"
+                                                    .panel-availability
+                                                        each hour in hours
+                                                            .hour= hour
+                                                if index > 0 && canEditSchedule
+                                                    button.avail-del-slot.delete-time-slot(type="button" data-id=slot._id title="Remove")
+                                                        span.material-symbols-outlined delete
+                                    else
+                                        .time-slot.flex-c(data-weekday-index=day.weekdayIndex)
+                                            .start-hour.slot-hour
+                                                .avail-time-box.hour-container.start-hour-(data-hours="start") 09:00
+                                                .panel-availability
+                                                    each hour in hours
+                                                        .hour= hour
+                                            span.avail-sep —
+                                            .end-hour.slot-hour
+                                                .avail-time-box.hour-container.end-hour-(data-hours="end") 18:00
+                                                .panel-availability
+                                                    each hour in hours
+                                                        .hour= hour
+
+                                //- Actions
+                                .avail-day-actions
+                                    if !day.dayOff && canEditSchedule
+                                        if availFeatures && availFeatures.ranges
+                                            button.avail-range-btn.option-add-plage(type="button")
+                                                span.material-symbols-outlined add
+                                                | #{t.avail.range_btn}
+                                        else
+                                            a.avail-range-btn.avail-range-btn--locked(href="/subscription" title="Fonctionnalité Pro")
+                                                span.material-symbols-outlined(style=`font-size:13px`) lock
+                                                | #{t.avail.range_btn}
+
+                //- Days off card
+                .avail-card
+                    .avail-card__hd
+                        span.avail-card__title= t.avail.t3
+                        button.avail-add-btn#addDaysOffBtn(type="button")
+                            span.material-symbols-outlined(style=`font-size:15px`) add
+                            | #{t.avail.btn1}
+
+                    #holidaysBody.avail-days-grid
+                        if daysOff && daysOff.dates
+                            each day in daysOff.dates
+                                - var d = new Date(day.date)
+                                - var dMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                                - var dDays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+                                - var dateLabel = dDays[d.getDay()] + ', ' + dMonths[d.getMonth()] + ' ' + d.getDate()
+                                .avail-doff-card.days-off__row(data-date=day)
+                                    .avail-doff-top.day-card__top
+                                        .avail-doff-date
+                                            span.avail-doff-date-label= dateLabel
+                                        button.avail-doff-del.days-off__button.delete-btn.flex-c(title=t.avail.delete_day)
+                                            span.material-symbols-outlined delete
+                                    .avail-doff-body.days-off__schedule.flex-c
+                                        if day.workingHours && day.workingHours.length > 0 && day.workingHours[0].start
+                                            .time-slot.flex-c
+                                                .start-hour.slot-hour
+                                                    .avail-time-box.hour-container.start-hour-(data-hours="start")= day.workingHours[0].start
+                                                    .panel-availability
+                                                        each hour in hours
+                                                            .hour= hour
+                                                span.avail-sep —
+                                                .end-hour.slot-hour
+                                                    .avail-time-box.hour-container.end-hour-(data-hours="end")= day.workingHours[0].end
+                                                    .panel-availability
+                                                        each hour in hours
+                                                            .hour= hour
+                                                button.avail-del-slot.delete-time-slot(type="button" title=t.avail.remove_schedule)
+                                                    span.material-symbols-outlined delete
+                                        else
+                                            .avail-doff-type= t.avail.all_day
+                                    if day.label
+                                        p.avail-doff-note= day.label
+                                    .avail-doff-emps
+                                        if day.employees && day.employees.length > 0
+                                            each emp in day.employees
+                                                span.emp-chip= emp.fullName
+                                        else
+                                            span.emp-chip.emp-chip--all= t.avail.all_employees
+                                    .day-card__footer
+                                        button.avail-doff-addtime.days-off__button.schedule-btn.flex-c(title=t.avail.add_schedule)
+                                            span.material-symbols-outlined(style=`font-size:13px`) add
+                                            span= t.avail.add_schedule
+
+                        button.avail-doff-add(type="button" onclick="document.getElementById('addDaysOffBtn').click()")
+                            .avail-doff-add__icon
+                                span.material-symbols-outlined add
+                            span.avail-doff-add__label= t.avail.add_dayoff_btn
+
+                    if !availFeatures || !availFeatures.ranges
+                        .avail-upsell
+                            .avail-upsell__icon
+                                span.material-symbols-outlined lock
+                            .avail-upsell__body
+                                strong.avail-upsell__title= t.avail.upsell_ranges_title
+                                span.avail-upsell__sub= t.avail.upsell_ranges_sub
+                                a.avail-upsell__cta(href="/subscription")= t.avail.upgrade_cta
+
+                //- Regroupement des rendez-vous ("smart grouping")
+                .avail-card.sg-card
+                    .avail-card__hd
+                        .sg-card__title-row
+                            span.material-symbols-outlined.sg-card__icon bar_chart
+                            span.avail-card__title= t.avail.sg_title
+                        label.sa-toggle
+                            input#sgEnabled(type="checkbox" checked=smartGrouping.enabled)
+                            .sa-toggle__track
+                    p.avail-card__sub
+                        | #{t.avail.sg_desc}
+                    #sgWindowRow(style=(smartGrouping.enabled ? '' : 'display:none'))
+                        .sg-window-label= t.avail.sg_window_label
+                        .sg-window-pills#sgWindowPills
+                            each h in [1, 2, 3, 4, 6]
+                                button.sg-window-pill(type="button" data-hours=h class=(Number(smartGrouping.windowHours) === h ? 'active' : ''))= h + 'h'
+                        .sg-window-label= t.avail.sg_days_label
+                            span.xs-comment= ' ' + t.avail.sg_days_hint
+                        .sg-window-pills#sgWeekdayPills
+                            - var sgDayDefs = [{ label: 'Lun', dow: 1 }, { label: 'Mar', dow: 2 }, { label: 'Mer', dow: 3 }, { label: 'Jeu', dow: 4 }, { label: 'Ven', dow: 5 }, { label: 'Sam', dow: 6 }, { label: 'Dim', dow: 0 }]
+                            each d in sgDayDefs
+                                button.sg-window-pill(type="button" data-day=d.dow class=(smartGrouping.weekdays && smartGrouping.weekdays.includes(d.dow) ? 'active' : ''))= d.label
+                    .sg-example(class=(smartGrouping.enabled ? '' : 'sg-example--off'))
+                        .sg-example__row
+                            span.sg-example__dot.sg-example__dot--booked
+                            span= t.avail.sg_example_booked
+                        .sg-example__row
+                            span.sg-example__dot.sg-example__dot--reco
+                            span= t.avail.sg_example_reco
+                        .sg-example__row
+                            span.sg-example__dot.sg-example__dot--extra
+                            span= t.avail.sg_example_extra
+
+                //- Délai minimum de réservation
+                -
+                    var ltMin   = (minBookingLeadTime && minBookingLeadTime.minutes) || 0
+                    var ltUnit  = 'minutes'
+                    var ltValue = ltMin
+                    if (ltMin > 0 && ltMin % 1440 === 0) { ltUnit = 'days'; ltValue = ltMin / 1440 }
+                    else if (ltMin > 0 && ltMin % 60 === 0) { ltUnit = 'hours'; ltValue = ltMin / 60 }
+                    var ltPresets = [0, 30, 60, 120, 240, 1440, 2880, 10080]
+                    function ltPresetLabel(p) {
+                        if (p === 0) return 'Aucun'
+                        if (p < 60) return p + ' min'
+                        if (p < 1440) return (p / 60) + 'h'
+                        return (p / 1440) + 'j'
+                    }
+                .avail-card.lt-card
+                    .avail-card__hd
+                        .sg-card__title-row
+                            span.material-symbols-outlined.sg-card__icon schedule
+                            span.avail-card__title= t.avail.lt_title
+                        label.sa-toggle
+                            input#ltEnabled(type="checkbox" checked=(minBookingLeadTime && minBookingLeadTime.enabled))
+                            .sa-toggle__track
+                    p.avail-card__sub
+                        | #{t.avail.lt_desc}
+                    #ltRow(style=((minBookingLeadTime && minBookingLeadTime.enabled) ? '' : 'display:none'))
+                        .sg-window-label= t.avail.lt_label
+                        .sg-window-pills#ltPresetPills
+                            each p in ltPresets
+                                button.sg-window-pill(type="button" data-minutes=p class=(ltMin === p ? 'active' : ''))= ltPresetLabel(p)
+                        .lt-custom
+                            span.lt-custom__label= t.avail.lt_custom_label
+                            input.lt-custom__input#ltValue(type="number" min="0" step="1" value=ltValue)
+                            select.lt-custom__unit#ltUnit
+                                option(value="minutes" selected=(ltUnit === 'minutes'))= t.avail.lt_unit_minutes
+                                option(value="hours" selected=(ltUnit === 'hours'))= t.avail.lt_unit_hours
+                                option(value="days" selected=(ltUnit === 'days'))= t.avail.lt_unit_days
+                            span.lt-custom__label= t.avail.lt_before_label
+
+            //- ── RIGHT: sidebar ──────────────────────────────────────
+            .avail-side
+
+                //- Slot duration
+                .avail-card(class=(!availFeatures || !availFeatures.slotDuration) ? 'avail-card--locked' : '')
+                    .avail-card__hd
+                        span.avail-card__title= t.avail.t2
+                    p.avail-card__sub= t.avail.slot_desc
+                    .slot-time-section(class=hasServices ? 'slot-managed' : '')
+                        .avail-slot-pills#slotPills
+                            each time in timeSlot
+                                button.slot-pill(
+                                    type="button"
+                                    data-time=time
+                                    class=(currentSlotTime == time || String(currentSlotTime) === String(time)) ? 'active' : ''
+                                )= time + 'm'
+                        //- Hidden legacy panel (JS still targets it for fetch)
+                        .time-slot__container(style="display:none")
+                            .slot-input__container#timeslotPanel
+                                .input #{currentSlotTime || "30"}min
+                                .panel
+                                    each time in timeSlot
+                                        .time(data-time=time) #{time}min
+                        if hasServices && availFeatures && availFeatures.slotDuration
+                            .slot-managed-info
+                                span.material-symbols-outlined info
+                                span= t.avail.slot_managed_hint
+                                button.slot-reenable-btn(type="button")= t.avail.slot_reenable
+                    if !availFeatures || !availFeatures.slotDuration
+                        .avail-upsell
+                            .avail-upsell__icon
+                                span.material-symbols-outlined lock
+                            .avail-upsell__body
+                                strong.avail-upsell__title= t.avail.upsell_slot_title
+                                span.avail-upsell__sub= t.avail.upsell_slot_sub
+                                a.avail-upsell__cta(href="/subscription")= t.avail.upgrade_cta
+
+                //- Buffer between bookings
+                if !adminFeatures || adminFeatures.buffer_time !== false
+                    .avail-card
+                        .avail-card__hd
+                            span.avail-card__title= t.avail.buffer_title
+                        p.avail-card__sub= t.avail.buffer_sub
+                        .avail-buffer-group
+                            .avail-buffer
+                                .avail-buffer__label= t.avail.buffer_before
+                                input.avail-buffer__range#bufferBeforeRange(type="range" min="0" max="120" step="5" value=(bufferBefore || 0))
+                                .avail-buffer__row
+                                    span 0
+                                    span.avail-buffer__val#bufferBeforeVal #{bufferBefore || 0} min
+                                    span 120
+                            .avail-buffer
+                                .avail-buffer__label= t.avail.buffer_after
+                                input.avail-buffer__range#bufferAfterRange(type="range" min="0" max="120" step="5" value=(bufferAfter || 0))
+                                .avail-buffer__row
+                                    span 0
+                                    span.avail-buffer__val#bufferAfterVal #{bufferAfter || 0} min
+                                    span 120
+
+                //- Mode de génération des créneaux
+                .avail-card
+                    .avail-card__hd
+                        span.avail-card__title= t.avail.slot_mode_title
+                    p.avail-card__sub= t.avail.slot_mode_desc
+                    .slot-mode-options#slotModeOptions
+                        button.slot-mode-option(type="button" data-mode="fixed" class=(slotMode !== 'interval' ? 'active' : ''))
+                            span.slot-mode-option__title= t.avail.slot_mode_fixed_title
+                            span.slot-mode-option__desc= t.avail.slot_mode_fixed_desc
+                        button.slot-mode-option(type="button" data-mode="interval" class=(slotMode === 'interval' ? 'active' : ''))
+                            span.slot-mode-option__title= t.avail.slot_mode_interval_title
+                            span.slot-mode-option__desc= t.avail.slot_mode_interval_desc
+                    .slot-interval-row#slotIntervalRow(style=(slotMode === 'interval' ? '' : 'display:none'))
+                        label.slot-interval-label(for="slotIntervalInput")= t.avail.slot_interval_label
+                        input.input.slot-interval-input#slotIntervalInput(type="number" min="5" max="120" step="5" value=(slotInterval || 30))
+                        span= t.avail.slot_interval_unit
+
+    //- ── Hidden templates / calendar ─────────────────────────────
+    #calendarWrapper
+    template#plageTemplate
+        .time-slot.flex-c
+            .start-hour.slot-hour
+                .avail-time-box.hour-container.start-hour-(data-hours="start") 09:00
+                .panel-availability
+                    each hour in hours
+                        .hour= hour
+            span.avail-sep —
+            .end-hour.slot-hour
+                .avail-time-box.hour-container.end-hour-(data-hours="end") 18:00
+                .panel-availability
+                    each hour in hours
+                        .hour= hour
+            button.avail-del-slot.delete-time-slot(type="button")
+                span.material-symbols-outlined delete
+
+    +calendar()
+
+    template#daysOffTemplate
+        .days-off__rows
+    template#dayOffRow
+        .avail-doff-card.days-off__row
+            .avail-doff-top.day-card__top
+                .avail-doff-date
+                    span.avail-doff-date-label
+                button.avail-doff-del.days-off__button.delete-btn.flex-c
+                    span.material-symbols-outlined delete
+            .avail-doff-body.days-off__schedule.flex-c
+                .avail-doff-type= t.avail.all_day
+            .avail-doff-emps
+            .day-card__footer
+                button.avail-doff-addtime.days-off__button.schedule-btn.flex-c
+                    span.material-symbols-outlined(style=`font-size:13px`) add
+                    span= t.avail.add_schedule
+
+    //- ── Employee picker modal ───────────────────────────────────
+    #empPickerModal.emp-picker(style="display:none")
+        .emp-picker__backdrop
+        .emp-picker__card
+            .emp-picker__hd
+                h3.emp-picker__title#empPickerTitle= t.avail.picker_title
+            .emp-picker__body
+                label.emp-picker-opt
+                    input#empModeAll(type="radio" name="empMode" value="all" checked)
+                    .emp-picker-opt__dot
+                    span= t.avail.picker_all
+                if employees && employees.length > 0
+                    label.emp-picker-opt
+                        input#empModeSpecific(type="radio" name="empMode" value="specific")
+                        .emp-picker-opt__dot
+                        span= t.avail.picker_specific
+                    .emp-picker-list#empPickerList
+                        each emp in employees
+                            label.emp-picker-emp
+                                input(type="checkbox" data-id=String(emp._id))
+                                .emp-picker-emp__check
+                                    span.material-symbols-outlined(style=`font-size:12px`) check
+                                span= emp.firstName + ' ' + emp.lastName
+            .emp-picker__ft
+                button.emp-picker__cancel#empPickerCancel(type="button")= t.avail.picker_cancel
+                button.emp-picker__confirm#empPickerConfirm(type="button")= t.avail.picker_confirm
+
+block scripts
+    script.
+        window.__employees = !{JSON.stringify(employees || [])};
+        window.__availFeatures = !{JSON.stringify(availFeatures || {})};
+        window.__daysOffCount = !{(daysOff && daysOff.dates) ? daysOff.dates.length : 0};
+    script(src="js/components/admin/availability.admin.js" type="module")
+    script(src="js/templates/calendar.js" type="module")
+    script.
+        (function () {
+            var radios = document.querySelectorAll('input[name="scheduleMode"]');
+            radios.forEach(function (radio) {
+                radio.addEventListener('change', function () {
+                    if (!radio.checked) return;
+                    fetch('/company/schedule-mode', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ scheduleMode: radio.value }),
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function () { window.location.reload(); });
+                });
+            });
+            var empSelect = document.getElementById('availEmployeeSelect');
+            if (empSelect) {
+                empSelect.addEventListener('change', function () {
+                    var url = new URL(window.location.href);
+                    url.searchParams.set('employeeId', empSelect.value);
+                    window.location.href = url.toString();
+                });
+            }
+        })();

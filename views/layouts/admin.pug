@@ -168,6 +168,30 @@ html(lang="fr")
                             });
                         })();
                 .main-wrapper
+                    //- Avertissement fin d'essai/octroi — visible uniquement si
+                    //- l'accès expire bientôt ET qu'aucun moyen de paiement par
+                    //- défaut n'est enregistré (sinon rien à faire pour l'user).
+                    if showTrialWarning
+                        style.
+                            .trial-warn { display:flex; align-items:center; gap:14px; background:#fff7ed; border:1px solid #fed7aa; border-radius:14px; padding:14px 18px; margin-bottom:18px; }
+                            .trial-warn__ic { color:#c2410c; font-size:26px; flex:none; }
+                            .trial-warn__body { flex:1; min-width:0; }
+                            .trial-warn__title { display:block; font-size:14px; font-weight:700; color:#9a3412; }
+                            .trial-warn__sub { display:block; font-size:12.5px; color:#b45309; line-height:1.5; margin-top:2px; }
+                            .trial-warn__cta { flex:none; display:inline-block; background:#c2410c; color:#fff; text-decoration:none; font-size:13px; font-weight:600; padding:9px 16px; border-radius:9px; white-space:nowrap; }
+                            .trial-warn__cta:hover { background:#9a3412; color:#fff; }
+                            @media (max-width:600px){ .trial-warn{flex-wrap:wrap} .trial-warn__cta{width:100%;text-align:center} }
+                        .trial-warn
+                            span.material-symbols-outlined.trial-warn__ic schedule
+                            .trial-warn__body
+                                strong.trial-warn__title
+                                    if daysLeft === 0
+                                        | Votre accès premium expire aujourd'hui
+                                    else
+                                        | Il vous reste #{daysLeft} jour#{daysLeft > 1 ? 's' : ''} d'accès premium
+                                span.trial-warn__sub
+                                    | Ajoutez un moyen de paiement pour ne pas perdre l'accès à vos fonctionnalités#{trialExpiryDate ? " — expire le " + new Date(trialExpiryDate).toLocaleDateString('fr-FR') : ''}.
+                            a.trial-warn__cta(href="/subscription") Voir les plans
                     block content
         +dialog()
 

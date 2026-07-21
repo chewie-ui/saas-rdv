@@ -102,6 +102,8 @@ block content
                 button.sq-addq#sqAddQ(type="button")
                     span.material-symbols-outlined add
                     | Ajouter une question
+                //- Avertissement : réponses qui ne mènent à aucun service actif.
+                .sq-warn#sqWarn(hidden)
                 .sq-foot
                     span.sq-saveind#sqSaveInd
                     button.sm-btn.sm-btn--primary#sqSave(type="button") Enregistrer le questionnaire
@@ -236,56 +238,82 @@ block content
                             th(data-col="status" style=(_hid('status') ? 'display:none' : null)) Statut
                             th.sv2-th--act Actions
                     tbody#sv2Body
-                        each svc in services
-                            - var _dur = svc.duration ? (svc.durationMax && svc.durationMax > svc.duration ? (svc.duration + '–' + svc.durationMax + ' min') : (svc.duration + ' min')) : '—'
-                            tr.sv2-row(data-name=(svc.name || '').toLowerCase() data-type=(svc.type === 'group' ? 'group' : 'service') data-active=(svc.active ? '1' : '0') data-price=(svc.price !== null && svc.price !== undefined ? svc.price : '') data-dur=(svc.duration || 0) class=(!svc.active ? 'sv2-row--inactive' : ''))
-                                td.sv2-td--name
-                                    span.sv2-dot(style=`background:${svc.color || '#1e7a4e'}`)
-                                    span.sv2-name= svc.name
-                                    if svc.type === 'group'
-                                        span.sv2-tag.sv2-tag--group #{svc.capacity} places
-                                td(data-col="type" style=(_hid('type') ? 'display:none' : null))
-                                    if svc.type === 'group'
-                                        span.sv2-type.sv2-type--group
-                                            span.material-symbols-outlined groups
-                                            | Cours collectif
-                                    else
-                                        span.sv2-type
-                                            span.material-symbols-outlined sell
-                                            | Service
-                                td(data-col="emp" style=(_hid('emp') ? 'display:none' : null))
-                                    if svc.employees && svc.employees.length
-                                        .sv2-emps
-                                            each emp, i in svc.employees
-                                                if i < 5
-                                                    - var _ini = (emp.fullName || '?').trim().split(/\s+/).map(function (w) { return w.charAt(0); }).slice(0, 2).join('').toUpperCase()
-                                                    if emp.profilePicture
-                                                        img.sv2-av(src=`/uploads/profiles/${emp.profilePicture}` alt=emp.fullName title=emp.fullName loading="lazy")
-                                                    else
-                                                        span.sv2-av.sv2-av--txt(title=emp.fullName)= _ini
-                                            if svc.employees.length > 5
-                                                span.sv2-av.sv2-av--more +#{svc.employees.length - 5}
-                                    else
-                                        span.sv2-all Tous les employés
-                                td.sv2-td--dur(data-col="dur" style=(_hid('dur') ? 'display:none' : null))= _dur
-                                td.sv2-td--price(data-col="price" style=(_hid('price') ? 'display:none' : null))
-                                    if svc.price !== null && svc.price !== undefined
-                                        = svc.price + '€'
-                                    else
-                                        = '—'
-                                td(data-col="status" style=(_hid('status') ? 'display:none' : null))
-                                    .sv2-statuscell
-                                        label.sa-toggle.sv2-toggle(title="Activer / désactiver ce service")
-                                            input.sv2-toggle-cb(type="checkbox" checked=svc.active data-id=String(svc._id))
-                                            .sa-toggle__track
-                                        span.sv2-status(class=svc.active ? 'is-on' : 'is-off')
-                                            span.sv2-status__dot
-                                            = svc.active ? 'Actif' : 'Inactif'
-                                td.sv2-td--act
-                                    button.sv2-iconbtn.sv2-edit(type="button" title="Modifier" data-id=String(svc._id) data-type=(svc.type === 'group' ? 'group' : 'service'))
-                                        span.material-symbols-outlined edit
-                                    button.sv2-iconbtn.sv2-iconbtn--danger.sv2-del(type="button" title="Supprimer" data-id=String(svc._id) data-name=svc.name data-type=(svc.type || 'individual'))
-                                        span.material-symbols-outlined delete
+                        -
+                            // Groupes = catégories de l'utilisateur, dans leur ordre
+                            // (l'ordre du tableau calendarSettings.categories fait foi),
+                            // + un groupe final « Sans catégorie » pour les services sans
+                            // catégorie ou dont la catégorie a été supprimée.
+                            var _groups = (categories || []).map(function (c) { return { name: c.name, icon: c.icon || '', items: [] }; });
+                            var _none = { name: '', icon: '', items: [], isNone: true };
+                            (services || []).forEach(function (s) {
+                                var g = null;
+                                for (var i = 0; i < _groups.length; i++) { if (_groups[i].name === s.category) { g = _groups[i]; break; } }
+                                (g || _none).items.push(s);
+                            });
+                            var _allGroups = _groups.concat([_none]);
+                        each grp in _allGroups
+                            //- Les catégories vides restent affichées (zone de dépôt) ;
+                            //- « Sans catégorie » n'apparaît que s'il contient des services.
+                            if !grp.isNone || grp.items.length
+                                tr.sv2-grouprow(data-cat=grp.name data-icon=grp.icon draggable=(grp.isNone ? null : 'true') class=(grp.isNone ? 'sv2-grouprow--none' : ''))
+                                    td.sv2-groupcell(colspan="7")
+                                        if !grp.isNone
+                                            span.sv2-ghandle.material-symbols-outlined(title="Glisser pour réordonner la catégorie") drag_indicator
+                                        if grp.icon
+                                            span.sv2-gicon= grp.icon
+                                        span.sv2-gname= grp.isNone ? 'Sans catégorie' : grp.name
+                                        span.sv2-gcount= grp.items.length
+                            each svc in grp.items
+                                - var _dur = svc.duration ? (svc.durationMax && svc.durationMax > svc.duration ? (svc.duration + '–' + svc.durationMax + ' min') : (svc.duration + ' min')) : '—'
+                                tr.sv2-row(draggable="true" data-id=String(svc._id) data-cat=(svc.category || '') data-name=(svc.name || '').toLowerCase() data-type=(svc.type === 'group' ? 'group' : 'service') data-active=(svc.active ? '1' : '0') data-price=(svc.price !== null && svc.price !== undefined ? svc.price : '') data-dur=(svc.duration || 0) class=(!svc.active ? 'sv2-row--inactive' : ''))
+                                    td.sv2-td--name
+                                        span.sv2-handle.material-symbols-outlined(title="Glisser pour réordonner") drag_indicator
+                                        span.sv2-dot(style=`background:${svc.color || '#1e7a4e'}`)
+                                        span.sv2-name= svc.name
+                                        if svc.type === 'group'
+                                            span.sv2-tag.sv2-tag--group #{svc.capacity} places
+                                    td(data-col="type" style=(_hid('type') ? 'display:none' : null))
+                                        if svc.type === 'group'
+                                            span.sv2-type.sv2-type--group
+                                                span.material-symbols-outlined groups
+                                                | Cours collectif
+                                        else
+                                            span.sv2-type
+                                                span.material-symbols-outlined sell
+                                                | Service
+                                    td(data-col="emp" style=(_hid('emp') ? 'display:none' : null))
+                                        if svc.employees && svc.employees.length
+                                            .sv2-emps
+                                                each emp, i in svc.employees
+                                                    if i < 5
+                                                        - var _ini = (emp.fullName || '?').trim().split(/\s+/).map(function (w) { return w.charAt(0); }).slice(0, 2).join('').toUpperCase()
+                                                        if emp.profilePicture
+                                                            img.sv2-av(src=`/uploads/profiles/${emp.profilePicture}` alt=emp.fullName title=emp.fullName loading="lazy")
+                                                        else
+                                                            span.sv2-av.sv2-av--txt(title=emp.fullName)= _ini
+                                                if svc.employees.length > 5
+                                                    span.sv2-av.sv2-av--more +#{svc.employees.length - 5}
+                                        else
+                                            span.sv2-all Tous les employés
+                                    td.sv2-td--dur(data-col="dur" style=(_hid('dur') ? 'display:none' : null))= _dur
+                                    td.sv2-td--price(data-col="price" style=(_hid('price') ? 'display:none' : null))
+                                        if svc.price !== null && svc.price !== undefined
+                                            = svc.price + '€'
+                                        else
+                                            = '—'
+                                    td(data-col="status" style=(_hid('status') ? 'display:none' : null))
+                                        .sv2-statuscell
+                                            label.sa-toggle.sv2-toggle(title="Activer / désactiver ce service")
+                                                input.sv2-toggle-cb(type="checkbox" checked=svc.active data-id=String(svc._id))
+                                                .sa-toggle__track
+                                            span.sv2-status(class=svc.active ? 'is-on' : 'is-off')
+                                                span.sv2-status__dot
+                                                = svc.active ? 'Actif' : 'Inactif'
+                                    td.sv2-td--act
+                                        button.sv2-iconbtn.sv2-edit(type="button" title="Modifier" data-id=String(svc._id) data-type=(svc.type === 'group' ? 'group' : 'service'))
+                                            span.material-symbols-outlined edit
+                                        button.sv2-iconbtn.sv2-iconbtn--danger.sv2-del(type="button" title="Supprimer" data-id=String(svc._id) data-name=svc.name data-type=(svc.type || 'individual'))
+                                            span.material-symbols-outlined delete
             .ch-empty.ch-empty--search#sv2NoResult(style="display:none")
                 span.ch-empty__icon.material-symbols-outlined search_off
                 p.ch-empty__title Aucun résultat
@@ -522,24 +550,71 @@ block content
                     r.style.display = ok ? '' : 'none';
                     if (ok) n++;
                 });
+                // Un en-tête de catégorie n'a de sens que s'il reste une ligne
+                // visible dessous (sinon on masque le groupe entier).
+                var filtering = !!q || off > 0;
+                Array.prototype.forEach.call(body ? body.children : [], function (tr) {
+                    if (!tr.classList.contains('sv2-grouprow')) return;
+                    var vis = 0, nx = tr.nextElementSibling;
+                    while (nx && !nx.classList.contains('sv2-grouprow')) {
+                        if (nx.classList.contains('sv2-row') && nx.style.display !== 'none') vis++;
+                        nx = nx.nextElementSibling;
+                    }
+                    tr.style.display = (filtering && vis === 0) ? 'none' : '';
+                });
                 if (noRes) noRes.style.display = n === 0 ? '' : 'none';
                 if (wrap) wrap.style.display = n === 0 ? 'none' : '';
             }
             // Tri → réordonne les lignes (l'ordre serveur = « défaut »).
             var sortMode = 'default';
+            // Ordre manuel (glisser-déposer) : instantané de la séquence du
+            // tableau, pour pouvoir y revenir quand on repasse sur « défaut ».
+            var manualOrder = null;
+            function snapshotOrder() {
+                if (!body) return;
+                manualOrder = Array.prototype.map.call(body.children, function (tr) {
+                    return tr.classList.contains('sv2-grouprow')
+                        ? { t: 'g', k: tr.dataset.cat || '' }
+                        : { t: 's', k: tr.dataset.id || '' };
+                });
+            }
+            function sortCmp(a, b) {
+                if (sortMode === 'name-asc') return a.dataset.name.localeCompare(b.dataset.name);
+                if (sortMode === 'name-desc') return b.dataset.name.localeCompare(a.dataset.name);
+                var pa = parseFloat(a.dataset.price) || 0, pb = parseFloat(b.dataset.price) || 0;
+                var da = parseInt(a.dataset.dur, 10) || 0, db = parseInt(b.dataset.dur, 10) || 0;
+                if (sortMode === 'price-asc') return pa - pb;
+                if (sortMode === 'price-desc') return pb - pa;
+                if (sortMode === 'dur-asc') return da - db;
+                if (sortMode === 'dur-desc') return db - da;
+                return 0;
+            }
             function applySort() {
-                if (!body || sortMode === 'default') return;
-                rowsNow().sort(function (a, b) {
-                    if (sortMode === 'name-asc') return a.dataset.name.localeCompare(b.dataset.name);
-                    if (sortMode === 'name-desc') return b.dataset.name.localeCompare(a.dataset.name);
-                    var pa = parseFloat(a.dataset.price) || 0, pb = parseFloat(b.dataset.price) || 0;
-                    var da = parseInt(a.dataset.dur, 10) || 0, db = parseInt(b.dataset.dur, 10) || 0;
-                    if (sortMode === 'price-asc') return pa - pb;
-                    if (sortMode === 'price-desc') return pb - pa;
-                    if (sortMode === 'dur-asc') return da - db;
-                    if (sortMode === 'dur-desc') return db - da;
-                    return 0;
-                }).forEach(function (r) { body.appendChild(r); });
+                if (!body) return;
+                if (sortMode === 'default') {
+                    // Revenir à l'ordre manuel : on ré-empile la séquence mémorisée.
+                    if (!manualOrder) return;
+                    manualOrder.forEach(function (it) {
+                        var sel = it.t === 'g'
+                            ? '.sv2-grouprow[data-cat="' + (window.CSS && CSS.escape ? CSS.escape(it.k) : it.k) + '"]'
+                            : '.sv2-row[data-id="' + (window.CSS && CSS.escape ? CSS.escape(it.k) : it.k) + '"]';
+                        var el = body.querySelector(sel);
+                        if (el) body.appendChild(el);
+                    });
+                    return;
+                }
+                // Sinon : trier les services À L'INTÉRIEUR de chaque catégorie,
+                // pour ne jamais casser le regroupement.
+                var groups = [], cur = null;
+                Array.prototype.forEach.call(body.children, function (tr) {
+                    if (tr.classList.contains('sv2-grouprow')) { cur = { header: tr, rows: [] }; groups.push(cur); }
+                    else if (tr.classList.contains('sv2-row') && cur) cur.rows.push(tr);
+                });
+                groups.forEach(function (g) {
+                    var after = g.header.nextElementSibling;
+                    while (after && !after.classList.contains('sv2-grouprow')) after = after.nextElementSibling;
+                    g.rows.slice().sort(sortCmp).forEach(function (r) { body.insertBefore(r, after); });
+                });
             }
             if (search) search.addEventListener('input', applyView);
             document.querySelectorAll('#sv2FilterMenu input').forEach(function (c) { c.addEventListener('change', applyView); });
@@ -551,6 +626,111 @@ block content
                     applySort();
                 });
             });
+
+            // ── Glisser-déposer : ordre des services ET des catégories ────────
+            snapshotOrder();
+            (function () {
+                if (!body) return;
+                var dragEl = null, dragKind = null;
+
+                // Bloc d'une catégorie = son en-tête + toutes ses lignes.
+                function groupBlock(header) {
+                    var rows = [header], n = header.nextElementSibling;
+                    while (n && !n.classList.contains('sv2-grouprow')) { rows.push(n); n = n.nextElementSibling; }
+                    return rows;
+                }
+                function refreshCounts() {
+                    Array.prototype.forEach.call(body.children, function (tr) {
+                        if (!tr.classList.contains('sv2-grouprow')) return;
+                        var c = 0, n = tr.nextElementSibling;
+                        while (n && !n.classList.contains('sv2-grouprow')) { if (n.classList.contains('sv2-row')) c++; n = n.nextElementSibling; }
+                        var el = tr.querySelector('.sv2-gcount'); if (el) el.textContent = c;
+                    });
+                }
+                // L'ordre affiché fait foi : on renvoie la séquence complète.
+                function saveServices() {
+                    var items = [], cat = '';
+                    Array.prototype.forEach.call(body.children, function (tr) {
+                        if (tr.classList.contains('sv2-grouprow')) { cat = tr.dataset.cat || ''; return; }
+                        if (!tr.classList.contains('sv2-row')) return;
+                        tr.dataset.cat = cat;
+                        items.push({ id: tr.dataset.id, category: cat });
+                    });
+                    fetch('/api/services/reorder', {
+                        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ items: items })
+                    }).catch(function () {});
+                }
+                function saveCategories() {
+                    var cats = [];
+                    body.querySelectorAll('.sv2-grouprow:not(.sv2-grouprow--none)').forEach(function (h) {
+                        cats.push({ name: h.dataset.cat || '', icon: h.dataset.icon || '' });
+                    });
+                    fetch('/account/categories', {
+                        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ categories: cats })
+                    }).catch(function () {});
+                }
+
+                // On ne démarre un glissement que depuis la poignée.
+                body.addEventListener('mousedown', function (e) {
+                    var handle = e.target.closest('.sv2-handle, .sv2-ghandle');
+                    Array.prototype.forEach.call(body.children, function (tr) { tr.draggable = false; });
+                    if (handle) { var tr = handle.closest('tr'); if (tr) tr.draggable = true; }
+                });
+
+                body.addEventListener('dragstart', function (e) {
+                    var tr = e.target.closest('tr');
+                    if (!tr) return;
+                    if (tr.classList.contains('sv2-row')) dragKind = 'service';
+                    else if (tr.classList.contains('sv2-grouprow') && !tr.classList.contains('sv2-grouprow--none')) dragKind = 'cat';
+                    else return;
+                    dragEl = tr;
+                    tr.classList.add('is-dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    try { e.dataTransfer.setData('text/plain', ''); } catch (_) {}
+                });
+
+                body.addEventListener('dragover', function (e) {
+                    if (!dragEl) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    var over = e.target.closest('tr');
+                    if (!over || over === dragEl) return;
+
+                    if (dragKind === 'service') {
+                        if (over.classList.contains('sv2-row')) {
+                            var r = over.getBoundingClientRect();
+                            body.insertBefore(dragEl, (e.clientY - r.top) > r.height / 2 ? over.nextSibling : over);
+                        } else if (over.classList.contains('sv2-grouprow')) {
+                            // Déposer sur un en-tête = placer en tête de cette catégorie
+                            body.insertBefore(dragEl, over.nextSibling);
+                        }
+                    } else if (dragKind === 'cat') {
+                        if (!over.classList.contains('sv2-grouprow') || over.classList.contains('sv2-grouprow--none')) return;
+                        var block = groupBlock(dragEl);
+                        if (block.indexOf(over) !== -1) return;
+                        var rect = over.getBoundingClientRect();
+                        var ref = over;
+                        if ((e.clientY - rect.top) > rect.height / 2) {
+                            var ob = groupBlock(over);
+                            ref = ob[ob.length - 1].nextSibling;
+                        }
+                        block.forEach(function (row) { body.insertBefore(row, ref); });
+                    }
+                });
+
+                body.addEventListener('drop', function (e) { e.preventDefault(); });
+
+                body.addEventListener('dragend', function () {
+                    if (dragEl) dragEl.classList.remove('is-dragging');
+                    refreshCounts();
+                    if (dragKind === 'service') saveServices();
+                    else if (dragKind === 'cat') { saveCategories(); saveServices(); }
+                    snapshotOrder();
+                    dragEl = null; dragKind = null;
+                });
+            })();
             // Sauvegarde de la préférence de colonnes (persistée par utilisateur).
             var _colSaveTimer = null;
             function saveCols() {
@@ -1018,7 +1198,48 @@ block content
 
                 enabledEl.addEventListener('change', function () {
                     sqBlock.classList.toggle('is-off', !enabledEl.checked);
+                    computeQuestionnaireCoverage();
                 });
+
+                // ── Avertissement admin : réponses sans service ───────────
+                // Un service « couvre » une réponse s'il n'a pas de règle pour
+                // cette question (= « Tous ») OU si la réponse est dans ses règles.
+                function svcCoversOption(svc, qid, oid) {
+                    var rules = svc.questionRules || [];
+                    for (var k = 0; k < rules.length; k++) {
+                        if (rules[k].questionId === qid) {
+                            var ids = rules[k].optionIds || [];
+                            if (!ids.length) return true;
+                            return ids.indexOf(oid) >= 0;
+                        }
+                    }
+                    return true; // aucune règle pour cette question = « Tous »
+                }
+                function computeQuestionnaireCoverage() {
+                    var warnEl = document.getElementById('sqWarn');
+                    if (!warnEl) return;
+                    var q = Q_DATA || { enabled: false, questions: [] };
+                    var actives = [];
+                    Object.keys(SVC_DATA || {}).forEach(function (id) { var s = SVC_DATA[id]; if (s && s.active) actives.push(s); });
+                    var msgs = [];
+                    if (actives.length === 0) {
+                        msgs.push('Aucun service actif : le questionnaire ne sera pas affiché aux clients tant qu\'aucun service n\'est activé.');
+                    } else {
+                        (q.questions || []).forEach(function (question) {
+                            (question.options || []).forEach(function (opt) {
+                                var covered = actives.some(function (s) { return svcCoversOption(s, question.id, opt.id); });
+                                if (!covered) {
+                                    msgs.push('La réponse « ' + (opt.label || '') + ' » (question « ' + (question.question || '') + ' ») n\'est proposée par aucun service. Ajoutez-lui un service (via Modifier → « Afficher ce service pour »), ou laissez un service en « Tous ».');
+                                }
+                            });
+                        });
+                    }
+                    if (!enabledEl.checked || !msgs.length) { warnEl.hidden = true; warnEl.innerHTML = ''; return; }
+                    function esc2(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+                    warnEl.hidden = false;
+                    warnEl.innerHTML = '<div class="sq-warn__title"><span class="material-symbols-outlined">warning</span>À vérifier</div>' +
+                        msgs.map(function (m) { return '<div class="sq-warn__item">' + esc2(m) + '</div>'; }).join('');
+                }
 
                 document.getElementById('sqAddQ').addEventListener('click', function () {
                     var node = qTpl.content.firstElementChild.cloneNode(true);
@@ -1083,6 +1304,16 @@ block content
                                 ref.qEl.dataset.qid = q._id;
                                 (q.options || []).forEach(function (o, j) { if (ref.chipEls[j]) ref.chipEls[j].dataset.oid = o._id; });
                             });
+                            // Rafraîchit Q_DATA (nouveaux _id) puis recalcule l'avertissement.
+                            if (d.questionnaire) {
+                                Q_DATA = {
+                                    enabled: !!d.questionnaire.enabled,
+                                    questions: (d.questionnaire.questions || []).map(function (qq) {
+                                        return { id: String(qq._id || ''), question: qq.question || '', options: (qq.options || []).map(function (oo) { return { id: String(oo._id || ''), label: oo.label || '' }; }) };
+                                    }),
+                                };
+                                computeQuestionnaireCoverage();
+                            }
                             if (saveInd) {
                                 saveInd.textContent = '✓ Enregistré';
                                 saveInd.className = 'sq-saveind is-ok';
@@ -1094,5 +1325,8 @@ block content
                         }
                     }).catch(function () { btn.disabled = false; if (saveInd) { saveInd.textContent = 'Erreur réseau'; saveInd.className = 'sq-saveind is-err'; } });
                 });
+
+                // Avertissement calculé au chargement (reflète l'état enregistré).
+                computeQuestionnaireCoverage();
             }
         })();

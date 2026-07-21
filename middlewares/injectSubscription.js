@@ -79,6 +79,27 @@ async function resolveSubscriptionState(user) {
         locals.isExpiring = diffDays <= 3;
       }
 
+      // Date d'expiration (pour l'affichage) + avertissement de paiement.
+      locals.trialExpiryDate = expiry ? new Date(expiry) : null;
+      // On n'avertit QUE si l'accès expire bientôt ET que l'utilisateur n'a
+      // pas de moyen de paiement par défaut (sinon il n'a rien à faire — le
+      // prélèvement se fera tout seul le moment venu). Sans customer Stripe,
+      // getUserPaymentMethods renvoie [] instantanément (aucun appel réseau).
+      if (locals.isExpiring) {
+        try {
+          let hasDefaultPM = false;
+          if (user.subscription && user.subscription.stripeCustomerId) {
+            const { getUserPaymentMethods } = require("../controllers/admin.controller");
+            const pms = await getUserPaymentMethods(user);
+            hasDefaultPM = Array.isArray(pms) && pms.some((pm) => pm.isDefault);
+          }
+          locals.showTrialWarning = !hasDefaultPM;
+        } catch (_) {
+          // En cas d'erreur Stripe, on avertit par prudence (mieux vaut prévenir).
+          locals.showTrialWarning = true;
+        }
+      }
+
       return locals;
     }
   }

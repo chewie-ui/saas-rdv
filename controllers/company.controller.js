@@ -122,10 +122,35 @@ exports.deleteTimeSlot = async (req, res) => {
 exports.scheduleDayOff = async (req, res) => {
   try {
     const companyId = res.locals.currentCompany._id;
-    const { schedule, dateId } = req.body;
+    const { schedule, slots, dateId } = req.body;
 
-    if (!schedule || !schedule.start) {
-      // Supprimer les horaires (remettre en congé total)
+    // Le client est la source de vérité : il envoie la liste COMPLÈTE des
+    // créneaux (`slots`, multi-créneaux). On garde la rétro-compatibilité avec
+    // l'ancienne page qui envoyait un objet unique `schedule`.
+    // HH:MM zéro-paddé → l'ordre lexicographique == ordre chronologique.
+    let hours = [];
+    if (Array.isArray(slots)) {
+      hours = slots
+        .filter((s) => s && s.start && s.end)
+        .map((s) => ({ start: String(s.start), end: String(s.end) }))
+        .filter((s) => s.start < s.end);
+    } else if (schedule && schedule.start && schedule.end) {
+      hours = [{ start: schedule.start, end: schedule.end }];
+    }
+
+    // Rejeter les chevauchements (défensif — le client valide déjà). HH:MM
+    // zéro-paddé → comparaison lexicographique == comparaison chronologique.
+    const sortedHours = [...hours].sort((a, b) =>
+      a.start < b.start ? -1 : a.start > b.start ? 1 : 0,
+    );
+    for (let i = 1; i < sortedHours.length; i++) {
+      if (sortedHours[i].start < sortedHours[i - 1].end) {
+        return res.status(400).json({ success: false, error: "overlap" });
+      }
+    }
+
+    if (hours.length === 0) {
+      // Aucun créneau → congé total
       await DaysOff.findOneAndUpdate(
         { company: companyId, "dates._id": dateId },
         { $set: { "dates.$.workingHours": [], "dates.$.dayOff": true } },
@@ -133,17 +158,10 @@ exports.scheduleDayOff = async (req, res) => {
     } else {
       await DaysOff.findOneAndUpdate(
         { company: companyId, "dates._id": dateId },
-        {
-          $set: {
-            "dates.$.workingHours": [
-              { start: schedule.start, end: schedule.end },
-            ],
-            "dates.$.dayOff": false,
-          },
-        },
+        { $set: { "dates.$.workingHours": hours, "dates.$.dayOff": false } },
       );
     }
-    return res.json({ success: true });
+    return res.json({ success: true, count: hours.length });
   } catch (err) {
     console.error(err);
     return res.json(err);
@@ -271,10 +289,16 @@ exports.updateBookingLeadTime = async (req, res) => {
     const update = {};
     const MAX_MINUTES = 90 * 24 * 60;
 
-    if (enabled !== undefined) update["minBookingLeadTime.enabled"] = !!enabled;
     if (minutes !== undefined) {
-      update["minBookingLeadTime.minutes"] = Math.max(0, Math.min(MAX_MINUTES, Math.round(Number(minutes)) || 0));
+      const m = Math.max(0, Math.min(MAX_MINUTES, Math.round(Number(minutes)) || 0));
+      update["minBookingLeadTime.minutes"] = m;
+      // Si l'admin ne précise pas explicitement enabled, on le déduit de la
+      // valeur : « Aucun » (0 min) = désactivé, toute valeur > 0 = activé.
+      // (Sans ça, choisir « 1 jour » enregistrait les minutes mais laissait
+      // enabled=false → le délai n'était jamais appliqué.)
+      if (enabled === undefined) update["minBookingLeadTime.enabled"] = m > 0;
     }
+    if (enabled !== undefined) update["minBookingLeadTime.enabled"] = !!enabled;
 
     await Company.findByIdAndUpdate(res.locals.currentCompany._id, { $set: update });
     return res.json({ success: true, ...update });

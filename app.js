@@ -73,6 +73,39 @@ const Stripe = require("stripe");
 const stripe = Stripe(env.stripeSecretKey); // Assure-toi que la clé est dans ton .env
 const injectSubscription = require("./middlewares/injectSubscription");
 // Middleware spécial pour Stripe qui a besoin du body "raw" pour vérifier la signature
+// ── Révoque l'accès premium suite à une fin d'abonnement (annulation ou
+// échecs de paiement). On retrouve l'utilisateur par son abonnement Stripe
+// courant — si son sub courant ne correspond pas (ex : il s'est déjà
+// réabonné avec un nouveau sub), on ne touche à rien. manualPremium (octroi
+// superadmin) survit : on ne coupe que isPremium/status, et getPlan continue
+// d'accorder l'accès aux comptes manualPremium.
+// Déduit le plan (« business » / « essentiel » / « pro ») à partir d'un price ID
+// Stripe. Couvre toutes les périodicités (mensuel / 6 mois / annuel). Renvoie
+// null si le prix est inconnu → dans ce cas on ne modifie PAS le plan (sécurité).
+function planFromPriceId(priceId) {
+  if (!priceId) return null;
+  const inList = (arr) => arr.filter(Boolean).includes(priceId);
+  if (inList([env.stripePriceBusinessMonthly, env.stripePriceBusinessSixMonths, env.stripePriceBusinessYearly])) return "business";
+  if (inList([env.stripePriceEssentielMonthly])) return "essentiel";
+  if (inList([env.stripePricePremiumMonthly, env.stripePricePremiumSixMonths, env.stripePricePremiumYearly])) return "pro";
+  return null;
+}
+
+async function revokePremiumBySubId(stripeSubscriptionId) {
+  if (!stripeSubscriptionId) return;
+  const user = await User.findOne({ "subscription.stripeSubscriptionId": stripeSubscriptionId }).select("_id manualPremium").lean();
+  if (!user) return;
+  await User.findByIdAndUpdate(user._id, {
+    isPremium: false,
+    "subscription.status": "cancelled",
+  });
+  await Subscription.updateMany(
+    { user: user._id, stripeSubscriptionId },
+    { status: "cancelled" }
+  );
+  console.log("🚫 Accès premium révoqué (abonnement terminé) pour user", String(user._id));
+}
+
 app.post("/account/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   console.log("--- Webhook Reçu ---"); // Pour vérifier que la route est touchée
 
@@ -115,14 +148,9 @@ app.post("/account/webhook", express.raw({ type: "application/json" }), async (r
         const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 5 });
         const priceId = lineItems.data[0]?.price?.id || "";
         console.log("💳 priceId:", priceId);
-        const isBusinessPrice = [
-          env.stripePriceBusinessMonthly,
-          env.stripePriceBusinessYearly,
-        ].filter(Boolean).includes(priceId);
-        const isEssentielPrice = [
-          env.stripePriceEssentielMonthly,
-        ].filter(Boolean).includes(priceId);
-        const planName = isEssentielPrice ? "essentiel" : isBusinessPrice ? "business" : "pro";
+        // Prix inconnu → « pro » par défaut (comportement historique), sinon le
+        // plan exact (gère aussi les prix « 6 mois » qui étaient mal classés).
+        const planName = planFromPriceId(priceId) || "pro";
         console.log("📋 planName:", planName);
 
         const userId = session.client_reference_id;
@@ -216,6 +244,78 @@ app.post("/account/webhook", express.raw({ type: "application/json" }), async (r
         console.log("❌ Erreur webhook:", dbErr.message);
       }
     }
+  }
+
+  // ── Renouvellement mensuel réussi → prolonge l'accès (30 j de plus) ─────────
+  else if (event.type === "invoice.paid" || event.type === "invoice.payment_succeeded") {
+    try {
+      const invoice = event.data.object;
+      const subId = invoice.subscription;
+      // La 1re facture (création) est déjà gérée par checkout.session.completed ;
+      // on ne traite ici que les renouvellements de cycle.
+      if (subId && invoice.billing_reason && invoice.billing_reason !== "subscription_create") {
+        const user = await User.findOne({ "subscription.stripeSubscriptionId": subId }).select("_id").lean();
+        if (user) {
+          const newEnd = new Date();
+          newEnd.setMonth(newEnd.getMonth() + 1);
+          await User.findByIdAndUpdate(user._id, { isPremium: true, "subscription.status": "active" });
+          await Subscription.updateMany(
+            { user: user._id, stripeSubscriptionId: subId, status: { $ne: "superseded" } },
+            { status: "active", endDate: newEnd }
+          );
+          console.log("✅ Renouvellement abonnement pour user", String(user._id));
+        }
+      }
+    } catch (e) { console.log("❌ Erreur webhook invoice.paid:", e.message); }
+  }
+
+  // ── Statut de l'abonnement modifié (impayé, annulé…) → coupe si nécessaire ───
+  else if (event.type === "customer.subscription.updated") {
+    try {
+      const sub = event.data.object;
+      // Statuts qui coupent l'accès. On laisse « past_due » tranquille : Stripe
+      // réessaie encore le paiement (période de grâce) — l'accès n'est coupé que
+      // si ça se solde par unpaid/canceled (ou par l'événement .deleted).
+      const revoke = ["canceled", "unpaid", "incomplete_expired"];
+      if (revoke.includes(sub.status)) {
+        await revokePremiumBySubId(sub.id);
+      } else if (sub.status === "active" || sub.status === "trialing") {
+        const user = await User.findOne({ "subscription.stripeSubscriptionId": sub.id }).select("_id subscription").lean();
+        if (user) {
+          // Déduire le plan du prix courant → gère les CHANGEMENTS DE PLAN faits
+          // hors de l'app (portail Stripe, dashboard, prorations planifiées…),
+          // pas seulement le changement de statut. Prix inconnu → on ne touche
+          // pas au plan (sécurité).
+          const planName = planFromPriceId(sub.items && sub.items.data && sub.items.data[0] && sub.items.data[0].price && sub.items.data[0].price.id);
+          const userUpdate = { isPremium: true, "subscription.status": "active" };
+          if (planName) userUpdate["subscription.plan"] = planName;
+          await User.findByIdAndUpdate(user._id, userUpdate);
+
+          if (planName) {
+            await Subscription.updateMany(
+              { user: user._id, stripeSubscriptionId: sub.id, status: { $ne: "superseded" } },
+              { plan: planName, status: "active" }
+            );
+            // Si le plan a réellement changé (souvent un downgrade), on rogne le
+            // contenu excédentaire selon le nouveau plan (services, employés…).
+            const prevPlan = user.subscription && user.subscription.plan;
+            if (prevPlan && prevPlan !== planName) {
+              try {
+                require("./controllers/account.controller").enforcePlanLimits(user._id, planName).catch(() => {});
+              } catch (_) {}
+              console.log(`🔄 Changement de plan ${prevPlan} → ${planName} pour user ${String(user._id)}`);
+            }
+          }
+        }
+      }
+    } catch (e) { console.log("❌ Erreur webhook subscription.updated:", e.message); }
+  }
+
+  // ── Abonnement supprimé (fin d'engagement OU échecs de paiement) → révoque ───
+  else if (event.type === "customer.subscription.deleted") {
+    try {
+      await revokePremiumBySubId(event.data.object.id);
+    } catch (e) { console.log("❌ Erreur webhook subscription.deleted:", e.message); }
   }
 
   res.json({ received: true });

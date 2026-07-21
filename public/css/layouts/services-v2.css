@@ -513,3 +513,72 @@ select.sv2-input { cursor: pointer; }
 /* ── Statut : interrupteur activer/désactiver directement dans la liste ── */
 .sv2-statuscell { display: flex; align-items: center; gap: 10px; }
 .sv2-statuscell .sv2-toggle { flex: none; }
+
+/* ── Avertissement admin : réponses du questionnaire sans service ── */
+.sq-warn { margin: 10px 0 2px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 10px 13px; }
+.sq-warn__title { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: #9a3412; margin-bottom: 5px; }
+.sq-warn__title .material-symbols-outlined { font-size: 17px; }
+.sq-warn__item { font-size: 12.5px; color: #9a3412; line-height: 1.5; padding: 2px 0 2px 23px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Catégories : en-têtes de groupe dans le tableau + glisser-déposer
+   ═══════════════════════════════════════════════════════════════════════════ */
+.sv2-grouprow > .sv2-groupcell {
+  padding: 16px 12px 8px;
+  border-bottom: 1px solid var(--border-light, #eceff3);
+  background: #fff;
+}
+.sv2-table tbody .sv2-grouprow:first-child > .sv2-groupcell { padding-top: 6px; }
+.sv2-groupcell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sv2-gname {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6b7280);
+}
+.sv2-gicon { font-size: 15px; line-height: 1; }
+.sv2-gcount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--main-color-pale, #f0fdf4);
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 700;
+}
+.sv2-grouprow--none .sv2-gcount {
+  background: #f8fafc;
+  border-color: var(--border-light, #e5e7eb);
+  color: var(--text-muted, #6b7280);
+}
+
+/* Poignées de glissement */
+.sv2-handle,
+.sv2-ghandle {
+  font-size: 18px;
+  color: #cbd5e1;
+  cursor: grab;
+  flex-shrink: 0;
+  transition: color .12s;
+  user-select: none;
+}
+.sv2-handle { margin-right: 2px; }
+.sv2-row:hover .sv2-handle,
+.sv2-grouprow:hover .sv2-ghandle { color: #94a3b8; }
+.sv2-handle:active,
+.sv2-ghandle:active { cursor: grabbing; }
+
+/* Élément en cours de déplacement */
+.sv2-row.is-dragging,
+.sv2-grouprow.is-dragging { opacity: .45; }
+.sv2-row.is-dragging td { background: var(--main-color-pale, #f0fdf4); }

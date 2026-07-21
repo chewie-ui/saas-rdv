@@ -4,6 +4,7 @@ const {
   panel,
   appointment,
   availability,
+  availabilityOld,
   toggleDay,
   editAvailabilty,
   editSlotTime,
@@ -77,6 +78,10 @@ router.get("/appointment", isAuth, injectCompany, requireFeatureActive("admin_pa
 router.post("/appointment/create", isAuth, injectCompany, requireFeatureActive("admin_panel"), adminController.createAdminBooking);
 router.post("/appointment/block", isAuth, injectCompany, requireFeatureActive("admin_panel"), adminController.createAdminBlock);
 router.get("/availability", isAuth, injectCompany, availability);
+// Ancienne page conservée (au cas où) sur /availability-old.
+router.get("/availability-old", isAuth, injectCompany, availabilityOld);
+// Ancienne URL de la refonte → redirection permanente vers /availability.
+router.get("/availability-v2", isAuth, injectCompany, (req, res) => res.redirect(301, "/availability"));
 router.get("/group-sessions", isAuth, injectCompany, requireAdminFeature("group_sessions"), requirePermission("groupSessions.view"), listGroupSessions);
 router.get("/group-sessions/participants", isAuth, injectCompany, requireAdminFeature("group_sessions"), requirePermission("groupSessions.view"), getSessionParticipants);
 router.post("/api/courses", isAuth, injectCompany, requireAdminFeature("group_sessions"), requirePermission("groupSessions.manage"), createCourse);

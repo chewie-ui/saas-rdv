@@ -99,21 +99,43 @@ exports.postLogin = async (req, res) => {
     });
   }
 
-  const client = await Client.findOne({ email: email?.toLowerCase().trim() });
-  if (!client) return fail("Email ou mot de passe incorrect.");
+  const emailNorm = email?.toLowerCase().trim();
+  const client = await Client.findOne({ email: emailNorm });
 
-  const match = await bcrypt.compare(password, client.password);
-  if (!match) return fail("Email ou mot de passe incorrect.");
+  if (client) {
+    const match = await bcrypt.compare(password, client.password);
+    if (!match) return fail("Email ou mot de passe incorrect.");
 
-  req.session.clientId = client._id.toString();
+    req.session.clientId = client._id.toString();
 
-  // Apply preferred language if set
-  if (client.preferredLang) {
-    res.cookie("user_lang", client.preferredLang, { maxAge: 365 * 24 * 60 * 60 * 1000, httpOnly: false });
+    // Apply preferred language if set
+    if (client.preferredLang) {
+      res.cookie("user_lang", client.preferredLang, { maxAge: 365 * 24 * 60 * 60 * 1000, httpOnly: false });
+    }
+
+    if (isAjax) return res.json({ success: true, redirect: "/espace-client" });
+    return res.redirect("/espace-client");
   }
 
-  if (isAjax) return res.json({ success: true, redirect: "/espace-client" });
-  return res.redirect("/espace-client");
+  // Comptes unifiés : il n'existe pas de « compte client » séparé. Si aucun
+  // Client (legacy) ne correspond, on tente le compte BranShee (User), qu'il
+  // possède un établissement ou non — sinon un utilisateur parfaitement
+  // légitime recevait « Email ou mot de passe incorrect ».
+  const User = require("../db/models/user.model");
+  const user = await User.findOne({ email: emailNorm });
+  if (!user || !user.password) return fail("Email ou mot de passe incorrect.");
+
+  const userMatch = await bcrypt.compare(password, user.password);
+  if (!userMatch) return fail("Email ou mot de passe incorrect.");
+
+  return req.logIn(user, (err) => {
+    if (err) {
+      console.error("postLogin req.logIn error:", err);
+      return fail("Connexion impossible pour le moment. Réessayez.");
+    }
+    if (isAjax) return res.json({ success: true, redirect: "/espace-client" });
+    return res.redirect("/espace-client");
+  });
 };
 
 // ─── LOGOUT ───────────────────────────────────────────────────────────────────

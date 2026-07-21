@@ -16,9 +16,6 @@ block links
 block content
     .settings-page
 
-        .settings-page__head
-            h1.settings-page__title Paramètres
-
         //- ── Tab bar ───────────────────────────────────────────────────────
         .settings-tabs
             button.settings-tab.is-active(type="button" data-target="stg-profil") Profil
@@ -33,31 +30,34 @@ block content
         //- ══════════════════════════════════════════════════════════════
         #stg-profil.settings-section.is-active
 
-            .settings-section__head
-                h2.settings-section__title Profil
-                p.settings-section__desc Votre identité personnelle sur BranShee.
+            .settings-section__head.settings-section__head--flex
+                .settings-section__headText
+                    h2.settings-section__title Profil
+                    p.settings-section__desc Votre identité personnelle sur BranShee.
+                .settings-section__headActions
+                    button.sm-btn.sm-btn--ghost#cancelChanges(type="button")= t.profile.cancel
+                    button.sm-btn.sm-btn--primary#saveChanges(disabled)
+                        span= t.profile.save
 
             .stg-form
 
                 //- Photo
-                .stg-row
-                    .stg-row__label
-                        | Photo de profil
-                        p.stg-row__desc Visible par vos clients et collaborateurs.
-                    .stg-row__field
-                        .stg-avatar-wrap
-                            img.stg-avatar(src=user.profilePicture || "/images/no-user.webp" id="avatarPreview" alt="avatar")
-                            div
-                                input#fileInput(type="file" style="display:none" accept="image/*")
-                                button.sm-btn.sm-btn--ghost#uploadBtn(type="button")
-                                    span= t.profile.upload_photo
+                -
+                    var _fn = (user.fullName || '').trim();
+                    var _sp = _fn.indexOf(' ');
+                    var _first = _sp === -1 ? _fn : _fn.slice(0, _sp);
+                    var _last  = _sp === -1 ? '' : _fn.slice(_sp + 1);
 
-                //- Nom
+                //- Nom (prénom + nom)
                 .stg-row
                     .stg-row__label
                         | Nom complet
+                        p.stg-row__desc Prénom et nom affichés à vos clients.
                     .stg-row__field
-                        input#fullname.input(value=user.fullName name="fullName")
+                        .stg-name-grid
+                            input#firstName.input(value=_first placeholder=t.profile.first_name_ph autocomplete="given-name")
+                            input#lastName.input(value=_last placeholder=t.profile.last_name_ph autocomplete="family-name")
+                        input#fullname(type="hidden" name="fullName" value=user.fullName)
 
                 //- Email
                 .stg-row
@@ -65,36 +65,68 @@ block content
                         | Adresse e-mail
                         p.stg-row__desc Votre identifiant de connexion.
                     .stg-row__field
-                        input#email.input(disabled value=maskEmail name="email")
+                        .stg-input-icon
+                            span.material-symbols-outlined.stg-input-icon__ic mail
+                            input#email.input(disabled value=maskEmail name="email")
                         a.stg-link#emailOpen= t.profile.edit_email
+
+                //- Photo de profil
+                .stg-row
+                    .stg-row__label
+                        | Photo de profil
+                        p.stg-row__desc Visible par vos clients et collaborateurs.
+                    .stg-row__field
+                        .stg-photo
+                            img.stg-avatar(src=user.profilePicture || "/images/no-user.webp" id="avatarPreview" alt="avatar")
+                            .stg-dropzone#photoDropzone(tabindex="0" role="button")
+                                .stg-dropzone__icon
+                                    span.material-symbols-outlined cloud_upload
+                                p.stg-dropzone__text
+                                    span.stg-dropzone__link= t.profile.upload_click
+                                    |  #{t.profile.upload_drag}
+                                p.stg-dropzone__hint= t.profile.upload_hint
+                                input#fileInput(type="file" accept="image/*" hidden)
+                                button#uploadBtn(type="button" hidden)
 
                 //- Téléphone
                 .stg-row
                     .stg-row__label
                         | Téléphone
                     .stg-row__field
+                        -
+                            var phoneCountries = [
+                                {name:'Belgique', prefix:'+32', flag:'/images/flags/be.png'},
+                                {name:'France', prefix:'+33', flag:'/images/flags/fr.png'},
+                                {name:'Luxembourg', prefix:'+352', flag:'/images/flags/lu.png'},
+                                {name:'Pays-Bas', prefix:'+31', flag:'/images/flags/nl.png'},
+                                {name:'Allemagne', prefix:'+49', flag:'/images/flags/de.png'},
+                                {name:'Royaume-Uni', prefix:'+44', flag:'/images/flags/gb.png'},
+                                {name:'Espagne', prefix:'+34', flag:'/images/flags/es.png'},
+                                {name:'Italie', prefix:'+39', flag:'/images/flags/it.png'},
+                                {name:'Suisse', prefix:'+41', flag:'/images/flags/ch.png'},
+                                {name:'Maroc', prefix:'+212', flag:'/images/flags/ma.png'},
+                                {name:'États-Unis', prefix:'+1', flag:'/images/flags/us.png'}
+                            ];
                         .phone-input-group
-                            select.phone-prefix#phonePrefix
-                                option(value="+32") 🇧🇪 +32
-                                option(value="+33") 🇫🇷 +33
-                                option(value="+352") 🇱🇺 +352
-                                option(value="+31") 🇳🇱 +31
-                                option(value="+49") 🇩🇪 +49
-                                option(value="+44") 🇬🇧 +44
-                                option(value="+34") 🇪🇸 +34
-                                option(value="+39") 🇮🇹 +39
-                                option(value="+41") 🇨🇭 +41
-                                option(value="+212") 🇲🇦 +212
-                                option(value="+1") 🇺🇸 +1
+                            .phone-flag-select#phonePrefixWrap
+                                button.phone-flag-btn#phonePrefixBtn(type="button" aria-haspopup="listbox" aria-expanded="false")
+                                    img.phone-flag-img#phonePrefixFlag(src="/images/flags/be.png" alt="")
+                                    span.phone-flag-code#phonePrefixCode +32
+                                    span.material-symbols-outlined.phone-flag-caret expand_more
+                                ul.phone-flag-menu#phonePrefixMenu(role="listbox")
+                                    each c in phoneCountries
+                                        li.phone-flag-option(role="option" data-prefix=c.prefix data-flag=c.flag)
+                                            img(src=c.flag alt="")
+                                            span.phone-flag-option__name= c.name
+                                            span.phone-flag-option__code= c.prefix
+                            input#phonePrefix(type="hidden" value="+32")
                             input#phoneLocal.input(type="tel" placeholder="456 12 34 56" autocomplete="off" inputmode="numeric")
                             input#phone(type="hidden" name="phone")
 
-                //- Actions
-                .stg-row.stg-row--actions
+                //- Zone danger
+                .stg-danger-row
                     button.sm-btn.sm-btn--danger#deleteAccountBtn(type="button")
                         span= t.profile.delete_account
-                    button.sm-btn.sm-btn--primary#saveChanges(disabled)
-                        span= t.profile.save
 
             if currentCompany
                 //- Pause / réactivation de l'établissement
@@ -152,7 +184,7 @@ block content
                     a.stg-link(href="/forgot-password" style="margin-right:auto")= t.settings.pwd_forgot_link
                     button.sm-btn.sm-btn--primary#pwdSaveBtn(type="button")
                         span= t.info.save
-                p.pwd-status#pwdStatus(style="padding:8px 24px;min-height:18px;font-size:12.5px")
+                p.pwd-status#pwdStatus(style="padding:8px 0;min-height:18px;font-size:12.5px")
             style.
                 .pwd-status.ok  { color:var(--accent,#16a34a); }
                 .pwd-status.err { color:#dc2626; }
@@ -282,39 +314,62 @@ block content
                         p.stg-card__title= t.info.pm_title
                         p.stg-card__desc= t.info.pm_desc
                     .stg-card__body
+                        p.pmx-hint= t.info.pm_select_hint
                         if paymentMethods && paymentMethods.length > 0
-                            .pm-list
+                            .pm-list.pmx-list
                                 each pm in paymentMethods
-                                    .pm-item(data-pmid=pm.id class=pm.isDefault ? 'pm-item--default' : '')
-                                        .pm-item__icon(class='pm-brand--' + pm.brand)
-                                            = pm.brand.charAt(0).toUpperCase() + pm.brand.slice(1)
-                                        .pm-item__info
-                                            span.pm-item__number •••• #{pm.last4}
-                                            span.pm-item__expiry= t.info.pm_expires.replace('{date}', String(pm.expMonth).padStart(2,'0') + '/' + String(pm.expYear).slice(-2))
-                                        .pm-item__actions
+                                    .pm-item.pmx-card(data-pmid=pm.id class=pm.isDefault ? 'pm-item--default' : '')
+                                        .pmx-logo(class='pmx-brand--' + pm.brand)
+                                            case pm.brand
+                                                when 'visa'
+                                                    span.pmx-wm.pmx-wm--visa VISA
+                                                when 'mastercard'
+                                                    span.pmx-mc
+                                                        i.pmx-mc__a
+                                                        i.pmx-mc__b
+                                                when 'amex'
+                                                    span.pmx-wm.pmx-wm--amex AMEX
+                                                default
+                                                    span.material-symbols-outlined credit_card
+                                        .pm-item__info.pmx-info
+                                            span.pm-item__number.pmx-number= (t.info.pm_ending || '{brand} se terminant par {last4}').replace('{brand}', pm.brand.charAt(0).toUpperCase() + pm.brand.slice(1)).replace('{last4}', pm.last4)
+                                            span.pm-item__expiry.pmx-exp= t.info.pm_expires.replace('{date}', String(pm.expMonth).padStart(2,'0') + '/' + pm.expYear)
+                                        .pm-item__actions.pmx-actions
                                             if pm.isDefault
                                                 span.pm-badge--default
-                                                    span.material-symbols-outlined(style=`font-size:11px`) check_circle
+                                                    span.material-symbols-outlined(style=`font-size:13px`) check_circle
                                                     = t.info.pm_default_badge
                                             else
                                                 button.pm-btn--set-default(type="button" data-pmid=pm.id)= t.info.pm_set_default
                                             button.pm-item__del(type="button" data-pmid=pm.id title=t.info.pm_delete_title)
                                                 span.material-symbols-outlined delete
+                                        span.pmx-radio
                         else
-                            p.pm-empty= t.info.pm_empty
-                        .pm-add-wrap
-                            button.sm-btn.sm-btn--ghost#pmAddBtn(type="button")
-                                span.material-symbols-outlined add
-                                span= t.info.pm_add_btn
-                        .pm-form-wrap#pmFormWrap(style="display:none")
-                            .pm-form
-                                p.pm-form__label= t.info.pm_form_label
-                                #pm-card-element.pm-card-input
-                                .pm-form__error#pmCardError
-                                .pm-form__actions
-                                    button.sm-btn.sm-btn--primary#pmConfirmBtn(type="button")
-                                        span= t.info.pm_confirm_btn
-                                    button.sm-btn.sm-btn--ghost#pmCancelBtn(type="button")= t.info.pm_cancel_btn
+                            p.pm-empty.pmx-empty
+                                span.material-symbols-outlined credit_card_off
+                                span= t.info.pm_empty
+                        button.pmx-add#pmAddBtn(type="button")
+                            span.material-symbols-outlined add
+                            span.pmx-add__label= t.info.pm_add_new
+                        .pm-form-wrap.pmx-form#pmFormWrap(style="display:none")
+                            .pmx-form__grid
+                                .pmx-field.pmx-field--full
+                                    label.pmx-label= t.info.pm_name_label
+                                    input.pmx-input#pmCardName(type="text" placeholder=t.info.pm_name_ph autocomplete="cc-name")
+                                .pmx-field.pmx-field--full
+                                    label.pmx-label= t.info.pm_number_label
+                                    .pmx-stripe#pm-card-number
+                                .pmx-field
+                                    label.pmx-label= t.info.pm_expiry_label
+                                    .pmx-stripe#pm-card-expiry
+                                .pmx-field
+                                    label.pmx-label= t.info.pm_cvv_label
+                                    .pmx-stripe#pm-card-cvc
+                            .pm-form__error.pmx-error#pmCardError
+                            .pmx-form__actions
+                                button.sm-btn.sm-btn--primary#pmConfirmBtn(type="button")
+                                    span= t.info.pm_confirm_btn
+                                button.sm-btn.sm-btn--ghost#pmCancelBtn(type="button")= t.info.pm_cancel_btn
 
                 //- Historique factures
                 .stg-card
@@ -648,12 +703,20 @@ block content
                     p.stg-card__title= t.settings.lang_title
                     p.stg-card__desc= t.settings.lang_desc
                 .stg-card__body
-                    .lang-grid
-                        - const langs = [{code:'fr',label:'Français',flag:'/images/fr.webp'},{code:'en',label:'English',flag:'/images/en.jpg'},{code:'nl',label:'Nederlands',flag:'/images/nl.jpg'},{code:'de',label:'Deutsch',flag:'/images/de.png'},{code:'es',label:'Español',flag:'/images/es.jpg'},{code:'it',label:'Italiano',flag:'/images/it.png'}]
-                        each l in langs
-                            button.lang-btn(type="button" data-lang=l.code class=(currentLang === l.code ? 'lang-btn--active' : ''))
-                                img.lang-flag(src=l.flag alt=l.code)
-                                span.lang-name= l.label
+                    -
+                        var langs = [{code:'fr',label:'Français',flag:'/images/fr.webp'},{code:'en',label:'English',flag:'/images/en.jpg'},{code:'nl',label:'Nederlands',flag:'/images/nl.jpg'},{code:'de',label:'Deutsch',flag:'/images/de.png'},{code:'es',label:'Español',flag:'/images/es.jpg'},{code:'it',label:'Italiano',flag:'/images/it.png'}];
+                        var _curLang = langs.filter(function(x){return x.code === currentLang;})[0] || langs[0];
+                    .lang-select#langSelect
+                        button.lang-select__btn#langSelectBtn(type="button" aria-haspopup="listbox" aria-expanded="false")
+                            img.lang-select__flag#langSelectFlag(src=_curLang.flag alt="")
+                            span.lang-select__name#langSelectName= _curLang.label
+                            span.material-symbols-outlined.lang-select__caret expand_more
+                        ul.lang-select__menu#langSelectMenu(role="listbox")
+                            each l in langs
+                                li.lang-select__option(role="option" data-lang=l.code data-flag=l.flag data-label=l.label class=(currentLang === l.code ? 'is-selected' : ''))
+                                    img(src=l.flag alt="")
+                                    span.lang-select__option-name= l.label
+                                    span.material-symbols-outlined.lang-select__check check
                     .lang-feedback#langFeedback
 
     //- ── Delete account modal ────────────────────────────────────────────────
@@ -689,12 +752,41 @@ block scripts
     script.
         // ── Cartes Stripe ────────────────────────────────────────────────────
         (function () {
-            var STRIPE_KEY=('!{stripePublishableKey}'); var pmAddBtn=document.getElementById('pmAddBtn'); var pmFormWrap=document.getElementById('pmFormWrap'); var pmConfirmBtn=document.getElementById('pmConfirmBtn'); var pmCancelBtn=document.getElementById('pmCancelBtn'); var pmCardError=document.getElementById('pmCardError'); var stripeInstance=null; var cardElement=null;
-            document.querySelectorAll('.pm-item__del').forEach(function(btn){btn.addEventListener('click',async function(){if(!confirm((window.__t&&window.__t.pm_delete_confirm)||'Supprimer cette carte ?'))return;var pmId=btn.dataset.pmid;btn.disabled=true;try{var res=await fetch('/account/payment-method/'+pmId,{method:'DELETE'});var d=await res.json();if(d.success){btn.closest('.pm-item').remove();}else{alert(d.error||(window.__t&&window.__t.pm_delete_error)||'Erreur.');btn.disabled=false;}}catch(e){btn.disabled=false;}});});
-            document.querySelectorAll('.pm-btn--set-default').forEach(function(btn){btn.addEventListener('click',async function(){var pmId=btn.dataset.pmid;var lbl=(window.__t&&window.__t.pm_set_default)||'Définir par défaut';btn.disabled=true;btn.textContent='...';try{var res=await fetch('/account/payment-method/'+pmId+'/set-default',{method:'POST'});var d=await res.json();if(d.success){document.querySelectorAll('.pm-badge--default').forEach(function(badge){var oldItem=badge.closest('.pm-item');var ae=badge.parentElement;var nb=document.createElement('button');nb.className='pm-btn--set-default';nb.type='button';nb.dataset.pmid=oldItem.dataset.pmid;nb.textContent=lbl;ae.replaceChild(nb,badge);oldItem.classList.remove('pm-item--default');nb.addEventListener('click',arguments.callee);});var ae=btn.parentElement;var badge=document.createElement('span');badge.className='pm-badge--default';badge.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" height="11px" viewBox="0 -960 960 960" width="11px" fill="currentColor"><path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-56-240 226-226-57-57-169 169-85-85-57 57 142 142Z"/></svg> '+((window.__t&&window.__t.pm_default_badge)||'Par défaut');ae.replaceChild(badge,btn);btn.closest('.pm-item').classList.add('pm-item--default');}else{alert(d.error||(window.__t&&window.__t.generic_error)||'Erreur.');btn.disabled=false;btn.textContent=lbl;}}catch(e){btn.disabled=false;btn.textContent=lbl;}});});
-            if(pmAddBtn){pmAddBtn.addEventListener('click',async function(){var addLabel=(window.__t&&window.__t.pm_add_btn)||'Ajouter une carte';if(!STRIPE_KEY){alert((window.__t&&window.__t.pm_stripe_missing)||'Configuration Stripe manquante.');return;}if(!window.Stripe){alert((window.__t&&window.__t.pm_stripe_not_loaded)||'Stripe.js non chargé.');return;}if(pmFormWrap.style.display!=='none')return;pmAddBtn.disabled=true;pmAddBtn.querySelector('span').textContent='...';try{var res=await fetch('/account/payment-method/setup-intent',{method:'POST'});var d=await res.json();if(!d.clientSecret)throw new Error(d.error||(window.__t&&window.__t.pm_setup_error)||'Erreur');if(!stripeInstance){stripeInstance=Stripe(STRIPE_KEY);var elements=stripeInstance.elements();cardElement=elements.create('card',{style:{base:{fontSize:'15px',color:'#111',fontFamily:'Inter, system-ui, sans-serif','::placeholder':{color:'#aaa'}}}});cardElement.mount('#pm-card-element');cardElement.on('change',function(e){pmCardError.textContent=e.error?e.error.message:'';});}pmFormWrap.dataset.secret=d.clientSecret;pmFormWrap.style.display='block';pmAddBtn.querySelector('span').textContent=addLabel;pmAddBtn.disabled=false;}catch(e){pmAddBtn.querySelector('span').textContent=addLabel;pmAddBtn.disabled=false;alert(e.message||(window.__t&&window.__t.pm_form_error)||'Erreur.');}});}
-            if(pmConfirmBtn){pmConfirmBtn.addEventListener('click',async function(){if(!stripeInstance||!cardElement)return;var secret=pmFormWrap.dataset.secret;var confirmLabel=(window.__t&&window.__t.pm_confirm_btn)||'Confirmer';pmConfirmBtn.disabled=true;pmConfirmBtn.querySelector('span').textContent='...';pmCardError.textContent='';try{var result=await stripeInstance.confirmCardSetup(secret,{payment_method:{card:cardElement}});if(result.error){pmCardError.textContent=result.error.message;pmConfirmBtn.disabled=false;pmConfirmBtn.querySelector('span').textContent=confirmLabel;}else{var newPmId=result.setupIntent.payment_method;try{await fetch('/account/payment-method/'+newPmId+'/set-default',{method:'POST'});}catch(e){}window.location.reload();}}catch(e){pmCardError.textContent=e.message||(window.__t&&window.__t.generic_error)||'Erreur.';pmConfirmBtn.disabled=false;pmConfirmBtn.querySelector('span').textContent=confirmLabel;}});}
-            if(pmCancelBtn){pmCancelBtn.addEventListener('click',function(){pmFormWrap.style.display='none';});}
+            function T(k,f){return (window.__t&&window.__t[k])||f;}
+            var STRIPE_KEY=('!{stripePublishableKey}'); var pmAddBtn=document.getElementById('pmAddBtn'); var pmFormWrap=document.getElementById('pmFormWrap'); var pmConfirmBtn=document.getElementById('pmConfirmBtn'); var pmCancelBtn=document.getElementById('pmCancelBtn'); var pmCardError=document.getElementById('pmCardError'); var pmCardName=document.getElementById('pmCardName'); var stripeInstance=null, numEl=null, expEl=null, cvcEl=null, mounted=false;
+            document.querySelectorAll('.pm-item__del').forEach(function(btn){btn.addEventListener('click',async function(){if(!confirm(T('pm_delete_confirm','Supprimer cette carte ?')))return;var pmId=btn.dataset.pmid;btn.disabled=true;try{var res=await fetch('/account/payment-method/'+pmId,{method:'DELETE'});var d=await res.json();if(d.success){btn.closest('.pm-item').remove();}else{alert(d.error||T('pm_delete_error','Erreur.'));btn.disabled=false;}}catch(e){btn.disabled=false;}});});
+            document.querySelectorAll('.pm-btn--set-default').forEach(function(btn){btn.addEventListener('click',async function(){var pmId=btn.dataset.pmid;var lbl=T('pm_set_default','Définir par défaut');btn.disabled=true;btn.textContent='...';try{var res=await fetch('/account/payment-method/'+pmId+'/set-default',{method:'POST'});var d=await res.json();if(d.success){document.querySelectorAll('.pm-badge--default').forEach(function(badge){var oldItem=badge.closest('.pm-item');var ae=badge.parentElement;var nb=document.createElement('button');nb.className='pm-btn--set-default';nb.type='button';nb.dataset.pmid=oldItem.dataset.pmid;nb.textContent=lbl;ae.replaceChild(nb,badge);oldItem.classList.remove('pm-item--default');nb.addEventListener('click',arguments.callee);});var ae=btn.parentElement;var badge=document.createElement('span');badge.className='pm-badge--default';badge.innerHTML='<span class="material-symbols-outlined" style="font-size:13px">check_circle</span> '+T('pm_default_badge','Par défaut');ae.replaceChild(badge,btn);btn.closest('.pm-item').classList.add('pm-item--default');}else{alert(d.error||T('generic_error','Erreur.'));btn.disabled=false;btn.textContent=lbl;}}catch(e){btn.disabled=false;btn.textContent=lbl;}});});
+            function mountFields(){if(mounted)return;stripeInstance=Stripe(STRIPE_KEY);var elements=stripeInstance.elements();var style={base:{fontSize:'15px',color:'#111827',fontFamily:'Inter, system-ui, sans-serif','::placeholder':{color:'#9ca3af'}},invalid:{color:'#dc2626'}};numEl=elements.create('cardNumber',{style:style,showIcon:true});expEl=elements.create('cardExpiry',{style:style});cvcEl=elements.create('cardCvc',{style:style});numEl.mount('#pm-card-number');expEl.mount('#pm-card-expiry');cvcEl.mount('#pm-card-cvc');numEl.on('change',function(e){pmCardError.textContent=e.error?e.error.message:'';});mounted=true;}
+            if(pmAddBtn){pmAddBtn.addEventListener('click',async function(){if(!STRIPE_KEY){alert(T('pm_stripe_missing','Configuration Stripe manquante.'));return;}if(!window.Stripe){alert(T('pm_stripe_not_loaded','Stripe.js non chargé.'));return;}if(pmFormWrap.style.display!=='none'){pmFormWrap.style.display='none';pmAddBtn.classList.remove('is-open');return;}pmAddBtn.disabled=true;try{var res=await fetch('/account/payment-method/setup-intent',{method:'POST'});var d=await res.json();if(!d.clientSecret)throw new Error(d.error||T('pm_setup_error','Erreur'));mountFields();pmFormWrap.dataset.secret=d.clientSecret;pmFormWrap.style.display='block';pmAddBtn.classList.add('is-open');}catch(e){alert(e.message||T('pm_form_error','Erreur.'));}finally{pmAddBtn.disabled=false;}});}
+            if(pmConfirmBtn){pmConfirmBtn.addEventListener('click',async function(){if(!mounted)return;var secret=pmFormWrap.dataset.secret;var confirmLabel=pmConfirmBtn.querySelector('span').textContent;pmConfirmBtn.disabled=true;pmConfirmBtn.querySelector('span').textContent='...';pmCardError.textContent='';try{var name=(pmCardName&&pmCardName.value.trim())||undefined;var result=await stripeInstance.confirmCardSetup(secret,{payment_method:{card:numEl,billing_details:{name:name}}});if(result.error){pmCardError.textContent=result.error.message;pmConfirmBtn.disabled=false;pmConfirmBtn.querySelector('span').textContent=confirmLabel;}else{var newPmId=result.setupIntent.payment_method;try{await fetch('/account/payment-method/'+newPmId+'/set-default',{method:'POST'});}catch(e){}window.location.reload();}}catch(e){pmCardError.textContent=e.message||T('generic_error','Erreur.');pmConfirmBtn.disabled=false;pmConfirmBtn.querySelector('span').textContent=confirmLabel;}});}
+            if(pmCancelBtn){pmCancelBtn.addEventListener('click',function(){pmFormWrap.style.display='none';if(pmAddBtn)pmAddBtn.classList.remove('is-open');});}
+        })();
+
+        // ── Annuler (Profil) ──────────────────────────────────────────────────
+        (function(){ var c=document.getElementById('cancelChanges'); if(c)c.addEventListener('click',function(){location.reload();}); })();
+
+        // ── Nom : prénom + nom → champ caché fullName ─────────────────────────
+        (function(){
+            var f=document.getElementById('firstName'), l=document.getElementById('lastName'), h=document.getElementById('fullname');
+            if(!f||!l||!h) return;
+            function sync(){ h.value=((f.value.trim()+' '+l.value.trim()).trim()); h.dispatchEvent(new Event('input',{bubbles:true})); }
+            f.addEventListener('input',sync); l.addEventListener('input',sync);
+        })();
+
+        // ── Photo : zone de dépôt (clic + glisser-déposer) ────────────────────
+        (function(){
+            var dz=document.getElementById('photoDropzone'), fi=document.getElementById('fileInput');
+            if(!dz||!fi) return;
+            dz.addEventListener('click',function(e){ if(e.target!==fi) fi.click(); });
+            dz.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); fi.click(); } });
+            ['dragenter','dragover'].forEach(function(ev){ dz.addEventListener(ev,function(e){ e.preventDefault(); dz.classList.add('is-drag'); }); });
+            ['dragleave','drop'].forEach(function(ev){ dz.addEventListener(ev,function(e){ e.preventDefault(); dz.classList.remove('is-drag'); }); });
+            dz.addEventListener('drop',function(e){
+                var files=e.dataTransfer&&e.dataTransfer.files;
+                if(!files||!files.length) return;
+                try{ fi.files=files; }catch(_){ }
+                fi.dispatchEvent(new Event('change',{bubbles:true}));
+            });
         })();
 
         // ── 2FA ──────────────────────────────────────────────────────────────
@@ -707,7 +799,29 @@ block scripts
 
             // ── Langue ────────────────────────────────────────────────────────
             var langFb=document.getElementById('langFeedback');
-            document.querySelectorAll('.lang-btn').forEach(function(btn){btn.addEventListener('click',function(){var lang=btn.getAttribute('data-lang');fetch('/account/language',{method:'POST',headers:{'Content-Type':'application/json','X-Requested-With':'fetch'},body:JSON.stringify({lang:lang})}).then(function(r){return r.json();}).then(function(d){if(d.success){document.querySelectorAll('.lang-btn').forEach(function(b){b.classList.remove('lang-btn--active');});btn.classList.add('lang-btn--active');if(langFb){langFb.textContent=(window.__t&&window.__t.lang_updated)||'Langue mise à jour.';langFb.className='lang-feedback lang-feedback--ok';}setTimeout(function(){location.reload();},800);}});});});
+            (function(){
+                var wrap=document.getElementById('langSelect');
+                var btn=document.getElementById('langSelectBtn');
+                var menu=document.getElementById('langSelectMenu');
+                var flagEl=document.getElementById('langSelectFlag');
+                var nameEl=document.getElementById('langSelectName');
+                if(!wrap||!btn||!menu) return;
+                function close(){ menu.classList.remove('is-open'); btn.setAttribute('aria-expanded','false'); }
+                btn.addEventListener('click',function(e){ e.stopPropagation(); var o=menu.classList.toggle('is-open'); btn.setAttribute('aria-expanded',o?'true':'false'); });
+                document.addEventListener('click',function(e){ if(!wrap.contains(e.target)) close(); });
+                menu.querySelectorAll('.lang-select__option').forEach(function(opt){
+                    opt.addEventListener('click',function(){
+                        var lang=opt.getAttribute('data-lang');
+                        if(opt.classList.contains('is-selected')){ close(); return; }
+                        flagEl.src=opt.getAttribute('data-flag'); nameEl.textContent=opt.getAttribute('data-label');
+                        menu.querySelectorAll('.lang-select__option').forEach(function(o){ o.classList.toggle('is-selected', o===opt); });
+                        close();
+                        fetch('/account/language',{method:'POST',headers:{'Content-Type':'application/json','X-Requested-With':'fetch'},body:JSON.stringify({lang:lang})}).then(function(r){return r.json();}).then(function(d){
+                            if(d.success){ if(langFb){ langFb.textContent=(window.__t&&window.__t.lang_updated)||'Langue mise à jour.'; langFb.className='lang-feedback lang-feedback--ok'; } setTimeout(function(){location.reload();},700); }
+                        });
+                    });
+                });
+            })();
 
             // ── Modes de paiement ─────────────────────────────────────────────
             (function(){
@@ -735,6 +849,7 @@ block scripts
         (function () {
             var tabs     = document.querySelectorAll('.settings-tab');
             var sections = document.querySelectorAll('.settings-section');
+            var pageTitle = document.getElementById('settingsPageTitle');
             function activate(targetId) {
                 tabs.forEach(function(t){t.classList.remove('is-active');});
                 sections.forEach(function(s){s.classList.remove('is-active');});
@@ -742,6 +857,8 @@ block scripts
                 var sec = document.getElementById(targetId);
                 if (tab) tab.classList.add('is-active');
                 if (sec) sec.classList.add('is-active');
+                // Le titre de la page reprend le nom de l'onglet actif.
+                if (tab && pageTitle) pageTitle.textContent = tab.textContent.trim();
             }
             tabs.forEach(function(tab){
                 tab.addEventListener('click', function(){
@@ -810,6 +927,38 @@ block scripts
             });
         })();
 
+        // ── Sélecteur de drapeau (préfixe téléphone) ──────────────────────────
+        (function () {
+            var wrap=document.getElementById('phonePrefixWrap');
+            var btn=document.getElementById('phonePrefixBtn');
+            var menu=document.getElementById('phonePrefixMenu');
+            var hidden=document.getElementById('phonePrefix');
+            var flagImg=document.getElementById('phonePrefixFlag');
+            var codeEl=document.getElementById('phonePrefixCode');
+            if(!wrap||!btn||!menu||!hidden||!flagImg||!codeEl) return;
+            function setValue(prefix, flag, dispatch){
+                hidden.value=prefix;
+                if(flag) flagImg.src=flag;
+                codeEl.textContent=prefix;
+                menu.querySelectorAll('.phone-flag-option').forEach(function(o){ o.classList.toggle('is-selected', o.dataset.prefix===prefix); });
+                if(dispatch) hidden.dispatchEvent(new Event('change',{bubbles:true}));
+            }
+            function close(){ menu.classList.remove('is-open'); btn.setAttribute('aria-expanded','false'); }
+            btn.addEventListener('click', function(e){
+                e.stopPropagation();
+                var open=menu.classList.toggle('is-open');
+                btn.setAttribute('aria-expanded', open?'true':'false');
+            });
+            menu.querySelectorAll('.phone-flag-option').forEach(function(o){
+                o.addEventListener('click', function(){ setValue(o.dataset.prefix, o.dataset.flag, true); close(); });
+            });
+            document.addEventListener('click', function(e){ if(!wrap.contains(e.target)) close(); });
+            // Init depuis la valeur déjà résolue par le picker (numéro stocké)
+            var cur=hidden.value||'+32';
+            var opt=menu.querySelector('.phone-flag-option[data-prefix="'+cur+'"]');
+            setValue(cur, opt?opt.dataset.flag:'/images/flags/be.png', false);
+        })();
+
         // ── Pause / réactivation de l'établissement ─────────────────────────
         (function() {
             var btn = document.getElementById('toggleCompanyPauseBtn');
@@ -823,6 +972,8 @@ block scripts
                     {
                         confirmLabel: isPaused ? !{JSON.stringify(t.profile.resume_confirm_btn)} : !{JSON.stringify(t.profile.pause_confirm_btn)},
                         danger: !isPaused,
+                        // Icône cohérente avec l'action (et non la corbeille par défaut)
+                        icon: isPaused ? 'play_circle' : 'pause_circle',
                     }
                 );
                 if (!confirmed) return;

@@ -361,12 +361,18 @@ router.get("/auth/google/callback", async (req, res) => {
         await user.save();
       }
     } else {
-      // Filet de sécurité tant que l'inscription client (compte séparé)
-      // existe encore — sans ça, le même email peut avoir un compte Client
-      // ET un compte User créés indépendamment (cf. plan d'unification).
+      // Comptes unifiés : une personne = UN compte. Si seul un ancien compte
+      // Client existe pour cet e-mail, on ouvre CE compte (Google a vérifié
+      // l'adresse) au lieu de renvoyer une erreur sans issue. La création d'un
+      // établissement se fait ensuite depuis l'espace, quand la personne le
+      // souhaite — il n'y a pas de « compte pro » à part.
       const existingClient = await Client.findOne({ email });
       if (existingClient) {
-        return res.redirect("/login?error=google_email_taken");
+        if (!existingClient.googleId) {
+          await Client.updateOne({ _id: existingClient._id }, { $set: { googleId } });
+        }
+        req.session.clientId = existingClient._id.toString();
+        return res.redirect("/espace-client");
       }
 
       isNewUser = true;

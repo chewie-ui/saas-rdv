@@ -15,6 +15,23 @@ function buildClientRedirectUri() {
   return `${base}/auth/google/client/callback`;
 }
 
+// En cas d'échec, on ramène le visiteur EXACTEMENT là où il était (sa page de
+// réservation) avec un code d'erreur lisible, au lieu de l'éjecter vers /login
+// sans explication — il perdait son tunnel et ne savait pas ce qui n'allait pas.
+// On ne garde que le chemin interne du returnTo (jamais une URL externe fournie
+// par le client) pour éviter toute redirection ouverte.
+function backWithAuthError(returnTo, code) {
+  const base = (process.env.BASE_URL || "http://localhost:3000").replace(/\/$/, "");
+  try {
+    const u = new URL(returnTo, base);
+    if (u.origin !== new URL(base).origin) throw new Error("external");
+    u.searchParams.set("authError", code);
+    return u.pathname + u.search + u.hash;
+  } catch (_) {
+    return `/login?error=${encodeURIComponent(code)}`;
+  }
+}
+
 // ─── Google OAuth for clients ────────────────────────────────────────────────
 
 router.get("/auth/google/client", (req, res) => {
@@ -64,12 +81,24 @@ router.get("/auth/google/client/callback", async (req, res) => {
         await client.save();
       }
     } else {
-      // Filet de sécurité tant que l'inscription pro (compte séparé) existe
-      // encore — sans ça, le même email peut avoir un compte User ET un
-      // compte Client créés indépendamment (cf. plan d'unification).
+      // Comptes unifiés : une personne = UN compte. Si cet e-mail Google
+      // correspond déjà à un compte BranShee (qu'il possède un établissement
+      // ou non), on ouvre simplement ce compte au lieu de refuser la connexion
+      // sous prétexte qu'il n'existe pas de « compte client » séparé.
+      // Google a vérifié la propriété de l'adresse : même niveau de confiance
+      // que la connexion Google côté pro.
       const existingUser = await User.findOne({ email });
       if (existingUser) {
-        return res.redirect("/client/login?error=google_email_taken");
+        if (!existingUser.googleId) {
+          await User.updateOne({ _id: existingUser._id }, { $set: { googleId } });
+        }
+        return req.logIn(existingUser, (err) => {
+          if (err) {
+            console.error("Google client OAuth logIn error:", err);
+            return res.redirect(backWithAuthError(returnTo, "google"));
+          }
+          return res.redirect(returnTo);
+        });
       }
       client = await Client.create({
         fullName: name,
@@ -83,7 +112,7 @@ router.get("/auth/google/client/callback", async (req, res) => {
     return res.redirect(returnTo);
   } catch (err) {
     console.error("Google client OAuth error:", err);
-    return res.redirect("/client/login?error=google");
+    return res.redirect(backWithAuthError(returnTo, "google"));
   }
 });
 
@@ -99,6 +128,21 @@ router.post("/client/login", ctrl.postLogin);
 
 // ── Session info (AJAX) ───────────────────────────────────────────────────────
 router.get("/client/me", async (req, res) => {
+  // Comptes unifiés : un User connecté est un client comme un autre pour la
+  // prise de rendez-vous (le tunnel a besoin de ses coordonnées pour
+  // pré-remplir). Priorité à req.user, repli sur l'ancien compte Client.
+  if (req.user) {
+    const parts = (req.user.fullName || "").trim().split(" ");
+    return res.json({
+      client: {
+        firstName:      parts[0] || "",
+        lastName:       parts.slice(1).join(" ") || "",
+        email:          req.user.email || "",
+        phone:          req.user.phone || "",
+        profilePicture: req.user.profilePicture || "",
+      }
+    });
+  }
   if (!req.session?.clientId) return res.json({ client: null });
   try {
     const Client = require("../db/models/client.model");

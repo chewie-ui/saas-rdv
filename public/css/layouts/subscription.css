@@ -1356,3 +1356,89 @@
 [data-theme="dark"] .sub-plan--studio .sub-plan__header {
   background: linear-gradient(145deg, rgba(37,99,235,0.14) 0%, rgba(37,99,235,0.08) 100%) !important;
 }
+
+/* ══════════ Sélecteur d'audience : Individuel / Équipe ══════════ */
+.sub-segment {
+  display: flex;
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+  background: var(--surface, #f5f4f1);
+  border: 1.5px solid var(--border-light);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 2px;
+  margin: 6px auto 24px;
+}
+.sub-segment__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 24px;
+  border-radius: 999px;
+  border: none;
+  background: none;
+  font-size: 0.86rem;
+  font-weight: 600;
+  font-family: var(--font-primary);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  white-space: nowrap;
+}
+.sub-segment__btn .material-symbols-outlined { font-size: 18px; }
+.sub-segment__btn.is-active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+/* ══════════ Plans : centrage flex (2 ou 3 cartes selon l'audience) ══════════ */
+.sub-plans {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 18px;
+}
+.sub-plans > .sub-plan {
+  flex: 1 1 300px;
+  max-width: 360px;
+  min-width: 240px;
+}
+/* Filtrage : on masque les cartes qui ne sont pas dans le groupe actif. */
+.sub-plans[data-active="individuel"] .sub-plan[data-group="equipe"],
+.sub-plans[data-active="equipe"] .sub-plan[data-group="individuel"] { display: none; }
+
+/* ══════════ Carte « Sur mesure » (grandes entreprises) ══════════ */
+.sub-plan--custom {
+  border: 1.5px solid var(--border-light);
+  background: linear-gradient(180deg, #fbfaff 0%, var(--surface-card) 60%);
+}
+.sub-plan--custom .sub-plan__badge-business {
+  background: #ede9fe;
+  color: #6d28d9;
+  border-color: #ddd6fe;
+}
+.sub-plan__price--custom {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--ink, #141c25);
+  letter-spacing: -0.02em;
+}
+.sub-plan--custom .feat-check--business { fill: #6d28d9; color: #6d28d9; }
+.sub-btn--contact {
+  background: #141c25;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  gap: 4px;
+}
+.sub-btn--contact:hover { background: #2a3441; color: #fff; }
+
+@media (max-width: 480px) {
+  .sub-segment__btn { padding: 9px 18px; font-size: 0.82rem; }
+  .sub-plans > .sub-plan { flex-basis: 100%; max-width: 420px; }
+}
