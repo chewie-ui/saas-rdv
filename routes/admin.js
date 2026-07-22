@@ -124,12 +124,17 @@ router.get("/subscription", isAuth, injectCompany, requireFeatureActive("subscri
   const PromoCode = require("../db/models/promoCode.model");
   const defaultOffers = await PromoCode.find({ isDefaultOffer: true, active: true }).lean();
 
+  // L'annuel Essentiel n'est proposé que si son prix existe vraiment dans
+  // Stripe — sinon on afficherait une remise qu'on ne pourrait pas facturer.
+  const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
+
   res.render("admin/subscription", {
     pageName: "Subscription",
     title: "Plans",
     monthlyBookingCount,
     paymentMethods,
     defaultOffers,
+    essentielYearlyAvailable: !!env.stripePriceEssentielYearly,
   });
 });
 

@@ -97,7 +97,20 @@ function updateBizIncompleteBanner() {
   const hasPic = picEl && picEl.tagName === "IMG" && !!picEl.src;
   const hasName = !!(nameInput?.value || "").trim();
 
-  if (banner) banner.style.display = hasPic && hasName ? "none" : "";
+  if (banner) {
+    banner.style.display = hasPic && hasName ? "none" : "";
+    // Le message doit désigner ce qui manque réellement, sinon on demande une
+    // photo à quelqu'un qui en a déjà une.
+    const text = document.getElementById("bizIncompleteText");
+    if (text) {
+      text.textContent =
+        !hasPic && !hasName
+          ? "Ajoutez une photo et un nom pour que votre page de réservation soit complète et professionnelle."
+          : !hasName
+            ? "Ajoutez le nom de votre établissement pour compléter votre page de réservation."
+            : "Ajoutez une photo pour que votre page de réservation soit complète et professionnelle.";
+    }
+  }
   if (preview) preview.classList.toggle("biz-photo-preview--empty", !hasPic);
   if (nameInput) nameInput.classList.toggle("input--warn", !hasName);
 }
@@ -115,7 +128,8 @@ if (deleteBusinessPicBtn) {
           const placeholder = document.createElement("div");
           placeholder.id = "businessPicPreview";
           placeholder.className = "biz-photo-placeholder";
-          placeholder.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 -960 960 960" width="32px" fill="currentColor"><path d="M160-120q-33 0-56.5-23.5T80-200v-480q0-33 23.5-56.5T160-760h126l74-80h240l74 80h126q33 0 56.5 23.5T880-680v480q0 33-23.5 56.5T800-120H160Zm0-80h640v-480H160v480Zm320-80q-58 0-99-41t-41-99q0-58 41-99t99-41q58 0 99 41t41 99q0 58-41 99t-99 41Zm0-80q25 0 42.5-17.5T540-420q0-25-17.5-42.5T480-480q-25 0-42.5 17.5T420-420q0 25 17.5 42.5T480-360Z"/></svg>`;
+          placeholder.innerHTML =
+            '<span class="material-symbols-outlined" style="font-size:32px">photo_camera</span>';
           wrapper.replaceWith(placeholder);
         }
         updateBizDeleteBtn(false);
@@ -562,8 +576,18 @@ if (confirmLocation) {
     // ── Mode en ligne (pays + langue) ────────────────────────────────────────
     if (isEnLigne) {
       const countryEl = document.getElementById('locCountryInput');
+      const otherEl   = document.getElementById('locCountryOtherInput');
       const langEl    = document.getElementById('locLangInput');
-      const country   = countryEl ? countryEl.value : '';
+      // « Autre pays… » : on enregistre le texte saisi, pas le marqueur OTHER.
+      let country = countryEl ? countryEl.value : '';
+      if (country === 'OTHER') {
+        country = (otherEl?.value || '').trim();
+        if (!country) {
+          alert('Veuillez écrire votre pays.');
+          if (otherEl) otherEl.focus();
+          return;
+        }
+      }
       const langs     = langEl
         ? Array.from(langEl.selectedOptions).map(function(o) { return o.value; })
         : [];

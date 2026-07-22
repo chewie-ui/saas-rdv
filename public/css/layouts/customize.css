@@ -547,11 +547,14 @@
   display: grid;
   grid-template-columns: auto 1fr;
   column-gap: 12px;
-  align-items: center;
+  align-items: start;
 }
 .cz-page .info-card__ic {
   grid-row: 1 / span 2;
-  align-self: center;
+  /* Alignée sur la 1re ligne du titre : centrée verticalement, elle « flottait »
+     au milieu des descriptions longues (ex. « À propos »), ce qui était moche. */
+  align-self: start;
+  margin-top: 1px;
   flex-shrink: 0;
   width: 38px;
   height: 38px;
@@ -596,3 +599,215 @@
 .cz-page .location-form { order: 1; gap: 18px; width: 100%; }
 .cz-page .location-map { order: 2; }
 .cz-page .location-map iframe { height: 260px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Afficher / masquer une section — vrai interrupteur, état écrit en toutes
+   lettres. L'ancienne « pastille » ne disait ni qu'elle était cliquable, ni ce
+   que voulait dire sa couleur.
+   L'état vient du :checked (aucun JS à synchroniser).
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cz-page .section-cb-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  padding: 4px 2px;
+}
+/* piste */
+.cz-page .section-cb-label::before {
+  content: '';
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: #d1d5db;
+  flex-shrink: 0;
+  transition: background .18s ease;
+}
+/* bouton */
+.cz-page .section-cb-label::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, .25);
+  transform: translateY(-50%);
+  transition: transform .18s ease;
+}
+.cz-page .section-cb-label:has(.toggle-cb:checked)::before { background: var(--accent, #16a34a); }
+.cz-page .section-cb-label:has(.toggle-cb:checked)::after  { transform: translateY(-50%) translateX(16px); }
+.cz-page .section-cb-label:hover::before { filter: brightness(.97); }
+
+/* Le libellé redevient du texte simple (plus de pastille ni de point) */
+.cz-page .section-cb-label .section-pill {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #6b7280;
+  transition: color .18s ease;
+}
+.cz-page .section-cb-label .section-pill::before { display: none; }
+.cz-page .section-cb-label:has(.toggle-cb:checked) .section-pill { color: var(--text-primary, #111); }
+
+/* État écrit — se met à jour tout seul avec la case */
+.cz-page .section-cb-label .section-pill::after {
+  content: ' · masquée';
+  font-weight: 500;
+  color: #9ca3af;
+}
+.cz-page .section-cb-label:has(.toggle-cb:checked) .section-pill::after {
+  content: ' · visible';
+  color: var(--accent, #16a34a);
+}
+
+/* Accessibilité clavier */
+.cz-page .section-cb-label:focus-within::before {
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, .18);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   « À propos » — barre d'outils détachée + zone de saisie autonome.
+   Avant : un seul gros bloc bordé, barre grise collée en haut et pied barré.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cz-page .about-editor {
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  background: none;
+  gap: 10px;
+}
+
+/* Barre flottante, largeur ajustée à son contenu */
+.cz-page .about-editor__toolbar {
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 10px;
+  padding: 5px 6px;
+  gap: 2px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .06);
+}
+.cz-page .about-editor__btn { height: 28px; min-width: 28px; border-radius: 7px; }
+
+/* Zone de texte : sa propre boîte, avec un focus net */
+.cz-page .about-editor__area {
+  border: 1.5px solid var(--border-light, #e5e7eb);
+  border-radius: 10px;
+  background: #fff;
+  min-height: 150px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.cz-page .about-editor__area:focus {
+  border-color: var(--accent, #16a34a);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, .12);
+}
+
+/* Pied allégé : compteur à gauche, astuce à droite */
+.cz-page .about-editor__footer {
+  border-top: none;
+  background: none;
+  padding: 0 2px;
+  flex-direction: row-reverse;
+}
+.cz-page .about-editor__hint { font-size: 11.5px; color: #9ca3af; }
+
+/* Le titre porte une marge haute par défaut qui le décalait sous l'icône —
+   on la neutralise pour que l'icône et le titre démarrent sur la même ligne. */
+.cz-page .info-card__header__left h3,
+.cz-page .info-card__header:not(.info-card__header--with-cb) h3 {
+  margin-top: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Menus déroulants Pays / Langues — le <select> natif (surtout en `multiple`,
+   qui imposait un Ctrl+clic et rognait les libellés) est masqué et habillé.
+   Il reste la source de vérité : la sauvegarde lit toujours .selectedOptions.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.psel { position: relative; }
+.psel__native {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Déclencheur */
+.psel__btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1.5px solid var(--border-medium, #e5e7eb);
+  border-radius: 10px;
+  font: 500 14px var(--font-primary, inherit);
+  color: var(--ink, #111827);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+}
+.psel__btn:hover { border-color: #d1d5db; }
+.psel.is-open .psel__btn {
+  border-color: var(--accent, #16a34a);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, .12);
+}
+.psel__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.psel__label.is-empty { color: #9ca3af; font-weight: 400; }
+.psel__chev { font-size: 20px; color: #9ca3af; flex-shrink: 0; transition: transform .15s; }
+.psel.is-open .psel__chev { transform: rotate(180deg); }
+
+/* Liste */
+.psel__menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  max-height: 290px;
+  overflow-y: auto;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(16, 24, 40, .14);
+}
+.psel.is-open .psel__menu { display: block; }
+
+.psel__opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-primary, #111);
+  cursor: pointer;
+  transition: background .12s;
+}
+.psel__opt:hover { background: #f6fef9; }
+.psel__opt.is-selected { background: var(--main-color-pale, #f0fdf4); font-weight: 600; }
+.psel__opt-txt { flex: 1; min-width: 0; }
+.psel__check { font-size: 19px; color: var(--accent, #16a34a); display: none; flex-shrink: 0; }
+.psel__opt.is-selected .psel__check { display: inline-flex; }
+
+/* Drapeaux : hauteur fixe, largeur libre (les ratios varient d'un pays à l'autre) */
+.psel__flag {
+  height: 14px;
+  width: auto;
+  flex-shrink: 0;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, .08);
+  object-fit: cover;
+}
+.psel__label .psel__flag { margin-right: 7px; vertical-align: -2px; }

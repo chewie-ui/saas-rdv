@@ -8,6 +8,9 @@ module.exports = {
 
   // Prix — nouveaux noms en priorité, anciens en fallback (rétrocompatibilité)
   stripePriceEssentielMonthly: env.STRIPE_PRICE_ESSENTIEL_MONTHLY_SERVER || "",
+  // Annuel Essentiel (7 €/mois, soit 84 €/an). Vide tant que le prix n'existe
+  // pas dans Stripe → l'offre annuelle reste masquée (cf. development.js).
+  stripePriceEssentielYearly: env.STRIPE_PRICE_ESSENTIEL_YEARLY_SERVER || "",
   stripePricePremiumMonthly:  env.STRIPE_PRICE_PREMIUM_MONTHLY_KEY_SERVER  || env.STRIPE_PRICE_KEY_SERVER,
   stripePricePremiumYearly:   env.STRIPE_PRICE_PREMIUM_YEARLY_KEY_SERVER   || env.STRIPE_PRICE_KEY_SERVER,
   stripePriceBusinessMonthly: env.STRIPE_PRICE_BUSINESS_MONTHLY_KEY_SERVER || env.STRIPE_PRICE_KEY_BUSINESS_SERVER,

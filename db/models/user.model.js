@@ -150,13 +150,20 @@ const userSchema = schema(
       country: String,
       zip: Number,
       iframeUrl: String,
+      iframeEmbedCode: String,
+      gmapUrl: String,
       lat: String,
       lon: String,
       serviceType: {
         type: String,
-        enum: ["sur_place", "en_ligne"],
+        enum: ["sur_place", "en_ligne", "iframe"],
         default: "sur_place",
       },
+      // Mode « en ligne » : pays d'exercice et langues de travail.
+      // onlineCountry contient un code ISO (BE, FR…) ou un pays libre saisi
+      // par l'utilisateur quand le sien n'est pas dans la liste.
+      onlineCountry: String,
+      onlineLangs: [String],
     },
 
     businessType: {

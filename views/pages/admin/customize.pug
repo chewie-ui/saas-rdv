@@ -36,17 +36,28 @@ block content
         .cz-panel#czPanelGeneral(style="display:none")
 
         //- ── Profil de l'établissement ──────────────────────────────────────────
-        - var _missingProfile = !user.businessPicture || !user.businessName
+        -
+            var _noPic  = !user.businessPicture
+            var _noName = !user.businessName
+            var _missingProfile = _noPic || _noName
+            // Message ciblé sur ce qui manque VRAIMENT : afficher « ajoutez une
+            // photo et un nom » alors que la photo est déjà là faisait douter.
+            var _missingMsg = (_noPic && _noName)
+                ? 'Ajoutez une photo et un nom pour que votre page de réservation soit complète et professionnelle.'
+                : _noName
+                    ? 'Ajoutez le nom de votre établissement pour compléter votre page de réservation.'
+                    : 'Ajoutez une photo pour que votre page de réservation soit complète et professionnelle.'
         .info-card
             .info-card__header
                 span.info-card__ic
                     span.material-symbols-outlined(style="font-size:19px") storefront
                 h3 Profil de l'établissement
                 p.info-card__desc Ces informations sont affichées en haut de votre page de réservation.
-            if _missingProfile
-                .biz-incomplete-banner#bizIncompleteBanner
-                    span.material-symbols-outlined(style="font-size:16px") info
-                    span Ajoutez une photo et un nom pour que votre page de réservation soit complète et professionnelle.
+            //- Toujours rendu (masqué si complet) pour que le JS puisse le
+            //- réafficher si l'utilisateur supprime sa photo ou vide le nom.
+            .biz-incomplete-banner#bizIncompleteBanner(style=_missingProfile ? '' : 'display:none')
+                span.material-symbols-outlined(style="font-size:16px") info
+                span#bizIncompleteText= _missingMsg
             .biz-row
                 .biz-photo-col
                     .biz-photo-preview(class=!user.businessPicture ? 'biz-photo-preview--empty' : '')
@@ -190,32 +201,62 @@ block content
 
                     //- ── Champs service en ligne (pays + langue) ──────────────
                     #locOnlineFields(style=(user.location && user.location.serviceType === 'en_ligne') ? '' : 'display:none')
+                        -
+                            // Les emojis drapeaux ne s'affichent pas sous Windows (la police
+                            // système n'a pas les indicateurs régionaux) : on passe par des
+                            // images dans /images/flags.
+                            var _countries = [
+                                { code: 'BE', name: 'Belgique',    flag: 'be.png' },
+                                { code: 'FR', name: 'France',      flag: 'fr.png' },
+                                { code: 'CH', name: 'Suisse',      flag: 'ch.png' },
+                                { code: 'LU', name: 'Luxembourg',  flag: 'lu.png' },
+                                { code: 'NL', name: 'Pays-Bas',    flag: 'nl.png' },
+                                { code: 'DE', name: 'Allemagne',   flag: 'de.png' },
+                                { code: 'ES', name: 'Espagne',     flag: 'es.png' },
+                                { code: 'IT', name: 'Italie',      flag: 'it.png' },
+                                { code: 'PT', name: 'Portugal',    flag: 'pt.svg' },
+                                { code: 'GB', name: 'Royaume-Uni', flag: 'gb.png' },
+                                { code: 'US', name: 'États-Unis',  flag: 'us.png' },
+                                { code: 'CA', name: 'Canada',      flag: 'ca.svg' },
+                                { code: 'MA', name: 'Maroc',       flag: 'ma.png' },
+                                { code: 'TN', name: 'Tunisie',     flag: 'tn.svg' },
+                                { code: 'SN', name: 'Sénégal',     flag: 'sn.svg' }
+                            ]
+                            var _curCountry = (user.location && user.location.onlineCountry) || ''
+                            // Un pays hors liste a été saisi à la main : on rouvre le champ libre.
+                            var _isOther = !!_curCountry && !_countries.some(function (c) { return c.code === _curCountry })
                         .loc-simple-block
                             label.loc-simple-label Pays
                             select.input.loc-simple-input#locCountryInput
-                                option(value="" disabled selected=(!(user.location && user.location.onlineCountry))) — Sélectionnez un pays —
-                                option(value="BE" selected=(user.location && user.location.onlineCountry === 'BE')) 🇧🇪 Belgique
-                                option(value="FR" selected=(user.location && user.location.onlineCountry === 'FR')) 🇫🇷 France
-                                option(value="CH" selected=(user.location && user.location.onlineCountry === 'CH')) 🇨🇭 Suisse
-                                option(value="LU" selected=(user.location && user.location.onlineCountry === 'LU')) 🇱🇺 Luxembourg
-                                option(value="CA" selected=(user.location && user.location.onlineCountry === 'CA')) 🇨🇦 Canada
-                                option(value="MA" selected=(user.location && user.location.onlineCountry === 'MA')) 🇲🇦 Maroc
-                                option(value="TN" selected=(user.location && user.location.onlineCountry === 'TN')) 🇹🇳 Tunisie
-                                option(value="SN" selected=(user.location && user.location.onlineCountry === 'SN')) 🇸🇳 Sénégal
-                                option(value="OTHER" selected=(user.location && user.location.onlineCountry === 'OTHER')) 🌍 Autre
+                                option(value="" disabled selected=!_curCountry) — Sélectionnez un pays —
+                                each c in _countries
+                                    option(value=c.code data-flag='/images/flags/' + c.flag selected=(_curCountry === c.code))= c.name
+                                option(value="OTHER" data-flag="/images/flags/_other.svg" selected=_isOther) Autre pays…
+                            input.input.loc-simple-input#locCountryOtherInput(
+                                type="text"
+                                placeholder="Écrivez votre pays"
+                                value=_isOther ? _curCountry : ''
+                                autocomplete="country-name"
+                                style=_isOther ? 'margin-top:8px' : 'display:none;margin-top:8px'
+                            )
                         .loc-simple-block
                             label.loc-simple-label Langue(s) de travail
                             select.input.loc-simple-input#locLangInput(multiple style="height:auto;min-height:44px;padding:8px 12px;")
                                 - var _langs = (user.location && user.location.onlineLangs) || []
-                                option(value="fr" selected=_langs.includes('fr')) 🇫🇷 Français
-                                option(value="en" selected=_langs.includes('en')) 🇬🇧 Anglais
-                                option(value="nl" selected=_langs.includes('nl')) 🇳🇱 Néerlandais
-                                option(value="de" selected=_langs.includes('de')) 🇩🇪 Allemand
-                                option(value="es" selected=_langs.includes('es')) 🇪🇸 Espagnol
-                                option(value="ar" selected=_langs.includes('ar')) 🇸🇦 Arabe
-                                option(value="pt" selected=_langs.includes('pt')) 🇵🇹 Portugais
-                                option(value="it" selected=_langs.includes('it')) 🇮🇹 Italien
-                            p.loc-simple-hint Ctrl+clic (ou Cmd sur Mac) pour sélectionner plusieurs langues.
+                                -
+                                    var _langList = [
+                                        { code: 'fr', name: 'Français',    flag: 'fr.png' },
+                                        { code: 'en', name: 'Anglais',     flag: 'gb.png' },
+                                        { code: 'nl', name: 'Néerlandais', flag: 'nl.png' },
+                                        { code: 'de', name: 'Allemand',    flag: 'de.png' },
+                                        { code: 'es', name: 'Espagnol',    flag: 'es.png' },
+                                        { code: 'it', name: 'Italien',     flag: 'it.png' },
+                                        { code: 'pt', name: 'Portugais',   flag: 'pt.svg' },
+                                        { code: 'ar', name: 'Arabe',       flag: 'sa.svg' }
+                                    ]
+                                each l in _langList
+                                    option(value=l.code data-flag='/images/flags/' + l.flag selected=_langs.includes(l.code))= l.name
+                            p.loc-simple-hint Cliquez pour cocher plusieurs langues.
 
                     //- ── Champ iframe (mode iframe) ─────────────────────────
                     #locIframeFields(style=(user.location && user.location.serviceType === 'iframe') ? '' : 'display:none')
@@ -2161,3 +2202,113 @@ block scripts
             }
         })();
 
+
+    //- ── Jolis menus déroulants (Pays / Langues) ──────────────────────────────
+    //- Le <select> natif reste dans le DOM et garde la valeur : la sauvegarde
+    //- (informations.js) continue de lire .value et .selectedOptions sans
+    //- aucun changement. On ne fait que l'habiller.
+    script.
+        (function () {
+            function flagImg(src) {
+                var img = document.createElement('img');
+                img.className = 'psel__flag';
+                img.src = src;
+                img.alt = '';
+                return img;
+            }
+
+            function buildPrettySelect(sel) {
+                if (!sel || sel.dataset.psel === '1') return;
+                sel.dataset.psel = '1';
+                var multi = sel.multiple;
+
+                var wrap = document.createElement('div');
+                wrap.className = 'psel' + (multi ? ' psel--multi' : '');
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'psel__btn';
+                btn.innerHTML = '<span class="psel__label"></span><span class="material-symbols-outlined psel__chev">expand_more</span>';
+                var menu = document.createElement('div');
+                menu.className = 'psel__menu';
+
+                sel.parentNode.insertBefore(wrap, sel);
+                wrap.appendChild(btn);
+                wrap.appendChild(menu);
+                wrap.appendChild(sel);          // le natif reste dedans, masqué par le CSS
+                sel.classList.add('psel__native');
+
+                Array.prototype.forEach.call(sel.options, function (opt, i) {
+                    if (opt.disabled && opt.value === '') return;   // placeholder
+                    var it = document.createElement('div');
+                    it.className = 'psel__opt';
+                    it.dataset.index = i;
+                    it.innerHTML = '<span class="psel__opt-txt"></span><span class="material-symbols-outlined psel__check">check</span>';
+                    it.querySelector('.psel__opt-txt').textContent = opt.textContent.trim();
+                    if (opt.dataset.flag) it.insertBefore(flagImg(opt.dataset.flag), it.firstChild);
+                    menu.appendChild(it);
+                });
+
+                function placeholder() {
+                    var ph = sel.querySelector('option[value=""]');
+                    return ph ? ph.textContent.trim() : 'Sélectionner…';
+                }
+                function sync() {
+                    var chosen = Array.prototype.filter.call(sel.options, function (o) { return o.selected && o.value; });
+                    var lbl = wrap.querySelector('.psel__label');
+                    lbl.textContent = '';
+                    if (!chosen.length) {
+                        lbl.textContent = placeholder();
+                        lbl.classList.add('is-empty');
+                    } else {
+                        lbl.classList.remove('is-empty');
+                        chosen.forEach(function (o, i) {
+                            if (i) lbl.appendChild(document.createTextNode(', '));
+                            if (o.dataset.flag) lbl.appendChild(flagImg(o.dataset.flag));
+                            lbl.appendChild(document.createTextNode(o.textContent.trim()));
+                        });
+                    }
+                    menu.querySelectorAll('.psel__opt').forEach(function (it) {
+                        it.classList.toggle('is-selected', sel.options[+it.dataset.index].selected);
+                    });
+                }
+                function close() { wrap.classList.remove('is-open'); }
+
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    document.querySelectorAll('.psel.is-open').forEach(function (w) { if (w !== wrap) w.classList.remove('is-open'); });
+                    wrap.classList.toggle('is-open');
+                });
+                menu.addEventListener('click', function (e) {
+                    var it = e.target.closest('.psel__opt');
+                    if (!it) return;
+                    var opt = sel.options[+it.dataset.index];
+                    if (multi) {
+                        opt.selected = !opt.selected;       // coche / décoche
+                    } else {
+                        sel.value = opt.value;
+                        close();
+                    }
+                    sel.dispatchEvent(new Event('change', { bubbles: true }));
+                    sync();
+                });
+                document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) close(); });
+
+                sync();
+            }
+
+            ['locCountryInput', 'locLangInput'].forEach(function (id) {
+                buildPrettySelect(document.getElementById(id));
+            });
+
+            // « Autre pays… » : champ libre pour les pays absents de la liste.
+            var countrySel   = document.getElementById('locCountryInput');
+            var countryOther = document.getElementById('locCountryOtherInput');
+            if (countrySel && countryOther) {
+                countrySel.addEventListener('change', function () {
+                    var other = countrySel.value === 'OTHER';
+                    countryOther.style.display = other ? '' : 'none';
+                    if (other) countryOther.focus();
+                    else countryOther.value = '';
+                });
+            }
+        })();

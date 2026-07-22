@@ -214,8 +214,15 @@ exports.createCheckout = async (req, res) => {
     // Choisir le bon price ID selon le plan et la période
     let priceId;
     if (plan === "essentiel") {
-      // Essentiel : mensuel uniquement (le paramètre billing est ignoré).
-      priceId = env.stripePriceEssentielMonthly;
+      // Essentiel : annuel (7 €/mois) s'il est demandé ET réellement configuré
+      // dans Stripe ; sinon on retombe sur le mensuel. Ce repli évite de
+      // facturer autre chose que ce qui est affiché tant que le prix annuel
+      // n'existe pas (la carte n'affiche l'annuel que dans ce cas, cf. la vue).
+      if (billing === "yearly" && env.stripePriceEssentielYearly) {
+        priceId = env.stripePriceEssentielYearly;
+      } else {
+        priceId = env.stripePriceEssentielMonthly;
+      }
     } else if (plan === "business") {
       if (billing === "yearly")     priceId = env.stripePriceBusinessYearly;
       else if (billing === "sixmonths") priceId = env.stripePriceBusinessSixMonths;

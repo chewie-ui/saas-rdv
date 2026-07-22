@@ -118,7 +118,19 @@ img { display: block; max-width: 100%; }
 /* ── Main ───────────────────────────────────────────────────────────────── */
 .bk-main {
   min-height: calc(100vh - 56px);
+  /* svh = hauteur visible barre d'adresse comprise. Sur iOS/Android, 100vh
+     déborde sous la barre ; svh reste stable quand elle se rétracte, donc pas
+     de re-centrage pendant le scroll. Ignoré par les vieux navigateurs, qui
+     gardent la ligne vh ci-dessus. */
+  min-height: calc(100svh - 56px);
   padding: 0 0 100px;
+  /* Quand le pro désactive ses sections (carte, horaires, à propos, galerie),
+     le contenu est bien plus court que la hauteur d'écran imposée ci-dessus :
+     on le centre au lieu de le laisser collé en haut avec un grand vide.
+     Dès que le contenu dépasse, `main` grandit et le centrage ne fait rien. */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* ── Mode embed (iframe sur site externe) ─────────────────────────────────

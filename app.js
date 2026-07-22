@@ -86,7 +86,7 @@ function planFromPriceId(priceId) {
   if (!priceId) return null;
   const inList = (arr) => arr.filter(Boolean).includes(priceId);
   if (inList([env.stripePriceBusinessMonthly, env.stripePriceBusinessSixMonths, env.stripePriceBusinessYearly])) return "business";
-  if (inList([env.stripePriceEssentielMonthly])) return "essentiel";
+  if (inList([env.stripePriceEssentielMonthly, env.stripePriceEssentielYearly])) return "essentiel";
   if (inList([env.stripePricePremiumMonthly, env.stripePricePremiumSixMonths, env.stripePricePremiumYearly])) return "pro";
   return null;
 }

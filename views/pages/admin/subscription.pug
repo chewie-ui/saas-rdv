@@ -138,7 +138,13 @@ block content
                         h2.sub-plan__name= t.subscription.plan_ess || 'Essentiel'
                         p.sub-plan__desc= t.subscription.plan_ess_desc || 'La prise de rendez-vous en ligne, sans limite'
                     .sub-plan__pricing
-                        span.sub-plan__price 9€
+                        //- data-yearly n'est posé que si le prix annuel existe côté
+                        //- Stripe : sans lui, le bouton « Annuel » laisse le tarif
+                        //- mensuel affiché (et c'est bien 9 € qui sera facturé).
+                        if essentielYearlyAvailable
+                            span.sub-plan__price(data-monthly="9" data-yearly="7") 9€
+                        else
+                            span.sub-plan__price 9€
                         span.sub-plan__per= t.subscription.price_2_sub || '/mois'
                 .sub-plan__divider
                 .sub-plan__features
@@ -509,7 +515,8 @@ block scripts
                     var btn = e.target.closest('.sub-segment__btn');
                     if (btn) setAudience(btn.dataset.aud);
                 });
-                // Par défaut, on met en avant le groupe du plan actuel de l'utilisateur.
-                if (plansEl.querySelector('.sub-plan--current[data-group="equipe"]')) setAudience('equipe');
+                // On reste toujours sur « Individuel » à l'ouverture (c'est l'entrée
+                // de gamme, et la majorité des visiteurs) — on ne bascule plus
+                // automatiquement sur « Équipe » quand le plan actuel en fait partie.
             }
         });

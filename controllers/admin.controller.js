@@ -2701,6 +2701,7 @@ exports.paymentVerification = async (req, res) => {
       ].filter(Boolean).includes(priceId);
       const isEssentielPrice = [
         env.stripePriceEssentielMonthly,
+        env.stripePriceEssentielYearly,
       ].filter(Boolean).includes(priceId);
       planName = isEssentielPrice ? "essentiel" : isBusinessPrice ? "business" : "pro";
     } catch (liErr) {

@@ -104,6 +104,11 @@ block content
             }
         }
         var showMap   = cs.showSectionMap   !== false && _mapEmbedSrc !== ''
+        // Le bouton « Carte » de Personnaliser pilote TOUTE la section Localisation.
+        // Avant, la section restait affichée dès qu'une adresse existait (même
+        // carte désactivée) : on se retrouvait avec un bloc entier alors que
+        // l'adresse figure déjà, en une ligne, dans l'en-tête de la page.
+        var showLocation = cs.showSectionMap !== false && (showMap || (_displayAddress && _displayAddress.trim()))
         var showHours = cs.showSectionHours !== false && company && company.schedule && company.schedule.length > 0
         // NB : calculé ici (et non plus loin, près de la galerie) car la boucle
         // `each _sec in _secOrder` ci-dessous teste `showGallery` — avec `var`,
@@ -284,7 +289,7 @@ block content
             -
                 var _secOrder = (cs && cs.sectionOrder && cs.sectionOrder.length) ? cs.sectionOrder : ['about','location','hours','gallery','reviews']
             each _sec in _secOrder
-                if _sec === 'location' && (showMap || (_displayAddress && _displayAddress.trim()))
+                if _sec === 'location' && showLocation
                     .bk-location-card
                         h2.bk-location-card__title
                             svg(xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor")
