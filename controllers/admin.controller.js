@@ -551,11 +551,20 @@ exports.appointment = async (req, res) => {
   const specialMin = specialDayHours.length > 0 ? Math.min(...specialDayHours.map((wh) => parseInt(wh.start.split(":")[0], 10))) : null;
   const specialMax = specialDayHours.length > 0 ? Math.max(...specialDayHours.map((wh) => parseInt(wh.end.split(":")[0], 10))) : null;
 
-  // Compute appointment range — use total minutes so :30 appointments extend the range correctly
-  const apptMinutesList = formatted.map((a) => {
-    const [h, m] = a.startHour.split(":").map(Number);
-    return h * 60 + m;
-  });
+  // Compute appointment range — use total minutes so :30 appointments extend the range correctly.
+  //
+  // IMPORTANT : uniquement sur les RDV de la période AFFICHÉE. `formatted`
+  // contient tout l'historique de l'établissement : un seul rendez-vous pris à
+  // 00:00 (créneau ouvert par erreur, un jour) forçait la grille à démarrer à
+  // minuit pour toujours, sur toutes les semaines — alors que les horaires
+  // commencent à 09:00. La plage suit maintenant ce qu'on regarde : les
+  // horaires de travail, sauf si un RDV de ces jours-là déborde.
+  const apptMinutesList = formatted
+    .filter((a) => weekIsos.includes(a.isoDate))
+    .map((a) => {
+      const [h, m] = a.startHour.split(":").map(Number);
+      return h * 60 + m;
+    });
   const apptMin = apptMinutesList.length > 0 ? Math.floor(Math.min(...apptMinutesList) / 60) : null;
   // +1h buffer so the appointment slot itself is always visible even at the last row
   const apptMax = apptMinutesList.length > 0 ? Math.ceil((Math.max(...apptMinutesList) + 60) / 60) : null;

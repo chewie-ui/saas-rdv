@@ -459,10 +459,76 @@ block content
                                 .bk-review-card__date= new Date(review.createdAt).toLocaleDateString('fr-FR', {day:'2-digit', month:'short', year:'numeric'})
                             if review.comment
                                 p.bk-review-card__comment= review.comment
-                            if clientSession && String(review.client) === clientSession._id
-                                button.bk-review-delete(type="button" data-id=String(review._id)) Supprimer mon avis
+                            .bk-review-card__actions
+                                if clientSession && String(review.client) === clientSession._id
+                                    button.bk-review-delete(type="button" data-id=String(review._id)) Supprimer mon avis
+                                else
+                                    //- Ouvert à tous, même non connecté : un avis
+                                    //- insultant doit pouvoir être remonté par
+                                    //- n'importe qui. Le superadmin tranche.
+                                    button.bk-review-report.js-report(type="button" data-id=String(review._id) title="Signaler cet avis")
+                                        svg(xmlns="http://www.w3.org/2000/svg" height="13px" viewBox="0 -960 960 960" width="13px" fill="currentColor")
+                                            path(d="M200-120v-680h360l16 80h224v400H520l-16-80H280v280h-80Z")
+                                        | Signaler
             else
                 p.bk-reviews__empty Aucun avis pour le moment. Soyez le premier à donner votre opinion !
+
+    //- ── Modale de signalement d'un avis ────────────────────────────────────
+    #bkReportModal.bk-report(style="display:none" aria-modal="true" role="dialog")
+        .bk-report__overlay#bkReportOverlay
+        .bk-report__box
+            button.bk-report__close#bkReportClose(type="button" aria-label="Fermer")
+                svg(xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="currentColor")
+                    path(d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z")
+
+            //- Écran 1 : le formulaire
+            #bkReportForm
+                .bk-report__head
+                    span.bk-report__icon
+                        svg(xmlns="http://www.w3.org/2000/svg" height="22px" viewBox="0 -960 960 960" width="22px" fill="currentColor")
+                            path(d="M200-120v-680h360l16 80h224v400H520l-16-80H280v280h-80Z")
+                    div
+                        h3.bk-report__title Signaler cet avis
+                        p.bk-report__sub Notre équipe examine chaque signalement. L'avis n'est pas retiré automatiquement.
+                .bk-report__body
+                    span.bk-report__flabel Motif du signalement
+                    .bk-report__reasons
+                        label.bk-report__reason
+                            input(type="radio" name="bkReportReason" value="insulting" checked)
+                            span.bk-report__radio
+                            span Propos insultants ou haineux
+                        label.bk-report__reason
+                            input(type="radio" name="bkReportReason" value="false")
+                            span.bk-report__radio
+                            span Faux avis — cette personne n'est jamais venue
+                        label.bk-report__reason
+                            input(type="radio" name="bkReportReason" value="spam")
+                            span.bk-report__radio
+                            span Spam ou publicité
+                        label.bk-report__reason
+                            input(type="radio" name="bkReportReason" value="personal")
+                            span.bk-report__radio
+                            span Données personnelles divulguées
+                        label.bk-report__reason
+                            input(type="radio" name="bkReportReason" value="other")
+                            span.bk-report__radio
+                            span Autre
+                    label.bk-report__field
+                        span.bk-report__flabel Précisions (facultatif)
+                        textarea.bk-report__msg#bkReportMsg(rows="3" maxlength="1000" placeholder="Ce qui pose problème, le contexte…")
+                    p.bk-report__err#bkReportErr(style="display:none")
+                .bk-report__actions
+                    button.bk-report__cancel#bkReportCancel(type="button") Annuler
+                    button.bk-report__send#bkReportSend(type="button") Envoyer le signalement
+
+            //- Écran 2 : la confirmation (remplace l'alerte du navigateur)
+            #bkReportDone.bk-report__done(style="display:none")
+                span.bk-report__done-ic
+                    svg(xmlns="http://www.w3.org/2000/svg" height="28px" viewBox="0 -960 960 960" width="28px" fill="currentColor")
+                        path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
+                h3.bk-report__title Signalement transmis
+                p.bk-report__sub#bkReportDoneMsg Merci. Notre équipe l'examinera sous peu.
+                button.bk-report__ok#bkReportOk(type="button") Fermer
 
     //- ── Lightbox galerie (rendue une seule fois, pilotée par le script plus bas)
     //- NB : ce bloc était auparavant enfermé dans un `if false` (mort), donc la
@@ -753,6 +819,82 @@ block scripts
                     });
                 });
             }
+
+            // ── Signaler un avis ─────────────────────────────────────────────
+            // Accessible à tout le monde, connecté ou non. Le professionnel qui
+            // consulte sa propre page voit le même bouton : sa demande sera
+            // simplement étiquetée « demande du pro » côté modération.
+            (function () {
+                var modale  = document.getElementById('bkReportModal');
+                if (!modale) return;
+                var boiteErr = document.getElementById('bkReportErr');
+                var champ   = document.getElementById('bkReportMsg');
+                var envoyer = document.getElementById('bkReportSend');
+                var ecranForm = document.getElementById('bkReportForm');
+                var ecranFin  = document.getElementById('bkReportDone');
+                var texteFin  = document.getElementById('bkReportDoneMsg');
+                var avisId  = null;
+
+                function ouvrir(id) {
+                    avisId = id;
+                    champ.value = '';
+                    boiteErr.style.display = 'none';
+                    envoyer.disabled = false;
+                    envoyer.textContent = 'Envoyer le signalement';
+                    // Toujours repartir du formulaire : la modale peut avoir été
+                    // laissée sur l'écran de confirmation d'un signalement précédent.
+                    ecranForm.style.display = '';
+                    ecranFin.style.display = 'none';
+                    var premier = document.querySelector('input[name="bkReportReason"][value="insulting"]');
+                    if (premier) premier.checked = true;
+                    modale.style.display = 'flex';
+                }
+                function fermer() { modale.style.display = 'none'; avisId = null; }
+
+                document.querySelectorAll('.js-report').forEach(function (btn) {
+                    btn.addEventListener('click', function () { ouvrir(btn.dataset.id); });
+                });
+                document.getElementById('bkReportCancel').addEventListener('click', fermer);
+                document.getElementById('bkReportClose').addEventListener('click', fermer);
+                document.getElementById('bkReportOk').addEventListener('click', fermer);
+                document.getElementById('bkReportOverlay').addEventListener('click', fermer);
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape' && modale.style.display === 'flex') fermer();
+                });
+
+                envoyer.addEventListener('click', function () {
+                    if (!avisId) return;
+                    var choisi = document.querySelector('input[name="bkReportReason"]:checked');
+                    envoyer.disabled = true;
+                    envoyer.textContent = 'Envoi…';
+                    boiteErr.style.display = 'none';
+                    fetch('/reviews/' + COMPANY_ID + '/' + avisId + '/report', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reason: choisi ? choisi.value : 'other', message: champ.value })
+                    })
+                        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+                        .then(function (res) {
+                            if (!res.ok || !res.d.success) throw new Error(res.d.error || 'Erreur.');
+                            // Le bouton de la ligne devient un accusé de réception.
+                            var btn = document.querySelector('.js-report[data-id="' + avisId + '"]');
+                            if (btn) { btn.textContent = 'Signalé'; btn.disabled = true; btn.style.color = '#9ca3af'; }
+                            // Confirmation dans la modale, pas dans une alerte du
+                            // navigateur (qui affiche « localhost:3000 indique… »).
+                            texteFin.textContent = res.d.message || 'Merci. Notre équipe l\'examinera sous peu.';
+                            ecranForm.style.display = 'none';
+                            ecranFin.style.display = 'block';
+                        })
+                        .catch(function (e) {
+                            boiteErr.textContent = e.message || 'Erreur réseau.';
+                            // Chaîne vide et non 'block' : on rend la main au CSS,
+                            // qui met la boîte d'erreur en flex (icône + texte).
+                            boiteErr.style.display = '';
+                            envoyer.disabled = false;
+                            envoyer.textContent = 'Envoyer le signalement';
+                        });
+                });
+            })();
 
             // ── Supprimer son avis ───────────────────────────────────────────
             document.querySelectorAll('.bk-review-delete').forEach(function(btn) {

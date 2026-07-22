@@ -214,6 +214,11 @@ block content
                                 span
                                     span.sv2-newmenu__t Cours collectif
                                     span.sv2-newmenu__d Plusieurs participants, récurrent ou par dates
+                            button.sv2-newmenu__item(type="button" data-new="category")
+                                span.sv2-newmenu__ic.material-symbols-outlined folder
+                                span
+                                    span.sv2-newmenu__t Catégorie
+                                    span.sv2-newmenu__d Regrouper vos services (ex : Corps, Tête)
 
         //- ── État vide (IDENTIQUE à la page Clients) ─────────────────
         if !services || services.length === 0
@@ -255,19 +260,33 @@ block content
                             //- Les catégories vides restent affichées (zone de dépôt) ;
                             //- « Sans catégorie » n'apparaît que s'il contient des services.
                             if !grp.isNone || grp.items.length
-                                tr.sv2-grouprow(data-cat=grp.name data-icon=grp.icon draggable=(grp.isNone ? null : 'true') class=(grp.isNone ? 'sv2-grouprow--none' : ''))
+                                tr.sv2-grouprow(data-cat=grp.name data-icon=grp.icon class=(grp.isNone ? 'sv2-grouprow--none' : ''))
+                                    //- La cellule reste une vraie case de tableau (sinon le
+                                    //- colspan est ignoré et le trait s'arrête à la 1re colonne) :
+                                    //- c'est le div intérieur qui porte la mise en ligne.
                                     td.sv2-groupcell(colspan="7")
-                                        if !grp.isNone
-                                            span.sv2-ghandle.material-symbols-outlined(title="Glisser pour réordonner la catégorie") drag_indicator
-                                        if grp.icon
-                                            span.sv2-gicon= grp.icon
-                                        span.sv2-gname= grp.isNone ? 'Sans catégorie' : grp.name
-                                        span.sv2-gcount= grp.items.length
+                                        .sv2-groupcell__in
+                                            if !grp.isNone
+                                                span.sv2-move(class="sv2-move--cat")
+                                                            button.sv2-move__btn.js-move-up(type="button" title="Monter" aria-label="Monter")
+                                                                span.material-symbols-outlined keyboard_arrow_up
+                                                            button.sv2-move__btn.js-move-down(type="button" title="Descendre" aria-label="Descendre")
+                                                                span.material-symbols-outlined keyboard_arrow_down
+                                            else
+                                                span.sv2-move.sv2-move--cat.sv2-move--ghost(aria-hidden="true")
+                                            if grp.icon
+                                                span.sv2-gicon= grp.icon
+                                            span.sv2-gname= grp.isNone ? 'Sans catégorie' : grp.name
+                                            span.sv2-gcount= grp.items.length
                             each svc in grp.items
                                 - var _dur = svc.duration ? (svc.durationMax && svc.durationMax > svc.duration ? (svc.duration + '–' + svc.durationMax + ' min') : (svc.duration + ' min')) : '—'
-                                tr.sv2-row(draggable="true" data-id=String(svc._id) data-cat=(svc.category || '') data-name=(svc.name || '').toLowerCase() data-type=(svc.type === 'group' ? 'group' : 'service') data-active=(svc.active ? '1' : '0') data-price=(svc.price !== null && svc.price !== undefined ? svc.price : '') data-dur=(svc.duration || 0) class=(!svc.active ? 'sv2-row--inactive' : ''))
+                                tr.sv2-row(data-id=String(svc._id) data-cat=(svc.category || '') data-name=(svc.name || '').toLowerCase() data-type=(svc.type === 'group' ? 'group' : 'service') data-active=(svc.active ? '1' : '0') data-price=(svc.price !== null && svc.price !== undefined ? svc.price : '') data-dur=(svc.duration || 0) class=(!svc.active ? 'sv2-row--inactive' : ''))
                                     td.sv2-td--name
-                                        span.sv2-handle.material-symbols-outlined(title="Glisser pour réordonner") drag_indicator
+                                        span.sv2-move(class="")
+                                            button.sv2-move__btn.js-move-up(type="button" title="Monter" aria-label="Monter")
+                                                span.material-symbols-outlined keyboard_arrow_up
+                                            button.sv2-move__btn.js-move-down(type="button" title="Descendre" aria-label="Descendre")
+                                                span.material-symbols-outlined keyboard_arrow_down
                                         span.sv2-dot(style=`background:${svc.color || '#1e7a4e'}`)
                                         span.sv2-name= svc.name
                                         if svc.type === 'group'
@@ -310,14 +329,35 @@ block content
                                                 span.sv2-status__dot
                                                 = svc.active ? 'Actif' : 'Inactif'
                                     td.sv2-td--act
-                                        button.sv2-iconbtn.sv2-edit(type="button" title="Modifier" data-id=String(svc._id) data-type=(svc.type === 'group' ? 'group' : 'service'))
+                                        button.ds-ico.sv2-edit(type="button" title="Modifier" data-id=String(svc._id) data-type=(svc.type === 'group' ? 'group' : 'service'))
                                             span.material-symbols-outlined edit
-                                        button.sv2-iconbtn.sv2-iconbtn--danger.sv2-del(type="button" title="Supprimer" data-id=String(svc._id) data-name=svc.name data-type=(svc.type || 'individual'))
+                                        button.ds-ico.ds-ico--danger.sv2-del(type="button" title="Supprimer" data-id=String(svc._id) data-name=svc.name data-type=(svc.type || 'individual'))
                                             span.material-symbols-outlined delete
             .ch-empty.ch-empty--search#sv2NoResult(style="display:none")
                 span.ch-empty__icon.material-symbols-outlined search_off
                 p.ch-empty__title Aucun résultat
                 p.ch-empty__sub Aucun service ne correspond à votre recherche.
+
+    //- ══════════ Modale « Nouvelle catégorie » ══════════
+    //- Créer une catégorie vide, sans passer par la création d'un service.
+    .modal-overlay#catModalOverlay
+    .service-modal.service-modal--sm#catModal
+        .service-modal__header
+            h3 Nouvelle catégorie
+            button.modal-close#catModalClose(type="button")
+                span.material-symbols-outlined close
+        .service-modal__body
+            .field
+                label Nom de la catégorie
+                input.input#catModalName(type="text" placeholder="Ex : Corps, Tête, Visage…" maxlength="40")
+            .field
+                label Icône #[span.xs-comment (optionnelle)]
+                input(type="hidden" id="catModalIcon")
+                .cat-icon-picker#catModalPicker
+            p.sv2-cat-hint Créez la catégorie, puis glissez vos services dessous — ou choisissez-la dans la fiche d'un service.
+        .service-modal__footer
+            button.sm-btn#catModalCancel(type="button") Annuler
+            button.sm-btn.sm-btn--primary#catModalSave(type="button") Créer la catégorie
 
     //- ══════════ Modale « Nouveau service » ══════════
     //- Modale « Service » riche (image, catégorie+emoji, palette de couleurs,
@@ -633,6 +673,40 @@ block content
                 if (!body) return;
                 var dragEl = null, dragKind = null;
 
+                // Anime le reflux des autres lignes (technique FLIP) : on mesure
+                // leur position avant/après la mutation, on les replace là où elles
+                // étaient, puis on les laisse glisser vers leur nouvelle place.
+                // Sans ça, les lignes sautent d'un coup et on ne « voit » pas
+                // qu'elles s'écartent pour laisser la place.
+                var DUREE_REFLUX = 180;
+                function refluxAnime(mutation, exclus) {
+                    exclus = exclus || [dragEl];
+                    var lignes = Array.prototype.slice.call(body.children);
+                    var avant = lignes.map(function (r) { return r.getBoundingClientRect().top; });
+                    mutation();
+                    var bouge = [];
+                    lignes.forEach(function (r, i) {
+                        if (exclus.indexOf(r) !== -1) return;      // suit déjà le curseur
+                        var delta = avant[i] - r.getBoundingClientRect().top;
+                        if (!delta) return;
+                        r.style.transition = 'none';
+                        r.style.transform = 'translateY(' + delta + 'px)';
+                        bouge.push(r);
+                    });
+                    if (!bouge.length) return;
+                    requestAnimationFrame(function () {
+                        bouge.forEach(function (r) {
+                            r.style.transition = 'transform ' + DUREE_REFLUX + 'ms cubic-bezier(.2,.7,.3,1)';
+                            r.style.transform = '';
+                        });
+                    });
+                }
+                function nettoyerReflux() {
+                    Array.prototype.forEach.call(body.children, function (r) {
+                        r.style.transition = ''; r.style.transform = '';
+                    });
+                }
+
                 // Bloc d'une catégorie = son en-tête + toutes ses lignes.
                 function groupBlock(header) {
                     var rows = [header], n = header.nextElementSibling;
@@ -672,64 +746,99 @@ block content
                     }).catch(function () {});
                 }
 
-                // On ne démarre un glissement que depuis la poignée.
-                body.addEventListener('mousedown', function (e) {
-                    var handle = e.target.closest('.sv2-handle, .sv2-ghandle');
-                    Array.prototype.forEach.call(body.children, function (tr) { tr.draggable = false; });
-                    if (handle) { var tr = handle.closest('tr'); if (tr) tr.draggable = true; }
-                });
+                // ── Réordonnancement par flèches ──────────────────────────
+                // Remplace le glisser-déposer : deux petites flèches par ligne.
+                // Un clic = un déplacement d'un cran, résultat prévisible, qui
+                // marche au clavier, au doigt, et ne dépend d'aucun événement
+                // pointeur capricieux. Le mouvement est animé (technique FLIP)
+                // pour qu'on voie ce qui bouge.
+                //
+                // Règles de déplacement :
+                //  • Service : échange avec la ligne voisine. Si le voisin est
+                //    un en-tête de catégorie, il passe dans cette catégorie
+                //    (dernier de celle du dessus, premier de celle du dessous).
+                //  • Catégorie : le bloc entier saute par-dessus le bloc voisin.
+                //    « Sans catégorie » reste toujours en dernier.
 
-                body.addEventListener('dragstart', function (e) {
-                    var tr = e.target.closest('tr');
-                    if (!tr) return;
-                    if (tr.classList.contains('sv2-row')) dragKind = 'service';
-                    else if (tr.classList.contains('sv2-grouprow') && !tr.classList.contains('sv2-grouprow--none')) dragKind = 'cat';
-                    else return;
-                    dragEl = tr;
-                    tr.classList.add('is-dragging');
-                    e.dataTransfer.effectAllowed = 'move';
-                    try { e.dataTransfer.setData('text/plain', ''); } catch (_) {}
-                });
+                function lignesOrdonnables() {
+                    return Array.prototype.filter.call(body.children, function (tr) {
+                        return tr.classList.contains('sv2-row') || tr.classList.contains('sv2-grouprow');
+                    });
+                }
 
-                body.addEventListener('dragover', function (e) {
-                    if (!dragEl) return;
+                // Déplacement possible ? Sert aussi à griser les flèches inutiles.
+                function cible(tr, sens) {
+                    var premierEnTete = body.querySelector('.sv2-grouprow');
+                    if (tr.classList.contains('sv2-grouprow')) {
+                        if (tr.classList.contains('sv2-grouprow--none')) return null;   // toujours en dernier
+                        var bloc = groupBlock(tr);
+                        if (sens < 0) {
+                            var precedent = tr.previousElementSibling;
+                            while (precedent && !precedent.classList.contains('sv2-grouprow')) precedent = precedent.previousElementSibling;
+                            return precedent ? { bloc: bloc, ref: precedent } : null;
+                        }
+                        var suivant = bloc[bloc.length - 1].nextElementSibling;   // en-tête suivant
+                        if (!suivant || suivant.classList.contains('sv2-grouprow--none')) return null;
+                        var blocSuivant = groupBlock(suivant);
+                        return { bloc: bloc, ref: blocSuivant[blocSuivant.length - 1].nextSibling };
+                    }
+                    // Service
+                    var voisin = sens < 0 ? tr.previousElementSibling : tr.nextElementSibling;
+                    if (!voisin) return null;
+                    if (sens < 0) {
+                        // Ne jamais remonter au-dessus du tout premier en-tête.
+                        if (voisin === premierEnTete) return null;
+                        return { bloc: [tr], ref: voisin };
+                    }
+                    return { bloc: [tr], ref: voisin.nextSibling };
+                }
+
+                function deplacer(tr, sens) {
+                    var c = cible(tr, sens);
+                    if (!c) return false;
+                    refluxAnime(function () {
+                        var frag = document.createDocumentFragment();
+                        c.bloc.forEach(function (r) { frag.appendChild(r); });
+                        body.insertBefore(frag, c.ref);
+                    }, c.bloc);
+
+                    // Le bloc déplacé s'anime aussi : sans ça, lui seul sauterait.
+                    c.bloc.forEach(function (r) {
+                        r.classList.add('just-dropped');
+                        setTimeout(function () { r.classList.remove('just-dropped'); }, 700);
+                    });
+
+                    refreshCounts();
+                    majFleches();
+                    if (tr.classList.contains('sv2-grouprow')) { saveCategories(); saveServices(); }
+                    else saveServices();
+                    snapshotOrder();
+                    return true;
+                }
+
+                // Grise les flèches qui ne mèneraient nulle part.
+                function majFleches() {
+                    lignesOrdonnables().forEach(function (tr) {
+                        var haut = tr.querySelector('.js-move-up');
+                        var bas = tr.querySelector('.js-move-down');
+                        if (haut) haut.disabled = !cible(tr, -1);
+                        if (bas) bas.disabled = !cible(tr, 1);
+                    });
+                }
+
+                body.addEventListener('click', function (e) {
+                    var btn = e.target.closest('.js-move-up, .js-move-down');
+                    if (!btn || btn.disabled) return;
                     e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    var over = e.target.closest('tr');
-                    if (!over || over === dragEl) return;
-
-                    if (dragKind === 'service') {
-                        if (over.classList.contains('sv2-row')) {
-                            var r = over.getBoundingClientRect();
-                            body.insertBefore(dragEl, (e.clientY - r.top) > r.height / 2 ? over.nextSibling : over);
-                        } else if (over.classList.contains('sv2-grouprow')) {
-                            // Déposer sur un en-tête = placer en tête de cette catégorie
-                            body.insertBefore(dragEl, over.nextSibling);
-                        }
-                    } else if (dragKind === 'cat') {
-                        if (!over.classList.contains('sv2-grouprow') || over.classList.contains('sv2-grouprow--none')) return;
-                        var block = groupBlock(dragEl);
-                        if (block.indexOf(over) !== -1) return;
-                        var rect = over.getBoundingClientRect();
-                        var ref = over;
-                        if ((e.clientY - rect.top) > rect.height / 2) {
-                            var ob = groupBlock(over);
-                            ref = ob[ob.length - 1].nextSibling;
-                        }
-                        block.forEach(function (row) { body.insertBefore(row, ref); });
+                    var tr = btn.closest('tr');
+                    if (deplacer(tr, btn.classList.contains('js-move-up') ? -1 : 1)) {
+                        // Le focus suit la ligne : on peut enchaîner les clics.
+                        var suite = tr.querySelector(btn.classList.contains('js-move-up') ? '.js-move-up' : '.js-move-down');
+                        if (suite && !suite.disabled) suite.focus();
                     }
                 });
 
-                body.addEventListener('drop', function (e) { e.preventDefault(); });
-
-                body.addEventListener('dragend', function () {
-                    if (dragEl) dragEl.classList.remove('is-dragging');
-                    refreshCounts();
-                    if (dragKind === 'service') saveServices();
-                    else if (dragKind === 'cat') { saveCategories(); saveServices(); }
-                    snapshotOrder();
-                    dragEl = null; dragKind = null;
-                });
+                majFleches();
             })();
             // Sauvegarde de la préférence de colonnes (persistée par utilisateur).
             var _colSaveTimer = null;
@@ -912,6 +1021,61 @@ block content
                 }
                 byId('serviceModalCategory').addEventListener('change', function () {
                     byId('newCategorySection').style.display = this.value==='__create__' ? '' : 'none';
+                });
+
+                // ── Modale « Nouvelle catégorie » ─────────────────────────
+                // Créer une catégorie vide sans devoir créer un service d'abord.
+                var catOv = byId('catModalOverlay'), catMd = byId('catModal');
+                function closeCatModal() { catOv.classList.remove('show'); catMd.classList.remove('show'); }
+                window.openCatModal = function () {
+                    byId('catModalName').value = '';
+                    byId('catModalIcon').value = '';
+                    byId('catModalPicker').innerHTML = CAT_ICONS.map(function (ic) {
+                        return '<button type="button" class="cat-icon-btn" data-icon="' + ic + '">' + ic + '</button>';
+                    }).join('');
+                    catOv.classList.add('show'); catMd.classList.add('show');
+                    byId('catModalName').focus();
+                };
+                byId('catModalPicker').addEventListener('click', function (e) {
+                    var b = e.target.closest('.cat-icon-btn'); if (!b) return;
+                    var deja = b.classList.contains('selected');
+                    this.querySelectorAll('.cat-icon-btn').forEach(function (x) { x.classList.remove('selected'); });
+                    if (deja) { byId('catModalIcon').value = ''; return; }   // re-cliquer = désélectionner
+                    b.classList.add('selected');
+                    byId('catModalIcon').value = b.dataset.icon;
+                });
+                byId('catModalClose').addEventListener('click', closeCatModal);
+                byId('catModalCancel').addEventListener('click', closeCatModal);
+                catOv.addEventListener('click', function (e) { if (e.target === catOv) closeCatModal(); });
+                byId('catModalName').addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') { e.preventDefault(); byId('catModalSave').click(); }
+                });
+                byId('catModalSave').addEventListener('click', function () {
+                    var nom = (byId('catModalName').value || '').trim();
+                    if (!nom) { alert('Donnez un nom à la catégorie.'); byId('catModalName').focus(); return; }
+                    var existe = (CATEGORIES || []).some(function (c) {
+                        return (c.name || '').toLowerCase() === nom.toLowerCase();
+                    });
+                    if (existe) { alert('Cette catégorie existe déjà.'); byId('catModalName').focus(); return; }
+
+                    var btn = this, libelle = btn.textContent;
+                    btn.disabled = true; btn.textContent = 'Création…';
+                    // On renvoie la liste complète : l'ordre du tableau fait foi.
+                    var cats = (CATEGORIES || []).map(function (c) { return { name: c.name, icon: c.icon || '' }; });
+                    cats.push({ name: nom, icon: byId('catModalIcon').value || '' });
+                    fetch('/account/categories', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ categories: cats })
+                    }).then(function (r) { return r.ok ? r.json() : null; })
+                      .then(function (d) {
+                        // La route répond 200 même en cas d'échec : on lit `success`.
+                        if (!d || !d.success) throw new Error('refus serveur');
+                        location.reload();   // le tableau se re-rend avec la catégorie vide
+                    }).catch(function () {
+                        btn.disabled = false; btn.textContent = libelle;
+                        alert('La catégorie n\'a pas pu être créée. Réessayez.');
+                    });
                 });
 
                 // ── Image ─────────────────────────────────────────────────
@@ -1178,6 +1342,7 @@ block content
                 if (!it) return;
                 newMenu.hidden = true;
                 if (it.dataset.new === 'service') { if (openSvc) openSvc(null); }
+                else if (it.dataset.new === 'category') { if (window.openCatModal) window.openCatModal(); }
                 else { if (openCrs) openCrs(null); }
             });
             if (body) body.addEventListener('click', function (e) {

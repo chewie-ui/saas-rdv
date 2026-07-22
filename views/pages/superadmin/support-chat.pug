@@ -1,276 +1,60 @@
-doctype html
-html(lang="fr")
-    head
-        meta(name="viewport" content="width=device-width, initial-scale=1.0")
-        meta(charset="UTF-8")
-        title Superadmin — Chat Support
-        link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
-        link(rel="stylesheet" href="/css/import.css")
-        link(rel="stylesheet" href="/css/layouts/superadmin.css")
-        style.
-            body { padding: 0 24px 24px; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; }
-            .page-header { margin-top: 32px; margin-bottom: 20px; flex-shrink: 0; }
-            .page-header h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -.02em; }
-            .page-header p { font-size: 13px; color: #555; margin-top: 4px; }
+extends ../../layouts/sa
 
-            .chat-layout { display: flex; gap: 16px; flex: 1; min-height: 0; }
+block content
+    -
+        var palette = ['#6ee7b7', '#93c5fd', '#fcd34d', '#fca5a5', '#c4b5fd', '#f9a8d4', '#a5f3fc', '#bef264'];
+        function couleurAvatar(s) {
+            var n = 0;
+            for (var i = 0; i < String(s).length; i++) n += String(s).charCodeAt(i);
+            return palette[n % palette.length];
+        }
+        function initiale(s) { return String(s || '?').trim().charAt(0).toUpperCase() || '?'; }
+        var nonLus = (chats || []).reduce(function (n, c) { return n + (c.unreadByAdmin || 0); }, 0);
 
-            /* ── Liste des conversations ── */
-            .chat-list-col { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
-            .chat-search {
-                background: #1a1a1a; border: 1.5px solid #2a2a2a; border-radius: 10px; color: #fff;
-                font-size: 13px; padding: 9px 12px; outline: none; transition: border-color .15s; flex-shrink: 0;
-            }
-            .chat-search:focus { border-color: #444; }
-            .chat-search::placeholder { color: #555; }
-            .chat-list {
-                flex: 1; background: #1a1a1a; border: 1px solid #2a2a2a;
-                border-radius: 14px; overflow-y: auto; display: flex; flex-direction: column; min-height: 0;
-            }
-            .chat-list__empty,
-            .chat-list__no-result { padding: 32px 16px; text-align: center; color: #444; font-size: 13px; }
-            .chat-list-item {
-                display: flex; flex-direction: column; gap: 4px; padding: 14px 16px;
-                border-bottom: 1px solid #222; cursor: pointer; transition: background .12s;
-            }
-            .chat-list-item:hover { background: #1f1f1f; }
-            .chat-list-item.is-active { background: #222; border-left: 2px solid #22c55e; }
-            .chat-list-item__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-            .chat-list-item__name { font-size: 13.5px; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            .chat-list-item__time { font-size: 10.5px; color: #555; flex-shrink: 0; }
-            .chat-list-item__preview { font-size: 12px; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            .chat-list-item__unread {
-                display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px;
-                padding: 0 5px; border-radius: 999px; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; flex-shrink: 0;
-            }
+    .sa-head
+        button.sa-ico.sa-burger(type="button" data-sa-burger aria-label="Menu")
+            span.material-symbols-outlined menu
+        div
+            h1.sa-head__title Chat support
+            .sa-head__sub= (chats || []).length + ' conversation' + ((chats || []).length > 1 ? 's' : '') + (nonLus ? ' · ' + nonLus + ' message(s) non lu(s)' : '')
 
-            /* ── Panneau de conversation ── */
-            .chat-panel { flex: 1; display: flex; flex-direction: column; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px; min-width: 0; }
-            .chat-panel__empty { flex: 1; display: flex; align-items: center; justify-content: center; color: #444; font-size: 14px; }
-            .chat-panel__header { padding: 16px 20px; border-bottom: 1px solid #222; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-            .chat-panel__header strong { color: #fff; font-size: 14px; }
-            .chat-panel__header span { color: #666; font-size: 12px; display: block; margin-top: 2px; }
-            .chat-panel__close {
-                background: transparent; border: 1px solid #2a2a2a; border-radius: 8px; color: #777;
-                font-size: 12px; padding: 6px 12px; cursor: pointer; transition: color .15s, border-color .15s; flex-shrink: 0;
-            }
-            .chat-panel__close:hover { color: #f87171; border-color: rgba(248,113,113,.3); }
-            .chat-panel__messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-            .chat-msg { max-width: 70%; padding: 9px 13px; border-radius: 12px; font-size: 13.5px; line-height: 1.5; }
-            .chat-msg--user { align-self: flex-start; background: #222; color: #ddd; border-bottom-left-radius: 3px; }
-            .chat-msg--admin { align-self: flex-end; background: #15803d; color: #fff; border-bottom-right-radius: 3px; }
-            .chat-msg__time { display: block; margin-top: 4px; font-size: 10px; opacity: .55; }
-            .chat-panel__form { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid #222; flex-shrink: 0; }
-            .chat-panel__input {
-                flex: 1; background: #111; border: 1.5px solid #2a2a2a; border-radius: 10px; color: #fff;
-                font-size: 13.5px; padding: 10px 14px; outline: none; transition: border-color .15s; resize: none; font-family: inherit;
-            }
-            .chat-panel__input:focus { border-color: #444; }
-            .chat-panel__send { background: #fff; color: #111; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; padding: 0 20px; cursor: pointer; transition: opacity .15s; }
-            .chat-panel__send:hover { opacity: .85; }
-            .chat-panel__send:disabled { opacity: .4; cursor: default; }
-    body
-        - var saPage = 'chat'
-        include ../../includes/sa-nav
-
-        .page-header
-            h1 💬 Chat support
-            p Répondez en direct aux utilisateurs depuis leur page d'aide.
-
-        .chat-layout
-            .chat-list-col
-                input.chat-search#chatSearch(type="text" placeholder="Rechercher un utilisateur…")
-                .chat-list#chatList
+    .sa-body.sa-body--full
+        .sa-chat
+            .sa-chat__side
+                label.sa-search(style="max-width:none;flex:0 0 auto")
+                    span.material-symbols-outlined search
+                    input.sa-input#chatSearch(type="text" placeholder="Rechercher un utilisateur…")
+                .sa-chat__list#chatList
                     if !chats || !chats.length
-                        .chat-list__empty Aucune conversation pour le moment.
+                        .sa-chat__empty Aucune conversation pour le moment.
                     else
                         each c in chats
-                            - var last = c.messages && c.messages.length ? c.messages[c.messages.length - 1] : null
-                            .chat-list-item(data-user-id=String(c.user) data-name=(c.businessName || 'Utilisateur') data-email=(c.email || ''))
-                                .chat-list-item__top
-                                    span.chat-list-item__name= c.businessName || c.email || 'Utilisateur'
-                                    if c.unreadByAdmin > 0
-                                        span.chat-list-item__unread= c.unreadByAdmin
-                                    else
-                                        span.chat-list-item__time= new Date(c.lastMessageAt).toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'})
-                                span.chat-list-item__preview= last ? (last.sender === 'admin' ? 'Vous : ' : '') + last.text : '—'
+                            - var titre = c.businessName || c.email || 'Utilisateur'
+                            - var dernier = c.messages && c.messages.length ? c.messages[c.messages.length - 1] : null
+                            .sa-chat__item(
+                                data-user-id=String(c.user)
+                                data-name=titre
+                                data-email=c.email || ''
+                            )
+                                span.sa-av(style='background:' + couleurAvatar(c.email || titre))= initiale(titre)
+                                .sa-chat__item-txt
+                                    .sa-chat__item-top
+                                        span.sa-chat__item-name= titre
+                                        if c.unreadByAdmin > 0
+                                            span.sa-chat__unread= c.unreadByAdmin
+                                        else if c.lastMessageAt
+                                            span.sa-chat__item-time= new Date(c.lastMessageAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+                                    .sa-chat__item-prev= dernier ? (dernier.sender === 'admin' ? 'Vous : ' : '') + dernier.text : '—'
 
-            .chat-panel#chatPanel
-                .chat-panel__empty#chatEmpty Sélectionnez une conversation à gauche.
+            .sa-chat__panel#chatPanel
+                .sa-chat__vide
+                    .sa-empty
+                        .sa-empty__ic
+                            span.material-symbols-outlined forum
+                        .sa-empty__t Aucune conversation ouverte
+                        .sa-empty__d Choisissez un utilisateur dans la liste de gauche.
 
-        script.
-            var chatList    = document.getElementById('chatList');
-            var chatPanel   = document.getElementById('chatPanel');
-            var currentUserId = null;
-
-            function fmtTime(iso) {
-                var d = new Date(iso);
-                return d.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'}) + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-            }
-
-            function msgHtml(m) {
-                return '<div class="chat-msg chat-msg--' + m.sender + '">' +
-                    m.text.replace(/</g, '&lt;') +
-                    '<span class="chat-msg__time">' + fmtTime(m.createdAt) + '</span></div>';
-            }
-            function renderMessages(messages) { return messages.map(msgHtml).join(''); }
-
-            function bindChatForm(userId, msgBox, input, sendBtn) {
-                function send() {
-                    var text = input.value.trim();
-                    if (!text) return;
-                    sendBtn.disabled = true;
-                    fetch('/superadmin/support-chat/' + userId + '/reply', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text })
-                    }).then(function(r) { return r.json(); }).then(function(d) {
-                        sendBtn.disabled = false;
-                        if (d.success) {
-                            input.value = '';
-                            msgBox.insertAdjacentHTML('beforeend', msgHtml({ sender: 'admin', text: text, createdAt: new Date().toISOString() }));
-                            msgBox.scrollTop = msgBox.scrollHeight;
-                        }
-                    }).catch(function() { sendBtn.disabled = false; });
-                }
-                sendBtn.addEventListener('click', send);
-                input.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-                });
-            }
-
-            async function openChat(userId) {
-                currentUserId = userId;
-                document.querySelectorAll('.chat-list-item').forEach(function(el) {
-                    el.classList.toggle('is-active', el.dataset.userId === userId);
-                    if (el.dataset.userId === userId) {
-                        var unreadEl = el.querySelector('.chat-list-item__unread');
-                        if (unreadEl) unreadEl.remove();
-                    }
-                });
-                try {
-                    var res = await fetch('/superadmin/support-chat/' + userId);
-                    var data = await res.json();
-                    if (!data.success) return;
-                    chatPanel.innerHTML =
-                        '<div class="chat-panel__header"><div><strong>' + (data.chat.businessName || data.chat.email || 'Utilisateur') + '</strong>' +
-                        (data.chat.email ? '<span>' + data.chat.email + '</span>' : '') + '</div>' +
-                        '<button class="chat-panel__close" id="chatClose">Fermer la conversation</button></div>' +
-                        '<div class="chat-panel__messages" id="chatMessages">' + renderMessages(data.chat.messages) + '</div>' +
-                        '<div class="chat-panel__form">' +
-                        '<textarea class="chat-panel__input" id="chatInput" rows="1" placeholder="Votre réponse…"></textarea>' +
-                        '<button class="chat-panel__send" id="chatSend">Envoyer</button></div>';
-                    var msgBox = document.getElementById('chatMessages');
-                    msgBox.scrollTop = msgBox.scrollHeight;
-                    bindChatForm(userId, msgBox, document.getElementById('chatInput'), document.getElementById('chatSend'));
-                    document.getElementById('chatClose').addEventListener('click', function() { closeChat(userId); });
-                } catch (e) {}
-            }
-
-            // Fermer = supprimer la conversation (pas d'archivage, pour
-            // économiser la base — cf. note backend).
-            async function closeChat(userId) {
-                if (!confirm('Fermer cette conversation ? Elle sera définitivement supprimée.')) return;
-                try {
-                    var res = await fetch('/superadmin/support-chat/' + userId, { method: 'DELETE' });
-                    var data = await res.json();
-                    if (!data.success) return;
-                    var item = chatList.querySelector('.chat-list-item[data-user-id="' + userId + '"]');
-                    if (item) item.remove();
-                    if (!chatList.querySelector('.chat-list-item')) {
-                        chatList.innerHTML = '<div class="chat-list__empty">Aucune conversation pour le moment.</div>';
-                    }
-                    if (currentUserId === userId) {
-                        currentUserId = null;
-                        chatPanel.innerHTML = '<div class="chat-panel__empty">Sélectionnez une conversation à gauche.</div>';
-                    }
-                } catch (e) {}
-            }
-
-            function bindListItem(item) {
-                item.addEventListener('click', function() { openChat(item.dataset.userId); });
-            }
-            chatList.querySelectorAll('.chat-list-item').forEach(bindListItem);
-
-            // ── Mise à jour temps réel SANS perdre la conversation ouverte ──
-            // (avant : un location.reload() faisait perdre la conversation en
-            // cours dès qu'un AUTRE utilisateur envoyait un message — corrigé.)
-            function upsertListItem(payload) {
-                var emptyState = chatList.querySelector('.chat-list__empty');
-                if (emptyState) emptyState.remove();
-
-                var item = chatList.querySelector('.chat-list-item[data-user-id="' + payload.userId + '"]');
-                var isOpen = payload.userId === currentUserId;
-                var preview = (payload.sender === 'admin' ? 'Vous : ' : '') + payload.text;
-                var unreadCount = item ? (parseInt((item.querySelector('.chat-list-item__unread') || {}).textContent, 10) || 0) : 0;
-                if (!isOpen && payload.sender === 'user') unreadCount += 1;
-
-                if (!item) {
-                    item = document.createElement('div');
-                    item.className = 'chat-list-item';
-                    item.dataset.userId = payload.userId;
-                    item.innerHTML =
-                        '<div class="chat-list-item__top"><span class="chat-list-item__name"></span></div>' +
-                        '<span class="chat-list-item__preview"></span>';
-                    bindListItem(item);
-                }
-                item.dataset.name = payload.businessName || 'Utilisateur';
-                item.dataset.email = payload.email || '';
-                item.classList.toggle('is-active', isOpen);
-                item.querySelector('.chat-list-item__name').textContent = payload.businessName || payload.email || 'Utilisateur';
-                item.querySelector('.chat-list-item__preview').textContent = preview;
-                var topRow = item.querySelector('.chat-list-item__top');
-                var rightEl = topRow.querySelector('.chat-list-item__unread, .chat-list-item__time');
-                if (rightEl) rightEl.remove();
-                if (unreadCount > 0) {
-                    var badgeEl = document.createElement('span');
-                    badgeEl.className = 'chat-list-item__unread';
-                    badgeEl.textContent = unreadCount;
-                    topRow.appendChild(badgeEl);
-                } else {
-                    var timeEl = document.createElement('span');
-                    timeEl.className = 'chat-list-item__time';
-                    timeEl.textContent = fmtTime(payload.createdAt).split(' ')[0];
-                    topRow.appendChild(timeEl);
-                }
-                chatList.insertBefore(item, chatList.firstChild);
-            }
-
-            if (window.__saSocket) {
-                window.__saSocket.on('support:newMessage', function(payload) {
-                    if (!payload || !payload.userId) return;
-                    upsertListItem(payload);
-                    if (payload.userId === currentUserId) {
-                        var msgBox = document.getElementById('chatMessages');
-                        if (msgBox) {
-                            msgBox.insertAdjacentHTML('beforeend', msgHtml(payload));
-                            msgBox.scrollTop = msgBox.scrollHeight;
-                        }
-                    }
-                });
-            }
-
-            // ── Recherche d'utilisateur (filtre live nom/email) ──
-            var searchInput = document.getElementById('chatSearch');
-            if (searchInput) {
-                searchInput.addEventListener('input', function() {
-                    var q = searchInput.value.trim().toLowerCase();
-                    var anyVisible = false;
-                    chatList.querySelectorAll('.chat-list-item').forEach(function(item) {
-                        var name = (item.dataset.name || '').toLowerCase();
-                        var email = (item.dataset.email || '').toLowerCase();
-                        var match = !q || name.indexOf(q) !== -1 || email.indexOf(q) !== -1;
-                        item.style.display = match ? '' : 'none';
-                        if (match) anyVisible = true;
-                    });
-                    var noResult = chatList.querySelector('.chat-list__no-result');
-                    if (!anyVisible && chatList.querySelector('.chat-list-item')) {
-                        if (!noResult) {
-                            noResult = document.createElement('div');
-                            noResult.className = 'chat-list__no-result';
-                            noResult.textContent = 'Aucun utilisateur trouvé.';
-                            chatList.appendChild(noResult);
-                        }
-                    } else if (noResult) {
-                        noResult.remove();
-                    }
-                });
-            }
+block scripts
+    script(src="/socket.io/socket.io.js")
+    script(src="/js/utils/confirm-modal.js")
+    script(src="/js/superadmin/support-chat.js")

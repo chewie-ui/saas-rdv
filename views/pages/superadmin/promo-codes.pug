@@ -1,237 +1,161 @@
-doctype html
-html(lang="fr")
-    head
-        meta(name="viewport" content="width=device-width, initial-scale=1.0")
-        meta(charset="UTF-8")
-        title Superadmin — Codes Promo
-        link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
-        link(rel="stylesheet" href="/css/import.css")
-        link(rel="stylesheet" href="/css/layouts/superadmin.css")
-        style.
-            body { padding: 0 24px 80px; }
-            .page-header { margin-top: 32px; margin-bottom: 28px; }
-            .page-header h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -.02em; }
-            .page-header p { font-size: 13px; color: #555; margin-top: 4px; }
-            /* Create form */
-            .create-form { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px; padding: 24px; margin-bottom: 28px; display: flex; flex-direction: column; gap: 16px; }
-            .create-form h3 { font-size: 15px; font-weight: 600; color: #fff; }
-            .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
-            .field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 140px; }
-            .field label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #555; }
-            .field input, .field select { background: #111; border: 1.5px solid #2a2a2a; border-radius: 10px; color: #fff; font-size: 13px; padding: 9px 12px; outline: none; transition: border-color .15s; width: 100%; }
-            .field input:focus, .field select:focus { border-color: #444; }
-            .field select option { background: #111; }
-            .btn-create { background: #fff; color: #111; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; padding: 10px 22px; cursor: pointer; transition: opacity .15s; align-self: flex-end; }
-            .btn-create:hover { opacity: .85; }
-            /* Table */
-            .promo-table { width: 100%; border-collapse: collapse; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px; overflow: hidden; }
-            .promo-table thead th { text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #444; padding: 12px 16px; border-bottom: 1px solid #222; background: #161616; }
-            .promo-table tbody tr { border-bottom: 1px solid #1f1f1f; transition: background .1s; }
-            .promo-table tbody tr:last-child { border-bottom: none; }
-            .promo-table tbody tr:hover { background: #1f1f1f; }
-            .promo-table tbody td { padding: 14px 16px; font-size: 13px; color: #ccc; vertical-align: middle; }
-            .code-badge { font-family: monospace; font-size: 14px; font-weight: 700; color: #fff; background: #222; border: 1px solid #333; border-radius: 6px; padding: 3px 10px; letter-spacing: .06em; }
-            .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; border-radius: 6px; padding: 3px 10px; }
-            .badge--green { color: #22c55e; border: 1px solid rgba(34,197,94,.25); background: rgba(34,197,94,.08); }
-            .badge--gray { color: #555; border: 1px solid #2a2a2a; background: transparent; }
-            .badge--blue { color: #60a5fa; border: 1px solid rgba(96,165,250,.25); background: rgba(96,165,250,.08); }
-            .sa-toggle { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
-            .sa-toggle input { opacity: 0; width: 0; height: 0; }
-            .sa-toggle__track { position: absolute; inset: 0; background: #2a2a2a; border-radius: 99px; transition: background .2s; cursor: pointer; }
-            .sa-toggle__track::after { content: ''; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; background: #555; border-radius: 50%; transition: transform .2s, background .2s; }
-            .sa-toggle input:checked + .sa-toggle__track { background: rgba(34,197,94,.25); }
-            .sa-toggle input:checked + .sa-toggle__track::after { transform: translateX(18px); background: #22c55e; }
-            /* Offre par défaut : étoile cliquable */
-            .btn-offer { background: transparent; border: none; font-size: 18px; cursor: pointer; opacity: .3; transition: opacity .15s, transform .1s; padding: 0 4px; }
-            .btn-offer:hover { opacity: .7; }
-            .btn-offer.is-offer { opacity: 1; filter: drop-shadow(0 0 6px rgba(250,204,21,.7)); }
-            .btn-offer.is-offer:hover { transform: scale(1.2); }
-            .btn-del { background: transparent; border: 1px solid #2a2a2a; border-radius: 8px; color: #555; font-size: 12px; padding: 5px 10px; cursor: pointer; transition: color .15s, border-color .15s; }
-            .btn-del:hover { color: #f87171; border-color: rgba(248,113,113,.3); }
-            .empty-state { text-align: center; padding: 48px; color: #444; font-size: 14px; }
-            .error-msg { background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.3); border-radius: 8px; color: #f87171; font-size: 13px; padding: 10px 14px; display: none; }
-    body
-        - var saPage = 'promo'
-        include ../../includes/sa-nav
+extends ../../layouts/sa
 
-        .page-header
-            h1 🎟️ Codes promo
-            p Créez et gérez les codes de réduction pour vos utilisateurs.
+block content
+    -
+        var PLANS = {
+            all: 'Tous les plans',
+            pro_monthly: 'Pro · mensuel',
+            pro_yearly: 'Pro · annuel',
+            business_monthly: 'Business · mensuel',
+            business_yearly: 'Business · annuel',
+            premium_monthly: 'Pro · mensuel',
+            premium_yearly: 'Pro · annuel',
+        };
+        var actifs = codes.filter(function (c) { return c.active; }).length;
+        var utilisations = codes.reduce(function (n, c) { return n + (c.usedCount || 0); }, 0);
+        var epuises = codes.filter(function (c) { return c.maxUses !== null && c.usedCount >= c.maxUses; }).length;
 
-        .create-form
-            h3 Créer un nouveau code
-            #createError.error-msg
-            .form-row
-                .field
-                    label Code *
-                    input(type="text" id="newCode" placeholder="EX: BIENVENUE30" style="text-transform:uppercase")
-                .field
-                    label Type *
-                    select#newType
-                        option(value="trial") 🎁 Essai gratuit (X jours offerts, puis plein tarif)
-                        option(value="percent") % Réduction sur 1ère facture
-                        option(value="fixed") € Montant fixe sur 1ère facture
-                .field#fieldTrialDays
-                    label Jours d'essai *
-                    input(type="number" id="newTrialDays" value="30" min="1" max="365" placeholder="Ex: 30")
-                    p(style="font-size:11px;color:#666;margin-top:4px") 30 = 1er mois gratuit, 7 = 1 semaine gratuite
-                .field#fieldValue(style="display:none")
-                    label Valeur *
-                    input(type="number" id="newValue" placeholder="Ex: 20" min="0" step="0.01")
-                .field
-                    label Max utilisations
-                    input(type="number" id="newMaxUses" placeholder="Vide = illimité" min="1")
-                .field
-                    label Expiration
-                    input(type="date" id="newExpiresAt")
-                .field
-                    label Plan applicable
-                    select#newApplicablePlan
-                        option(value="all") 🌐 Tous les plans
-                        option(value="pro_monthly") ⭐ Pro Mensuel
-                        option(value="pro_yearly") ⭐ Pro Annuel
-                        option(value="business_monthly") 🏢 Business Mensuel
-                        option(value="business_yearly") 🏢 Business Annuel
-            .info-box(style="background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:12px 16px;font-size:12.5px;color:#166534;margin-bottom:8px;")
-                | 💡 <strong>Essai gratuit</strong> = Stripe trial — le client entre sa carte, ne paye rien pendant X jours, puis est débité automatiquement. Fonctionne identiquement que ce soit mensuel ou annuel.&nbsp;
-                | <strong>Réduction %/€</strong> = seulement sur la 1ère facture. Ne pas mettre 100% sur un plan annuel (= toute l'année gratuite).
-            button.btn-create#createPromoBtn Créer le code
+    .sa-head
+        button.sa-ico.sa-burger(type="button" data-sa-burger aria-label="Menu")
+            span.material-symbols-outlined menu
+        div
+            h1.sa-head__title Codes promo
+            .sa-head__sub Essais gratuits et réductions appliqués à l'inscription
+        .sa-head__end
+            button.sa-btn.sa-btn--primary#btnNouveau(type="button")
+                span.material-symbols-outlined add
+                span Nouveau code
 
-        if codes.length === 0
-            .empty-state Aucun code promo pour le moment.
+    .sa-body
+        .sa-kpis
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined confirmation_number
+                    span Codes
+                .sa-kpi__value= codes.length
+                .sa-kpi__delta= actifs + ' actif(s)'
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined redeem
+                    span Utilisations
+                .sa-kpi__value= utilisations.toLocaleString('fr-FR')
+                .sa-kpi__delta Toutes périodes confondues
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined block
+                    span Épuisés
+                .sa-kpi__value= epuises
+                .sa-kpi__delta Quota d'utilisations atteint
+
+        .sa-alerte
+            span.material-symbols-outlined lightbulb
+            div
+                | <b>Essai gratuit</b> = essai Stripe : le client saisit sa carte, ne paie rien pendant X jours, puis est débité automatiquement. Identique en mensuel et en annuel.
+                br
+                | <b>Réduction % ou €</b> = uniquement sur la première facture. Évitez −100 % sur un plan annuel, cela offrirait l'année entière.
+
+        if !codes.length
+            .sa-tablewrap
+                .sa-empty
+                    .sa-empty__ic
+                        span.material-symbols-outlined confirmation_number
+                    .sa-empty__t Aucun code promo
+                    .sa-empty__d Créez-en un pour offrir un essai ou une réduction.
         else
-            table.promo-table
-                thead
-                    tr
-                        th Code
-                        th Réduction
-                        th Plan
-                        th Utilisations
-                        th Expiration
-                        th Offre ⭐
-                        th Actif
-                        th
-                tbody#promoTableBody
-                    each c in codes
-                        - var planLabels = { all: '🌐 Tous', pro_monthly: '⭐ Pro / mois', pro_yearly: '⭐ Pro / an', business_monthly: '🏢 Business / mois', business_yearly: '🏢 Business / an', premium_monthly: '⭐ Pro / mois', premium_yearly: '⭐ Pro / an' }
-                        tr(data-id=c._id)
-                            td
-                                span.code-badge= c.code
-                                br
-                                a(href=`https://www.branshee.com/register?promo=${c.code}&plan=pro` target="_blank" style="font-size:10px;color:#555;text-decoration:underline;margin-top:3px;display:inline-block;") 🔗 Lien invitation
-                            td
-                                if c.discountType === 'trial'
-                                    span.badge(style="background:rgba(34,197,94,.12);color:#15803d;border:1px solid rgba(34,197,94,.3);") 🎁 #{c.trialDays || 30} jours gratuits
-                                else if c.discountType === 'percent'
-                                    span.badge.badge--blue -#{c.discountValue}% (1ère facture)
-                                else
-                                    span.badge.badge--blue -#{c.discountValue}€ (1ère facture)
-                            td
-                                span.badge(class=c.applicablePlan === 'all' ? 'badge--gray' : 'badge--green')
-                                    = planLabels[c.applicablePlan || 'all'] || c.applicablePlan
-                            td
-                                = c.usedCount
-                                if c.maxUses !== null
-                                    | &nbsp;/ #{c.maxUses}
-                                else
-                                    | &nbsp;/ ∞
-                            td
-                                if c.expiresAt
-                                    = new Date(c.expiresAt).toLocaleDateString('fr-FR')
-                                else
-                                    | —
-                            td
-                                button.btn-offer.toggle-offer(
-                                    type="button"
-                                    data-id=String(c._id)
-                                    class=c.isDefaultOffer ? 'is-offer' : ''
-                                    title=c.isDefaultOffer ? 'Retirer de l\'offre par défaut' : 'Définir comme offre par défaut'
-                                ) ⭐
-                            td
-                                label.sa-toggle
-                                    input.toggle-promo(type="checkbox" checked=c.active data-id=String(c._id))
-                                    .sa-toggle__track
-                            td
-                                button.btn-del.delete-promo(data-id=String(c._id)) Supprimer
+            .sa-tablewrap
+                table.sa-table
+                    thead
+                        tr
+                            th Code
+                            th Avantage
+                            th Plan concerné
+                            th Utilisations
+                            th Expiration
+                            th Offre par défaut
+                            th Actif
+                            th(style="width:44px")
+                    tbody
+                        each c in codes
+                            tr(data-id=String(c._id))
+                                td
+                                    .sa-code
+                                        span.sa-mono(style="font-weight:700;font-size:13px")= c.code
+                                        button.sa-ico.js-copier(type="button" title="Copier le lien d'invitation" data-code=c.code)
+                                            span.material-symbols-outlined content_copy
+                                td
+                                    if c.discountType === 'trial'
+                                        span.sa-tag.sa-tag--green= (c.trialDays || 30) + ' jours offerts'
+                                    else if c.discountType === 'percent'
+                                        span.sa-tag.sa-tag--blue= '−' + c.discountValue + ' % (1ʳᵉ facture)'
+                                    else
+                                        span.sa-tag.sa-tag--blue= '−' + c.discountValue + ' € (1ʳᵉ facture)'
+                                td
+                                    span.sa-tag(class=c.applicablePlan && c.applicablePlan !== 'all' ? 'sa-tag--violet' : '')= PLANS[c.applicablePlan || 'all'] || c.applicablePlan
+                                td
+                                    span(style="font-weight:600")= c.usedCount
+                                    span.sa-muted= c.maxUses !== null ? ' / ' + c.maxUses : ' / ∞'
+                                td.sa-td--date= c.expiresAt ? new Date(c.expiresAt).toLocaleDateString('fr-FR') : '—'
+                                td
+                                    button.sa-ico.js-offre(
+                                        type="button"
+                                        class=c.isDefaultOffer ? 'is-on' : ''
+                                        data-id=String(c._id)
+                                        title=c.isDefaultOffer ? "Retirer de l'offre par défaut" : "Définir comme offre par défaut"
+                                    )
+                                        span.material-symbols-outlined star
+                                td
+                                    label.sa-switch
+                                        input.js-actif(type="checkbox" checked=c.active data-id=String(c._id))
+                                        span.sa-switch__track
+                                td.sa-td--right
+                                    button.sa-ico.sa-ico--danger.js-suppr(type="button" title="Supprimer" data-id=String(c._id) data-code=c.code)
+                                        span.material-symbols-outlined delete
 
-        script.
-            // ── Afficher/cacher les champs selon le type ──
-            var typeSelect = document.getElementById('newType');
-            var fieldTrial = document.getElementById('fieldTrialDays');
-            var fieldValue = document.getElementById('fieldValue');
-            function updateTypeFields() {
-                var t = typeSelect.value;
-                fieldTrial.style.display = t === 'trial' ? '' : 'none';
-                fieldValue.style.display = t !== 'trial' ? '' : 'none';
-            }
-            typeSelect.addEventListener('change', updateTypeFields);
-            updateTypeFields();
+    //- ── Création ──────────────────────────────────────────────────────────
+    .sa-modal#modalNouveau
+        .sa-modal__overlay(data-fermer)
+        .sa-modal__box
+            .sa-modal__head
+                span.material-symbols-outlined confirmation_number
+                span.sa-modal__title Nouveau code promo
+                button.sa-ico(type="button" data-fermer style="margin-left:auto" aria-label="Fermer")
+                    span.material-symbols-outlined close
+            .sa-modal__body
+                .sa-field
+                    span.sa-field__label Code
+                    input.sa-input#newCode(type="text" placeholder="BIENVENUE30" style="text-transform:uppercase")
+                .sa-field
+                    span.sa-field__label Type d'avantage
+                    select.sa-select#newType
+                        option(value="trial") Essai gratuit — X jours offerts puis plein tarif
+                        option(value="percent") Réduction en % sur la 1ʳᵉ facture
+                        option(value="fixed") Réduction en € sur la 1ʳᵉ facture
+                .sa-field#champJours
+                    span.sa-field__label Jours d'essai
+                    input.sa-input#newTrialDays(type="number" value="30" min="1" max="365")
+                    .sa-head__sub 30 = un mois offert · 7 = une semaine
+                .sa-field#champValeur(style="display:none")
+                    span.sa-field__label Valeur de la réduction
+                    input.sa-input#newValue(type="number" min="0" step="0.01" placeholder="20")
+                .sa-grid2
+                    .sa-field
+                        span.sa-field__label Utilisations maximum
+                        input.sa-input#newMaxUses(type="number" min="1" placeholder="Vide = illimité")
+                    .sa-field
+                        span.sa-field__label Expiration
+                        input.sa-input#newExpiresAt(type="date")
+                .sa-field
+                    span.sa-field__label Plan concerné
+                    select.sa-select#newApplicablePlan
+                        option(value="all") Tous les plans
+                        option(value="pro_monthly") Pro · mensuel
+                        option(value="pro_yearly") Pro · annuel
+                        option(value="business_monthly") Business · mensuel
+                        option(value="business_yearly") Business · annuel
+            .sa-modal__foot
+                button.sa-btn(type="button" data-fermer) Annuler
+                button.sa-btn.sa-btn--primary#btnCreer(type="button") Créer le code
 
-            // ── Créer un code promo ──
-            document.getElementById('createPromoBtn').addEventListener('click', async function() {
-                var errorEl = document.getElementById('createError');
-                errorEl.style.display = 'none';
-                var code = document.getElementById('newCode').value.trim().toUpperCase();
-                var discountType = document.getElementById('newType').value;
-                var trialDays = parseInt(document.getElementById('newTrialDays').value) || 30;
-                var discountValue = discountType === 'trial' ? 0 : document.getElementById('newValue').value;
-                var maxUses = document.getElementById('newMaxUses').value;
-                var expiresAt = document.getElementById('newExpiresAt').value;
-                var applicablePlan = document.getElementById('newApplicablePlan').value;
-                if (!code) { errorEl.textContent = 'Le code est requis.'; errorEl.style.display = 'block'; return; }
-                if (discountType !== 'trial' && !discountValue) { errorEl.textContent = 'La valeur est requise.'; errorEl.style.display = 'block'; return; }
-                try {
-                    var res = await fetch('/superadmin/promo-codes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, discountType, discountValue: discountType === 'trial' ? 0 : discountValue, trialDays, maxUses, expiresAt, applicablePlan }) });
-                    var data = await res.json();
-                    if (data.success) { location.reload(); }
-                    else { errorEl.textContent = data.error || 'Erreur.'; errorEl.style.display = 'block'; }
-                } catch(e) { errorEl.textContent = 'Erreur réseau.'; errorEl.style.display = 'block'; }
-            });
-
-            // ── Toggle actif ──
-            document.querySelectorAll('.toggle-promo').forEach(function(cb) {
-                cb.addEventListener('change', async function() {
-                    const id = this.dataset.id;
-                    await fetch('/superadmin/promo-codes/' + id + '/toggle', { method: 'PATCH' });
-                });
-            });
-
-            // ── Supprimer ──
-            document.querySelectorAll('.delete-promo').forEach(function(btn) {
-                btn.addEventListener('click', async function() {
-                    if (!confirm('Supprimer ce code promo ?')) return;
-                    const id = this.dataset.id;
-                    await fetch('/superadmin/promo-codes/' + id, { method: 'DELETE' });
-                    this.closest('tr').remove();
-                });
-            });
-
-            // ── Offre par défaut (étoile) ──
-            // Un seul code peut être "offre par défaut" par plan.
-            // Au clic : PATCH → l'étoile s'allume (ou s'éteint si déjà active).
-            document.querySelectorAll('.toggle-offer').forEach(function(btn) {
-                btn.addEventListener('click', async function() {
-                    var id = this.dataset.id;
-                    var willActivate = !this.classList.contains('is-offer');
-                    try {
-                        var res = await fetch('/superadmin/promo-codes/' + id + '/toggle-offer', { method: 'PATCH' });
-                        var data = await res.json();
-                        if (data.success) {
-                            // Si on active, retirer l'étoile des autres codes du même plan
-                            if (willActivate && data.applicablePlan) {
-                                document.querySelectorAll('.toggle-offer').forEach(function(other) {
-                                    if (other !== btn) other.classList.remove('is-offer');
-                                });
-                            }
-                            // Basculer l'état de ce bouton
-                            if (data.isDefaultOffer) {
-                                btn.classList.add('is-offer');
-                                btn.title = 'Retirer de l\'offre par défaut';
-                            } else {
-                                btn.classList.remove('is-offer');
-                                btn.title = 'Définir comme offre par défaut';
-                            }
-                        }
-                    } catch(e) { alert('Erreur réseau.'); }
-                });
-            });
+block scripts
+    script(src="/js/utils/confirm-modal.js")
+    script(src="/js/superadmin/promo-codes.js")

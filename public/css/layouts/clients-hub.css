@@ -81,59 +81,25 @@
 .ch-toolbar__actions .sm-btn { height: 40px; }
 
 /* ── Tableau ──────────────────────────────────────────────────────────────── */
-.ch-table-wrap {
-  width: 100%;
-  overflow-x: auto;
-  margin-top: 8px;
-}
-.ch-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 780px;
-}
-.ch-th {
-  text-align: left;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text-muted, #9ca3af);
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border-light, #eceff3);
-  white-space: nowrap;
-}
+.ch-table-wrap { margin-top: 8px; }   /* base : ds.css */
+.ch-table { min-width: 780px; }            /* base : ds.css */
+/* .ch-th, .ch-td : définis dans ds.css (référence du site) */
 .ch-th--action { width: 44px; }
 
 .ch-row { transition: background .12s; }
 .ch-row:hover { background: var(--surface-2, #f9fafb); }
 
-.ch-td {
-  padding: 12px 16px;
-  font-size: 13.5px;
-  color: var(--text-primary, #1f2937);
-  border-bottom: 1px solid var(--border-light, #f1f3f5);
-  vertical-align: middle;
-  white-space: nowrap;
-}
+.ch-td { white-space: nowrap; }
 .ch-muted { color: var(--text-muted, #9ca3af); }
 
 /* Colonne client : avatar + nom + sous-ligne. Le flex est sur un conteneur
    INTERNE — la cellule reste une vraie table-cell, sinon son filet de
    séparation se décale par rapport aux autres colonnes. */
-.ch-client { display: flex; align-items: center; gap: 11px; }
-.ch-avatar {
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .02em;
-}
-.ch-client-info { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
-.ch-client-name { font-weight: 600; color: var(--text-primary, #111827); }
-.ch-client-sub { font-size: 12px; color: var(--text-muted, #9ca3af); }
+/* .ch-client, .ch-client-info, .ch-client-name, .ch-client-sub : ds.css */
+/* .ch-avatar : base dans ds.css */
+
+
+
 
 /* Service : pastille de couleur + libellé */
 .ch-service { display: inline-flex; align-items: center; gap: 8px; }
@@ -179,15 +145,7 @@
 }
 .ch-open:hover { background: var(--surface-2, #f3f4f6); color: var(--text-primary, #111827); }
 
-/* ── Palette avatars (identique à l'historique) ───────────────────────────── */
-.av-0 { background: #dbeafe; color: #1d4ed8; }
-.av-1 { background: var(--accent-soft, #ecfdf3); color: var(--accent, #16a34a); }
-.av-2 { background: #fef3c7; color: #b45309; }
-.av-3 { background: #fce7f3; color: #9d174d; }
-.av-4 { background: #ede9fe; color: #6d28d9; }
-.av-5 { background: #ffedd5; color: #c2410c; }
-.av-6 { background: #cffafe; color: #0e7490; }
-.av-7 { background: #f0fdf4; color: #15803d; }
+/* Palette d avatars (.av-0 … .av-7) : déplacée dans ds.css */
 
 /* ── État vide ────────────────────────────────────────────────────────────── */
 .ch-empty {
@@ -228,50 +186,12 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Cases à cocher carrées à coins arrondis ───────────────────────────────── */
-.ch-check {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
-  border: 1.5px solid #d1d5db;
-  border-radius: 5px;
-  cursor: pointer;
-  position: relative;
-  flex-shrink: 0;
-  margin: 0;
-  transition: border-color .12s, background .12s;
-  vertical-align: middle;
-}
-.ch-check:hover { border-color: var(--accent, #2563eb); }
-.ch-check:checked {
-  background: var(--accent, #2563eb);
-  border-color: var(--accent, #2563eb);
-}
-.ch-check:checked::after {
-  content: '';
-  position: absolute;
-  left: 5px;
-  top: 2px;
-  width: 4px;
-  height: 8px;
-  border: solid #fff;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-.ch-check:indeterminate {
-  background: var(--accent, #2563eb);
-  border-color: var(--accent, #2563eb);
-}
-.ch-check:indeterminate::after {
-  content: '';
-  position: absolute;
-  left: 3px;
-  top: 7px;
-  width: 10px;
-  height: 2px;
-  background: #fff;
-  border-radius: 1px;
-}
+/* .ch-check et ses états : base dans ds.css */
+
+
+
+
+
 .ch-th--check, .ch-td--check { width: 44px; padding-right: 0; }
 .ch-td--check { display: table-cell; text-align: left; }
 
@@ -409,20 +329,8 @@
 .ch-dd__check input { width: 16px; height: 16px; accent-color: var(--accent, #2563eb); cursor: pointer; }
 
 /* ── Bouton « 3 points » + menu contextuel flottant ────────────────────────── */
-.ch-kebab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: none;
-  border-radius: 8px;
-  color: var(--text-muted, #9ca3af);
-  cursor: pointer;
-  transition: background .12s, color .12s;
-}
-.ch-kebab:hover { background: var(--surface-2, #f3f4f6); color: var(--text-primary, #111827); }
+/* .ch-kebab : base dans ds.css */
+
 
 .ch-menu {
   position: fixed;

@@ -1,0 +1,200 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Page Collaborateurs — une seule table pour toute l'équipe.
+   Les blocs empilés (sièges, grades, demandes) sont passés en boutons de
+   barre d'outils + modales : la page tient sur un écran et se lit d'un coup.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+body:has(.cb-table) .main { background: #fff; }
+
+/* ── En-tête ─────────────────────────────────────────────────────────────── */
+.cb-head { margin-bottom: 18px; }
+.cb-head__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink, #141c25);
+}
+.cb-head__sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--text-muted, #6b7280);
+}
+
+/* ── Barre d'outils ──────────────────────────────────────────────────────── */
+.cb-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.cb-search { position: relative; flex: 1 1 260px; max-width: 320px; }
+.cb-search__ic {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: var(--text-muted, #9ca3af);
+  pointer-events: none;
+}
+.cb-search__input {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px 0 36px;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 9px;
+  background: #fff;
+  font-size: 13.5px;
+  color: var(--ink, #141c25);
+}
+.cb-search__input:focus { outline: none; border-color: var(--accent, #1e7a4e); }
+.cb-search__input::-webkit-search-cancel-button { cursor: pointer; }
+
+.cb-tools { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap; }
+.cb-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 6px;
+  margin-left: 2px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ── Table ───────────────────────────────────────────────────────────────── */
+/* .cb-table* : base dans ds.css */
+
+
+.cb-th--act { text-align: right; }
+
+.cb-row:hover > td { background: var(--surface, #f8f7f4); }
+.cb-td--member { min-width: 240px; }
+.cb-td--act { text-align: right; white-space: nowrap; }
+.cb-td--act > * + * { margin-left: 6px; }
+
+/* Membre : photo + nom + email */
+/* .cb-member* : fiche personne définie dans ds.css */
+
+
+
+
+
+/* Le compte connecté est mis en évidence : liseré d'accent + pastille « Vous ». */
+.cb-row--self > td { background: var(--accent-soft, #e8f5ee); }
+.cb-row--self:hover > td { background: var(--accent-soft, #e8f5ee); }
+.cb-row--self > td:first-child { box-shadow: inset 3px 0 0 var(--accent, #1e7a4e); }
+.cb-you {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent, #1e7a4e);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .03em;
+}
+.cb-row--off > td { opacity: .55; }
+
+/* Étiquettes */
+.cb-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light, #e5e7eb);
+  background: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted, #6b7280);
+  white-space: nowrap;
+}
+.cb-tag--owner { border-color: #bbf7d0; background: var(--accent-soft, #f0fdf4); color: #15803d; }
+.cb-tag--on { border-color: #bbf7d0; background: var(--accent-soft, #f0fdf4); color: #15803d; }
+.cb-tag--wait { border-color: #fde68a; background: #fffbeb; color: #b45309; }
+.cb-tag--off { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+.cb-muted { color: var(--text-muted, #9ca3af); }
+
+/* Selects compacts (grade, congés) */
+.cb-select {
+  max-width: 190px;
+  height: 32px;
+  padding: 0 26px 0 10px;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12.5px;
+  color: var(--ink, #141c25);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%239ca3af'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  background-size: 16px;
+}
+.cb-select:focus { outline: none; border-color: var(--accent, #1e7a4e); }
+
+/* Barre de sélection multiple, sous le tableau */
+.cb-selbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-md);
+  background: var(--surface-card);
+  box-shadow: var(--ds-shadow-sm);
+}
+.cb-selbar[hidden] { display: none; }
+.cb-selbar__count { font-size: var(--ds-fs-md); font-weight: 600; margin-right: auto; }
+
+/* Boutons d'action en icône */
+.cb-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted, #6b7280);
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.cb-ico .material-symbols-outlined { font-size: 19px; }
+.cb-ico:hover {
+  background: var(--accent-soft, #e8f5ee);
+  border-color: var(--accent-border, rgba(30, 122, 78, .22));
+  color: var(--accent, #1e7a4e);
+}
+.cb-ico--danger:hover { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
+.cb-ico:disabled { opacity: .45; cursor: default; }
+
+/* États vides */
+.cb-empty { text-align: center; padding: 34px 0; color: var(--text-muted, #6b7280); }
+.cb-empty .material-symbols-outlined { opacity: .35; }
+.cb-empty p { margin: 6px 0 0; font-size: 13.5px; }
+.cb-nores { margin: 16px 0 0; text-align: center; font-size: 13.5px; color: var(--text-muted, #6b7280); }
+
+/* ── Modales ─────────────────────────────────────────────────────────────── */
+.cb-modal { max-width: 620px; width: min(620px, 92vw); }
+.cb-modal__lbl {
+  margin: 14px 0 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted, #6b7280);
+}
+.cb-table--mini td { padding: 9px 4px; }
+.cb-table--mini tr:last-child td { border-bottom: none; }
+
+@media (max-width: 760px) {
+  .cb-tools { margin-left: 0; width: 100%; }
+  .cb-search { max-width: none; }
+}

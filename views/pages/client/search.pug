@@ -145,8 +145,10 @@ block content
                                         span.srp-card__rating-n (#{coach.reviewCount})
                                 else
                                     .srp-card__rating.srp-card__rating--empty Nouveau sur BranShee
-                                if coach.owner.description
-                                    p.srp-card__desc= coach.owner.description.length > 88 ? coach.owner.description.slice(0, 88) + '…' : coach.owner.description
+                                //- Toujours rendu, même vide : le CSS lui réserve deux
+                                //- lignes, sinon les cartes sans description avaient un
+                                //- grand vide avant « Réserver ».
+                                p.srp-card__desc= coach.owner.description ? (coach.owner.description.length > 88 ? coach.owner.description.slice(0, 88) + '…' : coach.owner.description) : ''
                                 .srp-card__footer
                                     span.srp-card__book
                                         | Réserver

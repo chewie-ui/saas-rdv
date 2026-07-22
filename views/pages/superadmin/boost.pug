@@ -1,209 +1,138 @@
-doctype html
-html(lang="fr")
-    head
-        meta(name="viewport" content="width=device-width, initial-scale=1.0")
-        meta(charset="UTF-8")
-        title Superadmin — Mise en avant
-        link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
-        link(rel="stylesheet" href="/css/import.css")
-        link(rel="stylesheet" href="/css/layouts/superadmin.css")
-        style.
-            body { padding: 0 24px 80px; }
-            .page-header { margin-top: 32px; margin-bottom: 28px; }
-            .page-header h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
-            .page-header p { font-size: 13px; color: #555; }
+extends ../../layouts/sa
 
-            .info-box {
-                background: rgba(250,204,21,0.07);
-                border: 1px solid rgba(250,204,21,0.2);
-                border-radius: 10px;
-                padding: 14px 18px;
-                font-size: 13px;
-                color: #a89030;
-                margin-bottom: 24px;
-                line-height: 1.6;
-            }
+block content
+    -
+        var palette = ['#6ee7b7', '#93c5fd', '#fcd34d', '#fca5a5', '#c4b5fd', '#f9a8d4', '#a5f3fc', '#bef264'];
+        function couleurAvatar(s) {
+            var n = 0;
+            for (var i = 0; i < String(s).length; i++) n += String(s).charCodeAt(i);
+            return palette[n % palette.length];
+        }
+        //- Les mis en avant d'abord, dans l'ordre d'affichage réel de l'accueil.
+        var enAvant = companies.filter(function (c) { return (c.boostPosition || 0) > 0; })
+                               .sort(function (a, b) { return a.boostPosition - b.boostPosition; });
+        var autres = companies.filter(function (c) { return !(c.boostPosition || 0); });
+        var liste = enAvant.concat(autres);
 
-            .boost-table {
-                width: 100%;
-                border-collapse: collapse;
-                background: #1a1a1a;
-                border: 1px solid #2a2a2a;
-                border-radius: 14px;
-                overflow: hidden;
-            }
-            .boost-table thead th {
-                text-align: left;
-                font-size: 10px; font-weight: 600;
-                text-transform: uppercase; letter-spacing: 0.08em;
-                color: #444; padding: 12px 18px;
-                border-bottom: 1px solid #222; background: #161616;
-            }
-            .boost-table tbody tr {
-                border-bottom: 1px solid #1f1f1f;
-                transition: background 0.1s;
-            }
-            .boost-table tbody tr:last-child { border-bottom: none; }
-            .boost-table tbody tr:hover { background: #1f1f1f; }
-            .boost-table tbody tr.is-boosted { background: rgba(250,204,21,0.04); }
-            .boost-table tbody td { padding: 14px 18px; font-size: 13px; color: #ccc; vertical-align: middle; }
+    .sa-head
+        button.sa-ico.sa-burger(type="button" data-sa-burger aria-label="Menu")
+            span.material-symbols-outlined menu
+        div
+            h1.sa-head__title Mise en avant
+            .sa-head__sub Ordre des établissements affichés en tête de l'accueil
 
-            .pro-info { display: flex; align-items: center; gap: 12px; }
-            .pro-avatar {
-                width: 40px; height: 40px; border-radius: 8px;
-                object-fit: cover; background: #2a2a2a; flex-shrink: 0;
-            }
-            .pro-avatar-placeholder {
-                width: 40px; height: 40px; border-radius: 8px;
-                background: #2a2a2a; display: flex; align-items: center;
-                justify-content: center; font-size: 16px; flex-shrink: 0;
-            }
-            .pro-name { font-size: 14px; font-weight: 600; color: #fff; }
-            .pro-sub  { font-size: 12px; color: #555; margin-top: 2px; }
+    .sa-body
+        .sa-kpis
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined trending_up
+                    span Mis en avant
+                .sa-kpi__value= enAvant.length
+                .sa-kpi__delta= 'sur ' + companies.length + ' établissements'
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined looks_one
+                    span Première place
+                .sa-kpi__value(style="font-size:17px;line-height:1.5")= enAvant.length ? ((enAvant[0].owner && (enAvant[0].owner.businessName || enAvant[0].owner.fullName)) || 'Sans nom') : '—'
+                .sa-kpi__delta Tout en haut de l'accueil
 
-            .position-wrap { display: flex; align-items: center; gap: 10px; }
-            .position-input {
-                width: 70px;
-                background: #111; border: 1.5px solid #2a2a2a;
-                border-radius: 8px; color: #fff;
-                font-size: 14px; font-weight: 700; text-align: center;
-                padding: 7px 10px; outline: none;
-                transition: border-color 0.15s;
-            }
-            .position-input:focus { border-color: #facc15; }
-            .position-input[data-boosted="true"] {
-                border-color: rgba(250,204,21,0.5);
-                color: #facc15;
-            }
-            .save-btn {
-                background: #facc15; color: #111;
-                border: none; border-radius: 8px;
-                font-size: 12px; font-weight: 700;
-                padding: 7px 14px; cursor: pointer;
-                transition: opacity 0.15s;
-                white-space: nowrap;
-            }
-            .save-btn:hover { opacity: 0.85; }
-            .save-btn.saving { opacity: 0.5; cursor: wait; }
-            .save-btn.saved  { background: #22c55e; color: #fff; }
+        .sa-alerte
+            span.material-symbols-outlined lightbulb
+            div
+                | Une position supérieure à 0 place l'établissement avant les pros payants et les comptes gratuits. <b>Position 1 = tout en haut.</b> À position égale, l'ordre est alphabétique. Mettez <b>0</b> pour retirer la mise en avant.
 
-            .badge-boost {
-                display: inline-flex; align-items: center; gap: 5px;
-                font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
-                color: #facc15; background: rgba(250,204,21,0.1);
-                border: 1px solid rgba(250,204,21,0.25);
-                border-radius: 6px; padding: 3px 8px;
-            }
-            .badge-none { color: #333; font-size: 12px; }
+        .sa-toolbar
+            label.sa-search
+                span.material-symbols-outlined search
+                input.sa-input#recherche(type="text" placeholder="Nom, métier ou ville…")
+            .sa-toolbar__end
+                span.sa-head__sub#compteur= companies.length + ' établissements'
 
-            .slug-link { font-size: 12px; color: #444; text-decoration: none; }
-            .slug-link:hover { color: #888; }
-    body
-        - var saPage = 'boost'
-        include ../../includes/sa-nav
-
-        .page-header
-            h1 ⭐ Mise en avant homepage
-            p Définissez l'ordre des établissements mis en avant (position 1 = premier). Position 0 = pas mis en avant.
-
-        .info-box
-            | 💡 Les établissements avec une position &gt; 0 apparaissent en premier sur la homepage, avant les pros premium et les gratuits. Position 1 = tout en haut. En cas d'égalité de position, l'ordre est alphabétique. Mettez 0 pour désactiver la mise en avant.
-
-        table.boost-table
-            thead
-                tr
-                    th Établissement
-                    th Slug / lien
-                    th Statut
-                    th Position mise en avant
-            tbody
-                each c in companies
-                    - var name = (c.owner && (c.owner.businessName || c.owner.fullName)) || 'Sans nom'
-                    - var type = (c.owner && c.owner.businessType) || ''
-                    - var city = (c.owner && c.owner.location && c.owner.location.city) || ''
-                    - var photo = (c.owner && (c.owner.businessPicture || c.owner.profilePicture)) || null
-                    - var slug = c.slug || String(c._id)
-                    - var pos  = c.boostPosition || 0
-                    tr(class=pos > 0 ? 'is-boosted' : '' data-company-id=String(c._id))
-                        td
-                            .pro-info
-                                if photo
-                                    img.pro-avatar(src=photo alt=name)
+        .sa-tablewrap
+            table.sa-table
+                thead
+                    tr
+                        th Établissement
+                        th Lien public
+                        th Statut
+                        th(style="width:210px") Position
+                tbody
+                    each c in liste
+                        - var nom = (c.owner && (c.owner.businessName || c.owner.fullName)) || 'Sans nom'
+                        - var metier = (c.owner && c.owner.businessType) || ''
+                        - var ville = (c.owner && c.owner.location && c.owner.location.city) || ''
+                        - var photo = (c.owner && (c.owner.businessPicture || c.owner.profilePicture)) || null
+                        - var slug = c.slug || String(c._id)
+                        - var pos = c.boostPosition || 0
+                        tr(
+                            data-company-id=String(c._id)
+                            data-search=(nom + ' ' + metier + ' ' + ville).toLowerCase()
+                            class=pos > 0 ? 'is-selected' : ''
+                        )
+                            td
+                                .sa-person
+                                    if photo
+                                        img.sa-av(src=photo alt="" style="object-fit:cover")
+                                    else
+                                        span.sa-av(style='background:' + couleurAvatar(slug))= nom.charAt(0).toUpperCase()
+                                    div
+                                        .sa-person__name= nom
+                                        .sa-person__mail= [metier, ville].filter(Boolean).join(' · ') || '—'
+                            td
+                                a(href='/' + slug target="_blank" rel="noopener" style="color:#93c5fd;text-decoration:none")= '/' + slug
+                            td.js-statut
+                                if pos > 0
+                                    span.sa-tag.sa-tag--amber= 'Position ' + pos
                                 else
-                                    .pro-avatar-placeholder 🏢
-                                div
-                                    .pro-name= name
-                                    .pro-sub= [type, city].filter(Boolean).join(' · ') || '—'
-                        td
-                            a.slug-link(href=`/${slug}` target="_blank")= slug
-                        td
-                            if pos > 0
-                                span.badge-boost ⭐ Position #{pos}
-                            else
-                                span.badge-none —
-                        td
-                            .position-wrap
-                                input.position-input(
-                                    type="number"
-                                    min="0"
-                                    max="99"
-                                    value=pos
-                                    data-company-id=String(c._id)
-                                    data-boosted=pos > 0 ? 'true' : 'false'
-                                )
-                                button.save-btn(type="button" data-company-id=String(c._id)) Enregistrer
+                                    span.sa-muted —
+                            td
+                                .sa-boost
+                                    input.sa-input.js-pos(type="number" min="0" max="99" value=pos style="width:74px;height:30px")
+                                    button.sa-btn.js-save(type="button" style="height:30px")
+                                        span.material-symbols-outlined save
+                                        span Enregistrer
 
-        script.
-            document.querySelectorAll('.save-btn').forEach(function(btn) {
-                btn.addEventListener('click', async function() {
-                    const companyId = this.dataset.companyId;
-                    const row       = this.closest('tr');
-                    const input     = row.querySelector('.position-input');
-                    const position  = parseInt(input.value) || 0;
-
-                    this.classList.add('saving');
-                    this.textContent = '...';
-
-                    try {
-                        const res = await fetch('/superadmin/boost/' + companyId, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ position })
+block scripts
+    script.
+        (function () {
+            document.querySelectorAll('.js-save').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var tr = btn.closest('tr');
+                    var champ = tr.querySelector('.js-pos');
+                    var position = parseInt(champ.value, 10) || 0;
+                    btn.disabled = true;
+                    fetch('/superadmin/boost/' + tr.dataset.companyId, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ position: position })
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (d) {
+                            btn.disabled = false;
+                            if (!d.success) throw new Error(d.error || 'échec');
+                            tr.classList.toggle('is-selected', position > 0);
+                            tr.querySelector('.js-statut').innerHTML = position > 0
+                                ? '<span class="sa-tag sa-tag--amber">Position ' + position + '</span>'
+                                : '<span class="sa-muted">—</span>';
+                            window.saToast(position > 0 ? 'Mise en avant en position ' + position + '.' : 'Mise en avant retirée.');
+                        })
+                        .catch(function () {
+                            btn.disabled = false;
+                            window.saToast('Enregistrement impossible.', 'err');
                         });
-                        const data = await res.json();
-                        if (!data.success) throw new Error('Failed');
-
-                        // Mettre à jour l'UI
-                        const isBoosted = position > 0;
-                        input.dataset.boosted = isBoosted ? 'true' : 'false';
-                        row.classList.toggle('is-boosted', isBoosted);
-
-                        const statusCell = row.querySelector('td:nth-child(3)');
-                        if (isBoosted) {
-                            statusCell.innerHTML = '<span class="badge-boost">⭐ Position ' + position + '</span>';
-                        } else {
-                            statusCell.innerHTML = '<span class="badge-none">—</span>';
-                        }
-
-                        this.classList.remove('saving');
-                        this.classList.add('saved');
-                        this.textContent = '✓ Sauvegardé';
-                        setTimeout(() => {
-                            this.classList.remove('saved');
-                            this.textContent = 'Enregistrer';
-                        }, 2000);
-                    } catch(e) {
-                        this.classList.remove('saving');
-                        this.textContent = 'Enregistrer';
-                        alert('Erreur lors de la sauvegarde.');
-                    }
                 });
             });
 
-            // Highlight input quand valeur > 0
-            document.querySelectorAll('.position-input').forEach(function(input) {
-                input.addEventListener('input', function() {
-                    const val = parseInt(this.value) || 0;
-                    this.dataset.boosted = val > 0 ? 'true' : 'false';
+            var recherche = document.getElementById('recherche');
+            var compteur = document.getElementById('compteur');
+            recherche.addEventListener('input', function () {
+                var q = recherche.value.trim().toLowerCase();
+                var n = 0;
+                document.querySelectorAll('tbody tr').forEach(function (tr) {
+                    var ok = !q || (tr.dataset.search || '').indexOf(q) !== -1;
+                    tr.style.display = ok ? '' : 'none';
+                    if (ok) n++;
                 });
+                compteur.textContent = n + ' établissement' + (n > 1 ? 's' : '');
             });
+        })();

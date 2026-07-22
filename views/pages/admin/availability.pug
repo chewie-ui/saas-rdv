@@ -131,12 +131,12 @@ block content
                                 .avail-day-actions
                                     if !day.dayOff && canEditSchedule
                                         if availFeatures && availFeatures.ranges
-                                            button.avail-range-btn.option-add-plage(type="button")
-                                                span.material-symbols-outlined add
+                                            button.sm-btn.sm-btn--soft.avail-range-btn.option-add-plage(type="button")
+                                                span.material-symbols-outlined(style=`font-size:18px`) add
                                                 | #{t.avail.range_btn}
                                         else
-                                            a.avail-range-btn.avail-range-btn--locked(href="/subscription" title="Fonctionnalité Pro")
-                                                span.material-symbols-outlined(style=`font-size:13px`) lock
+                                            a.sm-btn.sm-btn--soft.avail-range-btn.avail-range-btn--locked(href="/subscription" title="Fonctionnalité Pro")
+                                                span.material-symbols-outlined(style=`font-size:16px`) lock
                                                 | #{t.avail.range_btn}
 
                 //- Days off card
@@ -424,6 +424,9 @@ block scripts
         window.__employees = !{JSON.stringify(employees || [])};
         window.__availFeatures = !{JSON.stringify(availFeatures || {})};
         window.__daysOffCount = !{(daysOff && daysOff.dates) ? daysOff.dates.length : 0};
+        //- Libellé du bouton « Créneau » : le JS le réinjecte quand on réactive
+        //- un jour, il doit rester traduit (il était codé en dur en anglais).
+        window.__availRangeLabel = !{JSON.stringify(t.avail.range_btn)};
     script(src="js/components/admin/availability.admin.js" type="module")
     script(src="js/templates/calendar.js" type="module")
     script.

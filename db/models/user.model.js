@@ -341,6 +341,11 @@ const userSchema = schema(
       default: false,
     },
 
+    // Dernière connexion réussie (mot de passe, 2FA ou Google) — affichée dans
+    // le panel superadmin. L'historique complet vit dans LoginEvent ; ici on ne
+    // garde que la date la plus récente, pour trier et filtrer sans agrégation.
+    lastLoginAt: { type: Date, default: null },
+
     // Préférences d'interface propres à l'utilisateur (par navigateur/compte),
     // persistées pour ne pas être perdues au rafraîchissement.
     uiPrefs: {

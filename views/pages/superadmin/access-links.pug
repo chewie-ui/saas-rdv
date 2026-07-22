@@ -1,275 +1,154 @@
-doctype html
-html(lang="fr")
-    head
-        meta(name="viewport" content="width=device-width, initial-scale=1.0")
-        meta(charset="UTF-8")
-        title Superadmin — Liens d'accès
-        link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
-        link(rel="stylesheet" href="/css/import.css")
-        link(rel="stylesheet" href="/css/layouts/superadmin.css")
-        style.
-            body { padding: 0 24px 80px; }
-            .page-header { margin-top: 32px; margin-bottom: 28px; }
-            .page-header h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -.02em; }
-            .page-header p { font-size: 13px; color: #555; margin-top: 4px; }
-            /* ── Create form ── */
-            .create-form { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px; padding: 24px; margin-bottom: 28px; display: flex; flex-direction: column; gap: 16px; }
-            .create-form h3 { font-size: 15px; font-weight: 600; color: #fff; }
-            .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
-            .field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 140px; }
-            .field label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #555; }
-            .field input, .field select { background: #111; border: 1.5px solid #2a2a2a; border-radius: 10px; color: #fff; font-size: 13px; padding: 9px 12px; outline: none; transition: border-color .15s; width: 100%; }
-            .field input:focus, .field select:focus { border-color: #444; }
-            .field select option { background: #111; }
-            .field input::placeholder { color: #444; }
-            .btn-create { background: #fff; color: #111; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; padding: 10px 22px; cursor: pointer; transition: opacity .15s; align-self: flex-end; }
-            .btn-create:hover { opacity: .85; }
-            .error-msg { background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.3); border-radius: 8px; color: #f87171; font-size: 13px; padding: 10px 14px; display: none; }
-            /* ── Table ── */
-            .links-table { width: 100%; border-collapse: collapse; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px; overflow: hidden; }
-            .links-table thead th { text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #444; padding: 12px 16px; border-bottom: 1px solid #222; background: #161616; }
-            .links-table tbody tr { border-bottom: 1px solid #1f1f1f; transition: background .1s; }
-            .links-table tbody tr.main-row:last-child { border-bottom: none; }
-            .links-table tbody tr:hover { background: #1f1f1f; }
-            .links-table tbody td { padding: 14px 16px; font-size: 13px; color: #ccc; vertical-align: middle; }
-            /* ── Badges ── */
-            .code-badge { font-family: monospace; font-size: 13px; font-weight: 700; color: #fff; background: #222; border: 1px solid #333; border-radius: 6px; padding: 3px 10px; letter-spacing: .06em; }
-            .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; border-radius: 6px; padding: 3px 10px; }
-            .badge--pro { color: #a78bfa; border: 1px solid rgba(167,139,250,.3); background: rgba(167,139,250,.08); }
-            .badge--business { color: #fb923c; border: 1px solid rgba(251,146,60,.3); background: rgba(251,146,60,.08); }
-            .badge--green { color: #22c55e; border: 1px solid rgba(34,197,94,.25); background: rgba(34,197,94,.08); }
-            .badge--gray { color: #555; border: 1px solid #2a2a2a; background: transparent; }
-            /* ── Toggle ── */
-            .sa-toggle { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
-            .sa-toggle input { opacity: 0; width: 0; height: 0; }
-            .sa-toggle__track { position: absolute; inset: 0; background: #2a2a2a; border-radius: 99px; transition: background .2s; cursor: pointer; }
-            .sa-toggle__track::after { content: ''; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; background: #555; border-radius: 50%; transition: transform .2s, background .2s; }
-            .sa-toggle input:checked + .sa-toggle__track { background: rgba(34,197,94,.25); }
-            .sa-toggle input:checked + .sa-toggle__track::after { transform: translateX(18px); background: #22c55e; }
-            /* ── Buttons ── */
-            .btn-del { background: transparent; border: 1px solid #2a2a2a; border-radius: 8px; color: #555; font-size: 12px; padding: 5px 10px; cursor: pointer; transition: color .15s, border-color .15s; }
-            .btn-del:hover { color: #f87171; border-color: rgba(248,113,113,.3); }
-            .btn-copy { background: transparent; border: 1px solid #2a2a2a; border-radius: 8px; color: #555; font-size: 12px; padding: 5px 10px; cursor: pointer; transition: color .15s, border-color .15s; display: inline-flex; align-items: center; gap: 4px; }
-            .btn-copy:hover { color: #fff; border-color: #444; }
-            .btn-expand { background: transparent; border: none; color: #444; cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: color .15s; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; }
-            .btn-expand:hover { color: #888; }
-            /* ── Uses detail row ── */
-            .detail-row td { padding: 0 !important; border-bottom: 1px solid #1f1f1f; }
-            .detail-inner { padding: 0 16px 14px; }
-            .uses-list { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-            .use-item { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #888; background: #141414; border: 1px solid #222; border-radius: 8px; padding: 8px 12px; }
-            .use-item__email { color: #ccc; font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            .use-item__date { color: #555; white-space: nowrap; }
-            .use-item__ip { font-family: monospace; font-size: 11px; color: #444; }
-            .no-uses { font-size: 12px; color: #444; padding: 8px 0; }
-            /* ── Link URL box ── */
-            .link-url-row { display: flex; align-items: center; gap: 8px; background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 8px 12px; margin-top: 8px; }
-            .link-url-text { font-family: monospace; font-size: 12px; color: #666; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            .empty-state { text-align: center; padding: 48px; color: #444; font-size: 14px; }
-            /* ── Actions cell ── */
-            .actions-cell { display: flex; align-items: center; gap: 6px; }
-    body
-        - var saPage = 'links'
-        include ../../includes/sa-nav
+extends ../../layouts/sa
 
-        .page-header
-            h1 🔗 Liens d'accès
-            p Générez des liens d'accès gratuits pour offrir un plan Pro ou Business à vos utilisateurs.
+block content
+    -
+        var maintenant = Date.now();
+        var actifs = links.filter(function (l) { return l.isActive; }).length;
+        var activations = links.reduce(function (n, l) { return n + (l.usedCount || 0); }, 0);
+        var expires = links.filter(function (l) { return l.expiresAt && new Date(l.expiresAt).getTime() < maintenant; }).length;
 
-        .create-form
-            h3 Créer un nouveau lien
-            #createError.error-msg
-            .form-row
-                .field(style="flex:2;min-width:200px")
-                    label Libellé (optionnel)
-                    input(type="text" id="newLabel" placeholder="Ex: Offre partenaire Mars 2026")
-                .field
-                    label Plan *
-                    select#newPlan
-                        option(value="pro") ⭐ Pro
-                        option(value="business") 🏢 Business
-                .field
-                    label Durée (jours) *
-                    select#newDuration
-                        option(value="7") 7 jours
-                        option(value="30" selected) 30 jours (1 mois)
-                        option(value="60") 60 jours (2 mois)
-                        option(value="90") 90 jours (3 mois)
-                        option(value="180") 180 jours (6 mois)
-                        option(value="365") 365 jours (1 an)
-                .field
-                    label Nb d'utilisations max
-                    input(type="number" id="newMaxUses" placeholder="1" min="1" value="1")
-                .field
-                    label Date d'expiration du lien
-                    input(type="date" id="newExpiresAt")
-            button.btn-create#createLinkBtn Générer le lien
+    .sa-head
+        button.sa-ico.sa-burger(type="button" data-sa-burger aria-label="Menu")
+            span.material-symbols-outlined menu
+        div
+            h1.sa-head__title Liens d'accès
+            .sa-head__sub Offrir un plan payant pendant une durée définie, sans carte bancaire
+        .sa-head__end
+            button.sa-btn.sa-btn--primary#btnNouveau(type="button")
+                span.material-symbols-outlined add
+                span Générer un lien
 
-        if links.length === 0
-            .empty-state Aucun lien d'accès pour le moment.
+    .sa-body
+        .sa-kpis
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined link
+                    span Liens
+                .sa-kpi__value= links.length
+                .sa-kpi__delta= actifs + ' actif(s)'
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined how_to_reg
+                    span Activations
+                .sa-kpi__value= activations
+                .sa-kpi__delta Accès accordés
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined event_busy
+                    span Expirés
+                .sa-kpi__value= expires
+                .sa-kpi__delta Ne fonctionnent plus
+
+        if !links.length
+            .sa-tablewrap
+                .sa-empty
+                    .sa-empty__ic
+                        span.material-symbols-outlined link
+                    .sa-empty__t Aucun lien d'accès
+                    .sa-empty__d Générez-en un pour offrir un plan à un partenaire.
         else
-            table.links-table
-                thead
-                    tr
-                        th Code
-                        th Plan
-                        th Durée
-                        th Utilisations
-                        th Expiration
-                        th Actif
-                        th
-                tbody#linksTableBody
-                    each l in links
-                        - var isExpired = l.expiresAt && new Date() > new Date(l.expiresAt)
-                        - var isFull = l.maxUses !== null && l.usedCount >= l.maxUses
-                        tr.main-row(data-id=String(l._id) data-code=l.code)
-                            td
-                                div(style="display:flex;flex-direction:column;gap:4px")
-                                    span.code-badge= l.code
+            .sa-tablewrap
+                table.sa-table
+                    thead
+                        tr
+                            th Code
+                            th Plan offert
+                            th Durée
+                            th Utilisations
+                            th Expiration du lien
+                            th Actif
+                            th(style="width:120px")
+                    tbody
+                        each l in links
+                            - var perime = l.expiresAt && new Date(l.expiresAt).getTime() < maintenant
+                            - var complet = l.maxUses !== null && l.usedCount >= l.maxUses
+                            tr(data-id=String(l._id) data-code=l.code)
+                                td
+                                    .sa-code
+                                        span.sa-mono(style="font-weight:700;font-size:13px")= l.code
                                     if l.label
-                                        span(style="font-size:11px;color:#555;margin-top:2px")= l.label
-                            td
-                                if l.plan === 'pro'
-                                    span.badge.badge--pro ⭐ Pro
-                                else
-                                    span.badge.badge--business 🏢 Business
-                            td= l.durationDays + ' jours'
-                            td
-                                - var useStr = l.usedCount + (l.maxUses !== null ? ' / ' + l.maxUses : ' / ∞')
-                                span(class=(isFull ? 'badge badge--gray' : ''))= useStr
-                            td
-                                if l.expiresAt
-                                    span(style=isExpired ? 'color:#f87171' : '')= new Date(l.expiresAt).toLocaleDateString('fr-FR')
-                                else
-                                    | —
-                            td
-                                label.sa-toggle
-                                    input.toggle-link(type="checkbox" checked=l.isActive data-id=String(l._id))
-                                    .sa-toggle__track
-                            td
-                                .actions-cell
-                                    button.btn-copy.copy-link(data-code=l.code title="Copier le lien")
-                                        svg(width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                            rect(x="9" y="9" width="13" height="13" rx="2" ry="2")
-                                            path(d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1")
-                                        | Copier
-                                    button.btn-expand.expand-link(data-id=String(l._id) title="Voir les utilisations")
-                                        svg(width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                            polyline(points="6 9 12 15 18 9")
-                                        | #{l.usedCount}
-                                    button.btn-del.delete-link(data-id=String(l._id)) Supprimer
-                        tr.detail-row(id="detail-" + l._id style="display:none")
-                            td(colspan="7")
-                                .detail-inner
-                                    .link-url-row
-                                        span.link-url-text(id="url-" + l._id) Chargement…
-                                        button.btn-copy.copy-url(data-code=l.code title="Copier l'URL")
-                                            svg(width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                                rect(x="9" y="9" width="13" height="13" rx="2" ry="2")
-                                                path(d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1")
-                                    if l.uses && l.uses.length > 0
-                                        ul.uses-list
-                                            each u in l.uses
-                                                li.use-item
-                                                    span.use-item__email= u.email || '(anonyme)'
-                                                    span.use-item__date= new Date(u.usedAt).toLocaleString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
-                                                    span.use-item__ip= u.ip || ''
+                                        .sa-person__mail= l.label
+                                td
+                                    span.sa-tag(class=l.plan === 'business' ? 'sa-tag--violet' : 'sa-tag--green')= l.plan === 'business' ? 'Business' : 'Pro'
+                                td= l.durationDays + ' jours'
+                                td
+                                    span(class=complet ? 'sa-muted' : '' style="font-weight:600")= l.usedCount
+                                    span.sa-muted= l.maxUses !== null ? ' / ' + l.maxUses : ' / ∞'
+                                td.sa-td--date
+                                    if l.expiresAt
+                                        span(class=perime ? 'sa-tag sa-tag--red' : '')= new Date(l.expiresAt).toLocaleDateString('fr-FR')
                                     else
-                                        p.no-uses Aucune utilisation pour l'instant.
+                                        | —
+                                td
+                                    label.sa-switch
+                                        input.js-actif(type="checkbox" checked=l.isActive data-id=String(l._id))
+                                        span.sa-switch__track
+                                td.sa-td--right
+                                    button.sa-ico.js-copier(type="button" title="Copier le lien" data-code=l.code)
+                                        span.material-symbols-outlined content_copy
+                                    button.sa-ico.js-detail(type="button" title="Voir les activations" data-id=String(l._id))
+                                        span.material-symbols-outlined expand_more
+                                    button.sa-ico.sa-ico--danger.js-suppr(type="button" title="Supprimer" data-id=String(l._id))
+                                        span.material-symbols-outlined delete
+                            tr.sa-detail(id='detail-' + l._id style="display:none")
+                                td(colspan="7")
+                                    .sa-detail__in
+                                        .sa-detail__url
+                                            span.sa-mono.js-url(data-code=l.code)
+                                            button.sa-ico.js-copier(type="button" title="Copier l'URL" data-code=l.code)
+                                                span.material-symbols-outlined content_copy
+                                        if l.uses && l.uses.length
+                                            .sa-props
+                                                each u in l.uses
+                                                    .sa-prop(style="grid-template-columns:1fr auto")
+                                                        .sa-prop__k(style="color:var(--sa-txt)")
+                                                            span.material-symbols-outlined person
+                                                            span= u.email || '(anonyme)'
+                                                        div(style="display:flex;gap:12px;align-items:center")
+                                                            span.sa-muted(style="font-size:12px")= u.ip || ''
+                                                            span.sa-muted(style="font-size:12px")= new Date(u.usedAt).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                        else
+                                            .sa-muted Aucune activation pour l'instant.
 
-        script.
-            const BASE_URL = window.location.origin;
+    //- ── Création ──────────────────────────────────────────────────────────
+    .sa-modal#modalNouveau
+        .sa-modal__overlay(data-fermer)
+        .sa-modal__box
+            .sa-modal__head
+                span.material-symbols-outlined link
+                span.sa-modal__title Générer un lien d'accès
+                button.sa-ico(type="button" data-fermer style="margin-left:auto" aria-label="Fermer")
+                    span.material-symbols-outlined close
+            .sa-modal__body
+                .sa-field
+                    span.sa-field__label Libellé interne
+                    input.sa-input#newLabel(type="text" placeholder="ex. Offre partenaire mars 2026")
+                .sa-grid2
+                    .sa-field
+                        span.sa-field__label Plan offert
+                        select.sa-select#newPlan
+                            option(value="pro") Pro
+                            option(value="business") Business
+                    .sa-field
+                        span.sa-field__label Durée de l'accès
+                        select.sa-select#newDuration
+                            option(value="7") 7 jours
+                            option(value="30" selected) 30 jours (1 mois)
+                            option(value="60") 60 jours (2 mois)
+                            option(value="90") 90 jours (3 mois)
+                            option(value="180") 180 jours (6 mois)
+                            option(value="365") 365 jours (1 an)
+                .sa-grid2
+                    .sa-field
+                        span.sa-field__label Utilisations maximum
+                        input.sa-input#newMaxUses(type="number" min="1" value="1")
+                    .sa-field
+                        span.sa-field__label Expiration du lien
+                        input.sa-input#newExpiresAt(type="date")
+            .sa-modal__foot
+                button.sa-btn(type="button" data-fermer) Annuler
+                button.sa-btn.sa-btn--primary#btnCreer(type="button") Générer le lien
 
-            // ── Remplir les URLs au chargement ──
-            document.querySelectorAll('[id^="url-"]').forEach(function(el) {
-                const id = el.id.replace('url-', '');
-                const row = document.querySelector('.main-row[data-id="' + id + '"]');
-                if (row) {
-                    const code = row.dataset.code;
-                    el.textContent = BASE_URL + '/access/' + code;
-                }
-            });
-
-            // ── Créer un lien ──
-            document.getElementById('createLinkBtn').addEventListener('click', async function() {
-                const errorEl = document.getElementById('createError');
-                errorEl.style.display = 'none';
-                const label     = document.getElementById('newLabel').value.trim();
-                const plan      = document.getElementById('newPlan').value;
-                const durationDays = document.getElementById('newDuration').value;
-                const maxUses   = document.getElementById('newMaxUses').value;
-                const expiresAt = document.getElementById('newExpiresAt').value;
-                try {
-                    const res = await fetch('/superadmin/access-links', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ label, plan, durationDays, maxUses, expiresAt })
-                    });
-                    const data = await res.json();
-                    if (data.success) { location.reload(); }
-                    else { errorEl.textContent = data.error || 'Erreur.'; errorEl.style.display = 'block'; }
-                } catch(e) { errorEl.textContent = 'Erreur réseau.'; errorEl.style.display = 'block'; }
-            });
-
-            // ── Toggle actif ──
-            document.querySelectorAll('.toggle-link').forEach(function(cb) {
-                cb.addEventListener('change', async function() {
-                    const id = this.dataset.id;
-                    await fetch('/superadmin/access-links/' + id + '/toggle', { method: 'PATCH' });
-                });
-            });
-
-            // ── Copier le lien ──
-            function copyToClipboard(text, btn) {
-                navigator.clipboard.writeText(text).then(function() {
-                    const orig = btn.innerHTML;
-                    btn.textContent = '✓ Copié !';
-                    btn.style.color = '#22c55e';
-                    btn.style.borderColor = 'rgba(34,197,94,.3)';
-                    setTimeout(function() { btn.innerHTML = orig; btn.style.color = ''; btn.style.borderColor = ''; }, 1800);
-                });
-            }
-
-            document.querySelectorAll('.copy-link').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    const code = this.dataset.code;
-                    copyToClipboard(BASE_URL + '/access/' + code, this);
-                });
-            });
-
-            document.querySelectorAll('.copy-url').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    const code = this.dataset.code;
-                    copyToClipboard(BASE_URL + '/access/' + code, this);
-                });
-            });
-
-            // ── Expand / collapse uses ──
-            document.querySelectorAll('.expand-link').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    const id = this.dataset.id;
-                    const detailRow = document.getElementById('detail-' + id);
-                    const isOpen = detailRow.style.display !== 'none';
-                    detailRow.style.display = isOpen ? 'none' : '';
-                    // Rotate chevron
-                    const svg = this.querySelector('svg');
-                    svg.style.transform = isOpen ? '' : 'rotate(180deg)';
-                    svg.style.transition = 'transform .2s';
-                });
-            });
-
-            // ── Supprimer ──
-            document.querySelectorAll('.delete-link').forEach(function(btn) {
-                btn.addEventListener('click', async function() {
-                    if (!confirm('Supprimer ce lien d\'accès ? Cette action est irréversible.')) return;
-                    const id = this.dataset.id;
-                    const res = await fetch('/superadmin/access-links/' + id, { method: 'DELETE' });
-                    const data = await res.json();
-                    if (data.success) {
-                        const mainRow = document.querySelector('.main-row[data-id="' + id + '"]');
-                        const detailRow = document.getElementById('detail-' + id);
-                        if (mainRow) mainRow.remove();
-                        if (detailRow) detailRow.remove();
-                    }
-                });
-            });
+block scripts
+    script(src="/js/utils/confirm-modal.js")
+    script(src="/js/superadmin/access-links.js")

@@ -26,6 +26,9 @@ const { processSingleImage } = require("../middlewares/processImageUpload");
 
 router.get("/superadmin/establishments", isSuperAdmin, ctrl.establishmentsPage);
 router.delete("/superadmin/establishments/:companyId", isSuperAdmin, ctrl.deleteEstablishment);
+router.get("/superadmin/establishments/export", isSuperAdmin, ctrl.establishmentsExport);
+router.get("/superadmin/establishments/:companyId/details", isSuperAdmin, ctrl.establishmentDetails);
+router.patch("/superadmin/establishments/:companyId/pause", isSuperAdmin, ctrl.toggleEstablishmentPause);
 router.patch("/superadmin/establishments/:companyId/plan", isSuperAdmin, ctrl.setPlanForCompany);
 router.patch(
   "/superadmin/establishments/:companyId/info",
@@ -83,6 +86,12 @@ router.patch("/superadmin/toggle-account/:userId", isSuperAdmin, ctrl.toggleAcco
 // Suppression définitive d'un compte (+ toutes ses données)
 router.delete("/superadmin/users/:userId", isSuperAdmin, ctrl.deleteUserAccount);
 
+// Export CSV de la liste filtrée — avant la route paramétrée pour que
+// "export" ne soit pas pris pour un identifiant.
+router.get("/superadmin/users/export", isSuperAdmin, ctrl.usersExport);
+// Fiche détaillée (panneau latéral)
+router.get("/superadmin/users/:userId/details", isSuperAdmin, ctrl.userDetails);
+
 // Pages / fonctionnalités (maintenance, erreur, désactivation)
 router.get("/superadmin/features", isSuperAdmin, ctrl.featuresPage);
 router.patch("/superadmin/features/:key", isSuperAdmin, ctrl.setFeatureStatus);
@@ -97,6 +106,11 @@ router.post("/superadmin/support-chat/:userId/reply", isSuperAdmin, ctrl.replySu
 router.delete("/superadmin/support-chat/:userId", isSuperAdmin, ctrl.deleteSupportChat);
 
 // Messagerie fondateur → utilisateurs pros
+// Signalements d'avis — c'est ici que se décide la suppression d'un avis.
+router.get("/superadmin/signalements", isSuperAdmin, ctrl.reviewReportsPage);
+router.get("/superadmin/signalements-count", isSuperAdmin, ctrl.reviewReportsCount);
+router.patch("/superadmin/signalements/:id", isSuperAdmin, ctrl.decideReviewReport);
+
 router.get("/superadmin/messages", isSuperAdmin, ctrl.messagesPage);
 router.post("/superadmin/messages", isSuperAdmin, ctrl.sendMessage);
 router.delete("/superadmin/messages/:id", isSuperAdmin, ctrl.deleteMessage);

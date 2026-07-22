@@ -9,31 +9,14 @@
   padding-bottom: 24px;
 }
 
-.sv2-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13.5px;
-}
+.sv2-table { /* base : ds.css */ }
 
 /* En-tête : libellés gris, discret, une seule règle sous la ligne */
-.sv2-table thead th {
-  text-align: left;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted, #637083);
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border-light);
-  white-space: nowrap;
-}
+/* en-têtes : ds.css */
 .sv2-th--act { text-align: right; }
 
 /* Lignes : fin filet, hover doux */
-.sv2-row td {
-  padding: 13px 16px;
-  border-bottom: 1px solid var(--border-light);
-  color: var(--ink, #141c25);
-  vertical-align: middle;
-}
+.sv2-row td { border-bottom: 1px solid var(--border-light); }
 .sv2-row:hover td { background: var(--surface, #f8f7f4); }
 .sv2-row--inactive td { color: var(--text-muted); }
 .sv2-row--inactive .sv2-name { color: var(--text-muted); }
@@ -122,26 +105,8 @@
 .sv2-status.is-off { color: #9ca3af; }
 .sv2-status.is-off .sv2-status__dot { background: #cbd5e1; }
 
-/* Actions : icônes modifier / supprimer */
+/* Actions : boutons icônes .ds-ico (ds.css) */
 .sv2-td--act { text-align: right; white-space: nowrap; }
-.sv2-iconbtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  /* Icônes nues : pas de bordure/fond par défaut (les <button> en ont un). */
-  border: none;
-  background: transparent;
-  border-radius: 8px;
-  color: var(--text-muted, #637083);
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  padding: 0;
-}
-.sv2-iconbtn:hover { background: var(--surface, #f1f0ec); color: var(--ink, #141c25); }
-.sv2-iconbtn--danger:hover { background: #fef2f2; color: #dc2626; }
-.sv2-iconbtn .material-symbols-outlined { font-size: 19px; }
 
 /* ── Modale « Modifier le service » ─────────────────────────── */
 .sv2-modal-overlay {
@@ -267,7 +232,9 @@ select.sv2-input { cursor: pointer; }
 
 .sq-list { display: flex; flex-direction: column; gap: 12px; }
 .sq-question {
-  background: var(--surface, #f8f7f4);
+  /* Fond blanc : --surface (#f5f4f1) faisait un aplat gris trop lourd.
+     La question se distingue par sa bordure, pas par un fond teinté. */
+  background: #fff;
   border: 1px solid var(--border-light);
   border-radius: 12px;
   padding: 12px 14px;
@@ -524,22 +491,41 @@ select.sv2-input { cursor: pointer; }
    Catégories : en-têtes de groupe dans le tableau + glisser-déposer
    ═══════════════════════════════════════════════════════════════════════════ */
 .sv2-grouprow > .sv2-groupcell {
-  padding: 16px 12px 8px;
+  /* Même retrait horizontal que les th et les td (16px) : l'en-tête de
+     catégorie partait à 12px, d'où le décalage visible avec le tableau. */
+  padding: 16px 16px 8px;
   border-bottom: 1px solid var(--border-light, #eceff3);
   background: #fff;
 }
 .sv2-table tbody .sv2-grouprow:first-child > .sv2-groupcell { padding-top: 6px; }
-.sv2-groupcell {
+/* `display:flex` sur le <td> annulait son colspan : le trait de séparation
+   s'arrêtait au bout de la 1re colonne. La mise en ligne se fait donc dans un
+   div intérieur, la cellule restant une vraie case de tableau. */
+.sv2-groupcell__in {
   display: flex;
   align-items: center;
-  gap: 8px;
+  /* Pas de `gap` : les marges sont posées à la main pour aligner le libellé
+     de catégorie exactement sur le nom des services (poignée + pastille). */
 }
+.sv2-gicon { margin-right: 8px; }
+.sv2-gcount { margin-left: 8px; }
 .sv2-gname {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
-  color: var(--text-muted, #6b7280);
+  /* Assombri : en gris clair, on ne rattachait pas les services à leur titre. */
+  color: var(--ink, #141c25);
+}
+.sv2-grouprow--none .sv2-gname { color: var(--text-muted, #6b7280); }
+
+/* Filet vertical reliant les services à l'en-tête de leur catégorie.
+   « Sans catégorie » est toujours en dernier : `~` cible donc exactement
+   les lignes non catégorisées, qui n'ont pas de filet. */
+.sv2-row > td:first-child { box-shadow: inset 2px 0 0 var(--main-color-pale, #d7ede0); }
+.sv2-grouprow--none ~ .sv2-row > td:first-child { box-shadow: none; }
+.sv2-grouprow:not(.sv2-grouprow--none) > .sv2-groupcell {
+  box-shadow: inset 2px 0 0 var(--accent, #1e7a4e);
 }
 .sv2-gicon { font-size: 15px; line-height: 1; }
 .sv2-gcount {
@@ -562,23 +548,71 @@ select.sv2-input { cursor: pointer; }
   color: var(--text-muted, #6b7280);
 }
 
-/* Poignées de glissement */
-.sv2-handle,
-.sv2-ghandle {
-  font-size: 18px;
-  color: #cbd5e1;
-  cursor: grab;
-  flex-shrink: 0;
-  transition: color .12s;
-  user-select: none;
+/* Modale compacte « Nouvelle catégorie » */
+.service-modal--sm { max-width: 420px; }
+.sv2-cat-hint {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted, #637083);
 }
-.sv2-handle { margin-right: 2px; }
-.sv2-row:hover .sv2-handle,
-.sv2-grouprow:hover .sv2-ghandle { color: #94a3b8; }
-.sv2-handle:active,
-.sv2-ghandle:active { cursor: grabbing; }
 
-/* Élément en cours de déplacement */
-.sv2-row.is-dragging,
-.sv2-grouprow.is-dragging { opacity: .45; }
-.sv2-row.is-dragging td { background: var(--main-color-pale, #f0fdf4); }
+/* ── Réordonnancement : deux flèches par ligne ─────────────────────────────
+   Remplace le glisser-déposer. Empilées, elles occupent la même largeur que
+   l'ancienne poignée : le rail d'alignement de la colonne ne bouge pas.
+   Discrètes au repos, elles se révèlent au survol de la ligne. */
+.sv2-move {
+  display: inline-flex;
+  /* Côte à côte : ↑ à gauche, ↓ à droite. Empilées, les deux boutons
+     devaient tenir dans la hauteur de ligne et restaient minuscules. */
+  flex-direction: row;
+  align-items: center;
+  width: 40px;                     /* 2 × 20 : le fantôme réserve la place */
+  margin-right: 8px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.sv2-move--cat { margin-right: 27px; }   /* = 8 + 9 (pastille) + 10 : aligne le libellé sur les noms */
+.sv2-move--ghost { visibility: hidden; }
+
+.sv2-move__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: color .12s, background .12s;
+}
+/* Le glyphe déborde légèrement de sa boîte de 18px : les chevrons sont
+   étroits, ça se voit pas, et le rail d'alignement reste intact. */
+.sv2-move__btn .material-symbols-outlined {
+  font-size: 24px;
+  line-height: 1;
+  /* Material Symbols est une police variable : on épaissit le trait, sinon
+     un chevron agrandi reste filiforme et ne se voit pas plus. */
+  font-variation-settings: 'wght' 500;
+}
+.sv2-row:hover .sv2-move__btn,
+.sv2-grouprow:hover .sv2-move__btn { color: #94a3b8; }
+.sv2-move__btn:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent); }
+.sv2-move__btn:focus-visible { outline: none; box-shadow: var(--ds-ring); color: var(--accent); }
+.sv2-move__btn:disabled { opacity: .25; cursor: default; }
+
+/* Confirmation après le dépôt : la ligne s'illumine puis retombe. */
+@keyframes sv2-drop-flash {
+  0%   { background: var(--main-color-pale, #f0fdf4); }
+  100% { background: transparent; }
+}
+.sv2-row.just-dropped td,
+.sv2-grouprow.just-dropped > td { animation: sv2-drop-flash .7s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sv2-row.just-dropped td,
+  .sv2-grouprow.just-dropped > td { animation: none; }
+}

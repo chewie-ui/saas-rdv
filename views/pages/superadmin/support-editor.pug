@@ -1,70 +1,77 @@
-doctype html
-html(lang="fr")
-    head
-        meta(name="viewport" content="width=device-width, initial-scale=1.0")
-        meta(charset="UTF-8")
-        title Superadmin — Éditeur Support
-        link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
-        link(rel="stylesheet" href="/css/import.css")
-        link(rel="stylesheet" href="/css/layouts/superadmin.css")
-        style.
-            body { padding: 0 24px 80px; }
-            .page-header { margin-top: 32px; margin-bottom: 28px; }
-            .page-header h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -.02em; }
-            .page-header p { font-size: 13px; color: #555; margin-top: 4px; }
+extends ../../layouts/sa
 
-            .se-sections { display: flex; flex-direction: column; gap: 20px; }
+block styles
+    style(type="text/css").
+        /* Éditeur de contenu : mêmes jetons que le reste du panel. */
+        .se-sections { display: flex; flex-direction: column; gap: 14px; }
+        .se-section { border: 1px solid var(--sa-line); border-radius: var(--sa-r-lg); background: var(--sa-panel); overflow: hidden; }
+        .se-section__head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--sa-line); }
+        .se-section__title-input { flex: 1; background: transparent; border: none; color: var(--sa-txt); font-size: 15px; font-weight: 700; outline: none; font-family: inherit; }
+        .se-section__title-input::placeholder { color: var(--sa-txt-3); }
+        .se-section__actions { display: flex; gap: 8px; }
+        .se-section__body { padding: 16px 18px; display: flex; flex-direction: column; gap: 20px; }
+        .se-subsection__label { font-size: 11px; font-weight: 700; color: var(--sa-txt-3); text-transform: uppercase; letter-spacing: .07em; margin: 0 0 10px; }
+        .se-videos { display: flex; flex-direction: column; gap: 8px; }
+        .se-video { display: grid; grid-template-columns: 1fr 1fr 110px auto; gap: 8px; align-items: center; }
+        .se-faqs { display: flex; flex-direction: column; gap: 10px; }
+        .se-faq { display: flex; flex-direction: column; gap: 7px; padding: 12px; border: 1px solid var(--sa-line); border-radius: var(--sa-r); background: var(--sa-panel-2); }
+        .se-faq__row { display: flex; gap: 8px; align-items: flex-start; }
+        /* Champs de l'éditeur : reprise exacte du style .sa-input. */
+        .se-video input, .se-faq input, .se-faq textarea, .se-new-section input {
+          width: 100%; height: 34px; padding: 0 12px;
+          border: 1px solid var(--sa-line-strong); border-radius: var(--sa-r);
+          background: #101014; color: var(--sa-txt);
+          font-family: inherit; font-size: 13px; outline: none;
+          transition: border-color .12s, box-shadow .12s;
+        }
+        .se-faq textarea { height: auto; min-height: 64px; padding: 9px 12px; line-height: 1.55; resize: vertical; }
+        .se-video input:focus, .se-faq input:focus, .se-faq textarea:focus, .se-new-section input:focus { border-color: var(--sa-blue); box-shadow: var(--sa-ring); }
+        .se-video input::placeholder, .se-faq input::placeholder, .se-faq textarea::placeholder, .se-new-section input::placeholder { color: var(--sa-txt-3); }
+        .btn-icon {
+          height: 30px; padding: 0 11px; border: 1px solid var(--sa-line-strong); border-radius: 8px;
+          background: var(--sa-panel-2); color: var(--sa-txt-2); font-family: inherit; font-size: 12.5px; cursor: pointer;
+        }
+        .btn-icon:hover { background: #232329; color: var(--sa-txt); }
+        .btn-icon--danger:hover { background: var(--sa-red-soft); border-color: rgba(239,68,68,.35); color: #fca5a5; }
+        .se-add-btn {
+          width: 100%; padding: 10px; border: 1px dashed var(--sa-line-strong); border-radius: var(--sa-r);
+          background: transparent; color: var(--sa-txt-3); font-family: inherit; font-size: 13px; cursor: pointer;
+        }
+        .se-add-btn:hover { border-color: var(--sa-txt-3); color: var(--sa-txt-2); background: var(--sa-panel-2); }
+        .se-new-section {
+          display: flex; gap: 10px; align-items: center; margin-top: 16px; padding: 18px;
+          border: 2px dashed var(--sa-line-strong); border-radius: var(--sa-r-lg); background: var(--sa-panel);
+        }
+        .btn-primary {
+          height: 34px; padding: 0 16px; border: none; border-radius: var(--sa-r);
+          background: var(--sa-accent); color: #04120a; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+        }
+        .btn-primary:hover { background: #16a34a; }
+        .se-order-btns { display: flex; flex-direction: column; gap: 2px; }
+        .se-order-btn {
+          width: 28px; height: 22px; display: flex; align-items: center; justify-content: center;
+          border: 1px solid var(--sa-line-strong); border-radius: 6px; background: var(--sa-panel-2);
+          color: var(--sa-txt-3); font-size: 11px; cursor: pointer;
+        }
+        .se-order-btn:hover { background: #232329; color: var(--sa-txt); }
+        /* Le message de confirmation réutilise .sa-toast du panel. */
+        .toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(12px); z-index: 400;
+          padding: 11px 18px; border: 1px solid var(--sa-line-strong); border-radius: 999px; background: #17171b;
+          box-shadow: var(--sa-shadow); font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none;
+          transition: opacity .18s, transform .18s; }
+        .toast.show { opacity: 1; transform: translateX(-50%); }
+        .toast--ok { color: #4ade80; }
+        .toast--err { color: #fca5a5; }
 
-            .se-section { background: #111; border: 1px solid #222; border-radius: 14px; overflow: hidden; }
-            .se-section__head { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid #1e1e1e; }
-            .se-section__title-input { flex: 1; background: transparent; border: none; color: #fff; font-size: 15px; font-weight: 600; outline: none; }
-            .se-section__title-input::placeholder { color: #444; }
-            .se-section__actions { display: flex; gap: 8px; }
-            .btn-icon { background: #1a1a1a; border: 1px solid #2a2a2a; color: #888; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 13px; transition: all .15s; }
-            .btn-icon:hover { background: #222; color: #fff; }
-            .btn-icon--danger:hover { background: #2a0a0a; border-color: #5a1a1a; color: #f87171; }
-            .btn-icon--save:hover { background: #0a1a0a; border-color: #1a5a1a; color: #4ade80; }
+block content
+    .sa-head
+        button.sa-ico.sa-burger(type="button" data-sa-burger aria-label="Menu")
+            span.material-symbols-outlined menu
+        div
+            h1.sa-head__title Articles support
+            .sa-head__sub Sections, vidéos et questions fréquentes de la page d'aide
 
-            .se-section__body { padding: 16px 20px; display: flex; flex-direction: column; gap: 20px; }
-
-            .se-subsection__label { font-size: 11px; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
-            .se-videos { display: flex; flex-direction: column; gap: 8px; }
-            .se-video { display: grid; grid-template-columns: 1fr 1fr 100px auto; gap: 8px; align-items: center; }
-            .se-video input { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px; outline: none; width: 100%; }
-            .se-video input:focus { border-color: #444; }
-            .se-video input::placeholder { color: #444; }
-
-            .se-faqs { display: flex; flex-direction: column; gap: 10px; }
-            .se-faq { display: flex; flex-direction: column; gap: 6px; background: #1a1a1a; border: 1px solid #222; border-radius: 10px; padding: 12px; }
-            .se-faq__row { display: flex; gap: 8px; align-items: flex-start; }
-            .se-faq input, .se-faq textarea { background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 13px; outline: none; width: 100%; resize: none; font-family: inherit; }
-            .se-faq input:focus, .se-faq textarea:focus { border-color: #444; }
-            .se-faq input::placeholder, .se-faq textarea::placeholder { color: #444; }
-            .se-faq textarea { min-height: 60px; }
-
-            .se-add-btn { background: #1a1a1a; border: 1px dashed #333; color: #555; border-radius: 10px; padding: 10px; font-size: 13px; cursor: pointer; text-align: center; width: 100%; transition: all .15s; }
-            .se-add-btn:hover { border-color: #555; color: #888; background: #1e1e1e; }
-
-            .se-new-section { background: #0a0a0a; border: 2px dashed #222; border-radius: 14px; padding: 20px; display: flex; gap: 10px; align-items: center; }
-            .se-new-section input { flex: 1; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 14px; outline: none; }
-            .se-new-section input::placeholder { color: #444; }
-            .btn-primary { background: #2563eb; border: none; color: #fff; border-radius: 8px; padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; }
-            .btn-primary:hover { background: #1d4ed8; }
-
-            .se-order-btns { display: flex; flex-direction: column; gap: 2px; }
-            .se-order-btn { background: #1a1a1a; border: 1px solid #2a2a2a; color: #555; border-radius: 6px; width: 28px; height: 22px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; }
-            .se-order-btn:hover { background: #222; color: #aaa; }
-
-            .toast { position: fixed; bottom: 24px; right: 24px; background: #1e1e1e; border: 1px solid #333; color: #fff; border-radius: 10px; padding: 12px 18px; font-size: 13px; opacity: 0; transform: translateY(8px); transition: all .2s; pointer-events: none; z-index: 9999; }
-            .toast.show { opacity: 1; transform: none; }
-            .toast--ok { border-color: #1a5a1a; color: #4ade80; }
-            .toast--err { border-color: #5a1a1a; color: #f87171; }
-
-    body
-        include ../../includes/sa-nav
-        .page-header
-            h1 📝 Éditeur — Aide & Support
-            p Gérez les sections, vidéos et FAQ de la page d'aide des utilisateurs.
+    .sa-body
 
         .se-sections#seSections
             if sections && sections.length
@@ -79,7 +86,7 @@ html(lang="fr")
                                 button.btn-icon.btn-icon--danger(onclick="deleteSection(this)") Supprimer
                         .se-section__body
                             div
-                                p.se-subsection__label 🎬 Vidéos (max 5)
+                                p.se-subsection__label Vidéos (5 maximum)
                                 .se-videos
                                     if section.videos && section.videos.length
                                         each video in section.videos
@@ -91,7 +98,7 @@ html(lang="fr")
                                 if !section.videos || section.videos.length < 5
                                     button.se-add-btn(onclick="addVideo(this)") + Ajouter une vidéo
                             div
-                                p.se-subsection__label ❓ Questions fréquentes
+                                p.se-subsection__label Questions fréquentes
                                 .se-faqs
                                     if section.faqs && section.faqs.length
                                         each faq in section.faqs
@@ -109,8 +116,10 @@ html(lang="fr")
             input#newSectionTitle(type="text" placeholder="Nom de la nouvelle section (ex: Disponibilités)")
             button.btn-primary(onclick="addSection()") + Créer la section
 
-        .toast#toast
 
+            .toast#toast
+
+block scripts
     script.
         const BASE = '/superadmin/support-editor';
 
@@ -188,12 +197,12 @@ html(lang="fr")
                 </div>
                 <div class="se-section__body">
                     <div>
-                        <p class="se-subsection__label">🎬 Vidéos (max 5)</p>
+                        <p class="se-subsection__label">Vidéos (5 maximum)</p>
                         <div class="se-videos"></div>
                         <button class="se-add-btn" onclick="addVideo(this)">+ Ajouter une vidéo</button>
                     </div>
                     <div>
-                        <p class="se-subsection__label">❓ Questions fréquentes</p>
+                        <p class="se-subsection__label">Questions fréquentes</p>
                         <div class="se-faqs"></div>
                         <button class="se-add-btn" onclick="addFaq(this)">+ Ajouter une FAQ</button>
                     </div>

@@ -3674,3 +3674,232 @@ body.bk-embed #bkCart .bk-cart {
   transition: background .15s, color .15s;
 }
 .bk-retry-btn:hover { background: var(--bk-ink, #111827); color: #fff; }
+
+/* ═══ SIGNALEMENT D'UN AVIS ═══════════════════════════════════════ */
+.bk-review-card__actions { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+
+.bk-review-report {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 12px;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color .12s;
+}
+.bk-review-report:hover { color: #ef4444; }
+.bk-review-report svg { flex-shrink: 0; }
+
+/* ── Signalement d'un avis ──────────────────────────────────────────────────
+   Modale complète : en-tête illustré, motifs sous forme de cartes cliquables,
+   précisions, puis un écran de confirmation intégré (plus aucun alert() du
+   navigateur, qui affichait « localhost:3000 indique… »). */
+.bk-report {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.bk-report__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 25, .55);
+  backdrop-filter: blur(2px);
+  animation: bkReportFade .16s ease-out;
+}
+.bk-report__box {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 28px 70px rgba(15, 23, 25, .3);
+  animation: bkReportPop .2s cubic-bezier(.2, .9, .3, 1.2);
+}
+@keyframes bkReportFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bkReportPop { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+
+.bk-report__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.bk-report__close:hover { background: #f1f5f9; color: #0f172a; }
+
+/* En-tête : pastille d'icône + titre + explication */
+.bk-report__head { display: flex; gap: 13px; padding: 22px 22px 0; }
+.bk-report__icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #dc2626;
+}
+.bk-report__title { margin: 2px 0 0; font-size: 17px; font-weight: 700; color: #0f172a; letter-spacing: -.01em; }
+.bk-report__sub { margin: 5px 0 0; font-size: 13px; line-height: 1.5; color: #64748b; }
+
+.bk-report__body { padding: 18px 22px 0; }
+.bk-report__flabel {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+/* Motifs : une carte par choix, l'état sélectionné est visible d'un coup d'œil */
+.bk-report__reasons { display: flex; flex-direction: column; gap: 7px; }
+.bk-report__reason {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 13px;
+  border: 1.5px solid #e8ecf0;
+  border-radius: 12px;
+  font-size: 13.5px;
+  color: #0f172a;
+  cursor: pointer;
+  transition: border-color .12s, background .12s;
+}
+.bk-report__reason:hover { border-color: #cbd5e1; background: #fafbfc; }
+.bk-report__reason input { position: absolute; opacity: 0; width: 0; height: 0; }
+.bk-report__radio {
+  position: relative;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 50%;
+  transition: border-color .12s;
+}
+.bk-report__radio::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: #0f172a;
+  transform: scale(0);
+  transition: transform .14s;
+}
+.bk-report__reason input:checked ~ .bk-report__radio { border-color: #0f172a; }
+.bk-report__reason input:checked ~ .bk-report__radio::after { transform: scale(1); }
+.bk-report__reason:has(input:checked) { border-color: #0f172a; background: #f8fafc; }
+.bk-report__reason input:focus-visible ~ .bk-report__radio { box-shadow: 0 0 0 3px rgba(15, 23, 25, .15); }
+
+.bk-report__field { display: block; margin-top: 18px; }
+.bk-report__msg {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  border: 1.5px solid #e8ecf0;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #0f172a;
+  resize: vertical;
+  transition: border-color .12s;
+}
+.bk-report__msg::placeholder { color: #94a3b8; }
+.bk-report__msg:focus { outline: none; border-color: #0f172a; }
+
+.bk-report__err {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 12px 0 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: #fef2f2;
+  font-size: 13px;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.bk-report__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 20px;
+  padding: 15px 22px;
+  border-top: 1px solid #f1f5f9;
+  background: #fcfdfd;
+  border-radius: 0 0 20px 20px;
+}
+.bk-report__cancel, .bk-report__send, .bk-report__ok {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 17px;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.bk-report__cancel { border: 1.5px solid #e8ecf0; background: #fff; color: #475569; }
+.bk-report__cancel:hover { background: #f1f5f9; }
+.bk-report__send { border: none; background: #dc2626; color: #fff; }
+.bk-report__send:hover { background: #b91c1c; }
+.bk-report__send:disabled { opacity: .55; cursor: default; }
+
+/* Écran de confirmation (remplace l'alerte du navigateur) */
+.bk-report__done { padding: 34px 26px 26px; text-align: center; }
+.bk-report__done-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: #ecfdf5;
+  color: #1e7a4e;
+  animation: bkReportPop .3s cubic-bezier(.2, .9, .3, 1.4);
+}
+.bk-report__done .bk-report__sub { margin: 7px auto 0; max-width: 330px; }
+.bk-report__ok {
+  margin-top: 20px;
+  width: 100%;
+  border: none;
+  background: #0f172a;
+  color: #fff;
+}
+.bk-report__ok:hover { background: #1e293b; }
+
+@media (max-width: 480px) {
+  .bk-report__head, .bk-report__body { padding-left: 18px; padding-right: 18px; }
+  /* Boutons empilés, action principale en haut : côte à côte, « Envoyer le
+     signalement » passait sur deux lignes et déséquilibrait la paire. */
+  .bk-report__actions { flex-direction: column-reverse; padding: 14px 18px; }
+  .bk-report__cancel, .bk-report__send { width: 100%; }
+}

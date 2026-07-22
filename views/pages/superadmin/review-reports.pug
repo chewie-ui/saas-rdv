@@ -1,0 +1,161 @@
+extends ../../layouts/sa
+
+block content
+    -
+        function jourFr(d, longue) {
+            if (!d) return '—';
+            return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: longue ? 'long' : 'short', year: 'numeric' });
+        }
+        var libelleStatut = { pending: 'À traiter', accepted: 'Avis supprimés', rejected: 'Avis conservés' };
+
+    .sa-head
+        button.sa-ico.sa-burger(type="button" data-sa-burger aria-label="Menu")
+            span.material-symbols-outlined menu
+        div
+            h1.sa-head__title Signalements d'avis
+            .sa-head__sub Les demandes du pro et les avis signalés plusieurs fois passent en premier
+
+    .sa-body
+        .sa-kpis
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined pending_actions
+                    span À traiter
+                .sa-kpi__value(class=stats.pending ? 'sa-kpi__delta--down' : '')= stats.pending
+                .sa-kpi__delta= stats.pending ? 'File d\'attente' : 'Rien en attente'
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined delete
+                    span Avis supprimés
+                .sa-kpi__value= stats.accepted
+                .sa-kpi__delta Signalements acceptés
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined shield
+                    span Avis conservés
+                .sa-kpi__value= stats.rejected
+                .sa-kpi__delta Signalements rejetés
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined history
+                    span Traités (7 j)
+                .sa-kpi__value= stats.traites7j
+                .sa-kpi__delta Décisions récentes
+
+        .sa-tabs
+            a.sa-tab(href="/superadmin/signalements?statut=pending" class=filtre === 'pending' ? 'is-active' : '')
+                | À traiter
+                if stats.pending
+                    |  (#{stats.pending})
+            a.sa-tab(href="/superadmin/signalements?statut=accepted" class=filtre === 'accepted' ? 'is-active' : '') Avis supprimés (#{stats.accepted})
+            a.sa-tab(href="/superadmin/signalements?statut=rejected" class=filtre === 'rejected' ? 'is-active' : '') Avis conservés (#{stats.rejected})
+
+        if !groupes.length
+            .sa-empty
+                .sa-empty__ic
+                    span.material-symbols-outlined task_alt
+                .sa-empty__t= filtre === 'pending' ? 'Rien à traiter' : 'Aucun signalement'
+                .sa-empty__d= filtre === 'pending' ? 'La file d\'attente est vide.' : 'Aucun signalement dans cette catégorie.'
+        else
+            each g in groupes
+                - var nbTotal = 1 + g.autres.length
+                - var urgent = g.reporterKind === 'owner' || nbTotal > 2
+                .sa-card.sa-report(class=urgent ? 'sa-report--urgent' : '' data-id=String(g._id) style="margin-bottom:14px")
+                    .sa-report__top
+                        div(style="min-width:0")
+                            .sa-report__estab
+                                if g.company
+                                    a(href='/' + (g.company.slug || g.company._id) target="_blank" rel="noopener")= g.company.name || 'Établissement'
+                                else
+                                    span.sa-muted Établissement supprimé
+                            if g.company && g.company.owner
+                                .sa-head__sub= (g.company.owner.fullName || '') + ' · ' + (g.company.owner.email || '')
+                        .sa-report__tags
+                            if nbTotal > 1
+                                span.sa-tag.sa-tag--red= nbTotal + ' signalements'
+                            case g.reporterKind
+                                when 'owner'
+                                    span.sa-tag.sa-tag--amber Demande du pro
+                                when 'user'
+                                    span.sa-tag.sa-tag--blue Client connecté
+                                default
+                                    span.sa-tag Visiteur
+
+                    //- L'avis tel qu'il était au moment du signalement : conservé même
+                    //- si l'avis a été supprimé depuis, pour garder la preuve.
+                    .sa-quote
+                        .sa-quote__head
+                            span(style="font-weight:700;color:var(--sa-txt)")= g.snapshot && g.snapshot.clientName || 'Auteur inconnu'
+                            span.sa-quote__stars= '★'.repeat(g.snapshot && g.snapshot.rating || 0) + '☆'.repeat(5 - (g.snapshot && g.snapshot.rating || 0))
+                            span.sa-muted= jourFr(g.snapshot && g.snapshot.createdAt)
+                        if g.snapshot && g.snapshot.comment
+                            p.sa-quote__txt= g.snapshot.comment
+                        else
+                            p.sa-quote__txt.sa-muted(style="font-style:italic") Note seule, sans commentaire.
+
+                    .sa-report__reason
+                        span.material-symbols-outlined flag
+                        span= motifs[g.reason] || g.reason
+                    if g.message
+                        p.sa-report__msg= g.message
+                    .sa-head__sub
+                        = 'Signalé par ' + g.reporterName + ' le ' + jourFr(g.createdAt, true)
+                        if g.status !== 'pending' && g.decidedAt
+                            = ' · Traité le ' + jourFr(g.decidedAt, true)
+                        if g.decisionNote
+                            = ' · Note : ' + g.decisionNote
+
+                    if g.autres.length
+                        .sa-report__autres
+                            .sa-section__t= g.autres.length + ' autre(s) signalement(s) sur le même avis'
+                            each o in g.autres
+                                .sa-head__sub= '• ' + (motifs[o.reason] || o.reason) + ' — ' + o.reporterName + (o.message ? ' : ' + o.message : '')
+
+                    if g.status === 'pending'
+                        .sa-report__actions
+                            input.sa-input.js-note(type="text" placeholder="Note interne (optionnelle)" maxlength="500")
+                            button.sa-btn(type="button" data-decision="rejected")
+                                span.material-symbols-outlined shield
+                                span Conserver l'avis
+                            button.sa-btn.sa-btn--danger(type="button" data-decision="accepted")
+                                span.material-symbols-outlined delete
+                                span Supprimer l'avis
+
+block scripts
+    script(src="/js/utils/confirm-modal.js")
+    script.
+        document.querySelectorAll('.sa-report').forEach(function (carte) {
+            carte.querySelectorAll('[data-decision]').forEach(function (btn) {
+                btn.addEventListener('click', async function () {
+                    var decision = btn.dataset.decision;
+                    if (decision === 'accepted') {
+                        var ok = await window.confirmModal(
+                            "Supprimer définitivement cet avis ?",
+                            "L'établissement retrouvera sa note sans lui. La copie de l'avis reste conservée comme preuve dans le signalement.",
+                            { confirmLabel: 'Supprimer', danger: true }
+                        );
+                        if (!ok) return;
+                    }
+                    var note = (carte.querySelector('.js-note') || {}).value || '';
+                    carte.querySelectorAll('[data-decision]').forEach(function (b) { b.disabled = true; });
+                    fetch('/superadmin/signalements/' + carte.dataset.id, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ decision: decision, note: note })
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (d) {
+                            if (!d.success) throw new Error(d.error || 'Erreur');
+                            carte.querySelector('.sa-report__actions').innerHTML =
+                                '<span class="sa-tag ' + (d.avisSupprime ? 'sa-tag--red' : 'sa-tag--green') + '">' +
+                                (d.avisSupprime ? 'Avis supprimé' : 'Avis conservé') + '</span>';
+                            carte.classList.add('is-traite');
+                            window.saToast(d.avisSupprime ? 'Avis supprimé.' : 'Avis conservé.');
+                        })
+                        .catch(function (e) {
+                            window.saToast(e.message || 'Erreur réseau.', 'err');
+                            carte.querySelectorAll('[data-decision]').forEach(function (b) { b.disabled = false; });
+                        });
+                });
+            });
+        });

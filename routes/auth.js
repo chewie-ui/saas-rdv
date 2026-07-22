@@ -46,6 +46,11 @@ function logLoginEvent(user, method) {
   LoginEvent.create({ user: user._id, method }).catch((err) => {
     console.error("LoginEvent create error:", err.message);
   });
+  // Date de dernière connexion : lue telle quelle par le panel superadmin
+  // (colonne « Dernière connexion », KPI des comptes jamais utilisés).
+  User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } }).catch((err) => {
+    console.error("lastLoginAt update error:", err.message);
+  });
 }
 
 function buildUserRedirectUri() {

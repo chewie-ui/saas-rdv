@@ -1,208 +1,179 @@
-doctype html
-html(lang="fr")
-    head
-        meta(name="viewport" content="width=device-width, initial-scale=1.0")
-        meta(charset="UTF-8")
-        title Superadmin — Pages & fonctionnalités
-        link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
-        link(rel="stylesheet" href="/css/import.css")
-        link(rel="stylesheet" href="/css/layouts/superadmin.css")
-        style.
-            body { padding: 0 24px 80px; }
-            .page-header { margin-top: 32px; margin-bottom: 28px; }
-            .page-header h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -.02em; }
-            .page-header p { font-size: 13px; color: #555; margin-top: 4px; }
+extends ../../layouts/sa
 
-            .feature-list { display: flex; flex-direction: column; gap: 14px; }
-            .feature-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px; padding: 20px 22px; }
-            .feature-card__top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
-            .feature-card__label { font-size: 14px; font-weight: 600; color: #fff; }
-            .feature-card__key { font-size: 11px; color: #555; font-family: monospace; margin-top: 2px; }
-            .status-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; border-radius: 6px; padding: 3px 10px; }
-            .status-badge--active      { color: #22c55e; border: 1px solid rgba(34,197,94,.25); background: rgba(34,197,94,.08); }
-            .status-badge--maintenance { color: #eab308; border: 1px solid rgba(234,179,8,.25); background: rgba(234,179,8,.08); }
-            .status-badge--error       { color: #f87171; border: 1px solid rgba(248,113,113,.25); background: rgba(248,113,113,.08); }
-            .status-badge--disabled    { color: #9ca3af; border: 1px solid rgba(156,163,175,.25); background: rgba(156,163,175,.08); }
+block content
+    -
+        var LIBELLES = { active: 'Actif', maintenance: 'En construction', error: 'Erreur temporaire', disabled: 'Désactivé' };
+        var COULEURS = { active: 'sa-tag--green', maintenance: 'sa-tag--amber', error: 'sa-tag--red', disabled: '' };
+        var enPanne = features.filter(function (f) { return f.status !== 'active'; }).length;
+        var liensCaches = navSections.reduce(function (n, s) {
+            return n + s.links.filter(function (l) { return !l.enabled; }).length;
+        }, 0);
+        var modulesCoupes = adminFeatures.filter(function (f) { return !f.enabled; }).length;
 
-            .feature-card__row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
-            .field { display: flex; flex-direction: column; gap: 6px; }
-            .field label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #555; }
-            .field select, .field input, .field textarea { background: #111; border: 1.5px solid #2a2a2a; border-radius: 10px; color: #fff; font-size: 13px; padding: 9px 12px; outline: none; transition: border-color .15s; font-family: inherit; }
-            .field select:focus, .field input:focus, .field textarea:focus { border-color: #444; }
-            .field select option { background: #111; }
-            .field--status { min-width: 180px; }
-            .field--message { flex: 1; min-width: 220px; }
-            .btn-save { background: #fff; color: #111; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; padding: 10px 22px; cursor: pointer; transition: opacity .15s; height: 39px; }
-            .btn-save:hover { opacity: .85; }
-            .btn-save:disabled { opacity: .4; cursor: default; }
-            .save-msg { font-size: 12px; color: #22c55e; margin-left: 4px; opacity: 0; transition: opacity .2s; }
-            .save-msg.visible { opacity: 1; }
+    .sa-head
+        button.sa-ico.sa-burger(type="button" data-sa-burger aria-label="Menu")
+            span.material-symbols-outlined menu
+        div
+            h1.sa-head__title Pages & fonctionnalités
+            .sa-head__sub Couper une page, la passer en maintenance ou masquer un lien du menu
 
-            .hidden-feature-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px; padding: 20px 22px; margin-bottom: 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-            .hidden-feature-card__label { font-size: 14px; font-weight: 600; color: #fff; }
-            .hidden-feature-card__desc { font-size: 12px; color: #555; margin-top: 4px; max-width: 480px; }
-            .toggle-switch { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
-            .toggle-switch input { opacity: 0; width: 0; height: 0; }
-            .toggle-switch__slider { position: absolute; cursor: pointer; inset: 0; background: #2a2a2a; border: 1px solid #333; border-radius: 999px; transition: background .15s; }
-            .toggle-switch__slider::before { content: ""; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #888; border-radius: 50%; transition: transform .15s, background .15s; }
-            .toggle-switch input:checked + .toggle-switch__slider { background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.4); }
-            .toggle-switch input:checked + .toggle-switch__slider::before { transform: translateX(20px); background: #22c55e; }
+    .sa-body
+        .sa-kpis
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined toggle_on
+                    span Pages surveillées
+                .sa-kpi__value= features.length
+                .sa-kpi__delta(class=enPanne ? 'sa-kpi__delta--down' : '')= enPanne ? enPanne + ' hors service' : 'Toutes actives'
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined visibility_off
+                    span Liens masqués
+                .sa-kpi__value= liensCaches
+                .sa-kpi__delta Invisibles dans le menu des pros
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined extension
+                    span Modules coupés
+                .sa-kpi__value= modulesCoupes
+                .sa-kpi__delta= 'sur ' + adminFeatures.length + ' modules'
 
-            .nav-section-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
-            .nav-section-group__title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #666; }
-            .nav-section-group .hidden-feature-card { margin-bottom: 0; padding: 14px 18px; }
-            .nav-section-group .hidden-feature-card__desc { font-family: monospace; }
-    body
-        - var saPage = 'features'
-        include ../../includes/sa-nav
+        .sa-tabs
+            button.sa-tab.is-active(type="button" data-onglet="pages") Pages publiques
+            button.sa-tab(type="button" data-onglet="menu") Menu des pros
+            button.sa-tab(type="button" data-onglet="modules") Modules
 
-        .page-header
-            h1 🚧 Pages & fonctionnalités
-            p Mets une page en maintenance, en erreur temporaire, ou désactive-la complètement, avec un message personnalisé.
-
-        .hidden-feature-card
-            div
-                .hidden-feature-card__label 📱 Notifications SMS aux clients
-                .hidden-feature-card__desc Envoie un SMS de confirmation au client après une réservation (en plus de l'email). Fonctionnalité préparée mais désactivée par défaut.
-            label.toggle-switch
-                input#smsNotifToggle(type="checkbox" checked=smsNotificationsEnabled)
-                span.toggle-switch__slider
-
-        .page-header
-            h1 🧭 Navigation (sidebar admin)
-            p Détecté automatiquement depuis le menu — coche/décoche pour afficher ou cacher un lien à tous les comptes pendant que tu développes une page.
-
-        .feature-list(style="margin-bottom: 28px;")
-            each section in navSections
-                .nav-section-group
-                    .nav-section-group__title= section.label
-                    each l in section.links
-                        .hidden-feature-card(data-nav-key=l.key)
-                            div
-                                .hidden-feature-card__label= l.label
-                                .hidden-feature-card__desc= l.href
-                            label.toggle-switch
-                                input.navLinkToggle(type="checkbox" checked=l.enabled)
-                                span.toggle-switch__slider
-
-        .page-header
-            h1 🧩 Fonctionnalités admin (sidebar)
-            p Active/désactive ces fonctionnalités pour tous les comptes — pratique pour tester un nouveau module avant de le déployer largement.
-
-        .feature-list(style="margin-bottom: 28px;")
-            each f in adminFeatures
-                .hidden-feature-card(data-admin-feature-key=f.key)
-                    div
-                        .hidden-feature-card__label= f.label
-                        .hidden-feature-card__desc= f.key
-                    label.toggle-switch
-                        input.adminFeatureToggle(type="checkbox" checked=f.enabled)
-                        span.toggle-switch__slider
-
-        .feature-list
+        //- ── Pages publiques ───────────────────────────────────────────────
+        .sa-pane.is-active#pane-pages
             each f in features
-                .feature-card(data-key=f.key)
-                    .feature-card__top
+                .sa-card.sa-flag(data-key=f.key style="margin-bottom:12px")
+                    .sa-flag__top
                         div
-                            .feature-card__label= f.label
-                            .feature-card__key= f.key
-                        span.status-badge(class=`status-badge--${f.status}`)
-                            = f.status === 'active' ? 'Actif' : f.status === 'maintenance' ? 'En construction' : f.status === 'error' ? 'Erreur temporaire' : 'Désactivé'
-                    .feature-card__row
-                        .field.field--status
-                            label Statut
-                            select.feature-status
-                                option(value="active" selected=f.status==='active') ✅ Actif
-                                option(value="maintenance" selected=f.status==='maintenance') 🚧 En cours de construction
-                                option(value="error" selected=f.status==='error') ⚠️ Erreur temporaire
-                                option(value="disabled" selected=f.status==='disabled') ⛔ Désactivé
-                        .field.field--message
-                            label Message personnalisé (optionnel)
-                            input.feature-message(type="text" placeholder="Laisser vide pour le message par défaut" value=f.message)
-                        button.btn-save(type="button") Enregistrer
-                        span.save-msg ✓ Enregistré
+                            .sa-flag__label= f.label
+                            .sa-mono.sa-muted= f.key
+                        span.sa-tag.js-badge(class=COULEURS[f.status])= LIBELLES[f.status]
+                    .sa-flag__row
+                        .sa-field(style="min-width:210px")
+                            span.sa-field__label Statut
+                            select.sa-select.js-statut
+                                option(value="active" selected=f.status === 'active') Actif
+                                option(value="maintenance" selected=f.status === 'maintenance') En cours de construction
+                                option(value="error" selected=f.status === 'error') Erreur temporaire
+                                option(value="disabled" selected=f.status === 'disabled') Désactivé
+                        .sa-field(style="flex:1;min-width:220px")
+                            span.sa-field__label Message affiché (facultatif)
+                            input.sa-input.js-message(type="text" placeholder="Vide = message par défaut" value=f.message)
+                        button.sa-btn.js-save(type="button" style="align-self:flex-end")
+                            span.material-symbols-outlined save
+                            span Enregistrer
 
-        script.
-            var smsToggle = document.getElementById('smsNotifToggle');
-            if (smsToggle) {
-                smsToggle.addEventListener('change', async function () {
-                    var enabled = smsToggle.checked;
-                    smsToggle.disabled = true;
-                    try {
-                        var res = await fetch('/superadmin/hidden-features/sms_notifications', {
+        //- ── Menu des pros ─────────────────────────────────────────────────
+        .sa-pane#pane-menu
+            .sa-alerte
+                span.material-symbols-outlined lightbulb
+                div Détecté automatiquement depuis le menu latéral des pros. Décochez un lien pour le masquer à <b>tous les comptes</b> pendant que la page est en travaux.
+            each section in navSections
+                .sa-card(style="margin-bottom:12px")
+                    .sa-card__t= section.label
+                    each l in section.links
+                        .sa-bascule(data-nav-key=l.key)
+                            div(style="min-width:0")
+                                .sa-flag__label= l.label
+                                .sa-mono.sa-muted= l.href
+                            label.sa-switch
+                                input.js-nav(type="checkbox" checked=l.enabled)
+                                span.sa-switch__track
+
+        //- ── Modules ───────────────────────────────────────────────────────
+        .sa-pane#pane-modules
+            .sa-card
+                .sa-card__t Modules activables
+                .sa-bascule(data-module-key="sms_notifications")
+                    div(style="min-width:0")
+                        .sa-flag__label Notifications SMS aux clients
+                        .sa-head__sub Envoie un SMS de confirmation après une réservation, en plus de l'email. Préparé mais désactivé par défaut.
+                    label.sa-switch
+                        input.js-module(type="checkbox" checked=smsNotificationsEnabled)
+                        span.sa-switch__track
+                each f in adminFeatures
+                    .sa-bascule(data-module-key=f.key)
+                        div(style="min-width:0")
+                            .sa-flag__label= f.label
+                            .sa-mono.sa-muted= f.key
+                        label.sa-switch
+                            input.js-module(type="checkbox" checked=f.enabled)
+                            span.sa-switch__track
+
+block scripts
+    script.
+        (function () {
+            // ── Onglets ───────────────────────────────────────────────────
+            document.querySelectorAll('[data-onglet]').forEach(function (tab) {
+                tab.addEventListener('click', function () {
+                    document.querySelectorAll('[data-onglet]').forEach(function (t) { t.classList.remove('is-active'); });
+                    document.querySelectorAll('.sa-pane').forEach(function (p) { p.classList.remove('is-active'); });
+                    tab.classList.add('is-active');
+                    document.getElementById('pane-' + tab.dataset.onglet).classList.add('is-active');
+                });
+            });
+
+            var LIBELLES = { active: 'Actif', maintenance: 'En construction', error: 'Erreur temporaire', disabled: 'Désactivé' };
+            var COULEURS = { active: 'sa-tag--green', maintenance: 'sa-tag--amber', error: 'sa-tag--red', disabled: '' };
+
+            // ── Statut d'une page publique ────────────────────────────────
+            document.querySelectorAll('.sa-flag').forEach(function (carte) {
+                carte.querySelector('.js-save').addEventListener('click', function () {
+                    var bouton = this;
+                    var statut = carte.querySelector('.js-statut').value;
+                    bouton.disabled = true;
+                    fetch('/superadmin/features/' + carte.dataset.key, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: statut, message: carte.querySelector('.js-message').value })
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (d) {
+                            bouton.disabled = false;
+                            if (!d.success) throw new Error(d.error || 'échec');
+                            var badge = carte.querySelector('.js-badge');
+                            badge.className = 'sa-tag js-badge ' + (COULEURS[statut] || '');
+                            badge.textContent = LIBELLES[statut];
+                            window.saToast('Statut mis à jour.');
+                        })
+                        .catch(function () {
+                            bouton.disabled = false;
+                            window.saToast('Enregistrement impossible.', 'err');
+                        });
+                });
+            });
+
+            // ── Bascules (liens du menu et modules) ───────────────────────
+            function brancher(selecteur, url) {
+                document.querySelectorAll(selecteur).forEach(function (input) {
+                    input.addEventListener('change', function () {
+                        var ligne = input.closest('.sa-bascule');
+                        var cle = ligne.dataset.navKey || ligne.dataset.moduleKey;
+                        var actif = input.checked;
+                        input.disabled = true;
+                        fetch(url(cle), {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ enabled: enabled }),
-                        });
-                        var data = await res.json();
-                        if (!data.success) smsToggle.checked = !enabled;
-                    } catch (e) { smsToggle.checked = !enabled; }
-                    smsToggle.disabled = false;
+                            body: JSON.stringify({ enabled: actif })
+                        })
+                            .then(function (r) { return r.json(); })
+                            .then(function (d) {
+                                input.disabled = false;
+                                if (!d.success) throw new Error(d.error || 'échec');
+                                window.saToast(actif ? 'Activé.' : 'Désactivé.');
+                            })
+                            .catch(function () {
+                                input.disabled = false;
+                                input.checked = !actif;
+                                window.saToast('Changement impossible.', 'err');
+                            });
+                    });
                 });
             }
-
-            document.querySelectorAll('.navLinkToggle').forEach(function (toggle) {
-                var card = toggle.closest('.hidden-feature-card');
-                var key = card.dataset.navKey;
-                toggle.addEventListener('change', async function () {
-                    var enabled = toggle.checked;
-                    toggle.disabled = true;
-                    try {
-                        var res = await fetch('/superadmin/nav/' + key + '/toggle', {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ enabled: enabled }),
-                        });
-                        var data = await res.json();
-                        if (!data.success) toggle.checked = !enabled;
-                    } catch (e) { toggle.checked = !enabled; }
-                    toggle.disabled = false;
-                });
-            });
-
-            document.querySelectorAll('.adminFeatureToggle').forEach(function (toggle) {
-                var card = toggle.closest('.hidden-feature-card');
-                var key = card.dataset.adminFeatureKey;
-                toggle.addEventListener('change', async function () {
-                    var enabled = toggle.checked;
-                    toggle.disabled = true;
-                    try {
-                        var res = await fetch('/superadmin/hidden-features/' + key, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ enabled: enabled }),
-                        });
-                        var data = await res.json();
-                        if (!data.success) toggle.checked = !enabled;
-                    } catch (e) { toggle.checked = !enabled; }
-                    toggle.disabled = false;
-                });
-            });
-
-            document.querySelectorAll('.feature-card').forEach(function (card) {
-                var key = card.dataset.key;
-                var btn = card.querySelector('.btn-save');
-                var msg = card.querySelector('.save-msg');
-
-                btn.addEventListener('click', async function () {
-                    var status = card.querySelector('.feature-status').value;
-                    var message = card.querySelector('.feature-message').value;
-                    btn.disabled = true;
-                    try {
-                        var res = await fetch('/superadmin/features/' + key, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ status: status, message: message }),
-                        });
-                        var data = await res.json();
-                        if (data.success) {
-                            var badge = card.querySelector('.status-badge');
-                            badge.className = 'status-badge status-badge--' + status;
-                            badge.textContent = status === 'active' ? 'Actif' : status === 'maintenance' ? 'En construction' : status === 'error' ? 'Erreur temporaire' : 'Désactivé';
-                            msg.classList.add('visible');
-                            setTimeout(function () { msg.classList.remove('visible'); }, 1800);
-                        }
-                    } catch (e) {}
-                    btn.disabled = false;
-                });
-            });
+            brancher('.js-nav', function (cle) { return '/superadmin/nav/' + cle + '/toggle'; });
+            brancher('.js-module', function (cle) { return '/superadmin/hidden-features/' + cle; });
+        })();

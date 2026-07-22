@@ -1,0 +1,886 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   BranShee — Base de composants partagée
+   ═══════════════════════════════════════════════════════════════════════════
+
+   UNE seule définition par composant, pour toute l'application.
+   Avant ce fichier : 4 systèmes d'onglets et 6 systèmes de tableaux
+   divergents (tailles de police, retraits et bordures tous différents).
+
+   Règles :
+   • Toute nouvelle page utilise les classes `ds-*` ci-dessous.
+   • Les anciens noms de classes sont listés en alias dans chaque règle :
+     on ne les recopie plus, on les branche ici. Quand une page n'utilise
+     plus son alias, on le retire de la liste.
+   • Les boutons restent dans classes.css (`.sm-btn`) — voir CONVENTIONS.md.
+   • Les couleurs, ombres et rayons viennent des jetons de import.css :
+     ne jamais écrire une valeur en dur ici.
+
+   Page de démonstration : /design.html
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Échelle typographique de l'interface */
+  --ds-fs-xs: 11.5px;   /* étiquettes, compteurs */
+  --ds-fs-sm: 12.5px;   /* texte secondaire, aide */
+  --ds-fs-md: 13.5px;   /* corps des tableaux et champs */
+  --ds-fs-lg: 14px;     /* onglets, boutons */
+  --ds-fs-title: 15px;  /* titres de section */
+
+  /* Rayons */
+  --ds-r-sm: 8px;
+  --ds-r-md: 10px;
+  --ds-r-lg: 14px;
+  --ds-r-pill: 999px;
+
+  /* Hauteurs de contrôle — un champ et un bouton doivent s'aligner */
+  --ds-h-sm: 32px;
+  --ds-h-md: 38px;
+
+  /* Ombres */
+  --ds-shadow-sm: 0 1px 2px rgba(16, 24, 40, .05);
+  --ds-shadow-md: 0 4px 12px -4px rgba(16, 24, 40, .12);
+  --ds-shadow-pop: 0 12px 28px -10px rgba(16, 24, 40, .28);
+
+  /* Anneau de focus — identique sur tous les contrôles */
+  --ds-ring: 0 0 0 3px var(--accent-glow, rgba(30, 122, 78, .16));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ONGLETS — référence : la fiche client
+   Soulignement fin, pas de pilule, pas de fond.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ds-tabs,
+.cd-tabs,
+.av2-tabs,
+.cz-tabs {
+  display: flex;
+  gap: 26px;
+  border-bottom: 1px solid var(--border-light);
+  margin: 12px 0 22px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ds-tabs::-webkit-scrollbar,
+.cd-tabs::-webkit-scrollbar,
+.av2-tabs::-webkit-scrollbar,
+.cz-tabs::-webkit-scrollbar { display: none; }
+
+.ds-tab,
+.cd-tab,
+.av2-tab,
+.cz-tab {
+  padding: 10px 2px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-family: inherit;
+  font-size: var(--ds-fs-lg);
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .12s, border-color .12s;
+}
+.ds-tab:hover,
+.cd-tab:hover,
+.av2-tab:hover,
+.cz-tab:hover { color: var(--text-primary); }
+
+.ds-tab.is-active,
+.cd-tab.is-active,
+.av2-tab.is-active,
+.cz-tab.is-active {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+  font-weight: 600;
+}
+.ds-tab:focus-visible,
+.cd-tab:focus-visible,
+.av2-tab:focus-visible,
+.cz-tab:focus-visible { outline: none; box-shadow: var(--ds-ring); border-radius: 4px; }
+
+/* Compteur dans un onglet */
+.ds-tab__count {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: var(--ds-r-pill);
+  background: var(--surface-2);
+  font-size: var(--ds-fs-xs);
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.ds-tab.is-active .ds-tab__count { background: var(--accent-soft); color: var(--accent); }
+
+/* Panneaux liés aux onglets */
+.ds-panel, .cd-panel { display: none; }
+.ds-panel.is-active, .cd-panel.is-active { display: block; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TABLEAUX — référence : la liste des clients
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ds-table-wrap,
+.cb-table-wrap,
+.ch-table-wrap,
+.sv2-table-wrap { width: 100%; overflow-x: auto; }
+
+.ds-table,
+.cb-table,
+.ch-table,
+.sv2-table,
+.est-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ds-fs-md);
+}
+/* En-tête de colonne. `.ch-th` / `.ch-td` sont les classes de cellule de la
+   page Clients, prise comme référence : c'est sa mesure exacte (12,5 px,
+   graisse 500, retrait 10/16) qui est reprise ici pour tout le site. */
+.ds-table thead th,
+.cb-table thead th,
+.ch-table thead th,
+.sv2-table thead th,
+.est-table thead th,
+.ch-th {
+  text-align: left;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--ds-fs-sm);
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.ds-table tbody td,
+.cb-table tbody td,
+.ch-table tbody td,
+.sv2-table tbody td,
+.est-table tbody td,
+.ch-td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: var(--ds-fs-md);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+.ds-table tbody tr:hover > td { background: var(--surface); }
+.ds-th--right, .ds-td--right { text-align: right; }
+.ds-td--actions { text-align: right; white-space: nowrap; }
+.ds-td--actions > * + * { margin-left: 6px; }
+
+/* ── Colonne de sélection ─────────────────────────────────────────────────
+   Case à cocher NUE (sans le libellé de .ds-choice) : dans un tableau, la
+   ligne fait office d'étiquette. C'est le modèle de la page Clients. */
+.ds-th--check, .ds-td--check, .ch-th--check, .ch-td--check { width: 40px; padding-right: 0; }
+/* Sélecteur `input.xxx` : robuste face à une éventuelle règle globale sur
+   `input`. NB : les 1.5px de bordure s'affichent 1px sur un écran non-Retina,
+   le navigateur arrondissant au pixel physique — c'est voulu, identique à la
+   page Clients. */
+input.ds-check,
+input.ch-check {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1.5px solid var(--border-medium);
+  border-radius: 5px;
+  background: var(--surface-card);
+  cursor: pointer;
+  vertical-align: middle;
+  transition: border-color .12s, background .12s;
+}
+.ds-check:hover, .ch-check:hover { border-color: var(--accent); }
+.ds-check:focus-visible, .ch-check:focus-visible { outline: none; box-shadow: var(--ds-ring); }
+.ds-check:checked, .ch-check:checked,
+.ds-check:indeterminate, .ch-check:indeterminate { background: var(--accent); border-color: var(--accent); }
+.ds-check:checked::after, .ch-check:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px; top: 2px;
+  width: 4px; height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.ds-check:indeterminate::after, .ch-check:indeterminate::after {
+  content: '';
+  position: absolute;
+  left: 3px; top: 7px;
+  width: 10px; height: 2px;
+  border-radius: 1px;
+  background: #fff;
+}
+
+/* ── Pastille d'initiales (quand il n'y a pas de photo) ──────────────────── */
+.ds-avatar,
+.ch-avatar {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+/* Palette tournante, indexée sur le nom. */
+
+.av-0 { background: #dbeafe; color: #1d4ed8; }
+.av-1 { background: var(--accent-soft, #ecfdf3); color: var(--accent, #16a34a); }
+.av-2 { background: #fef3c7; color: #b45309; }
+.av-3 { background: #fce7f3; color: #9d174d; }
+.av-4 { background: #ede9fe; color: #6d28d9; }
+.av-5 { background: #ffedd5; color: #c2410c; }
+.av-6 { background: #cffafe; color: #0e7490; }
+.av-7 { background: #f0fdf4; color: #15803d; }
+
+/* ── Bouton « ⋮ » de fin de ligne ─────────────────────────────────────────── */
+.ds-kebab,
+.ch-kebab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ds-h-sm);
+  height: var(--ds-h-sm);
+  border: none;
+  border-radius: var(--ds-r-sm);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.ds-kebab:hover, .ch-kebab:hover { background: var(--surface-2); color: var(--text-primary); }
+.ds-kebab:focus-visible { outline: none; box-shadow: var(--ds-ring); }
+
+/* ── Cellule « personne » : photo + nom + ligne secondaire ────────────────
+   Métriques reprises telles quelles de la page Clients. Elles fixent la
+   HAUTEUR DE LIGNE de tous les tableaux du site : `line-height: 1.25` sur les
+   deux lignes de texte, avatar 34 px. Sans cette hauteur de ligne, le texte
+   héritait du 1,55 du corps de page et la ligne gagnait ~8 px — les tableaux
+   n'avaient plus la même hauteur d'une page à l'autre. */
+.ds-person, .ch-client, .cb-member { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.ds-person__img, .cb-member__avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--surface-2);
+}
+.ds-person__txt, .ch-client-info, .cb-member__txt {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+.ds-person__name, .ch-client-name, .cb-member__name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.ds-person__sub, .ch-client-sub, .cb-member__mail {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Une étiquette dans le nom (« Vous », « Désactivé »…) ne doit pas grandir la
+   ligne. Boîte compacte et SANS bordure : avec ses 3px de retrait vertical et
+   son filet, l'étiquette normale dépassait la ligne de texte d'environ 1px et
+   la ligne du tableau perdait sa hauteur commune. */
+.ds-person__name .ds-badge,
+.ds-person__name .cb-you, .cb-member__name .cb-you,
+.cb-member__name .cb-tag {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-left: 7px;
+  padding: 1px 7px;
+  border: none;
+  font-size: 10.5px;
+  line-height: 1;
+}
+
+/* Ligne mise en évidence (le compte connecté, un élément sélectionné…) */
+.ds-row--highlight > td { background: var(--accent-soft); }
+.ds-row--highlight:hover > td { background: var(--accent-soft); }
+.ds-row--highlight > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.ds-row--muted > td { opacity: .55; }
+
+/* État vide dans un tableau */
+.ds-empty { text-align: center; padding: 34px 0; color: var(--text-muted); }
+.ds-empty .material-symbols-outlined { opacity: .35; font-size: 30px; }
+.ds-empty p { margin: 6px 0 0; font-size: var(--ds-fs-md); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BARRE D'OUTILS (recherche + actions au-dessus d'un tableau)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ds-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.ds-toolbar__end { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap; }
+
+.ds-search { position: relative; flex: 1 1 260px; max-width: 320px; }
+.ds-search__ic {
+  position: absolute; left: 11px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.ds-search__input {
+  width: 100%;
+  height: var(--ds-h-md);
+  padding: 0 12px 0 36px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-sm);
+  background: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--ds-fs-md);
+  color: var(--text-primary);
+}
+.ds-search__input:focus { outline: none; border-color: var(--accent); box-shadow: var(--ds-ring); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CHAMPS — étiquette + contrôle + texte d'aide
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ds-field { display: flex; flex-direction: column; gap: 6px; }
+.ds-label {
+  font-size: var(--ds-fs-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.ds-label__opt { font-weight: 400; color: var(--text-muted); }
+.ds-help { font-size: var(--ds-fs-sm); color: var(--text-muted); line-height: 1.5; }
+.ds-help--error { color: var(--danger); }
+
+.ds-input,
+.ds-select,
+.ds-textarea {
+  width: 100%;
+  height: var(--ds-h-md);
+  padding: 0 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-sm);
+  background: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--ds-fs-md);
+  color: var(--text-primary);
+  transition: border-color .12s, box-shadow .12s;
+}
+.ds-textarea { height: auto; padding: 10px 12px; line-height: 1.55; resize: vertical; }
+.ds-input::placeholder, .ds-textarea::placeholder { color: var(--text-muted); }
+.ds-input:hover, .ds-select:hover, .ds-textarea:hover { border-color: var(--border-medium); }
+.ds-input:focus, .ds-select:focus, .ds-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ds-ring);
+}
+.ds-input:disabled, .ds-select:disabled, .ds-textarea:disabled {
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+.ds-input.is-error, .ds-select.is-error, .ds-textarea.is-error { border-color: var(--danger); }
+.ds-input.is-error:focus { box-shadow: 0 0 0 3px var(--danger-border); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SELECT ÉVOLUÉ (.ds-sel)
+   Un `<select>` natif ne se laisse pas habiller : sa LISTE reste celle du
+   système (fond bleu Windows, police système…). Ce composant remplace
+   l'affichage par un bouton + un panneau maison, tout en gardant le `<select>`
+   d'origine dans le DOM (masqué) : `.value`, `.selectedOptions` et l'événement
+   `change` continuent de fonctionner, donc le JS existant n'est pas touché.
+
+   Usage : ajouter `data-ds-select` au <select>, le script commun
+   /js/components/ds-select.js fait le reste. Multi-sélection gérée.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ds-sel, .psel { position: relative; }
+.ds-sel__native, .psel__native {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.ds-sel__btn, .psel__btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--ds-h-md);
+  padding: 0 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-sm);
+  background: var(--surface-card);
+  font: 500 var(--ds-fs-md) var(--font-primary, inherit);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .12s, box-shadow .12s;
+}
+.ds-sel__btn:hover, .psel__btn:hover { border-color: var(--border-medium); }
+.ds-sel.is-open .ds-sel__btn, .psel.is-open .psel__btn {
+  border-color: var(--accent);
+  box-shadow: var(--ds-ring);
+}
+.ds-sel__label, .psel__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds-sel__label.is-empty, .psel__label.is-empty { color: var(--text-muted); font-weight: 400; }
+.ds-sel__chev, .psel__chev { font-size: 18px; color: var(--text-muted); flex-shrink: 0; transition: transform .15s; }
+.ds-sel.is-open .ds-sel__chev, .psel.is-open .psel__chev { transform: rotate(180deg); }
+
+.ds-sel__menu, .psel__menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  z-index: 60;
+  max-height: 290px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-md);
+  background: var(--surface-card);
+  box-shadow: var(--ds-shadow-pop);
+}
+.ds-sel.is-open .ds-sel__menu, .psel.is-open .psel__menu { display: block; }
+
+.ds-sel__opt, .psel__opt {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: var(--ds-r-sm);
+  font-size: var(--ds-fs-md);
+  color: var(--text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .12s;
+}
+.ds-sel__opt:hover, .psel__opt:hover { background: var(--surface); }
+.ds-sel__opt.is-selected, .psel__opt.is-selected { background: var(--accent-soft); font-weight: 600; }
+.ds-sel__opt-txt, .psel__opt-txt { flex: 1; min-width: 0; }
+.ds-sel__check, .psel__check { font-size: 18px; color: var(--accent); display: none; flex-shrink: 0; }
+.ds-sel__opt.is-selected .ds-sel__check,
+.psel__opt.is-selected .psel__check { display: inline-flex; }
+
+/* Version compacte, pour les cellules de tableau */
+.ds-sel--sm .ds-sel__btn { min-height: var(--ds-h-sm); font-size: var(--ds-fs-sm); }
+.ds-sel--sm .ds-sel__opt { padding: 7px 9px; font-size: var(--ds-fs-sm); }
+
+/* Flèche du select dessinée en CSS : les flèches natives diffèrent d'un OS à l'autre */
+.ds-select {
+  appearance: none;
+  padding-right: 32px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238a919e'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 18px;
+}
+.ds-input--sm, .ds-select--sm { height: var(--ds-h-sm); font-size: var(--ds-fs-sm); }
+
+/* Champ avec icône ou préfixe (ex. « https:// ») */
+.ds-input-group {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-sm);
+  background: var(--surface-card);
+  overflow: hidden;
+  transition: border-color .12s, box-shadow .12s;
+}
+.ds-input-group:focus-within { border-color: var(--accent); box-shadow: var(--ds-ring); }
+.ds-input-group .ds-input { border: none; box-shadow: none; }
+.ds-input-group .ds-input:focus { box-shadow: none; }
+.ds-input-group__ic {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 12px;
+  color: var(--text-muted);
+  font-size: 18px;
+}
+.ds-input-group__prefix {
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-right: 1px solid var(--border-light);
+  background: var(--surface);
+  font-size: var(--ds-fs-md);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.ds-input-group__suffix {
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-left: 1px solid var(--border-light);
+  background: var(--surface);
+  font-size: var(--ds-fs-sm);
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CASES À COCHER ET BOUTONS RADIO
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ds-choice { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+.ds-choice input { position: absolute; opacity: 0; width: 0; height: 0; }
+.ds-choice__box {
+  flex-shrink: 0;
+  position: relative;
+  width: 18px; height: 18px;
+  margin-top: 1px;
+  border: 1.5px solid var(--border-medium);
+  border-radius: 5px;
+  background: var(--surface-card);
+  transition: background .12s, border-color .12s, box-shadow .12s;
+}
+.ds-choice--radio .ds-choice__box { border-radius: 50%; }
+.ds-choice:hover .ds-choice__box { border-color: var(--accent); }
+.ds-choice input:focus-visible + .ds-choice__box { box-shadow: var(--ds-ring); }
+
+.ds-choice input:checked + .ds-choice__box { background: var(--accent); border-color: var(--accent); }
+/* Coche dessinée à la main : pas de dépendance à une police d'icônes */
+.ds-choice input:checked + .ds-choice__box::after {
+  content: "";
+  position: absolute;
+  left: 5px; top: 1.5px;
+  width: 5px; height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.ds-choice--radio input:checked + .ds-choice__box::after {
+  left: 4px; top: 4px;
+  width: 8px; height: 8px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  transform: none;
+}
+/* État indéterminé (sélection partielle d'une liste) */
+.ds-choice input:indeterminate + .ds-choice__box { background: var(--accent); border-color: var(--accent); }
+.ds-choice input:indeterminate + .ds-choice__box::after {
+  content: "";
+  position: absolute;
+  left: 3px; top: 7px;
+  width: 10px; height: 2px;
+  border: none;
+  background: #fff;
+  transform: none;
+}
+.ds-choice input:disabled + .ds-choice__box { background: var(--surface); border-color: var(--border-light); }
+.ds-choice:has(input:disabled) { cursor: not-allowed; opacity: .6; }
+
+/* Les deux lignes sont des <span> : sans `display:block` l'aide se colle à
+   la suite de l'étiquette au lieu de passer dessous. */
+.ds-choice__txt { min-width: 0; display: block; }
+.ds-choice__label { display: block; font-size: var(--ds-fs-md); color: var(--text-primary); }
+.ds-choice__help { display: block; font-size: var(--ds-fs-sm); color: var(--text-muted); margin-top: 1px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INTERRUPTEUR
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ds-switch { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; }
+.ds-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.ds-switch__track {
+  position: relative;
+  width: 40px; height: 23px;
+  border-radius: var(--ds-r-pill);
+  background: var(--surface-2);
+  transition: background .15s;
+}
+.ds-switch__track::after {
+  content: "";
+  position: absolute;
+  top: 2.5px; left: 2.5px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--ds-shadow-sm);
+  transition: transform .15s;
+}
+.ds-switch input:checked + .ds-switch__track { background: var(--accent); }
+.ds-switch input:checked + .ds-switch__track::after { transform: translateX(17px); }
+.ds-switch input:focus-visible + .ds-switch__track { box-shadow: var(--ds-ring); }
+.ds-switch__label { font-size: var(--ds-fs-md); color: var(--text-secondary); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ÉTIQUETTES ET COMPTEURS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ds-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-pill);
+  background: var(--surface-card);
+  font-size: var(--ds-fs-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.ds-badge--success { border-color: var(--accent-border); background: var(--accent-soft); color: var(--accent); }
+.ds-badge--warning { border-color: rgba(217, 119, 6, .25); background: var(--warning-pale); color: var(--warning); }
+.ds-badge--danger  { border-color: var(--danger-border); background: var(--danger-pale); color: var(--danger); }
+.ds-badge--solid   { border-color: var(--accent); background: var(--accent); color: #fff; }
+
+.ds-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px; height: 19px;
+  padding: 0 6px;
+  border-radius: var(--ds-r-pill);
+  background: var(--danger);
+  color: #fff;
+  font-size: var(--ds-fs-xs);
+  font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BOUTONS EN ICÔNE + MENU « ⋯ »
+   Deux façons d'agir sur une ligne de tableau : icônes visibles (2 actions
+   max) ou menu à trois points (au-delà). Ne pas mélanger les deux.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ds-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ds-h-sm);
+  height: var(--ds-h-sm);
+  border: 1px solid transparent;
+  border-radius: var(--ds-r-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.ds-ico .material-symbols-outlined { font-size: 19px; }
+.ds-ico:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+.ds-ico--danger:hover { background: var(--danger-pale); border-color: var(--danger-border); color: var(--danger); }
+.ds-ico:focus-visible { outline: none; box-shadow: var(--ds-ring); }
+.ds-ico:disabled { opacity: .45; cursor: default; }
+
+.ds-menu { position: relative; display: inline-block; }
+.ds-menu__list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 40;
+  min-width: 190px;
+  padding: 6px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-md);
+  background: var(--surface-card);
+  box-shadow: var(--ds-shadow-pop);
+  display: none;
+}
+.ds-menu.is-open .ds-menu__list { display: block; }
+.ds-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--ds-r-sm);
+  background: none;
+  font-family: inherit;
+  font-size: var(--ds-fs-md);
+  color: var(--text-primary);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ds-menu__item:hover { background: var(--surface); }
+.ds-menu__item .material-symbols-outlined { font-size: 18px; color: var(--text-muted); }
+.ds-menu__item--danger { color: var(--danger); }
+.ds-menu__item--danger .material-symbols-outlined { color: var(--danger); }
+.ds-menu__item--danger:hover { background: var(--danger-pale); }
+.ds-menu__sep { height: 1px; margin: 5px 0; background: var(--border-light); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CARTES ET SÉPARATEURS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ds-box {
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-lg);
+  padding: 16px 18px;
+}
+.ds-box__title { margin: 0; font-size: var(--ds-fs-title); font-weight: 700; color: var(--text-primary); }
+.ds-box__sub { margin: 3px 0 0; font-size: var(--ds-fs-sm); color: var(--text-muted); line-height: 1.55; }
+.ds-sep { height: 1px; background: var(--border-light); border: none; margin: 16px 0; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ALERTES ET NOTIFICATIONS
+   Une carte blanche, une pastille d'icône cerclée qui porte la couleur, un
+   titre, une explication, puis des actions en lien. Le fond reste blanc :
+   c'est l'icône et le liseré qui donnent le ton, pas un aplat coloré.
+
+   <div class="ds-alert ds-alert--warning">
+     <span class="ds-alert__ic material-symbols-outlined">warning</span>
+     <div class="ds-alert__body">
+       <p class="ds-alert__title">…</p>
+       <p class="ds-alert__text">…</p>
+       <div class="ds-alert__actions">…</div>
+     </div>
+     <button class="ds-alert__close">…</button>
+   </div>
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ds-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-md);
+  background: var(--surface-card);
+  box-shadow: var(--ds-shadow-sm);
+}
+.ds-alert + .ds-alert { margin-top: 12px; }
+
+/* Sélecteur à deux classes VOLONTAIREMENT : la feuille de Google Fonts définit
+   `.material-symbols-outlined { display: block }`. Avec une seule classe, elle
+   gagnait (même spécificité, chargée après) et le glyphe se calait en haut à
+   gauche du cercle au lieu d'être centré. */
+/* L'icône EST le rond : on utilise les glyphes circulaires de Material Symbols
+   (info / check_circle / error), sans anneau dessiné autour. Un cercle dans un
+   cercle se voyait, et le triangle « warning » tombait mal dans la pastille.
+   Sélecteur à deux classes VOLONTAIREMENT : la feuille de Google Fonts définit
+   `.material-symbols-outlined { display: block }` et gagnait sur une seule
+   classe (même spécificité, chargée après), ce qui décalait le glyphe. */
+.ds-alert .ds-alert__ic {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;         /* aligne l'icône sur la première ligne du titre */
+  font-size: 22px;
+  line-height: 1;          /* la boîte du glyphe = son cadratin : centrage exact */
+  color: var(--text-muted);
+}
+.ds-alert__body { flex: 1; min-width: 0; }
+.ds-alert__title {
+  margin: 0;
+  font-size: var(--ds-fs-md);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+.ds-alert__text {
+  margin: 3px 0 0;
+  font-size: var(--ds-fs-md);
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+.ds-alert__actions { display: flex; align-items: center; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+.ds-alert__link {
+  /* `display` et `line-height` explicites : un <button> a une hauteur de ligne
+     « normal » alors qu'un <a> hérite de celle du corps de texte. Mélangés sur
+     la même ligne, les deux libellés ne tombaient pas à la même hauteur. */
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.45;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: var(--ds-fs-md);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  cursor: pointer;
+}
+.ds-alert__link:hover { color: var(--text-primary); text-decoration: underline; }
+.ds-alert__link--strong { color: var(--accent); }
+.ds-alert__link--strong:hover { color: var(--accent-hover); }
+
+.ds-alert__close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin: -2px -4px 0 0;
+  border: none;
+  border-radius: var(--ds-r-sm);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.ds-alert__close:hover { background: var(--surface); color: var(--text-primary); }
+.ds-alert__close .material-symbols-outlined { font-size: 18px; }
+
+/* Variantes : seule la couleur de l'icône change.
+   Glyphes Material à utiliser — tous circulaires, pour rester homogènes :
+     info → `info`   success → `check_circle`   warning → `error`   danger → `error` */
+.ds-alert--info .ds-alert__ic    { color: var(--text-secondary); }
+.ds-alert--success .ds-alert__ic { color: var(--accent); }
+.ds-alert--warning .ds-alert__ic { color: var(--warning); }
+.ds-alert--danger .ds-alert__ic  { color: var(--danger); }
+.ds-alert--success .ds-alert__link--strong { color: var(--accent); }
+.ds-alert--warning .ds-alert__link--strong { color: var(--warning); }
+.ds-alert--danger .ds-alert__link--strong  { color: var(--danger); }
+
+/* Variante « bandeau » : tout sur une ligne, actions à droite.
+   Pour un message permanent en haut de page (limite de forfait, mode lecture
+   seule…) plutôt qu'une notification ponctuelle. */
+.ds-alert--row { align-items: center; padding: 12px 16px; }
+.ds-alert--row .ds-alert__body { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ds-alert--row .ds-alert__text { margin: 0; }
+.ds-alert--row .ds-alert__actions { margin: 0 0 0 auto; padding-left: 16px; }
+
+@media (max-width: 700px) {
+  .ds-alert--row { align-items: flex-start; }
+  .ds-alert--row .ds-alert__actions { margin: 10px 0 0; padding-left: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAGINATION
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ds-pager { display: flex; align-items: center; gap: 6px; }
+.ds-pager__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--ds-h-sm);
+  min-width: var(--ds-h-sm);
+  padding: 0 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-sm);
+  background: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--ds-fs-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.ds-pager__btn:hover:not(:disabled) { background: var(--surface); border-color: var(--border-medium); }
+.ds-pager__btn.is-active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.ds-pager__btn:disabled { opacity: .45; cursor: default; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ACCESSIBILITÉ
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .ds-tab, .ds-input, .ds-select, .ds-ico, .ds-choice__box, .ds-switch__track,
+  .ds-switch__track::after { transition: none; }
+}

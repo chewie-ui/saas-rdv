@@ -1,0 +1,63 @@
+//- Barre latérale du panel superadmin.
+//- Attend : saPage — clé de la page active.
+//- Clés : users | estab | reports | logs | promo | boost | referrals | links
+//-        messages | chat | support | features
+aside.sa-side#saSide
+    a.sa-brand(href="/superadmin")
+        span.sa-brand__mark SA
+        span.sa-brand__name Superadmin
+
+    .sa-side__group
+        .sa-side__label Personnes
+        a.sa-link(href="/superadmin" class=saPage === 'users' ? 'is-active' : '')
+            span.material-symbols-outlined group
+            span Utilisateurs
+        a.sa-link(href="/superadmin/establishments" class=saPage === 'estab' ? 'is-active' : '')
+            span.material-symbols-outlined storefront
+            span Établissements
+
+    .sa-side__group
+        .sa-side__label Modération
+        a.sa-link(href="/superadmin/signalements" class=saPage === 'reports' ? 'is-active' : '')
+            span.material-symbols-outlined flag
+            span Signalements
+            span.sa-link__badge#saReportBadge(style="display:none")
+        a.sa-link(href="/superadmin/logs" class=saPage === 'logs' ? 'is-active' : '')
+            span.material-symbols-outlined monitoring
+            span Logs
+
+    .sa-side__group
+        .sa-side__label Croissance
+        a.sa-link(href="/superadmin/promo-codes" class=saPage === 'promo' ? 'is-active' : '')
+            span.material-symbols-outlined confirmation_number
+            span Codes promo
+        a.sa-link(href="/superadmin/boost" class=saPage === 'boost' ? 'is-active' : '')
+            span.material-symbols-outlined trending_up
+            span Boost
+        a.sa-link(href="/superadmin/referrals" class=saPage === 'referrals' ? 'is-active' : '')
+            span.material-symbols-outlined redeem
+            span Parrainage
+        a.sa-link(href="/superadmin/access-links" class=saPage === 'links' ? 'is-active' : '')
+            span.material-symbols-outlined link
+            span Liens d'accès
+
+    .sa-side__group
+        .sa-side__label Communication
+        a.sa-link(href="/superadmin/messages" class=saPage === 'messages' ? 'is-active' : '')
+            span.material-symbols-outlined campaign
+            span Messages
+        a.sa-link(href="/superadmin/support-chat" class=saPage === 'chat' ? 'is-active' : '')
+            span.material-symbols-outlined chat
+            span Chat support
+            span.sa-link__badge#saChatBadge(style="display:none")
+        a.sa-link(href="/superadmin/support-editor" class=saPage === 'support' ? 'is-active' : '')
+            span.material-symbols-outlined edit_note
+            span Articles support
+        a.sa-link(href="/superadmin/features" class=saPage === 'features' ? 'is-active' : '')
+            span.material-symbols-outlined toggle_on
+            span Pages & features
+
+    .sa-side__foot
+        a.sa-link(href="/superadmin/logout")
+            span.material-symbols-outlined logout
+            span Déconnexion

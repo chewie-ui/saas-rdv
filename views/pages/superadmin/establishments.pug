@@ -1,492 +1,311 @@
-doctype html
-html(lang="fr")
-    head
-        meta(name="viewport" content="width=device-width, initial-scale=1.0")
-        meta(charset="UTF-8")
-        title Superadmin — Établissements
-        link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
-        link(rel="stylesheet" href="/css/import.css")
-        link(rel="stylesheet" href="/css/layouts/superadmin.css")
-        style.
-            body { padding: 0 24px 80px; }
-            .stats-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; }
-            .stat-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 16px 22px; min-width: 110px; }
-            .stat-card__value { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: -.02em; }
-            .stat-card__label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #555; margin-top: 4px; }
-            .search-bar { margin-bottom: 24px; }
-            .search-bar form { display: flex; gap: 10px; }
-            .search-bar input { flex: 1; max-width: 340px; background: #1a1a1a; border: 1.5px solid #2a2a2a; border-radius: 10px; color: #fff; font-size: 14px; padding: 9px 14px; outline: none; }
-            .search-bar input:focus { border-color: #444; }
-            .search-bar button { background: #2a2a2a; border: 1px solid #333; color: #ccc; font-size: 13px; font-weight: 600; padding: 9px 18px; border-radius: 10px; cursor: pointer; }
-            .est-table { width: 100%; border-collapse: collapse; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px; overflow: hidden; }
-            .est-table thead th { text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #444; padding: 12px 18px; border-bottom: 1px solid #222; background: #161616; }
-            .est-table tbody tr { border-bottom: 1px solid #1f1f1f; transition: background .12s; }
-            .est-table tbody tr:last-child { border-bottom: none; }
-            .est-table tbody tr:hover { background: #1f1f1f; }
-            .est-table td { padding: 12px 18px; font-size: 13px; color: #ccc; vertical-align: middle; }
-            .est-name { font-weight: 600; color: #fff; display: flex; align-items: center; gap: 10px; }
-            .est-avatar { width: 32px; height: 32px; border-radius: 8px; background: #2a2a2a; object-fit: cover; flex-shrink: 0; }
-            .est-avatar--placeholder { display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #555; width: 32px; height: 32px; border-radius: 8px; background: #222; border: 1px solid #2a2a2a; flex-shrink: 0; }
-            .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 3px 8px; border-radius: 5px; }
-            .badge--green { color: #22c55e; background: rgba(34,197,94,.08); border: 1px solid rgba(34,197,94,.2); }
-            .badge--red { color: #f87171; background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.2); }
-            .link-btn { font-size: 12px; color: #555; text-decoration: none; padding: 5px 10px; border: 1px solid #2a2a2a; border-radius: 7px; transition: color .15s, border-color .15s; white-space: nowrap; }
-            .link-btn:hover { color: #fff; border-color: #444; }
-            .owner-email { font-size: 11px; color: #555; margin-top: 2px; }
-            .empty-state { text-align: center; padding: 60px 24px; color: #444; font-size: 14px; }
-            /* Plan select */
-            .plan-select { appearance: none; background: #1f1f1f; border: 1.5px solid #2a2a2a; border-radius: 8px; color: #ccc; font-size: 12px; font-weight: 600; padding: 5px 28px 5px 10px; cursor: pointer; outline: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23555' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; transition: border-color .15s; }
-            .plan-select:focus { border-color: #444; }
-            .plan-select[data-plan="free"] { color: #555; }
-            .plan-select[data-plan="essentiel"] { color: #38bdf8; border-color: rgba(56,189,248,.3); }
-            .plan-select[data-plan="pro"] { color: #22c55e; border-color: rgba(34,197,94,.3); }
-            .plan-select[data-plan="business"] { color: #a78bfa; border-color: rgba(167,139,250,.3); }
-            .plan-select[data-plan="basic"] { color: #555; }
-            /* Durée d'octroi manuel (Infini / X jours) + jours restants */
-            .plan-cell { display: inline-flex; flex-direction: column; gap: 5px; align-items: flex-start; }
-            .plan-dur { display: inline-flex; align-items: center; gap: 7px; }
-            .dur-select { background: #171717; border: 1px solid #2a2a2a; border-radius: 7px; color: #999; font-size: 11px; font-weight: 600; padding: 3px 6px; cursor: pointer; outline: none; }
-            .dur-select:disabled { opacity: .4; cursor: not-allowed; }
-            .dur-select:focus { border-color: #444; }
-            .dur-badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px; background: #14261a; color: #4ade80; border: 1px solid rgba(74,222,128,.25); white-space: nowrap; }
-            .dur-badge--inf { background: #1f1f1f; color: #888; border-color: #333; }
-            .dur-badge--warn { background: #2b1616; color: #f87171; border-color: rgba(248,113,113,.3); }
-            .dur-date { font-size: 10.5px; color: #777; margin-left: 2px; white-space: nowrap; }
-            /* Edit btn */
-            .edit-btn { background: none; border: 1px solid #2a2a2a; border-radius: 7px; color: #555; padding: 5px 9px; cursor: pointer; transition: color .15s, border-color .15s; display: inline-flex; align-items: center; }
-            .edit-btn:hover { color: #fff; border-color: #444; }
-            .del-btn { background: none; border: 1px solid #3a1f1f; border-radius: 7px; color: #a45; padding: 5px 9px; cursor: pointer; transition: color .15s, border-color .15s, background .15s; display: inline-flex; align-items: center; }
-            .del-btn:hover { color: #fff; background: #dc2626; border-color: #dc2626; }
-            .del-btn:disabled { opacity: .5; cursor: default; }
-            /* Impersonation btns */
-            .imp-btn { font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 6px; border: 1px solid #2a2a2a; cursor: pointer; transition: all .15s; white-space: nowrap; }
-            .imp-btn--discrete { background: none; color: #555; }
-            .imp-btn--discrete:hover { background: #1f1f1f; color: #fff; border-color: #444; }
-            .imp-btn--supervision { background: none; color: #555; }
-            .imp-btn--supervision:hover { background: rgba(249,115,22,.1); color: #f97316; border-color: rgba(249,115,22,.4); }
-            .imp-btn:disabled { opacity: .45; cursor: not-allowed; }
-            /* Modal */
-            .sa-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(3px); }
-            .sa-modal { background: #111; border: 1px solid #2a2a2a; border-radius: 18px; padding: 28px; width: 420px; max-width: 95vw; }
-            .sa-modal__title { font-size: 16px; font-weight: 700; color: #fff; margin: 0 0 20px; }
-            .sa-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
-            .sa-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #555; }
-            .sa-input { background: #1a1a1a; border: 1.5px solid #2a2a2a; border-radius: 10px; color: #fff; font-size: 14px; padding: 9px 13px; outline: none; width: 100%; box-sizing: border-box; }
-            .sa-input:focus { border-color: #444; }
-            .sa-photo-preview { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; border: 1px solid #2a2a2a; background: #1a1a1a; }
-            .sa-photo-row { display: flex; align-items: center; gap: 12px; }
-            .sa-modal__actions { display: flex; gap: 8px; margin-top: 20px; }
-            .sa-btn { flex: 1; padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: opacity .15s; }
-            .sa-btn--primary { background: #fff; color: #111; }
-            .sa-btn--ghost { background: #1a1a1a; border: 1px solid #2a2a2a; color: #888; }
-            .sa-btn:disabled { opacity: .5; cursor: default; }
-            .sa-error { font-size: 12px; color: #f87171; margin-top: 8px; min-height: 16px; }
-    body
-        - var saPage = 'establishments'
-        include ../../includes/sa-nav
+extends ../../layouts/sa
 
-        .sa-header(style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:32px 0 24px")
-            .sa-header__left
-                h1(style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-.02em") 🏢 Établissements
-                p(style="font-size:13px;color:#555;margin-top:4px") Tous les espaces professionnels créés sur BranShee.
-            .sa-header__right
-                span(style="font-size:12px;color:#555;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:5px 12px;font-weight:600")= companies.length + ' établissements'
+block content
+    -
+        var palette = ['#6ee7b7', '#93c5fd', '#fcd34d', '#fca5a5', '#c4b5fd', '#f9a8d4', '#a5f3fc', '#bef264'];
+        function couleurAvatar(s) {
+            var n = 0;
+            for (var i = 0; i < String(s).length; i++) n += String(s).charCodeAt(i);
+            return palette[n % palette.length];
+        }
+        function jourFr(d) {
+            return d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+        }
+        var couleurPlan = { Free: '', Essentiel: 'sa-tag--blue', Pro: 'sa-tag--green', Business: 'sa-tag--violet' };
+        function requete(extra) {
+            var q = [];
+            if (filtres.search) q.push('search=' + encodeURIComponent(filtres.search));
+            if (filtres.plan !== 'tous') q.push('plan=' + filtres.plan);
+            if (filtres.statut !== 'tous') q.push('statut=' + filtres.statut);
+            if (filtres.tri !== 'recent') q.push('tri=' + filtres.tri);
+            if (extra) q.push(extra);
+            return q.length ? '?' + q.join('&') : '';
+        }
+        var filtreActif = filtres.search || filtres.plan !== 'tous' || filtres.statut !== 'tous';
 
-        - var totalRdv = companies.reduce(function(s,c){return s+c.bookingCount},0)
-        - var totalPaused = companies.filter(function(c){return c.isPaused}).length
-        .stats-row
-            .stat-card
-                .stat-card__value= companies.length
-                .stat-card__label Total
-            .stat-card
-                .stat-card__value= companies.filter(function(c){return !c.isPaused}).length
-                .stat-card__label Actifs
-            .stat-card
-                .stat-card__value= totalPaused
-                .stat-card__label En pause
-            .stat-card
-                .stat-card__value= totalRdv.toLocaleString('fr-FR')
-                .stat-card__label RDV total
+    .sa-head
+        button.sa-ico.sa-burger(type="button" data-sa-burger aria-label="Menu")
+            span.material-symbols-outlined menu
+        div
+            h1.sa-head__title Établissements
+            .sa-head__sub Le plan et la durée d'octroi se gèrent ici
+        .sa-head__end
+            a.sa-btn(href='/superadmin/establishments/export' + requete())
+                span.material-symbols-outlined download
+                span Exporter
 
-        .search-bar
-            form(method="GET" action="/superadmin/establishments")
-                input(type="text" name="search" value=search placeholder="Rechercher par nom, slug, métier...")
-                button(type="submit") Rechercher
-                if search
-                    a(href="/superadmin/establishments" style="font-size:13px;color:#555;text-decoration:none;padding:9px 12px") ✕ Effacer
+    .sa-body
+        .sa-kpis
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined storefront
+                    span Établissements
+                .sa-kpi__value= kpis.total.toLocaleString('fr-FR')
+                .sa-kpi__delta(class=kpis.nouveaux7j ? 'sa-kpi__delta--up' : '')= '+' + kpis.nouveaux7j + ' sur 7 jours'
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined check_circle
+                    span Actifs
+                .sa-kpi__value= kpis.actifs.toLocaleString('fr-FR')
+                .sa-kpi__delta(class=kpis.enPause ? 'sa-kpi__delta--down' : '')= kpis.enPause + ' en pause'
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined workspace_premium
+                    span Payants
+                .sa-kpi__value= kpis.payants.toLocaleString('fr-FR')
+                .sa-kpi__delta= kpis.total ? Math.round((kpis.payants / kpis.total) * 100) + ' % du parc' : '—'
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined payments
+                    span Revenu mensuel
+                .sa-kpi__value= kpis.mrr.toLocaleString('fr-FR') + ' €'
+                .sa-kpi__delta Estimé d'après les plans
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined event
+                    span Réservations
+                .sa-kpi__value= kpis.totalBookings.toLocaleString('fr-FR')
+                .sa-kpi__delta(class=kpis.bookings30j ? 'sa-kpi__delta--up' : '')= kpis.bookings30j.toLocaleString('fr-FR') + ' sur 30 jours'
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined heart_broken
+                    span Aucune réservation
+                .sa-kpi__value= kpis.sansRdv.toLocaleString('fr-FR')
+                .sa-kpi__delta Établissements à relancer
 
-        if companies.length === 0
-            .empty-state Aucun établissement trouvé.
+        form.sa-toolbar(method="GET" action="/superadmin/establishments" id="formFiltres")
+            label.sa-search
+                span.material-symbols-outlined search
+                input.sa-input(type="text" name="search" placeholder="Nom, lien ou métier…" value=filtres.search)
+            select.sa-select(name="plan" data-auto)
+                option(value="tous" selected=filtres.plan === 'tous') Tous les plans
+                option(value="basic" selected=filtres.plan === 'basic') Free
+                option(value="essentiel" selected=filtres.plan === 'essentiel') Essentiel
+                option(value="pro" selected=filtres.plan === 'pro') Pro
+                option(value="business" selected=filtres.plan === 'business') Business
+            select.sa-select(name="statut" data-auto)
+                option(value="tous" selected=filtres.statut === 'tous') Tous les statuts
+                option(value="actif" selected=filtres.statut === 'actif') Actifs
+                option(value="pause" selected=filtres.statut === 'pause') En pause
+                option(value="supprime" selected=filtres.statut === 'supprime') Supprimés par le pro
+            .sa-toolbar__end
+                select.sa-select(name="tri" data-auto)
+                    option(value="recent" selected=filtres.tri === 'recent') Plus récents
+                    option(value="ancien" selected=filtres.tri === 'ancien') Plus anciens
+                    option(value="nom" selected=filtres.tri === 'nom') Nom (A→Z)
+                    option(value="rdv" selected=filtres.tri === 'rdv') Plus de réservations
+                button.sa-btn(type="submit")
+                    span.material-symbols-outlined filter_alt
+                    span Filtrer
+                if filtreActif
+                    a.sa-btn(href="/superadmin/establishments")
+                        span.material-symbols-outlined close
+                        span Réinitialiser
+
+        if !companies.length
+            .sa-tablewrap
+                .sa-empty
+                    .sa-empty__ic
+                        span.material-symbols-outlined storefront
+                    .sa-empty__t Aucun établissement
+                    .sa-empty__d= filtreActif ? 'Aucun résultat pour ces filtres.' : 'Aucun établissement configuré pour le moment.'
         else
-            table.est-table
-                thead
-                    tr
-                        th Établissement
-                        th Propriétaire
-                        th Métier
-                        th Plan
-                        th RDV
-                        th Statut
-                        th Inscrit le
-                        th Actions
-                tbody
-                    each c in companies
-                        - var ownerPlan = (c.owner && c.owner.subscription && c.owner.subscription.plan) ? c.owner.subscription.plan : 'basic'
-                        - var displayPlan = ownerPlan === 'basic' ? 'free' : ownerPlan
-                        - var estabName = c.name || (c.owner && c.owner.businessName) || ''
-                        - var estabPhoto = c.photo || (c.owner && c.owner.businessPicture) || ''
-                        tr(data-company-id=c._id)
-                            td
-                                .est-name
-                                    if estabPhoto
-                                        img.est-avatar(src=estabPhoto alt=estabName class="est-row-photo")
+            .sa-tablewrap
+                table.sa-table.sa-table--estab
+                    thead
+                        tr
+                            th Établissement
+                            th Propriétaire
+                            th Plan
+                            th Octroi
+                            th RDV
+                            th Clients
+                            th Créé le
+                            th Statut
+                            th(style="width:44px")
+                    tbody
+                        each c in companies
+                            tr(
+                                data-company-id=String(c._id)
+                                data-name=c.displayName
+                                data-slug=c.slug || ''
+                                data-type=c.businessType || ''
+                                data-photo=c.displayPhoto
+                                data-owner-id=c.owner ? String(c.owner._id) : ''
+                                data-plan=c.planKey
+                                data-paused=c.isPaused ? '1' : '0'
+                            )
+                                td
+                                    .sa-person
+                                        if c.displayPhoto
+                                            img.sa-av.js-photo(src=c.displayPhoto alt="" style="object-fit:cover")
+                                        else
+                                            span.sa-av(style='background:' + couleurAvatar(c.slug || c.displayName))= (c.displayName || '?')[0].toUpperCase()
+                                        div
+                                            .sa-person__name.js-name= c.displayName || '—'
+                                            .sa-person__mail
+                                                span.js-type= c.businessType || 'Métier non renseigné'
+                                td
+                                    if c.owner
+                                        .sa-person__name(style="font-weight:500")= c.owner.fullName || '—'
+                                        .sa-person__mail= c.owner.email || ''
                                     else
-                                        .est-avatar--placeholder.est-row-photo= (estabName || '?')[0].toUpperCase()
-                                    div
-                                        div.est-row-name= estabName || '—'
-                                        div(style="font-size:11px;color:#555;margin-top:2px") /#{c.slug || '—'}
-                            td
-                                if c.owner
-                                    div(style="font-size:13px;color:#ccc;font-weight:500")= c.owner.fullName || '—'
-                                    .owner-email= c.owner.email || ''
-                                else
-                                    span(style="color:#444") —
-                            td(style="color:#888;font-size:12px")
-                                span.est-row-type= c.businessType || '—'
-                            td
-                                .plan-cell
-                                    select.plan-select(data-plan=displayPlan data-company-id=String(c._id))
-                                        option(value="free" selected=displayPlan==='free') Free
-                                        option(value="essentiel" selected=displayPlan==='essentiel') Essentiel
-                                        option(value="pro" selected=displayPlan==='pro') Pro
-                                        option(value="business" selected=displayPlan==='business') Business
-                                    .plan-dur
-                                        select.dur-select(data-company-id=String(c._id) disabled=(displayPlan==='free'))
-                                            option(value="keep" selected) Durée…
-                                            option(value="infinite") Infini ∞
-                                            option(value="7d") 7 jours
-                                            option(value="14d") 14 jours
-                                            option(value="30d") 30 jours
-                                            option(value="90d") 90 jours
-                                            option(value="custom") Perso…
-                                        span.dur-left(data-company-id=String(c._id))
-                                            if displayPlan === 'free'
-                                                span(style="color:#444") —
-                                            else if c.trialDaysLeft === null
-                                                span.dur-badge.dur-badge--inf ∞
-                                            else
-                                                span.dur-badge(class=(c.trialDaysLeft <= 3 ? 'dur-badge--warn' : ''))= c.trialDaysLeft + ' j'
-                                                if c.owner && c.owner.manualPremiumExpiry
-                                                    span.dur-date= new Date(c.owner.manualPremiumExpiry).toLocaleDateString('fr-FR')
-                            td(style="font-weight:600;color:#fff")= c.bookingCount.toLocaleString('fr-FR')
-                            td
-                                if c.isPaused
-                                    span.badge.badge--red En pause
-                                else
-                                    span.badge.badge--green Actif
-                            td(style="color:#666;font-size:12px")= c.createdAt ? new Date(c.createdAt).toLocaleDateString('fr-FR') : '—'
-                            td(style="display:flex;gap:6px;align-items:center;flex-wrap:wrap")
-                                a.link-btn(href='/' + c.slug target="_blank") Voir
-                                if c.owner
-                                    button.imp-btn.imp-btn--discrete(
-                                        type="button"
-                                        title="Accès discret — sans consentement"
-                                        data-user-id=String(c.owner._id)
-                                    ) 🔒 Accès
-                                    button.imp-btn.imp-btn--supervision(
-                                        type="button"
-                                        title="Demander la supervision — l'utilisateur doit accepter"
-                                        data-user-id=String(c.owner._id)
-                                    ) 👁 Supervision
-                                button.edit-btn(
-                                    type="button"
-                                    title="Modifier"
-                                    data-id=String(c._id)
-                                    data-name=c.name || ''
-                                    data-type=c.businessType || ''
-                                    data-photo=c.photo || ''
-                                )
-                                    svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
-                                        path(d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z")
-                                button.del-btn(
-                                    type="button"
-                                    title="Supprimer l'établissement"
-                                    data-del-id=String(c._id)
-                                    data-name=estabName || 'cet établissement'
-                                )
-                                    svg(viewBox="0 -960 960 960" height="14" width="14" fill="currentColor")
-                                        path(d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z")
+                                        span.sa-muted —
+                                td
+                                    select.sa-select.sa-select--mini.js-plan(data-plan=c.planKey)
+                                        option(value="free" selected=c.planKey === 'basic') Free
+                                        option(value="essentiel" selected=c.planKey === 'essentiel') Essentiel
+                                        option(value="pro" selected=c.planKey === 'pro') Pro
+                                        option(value="business" selected=c.planKey === 'business') Business
+                                td.js-reste
+                                    if c.planKey === 'basic'
+                                        span.sa-muted —
+                                    else if c.trialDaysLeft === null
+                                        span.sa-tag Illimité
+                                    else
+                                        span.sa-tag(class=c.trialDaysLeft <= 3 ? 'sa-tag--red' : 'sa-tag--amber')= c.trialDaysLeft + ' j'
+                                td(style="font-weight:600")= c.bookingCount.toLocaleString('fr-FR')
+                                td.sa-muted= c.clientCount.toLocaleString('fr-FR')
+                                td.sa-td--date= jourFr(c.createdAt)
+                                td
+                                    if c.isDeleted
+                                        span.sa-tag.sa-tag--red
+                                            span.sa-tag__dot
+                                            span Supprimé
+                                    else if c.isPaused
+                                        span.sa-tag.sa-tag--amber.js-statut
+                                            span.sa-tag__dot
+                                            span En pause
+                                    else
+                                        span.sa-tag.sa-tag--green.js-statut
+                                            span.sa-tag__dot
+                                            span Actif
+                                td.sa-td--right
+                                    .sa-menu
+                                        button.sa-ico(type="button" data-sa-menu aria-label="Actions")
+                                            span.material-symbols-outlined more_vert
+                                        .sa-menu__list
+                                            button.sa-menu__item(type="button" data-act="fiche")
+                                                span.material-symbols-outlined info
+                                                span Voir la fiche
+                                            a.sa-menu__item(href='/' + (c.slug || '') target="_blank" rel="noopener")
+                                                span.material-symbols-outlined open_in_new
+                                                span Page publique
+                                            button.sa-menu__item(type="button" data-act="modifier")
+                                                span.material-symbols-outlined edit
+                                                span Modifier
+                                            button.sa-menu__item(type="button" data-act="duree")
+                                                span.material-symbols-outlined timer
+                                                span Durée d'octroi
+                                            button.sa-menu__item(type="button" data-act="pause")
+                                                span.material-symbols-outlined pause_circle
+                                                span= c.isPaused ? 'Réactiver' : 'Mettre en pause'
+                                            .sa-menu__sep
+                                            if c.owner
+                                                button.sa-menu__item(type="button" data-act="acces")
+                                                    span.material-symbols-outlined lock_open
+                                                    span Accéder au compte
+                                                button.sa-menu__item(type="button" data-act="supervision")
+                                                    span.material-symbols-outlined visibility
+                                                    span Demander une supervision
+                                                .sa-menu__sep
+                                            button.sa-menu__item.sa-menu__item--danger(type="button" data-act="supprimer")
+                                                span.material-symbols-outlined delete
+                                                span Supprimer l'établissement
 
-    //- ── Modale édition établissement ────────────────────────────────────────
-    .sa-modal-overlay#editEstabOverlay(style="display:none")
-        .sa-modal
-            h3.sa-modal__title Modifier l'établissement
-            .sa-field
-                label.sa-label Nom
-                input.sa-input#editEstabName(type="text" placeholder="Nom de l'établissement")
-            .sa-field
-                label.sa-label Métier / type d'activité
-                input.sa-input#editEstabType(type="text" placeholder="Ex. Coiffeur, Kiné...")
-            .sa-field
-                label.sa-label Photo
-                .sa-photo-row
-                    img.sa-photo-preview#editEstabPhotoPreview(src="/images/no-user.webp" alt="")
-                    div(style="flex:1")
-                        input(type="file" accept="image/*" id="editEstabPhotoFile" style="display:none")
-                        button(type="button" onclick="document.getElementById('editEstabPhotoFile').click()" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;color:#888;font-size:12px;padding:7px 12px;cursor:pointer;") Choisir une image
-                        div(style="font-size:11px;color:#444;margin-top:4px") JPG, PNG, WEBP — 60 Mo max
-            p.sa-error#editEstabError
-            .sa-modal__actions
-                button.sa-btn.sa-btn--primary#editEstabSave(type="button") Enregistrer
-                button.sa-btn.sa-btn--ghost#editEstabCancel(type="button") Annuler
+            .sa-pager
+                span= resultats + ' établissement' + (resultats > 1 ? 's' : '') + ' · page ' + page + ' / ' + pages
+                .sa-pager__end
+                    a.sa-pager__btn(href='/superadmin/establishments' + requete('page=' + (page - 1)) class=page <= 1 ? 'is-off' : '')
+                        span.material-symbols-outlined chevron_left
+                    - var debut = Math.max(1, Math.min(page - 2, pages - 4))
+                    - var fin = Math.min(pages, debut + 4)
+                    each n in Array.from({ length: fin - debut + 1 }, function (_, i) { return debut + i })
+                        a.sa-pager__btn(href='/superadmin/establishments' + requete('page=' + n) class=n === page ? 'is-current' : '')= n
+                    a.sa-pager__btn(href='/superadmin/establishments' + requete('page=' + (page + 1)) class=page >= pages ? 'is-off' : '')
+                        span.material-symbols-outlined chevron_right
 
+    //- ── Fiche détaillée ───────────────────────────────────────────────────
+    .sa-drawer#drawer
+        .sa-drawer__overlay(data-close)
+        .sa-drawer__panel
+            .sa-drawer__head
+                span.sa-av#dwAvatar
+                div(style="min-width:0")
+                    .sa-drawer__title#dwName —
+                    .sa-head__sub#dwSlug
+                button.sa-ico(type="button" data-close style="margin-left:auto" aria-label="Fermer")
+                    span.material-symbols-outlined close
+            .sa-drawer__body#dwBody
+            .sa-drawer__foot
+                a.sa-btn#dwVoir(href="#" target="_blank" rel="noopener")
+                    span.material-symbols-outlined open_in_new
+                    span Page publique
+                button.sa-btn(type="button" id="dwEdit")
+                    span.material-symbols-outlined edit
+                    span Modifier
+                button.sa-btn.sa-btn--danger(type="button" id="dwDel" style="margin-left:auto")
+                    span.material-symbols-outlined delete
+                    span Supprimer
+
+    //- ── Durée d'octroi manuel ─────────────────────────────────────────────
+    .sa-modal#modalDuree
+        .sa-modal__overlay(data-close-duree)
+        .sa-modal__box
+            .sa-modal__head
+                span.material-symbols-outlined timer
+                span.sa-modal__title Durée d'octroi
+                button.sa-ico(type="button" data-close-duree style="margin-left:auto" aria-label="Fermer")
+                    span.material-symbols-outlined close
+            .sa-modal__body
+                .sa-head__sub Plan payant accordé à <b id="durNom" style="color:var(--sa-txt)">—</b>. Au-delà, le compte repasse en Free.
+                .sa-field
+                    span.sa-field__label Durée
+                    select.sa-select#durChoix
+                        option(value="infinite") Illimitée
+                        option(value="7d") 7 jours
+                        option(value="14d") 14 jours
+                        option(value="30d") 30 jours
+                        option(value="90d") 90 jours
+                        option(value="custom") Personnalisée…
+                .sa-field#durPersoBloc(style="display:none")
+                    span.sa-field__label Nombre de jours
+                    input.sa-input#durJours(type="number" min="1" max="3650" value="30")
+            .sa-modal__foot
+                button.sa-btn(type="button" data-close-duree) Annuler
+                button.sa-btn.sa-btn--primary#durSave(type="button") Appliquer
+
+    //- ── Modification de l'établissement ───────────────────────────────────
+    .sa-modal#modalEdit
+        .sa-modal__overlay(data-close-edit)
+        .sa-modal__box
+            .sa-modal__head
+                span.material-symbols-outlined edit
+                span.sa-modal__title Modifier l'établissement
+                button.sa-ico(type="button" data-close-edit style="margin-left:auto" aria-label="Fermer")
+                    span.material-symbols-outlined close
+            .sa-modal__body
+                .sa-field
+                    span.sa-field__label Nom
+                    input.sa-input#edName(type="text" placeholder="Nom de l'établissement")
+                .sa-field
+                    span.sa-field__label Métier / activité
+                    input.sa-input#edType(type="text" placeholder="Ex. Coiffeur, Kinésithérapeute…")
+                .sa-field
+                    span.sa-field__label Photo
+                    div(style="display:flex;align-items:center;gap:12px")
+                        img#edPhoto(src="/images/no-user.webp" alt="" style="width:52px;height:52px;border-radius:12px;object-fit:cover;background:var(--sa-panel-2)")
+                        div
+                            input#edFile(type="file" accept="image/*" style="display:none")
+                            button.sa-btn(type="button" id="edPick")
+                                span.material-symbols-outlined image
+                                span Choisir une image
+                            .sa-head__sub(style="margin-top:5px") JPG, PNG ou WEBP — 60 Mo max
+            .sa-modal__foot
+                button.sa-btn(type="button" data-close-edit) Annuler
+                button.sa-btn.sa-btn--primary#edSave(type="button") Enregistrer
+
+block scripts
+    script(src="/socket.io/socket.io.js")
     script(src="/js/utils/confirm-modal.js")
-    script.
-        (function () {
-            // ── Suppression d'un établissement ─────────────────────────────────
-            document.querySelectorAll('.del-btn').forEach(function (btn) {
-                btn.addEventListener('click', async function () {
-                    var id = this.dataset.delId;
-                    var name = this.dataset.name || 'cet établissement';
-                    var confirmed = await window.confirmModal(
-                        'Supprimer "' + name + '" ?',
-                        "Toutes ses données (réservations, services, employés...) seront définitivement supprimées. Cette action est irréversible. Le compte propriétaire, lui, est conservé.",
-                        { confirmLabel: 'Supprimer', danger: true }
-                    );
-                    if (!confirmed) return;
-                    this.disabled = true;
-                    try {
-                        var res = await fetch('/superadmin/establishments/' + id, { method: 'DELETE', headers: { 'Content-Type': 'application/json' } });
-                        var data = await res.json();
-                        if (!data.success) throw new Error(data.error || 'Échec');
-                        this.closest('tr').remove();
-                    } catch (e) {
-                        this.disabled = false;
-                        await window.alertModal(e.message && e.message !== 'Échec' ? e.message : "Erreur lors de la suppression de l'établissement.");
-                    }
-                });
-            });
-
-            // ── Plan + durée ──────────────────────────────────────────────────
-            // Le plan et la durée d'octroi manuel (Infini / X jours) partent vers
-            // le même endpoint. La durée fixe manualPremiumExpiry côté serveur ;
-            // « — » restant est recalculé et affiché sans recharger la page.
-            function durBadge(expiry, plan) {
-                if (plan === 'free') return '<span style="color:#444">—</span>';
-                if (!expiry) return '<span class="dur-badge dur-badge--inf">∞</span>';
-                var e = new Date(expiry);
-                var ms = e - new Date();
-                var days = ms > 0 ? Math.ceil(ms / 86400000) : 0;
-                return '<span class="dur-badge' + (days <= 3 ? ' dur-badge--warn' : '') + '">' + days + ' j</span>'
-                     + '<span class="dur-date">' + e.toLocaleDateString('fr-FR') + '</span>';
-            }
-            function savePlanRow(cid, plan, durVal, customDays) {
-                var body = { plan: plan };
-                if (durVal && durVal !== 'keep') { body.duration = durVal; if (durVal === 'custom') body.customDays = customDays; }
-                return fetch('/superadmin/establishments/' + cid + '/plan', {
-                    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-                }).then(function (r) { return r.json(); });
-            }
-            document.querySelectorAll('.plan-select').forEach(function (sel) {
-                sel.addEventListener('change', function () {
-                    var plan = sel.value, cid = sel.dataset.companyId;
-                    var durSel = document.querySelector('.dur-select[data-company-id="' + cid + '"]');
-                    sel.disabled = true;
-                    savePlanRow(cid, plan, durSel ? durSel.value : 'keep').then(function (d) {
-                        sel.disabled = false;
-                        if (d.success) {
-                            sel.dataset.plan = plan; sel.setAttribute('data-plan', plan);
-                            if (durSel) { durSel.disabled = (plan === 'free'); durSel.value = 'keep'; }
-                            var left = document.querySelector('.dur-left[data-company-id="' + cid + '"]');
-                            if (left) left.innerHTML = durBadge(d.expiry, plan);
-                        } else { alert(d.error || 'Erreur'); sel.value = sel.dataset.plan; }
-                    }).catch(function () { sel.disabled = false; sel.value = sel.dataset.plan; });
-                });
-            });
-            document.querySelectorAll('.dur-select').forEach(function (durSel) {
-                durSel.addEventListener('change', function () {
-                    var cid = durSel.dataset.companyId;
-                    var planSel = document.querySelector('.plan-select[data-company-id="' + cid + '"]');
-                    var plan = planSel ? planSel.value : 'pro';
-                    var durVal = durSel.value;
-                    if (plan === 'free' || durVal === 'keep') { durSel.value = 'keep'; return; }
-                    var customDays;
-                    if (durVal === 'custom') {
-                        var d = prompt('Durée en jours (1 à 3650) ?', '30');
-                        if (d === null) { durSel.value = 'keep'; return; }
-                        customDays = Number(d);
-                    }
-                    durSel.disabled = true;
-                    savePlanRow(cid, plan, durVal, customDays).then(function (resp) {
-                        durSel.disabled = false; durSel.value = 'keep';
-                        if (resp.success) {
-                            var left = document.querySelector('.dur-left[data-company-id="' + cid + '"]');
-                            if (left) left.innerHTML = durBadge(resp.expiry, plan);
-                        } else alert(resp.error || 'Erreur');
-                    }).catch(function () { durSel.disabled = false; durSel.value = 'keep'; });
-                });
-            });
-
-            // ── Edit modal ────────────────────────────────────────────────────
-            var overlay   = document.getElementById('editEstabOverlay');
-            var nameInput = document.getElementById('editEstabName');
-            var typeInput = document.getElementById('editEstabType');
-            var photoPreview = document.getElementById('editEstabPhotoPreview');
-            var photoFile = document.getElementById('editEstabPhotoFile');
-            var saveBtn   = document.getElementById('editEstabSave');
-            var cancelBtn = document.getElementById('editEstabCancel');
-            var errorEl   = document.getElementById('editEstabError');
-            var currentId = null;
-            var currentRow = null;
-
-            photoFile.addEventListener('change', function () {
-                var file = photoFile.files[0];
-                if (!file) return;
-                var reader = new FileReader();
-                reader.onload = function (e) { photoPreview.src = e.target.result; };
-                reader.readAsDataURL(file);
-            });
-
-            document.querySelectorAll('.edit-btn').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    currentId  = btn.dataset.id;
-                    currentRow = btn.closest('tr');
-                    nameInput.value = btn.dataset.name || '';
-                    typeInput.value = btn.dataset.type || '';
-                    photoPreview.src = btn.dataset.photo || '/images/no-user.webp';
-                    photoFile.value  = '';
-                    errorEl.textContent = '';
-                    overlay.style.display = 'flex';
-                });
-            });
-
-            function closeModal() {
-                overlay.style.display = 'none';
-                currentId = null;
-                currentRow = null;
-            }
-
-            cancelBtn.addEventListener('click', closeModal);
-            overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
-
-            saveBtn.addEventListener('click', function () {
-                if (!currentId) return;
-                errorEl.textContent = '';
-                saveBtn.disabled = true;
-
-                var fd = new FormData();
-                fd.append('name', nameInput.value.trim());
-                fd.append('businessType', typeInput.value.trim());
-                if (photoFile.files[0]) fd.append('photo', photoFile.files[0]);
-
-                fetch('/superadmin/establishments/' + currentId + '/info', {
-                    method: 'PATCH',
-                    body: fd,
-                })
-                    .then(function (r) { return r.json(); })
-                    .then(function (d) {
-                        saveBtn.disabled = false;
-                        if (!d.success) {
-                            errorEl.textContent = d.error || 'Erreur.';
-                            return;
-                        }
-                        // Mettre à jour la ligne sans rechargement
-                        if (currentRow) {
-                            var nameEl = currentRow.querySelector('.est-row-name');
-                            var typeEl = currentRow.querySelector('.est-row-type');
-                            var photoEl = currentRow.querySelector('.est-row-photo');
-                            if (nameEl && d.update.name !== undefined) nameEl.textContent = d.update.name || '—';
-                            if (typeEl && d.update.businessType !== undefined) typeEl.textContent = d.update.businessType || '—';
-                            if (photoEl && d.update.photo) {
-                                if (photoEl.tagName === 'IMG') photoEl.src = d.update.photo;
-                            }
-                            // Mettre à jour le data-* du bouton edit
-                            var editBtn = currentRow.querySelector('.edit-btn');
-                            if (editBtn) {
-                                if (d.update.name !== undefined) editBtn.dataset.name = d.update.name || '';
-                                if (d.update.businessType !== undefined) editBtn.dataset.type = d.update.businessType || '';
-                                if (d.update.photo) editBtn.dataset.photo = d.update.photo;
-                            }
-                        }
-                        closeModal();
-                    })
-                    .catch(function () {
-                        saveBtn.disabled = false;
-                        errorEl.textContent = 'Erreur réseau.';
-                    });
-            });
-        })();
-
-        // ── Impersonation (accès discret) ─────────────────────────────────────
-        document.querySelectorAll('.imp-btn--discrete').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var userId = btn.dataset.userId;
-                var form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '/superadmin/impersonate/' + userId;
-                document.body.appendChild(form);
-                form.submit();
-            });
-        });
-
-        // ── Supervision (avec consentement) ──────────────────────────────────
-        (function() {
-            var socket = io();
-            socket.emit('support:joinAdmin');
-            var pendingToken = null;
-            var pendingBtn = null;
-
-            document.querySelectorAll('.imp-btn--supervision').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    var userId = btn.dataset.userId;
-                    btn.disabled = true;
-                    btn.textContent = '⏳ En attente…';
-                    pendingBtn = btn;
-
-                    fetch('/superadmin/supervision-request/' + userId, { method: 'POST' })
-                        .then(function(r) { return r.json(); })
-                        .then(function(d) {
-                            if (!d.success) {
-                                alert(d.error || 'Erreur');
-                                btn.disabled = false;
-                                btn.textContent = '👁 Supervision';
-                                return;
-                            }
-                            pendingToken = d.token;
-                            btn.textContent = '⏳ Attente réponse…';
-                        })
-                        .catch(function() {
-                            alert('Erreur réseau');
-                            btn.disabled = false;
-                            btn.textContent = '👁 Supervision';
-                        });
-                });
-            });
-
-            socket.on('supervision:accepted', function(data) {
-                if (data.token !== pendingToken) return;
-                if (pendingBtn) { pendingBtn.disabled = false; pendingBtn.textContent = '👁 Supervision'; }
-                pendingToken = null; pendingBtn = null;
-                var form = document.createElement('form');
-                form.method = 'GET';
-                form.action = '/superadmin/impersonate-supervised/' + data.token;
-                document.body.appendChild(form);
-                form.submit();
-            });
-
-            socket.on('supervision:declined', function(data) {
-                if (data.token !== pendingToken) return;
-                if (pendingBtn) { pendingBtn.disabled = false; pendingBtn.textContent = '👁 Supervision'; }
-                pendingToken = null; pendingBtn = null;
-                alert('❌ L\'utilisateur a refusé la supervision.');
-            });
-
-            socket.on('supervision:closed-by-user', function(data) {
-                // L'utilisateur a fermé la supervision — quitter immédiatement
-                var form = document.createElement('form');
-                form.method = 'GET';
-                form.action = '/superadmin/exit-impersonation';
-                document.body.appendChild(form);
-                form.submit();
-            });
-        })();
+    script(src="/js/superadmin/establishments.js")

@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>BranShee — Base de design</title>
+<link rel="icon" href="/images/icon.svg?v=2" type="image/svg+xml">
+<link rel="stylesheet" href="/css/import.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined">
+<style>
+  body { background: #fff; font-family: var(--font-primary); color: var(--text-primary); margin: 0; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 40px 24px 90px; }
+  h1 { font-size: 26px; margin: 0 0 6px; }
+  .lede { color: var(--text-muted); font-size: 14px; margin: 0 0 34px; line-height: 1.6; }
+  h2 { font-size: 17px; margin: 46px 0 4px; padding-top: 22px; border-top: 1px solid var(--border-light); }
+  h2:first-of-type { border-top: none; padding-top: 0; }
+  .note { color: var(--text-muted); font-size: 12.5px; margin: 0 0 18px; line-height: 1.6; }
+  .demo { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; margin-bottom: 12px; }
+  .demo > * { min-width: 0; }
+  .col { display: flex; flex-direction: column; gap: 14px; width: 260px; }
+  code { font-family: var(--font-mono); font-size: 12px; background: var(--surface); padding: 2px 6px; border-radius: 5px; color: var(--text-secondary); }
+  .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+  .sw { width: 92px; font-size: 11px; color: var(--text-muted); }
+  .sw i { display: block; height: 46px; border-radius: 8px; border: 1px solid var(--border-light); margin-bottom: 5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Base de design BranShee</h1>
+  <p class="lede">
+    Une seule définition par composant, dans <code>public/css/ds.css</code>, chargée sur toutes les pages via <code>import.css</code>.<br>
+    Les boutons vivent dans <code>classes.css</code> (<code>.sm-btn</code>). Les couleurs, ombres et rayons sont des jetons — on n'écrit jamais une valeur en dur.
+  </p>
+
+  <h2>Couleurs</h2>
+  <p class="note">Toujours passer par la variable, jamais par le code hexadécimal.</p>
+  <div class="swatches">
+    <div class="sw"><i style="background:var(--accent)"></i>--accent</div>
+    <div class="sw"><i style="background:var(--accent-soft)"></i>--accent-soft</div>
+    <div class="sw"><i style="background:var(--ink)"></i>--ink</div>
+    <div class="sw"><i style="background:var(--text-muted)"></i>--text-muted</div>
+    <div class="sw"><i style="background:var(--surface)"></i>--surface</div>
+    <div class="sw"><i style="background:var(--surface-card)"></i>--surface-card</div>
+    <div class="sw"><i style="background:var(--danger)"></i>--danger</div>
+    <div class="sw"><i style="background:var(--warning)"></i>--warning</div>
+  </div>
+
+  <h2>Onglets</h2>
+  <p class="note">Le seul système de navigation secondaire du site : <code>.ds-tabs</code> + <code>.ds-tab</code>. Soulignement fin, jamais de pilule ni de fond.</p>
+  <nav class="ds-tabs" id="tabsDemo">
+    <button class="ds-tab is-active" type="button">Aperçu</button>
+    <button class="ds-tab" type="button">Rendez-vous <span class="ds-tab__count">12</span></button>
+    <button class="ds-tab" type="button">Dossier</button>
+    <button class="ds-tab" type="button">Paiements</button>
+  </nav>
+
+  <h2>Barre d'outils + tableau</h2>
+  <p class="note">Recherche à gauche, actions à droite. Deux actions maximum en icônes ; au-delà, menu « ⋯ ».</p>
+  <div class="ds-toolbar">
+    <div class="ds-search">
+      <span class="material-symbols-outlined ds-search__ic">search</span>
+      <input class="ds-search__input" type="search" placeholder="Rechercher…">
+    </div>
+    <div class="ds-toolbar__end">
+      <button class="sm-btn sm-btn--ghost" type="button"><span class="material-symbols-outlined" style="font-size:18px">filter_list</span> Filtres</button>
+      <button class="sm-btn sm-btn--primary" type="button"><span class="material-symbols-outlined" style="font-size:18px">add</span> Ajouter</button>
+    </div>
+  </div>
+  <div class="ds-table-wrap">
+    <table class="ds-table">
+      <thead>
+        <tr><th>Membre</th><th>Rôle</th><th>Statut</th><th class="ds-th--right">Actions</th></tr>
+      </thead>
+      <tbody>
+        <tr class="ds-row--highlight">
+          <td>
+            <div class="ds-person">
+              <img class="ds-person__img" src="/images/no-user.webp" alt="">
+              <div>
+                <div class="ds-person__name">Quentin Rennies <span class="ds-badge ds-badge--solid">Vous</span></div>
+                <div class="ds-person__sub">quentin@exemple.com</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="ds-badge ds-badge--success">Propriétaire</span></td>
+          <td><span class="ds-badge ds-badge--success">Actif</span></td>
+          <td class="ds-td--actions"><button class="ds-ico" title="Modifier"><span class="material-symbols-outlined">edit</span></button></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="ds-person">
+              <img class="ds-person__img" src="/images/no-user.webp" alt="">
+              <div>
+                <div class="ds-person__name">Alice Dupont</div>
+                <div class="ds-person__sub">alice@exemple.com</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="ds-badge">Manager</span></td>
+          <td><span class="ds-badge ds-badge--warning">En attente</span></td>
+          <td class="ds-td--actions">
+            <button class="ds-ico" title="Modifier"><span class="material-symbols-outlined">edit</span></button>
+            <button class="ds-ico ds-ico--danger" title="Supprimer"><span class="material-symbols-outlined">delete</span></button>
+          </td>
+        </tr>
+        <tr class="ds-row--muted">
+          <td>
+            <div class="ds-person">
+              <img class="ds-person__img" src="/images/no-user.webp" alt="">
+              <div>
+                <div class="ds-person__name">Bob Martin</div>
+                <div class="ds-person__sub">bob@exemple.com</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="ds-badge">Staff</span></td>
+          <td><span class="ds-badge ds-badge--danger">Désactivé</span></td>
+          <td class="ds-td--actions">
+            <div class="ds-menu" id="menuDemo">
+              <button class="ds-ico" type="button" title="Plus d'actions"><span class="material-symbols-outlined">more_horiz</span></button>
+              <div class="ds-menu__list">
+                <button class="ds-menu__item" type="button"><span class="material-symbols-outlined">edit</span> Modifier</button>
+                <button class="ds-menu__item" type="button"><span class="material-symbols-outlined">check_circle</span> Réactiver</button>
+                <div class="ds-menu__sep"></div>
+                <button class="ds-menu__item ds-menu__item--danger" type="button"><span class="material-symbols-outlined">delete</span> Retirer</button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Champs</h2>
+  <p class="note">Étiquette au-dessus, aide en dessous. Même hauteur que les boutons (38 px) pour qu'ils s'alignent sur une même ligne.</p>
+  <div class="demo">
+    <div class="col">
+      <div class="ds-field">
+        <label class="ds-label" for="f1">Nom</label>
+        <input class="ds-input" id="f1" placeholder="Ex : Salon de Marie">
+        <span class="ds-help">Visible par vos clients.</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="ds-field">
+        <label class="ds-label" for="f2">Email <span class="ds-label__opt">(optionnel)</span></label>
+        <div class="ds-input-group">
+          <span class="material-symbols-outlined ds-input-group__ic">mail</span>
+          <input class="ds-input" id="f2" placeholder="prenom@exemple.com">
+        </div>
+        <span class="ds-help">Champ avec icône.</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="ds-field">
+        <label class="ds-label" for="f3">Site web</label>
+        <div class="ds-input-group">
+          <span class="ds-input-group__prefix">https://</span>
+          <input class="ds-input" id="f3" placeholder="monsite.be">
+        </div>
+        <span class="ds-help">Champ avec préfixe.</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="ds-field">
+        <label class="ds-label" for="f4">Pays</label>
+        <select class="ds-select" id="f4">
+          <option>Belgique</option><option>France</option><option>Suisse</option>
+        </select>
+        <span class="ds-help">Flèche dessinée en CSS, identique sur tous les systèmes.</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="ds-field">
+        <label class="ds-label" for="f5">Champ en erreur</label>
+        <input class="ds-input is-error" id="f5" value="adresse-invalide">
+        <span class="ds-help ds-help--error">Adresse email invalide.</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="ds-field">
+        <label class="ds-label" for="f6">Désactivé</label>
+        <input class="ds-input" id="f6" value="Non modifiable" disabled>
+        <span class="ds-help">État inactif.</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>Select évolué</h2>
+  <p class="note">
+    Un <code>&lt;select&gt;</code> natif garde la liste déroulante du système (fond bleu Windows, police système).
+    Ajoutez <code>data-ds-select</code> et le script commun l'habille — le <code>&lt;select&gt;</code> reste dans le DOM,
+    donc <code>.value</code> et l'événement <code>change</code> continuent de marcher.
+  </p>
+  <div class="demo">
+    <div class="col">
+      <div class="ds-field">
+        <label class="ds-label">Select habillé</label>
+        <select data-ds-select>
+          <option value="">Sélectionner…</option>
+          <option value="a">Staff</option>
+          <option value="b" selected>Manager</option>
+          <option value="c">Réception</option>
+        </select>
+        <span class="ds-help">Liste dessinée par nos soins.</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="ds-field">
+        <label class="ds-label">Compact (cellule de tableau)</label>
+        <select data-ds-select data-ds-select-size="sm">
+          <option value="a" selected>Hérite du grade (autorisé)</option>
+          <option value="b">Autorisé</option>
+          <option value="c">Refusé</option>
+        </select>
+        <span class="ds-help"><code>data-ds-select-size="sm"</code></span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="ds-field">
+        <label class="ds-label">Multi-sélection</label>
+        <select data-ds-select multiple>
+          <option value="fr" selected>Français</option>
+          <option value="en" selected>Anglais</option>
+          <option value="nl">Néerlandais</option>
+        </select>
+        <span class="ds-help">Clic pour cocher / décocher.</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="ds-field">
+        <label class="ds-label">Select natif</label>
+        <select class="ds-select">
+          <option>Belgique</option><option>France</option>
+        </select>
+        <span class="ds-help">Sans <code>data-ds-select</code> : suffisant pour un choix simple.</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>Cases, radios, interrupteur</h2>
+  <div class="demo">
+    <div class="col">
+      <label class="ds-choice">
+        <input type="checkbox" checked>
+        <span class="ds-choice__box"></span>
+        <span class="ds-choice__txt">
+          <span class="ds-choice__label">Cochée</span>
+          <span class="ds-choice__help">Avec texte d'aide</span>
+        </span>
+      </label>
+      <label class="ds-choice">
+        <input type="checkbox">
+        <span class="ds-choice__box"></span>
+        <span class="ds-choice__txt"><span class="ds-choice__label">Décochée</span></span>
+      </label>
+      <label class="ds-choice">
+        <input type="checkbox" id="indet">
+        <span class="ds-choice__box"></span>
+        <span class="ds-choice__txt"><span class="ds-choice__label">Sélection partielle</span></span>
+      </label>
+      <label class="ds-choice">
+        <input type="checkbox" disabled>
+        <span class="ds-choice__box"></span>
+        <span class="ds-choice__txt"><span class="ds-choice__label">Désactivée</span></span>
+      </label>
+    </div>
+    <div class="col">
+      <label class="ds-choice ds-choice--radio">
+        <input type="radio" name="r" checked>
+        <span class="ds-choice__box"></span>
+        <span class="ds-choice__txt"><span class="ds-choice__label">Option A</span></span>
+      </label>
+      <label class="ds-choice ds-choice--radio">
+        <input type="radio" name="r">
+        <span class="ds-choice__box"></span>
+        <span class="ds-choice__txt"><span class="ds-choice__label">Option B</span></span>
+      </label>
+    </div>
+    <div class="col">
+      <label class="ds-switch">
+        <input type="checkbox" checked>
+        <span class="ds-switch__track"></span>
+        <span class="ds-switch__label">Activé</span>
+      </label>
+      <label class="ds-switch">
+        <input type="checkbox">
+        <span class="ds-switch__track"></span>
+        <span class="ds-switch__label">Désactivé</span>
+      </label>
+    </div>
+  </div>
+
+  <h2>Boutons</h2>
+  <p class="note">Toujours <code>.sm-btn</code> + une variante. Jamais de bouton dessiné à la main : c'est la première cause de survols illisibles.</p>
+  <div class="demo">
+    <button class="sm-btn sm-btn--primary"><span class="material-symbols-outlined" style="font-size:18px">add</span> Principal</button>
+    <button class="sm-btn sm-btn--soft"><span class="material-symbols-outlined" style="font-size:18px">add</span> Doux</button>
+    <button class="sm-btn sm-btn--ghost">Secondaire</button>
+    <button class="sm-btn sm-btn--danger">Supprimer</button>
+    <button class="sm-btn sm-btn--primary" disabled>Désactivé</button>
+  </div>
+
+  <h2>Étiquettes et compteurs</h2>
+  <div class="demo">
+    <span class="ds-badge">Neutre</span>
+    <span class="ds-badge ds-badge--success">Actif</span>
+    <span class="ds-badge ds-badge--warning">En attente</span>
+    <span class="ds-badge ds-badge--danger">Erreur</span>
+    <span class="ds-badge ds-badge--solid">Vous</span>
+    <span class="ds-count">3</span>
+    <span class="ds-count">99+</span>
+  </div>
+
+  <h2>Alertes et notifications</h2>
+  <p class="note">
+    Fond blanc, la couleur est portée par la pastille d'icône — jamais par un aplat.
+    <code>.ds-alert</code> + <code>--info</code> / <code>--success</code> / <code>--warning</code> / <code>--danger</code>.
+  </p>
+
+  <div class="ds-alert ds-alert--info">
+    <span class="ds-alert__ic material-symbols-outlined">info</span>
+    <div class="ds-alert__body">
+      <p class="ds-alert__title">Une nouveauté vient d'arriver</p>
+      <p class="ds-alert__text">Vos clients peuvent désormais régler leur acompte directement en ligne.</p>
+      <div class="ds-alert__actions">
+        <button class="ds-alert__link" type="button">Ignorer</button>
+        <a class="ds-alert__link ds-alert__link--strong" href="#">Voir les changements</a>
+      </div>
+    </div>
+    <button class="ds-alert__close" type="button" aria-label="Fermer"><span class="material-symbols-outlined">close</span></button>
+  </div>
+
+  <div class="ds-alert ds-alert--success">
+    <span class="ds-alert__ic material-symbols-outlined">check_circle</span>
+    <div class="ds-alert__body">
+      <p class="ds-alert__title">Profil mis à jour</p>
+      <p class="ds-alert__text">Vos modifications sont en ligne. Votre équipe peut les modifier à son tour.</p>
+      <div class="ds-alert__actions">
+        <button class="ds-alert__link" type="button">Ignorer</button>
+        <a class="ds-alert__link ds-alert__link--strong" href="#">Voir les changements</a>
+      </div>
+    </div>
+    <button class="ds-alert__close" type="button" aria-label="Fermer"><span class="material-symbols-outlined">close</span></button>
+  </div>
+
+  <div class="ds-alert ds-alert--warning">
+    <span class="ds-alert__ic material-symbols-outlined">error</span>
+    <div class="ds-alert__body">
+      <p class="ds-alert__title">Limite de collaborateurs atteinte</p>
+      <p class="ds-alert__text">Votre forfait pro est complet. Ajoutez un siège pour un collaborateur de plus.</p>
+      <div class="ds-alert__actions">
+        <button class="ds-alert__link ds-alert__link--strong" type="button">Ajouter un siège</button>
+        <a class="ds-alert__link" href="#">Voir les forfaits →</a>
+      </div>
+    </div>
+    <button class="ds-alert__close" type="button" aria-label="Fermer"><span class="material-symbols-outlined">close</span></button>
+  </div>
+
+  <div class="ds-alert ds-alert--danger">
+    <span class="ds-alert__ic material-symbols-outlined">error</span>
+    <div class="ds-alert__body">
+      <p class="ds-alert__title">L'action n'a pas abouti</p>
+      <p class="ds-alert__text">Le paiement a été refusé par la banque. Aucun montant n'a été débité.</p>
+      <div class="ds-alert__actions">
+        <button class="ds-alert__link" type="button">Ignorer</button>
+        <a class="ds-alert__link ds-alert__link--strong" href="#">Réessayer</a>
+      </div>
+    </div>
+    <button class="ds-alert__close" type="button" aria-label="Fermer"><span class="material-symbols-outlined">close</span></button>
+  </div>
+
+  <p class="note" style="margin-top:22px">
+    Variante <code>.ds-alert--row</code> : message permanent en haut de page, tout sur une ligne.
+  </p>
+  <div class="ds-alert ds-alert--row ds-alert--warning">
+    <span class="ds-alert__ic material-symbols-outlined">error</span>
+    <div class="ds-alert__body">
+      <p class="ds-alert__title">Limite atteinte</p>
+      <p class="ds-alert__text">Votre forfait pro est complet.</p>
+    </div>
+    <div class="ds-alert__actions">
+      <a class="ds-alert__link ds-alert__link--strong" href="#">Voir les forfaits →</a>
+    </div>
+  </div>
+
+  <h2>Pagination</h2>
+  <div class="ds-pager">
+    <button class="ds-pager__btn"><span class="material-symbols-outlined" style="font-size:16px">chevron_left</span> Précédent</button>
+    <button class="ds-pager__btn is-active">1</button>
+    <button class="ds-pager__btn">2</button>
+    <button class="ds-pager__btn">3</button>
+    <button class="ds-pager__btn">Suivant <span class="material-symbols-outlined" style="font-size:16px">chevron_right</span></button>
+  </div>
+
+  <h2>Carte</h2>
+  <div class="ds-box" style="max-width:520px">
+    <h3 class="ds-box__title">Titre de section</h3>
+    <p class="ds-box__sub">Une ligne d'explication sous le titre. Sur fond blanc uniquement — pas d'aplat gris.</p>
+  </div>
+
+</div>
+
+<script>
+  // Démonstrations interactives
+  document.getElementById('indet').indeterminate = true;
+  document.getElementById('tabsDemo').addEventListener('click', function (e) {
+    var t = e.target.closest('.ds-tab');
+    if (!t) return;
+    this.querySelectorAll('.ds-tab').forEach(function (b) { b.classList.remove('is-active'); });
+    t.classList.add('is-active');
+  });
+  var menu = document.getElementById('menuDemo');
+  menu.querySelector('.ds-ico').addEventListener('click', function (e) {
+    e.stopPropagation();
+    menu.classList.toggle('is-open');
+  });
+  document.addEventListener('click', function () { menu.classList.remove('is-open'); });
+</script>
+<!-- Composant partagé : habille les <select data-ds-select> -->
+<script src="/js/components/ds-select.js"></script>
+<script>
+</script>
+</body>
+</html>

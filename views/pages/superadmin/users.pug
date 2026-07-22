@@ -1,364 +1,331 @@
-doctype html
-html(lang="fr")
-    head
-        meta(name="viewport" content="width=device-width, initial-scale=1.0")
-        meta(charset="UTF-8")
-        title Superadmin — Utilisateurs
-        link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
-        link(rel="stylesheet" href="/css/import.css")
-        link(rel="stylesheet" href="/css/layouts/superadmin.css")
-        style.
-            body { padding: 0 24px 80px; }
-            .sa-header__left h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -.02em; }
-            .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: .05em; color: #666; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 4px 10px; }
-            .search-bar { margin-bottom: 24px; }
-            .search-bar form { display: flex; gap: 10px; }
-            .search-bar input { flex: 1; max-width: 340px; background: #141414; border: 1.5px solid #2a2a2a; border-radius: 10px; color: #fff; font-size: 13px; padding: 9px 14px; outline: none; transition: border-color .15s; }
-            .search-bar input:focus { border-color: #444; }
-            .search-bar button { background: #fff; color: #111; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; padding: 9px 18px; cursor: pointer; }
-            .stats-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
-            .stat-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 15px 20px; display: flex; flex-direction: column; gap: 4px; min-width: 118px; }
-            .stat-card__value { font-size: 25px; font-weight: 700; color: #fff; letter-spacing: -.02em; line-height: 1; }
-            .stat-card__value--green { color: #22c55e; }
-            .stat-card__value--red { color: #f87171; }
-            .stat-card__label { font-size: 10.5px; color: #555; text-transform: uppercase; letter-spacing: .06em; }
-            .sources-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px; }
-            .sources-card__title { font-size: 11px; font-weight: 600; color: #777; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
-            .source-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-            .source-row__name { width: 150px; flex-shrink: 0; font-size: 12.5px; color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .source-row__bar-wrap { flex: 1; height: 7px; background: #222; border-radius: 4px; overflow: hidden; }
-            .source-row__bar { height: 100%; background: linear-gradient(90deg,#22c55e,#16a34a); border-radius: 4px; }
-            .source-row__count { width: 60px; flex-shrink: 0; text-align: right; font-size: 12.5px; font-weight: 600; color: #fff; }
-            .users-table { width: 100%; border-collapse: collapse; background: #141414; border: 1px solid #1e1e1e; border-radius: 14px; overflow: hidden; }
-            .users-table thead th { text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #444; padding: 12px 18px; border-bottom: 1px solid #1e1e1e; background: #131313; }
-            .users-table tbody tr { border-bottom: 1px solid #1c1c1c; transition: background .1s; }
-            .users-table tbody tr:last-child { border-bottom: none; }
-            .users-table tbody tr:hover { background: #1a1a1a; }
-            .users-table tbody td { padding: 13px 18px; font-size: 13px; color: #ccc; vertical-align: middle; }
-            .user-info__name { font-size: 14px; font-weight: 600; color: #fff; }
-            .user-info__email { font-size: 12px; color: #555; margin-top: 1px; }
-            .estabs { display: flex; flex-direction: column; gap: 4px; }
-            .estab-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: #cbd5e1; }
-            .estab-plan { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 1px 6px; border-radius: 4px; }
-            .estab-plan--free { color: #64748b; background: #1e1e1e; border: 1px solid #2a2a2a; }
-            .estab-plan--essentiel { color: #38bdf8; background: rgba(56,189,248,.1); border: 1px solid rgba(56,189,248,.25); }
-            .estab-plan--pro { color: #22c55e; background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.25); }
-            .estab-plan--business { color: #a78bfa; background: rgba(167,139,250,.1); border: 1px solid rgba(167,139,250,.25); }
-            .estab-paused { font-size: 10px; color: #f87171; }
-            .no-estab { color: #444; font-size: 12px; }
-            .date-col { color: #555; font-size: 12px; }
-            /* Toggle actif/désactivé */
-            .acc-toggle { position: relative; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
-            .acc-toggle input { display: none; }
-            .acc-toggle__track { width: 36px; height: 20px; border-radius: 10px; background: #2a2a2a; border: 1.5px solid #333; transition: background .2s, border-color .2s; flex-shrink: 0; position: relative; }
-            .acc-toggle__track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #444; transition: transform .2s, background .2s; }
-            .acc-toggle input:checked + .acc-toggle__track { background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.4); }
-            .acc-toggle input:checked + .acc-toggle__track::after { transform: translateX(16px); background: #22c55e; }
-            .acc-toggle__label { font-size: 12px; font-weight: 600; color: #555; min-width: 60px; }
-            .acc-toggle input:checked ~ .acc-toggle__label { color: #22c55e; }
-            .acc-toggle--disabled-state .acc-toggle__label { color: #f87171 !important; }
-            /* Action buttons */
-            .act-btns { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-            .act-btn { font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 7px; border: 1px solid #2a2a2a; cursor: pointer; transition: all .15s; white-space: nowrap; background: none; color: #666; }
-            .act-btn:hover { background: #1f1f1f; color: #fff; border-color: #444; }
-            .act-btn--msg:hover { color: #60a5fa; border-color: rgba(96,165,250,.4); }
-            .act-btn--del:hover { color: #f87171; border-color: rgba(248,113,113,.4); }
-            .act-btn:disabled { opacity: .6; cursor: default; }
-            .empty-state { text-align: center; padding: 60px 24px; color: #444; font-size: 14px; }
-            /* Compose modal */
-            .sa-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.72); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(3px); }
-            .sa-modal-overlay.open { display: flex; }
-            .sa-modal { background: #111; border: 1px solid #262626; border-radius: 18px; padding: 26px; width: 460px; max-width: 95vw; }
-            .sa-modal__title { font-size: 16px; font-weight: 700; color: #fff; margin: 0 0 4px; }
-            .sa-modal__sub { font-size: 12.5px; color: #666; margin-bottom: 18px; }
-            .sa-modal__sub b { color: #cbd5e1; }
-            .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-            .field__label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #666; }
-            .input, .textarea { background: #1a1a1a; border: 1.5px solid #2a2a2a; border-radius: 10px; color: #fff; font-size: 13.5px; padding: 10px 13px; outline: none; width: 100%; box-sizing: border-box; font-family: inherit; }
-            .input:focus, .textarea:focus { border-color: #444; }
-            .textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
-            .type-chips { display: flex; flex-wrap: wrap; gap: 7px; }
-            .type-chip { padding: 6px 11px; border-radius: 8px; border: 1.5px solid #2a2a2a; background: #1a1a1a; color: #888; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; }
-            .type-chip.active[data-type="info"] { border-color: #3b82f6; color: #fff; background: rgba(59,130,246,.15); }
-            .type-chip.active[data-type="tip"] { border-color: #9333ea; color: #fff; background: rgba(147,51,234,.15); }
-            .type-chip.active[data-type="success"] { border-color: #16a34a; color: #fff; background: rgba(22,163,74,.15); }
-            .type-chip.active[data-type="warning"] { border-color: #d97706; color: #fff; background: rgba(217,119,6,.15); }
-            .type-chip.active[data-type="security"] { border-color: #dc2626; color: #fff; background: rgba(220,38,38,.15); }
-            .sa-modal__actions { display: flex; gap: 8px; margin-top: 18px; }
-            .sa-btn { flex: 1; padding: 11px 16px; border-radius: 10px; font-size: 13.5px; font-weight: 700; cursor: pointer; border: none; }
-            .sa-btn--primary { background: #fff; color: #111; }
-            .sa-btn--ghost { background: #1a1a1a; border: 1px solid #2a2a2a; color: #888; }
-            .sa-btn:disabled { opacity: .5; cursor: default; }
-            .modal-status { font-size: 12px; margin-top: 8px; min-height: 15px; }
-            .modal-status.ok { color: #22c55e; }
-            .modal-status.err { color: #f87171; }
-            @media (max-width: 760px) {
-                .users-table thead th:nth-child(2), .users-table tbody td:nth-child(2) { display: none; }
-            }
-    body
-        - var saPage = 'users'
-        include ../../includes/sa-nav
+extends ../../layouts/sa
 
-        .sa-header(style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:32px 0 24px")
-            .sa-header__left
-                h1 👥 Utilisateurs
-                p(style="font-size:13px;color:#555;margin-top:4px") Comptes personnels. Le plan est géré par établissement (onglet Établissements).
-            .sa-header__right(style="display:flex;gap:10px;align-items:center")
-                button.act-btn.act-btn--msg#broadcastBtn(type="button" style="padding:8px 14px;font-size:12.5px") 📢 Message à tous
-                span.badge= users.length + ' utilisateurs'
+block content
+    -
+        var palette = ['#6ee7b7', '#93c5fd', '#fcd34d', '#fca5a5', '#c4b5fd', '#f9a8d4', '#a5f3fc', '#bef264'];
+        function couleurAvatar(s) {
+            var n = 0;
+            for (var i = 0; i < String(s).length; i++) n += String(s).charCodeAt(i);
+            return palette[n % palette.length];
+        }
+        function initiales(nom, email) {
+            var base = String(nom || email || '?').trim();
+            var mots = base.split(/[\s@._-]+/).filter(Boolean);
+            return ((mots[0] || '?')[0] + (mots[1] ? mots[1][0] : '')).toUpperCase();
+        }
+        function jourFr(d) {
+            return d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+        }
+        function depuis(d) {
+            if (!d) return 'jamais';
+            var j = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
+            if (j <= 0) return "aujourd'hui";
+            if (j === 1) return 'hier';
+            if (j < 30) return 'il y a ' + j + ' j';
+            if (j < 365) return 'il y a ' + Math.floor(j / 30) + ' mois';
+            return 'il y a ' + Math.floor(j / 365) + ' an';
+        }
+        var couleurPlan = { Free: '', Essentiel: 'sa-tag--blue', Pro: 'sa-tag--green', Business: 'sa-tag--violet' };
+        //- Conserve les filtres courants dans les liens (pagination, export).
+        function requete(extra) {
+            var q = [];
+            if (filtres.search) q.push('search=' + encodeURIComponent(filtres.search));
+            if (filtres.statut !== 'tous') q.push('statut=' + filtres.statut);
+            if (filtres.plan !== 'tous') q.push('plan=' + filtres.plan);
+            if (filtres.estab !== 'tous') q.push('estab=' + filtres.estab);
+            if (filtres.tri !== 'recent') q.push('tri=' + filtres.tri);
+            if (extra) q.push(extra);
+            return q.length ? '?' + q.join('&') : '';
+        }
+        var filtreActif = filtres.search || filtres.statut !== 'tous' || filtres.plan !== 'tous' || filtres.estab !== 'tous';
 
-        - var disabled = disabledCount || 0
-        - var active = users.length - disabled
-        .stats-row
-            .stat-card
-                .stat-card__value= users.length
-                .stat-card__label Comptes
-            .stat-card
-                .stat-card__value.stat-card__value--green= active
-                .stat-card__label Actifs
-            .stat-card
-                .stat-card__value(class=disabled ? 'stat-card__value--red' : '')= disabled
-                .stat-card__label Désactivés
-            .stat-card
-                .stat-card__value= adminsToday || 0
-                .stat-card__label Inscrits aujourd'hui
-            .stat-card
-                .stat-card__value= (totalViews || 0).toLocaleString('fr-FR')
-                .stat-card__label Vues totales
-            .stat-card
-                .stat-card__value= (uniqueViews || 0).toLocaleString('fr-FR')
-                .stat-card__label Vues uniques
-            .stat-card
-                .stat-card__value= totalClients || 0
-                .stat-card__label Clients (total)
-            .stat-card
-                .stat-card__value= clientsToday || 0
-                .stat-card__label Clients aujourd'hui
+    .sa-head
+        button.sa-ico.sa-burger(type="button" data-sa-burger aria-label="Menu")
+            span.material-symbols-outlined menu
+        div
+            h1.sa-head__title Utilisateurs
+            .sa-head__sub Comptes personnels · le plan se gère par établissement
+        .sa-head__end
+            button.sa-btn(type="button" id="btnBroadcast")
+                span.material-symbols-outlined campaign
+                span Message à tous
+            a.sa-btn(href='/superadmin/users/export' + requete())
+                span.material-symbols-outlined download
+                span Exporter
 
-        if topSources && topSources.length
-            - var maxSourceCount = Math.max.apply(null, topSources.map(function(s){ return s.count; }))
-            .sources-card
-                .sources-card__title Provenance des vues
-                each s in topSources
-                    .source-row
-                        .source-row__name= s._id || 'direct'
-                        .source-row__bar-wrap
-                            .source-row__bar(style=`width:${Math.round((s.count / maxSourceCount) * 100)}%`)
-                        .source-row__count= s.count.toLocaleString('fr-FR')
+    .sa-body
+        .sa-kpis
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined group
+                    span Comptes
+                .sa-kpi__value= kpis.total.toLocaleString('fr-FR')
+                .sa-kpi__delta= kpis.etablissements + ' établissement' + (kpis.etablissements > 1 ? 's' : '')
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined task_alt
+                    span Actifs
+                .sa-kpi__value= kpis.actifs.toLocaleString('fr-FR')
+                .sa-kpi__delta(class=kpis.desactives ? 'sa-kpi__delta--down' : '')= kpis.desactives + ' désactivé' + (kpis.desactives > 1 ? 's' : '')
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined person_add
+                    span Inscrits aujourd'hui
+                .sa-kpi__value= kpis.aujourdhui
+                .sa-kpi__delta(class=kpis.inscrits7j ? 'sa-kpi__delta--up' : '')= kpis.inscrits7j + ' sur 7 jours'
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined login
+                    span Connectés (7 j)
+                .sa-kpi__value= kpis.connectes7j.toLocaleString('fr-FR')
+                .sa-kpi__delta= kpis.total ? Math.round((kpis.connectes7j / kpis.total) * 100) + ' % des comptes' : '—'
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined do_not_disturb_on
+                    span Jamais connectés
+                .sa-kpi__value= kpis.jamaisConnectes.toLocaleString('fr-FR')
+                .sa-kpi__delta Comptes créés sans usage
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined groups
+                    span Clients (total)
+                .sa-kpi__value= trafic.totalClients.toLocaleString('fr-FR')
+                .sa-kpi__delta(class=trafic.clientsToday ? 'sa-kpi__delta--up' : '')= '+' + trafic.clientsToday + " aujourd'hui"
 
-        .search-bar
-            form(method="GET" action="/superadmin")
-                input(type="text" name="search" placeholder="Rechercher par nom ou email..." value=search)
-                button(type="submit") Rechercher
-                if search
-                    a(href="/superadmin" style="font-size:13px;color:#555;text-decoration:none;margin-left:8px;align-self:center;") ✕ Effacer
+        //- ── Filtres ───────────────────────────────────────────────────────
+        form.sa-toolbar(method="GET" action="/superadmin" id="formFiltres")
+            label.sa-search
+                span.material-symbols-outlined search
+                input.sa-input(type="text" name="search" placeholder="Nom ou email…" value=filtres.search)
+            select.sa-select(name="statut" data-auto)
+                option(value="tous" selected=filtres.statut === 'tous') Tous les statuts
+                option(value="actif" selected=filtres.statut === 'actif') Actifs
+                option(value="desactive" selected=filtres.statut === 'desactive') Désactivés
+            select.sa-select(name="plan" data-auto)
+                option(value="tous" selected=filtres.plan === 'tous') Tous les plans
+                option(value="basic" selected=filtres.plan === 'basic') Free
+                option(value="essentiel" selected=filtres.plan === 'essentiel') Essentiel
+                option(value="pro" selected=filtres.plan === 'pro') Pro
+                option(value="business" selected=filtres.plan === 'business') Business
+            select.sa-select(name="estab" data-auto)
+                option(value="tous" selected=filtres.estab === 'tous') Avec ou sans établissement
+                option(value="avec" selected=filtres.estab === 'avec') Avec établissement
+                option(value="sans" selected=filtres.estab === 'sans') Sans établissement
+            .sa-toolbar__end
+                select.sa-select(name="tri" data-auto)
+                    option(value="recent" selected=filtres.tri === 'recent') Plus récents
+                    option(value="ancien" selected=filtres.tri === 'ancien') Plus anciens
+                    option(value="nom" selected=filtres.tri === 'nom') Nom (A→Z)
+                    option(value="connexion" selected=filtres.tri === 'connexion') Dernière connexion
+                button.sa-btn(type="submit")
+                    span.material-symbols-outlined filter_alt
+                    span Filtrer
+                if filtreActif
+                    a.sa-btn(href="/superadmin")
+                        span.material-symbols-outlined close
+                        span Réinitialiser
 
-        if users.length === 0
-            .empty-state Aucun utilisateur trouvé.
+        //- ── Actions sur la sélection ──────────────────────────────────────
+        .sa-bulk#bulkBar
+            span#bulkCount 0 sélectionné
+            .sa-bulk__end
+                button.sa-btn(type="button" id="bulkMsg")
+                    span.material-symbols-outlined mail
+                    span Message groupé
+                button.sa-btn(type="button" id="bulkOff")
+                    span.material-symbols-outlined block
+                    span Désactiver
+                button.sa-btn.sa-btn--danger(type="button" id="bulkDel")
+                    span.material-symbols-outlined delete
+                    span Supprimer
+
+        if !users.length
+            .sa-tablewrap
+                .sa-empty
+                    .sa-empty__ic
+                        span.material-symbols-outlined person_search
+                    .sa-empty__t Aucun compte
+                    .sa-empty__d= filtreActif ? 'Aucun résultat pour ces filtres.' : 'Aucun utilisateur inscrit pour le moment.'
         else
-            table.users-table
-                thead
-                    tr
-                        th Utilisateur
-                        th Établissement(s)
-                        th Inscrit le
-                        th Statut
-                        th Actions
-                tbody
-                    each u in users
-                        tr(data-user-id=String(u._id))
-                            td
-                                .user-info__name= u.fullName || '—'
-                                .user-info__email= u.email
-                            td
-                                if u.establishments && u.establishments.length
-                                    - var uPlan = (u.planKey === 'basic' || !u.planKey) ? 'free' : u.planKey
-                                    .estabs
-                                        each e in u.establishments
-                                            .estab-chip
-                                                span= e.name || ('/' + (e.slug || '—'))
-                                                span.estab-plan(class='estab-plan--' + uPlan)= u.planLabel
-                                                if e.isPaused
-                                                    span.estab-paused ⏸
-                                else
-                                    span.no-estab —
-                            td.date-col= new Date(u.createdAt).toLocaleDateString('fr-FR')
-                            td
-                                label.acc-toggle(class=u.isDisabled ? 'acc-toggle--disabled-state' : '')
-                                    input(type="checkbox" class="acc-status-toggle" data-user-id=String(u._id) checked=(!u.isDisabled))
-                                    span.acc-toggle__track
-                                    span.acc-toggle__label= u.isDisabled ? 'Désactivé' : 'Actif'
-                            td
-                                .act-btns
-                                    button.act-btn.act-btn--msg(type="button" data-msg-user-id=String(u._id) data-user-name=(u.fullName || u.email)) ✉️ Message
-                                    button.act-btn(type="button" data-imp-user-id=String(u._id) title="Accéder au compte") 🔒 Accès
-                                    button.act-btn.act-btn--del(type="button" data-del-user-id=String(u._id) data-user-name=(u.fullName || u.email) title="Supprimer définitivement") 🗑️
+            .sa-tablewrap
+                table.sa-table.sa-table--users
+                    thead
+                        tr
+                            th.sa-col-check
+                                input.sa-check(type="checkbox" id="checkAll" aria-label="Tout sélectionner")
+                            th Utilisateur
+                            th Établissements
+                            th Plan
+                            th Inscrit le
+                            th Dernière connexion
+                            th Statut
+                            th(style="width:44px")
+                    tbody
+                        each u in users
+                            - var nom = u.fullName || u.email
+                            tr(data-user-id=String(u._id) data-user-name=nom data-user-mail=u.email data-actif=(u.isDisabled ? '0' : '1'))
+                                td.sa-col-check
+                                    input.sa-check.js-row-check(type="checkbox" aria-label='Sélectionner ' + nom)
+                                td
+                                    .sa-person
+                                        span.sa-av(style='background:' + couleurAvatar(u.email || nom))= initiales(u.fullName, u.email)
+                                        div
+                                            .sa-person__name
+                                                span= u.fullName || '—'
+                                            .sa-person__mail= u.email
+                                td
+                                    //- Une seule ligne : toutes les lignes du tableau gardent
+                                    //- exactement la même hauteur (règle du design commun).
+                                    if u.establishments.length
+                                        - var premier = u.establishments[0]
+                                        .sa-estab(title=u.establishments.map(function (e) { return e.name || e.slug; }).join(', '))
+                                            a(href='/' + (premier.slug || '') style="color:var(--sa-txt-2);text-decoration:none")= premier.name || ('/' + premier.slug)
+                                            if premier.isPaused
+                                                span.sa-tag.sa-tag--amber En pause
+                                            if u.establishments.length > 1
+                                                span.sa-muted(style="font-size:12px")= '+' + (u.establishments.length - 1)
+                                    else
+                                        span.sa-muted —
+                                td
+                                    span.sa-tag(class=couleurPlan[u.planLabel])= u.planLabel
+                                td.sa-td--date= jourFr(u.createdAt)
+                                td.sa-td--date
+                                    span(class=u.lastLoginAt ? '' : 'sa-muted' style=u.lastLoginAt ? 'color:var(--sa-txt)' : '')= depuis(u.lastLoginAt)
+                                td
+                                    label.sa-switch(title="Activer / désactiver le compte")
+                                        input(type="checkbox" class="js-toggle" checked=!u.isDisabled)
+                                        span.sa-switch__track
+                                        span.sa-person__mail.js-toggle-label(style="font-size:12px")= u.isDisabled ? 'Désactivé' : 'Actif'
+                                td.sa-td--right
+                                    .sa-menu
+                                        button.sa-ico(type="button" data-sa-menu aria-label="Actions")
+                                            span.material-symbols-outlined more_vert
+                                        .sa-menu__list
+                                            button.sa-menu__item(type="button" data-act="fiche")
+                                                span.material-symbols-outlined person
+                                                span Voir la fiche
+                                            button.sa-menu__item(type="button" data-act="message")
+                                                span.material-symbols-outlined mail
+                                                span Envoyer un message
+                                            button.sa-menu__item(type="button" data-act="copie")
+                                                span.material-symbols-outlined content_copy
+                                                span Copier l'email
+                                            .sa-menu__sep
+                                            button.sa-menu__item(type="button" data-act="acces")
+                                                span.material-symbols-outlined lock_open
+                                                span Accéder au compte
+                                            button.sa-menu__item(type="button" data-act="supervision")
+                                                span.material-symbols-outlined visibility
+                                                span Demander une supervision
+                                            .sa-menu__sep
+                                            button.sa-menu__item.sa-menu__item--danger(type="button" data-act="supprimer")
+                                                span.material-symbols-outlined delete
+                                                span Supprimer le compte
 
-        //- ── Modale de composition de message ──────────────────────────────
-        .sa-modal-overlay#msgOverlay
-            .sa-modal
-                h3.sa-modal__title ✉️ Envoyer un message
-                p.sa-modal__sub#msgSub À : <b id="msgTo">—</b>
-                .field
-                    label.field__label Tonalité
-                    .type-chips#msgTypeChips
-                        button.type-chip.active(type="button" data-type="info") ℹ️ Info
-                        button.type-chip(type="button" data-type="tip") 💡 Conseil
-                        button.type-chip(type="button" data-type="success") ✅ Succès
-                        button.type-chip(type="button" data-type="warning") ⚠️ Alerte
-                        button.type-chip(type="button" data-type="security") 🔒 Sécurité
-                .field
-                    label.field__label Titre
-                    input.input#msgTitle(type="text" maxlength="140" placeholder="ex. Bienvenue sur BranShee !")
-                .field
-                    label.field__label Message
-                    textarea.textarea#msgBody(maxlength="4000" placeholder="Votre message…")
-                .field
-                    label.field__label Bouton (optionnel) — texte / lien
+            .sa-pager
+                span= resultats + ' compte' + (resultats > 1 ? 's' : '') + ' · page ' + page + ' / ' + pages
+                .sa-pager__end
+                    a.sa-pager__btn(href='/superadmin' + requete('page=' + (page - 1)) class=page <= 1 ? 'is-off' : '')
+                        span.material-symbols-outlined chevron_left
+                    - var debut = Math.max(1, Math.min(page - 2, pages - 4))
+                    - var fin = Math.min(pages, debut + 4)
+                    each n in Array.from({ length: fin - debut + 1 }, function (_, i) { return debut + i })
+                        a.sa-pager__btn(href='/superadmin' + requete('page=' + n) class=n === page ? 'is-current' : '')= n
+                    a.sa-pager__btn(href='/superadmin' + requete('page=' + (page + 1)) class=page >= pages ? 'is-off' : '')
+                        span.material-symbols-outlined chevron_right
+
+        //- ── Trafic ────────────────────────────────────────────────────────
+        .sa-grid2(style="margin-top:24px")
+            .sa-card
+                .sa-card__t Trafic du site
+                .sa-props
+                    .sa-prop
+                        .sa-prop__k
+                            span.material-symbols-outlined visibility
+                            span Vues totales
+                        .sa-prop__v= trafic.totalViews.toLocaleString('fr-FR')
+                    .sa-prop
+                        .sa-prop__k
+                            span.material-symbols-outlined person
+                            span Visiteurs uniques
+                        .sa-prop__v= trafic.uniqueViews.toLocaleString('fr-FR')
+                    .sa-prop
+                        .sa-prop__k
+                            span.material-symbols-outlined groups
+                            span Clients enregistrés
+                        .sa-prop__v= trafic.totalClients.toLocaleString('fr-FR')
+            .sa-card
+                .sa-card__t Provenance des vues
+                if trafic.topSources && trafic.topSources.length
+                    - var maxSource = Math.max.apply(null, trafic.topSources.map(function (s) { return s.count; }))
+                    .sa-bars
+                        each s in trafic.topSources
+                            .sa-bar
+                                .sa-bar__name= s._id || 'direct'
+                                .sa-bar__track
+                                    .sa-bar__fill(style='width:' + Math.round((s.count / maxSource) * 100) + '%')
+                                .sa-bar__n= s.count.toLocaleString('fr-FR')
+                else
+                    .sa-muted Aucune donnée de provenance.
+
+    //- ── Fiche détaillée ───────────────────────────────────────────────────
+    .sa-drawer#drawer
+        .sa-drawer__overlay(data-close)
+        .sa-drawer__panel
+            .sa-drawer__head
+                span.sa-av#dwAvatar
+                div(style="min-width:0")
+                    .sa-drawer__title#dwName —
+                    .sa-head__sub#dwMail
+                button.sa-ico(type="button" data-close style="margin-left:auto" aria-label="Fermer")
+                    span.material-symbols-outlined close
+            .sa-drawer__body#dwBody
+            .sa-drawer__foot
+                button.sa-btn(type="button" id="dwMsg")
+                    span.material-symbols-outlined mail
+                    span Message
+                button.sa-btn(type="button" id="dwImp")
+                    span.material-symbols-outlined lock_open
+                    span Accéder
+                button.sa-btn.sa-btn--danger(type="button" id="dwDel" style="margin-left:auto")
+                    span.material-symbols-outlined delete
+                    span Supprimer
+
+    //- ── Composition d'un message ──────────────────────────────────────────
+    .sa-modal#modalMsg
+        .sa-modal__overlay(data-close-msg)
+        .sa-modal__box
+            .sa-modal__head
+                span.material-symbols-outlined mail
+                span.sa-modal__title Envoyer un message
+                button.sa-ico(type="button" data-close-msg style="margin-left:auto" aria-label="Fermer")
+                    span.material-symbols-outlined close
+            .sa-modal__body
+                .sa-head__sub À : <b id="msgTo" style="color:var(--sa-txt)">—</b>
+                .sa-field
+                    span.sa-field__label Tonalité
+                    div(style="display:flex;flex-wrap:wrap;gap:6px" id="msgTypes")
+                        button.sa-btn(type="button" data-type="info") Info
+                        button.sa-btn(type="button" data-type="tip") Conseil
+                        button.sa-btn(type="button" data-type="success") Succès
+                        button.sa-btn(type="button" data-type="warning") Alerte
+                        button.sa-btn(type="button" data-type="security") Sécurité
+                .sa-field
+                    span.sa-field__label Titre
+                    input.sa-input#msgTitle(type="text" maxlength="140" placeholder="ex. Bienvenue sur BranShee !")
+                .sa-field
+                    span.sa-field__label Message
+                    textarea.sa-textarea#msgBody(maxlength="4000" placeholder="Votre message…")
+                .sa-field
+                    span.sa-field__label Bouton (optionnel) — texte / lien
                     div(style="display:flex;gap:8px")
-                        input.input#msgCtaLabel(type="text" maxlength="60" placeholder="ex. Voir")
-                        input.input#msgCtaUrl(type="text" maxlength="500" placeholder="/subscription")
-                .modal-status#msgStatus
-                .sa-modal__actions
-                    button.sa-btn.sa-btn--primary#msgSend(type="button") Envoyer
-                    button.sa-btn.sa-btn--ghost#msgCancel(type="button") Annuler
+                        input.sa-input#msgCtaLabel(type="text" maxlength="60" placeholder="ex. Voir")
+                        input.sa-input#msgCtaUrl(type="text" maxlength="500" placeholder="/subscription")
+            .sa-modal__foot
+                button.sa-btn(type="button" data-close-msg) Annuler
+                button.sa-btn.sa-btn--primary#msgSend(type="button") Envoyer
 
-        script(src="/js/utils/confirm-modal.js")
-        script.
-            // ── Statut actif / désactivé ──────────────────────────────
-            document.querySelectorAll('.acc-status-toggle').forEach(function(checkbox) {
-                checkbox.addEventListener('change', async function() {
-                    const userId = this.dataset.userId;
-                    const label = this.closest('.acc-toggle').querySelector('.acc-toggle__label');
-                    const wrapper = this.closest('.acc-toggle');
-                    try {
-                        const res = await fetch('/superadmin/toggle-account/' + userId, { method: 'PATCH', headers: { 'Content-Type': 'application/json' } });
-                        const data = await res.json();
-                        if (!data.success) throw new Error('Failed');
-                        if (data.isDisabled) { label.textContent = 'Désactivé'; wrapper.classList.add('acc-toggle--disabled-state'); }
-                        else { label.textContent = 'Actif'; wrapper.classList.remove('acc-toggle--disabled-state'); }
-                    } catch(e) {
-                        this.checked = !this.checked;
-                        alert('Erreur lors de la mise à jour du statut.');
-                    }
-                });
-            });
-
-            // ── Suppression d'un compte ───────────────────────────────
-            document.querySelectorAll('[data-del-user-id]').forEach(function(btn) {
-                btn.addEventListener('click', async function() {
-                    const userId = this.dataset.delUserId;
-                    const userName = this.dataset.userName;
-                    const confirmed = await window.confirmModal(
-                        'Supprimer "' + userName + '" ?',
-                        'Toutes ses données (réservations, services, employés...) seront définitivement supprimées. Cette action est irréversible.'
-                    );
-                    if (!confirmed) return;
-                    this.disabled = true;
-                    this.textContent = '⏳';
-                    try {
-                        const res = await fetch('/superadmin/users/' + userId, { method: 'DELETE', headers: { 'Content-Type': 'application/json' } });
-                        const data = await res.json();
-                        if (!data.success) throw new Error(data.error || 'Failed');
-                        this.closest('tr').remove();
-                    } catch(e) {
-                        this.disabled = false;
-                        this.textContent = '🗑️';
-                        // Message réel du serveur affiché (au lieu d'un texte
-                        // générique toujours identique) — pour comprendre la
-                        // vraie cause si ça échoue encore.
-                        await window.alertModal(e.message && e.message !== 'Failed' ? e.message : 'Erreur lors de la suppression du compte.');
-                    }
-                });
-            });
-
-            // ── Impersonation (accès discret) ─────────────────────────
-            document.querySelectorAll('[data-imp-user-id]').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    var userId = btn.dataset.impUserId;
-                    var form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = '/superadmin/impersonate/' + userId;
-                    document.body.appendChild(form);
-                    form.submit();
-                });
-            });
-
-            // ── Modale de composition de message ──────────────────────
-            (function() {
-                var overlay = document.getElementById('msgOverlay');
-                var toEl = document.getElementById('msgTo');
-                var titleEl = document.getElementById('msgTitle');
-                var bodyEl = document.getElementById('msgBody');
-                var ctaLabel = document.getElementById('msgCtaLabel');
-                var ctaUrl = document.getElementById('msgCtaUrl');
-                var sendBtn = document.getElementById('msgSend');
-                var cancelBtn = document.getElementById('msgCancel');
-                var status = document.getElementById('msgStatus');
-                var type = 'info';
-                var targetUserId = null; // null = broadcast
-
-                document.querySelectorAll('#msgTypeChips .type-chip').forEach(function(c) {
-                    c.addEventListener('click', function() {
-                        document.querySelectorAll('#msgTypeChips .type-chip').forEach(function(x) { x.classList.remove('active'); });
-                        c.classList.add('active');
-                        type = c.dataset.type;
-                    });
-                });
-
-                function resetType() {
-                    type = 'info';
-                    document.querySelectorAll('#msgTypeChips .type-chip').forEach(function(x) { x.classList.toggle('active', x.dataset.type === 'info'); });
-                }
-                function open(userId, label) {
-                    targetUserId = userId;
-                    toEl.textContent = label;
-                    titleEl.value = ''; bodyEl.value = ''; ctaLabel.value = ''; ctaUrl.value = '';
-                    status.textContent = ''; status.className = 'modal-status';
-                    resetType();
-                    overlay.classList.add('open');
-                    setTimeout(function() { titleEl.focus(); }, 50);
-                }
-                function close() { overlay.classList.remove('open'); }
-
-                document.querySelectorAll('[data-msg-user-id]').forEach(function(btn) {
-                    btn.addEventListener('click', function() { open(btn.dataset.msgUserId, btn.dataset.userName); });
-                });
-                var broadcastBtn = document.getElementById('broadcastBtn');
-                if (broadcastBtn) broadcastBtn.addEventListener('click', function() { open(null, 'Tous les pros 📢'); });
-
-                cancelBtn.addEventListener('click', close);
-                overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
-
-                sendBtn.addEventListener('click', function() {
-                    status.className = 'modal-status'; status.textContent = '';
-                    if (!titleEl.value.trim() || !bodyEl.value.trim()) {
-                        status.className = 'modal-status err'; status.textContent = 'Titre et message requis.'; return;
-                    }
-                    sendBtn.disabled = true; sendBtn.textContent = 'Envoi…';
-                    fetch('/superadmin/messages', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            broadcast: targetUserId === null,
-                            recipientId: targetUserId,
-                            title: titleEl.value.trim(),
-                            body: bodyEl.value.trim(),
-                            type: type,
-                            ctaLabel: ctaLabel.value.trim(),
-                            ctaUrl: ctaUrl.value.trim(),
-                        }),
-                    }).then(function(r) { return r.json(); }).then(function(d) {
-                        sendBtn.disabled = false; sendBtn.textContent = 'Envoyer';
-                        if (d.success) {
-                            status.className = 'modal-status ok'; status.textContent = '✅ Message envoyé !';
-                            setTimeout(close, 900);
-                        } else {
-                            status.className = 'modal-status err'; status.textContent = d.error || 'Erreur.';
-                        }
-                    }).catch(function() {
-                        sendBtn.disabled = false; sendBtn.textContent = 'Envoyer';
-                        status.className = 'modal-status err'; status.textContent = 'Erreur réseau.';
-                    });
-                });
-            })();
+block scripts
+    script(src="/socket.io/socket.io.js")
+    script(src="/js/utils/confirm-modal.js")
+    script(src="/js/superadmin/users.js")

@@ -308,6 +308,9 @@
 .sx-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  /* Sans ceci, chaque LIGNE se dimensionne seule : la 2e rangée était plus
+     courte que la 1re. Là, toutes les cartes de la page ont la même hauteur. */
+  grid-auto-rows: 1fr;
   gap: 18px;
 }
 
@@ -328,7 +331,7 @@
 }
 .srp-card__img-wrap {
   position: relative;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 4 / 3;
   background: var(--surface, #f1f5f4);
   overflow: hidden;
 }
@@ -336,6 +339,9 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Cadrage haut : un `cover` centré rogne autant en haut qu'en bas et
+     décapite les portraits. */
+  object-position: center 25%;
   transition: transform 0.4s ease;
 }
 .srp-card:hover .srp-card__img { transform: scale(1.05); }
@@ -380,10 +386,18 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 10px;
+  /* Réservé : un professionnel sans métier renseigné faisait disparaître cette
+     ligne, et les 26 px se reportaient en vide juste avant « Réserver ». */
+  min-height: 26px;
   font-size: 12.5px;
   color: var(--text-muted, #64748b);
 }
 .srp-card__type {
+  /* Un métier à rallonge tenait sur 3 lignes et déséquilibrait la carte. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   font-weight: 600;
   color: var(--accent-strong, #15803d);
   background: var(--accent-soft, #f0fdf4);
@@ -413,6 +427,9 @@
   color: var(--text-muted, #9ca3af);
 }
 .srp-card__desc {
+  /* Réservé même sans texte : sinon les cartes sans description avaient un
+     grand vide entre la note et « Réserver ». */
+  min-height: 39px;
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-muted, #64748b);

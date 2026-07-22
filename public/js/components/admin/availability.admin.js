@@ -409,21 +409,21 @@ inputsWeekday.forEach((input) => {
       const actionsContainer = row.querySelector(".avail-day-actions");
       if (actionsContainer && !actionsContainer.querySelector(".avail-range-btn")) {
         const hasRanges = window.__availFeatures && window.__availFeatures.ranges;
+        // Doit reproduire à l'identique le markup de la vue (classes partagées
+        // .sm-btn + icône Material + libellé traduit), sinon le bouton change
+        // d'apparence et de langue dès qu'on réactive un jour.
+        const label = window.__availRangeLabel || "Créneau";
         if (hasRanges) {
           actionsContainer.insertAdjacentHTML("afterbegin", `
-            <button class="avail-range-btn option-add-plage" type="button">
-              <svg viewBox="0 -960 960 960" height="14" width="14" fill="currentColor">
-                <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/>
-              </svg>
-              Range
+            <button class="sm-btn sm-btn--soft avail-range-btn option-add-plage" type="button">
+              <span class="material-symbols-outlined" style="font-size:18px">add</span>
+              ${label}
             </button>`);
         } else {
           actionsContainer.insertAdjacentHTML("afterbegin", `
-            <a class="avail-range-btn avail-range-btn--locked" href="/subscription" title="Fonctionnalité Pro">
-              <svg viewBox="0 -960 960 960" height="13" width="13" fill="currentColor">
-                <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z"/>
-              </svg>
-              Range
+            <a class="sm-btn sm-btn--soft avail-range-btn avail-range-btn--locked" href="/subscription" title="Fonctionnalité Pro">
+              <span class="material-symbols-outlined" style="font-size:16px">lock</span>
+              ${label}
             </a>`);
         }
       }

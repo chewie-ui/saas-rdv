@@ -16,8 +16,10 @@ block content
         //- ── Header avec onglets ────────────────────────────────────────────────
         .cz-header
             .cz-header__top
-                h2.cz-header__title Personnaliser
-                p.cz-header__sub Gérez votre page publique, vos rappels et vos sections.
+                //- Le titre suit l'onglet actif (voir showTab plus bas) : au
+                //- chargement, l'onglet ouvert est « Général ».
+                h2.cz-header__title Général
+                p.cz-header__sub Le profil de votre établissement, votre présentation et vos sections.
             .cz-tabs
                 button.cz-tab.is-active#czTabGeneral(type="button")
                     span.material-symbols-outlined(style="font-size:16px") settings
@@ -55,9 +57,11 @@ block content
                 p.info-card__desc Ces informations sont affichées en haut de votre page de réservation.
             //- Toujours rendu (masqué si complet) pour que le JS puisse le
             //- réafficher si l'utilisateur supprime sa photo ou vide le nom.
-            .biz-incomplete-banner#bizIncompleteBanner(style=_missingProfile ? '' : 'display:none')
-                span.material-symbols-outlined(style="font-size:16px") info
-                span#bizIncompleteText= _missingMsg
+            .ds-alert.ds-alert--warning#bizIncompleteBanner(style=(_missingProfile ? '' : 'display:none') + ';margin-bottom:16px')
+                span.ds-alert__ic.material-symbols-outlined error
+                .ds-alert__body
+                    p.ds-alert__title Profil incomplet
+                    p.ds-alert__text#bizIncompleteText= _missingMsg
             .biz-row
                 .biz-photo-col
                     .biz-photo-preview(class=!user.businessPicture ? 'biz-photo-preview--empty' : '')
@@ -107,9 +111,11 @@ block content
                 label.section-cb-label(for="toggleSectionAbout" title="Afficher la section « À propos » sur la page publique")
                     input#toggleSectionAbout.toggle-cb(type="checkbox" checked=cs.showSectionAbout !== false)
                     span.section-pill À propos
-            .section-off-banner
-                span.material-symbols-outlined(style="font-size:16px") visibility_off
-                span Cette section est masquée sur votre page publique — les visiteurs ne la verront pas.
+            .ds-alert.ds-alert--warning.section-off-banner(style="margin-bottom:16px")
+                span.ds-alert__ic.material-symbols-outlined visibility_off
+                .ds-alert__body
+                    p.ds-alert__title Section masquée
+                    p.ds-alert__text Les visiteurs de votre page publique ne verront pas cette section.
             .section-body(style=(cs.showSectionAbout === false ? 'display:none' : ''))
                 .about-editor
                     .about-editor__toolbar
@@ -305,9 +311,11 @@ block content
                 label.section-cb-label(for="toggleSectionGallery" title="Afficher la galerie sur la page publique")
                     input#toggleSectionGallery.toggle-cb(type="checkbox" checked=!!cs.showSectionGallery)
                     span.section-pill Galerie
-            .section-off-banner
-                span.material-symbols-outlined(style="font-size:16px") visibility_off
-                span Cette section est masquée sur votre page publique — les visiteurs ne la verront pas.
+            .ds-alert.ds-alert--warning.section-off-banner(style="margin-bottom:16px")
+                span.ds-alert__ic.material-symbols-outlined visibility_off
+                .ds-alert__body
+                    p.ds-alert__title Section masquée
+                    p.ds-alert__text Les visiteurs de votre page publique ne verront pas cette section.
 
             .gl-body
                 - var _galleryLayout = cs.galleryLayout || 'grid'
@@ -1428,7 +1436,22 @@ block scripts
 
             var designVisible = false;
 
+            // Le titre de la page suit l'onglet : « Personnaliser » reste dans la
+            // barre du haut, le gros titre annonce la section où l'on se trouve.
+            var titres = {
+                general:     { t: 'Général',     s: 'Le profil de votre établissement, votre présentation et vos sections.' },
+                rappels:     { t: 'Rappels',     s: 'Les messages envoyés automatiquement à vos clients.' },
+                design:      { t: 'Design',      s: "L'apparence de votre page de réservation." },
+                integration: { t: 'Intégration', s: 'Intégrez votre calendrier sur votre propre site.' }
+            };
+            var elTitre = document.querySelector('.cz-header__title');
+            var elSous  = document.querySelector('.cz-header__sub');
+
             function showTab(name) {
+                if (titres[name] && elTitre) {
+                    elTitre.textContent = titres[name].t;
+                    if (elSous) elSous.textContent = titres[name].s;
+                }
                 // Tabs actifs
                 Object.keys(tabs).forEach(function(k) {
                     if (tabs[k]) tabs[k].classList.toggle('is-active', k === name);

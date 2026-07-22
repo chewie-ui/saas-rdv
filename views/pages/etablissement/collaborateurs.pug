@@ -5,188 +5,318 @@ block links
     link(rel="stylesheet", href="/css/layouts/informations.css")
     link(rel="stylesheet", href="/css/layouts/client-dashboard.css")
     link(rel="stylesheet", href="/css/layouts/etablissements.css")
+    link(rel="stylesheet", href="/css/layouts/collaborateurs.css")
 
 block content
     a.etab-back-link(href="/etablissement/mes-etablissements" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted,#6b7280);text-decoration:none;margin-bottom:16px")
         span.material-symbols-outlined(style=`font-size:14px`) arrow_back
         | Retour à mes établissements
 
-    .dash-header
-        .dash-header__left
-            h1= company.name
-            span.dash-header__sub
-                if collaboratorsLimit !== null
-                    = `${collaborators.length} / ${collaboratorsLimit} collaborateur(s) — forfait ${currentPlan}`
-                else
-                    = `${collaborators.length} collaborateur(s) — forfait ${currentPlan}`
-        .dash-header__cta
-            if permissions.collaborators.manage && !atCollaboratorsLimit
-                button.sm-btn.sm-btn--primary#inviteBtn(type="button")
-                    span.material-symbols-outlined(style=`font-size:16px`) add
-                    span Inviter un collaborateur
+    - var _nbDemandes = (permissions.collaborators.manage && pendingRequests) ? pendingRequests.length : 0
+    - var _nbInvits = (permissions.collaborators.manage && pendingInvitations) ? pendingInvitations.length : 0
+    - var _viewerIsOwner = String(ownerUser._id) === String(user._id)
+
+    .cb-head
+        h1.cb-head__title= company.name
+        span.cb-head__sub
+            if collaboratorsLimit !== null
+                = `${collaborators.length} / ${collaboratorsLimit} collaborateur(s) — forfait ${currentPlan}`
+            else
+                = `${collaborators.length} collaborateur(s) — forfait ${currentPlan}`
 
     if collaboratorsLimit === 0
-        .estab-limit-banner
-            span Votre forfait actuel ne permet pas d'ajouter de collaborateurs.
-            a(href="/subscription") Passer à un forfait supérieur →
+        .ds-alert.ds-alert--warning(style="margin-bottom:18px")
+            span.ds-alert__ic.material-symbols-outlined error
+            .ds-alert__body
+                p.ds-alert__title Votre forfait ne permet pas d'ajouter de collaborateurs
+                p.ds-alert__text Passez à un forfait supérieur pour constituer votre équipe et répartir les rendez-vous.
+                .ds-alert__actions
+                    a.ds-alert__link.ds-alert__link--strong(href="/subscription") Voir les forfaits →
     else if atCollaboratorsLimit
-        .estab-limit-banner
-            span Vous avez atteint la limite de collaborateurs de votre forfait.
-            if currentPlan === 'pro' || currentPlan === 'business'
-                span &nbsp;— ajoutez un siège ci-dessous, ou
-            a(href="/subscription") Passer à un forfait supérieur →
+        .ds-alert.ds-alert--warning(style="margin-bottom:18px")
+            span.ds-alert__ic.material-symbols-outlined error
+            .ds-alert__body
+                p.ds-alert__title Limite de collaborateurs atteinte
+                if currentPlan === 'pro' || currentPlan === 'business'
+                    p.ds-alert__text Votre forfait #{currentPlan} est complet. Ajoutez un siège (10 €/mois, proratisé) pour un collaborateur de plus, ou passez à un forfait supérieur.
+                    .ds-alert__actions
+                        button.ds-alert__link.ds-alert__link--strong#seatsBtnAlert(type="button") Ajouter un siège
+                        a.ds-alert__link(href="/subscription") Voir les forfaits →
+                else
+                    p.ds-alert__text Vous ne pouvez plus inviter de collaborateurs avec ce forfait.
+                    .ds-alert__actions
+                        a.ds-alert__link.ds-alert__link--strong(href="/subscription") Voir les forfaits →
 
+    //- ── Navigation (onglets partagés .ds-tabs) ─────────────────────────────
+    nav.ds-tabs#collabTabs
+        button.ds-tab.is-active(type="button" data-pan="equipe") Équipe
+        if permissions.collaborators.manage
+            button.ds-tab(type="button" data-pan="demandes")
+                | Demandes
+                if _nbDemandes + _nbInvits
+                    span.ds-tab__count= _nbDemandes + _nbInvits
+        if currentPlan === 'pro' || currentPlan === 'business'
+            button.ds-tab(type="button" data-pan="sieges") Sièges
+        //- Pas d'onglet « Grades » : il mène à une autre page, et le lien
+        //- existe déjà dans la barre latérale (section Équipe).
+
+    //- ══════════ Panneau « Équipe » ══════════
+    .ds-panel.is-active#panEquipe
+        .cb-toolbar
+            .cb-search
+                span.material-symbols-outlined.cb-search__ic search
+                input.cb-search__input#collabSearch(type="search" placeholder="Rechercher un collaborateur…" autocomplete="off")
+            .cb-tools
+                .ds-menu#collabFilterMenu
+                    button.sm-btn.sm-btn--ghost#collabFilterBtn(type="button")
+                        span.material-symbols-outlined(style=`font-size:18px`) filter_list
+                        span Filtres
+                        span.cb-badge#collabFilterCount(hidden)
+                    .ds-menu__list(style="min-width:230px;padding:10px")
+                        p.cb-modal__lbl(style="margin:0 0 6px") Statut
+                        label.ds-choice(style="margin-bottom:6px")
+                            input.js-filter(type="checkbox" data-filtre="actif" checked)
+                            span.ds-choice__box
+                            span.ds-choice__txt
+                                span.ds-choice__label Actif
+                        label.ds-choice
+                            input.js-filter(type="checkbox" data-filtre="inactif" checked)
+                            span.ds-choice__box
+                            span.ds-choice__txt
+                                span.ds-choice__label Désactivé
+                        .ds-menu__sep
+                        p.cb-modal__lbl(style="margin:0 0 6px") Page publique
+                        label.ds-choice(style="margin-bottom:6px")
+                            input.js-filter(type="checkbox" data-filtre="employe" checked)
+                            span.ds-choice__box
+                            span.ds-choice__txt
+                                span.ds-choice__label Employé
+                        label.ds-choice
+                            input.js-filter(type="checkbox" data-filtre="masque" checked)
+                            span.ds-choice__box
+                            span.ds-choice__txt
+                                span.ds-choice__label Masqué
+                if permissions.collaborators.manage && !atCollaboratorsLimit
+                    button.sm-btn.sm-btn--primary#inviteBtn(type="button")
+                        span.material-symbols-outlined(style=`font-size:18px`) add
+                        span Nouveau
+
+        //- ── Tableau de l'équipe ─────────────────────────────────────────────────
+        .cb-table-wrap
+            table.cb-table
+                thead
+                    tr
+                        th.ds-th--check
+                            input#collabCheckAll.ds-check(type="checkbox" title="Tout sélectionner")
+                        th Membre
+                        th Grade
+                        th Congés
+                        th Page publique
+                        th.cb-th--act Actions
+                tbody#collabTbody
+                    //- Le patron d'abord, mis en évidence. Pas de case à cocher :
+                    //- le propriétaire ne peut être ni désactivé ni retiré.
+                    tr.cb-row.cb-row--owner(class=_viewerIsOwner ? 'cb-row--self' : '' data-owner="1" data-search=(ownerUser.fullName + ' ' + ownerUser.email).toLowerCase())
+                        td.ds-td--check
+                        td.cb-td--member
+                            .cb-member
+                                img.cb-member__avatar(src=ownerUser.profilePicture || '/images/no-user.webp' alt="")
+                                .cb-member__txt
+                                    .cb-member__name
+                                        = ownerUser.fullName
+                                        if _viewerIsOwner
+                                            span.cb-you Vous
+                                    .cb-member__mail= ownerUser.email
+                        td
+                            span.cb-tag.cb-tag--owner Propriétaire
+                        td
+                            span.cb-muted —
+                        td
+                            if permissions.collaborators.manage
+                                label.estab-active-toggle.js-employee-toggle(title="Afficher comme employé bookable" data-owner="1")
+                                    input.js-employee-toggle-input(type="checkbox" checked=ownerProfile.isEmployee data-owner="1")
+                                    span.estab-active-toggle__track
+                                        span.estab-active-toggle__thumb
+                                    span.estab-active-toggle__label= ownerProfile.isEmployee ? 'Employé' : 'Masqué'
+                            else
+                                span.cb-tag(class=ownerProfile.isEmployee ? 'cb-tag--on' : '')= ownerProfile.isEmployee ? 'Employé' : 'Masqué'
+                        td.cb-td--act
+                            if permissions.collaborators.manage || _viewerIsOwner
+                                .ds-menu
+                                    button.ds-kebab.js-kebab(type="button" title="Actions" aria-haspopup="true")
+                                        span.material-symbols-outlined(style=`font-size:20px`) more_vert
+                                    .ds-menu__list
+                                        button.ds-menu__item.js-edit-employee-profile(type="button" data-owner="1" data-profile=JSON.stringify(ownerProfile) data-name=ownerUser.fullName data-default-photo=(ownerUser.profilePicture || '/images/no-user.webp'))
+                                            span.material-symbols-outlined edit
+                                            | Modifier le profil public
+
+                    if !collaborators.length
+                        tr.cb-empty-row
+                            td(colspan="6")
+                                .cb-empty
+                                    span.material-symbols-outlined(style=`font-size:30px`) group
+                                    p Aucun collaborateur pour le moment.
+                    else
+                        each c in collaborators
+                            - const isSelf = c.userId === String(user._id)
+                            tr.cb-row(class=(c.isActive ? '' : 'cb-row--off') + (isSelf ? ' cb-row--self' : '') data-id=c.id data-search=((c.displayName || c.fullName) + ' ' + c.email).toLowerCase())
+                                td.ds-td--check
+                                    if permissions.collaborators.manage
+                                        input.ds-check.js-rowcheck(type="checkbox" title="Sélectionner" data-id=c.id data-name=c.fullName)
+                                td.cb-td--member
+                                    .cb-member
+                                        img.cb-member__avatar(src=(c.displayPhoto || c.profilePicture) alt="")
+                                        .cb-member__txt
+                                            .cb-member__name
+                                                = (c.displayName || c.fullName)
+                                                if isSelf
+                                                    span.cb-you Vous
+                                                if !c.isActive
+                                                    span.cb-tag.cb-tag--off Désactivé
+                                            .cb-member__mail= c.email
+                                td
+                                    if permissions.collaborators.manage
+                                        select.js-grade-select(data-id=c.id data-ds-select data-ds-select-size="sm")
+                                            each g in grades
+                                                option(value=g.id selected=c.gradeId === g.id)= g.name
+                                    else
+                                        span.cb-tag= c.gradeName
+                                td
+                                    if permissions.collaborators.manage
+                                        select.js-timeoff-select(data-id=c.id title="Peut poser ses propres congés" data-ds-select data-ds-select-size="sm")
+                                            option(value="" selected=c.canManageOwnTimeOff === null)= 'Hérite du grade (' + (c.canManageOwnTimeOffEffective ? 'autorisé' : 'refusé') + ')'
+                                            option(value="true" selected=c.canManageOwnTimeOff === true) Autorisé
+                                            option(value="false" selected=c.canManageOwnTimeOff === false) Refusé
+                                    else
+                                        span.cb-muted= c.canManageOwnTimeOffEffective ? 'Autorisé' : 'Refusé'
+                                td
+                                    if permissions.collaborators.manage
+                                        label.estab-active-toggle.js-employee-toggle(title="Afficher comme employé bookable" data-id=c.id)
+                                            input.js-employee-toggle-input(type="checkbox" checked=c.isEmployee data-id=c.id)
+                                            span.estab-active-toggle__track
+                                                span.estab-active-toggle__thumb
+                                            span.estab-active-toggle__label= c.isEmployee ? 'Employé' : 'Masqué'
+                                    else
+                                        span.cb-tag(class=c.isEmployee ? 'cb-tag--on' : '')= c.isEmployee ? 'Employé' : 'Masqué'
+                                //- Trois actions ou plus → menu « ⋮ », comme sur la page
+                                //- Clients (règle §2 bis de CONVENTIONS.md).
+                                td.cb-td--act
+                                    .ds-menu
+                                        button.ds-kebab.js-kebab(type="button" title="Actions" aria-haspopup="true")
+                                            span.material-symbols-outlined(style=`font-size:20px`) more_vert
+                                        .ds-menu__list
+                                            if permissions.collaborators.manage || isSelf
+                                                button.ds-menu__item.js-edit-employee-profile(type="button" data-id=c.id data-profile=JSON.stringify({isEmployee: c.isEmployee, displayName: c.displayName, displayPhoto: c.displayPhoto, description: c.description, showRole: c.showRole, customInfo: c.customInfo}) data-name=c.fullName data-default-photo=c.profilePicture)
+                                                    span.material-symbols-outlined edit
+                                                    | Modifier le profil public
+                                            if permissions.collaborators.manage
+                                                button.ds-menu__item.js-toggle-active(type="button" data-id=c.id data-active=c.isActive ? '1' : '0')
+                                                    span.material-symbols-outlined= c.isActive ? 'block' : 'check_circle'
+                                                    = c.isActive ? 'Désactiver' : 'Réactiver'
+                                                .ds-menu__sep
+                                                button.ds-menu__item.ds-menu__item--danger.js-remove-collab(type="button" data-id=c.id data-name=c.fullName)
+                                                    span.material-symbols-outlined delete
+                                                    | Retirer de l'établissement
+
+        //- Barre contextuelle de sélection (apparaît dès qu'une case est cochée)
+        if permissions.collaborators.manage
+            .cb-selbar#collabSelBar(hidden)
+                span.cb-selbar__count#collabSelCount
+                button.sm-btn.sm-btn--danger#collabSelRemove(type="button")
+                    span.material-symbols-outlined(style=`font-size:18px`) delete
+                    span Retirer la sélection
+                button.sm-btn.sm-btn--ghost#collabSelClear(type="button") Annuler
+
+        p.cb-nores#collabNoResult(style="display:none") Aucun collaborateur ne correspond à cette recherche.
+    p.etab-error#collabError(style="display:none")
+
+    //- ══════════ Panneau « Demandes » ══════════
+    if permissions.collaborators.manage
+        .ds-panel#panDemandes
+            if !_nbDemandes && !_nbInvits
+                .cb-empty
+                    span.material-symbols-outlined(style=`font-size:30px`) inbox
+                    p Aucune demande ni invitation en attente.
+            if _nbDemandes
+                p.cb-modal__lbl= _nbDemandes + ' demande(s) à approuver'
+                .cb-table-wrap
+                    table.cb-table
+                        tbody
+                            each r in pendingRequests
+                                tr.cb-row(data-id=r.id)
+                                    td.cb-td--member
+                                        .cb-member
+                                            img.cb-member__avatar(src=r.profilePicture alt="")
+                                            .cb-member__txt
+                                                .cb-member__name= r.fullName
+                                                .cb-member__mail= r.email
+                                    td.cb-td--act
+                                        button.sm-btn.sm-btn--primary.js-respond-request(type="button" data-id=r.id data-decision="accepted") Accepter
+                                        button.sm-btn.sm-btn--ghost.js-respond-request(type="button" data-id=r.id data-decision="rejected") Refuser
+            if _nbInvits
+                p.cb-modal__lbl= _nbInvits + ' invitation(s) envoyée(s), en attente d\'acceptation'
+                .cb-table-wrap
+                    table.cb-table
+                        tbody
+                            each inv in pendingInvitations
+                                tr.cb-row(data-id=inv.id)
+                                    td.cb-td--member
+                                        .cb-member
+                                            img.cb-member__avatar(src="/images/no-user.webp" alt="")
+                                            .cb-member__txt
+                                                .cb-member__name= inv.fullName
+                                                .cb-member__mail= inv.email + (inv.gradeName ? ' · ' + inv.gradeName : '')
+                                    td.cb-td--act
+                                        span.cb-tag.cb-tag--wait En attente
+                                        button.sm-btn.sm-btn--ghost.js-cancel-invitation(type="button" data-id=inv.id data-name=inv.fullName) Annuler
+
+    //- ══════════ Panneau « Sièges » ══════════
     if currentPlan === 'pro' || currentPlan === 'business'
-        .info-card
-            .info-card__header
-                h3 Sièges collaborateurs supplémentaires
-                p.info-card__desc Chaque siège ajouté permet 1 collaborateur de plus, facturé 10€/mois, avec proratisation automatique.
-            .seats-stepper(style="display:flex;align-items:center;gap:12px")
-                button.sm-btn.sm-btn--ghost#seatsMinusBtn(type="button" style="width:38px;padding:0") −
-                span#seatsValue(style="min-width:26px;text-align:center;font-weight:700;font-size:15px")= extraCollaboratorSeats
-                button.sm-btn.sm-btn--ghost#seatsPlusBtn(type="button" style="width:38px;padding:0") +
-                span(style="color:var(--text-muted,#6b7280);font-size:13px")= `= +${extraCollaboratorSeats * 10}€/mois`
-                button.sm-btn.sm-btn--primary#seatsSaveBtn(type="button" data-current=extraCollaboratorSeats) Mettre à jour
-                span#seatsStatus(style="font-size:12.5px;color:var(--text-muted,#6b7280)")
+        .ds-panel#panSieges
+            .ds-box(style="max-width:560px")
+                h3.ds-box__title Sièges collaborateurs supplémentaires
+                p.ds-box__sub Chaque siège ajouté permet 1 collaborateur de plus, facturé 10 €/mois, avec proratisation automatique.
+                .seats-stepper(style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px")
+                    button.sm-btn.sm-btn--ghost#seatsMinusBtn(type="button" style="width:38px;padding:0") −
+                    span#seatsValue(style="min-width:26px;text-align:center;font-weight:700;font-size:15px")= extraCollaboratorSeats
+                    button.sm-btn.sm-btn--ghost#seatsPlusBtn(type="button" style="width:38px;padding:0") +
+                    span(style="color:var(--text-muted);font-size:13px")= `= +${extraCollaboratorSeats * 10}€/mois`
+                    button.sm-btn.sm-btn--primary#seatsSaveBtn(type="button" data-current=extraCollaboratorSeats) Mettre à jour
+                p#seatsStatus(style="margin:10px 0 0;font-size:12.5px;color:var(--text-muted)")
 
-            script.
-                (function() {
-                    var val = document.getElementById('seatsValue');
-                    var minus = document.getElementById('seatsMinusBtn');
-                    var plus = document.getElementById('seatsPlusBtn');
-                    var save = document.getElementById('seatsSaveBtn');
-                    var status = document.getElementById('seatsStatus');
-                    function n() { return parseInt(val.textContent, 10) || 0; }
-                    minus.addEventListener('click', function() { if (n() > 0) val.textContent = n() - 1; });
-                    plus.addEventListener('click', function() { if (n() < 50) val.textContent = n() + 1; });
-                    save.addEventListener('click', async function() {
-                        save.disabled = true;
-                        status.textContent = 'Mise à jour...';
-                        try {
-                            var r = await fetch('/account/collaborator-seats', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ seats: n() }),
-                            });
-                            var d = await r.json();
-                            if (d.success) {
-                                status.textContent = '✓ Mis à jour';
-                                setTimeout(function() { window.location.reload(); }, 700);
-                            } else {
-                                status.textContent = d.error || 'Erreur';
-                                save.disabled = false;
-                            }
-                        } catch (e) {
-                            status.textContent = 'Erreur réseau';
+        script.
+            (function() {
+                var val = document.getElementById('seatsValue');
+                var minus = document.getElementById('seatsMinusBtn');
+                var plus = document.getElementById('seatsPlusBtn');
+                var save = document.getElementById('seatsSaveBtn');
+                var status = document.getElementById('seatsStatus');
+                function n() { return parseInt(val.textContent, 10) || 0; }
+                minus.addEventListener('click', function() { if (n() > 0) val.textContent = n() - 1; });
+                plus.addEventListener('click', function() { if (n() < 50) val.textContent = n() + 1; });
+                save.addEventListener('click', async function() {
+                    save.disabled = true;
+                    status.textContent = 'Mise à jour...';
+                    try {
+                        var r = await fetch('/account/collaborator-seats', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ seats: n() }),
+                        });
+                        var d = await r.json();
+                        if (d.success) {
+                            status.textContent = '✓ Mis à jour';
+                            setTimeout(function() { window.location.reload(); }, 700);
+                        } else {
+                            status.textContent = d.error || 'Erreur';
                             save.disabled = false;
                         }
-                    });
-                })();
-
-    if permissions.grades && (permissions.grades.view || permissions.grades.manage)
-        .info-card
-            .info-card__header
-                h3 Grades & permissions
-                p.info-card__desc Configurez les niveaux d'accès de chaque grade pour votre équipe.
-            a.sm-btn.sm-btn--ghost(href=`/etablissement/${company.id}/grades` style="align-self:flex-start") Gérer les grades →
-
-    .info-card
-        .info-card__header
-            h3 Patron
-            p.info-card__desc Affichez (ou non) le patron comme prestataire sur la page de réservation publique.
-        .collab-row(data-owner="1")
-            img.collab-row__avatar(src=ownerUser.profilePicture || '/images/no-user.webp' alt=ownerUser.fullName)
-            .collab-row__info
-                div.collab-row__name= ownerUser.fullName
-                div.collab-row__meta= ownerUser.email
-            span.estab-badge.estab-badge--active Propriétaire
-            - const viewerIsOwner = String(ownerUser._id) === String(user._id)
-            if permissions.collaborators.manage || viewerIsOwner
-                .collab-row__actions
-                    if permissions.collaborators.manage
-                        label.estab-active-toggle.js-employee-toggle(title="Afficher comme employé bookable" data-owner="1")
-                            input.js-employee-toggle-input(type="checkbox" checked=ownerProfile.isEmployee data-owner="1")
-                            span.estab-active-toggle__track
-                                span.estab-active-toggle__thumb
-                            span.estab-active-toggle__label= ownerProfile.isEmployee ? 'Employé' : 'Masqué'
-                    button.sm-btn.sm-btn--ghost.js-edit-employee-profile(type="button" data-owner="1" data-profile=JSON.stringify(ownerProfile) data-name=ownerUser.fullName data-default-photo=(ownerUser.profilePicture || '/images/no-user.webp'))
-                        span Modifier le profil
-
-    .info-card
-        .info-card__header
-            h3 Collaborateurs
-            p.info-card__desc Affichez (ou non) chaque collaborateur comme prestataire sur la page de réservation publique.
-        if !collaborators.length
-            .dash-empty-reviews
-                p Aucun collaborateur pour le moment.
-        else
-            each c in collaborators
-                - const isSelf = c.userId === String(user._id)
-                .collab-row(class=c.isActive ? '' : 'collab-row--inactive' data-id=c.id)
-                    img.collab-row__avatar(src=(c.displayPhoto || c.profilePicture) alt=(c.displayName || c.fullName))
-                    .collab-row__info
-                        div.collab-row__name= (c.displayName || c.fullName) + (c.isActive ? '' : ' (désactivé)')
-                        div.collab-row__meta= c.email + ' · Membre depuis le ' + new Date(c.acceptedAt).toLocaleDateString('fr-FR')
-                    .collab-row__actions
-                        if permissions.collaborators.manage
-                            select.collab-role-select.js-grade-select(data-id=c.id)
-                                each g in grades
-                                    option(value=g.id selected=c.gradeId === g.id)= g.name
-                            select.collab-role-select.js-timeoff-select(data-id=c.id title="Peut poser ses propres congés")
-                                option(value="" selected=c.canManageOwnTimeOff === null)= 'Congés : hérite du grade (' + (c.canManageOwnTimeOffEffective ? 'autorisé' : 'refusé') + ')'
-                                option(value="true" selected=c.canManageOwnTimeOff === true) Congés : autorisé
-                                option(value="false" selected=c.canManageOwnTimeOff === false) Congés : refusé
-                            label.estab-active-toggle.js-employee-toggle(title="Afficher comme employé bookable" data-id=c.id)
-                                input.js-employee-toggle-input(type="checkbox" checked=c.isEmployee data-id=c.id)
-                                span.estab-active-toggle__track
-                                    span.estab-active-toggle__thumb
-                                span.estab-active-toggle__label= c.isEmployee ? 'Employé' : 'Masqué'
-                        else
-                            span.estab-badge= c.gradeName
-                            span.estab-badge(class=c.isEmployee ? 'estab-badge--active' : '')= c.isEmployee ? 'Employé' : 'Masqué'
-                        if permissions.collaborators.manage || isSelf
-                            button.sm-btn.sm-btn--ghost.js-edit-employee-profile(type="button" data-id=c.id data-profile=JSON.stringify({isEmployee: c.isEmployee, displayName: c.displayName, displayPhoto: c.displayPhoto, description: c.description, showRole: c.showRole, customInfo: c.customInfo}) data-name=c.fullName data-default-photo=c.profilePicture)
-                                span Modifier le profil
-                        if permissions.collaborators.manage
-                            button.sm-btn.sm-btn--ghost.js-toggle-active(type="button" data-id=c.id data-active=c.isActive ? '1' : '0')
-                                span= c.isActive ? 'Désactiver' : 'Réactiver'
-                            button.sm-btn.sm-btn--danger.js-remove-collab(type="button" data-id=c.id data-name=c.fullName)
-                                span Retirer
-
-    if permissions.collaborators.manage && pendingInvitations && pendingInvitations.length
-        .info-card
-            .info-card__header
-                h3 Invitations envoyées
-                p.info-card__desc= pendingInvitations.length + ' invitation(s) en attente d\'acceptation.'
-            each inv in pendingInvitations
-                .collab-row(data-id=inv.id)
-                    img.collab-row__avatar(src="/images/no-user.webp" alt=inv.fullName)
-                    .collab-row__info
-                        div.collab-row__name= inv.fullName
-                        div.collab-row__meta= inv.email + (inv.gradeName ? ' · ' + inv.gradeName : '')
-                    .collab-row__actions
-                        span.estab-badge.estab-badge--pending En attente
-                        button.sm-btn.sm-btn--ghost.js-cancel-invitation(type="button" data-id=inv.id data-name=inv.fullName)
-                            span Annuler
-
-    if permissions.collaborators.manage && pendingRequests && pendingRequests.length
-        .info-card
-            .info-card__header
-                h3 Demandes en attente
-                p.info-card__desc= pendingRequests.length + ' demande(s) à approuver.'
-            each r in pendingRequests
-                .collab-row(data-id=r.id)
-                    img.collab-row__avatar(src=r.profilePicture alt=r.fullName)
-                    .collab-row__info
-                        div.collab-row__name= r.fullName
-                        div.collab-row__meta= r.email
-                    .collab-row__actions
-                        button.sm-btn.sm-btn--primary.js-respond-request(type="button" data-id=r.id data-decision="accepted")
-                            span Accepter
-                        button.sm-btn.sm-btn--ghost.js-respond-request(type="button" data-id=r.id data-decision="rejected")
-                            span Refuser
-
-    p.etab-error#collabError(style="display:none")
+                    } catch (e) {
+                        status.textContent = 'Erreur réseau';
+                        save.disabled = false;
+                    }
+                });
+            })();
 
     //- ── Modale invitation ────────────────────────────────────────────────────
     .cancel-modal-overlay#inviteModalOverlay(style="display:none")
@@ -260,6 +390,150 @@ block scripts
         (function () {
             var companyId = !{JSON.stringify(company.id)};
             var errorEl = document.getElementById('collabError');
+
+            // ── Recherche : filtre les lignes sur le nom et l'email ──────────
+            var rechercheInput = document.getElementById('collabSearch');
+            var aucunResultat = document.getElementById('collabNoResult');
+            if (rechercheInput) {
+                rechercheInput.addEventListener('input', function () {
+                    var q = this.value.trim().toLowerCase();
+                    var visibles = 0;
+                    document.querySelectorAll('#collabTbody .cb-row').forEach(function (tr) {
+                        // Recherche ET filtres doivent tous deux être satisfaits.
+                        var ok = (!q || (tr.dataset.search || '').indexOf(q) !== -1)
+                                 && tr.dataset.filtreCache !== '1';
+                        tr.style.display = ok ? '' : 'none';
+                        if (ok) visibles++;
+                    });
+                    var vide = document.querySelector('#collabTbody .cb-empty-row');
+                    if (vide) vide.style.display = q ? 'none' : '';
+                    aucunResultat.style.display = (!visibles && (q || document.querySelector('[data-filtre-cache="1"]'))) ? 'block' : 'none';
+                });
+            }
+
+            // ── Onglets (composant partagé .ds-tabs / .ds-panel) ─────────────
+            var panneaux = { equipe: 'panEquipe', demandes: 'panDemandes', sieges: 'panSieges' };
+            function afficherPanneau(nom) {
+                Object.keys(panneaux).forEach(function (k) {
+                    var p = document.getElementById(panneaux[k]);
+                    if (p) p.classList.toggle('is-active', k === nom);
+                });
+                document.querySelectorAll('#collabTabs .ds-tab[data-pan]').forEach(function (t) {
+                    t.classList.toggle('is-active', t.dataset.pan === nom);
+                });
+            }
+            document.querySelectorAll('#collabTabs .ds-tab[data-pan]').forEach(function (t) {
+                t.addEventListener('click', function () { afficherPanneau(t.dataset.pan); });
+            });
+            // Le lien « Ajouter un siège » de l'alerte mène à l'onglet Sièges.
+            var lienSiege = document.getElementById('seatsBtnAlert');
+            if (lienSiege) lienSiege.addEventListener('click', function () {
+                afficherPanneau('sieges');
+                document.getElementById('panSieges').scrollIntoView({ block: 'nearest' });
+            });
+
+            // ── Filtres (statut + visibilité publique) ───────────────────────
+            var filtres = document.querySelectorAll('.js-filter');
+            var pastilleFiltre = document.getElementById('collabFilterCount');
+            function appliquerFiltres() {
+                var actifs = {};
+                filtres.forEach(function (f) { actifs[f.dataset.filtre] = f.checked; });
+                var nbDecoches = Array.prototype.filter.call(filtres, function (f) { return !f.checked; }).length;
+                if (pastilleFiltre) {
+                    pastilleFiltre.hidden = nbDecoches === 0;
+                    pastilleFiltre.textContent = nbDecoches;
+                }
+                document.querySelectorAll('#collabTbody .cb-row:not(.cb-row--owner)').forEach(function (tr) {
+                    var inactif = tr.classList.contains('cb-row--off');
+                    var masque = !tr.querySelector('.js-employee-toggle-input:checked');
+                    var ok = (inactif ? actifs.inactif : actifs.actif) &&
+                             (masque ? actifs.masque : actifs.employe);
+                    tr.dataset.filtreCache = ok ? '' : '1';
+                });
+                if (rechercheInput) rechercheInput.dispatchEvent(new Event('input'));
+            }
+            filtres.forEach(function (f) { f.addEventListener('change', appliquerFiltres); });
+            // ── Menus « ⋮ » de fin de ligne ─────────────────────────────────
+            document.querySelectorAll('.js-kebab').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var menu = btn.closest('.ds-menu');
+                    var ouvert = menu.classList.contains('is-open');
+                    document.querySelectorAll('.ds-menu.is-open').forEach(function (m) { m.classList.remove('is-open'); });
+                    if (!ouvert) menu.classList.add('is-open');
+                });
+            });
+            document.addEventListener('click', function () {
+                document.querySelectorAll('.ds-menu.is-open').forEach(function (m) { m.classList.remove('is-open'); });
+            });
+
+            // ── Sélection multiple + retrait groupé ─────────────────────────
+            var toutCocher = document.getElementById('collabCheckAll');
+            var barre = document.getElementById('collabSelBar');
+            var compteur = document.getElementById('collabSelCount');
+            function cases() {
+                return Array.prototype.slice.call(document.querySelectorAll('.js-rowcheck'))
+                    .filter(function (c) { return c.closest('tr').style.display !== 'none'; });
+            }
+            function cochees() { return cases().filter(function (c) { return c.checked; }); }
+            function majSelection() {
+                var n = cochees().length, total = cases().length;
+                if (barre) barre.hidden = n === 0;
+                if (compteur) compteur.textContent = n + (n > 1 ? ' collaborateurs sélectionnés' : ' collaborateur sélectionné');
+                if (toutCocher) {
+                    toutCocher.checked = n > 0 && n === total;
+                    toutCocher.indeterminate = n > 0 && n < total;   // sélection partielle
+                }
+            }
+            document.querySelectorAll('.js-rowcheck').forEach(function (c) {
+                c.addEventListener('change', majSelection);
+            });
+            if (toutCocher) {
+                toutCocher.addEventListener('change', function () {
+                    cases().forEach(function (c) { c.checked = toutCocher.checked; });
+                    majSelection();
+                });
+            }
+            var effacerSel = document.getElementById('collabSelClear');
+            if (effacerSel) effacerSel.addEventListener('click', function () {
+                cases().forEach(function (c) { c.checked = false; });
+                majSelection();
+            });
+            var retirerSel = document.getElementById('collabSelRemove');
+            if (retirerSel) retirerSel.addEventListener('click', function () {
+                var choisis = cochees();
+                if (!choisis.length) return;
+                var noms = choisis.map(function (c) { return c.dataset.name; }).join(', ');
+                if (!confirm('Retirer ' + choisis.length + ' collaborateur(s) de l\'établissement ?\n\n' + noms)) return;
+                retirerSel.disabled = true;
+                Promise.all(choisis.map(function (c) {
+                    return fetch('/account/establishments/' + companyId + '/collaborateurs/' + c.dataset.id, { method: 'DELETE' })
+                        .then(function (r) { return r.json(); });
+                })).then(function (reponses) {
+                    var echecs = reponses.filter(function (d) { return !d || !d.success; }).length;
+                    if (echecs) { retirerSel.disabled = false; showError(echecs + ' retrait(s) ont échoué.'); }
+                    else window.location.reload();
+                }).catch(function () { retirerSel.disabled = false; showError('Erreur réseau.'); });
+            });
+
+            // ── Menu des filtres (mêmes règles d'ouverture que les « ⋮ ») ─────
+            var btnFiltre = document.getElementById('collabFilterBtn');
+            if (btnFiltre) {
+                btnFiltre.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var menu = btnFiltre.closest('.ds-menu');
+                    var ouvert = menu.classList.contains('is-open');
+                    document.querySelectorAll('.ds-menu.is-open').forEach(function (m) { m.classList.remove('is-open'); });
+                    if (!ouvert) menu.classList.add('is-open');
+                });
+                // Cocher une case ne doit pas refermer le menu.
+                btnFiltre.closest('.ds-menu').querySelector('.ds-menu__list')
+                    .addEventListener('click', function (e) { e.stopPropagation(); });
+            }
+            document.addEventListener('keydown', function (e) {
+                if (e.key !== 'Escape') return;
+                document.querySelectorAll('.ds-menu.is-open').forEach(function (m) { m.classList.remove('is-open'); });
+            });
 
             function showError(msg) {
                 errorEl.textContent = msg;

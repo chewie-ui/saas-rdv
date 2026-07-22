@@ -1,96 +1,99 @@
-doctype html
-html(lang="fr")
-    head
-        meta(name="viewport" content="width=device-width, initial-scale=1.0")
-        meta(charset="UTF-8")
-        title Superadmin — Parrainage
-        link(rel="shortcut icon" href="/images/icon.svg" type="image/x-icon")
-        link(rel="stylesheet" href="/css/import.css")
-        link(rel="stylesheet" href="/css/layouts/superadmin.css")
-        style.
-            body { padding:0 24px 80px; }
-            .page-header { margin-top:32px; margin-bottom:24px; }
-            .page-header h1 { font-size:22px; font-weight:700; color:#fff; letter-spacing:-.02em; }
-            .page-header p { font-size:13px; color:#555; margin-top:4px; }
-            .stats-row { display:flex; gap:12px; margin-bottom:28px; flex-wrap:wrap; }
-            .stat-card { background:#1a1a1a; border:1px solid #2a2a2a; border-radius:12px; padding:16px 20px; display:flex; flex-direction:column; gap:4px; min-width:130px; }
-            .stat-card__value { font-size:26px; font-weight:700; color:#fff; letter-spacing:-.02em; line-height:1; }
-            .stat-card__label { font-size:11px; color:#555; text-transform:uppercase; letter-spacing:.06em; }
-            .ref-card { background:#1a1a1a; border:1px solid #2a2a2a; border-radius:14px; margin-bottom:14px; overflow:hidden; }
-            .ref-card__header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; gap:12px; flex-wrap:wrap; border-bottom:1px solid #222; }
-            .ref-card__info { display:flex; flex-direction:column; gap:3px; }
-            .ref-card__name { font-size:15px; font-weight:700; color:#fff; }
-            .ref-card__email { font-size:12px; color:#555; }
-            .ref-card__stats { display:flex; gap:10px; flex-wrap:wrap; }
-            .ref-stat { display:flex; flex-direction:column; align-items:center; gap:2px; background:#111; border:1px solid #2a2a2a; border-radius:8px; padding:8px 14px; min-width:80px; }
-            .ref-stat__val { font-size:18px; font-weight:800; color:#fff; line-height:1; }
-            .ref-stat__val.green { color:#22c55e; }
-            .ref-stat__label { font-size:10px; color:#555; text-transform:uppercase; letter-spacing:.06em; }
-            .ref-card__code { font-family:monospace; font-size:12px; color:#666; background:#111; border:1px solid #2a2a2a; border-radius:6px; padding:4px 10px; }
-            .ref-filleuls { padding:0 20px 16px; }
-            .ref-filleuls__title { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:#444; margin:12px 0 8px; }
-            .ref-filleul { display:flex; align-items:center; gap:10px; padding:8px 12px; background:#111; border-radius:8px; margin-bottom:6px; }
-            .ref-filleul__name { font-size:13px; font-weight:600; color:#ccc; flex:1; }
-            .ref-filleul__email { font-size:11px; color:#555; }
-            .ref-filleul__badge { font-size:10px; font-weight:700; text-transform:uppercase; padding:3px 8px; border-radius:6px; }
-            .ref-filleul__badge.paying { background:rgba(34,197,94,.15); color:#22c55e; border:1px solid rgba(34,197,94,.25); }
-            .ref-filleul__badge.free { background:#1a1a1a; color:#555; border:1px solid #2a2a2a; }
-            .ref-filleul__date { font-size:11px; color:#444; }
-            .empty-state { text-align:center; padding:60px 24px; color:#444; font-size:14px; }
-    body
-        - var saPage = 'referrals'
-        include ../../includes/sa-nav
+extends ../../layouts/sa
 
-        .page-header
-            h1 🎁 Parrainage
-            p Suivi des parrains et de leurs filleuls.
+block content
+    -
+        var palette = ['#6ee7b7', '#93c5fd', '#fcd34d', '#fca5a5', '#c4b5fd', '#f9a8d4', '#a5f3fc', '#bef264'];
+        function couleurAvatar(s) {
+            var n = 0;
+            for (var i = 0; i < String(s).length; i++) n += String(s).charCodeAt(i);
+            return palette[n % palette.length];
+        }
+        function initiales(nom, email) {
+            var base = String(nom || email || '?').trim();
+            var mots = base.split(/[\s@._-]+/).filter(Boolean);
+            return ((mots[0] || '?')[0] + (mots[1] ? mots[1][0] : '')).toUpperCase();
+        }
+        var totalFilleuls = users.reduce(function (s, u) { return s + ((u.referral && u.referral.totalInvited) || 0); }, 0);
+        var totalPayants = users.reduce(function (s, u) { return s + ((u.referral && u.referral.totalPaying) || 0); }, 0);
+        var totalCredits = users.reduce(function (s, u) { return s + ((u.referral && u.referral.creditMonths) || 0); }, 0);
 
-        - var totalParrains = users.length
-        - var totalFilleuls = users.reduce(function(s,u){return s+(u.referral&&u.referral.totalInvited||0)},0)
-        - var totalPayants  = users.reduce(function(s,u){return s+(u.referral&&u.referral.totalPaying||0)},0)
-        - var totalCredits  = users.reduce(function(s,u){return s+(u.referral&&u.referral.creditMonths||0)},0)
+    .sa-head
+        button.sa-ico.sa-burger(type="button" data-sa-burger aria-label="Menu")
+            span.material-symbols-outlined menu
+        div
+            h1.sa-head__title Parrainage
+            .sa-head__sub Parrains, filleuls et mois offerts à créditer
 
-        .stats-row
-            .stat-card
-                .stat-card__value= totalParrains
-                .stat-card__label Parrains actifs
-            .stat-card
-                .stat-card__value= totalFilleuls
-                .stat-card__label Filleuls inscrits
-            .stat-card
-                .stat-card__value= totalPayants
-                .stat-card__label Filleuls payants
-            .stat-card
-                .stat-card__value= totalCredits
-                .stat-card__label Mois en attente
+    .sa-body
+        .sa-kpis
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined handshake
+                    span Parrains
+                .sa-kpi__value= users.length
+                .sa-kpi__delta Ont invité au moins une personne
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined group_add
+                    span Filleuls inscrits
+                .sa-kpi__value= totalFilleuls
+                .sa-kpi__delta= totalFilleuls ? Math.round((totalPayants / totalFilleuls) * 100) + ' % devenus payants' : '—'
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined credit_card
+                    span Filleuls payants
+                .sa-kpi__value= totalPayants
+                .sa-kpi__delta Abonnements déclenchés
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined redeem
+                    span Mois à offrir
+                .sa-kpi__value(class=totalCredits ? 'sa-kpi__delta--up' : '')= totalCredits
+                .sa-kpi__delta Crédits en attente
 
-        if users.length === 0
-            .empty-state Aucun parrainage pour le moment.
+        if !users.length
+            .sa-empty
+                .sa-empty__ic
+                    span.material-symbols-outlined handshake
+                .sa-empty__t Aucun parrainage
+                .sa-empty__d Personne n'a encore invité de filleul.
         else
             each u in users
-                .ref-card
-                    .ref-card__header
-                        .ref-card__info
-                            .ref-card__name= u.fullName
-                            .ref-card__email= u.email
-                            span.ref-card__code= u.referralCode || '—'
-                        .ref-card__stats
-                            .ref-stat
-                                .ref-stat__val= u.referral && u.referral.totalInvited || 0
-                                .ref-stat__label Inscrits
-                            .ref-stat
-                                .ref-stat__val.green= u.referral && u.referral.totalPaying || 0
-                                .ref-stat__label Payants
-                            .ref-stat
-                                .ref-stat__val= u.referral && u.referral.creditMonths || 0
-                                .ref-stat__label Mois offerts
+                - var invites = (u.referral && u.referral.totalInvited) || 0
+                - var payants = (u.referral && u.referral.totalPaying) || 0
+                - var credits = (u.referral && u.referral.creditMonths) || 0
+                .sa-card(style="margin-bottom:14px")
+                    .sa-parrain
+                        span.sa-av(style='background:' + couleurAvatar(u.email || u.fullName))= initiales(u.fullName, u.email)
+                        div(style="min-width:0;flex:1")
+                            .sa-person__name= u.fullName || '—'
+                            .sa-person__mail= u.email
+                        span.sa-tag.sa-mono= u.referralCode || '—'
+                        .sa-parrain__stats
+                            .sa-parrain__stat
+                                .sa-parrain__val= invites
+                                .sa-parrain__lbl Inscrits
+                            .sa-parrain__stat
+                                .sa-parrain__val(style="color:#4ade80")= payants
+                                .sa-parrain__lbl Payants
+                            .sa-parrain__stat
+                                .sa-parrain__val(class=credits ? 'sa-kpi__delta--up' : '')= credits
+                                .sa-parrain__lbl Mois offerts
+
                     if u.filleuls && u.filleuls.length
-                        .ref-filleuls
-                            .ref-filleuls__title Filleuls (#{u.filleuls.length})
-                            each f in u.filleuls
-                                .ref-filleul
-                                    .ref-filleul__name= f.fullName
-                                    .ref-filleul__email= f.email
-                                    span.ref-filleul__badge(class=f.referralPaidCounted ? 'paying' : 'free')
-                                        = f.referralPaidCounted ? '💳 Payant' : 'Gratuit'
-                                    .ref-filleul__date= new Date(f.createdAt).toLocaleDateString('fr-FR')
+                        .sa-section(style="margin-top:16px")
+                            .sa-section__t= 'Filleuls (' + u.filleuls.length + ')'
+                            .sa-props
+                                each f in u.filleuls
+                                    .sa-prop(style="grid-template-columns:1fr auto")
+                                        .sa-prop__k(style="color:var(--sa-txt)")
+                                            span.material-symbols-outlined person
+                                            div
+                                                div= f.fullName || '—'
+                                                .sa-person__mail= f.email
+                                        div(style="display:flex;align-items:center;gap:10px")
+                                            if f.referralPaidCounted
+                                                span.sa-tag.sa-tag--green Payant
+                                            else
+                                                span.sa-tag Gratuit
+                                            span.sa-muted(style="font-size:12px")= new Date(f.createdAt).toLocaleDateString('fr-FR')

@@ -10,6 +10,7 @@ const Employee  = require("../db/models/company/employee.model");
 const DaysOff   = require("../db/models/company/daysOff.model");
 const Form      = require("../db/models/form.model");
 const Review    = require("../db/models/review.model");
+const ReviewReport = require("../db/models/review-report.model");
 const Client    = require("../db/models/client.model");
 const LoginEvent = require("../db/models/loginEvent.model");
 const { FEATURES, ADMIN_FEATURES, invalidateFeatureFlagCache } = require("../middlewares/featureFlag");
@@ -48,112 +49,472 @@ exports.logout = (req, res) => {
   res.redirect("/superadmin/login");
 };
 
+// Tarifs mensuels affichés sur /subscription — sert à estimer le revenu
+// récurrent. C'est une estimation à partir des plans, pas un chiffre Stripe.
+const PRIX_MENSUEL = { basic: 0, essentiel: 9, pro: 19, business: 49 };
+
+const ETABS_PAR_PAGE = 25;
+
 exports.establishmentsPage = async (req, res) => {
-  const { search } = req.query;
-  let query = {};
-  if (search) {
-    const regex = { $regex: search, $options: "i" };
-    query = { $or: [{ name: regex }, { slug: regex }, { businessType: regex }] };
+  const filtres = {
+    search: req.query.search || "",
+    plan: req.query.plan || "tous",
+    statut: req.query.statut || "tous",
+    tri: req.query.tri || "recent",
+  };
+
+  const query = {};
+  if (filtres.search) {
+    const regex = { $regex: filtres.search, $options: "i" };
+    query.$or = [{ name: regex }, { slug: regex }, { businessType: regex }];
   }
-  const [companiesRaw, totalBookings] = await Promise.all([
+  // isDeleted = suppression douce faite par le pro lui-même. On ne l'affiche
+  // que si on la demande explicitement, sinon la liste montrerait des
+  // établissements invisibles partout ailleurs dans l'application.
+  if (filtres.statut === "supprime") query.isDeleted = true;
+  else query.isDeleted = { $ne: true };
+  if (filtres.statut === "actif") query.isPaused = { $ne: true };
+  if (filtres.statut === "pause") query.isPaused = true;
+
+  const il7j = new Date(Date.now() - 7 * 24 * 3600 * 1000);
+  const il30j = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+
+  const [brutes, toutes, totalBookings, bookings30j, parEtab, parEtab30j, clientsParEtab] = await Promise.all([
     Company.find(query)
-      .populate("owner", "fullName email isPremium manualPremium manualPremiumExpiry subscription businessName businessPicture")
-      .select("name slug businessType createdAt isPaused photo description")
-      .sort("-createdAt")
+      .populate("owner", "fullName email isPremium manualPremium manualPremiumExpiry subscription businessName businessPicture isDisabled")
+      .select("name slug businessType createdAt isPaused isDeleted photo description")
+      .lean(),
+    // Deuxième passe sans filtre : les chiffres clés doivent rester stables
+    // quand on filtre la liste.
+    Company.find({ isDeleted: { $ne: true } })
+      .populate("owner", "isPremium manualPremium subscription businessName")
+      .select("name isPaused createdAt owner")
       .lean(),
     Booking.countDocuments({}),
+    Booking.countDocuments({ createdAt: { $gte: il30j } }),
+    Booking.aggregate([{ $group: { _id: "$company", count: { $sum: 1 } } }]),
+    Booking.aggregate([
+      { $match: { createdAt: { $gte: il30j } } },
+      { $group: { _id: "$company", count: { $sum: 1 } } },
+    ]),
+    Client.aggregate([{ $group: { _id: "$company", count: { $sum: 1 } } }]),
   ]);
 
   // Ne lister que les VRAIS établissements : ceux qui ont un nom affichable.
   // Un compte pro inscrit mais jamais configuré crée une Company vide (name ""),
   // affichée « — / — » — on l'exclut (même critère que l'affichage dans la vue).
-  const companies = companiesRaw.filter((c) => {
-    const displayName = (c.name || (c.owner && c.owner.businessName) || "").trim();
-    return displayName !== "";
-  });
+  let liste = brutes.filter((c) => (c.name || c.owner?.businessName || "").trim() !== "");
 
-  // Ajouter le nb de RDV par company
-  const bookingCounts = await Booking.aggregate([
-    { $group: { _id: "$company", count: { $sum: 1 } } },
-  ]);
-  const countMap = new Map(bookingCounts.map((b) => [String(b._id), b.count]));
-  const nowMs = Date.now();
-  companies.forEach((c) => {
-    c.bookingCount = countMap.get(String(c._id)) || 0;
+  const rdv = new Map(parEtab.map((b) => [String(b._id), b.count]));
+  const rdv30 = new Map(parEtab30j.map((b) => [String(b._id), b.count]));
+  const clients = new Map(clientsParEtab.map((b) => [String(b._id), b.count]));
+  const maintenant = Date.now();
+
+  liste.forEach((c) => {
+    c.bookingCount = rdv.get(String(c._id)) || 0;
+    c.bookings30d = rdv30.get(String(c._id)) || 0;
+    c.clientCount = clients.get(String(c._id)) || 0;
+    c.displayName = (c.name || c.owner?.businessName || "").trim();
+    c.displayPhoto = c.photo || c.owner?.businessPicture || "";
+    Object.assign(c, planDuCompte(c.owner || {}));
     // Jours restants d'un octroi manuel avec durée. null = infini / pas d'octroi.
     const o = c.owner;
     if (o && (o.manualPremium || o.isPremium) && o.manualPremiumExpiry) {
-      const ms = new Date(o.manualPremiumExpiry).getTime() - nowMs;
+      const ms = new Date(o.manualPremiumExpiry).getTime() - maintenant;
       c.trialDaysLeft = ms > 0 ? Math.ceil(ms / 86400000) : 0;
     } else {
       c.trialDaysLeft = null;
     }
   });
-  res.render("superadmin/establishments", { companies, search: search || "", totalBookings });
+
+  if (filtres.plan !== "tous") liste = liste.filter((c) => c.planKey === filtres.plan);
+
+  const parDate = (v) => (v ? new Date(v).getTime() : 0);
+  if (filtres.tri === "ancien") liste.sort((a, b) => parDate(a.createdAt) - parDate(b.createdAt));
+  else if (filtres.tri === "nom") liste.sort((a, b) => a.displayName.localeCompare(b.displayName, "fr"));
+  else if (filtres.tri === "rdv") liste.sort((a, b) => b.bookingCount - a.bookingCount);
+  else liste.sort((a, b) => parDate(b.createdAt) - parDate(a.createdAt));
+
+  // Chiffres clés : calculés sur l'ensemble des établissements réels, pas sur
+  // la page affichée — sinon ils changeraient à chaque filtre.
+  const tous = toutes.filter((c) => (c.name || c.owner?.businessName || "").trim() !== "");
+  const kpis = {
+    total: tous.length,
+    enPause: tous.filter((c) => c.isPaused).length,
+    nouveaux7j: tous.filter((c) => parDate(c.createdAt) >= il7j.getTime()).length,
+    sansRdv: tous.filter((c) => !(rdv.get(String(c._id)) || 0)).length,
+    totalBookings,
+    bookings30j,
+    mrr: tous.reduce((somme, c) => somme + (PRIX_MENSUEL[planDuCompte(c.owner || {}).planKey] || 0), 0),
+    payants: tous.filter((c) => planDuCompte(c.owner || {}).planKey !== "basic").length,
+  };
+  kpis.actifs = kpis.total - kpis.enPause;
+
+  const pages = Math.max(1, Math.ceil(liste.length / ETABS_PAR_PAGE));
+  const page = Math.min(Math.max(1, parseInt(req.query.page, 10) || 1), pages);
+
+  res.render("superadmin/establishments", {
+    saPage: "estab",
+    companies: liste.slice((page - 1) * ETABS_PAR_PAGE, page * ETABS_PAR_PAGE),
+    filtres,
+    resultats: liste.length,
+    page,
+    pages,
+    kpis,
+    search: filtres.search,
+    totalBookings,
+  });
 };
 
-exports.usersPage = async (req, res) => {
-  const { search } = req.query;
-  let query = {};
+// Export CSV du parc d'établissements (mêmes filtres que la page).
+exports.establishmentsExport = async (req, res) => {
+  try {
+    const query = { isDeleted: { $ne: true } };
+    if (req.query.search) {
+      const regex = { $regex: req.query.search, $options: "i" };
+      query.$or = [{ name: regex }, { slug: regex }, { businessType: regex }];
+    }
+    if (req.query.statut === "actif") query.isPaused = { $ne: true };
+    if (req.query.statut === "pause") query.isPaused = true;
+
+    const [liste, parEtab] = await Promise.all([
+      Company.find(query)
+        .populate("owner", "fullName email isPremium manualPremium subscription businessName")
+        .select("name slug businessType createdAt isPaused")
+        .sort("-createdAt")
+        .lean(),
+      Booking.aggregate([{ $group: { _id: "$company", count: { $sum: 1 } } }]),
+    ]);
+    const rdv = new Map(parEtab.map((b) => [String(b._id), b.count]));
+
+    const echapper = (v) => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
+    const lignes = [["Établissement", "Lien", "Métier", "Propriétaire", "Email", "Plan", "RDV", "Statut", "Créé le"].join(";")];
+    liste
+      .filter((c) => (c.name || c.owner?.businessName || "").trim() !== "")
+      .filter((c) => req.query.plan && req.query.plan !== "tous"
+        ? planDuCompte(c.owner || {}).planKey === req.query.plan
+        : true)
+      .forEach((c) => {
+        lignes.push([
+          echapper((c.name || c.owner?.businessName || "").trim()),
+          echapper("/" + (c.slug || "")),
+          echapper(c.businessType || ""),
+          echapper(c.owner?.fullName || ""),
+          echapper(c.owner?.email || ""),
+          echapper(planDuCompte(c.owner || {}).planLabel),
+          echapper(rdv.get(String(c._id)) || 0),
+          echapper(c.isPaused ? "En pause" : "Actif"),
+          echapper(c.createdAt ? new Date(c.createdAt).toLocaleDateString("fr-FR") : ""),
+        ].join(";"));
+      });
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="branshee-etablissements.csv"');
+    res.send("﻿" + lignes.join("\r\n"));
+  } catch (err) {
+    console.error("establishmentsExport error:", err);
+    res.status(500).send("Erreur serveur.");
+  }
+};
+
+// Met en pause / réactive un établissement depuis le panel. Même drapeau que
+// la pause déclenchée par le pro : page publique et /search masquées, aucune
+// donnée touchée, réversible.
+exports.toggleEstablishmentPause = async (req, res) => {
+  try {
+    const c = await Company.findById(req.params.companyId).select("isPaused").lean();
+    if (!c) return res.status(404).json({ error: "Établissement introuvable." });
+    const nouveau = !c.isPaused;
+    await Company.updateOne({ _id: req.params.companyId }, { $set: { isPaused: nouveau } });
+    res.json({ success: true, isPaused: nouveau });
+  } catch (err) {
+    console.error("toggleEstablishmentPause error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// Fiche détaillée d'un établissement (panneau latéral).
+exports.establishmentDetails = async (req, res) => {
+  try {
+    const c = await Company.findById(req.params.companyId)
+      .populate("owner", "fullName email phone isPremium manualPremium manualPremiumExpiry subscription isDisabled")
+      .lean();
+    if (!c) return res.status(404).json({ error: "Établissement introuvable." });
+
+    const [reservations, aVenir, services, employes, clients, avis] = await Promise.all([
+      Booking.countDocuments({ company: c._id }),
+      Booking.countDocuments({ company: c._id, date: { $gte: new Date() } }),
+      Service.countDocuments({ company: c._id }),
+      Employee.countDocuments({ company: c._id }),
+      Client.countDocuments({ company: c._id }),
+      Review.countDocuments({ company: c._id }),
+    ]);
+
+    res.json({
+      success: true,
+      company: {
+        id: String(c._id),
+        name: (c.name || "").trim(),
+        slug: c.slug || "",
+        businessType: c.businessType || "",
+        photo: c.photo || "",
+        description: c.description || "",
+        isPaused: !!c.isPaused,
+        isDeleted: !!c.isDeleted,
+        createdAt: c.createdAt,
+      },
+      owner: c.owner
+        ? {
+            id: String(c.owner._id),
+            fullName: c.owner.fullName || "",
+            email: c.owner.email || "",
+            phone: c.owner.phone || "",
+            isDisabled: !!c.owner.isDisabled,
+            manualPremium: !!c.owner.manualPremium,
+            manualPremiumExpiry: c.owner.manualPremiumExpiry || null,
+            ...planDuCompte(c.owner),
+          }
+        : null,
+      stats: { reservations, aVenir, services, employes, clients, avis },
+    });
+  } catch (err) {
+    console.error("establishmentDetails error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+const PLAN_LABEL = { basic: "Free", essentiel: "Essentiel", pro: "Pro", business: "Business" };
+
+// Plan effectif d'un compte : l'octroi manuel prime, sinon l'abonnement Stripe.
+function planDuCompte(u) {
+  const brut = (u.manualPremium || u.isPremium)
+    ? (u.subscription?.plan && u.subscription.plan !== "basic" ? u.subscription.plan : "pro")
+    : (u.subscription?.status === "active" ? (u.subscription.plan || "basic") : "basic");
+  const cle = brut === "premium" ? "pro" : brut;
+  return { planKey: cle, planLabel: PLAN_LABEL[cle] || "Free" };
+}
+
+// Charge les comptes correspondant aux filtres, enrichis de leurs
+// établissements et de leur plan. Les filtres « plan » et « établissement »
+// sont dérivés (pas stockés tels quels) : on les applique en mémoire, après
+// avoir réduit au maximum côté base avec la recherche et le statut.
+async function chargerComptes({ search, statut, plan, estab }) {
+  const query = {};
   if (search) {
     const regex = { $regex: search, $options: "i" };
-    query = { $or: [{ fullName: regex }, { email: regex }] };
+    query.$or = [{ fullName: regex }, { email: regex }];
   }
+  if (statut === "actif") query.isDisabled = { $ne: true };
+  if (statut === "desactive") query.isDisabled = true;
+
+  const users = await User.find(query)
+    .select("fullName email phone isPremium manualPremium manualPremiumExpiry subscription createdAt isDisabled lastLoginAt")
+    .lean();
+
+  const companies = await Company.find({ owner: { $in: users.map((u) => u._id) } })
+    .select("name slug owner isPaused")
+    .lean();
+  const parProprietaire = new Map();
+  companies.forEach((c) => {
+    const cle = String(c.owner);
+    if (!parProprietaire.has(cle)) parProprietaire.set(cle, []);
+    parProprietaire.get(cle).push(c);
+  });
+
+  let liste = users.map((u) => ({
+    ...u,
+    establishments: parProprietaire.get(String(u._id)) || [],
+    ...planDuCompte(u),
+  }));
+
+  if (plan && plan !== "tous") liste = liste.filter((u) => u.planKey === plan);
+  if (estab === "avec") liste = liste.filter((u) => u.establishments.length > 0);
+  if (estab === "sans") liste = liste.filter((u) => u.establishments.length === 0);
+  return liste;
+}
+
+function trierComptes(liste, tri) {
+  const parDate = (v) => (v ? new Date(v).getTime() : 0);
+  const copie = liste.slice();
+  if (tri === "ancien") copie.sort((a, b) => parDate(a.createdAt) - parDate(b.createdAt));
+  else if (tri === "nom") copie.sort((a, b) => (a.fullName || a.email || "").localeCompare(b.fullName || b.email || "", "fr"));
+  else if (tri === "connexion") copie.sort((a, b) => parDate(b.lastLoginAt) - parDate(a.lastLoginAt));
+  else copie.sort((a, b) => parDate(b.createdAt) - parDate(a.createdAt));
+  return copie;
+}
+
+const COMPTES_PAR_PAGE = 25;
+
+exports.usersPage = async (req, res) => {
+  const filtres = {
+    search: req.query.search || "",
+    statut: req.query.statut || "tous",
+    plan: req.query.plan || "tous",
+    estab: req.query.estab || "tous",
+    tri: req.query.tri || "recent",
+  };
+
   const PageView = require("../db/models/pageView.model");
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-  const [users, totalViews, uniqueVisitors, totalClients, clientsToday, adminsToday, disabledCount, topSources] = await Promise.all([
-    User.find(query)
-      .select("fullName email isPremium manualPremium manualPremiumExpiry subscription createdAt isDisabled lastLoginAt")
-      .sort("-createdAt")
-      .lean(),
+  const debutJour = new Date();
+  debutJour.setHours(0, 0, 0, 0);
+  const ilYa7j = new Date(Date.now() - 7 * 24 * 3600 * 1000);
+  const ilYa30j = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+
+  const [
+    liste, totalComptes, disabledCount, adminsToday, inscrits7j,
+    connectes7j, jamaisConnectes, totalViews, uniqueVisitors,
+    totalClients, clientsToday, topSources, totalEtablissements,
+  ] = await Promise.all([
+    chargerComptes(filtres),
+    User.countDocuments({}),
+    User.countDocuments({ isDisabled: true }),
+    User.countDocuments({ createdAt: { $gte: debutJour } }),
+    User.countDocuments({ createdAt: { $gte: ilYa7j } }),
+    User.countDocuments({ lastLoginAt: { $gte: ilYa7j } }),
+    User.countDocuments({ $or: [{ lastLoginAt: null }, { lastLoginAt: { $exists: false } }] }),
     PageView.countDocuments({}),
     PageView.distinct("visitorId"),
     Client.countDocuments({}),
-    Client.countDocuments({ createdAt: { $gte: startOfDay } }),
-    User.countDocuments({ createdAt: { $gte: startOfDay } }),
-    User.countDocuments({ isDisabled: true }),
+    Client.countDocuments({ createdAt: { $gte: debutJour } }),
     PageView.aggregate([
       { $group: { _id: { $ifNull: ["$source", "direct"] }, count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 8 },
     ]),
+    Company.countDocuments({}),
   ]);
 
-  // ── Rattacher les établissements à chaque propriétaire ────────────────────
-  // Un utilisateur n'a plus de "plan" (il vit sur l'établissement) : ici on
-  // liste juste les établissements qu'il possède, avec leur plan effectif
-  // hérité de lui, pour l'afficher dans la nouvelle page centrée sur la personne.
-  const companies = await Company.find({ owner: { $in: users.map((u) => u._id) } })
-    .select("name slug owner isPaused")
-    .lean();
-  const companiesByOwner = new Map();
-  companies.forEach((c) => {
-    const key = String(c.owner);
-    if (!companiesByOwner.has(key)) companiesByOwner.set(key, []);
-    companiesByOwner.get(key).push(c);
-  });
-  const PLAN_LABEL = { basic: "Free", essentiel: "Essentiel", pro: "Pro", business: "Business" };
-  users.forEach((u) => {
-    u.establishments = companiesByOwner.get(String(u._id)) || [];
-    const rawPlan = (u.manualPremium || u.isPremium)
-      ? (u.subscription?.plan && u.subscription.plan !== "basic" ? u.subscription.plan : "pro")
-      : (u.subscription?.status === "active" ? (u.subscription.plan || "basic") : "basic");
-    u.planKey = rawPlan === "premium" ? "pro" : rawPlan;
-    u.planLabel = PLAN_LABEL[u.planKey] || "Free";
-  });
+  const triee = trierComptes(liste, filtres.tri);
+  const pages = Math.max(1, Math.ceil(triee.length / COMPTES_PAR_PAGE));
+  const page = Math.min(Math.max(1, parseInt(req.query.page, 10) || 1), pages);
+  const users = triee.slice((page - 1) * COMPTES_PAR_PAGE, page * COMPTES_PAR_PAGE);
 
   res.render("superadmin/users", {
+    saPage: "users",
     users,
-    search: search || "",
-    topSources,
-    totalViews,
-    uniqueViews: uniqueVisitors.length,
-    totalClients,
-    clientsToday,
-    adminsToday,
-    disabledCount,
+    filtres,
+    resultats: triee.length,
+    page,
+    pages,
+    parPage: COMPTES_PAR_PAGE,
+    kpis: {
+      total: totalComptes,
+      actifs: totalComptes - disabledCount,
+      desactives: disabledCount,
+      aujourdhui: adminsToday,
+      inscrits7j,
+      connectes7j,
+      jamaisConnectes,
+      etablissements: totalEtablissements,
+    },
+    trafic: {
+      totalViews,
+      uniqueViews: uniqueVisitors.length,
+      totalClients,
+      clientsToday,
+      topSources,
+    },
+    // Compat : d'anciens gabarits lisent encore ces variables à plat.
+    search: filtres.search,
+    ilYa30j,
   });
+};
+
+// Fiche détaillée d'un compte, chargée à la volée par le panneau latéral.
+exports.userDetails = async (req, res) => {
+  try {
+    const u = await User.findById(req.params.userId)
+      .select("fullName email phone isPremium manualPremium manualPremiumExpiry subscription createdAt isDisabled lastLoginAt googleId twoFactorEnabled")
+      .lean();
+    if (!u) return res.status(404).json({ error: "Compte introuvable." });
+
+    const companies = await Company.find({ owner: u._id }).select("name slug isPaused createdAt").lean();
+    const ids = companies.map((c) => c._id);
+    const [clients, reservations, connexions, dernieresActions] = await Promise.all([
+      ids.length ? Client.countDocuments({ company: { $in: ids } }) : 0,
+      ids.length ? Booking.countDocuments({ company: { $in: ids } }) : 0,
+      LoginEvent.countDocuments({ user: u._id }),
+      ids.length
+        ? require("../db/models/activityLog.model")
+            .find({ company: { $in: ids } })
+            .sort("-createdAt")
+            .limit(6)
+            .select("description createdAt")
+            .lean()
+        : [],
+    ]);
+
+    res.json({
+      success: true,
+      user: {
+        id: String(u._id),
+        fullName: u.fullName || "",
+        email: u.email,
+        phone: u.phone || "",
+        createdAt: u.createdAt,
+        lastLoginAt: u.lastLoginAt || null,
+        isDisabled: !!u.isDisabled,
+        google: !!u.googleId,
+        twoFactor: !!u.twoFactorEnabled,
+        manualPremium: !!u.manualPremium,
+        manualPremiumExpiry: u.manualPremiumExpiry || null,
+        subscriptionStatus: u.subscription?.status || "inactive",
+        ...planDuCompte(u),
+      },
+      establishments: companies.map((c) => ({
+        id: String(c._id),
+        name: c.name || "",
+        slug: c.slug || "",
+        isPaused: !!c.isPaused,
+        createdAt: c.createdAt,
+      })),
+      stats: { clients, reservations, connexions },
+      activite: dernieresActions,
+    });
+  } catch (err) {
+    console.error("userDetails error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+// Export CSV de la sélection courante (mêmes filtres que la page).
+exports.usersExport = async (req, res) => {
+  try {
+    const liste = trierComptes(
+      await chargerComptes({
+        search: req.query.search || "",
+        statut: req.query.statut || "tous",
+        plan: req.query.plan || "tous",
+        estab: req.query.estab || "tous",
+      }),
+      req.query.tri || "recent",
+    );
+
+    const echapper = (v) => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
+    const lignes = [
+      ["Nom", "Email", "Téléphone", "Plan", "Statut", "Établissements", "Inscrit le", "Dernière connexion"].join(";"),
+    ];
+    liste.forEach((u) => {
+      lignes.push([
+        echapper(u.fullName || ""),
+        echapper(u.email),
+        echapper(u.phone || ""),
+        echapper(u.planLabel),
+        echapper(u.isDisabled ? "Désactivé" : "Actif"),
+        echapper(u.establishments.map((e) => e.name || e.slug).join(", ")),
+        echapper(u.createdAt ? new Date(u.createdAt).toLocaleDateString("fr-FR") : ""),
+        echapper(u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString("fr-FR") : "jamais"),
+      ].join(";"));
+    });
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="branshee-utilisateurs.csv"');
+    // BOM : sans lui Excel lit le fichier en ANSI et casse les accents.
+    res.send("﻿" + lignes.join("\r\n"));
+  } catch (err) {
+    console.error("usersExport error:", err);
+    res.status(500).send("Erreur serveur.");
+  }
 };
 
 exports.toggleManualPremium = async (req, res) => {
@@ -321,7 +682,7 @@ exports.setTrialDuration = async (req, res) => {
 
 exports.promoCodesPage = async (req, res) => {
   const codes = await PromoCode.find({}).sort("-createdAt").lean();
-  res.render("superadmin/promo-codes", { codes });
+  res.render("superadmin/promo-codes", { saPage: "promo", codes });
 };
 
 exports.createPromoCode = async (req, res) => {
@@ -479,7 +840,7 @@ exports.referralsPage = async (req, res) => {
     return { ...u, filleuls };
   }));
 
-  res.render("superadmin/referrals", { users: referrersWithFilleuls });
+  res.render("superadmin/referrals", { saPage: "referrals", users: referrersWithFilleuls });
 };
 
 // ── Logs (activité globale) ───────────────────────────────────────────────────
@@ -612,7 +973,30 @@ exports.logsPage = async (req, res) => {
 
   events.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  res.render("superadmin/logs", { events: events.slice(0, 400) });
+  // Chiffres clés du flux : calculés en base, pas sur la tranche affichée.
+  const il24h = new Date(Date.now() - 24 * 3600 * 1000);
+  const il7j = new Date(Date.now() - 7 * 24 * 3600 * 1000);
+  const [inscrits7j, rdv7j, connexions24h, encaisse7j] = await Promise.all([
+    User.countDocuments({ createdAt: { $gte: il7j } }),
+    Booking.countDocuments({ createdAt: { $gte: il7j } }),
+    LoginEvent.countDocuments({ createdAt: { $gte: il24h } }),
+    Booking.aggregate([
+      { $match: { "payment.status": "paid", "payment.paidAt": { $gte: il7j } } },
+      { $group: { _id: null, total: { $sum: "$payment.amount" } } },
+    ]),
+  ]);
+
+  res.render("superadmin/logs", {
+    saPage: "logs",
+    events: events.slice(0, 400),
+    kpis: {
+      evenements: events.length,
+      inscrits7j,
+      rdv7j,
+      connexions24h,
+      encaisse7j: encaisse7j[0]?.total || 0,
+    },
+  });
 };
 
 // ── Boost (mise en avant homepage) ───────────────────────────────────────────
@@ -623,7 +1007,7 @@ exports.boostPage = async (req, res) => {
     .populate("owner", "fullName businessName businessType location profilePicture businessPicture")
     .sort({ boostPosition: -1, "owner.businessName": 1 })
     .lean();
-  res.render("superadmin/boost", { companies });
+  res.render("superadmin/boost", { saPage: "boost", companies });
 };
 
 exports.setBoost = async (req, res) => {
@@ -642,7 +1026,7 @@ exports.setBoost = async (req, res) => {
 
 exports.accessLinksPage = async (req, res) => {
   const links = await AccessLink.find({}).sort("-createdAt").lean();
-  res.render("superadmin/access-links", { links });
+  res.render("superadmin/access-links", { saPage: "links", links });
 };
 
 exports.createAccessLink = async (req, res) => {
@@ -902,7 +1286,7 @@ exports.featuresPage = async (req, res) => {
     group.links.push(l);
   });
 
-  res.render("superadmin/features", { features, smsNotificationsEnabled, adminFeatures, navSections });
+  res.render("superadmin/features", { saPage: "features", features, smsNotificationsEnabled, adminFeatures, navSections });
 };
 
 // Toggle d'un lien de nav auto-détecté (voir extractNavLinks). La clé est
@@ -1408,7 +1792,7 @@ exports.messagesPage = async (req, res) => {
     User.find({}).select("fullName email").sort("fullName").lean(),
   ]);
   messages.forEach((m) => { m.readCount = (m.dismissedBy || []).length; });
-  res.render("superadmin/messages", { messages, totalUsers, userList });
+  res.render("superadmin/messages", { saPage: "messages", messages, totalUsers, userList });
 };
 
 // Envoi d'un message ciblé (recipientId) ou en diffusion (broadcast=true).
@@ -1468,5 +1852,108 @@ exports.deleteMessage = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur." });
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Signalements d'avis
+   Personne — pas même le professionnel concerné — ne peut supprimer un avis :
+   sinon il suffirait de signaler ses mauvaises notes pour les faire tomber.
+   Tout passe par une décision prise ici.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const MOTIFS_LABELS = {
+  insulting: "Propos insultants ou haineux",
+  false:     "Faux avis / client jamais venu",
+  spam:      "Spam ou publicité",
+  personal:  "Données personnelles divulguées",
+  other:     "Autre",
+};
+
+exports.reviewReportsPage = async (req, res) => {
+  const filtre = ["pending", "accepted", "rejected"].includes(req.query.statut)
+    ? req.query.statut
+    : "pending";
+
+  const [reports, compteurs] = await Promise.all([
+    ReviewReport.find({ status: filtre })
+      .populate({ path: "company", select: "name slug owner", populate: { path: "owner", select: "fullName email" } })
+      .sort("-createdAt")
+      .limit(300)
+      .lean(),
+    ReviewReport.aggregate([{ $group: { _id: "$status", n: { $sum: 1 } } }]),
+  ]);
+
+  // Un même avis peut être signalé par plusieurs personnes : on regroupe pour
+  // que la décision se prenne une fois, pas dix.
+  const parAvis = new Map();
+  reports.forEach((r) => {
+    const cle = String(r.review);
+    if (!parAvis.has(cle)) parAvis.set(cle, { ...r, autres: [] });
+    else parAvis.get(cle).autres.push(r);
+  });
+
+  const stats = { pending: 0, accepted: 0, rejected: 0 };
+  compteurs.forEach((c) => { stats[c._id] = c.n; });
+  stats.traites7j = await ReviewReport.countDocuments({
+    status: { $ne: "pending" },
+    decidedAt: { $gte: new Date(Date.now() - 7 * 24 * 3600 * 1000) },
+  });
+
+  // File d'attente triée par urgence : une demande du pro et les avis signalés
+  // plusieurs fois passent devant, le reste reste antéchronologique.
+  const groupes = Array.from(parAvis.values());
+  if (filtre === "pending") {
+    const urgence = (g) => (g.reporterKind === "owner" ? 10 : 0) + g.autres.length;
+    groupes.sort((a, b) => urgence(b) - urgence(a) || new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  res.render("superadmin/review-reports", {
+    saPage: "reports",
+    groupes,
+    filtre,
+    stats,
+    motifs: MOTIFS_LABELS,
+  });
+};
+
+// Compteur pour la pastille de la barre de navigation.
+exports.reviewReportsCount = async (req, res) => {
+  const n = await ReviewReport.countDocuments({ status: "pending" });
+  res.json({ pending: n });
+};
+
+// Décision : « accepted » supprime l'avis, « rejected » le conserve.
+// Dans les deux cas TOUS les signalements portant sur cet avis sont clos, sans
+// quoi le même avis reviendrait indéfiniment dans la file.
+exports.decideReviewReport = async (req, res) => {
+  try {
+    const { decision, note } = req.body;
+    if (!["accepted", "rejected"].includes(decision)) {
+      return res.status(400).json({ error: "Décision invalide." });
+    }
+
+    const report = await ReviewReport.findById(req.params.id).lean();
+    if (!report) return res.status(404).json({ error: "Signalement introuvable." });
+
+    if (decision === "accepted") {
+      await Review.deleteOne({ _id: report.review });
+    }
+
+    await ReviewReport.updateMany(
+      { review: report.review, status: "pending" },
+      {
+        $set: {
+          status: decision,
+          decidedAt: new Date(),
+          decisionNote: (note || "").toString().trim().slice(0, 500),
+        },
+      },
+    );
+
+    return res.json({ success: true, avisSupprime: decision === "accepted" });
+  } catch (err) {
+    console.error("decideReviewReport:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
   }
 };

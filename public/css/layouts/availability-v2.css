@@ -26,35 +26,10 @@ body:has(.avail-page.av2) .main-wrapper { gap: 0; }
 }
 
 /* ── Onglets (soulignement foncé, comme la fiche client) ───────────── */
-.av2 .av2-tabs {
-  display: flex;
-  gap: 26px;
-  border-bottom: 1px solid var(--border-light, #e5e7eb);
-  margin: 2px 0 4px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.av2 .av2-tabs::-webkit-scrollbar { display: none; }
-.av2 .av2-tab {
-  padding: 11px 2px;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-muted, #637083);
-  cursor: pointer;
-  white-space: nowrap;
-  font-family: inherit;
-  transition: color .12s, border-color .12s;
-}
-.av2 .av2-tab:hover { color: var(--text-primary, #141c25); }
-.av2 .av2-tab.is-active {
-  color: var(--text-primary, #141c25);
-  border-bottom-color: var(--text-primary, #141c25);
-  font-weight: 600;
-}
+/* Onglets : définis une seule fois dans ds.css (alias .av2-tabs / .av2-tab).
+   Cette page les redéfinissait avec une marge différente — supprimé pour que
+   la navigation soit identique partout. Seule la marge reste ajustée ici. */
+.av2 .av2-tabs { margin: 2px 0 4px; }
 
 /* ── Sections (onglets) ────────────────────────────────────────────── */
 .av2 .av2-section { display: none; }
@@ -153,13 +128,12 @@ body:has(.avail-page.av2) .main-wrapper { gap: 0; }
 }
 .av2 .avail-time-box:hover { border-color: #d1d5db; }
 
-.av2 .avail-range-btn {
-  background: #fff;
-  border: 1px solid var(--border-light, #e5e7eb);
-  border-radius: 8px;
-  color: var(--main-color, #16a34a);
-}
-.av2 .avail-range-btn:hover { background: var(--main-color-pale, #f0fdf4); border-color: var(--main-color, #16a34a); }
+/* Le bouton « Créneau » utilise les classes partagées .sm-btn--soft.
+   Ces surcharges maison mettaient un fond vert PÂLE au survol, alors que
+   btn-normalize.css impose `color: #fff !important` sur .avail-range-btn :
+   blanc sur vert pâle = texte illisible. On laisse donc .sm-btn gouverner
+   (fond vert plein + texte blanc au survol) et on ne garde que la hauteur. */
+.av2 .avail-range-btn { height: 34px; padding: 0 13px; font-size: 13px; }
 
 /* ── Boutons + / add ───────────────────────────────────────────────── */
 .av2 .avail-add-btn {
