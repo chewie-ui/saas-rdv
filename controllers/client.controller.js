@@ -263,11 +263,24 @@ exports.getSettings = (req, res) => {
 // POST /espace-client/parametres/profile
 exports.updateProfile = async (req, res) => {
   try {
-    const { fullName, phone, location, languages, emailNotifications } = req.body;
+    const { fullName, phone, location, birthDate, gender, address, postalCode, city, country, languages, emailNotifications } = req.body;
 
     if (!fullName || fullName.trim().length < 2 || !isSafePlainText(fullName)) {
       return res.redirect("/espace-client/parametres?error=invalid_name");
     }
+
+    // Le téléphone ne doit contenir que des chiffres (et un éventuel « + »).
+    const cleanPhone = (phone || "").trim().replace(/[^\d+]/g, "");
+
+    // Coordonnées personnelles communes aux deux types de compte.
+    const personal = {
+      birthDate: (birthDate || "").trim(),
+      gender: (gender || "").trim(),
+      address: (address || "").trim(),
+      postalCode: (postalCode || "").trim(),
+      city: (city || "").trim(),
+      country: (country || "").trim(),
+    };
 
     if (req.user) {
       // Le modèle User n'a ni "location" (texte libre) ni "languages"/
@@ -275,7 +288,8 @@ exports.updateProfile = async (req, res) => {
       // un compte unifié (cf. client-settings.pug) et ignorés ici.
       await User.findByIdAndUpdate(req.user._id, {
         fullName: fullName.trim(),
-        phone: phone?.trim() || "",
+        phone: cleanPhone,
+        ...personal,
       });
       return res.redirect("/espace-client/parametres?success=profile");
     }
@@ -288,8 +302,9 @@ exports.updateProfile = async (req, res) => {
 
     await Client.findByIdAndUpdate(req.client._id, {
       fullName: fullName.trim(),
-      phone: phone?.trim() || "",
+      phone: cleanPhone,
       location: location?.trim() || "",
+      ...personal,
       languages: parsedLanguages,
       emailNotifications: emailNotifications === "on",
     });

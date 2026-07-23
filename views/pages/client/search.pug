@@ -61,9 +61,10 @@ block content
                     each cat in _topCats
                         button.sx-chip(
                             data-cat=cat.name.toLowerCase()
+                            title=cat.name
                             class=(searchCategory && searchCategory.toLowerCase() === cat.name.toLowerCase() ? 'is-active' : '')
                         )
-                            = cat.name
+                            span.sx-chip__t= cat.name
                             span.sx-chip__n= cat.count
                 .sx-sort
                     label.sx-sort__lbl(for="sxSort") Trier

@@ -69,6 +69,7 @@ app.use(cookieParser());
 
 const User = require("./db/models/user.model");
 const Subscription = require("./db/models/subscription.model");
+const Company = require("./db/models/company/company.model");
 const Stripe = require("stripe");
 const stripe = Stripe(env.stripeSecretKey); // Assure-toi que la clé est dans ton .env
 const injectSubscription = require("./middlewares/injectSubscription");
@@ -93,8 +94,17 @@ function planFromPriceId(priceId) {
 
 async function revokePremiumBySubId(stripeSubscriptionId) {
   if (!stripeSubscriptionId) return;
+
+  // ── Per-établissement : l'établissement rattaché à cet abonnement repasse
+  // en gratuit (source de vérité cible). Cf. facturation par établissement.
+  await Company.updateMany(
+    { stripeSubscriptionId },
+    { plan: "", planStatus: "cancelled", stripeSubscriptionId: "" }
+  );
+
   const user = await User.findOne({ "subscription.stripeSubscriptionId": stripeSubscriptionId }).select("_id manualPremium").lean();
   if (!user) return;
+  // Dual-write legacy (compte) — conservé le temps de la transition.
   await User.findByIdAndUpdate(user._id, {
     isPremium: false,
     "subscription.status": "cancelled",
@@ -188,9 +198,28 @@ app.post("/account/webhook", express.raw({ type: "application/json" }), async (r
             "subscription.stripeSubscriptionId": session.subscription,
           });
           console.log(`✅ Plan activé : ${planName} pour user ${userId}`);
-          // Appliquer les limites du plan (supprime/désactive le contenu excédentaire)
+
+          // ── Écriture PER-ÉTABLISSEMENT (source de vérité cible) ─────────────
+          // Le forfait s'applique à l'établissement ciblé au checkout
+          // (metadata.companyId), sinon au 1er établissement possédé (compat).
+          let companyId = session.metadata?.companyId || "";
+          if (!companyId) {
+            const firstOwned = await Company.findOne({ owner: userId, isDeleted: { $ne: true } })
+              .sort({ createdAt: 1 }).select("_id").lean();
+            companyId = firstOwned?._id ? String(firstOwned._id) : "";
+          }
+          if (companyId) {
+            await Company.findByIdAndUpdate(companyId, {
+              plan: planName,
+              planStatus: "active",
+              stripeSubscriptionId: session.subscription,
+            });
+            console.log(`✅ Forfait ${planName} rattaché à l'établissement ${companyId}`);
+          }
+
+          // Appliquer les limites du plan à CET établissement (rogne l'excédent)
           const { enforcePlanLimits } = require("./controllers/account.controller");
-          enforcePlanLimits(userId, planName).catch(() => {});
+          enforcePlanLimits(userId, planName, companyId || null).catch(() => {});
 
           // ── Activer les add-ons si présents dans les metadata ──────────────
           const addon = session.metadata?.addon;
@@ -254,6 +283,9 @@ app.post("/account/webhook", express.raw({ type: "application/json" }), async (r
       // La 1re facture (création) est déjà gérée par checkout.session.completed ;
       // on ne traite ici que les renouvellements de cycle.
       if (subId && invoice.billing_reason && invoice.billing_reason !== "subscription_create") {
+        // Per-établissement : le forfait de l'établissement rattaché reste actif.
+        await Company.updateMany({ stripeSubscriptionId: subId }, { planStatus: "active" });
+
         const user = await User.findOne({ "subscription.stripeSubscriptionId": subId }).select("_id").lean();
         if (user) {
           const newEnd = new Date();
@@ -296,13 +328,22 @@ app.post("/account/webhook", express.raw({ type: "application/json" }), async (r
               { user: user._id, stripeSubscriptionId: sub.id, status: { $ne: "superseded" } },
               { plan: planName, status: "active" }
             );
+            // ── Per-établissement : répercuter le plan sur l'établissement
+            // rattaché à cet abonnement, et rogner son excédent si downgrade.
+            const targetCompany = await Company.findOne({ stripeSubscriptionId: sub.id }).select("_id plan").lean();
+            if (targetCompany) {
+              await Company.findByIdAndUpdate(targetCompany._id, { plan: planName, planStatus: "active" });
+              if (targetCompany.plan && targetCompany.plan !== planName) {
+                try { require("./controllers/account.controller").enforcePlanLimits(user._id, planName, String(targetCompany._id)).catch(() => {}); } catch (_) {}
+              }
+            }
             // Si le plan a réellement changé (souvent un downgrade), on rogne le
             // contenu excédentaire selon le nouveau plan (services, employés…).
             const prevPlan = user.subscription && user.subscription.plan;
             if (prevPlan && prevPlan !== planName) {
-              try {
-                require("./controllers/account.controller").enforcePlanLimits(user._id, planName).catch(() => {});
-              } catch (_) {}
+              if (!targetCompany) {
+                try { require("./controllers/account.controller").enforcePlanLimits(user._id, planName).catch(() => {}); } catch (_) {}
+              }
               console.log(`🔄 Changement de plan ${prevPlan} → ${planName} pour user ${String(user._id)}`);
             }
           }

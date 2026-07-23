@@ -38,6 +38,25 @@ const companySchema = schema(
       default: false,
     },
 
+    // ── Forfait porté par l'établissement (facturation par établissement) ──
+    // Vide = hérite du forfait du compte owner (compat avant la facturation
+    // par établissement). Une fois branché sur Stripe, chaque établissement a
+    // son propre plan. `getCompanyPlan()` (utils/planLimits) résout l'effectif.
+    plan: {
+      type: String,
+      enum: ["", "basic", "essentiel", "pro", "business"],
+      default: "",
+    },
+    planStatus: {
+      type: String,
+      enum: ["active", "cancelled", "expired", "pending", "inactive"],
+      default: "active",
+    },
+    stripeSubscriptionId: {
+      type: String,
+      default: "",
+    },
+
     // Suppression douce (cf. "supprimer un établissement") : on ne détruit
     // jamais les données (services, employés, historique de RDV) — on masque
     // simplement l'établissement de toutes les listes/recherches.

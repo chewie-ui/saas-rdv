@@ -63,6 +63,15 @@ const userSchema = schema(
       type: String,
     },
 
+    // ── Coordonnées / infos personnelles (espace client → Paramètres) ──────
+    // Distinctes de l'objet `location` plus bas, qui décrit l'établissement.
+    birthDate: { type: String, default: "" },
+    gender: { type: String, default: "" },
+    address: { type: String, default: "" },
+    postalCode: { type: String, default: "" },
+    city: { type: String, default: "" },
+    country: { type: String, default: "" },
+
     instagramLink: {
       type: String,
     },
@@ -241,6 +250,9 @@ const userSchema = schema(
       reminderPaymentNote:    { type: String, default: '' }, // précisions libres sur le paiement (ex: lien QR code)
       // ── Rappels SMS (Pro & Business, quota mensuel puis email en repli) ────
       smsRemindersEnabled: { type: Boolean, default: false },
+      // SMS de CONFIRMATION à la réservation (distinct du rappel). Passe par le
+      // même système de crédits (quota inclus → solde prépayé → repli email).
+      smsConfirmationEnabled: { type: Boolean, default: false },
       // Au-delà du quota inclus : true = continuer en SMS en dépensant le solde
       // prépayé ; false (défaut) = passer à l'email, ne jamais dépenser le solde.
       smsAllowOverage: { type: Boolean, default: false },

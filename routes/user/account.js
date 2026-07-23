@@ -37,6 +37,7 @@ router.post("/purchase-addon/custom-url", isAuth, accountController.purchaseAddo
 router.post("/collaborator-seats", isAuth, accountController.updateCollaboratorSeats);
 router.post("/sms-topup", isAuth, accountController.topUpSmsBalance);
 router.post("/sms-autorecharge", isAuth, accountController.updateSmsAutoRecharge);
+router.patch("/sms-settings", isAuth, accountController.updateSmsSettings);
 
 router.post(
   "/update-password",

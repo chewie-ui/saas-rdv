@@ -736,14 +736,29 @@ exports.createBooking = async (req, res) => {
 
     await sendEmail(email, "Confirmation de votre rendez-vous — BranShee", htmlTemplate);
 
-    // ── SMS de confirmation au client (fonctionnalité cachée, désactivée par défaut) ──
+    // ── SMS de confirmation au client ─────────────────────────────────────
+    // Passe par le système de crédits (quota inclus → solde prépayé → repli
+    // email déjà envoyé ci-dessus). Conditions : flag global + toggle de
+    // l'établissement (smsConfirmationEnabled). Jamais bloquant.
     try {
-      if (phone && (await isFeatureEnabled("sms_notifications"))) {
-        const { sendSms } = require("../utils/sms");
-        await sendSms(
-          phone,
-          `BranShee : votre rendez-vous est confirmé pour le ${formattedDate} à ${startTime}.`,
-        );
+      if (
+        phone &&
+        companyOwner?.calendarSettings?.smsConfirmationEnabled &&
+        (await isFeatureEnabled("sms_notifications"))
+      ) {
+        const { sendBillableSmsIfAllowed } = require("../utils/sms");
+        const bizName = (companyOwner.businessName || companyOwner.fullName || "").trim();
+        const clientName = [name, surname].filter(Boolean).join(" ").trim();
+        const smsBody =
+          "Confirmation de rendez-vous" +
+          (clientName ? " — " + clientName : "") +
+          "\n" + (bizName ? bizName + " · " : "") + formattedDate + " à " + startTime +
+          (locationText ? "\nLieu : " + locationText : "");
+        // Fire-and-forget : on NE bloque PAS la réponse de réservation sur
+        // l'appel externe Spryng (sinon la page reste sur « Envoi… »). Le SMS
+        // part en arrière-plan ; en cas d'échec on log simplement.
+        sendBillableSmsIfAllowed(companyOwner, phone, smsBody)
+          .catch((e) => console.error("SMS confirmation error:", e.message));
       }
     } catch (smsErr) {
       console.error("SMS confirmation error:", smsErr.message);

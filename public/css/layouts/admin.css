@@ -136,7 +136,9 @@ svg {
 
 /* ── Responsive admin layout ── */
 @media (min-width: 820px) {
-  #openMenu { display: none; }
+  /* Le hamburger reste visible tant que la sidebar n'est PAS fixe
+     (elle ne le devient qu'à ≥1280px, cf. sidebar.admin.css). Le cacher
+     dès 820px créait une zone morte 820–1279px : ni sidebar, ni bouton. */
   .main-wrapper {
     padding: 24px;
     gap: 24px;

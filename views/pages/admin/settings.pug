@@ -123,10 +123,14 @@ block content
                             input#phoneLocal.input(type="tel" placeholder="456 12 34 56" autocomplete="off" inputmode="numeric")
                             input#phone(type="hidden" name="phone")
 
-                //- Zone danger
-                .stg-danger-row
-                    button.sm-btn.sm-btn--danger#deleteAccountBtn(type="button")
-                        span= t.profile.delete_account
+                //- Zone danger — suppression de l'ÉTABLISSEMENT courant (pas du
+                //- compte) : on est dans les paramètres de l'établissement. La
+                //- suppression est douce (données conservées), comme dans
+                //- « Mes établissements ».
+                if currentCompany
+                    .stg-danger-row
+                        button.sm-btn.sm-btn--danger#deleteEstabBtn(type="button" data-id=String(currentCompany._id) data-name=(currentCompany.name || 'cet établissement'))
+                            span Supprimer l'établissement
 
             if currentCompany
                 //- Pause / réactivation de l'établissement
@@ -314,6 +318,19 @@ block content
                         p.stg-card__title= t.info.pm_title
                         p.stg-card__desc= t.info.pm_desc
                     .stg-card__body
+                        //- Alerte : abonnement payant SANS carte → pas de
+                        //- renouvellement automatique. On ne l'affiche pas aux
+                        //- comptes gratuits (rien à renouveler).
+                        - var _paidPlan = currentPlan && currentPlan !== 'basic' && currentPlan !== 'free'
+                        - var _hasCard = paymentMethods && paymentMethods.length > 0
+                        if _paidPlan && !_hasCard
+                            .ds-alert.ds-alert--warning(style="margin-bottom:16px")
+                                span.ds-alert__ic.material-symbols-outlined error
+                                .ds-alert__body
+                                    p.ds-alert__title Aucune carte enregistrée
+                                    p.ds-alert__text Sans moyen de paiement, votre abonnement ne pourra pas se renouveler automatiquement et prendra fin à son échéance. Ajoutez une carte pour conserver votre accès sans interruption.
+                                    .ds-alert__actions
+                                        button.ds-alert__link.ds-alert__link--strong#noCardAddBtn(type="button") Ajouter une carte maintenant
                         p.pmx-hint= t.info.pm_select_hint
                         if paymentMethods && paymentMethods.length > 0
                             .pm-list.pmx-list
@@ -758,12 +775,36 @@ block scripts
             document.querySelectorAll('.pm-btn--set-default').forEach(function(btn){btn.addEventListener('click',async function(){var pmId=btn.dataset.pmid;var lbl=T('pm_set_default','Définir par défaut');btn.disabled=true;btn.textContent='...';try{var res=await fetch('/account/payment-method/'+pmId+'/set-default',{method:'POST'});var d=await res.json();if(d.success){document.querySelectorAll('.pm-badge--default').forEach(function(badge){var oldItem=badge.closest('.pm-item');var ae=badge.parentElement;var nb=document.createElement('button');nb.className='pm-btn--set-default';nb.type='button';nb.dataset.pmid=oldItem.dataset.pmid;nb.textContent=lbl;ae.replaceChild(nb,badge);oldItem.classList.remove('pm-item--default');nb.addEventListener('click',arguments.callee);});var ae=btn.parentElement;var badge=document.createElement('span');badge.className='pm-badge--default';badge.innerHTML='<span class="material-symbols-outlined" style="font-size:13px">check_circle</span> '+T('pm_default_badge','Par défaut');ae.replaceChild(badge,btn);btn.closest('.pm-item').classList.add('pm-item--default');}else{alert(d.error||T('generic_error','Erreur.'));btn.disabled=false;btn.textContent=lbl;}}catch(e){btn.disabled=false;btn.textContent=lbl;}});});
             function mountFields(){if(mounted)return;stripeInstance=Stripe(STRIPE_KEY);var elements=stripeInstance.elements();var style={base:{fontSize:'15px',color:'#111827',fontFamily:'Inter, system-ui, sans-serif','::placeholder':{color:'#9ca3af'}},invalid:{color:'#dc2626'}};numEl=elements.create('cardNumber',{style:style,showIcon:true});expEl=elements.create('cardExpiry',{style:style});cvcEl=elements.create('cardCvc',{style:style});numEl.mount('#pm-card-number');expEl.mount('#pm-card-expiry');cvcEl.mount('#pm-card-cvc');numEl.on('change',function(e){pmCardError.textContent=e.error?e.error.message:'';});mounted=true;}
             if(pmAddBtn){pmAddBtn.addEventListener('click',async function(){if(!STRIPE_KEY){alert(T('pm_stripe_missing','Configuration Stripe manquante.'));return;}if(!window.Stripe){alert(T('pm_stripe_not_loaded','Stripe.js non chargé.'));return;}if(pmFormWrap.style.display!=='none'){pmFormWrap.style.display='none';pmAddBtn.classList.remove('is-open');return;}pmAddBtn.disabled=true;try{var res=await fetch('/account/payment-method/setup-intent',{method:'POST'});var d=await res.json();if(!d.clientSecret)throw new Error(d.error||T('pm_setup_error','Erreur'));mountFields();pmFormWrap.dataset.secret=d.clientSecret;pmFormWrap.style.display='block';pmAddBtn.classList.add('is-open');}catch(e){alert(e.message||T('pm_form_error','Erreur.'));}finally{pmAddBtn.disabled=false;}});}
+            // Bouton de l'alerte « aucune carte » → ouvre le formulaire d'ajout.
+            var noCardBtn=document.getElementById('noCardAddBtn');if(noCardBtn&&pmAddBtn){noCardBtn.addEventListener('click',function(){pmAddBtn.scrollIntoView({behavior:'smooth',block:'center'});if(!pmFormWrap.style.display||pmFormWrap.style.display==='none'){pmAddBtn.click();}});}
             if(pmConfirmBtn){pmConfirmBtn.addEventListener('click',async function(){if(!mounted)return;var secret=pmFormWrap.dataset.secret;var confirmLabel=pmConfirmBtn.querySelector('span').textContent;pmConfirmBtn.disabled=true;pmConfirmBtn.querySelector('span').textContent='...';pmCardError.textContent='';try{var name=(pmCardName&&pmCardName.value.trim())||undefined;var result=await stripeInstance.confirmCardSetup(secret,{payment_method:{card:numEl,billing_details:{name:name}}});if(result.error){pmCardError.textContent=result.error.message;pmConfirmBtn.disabled=false;pmConfirmBtn.querySelector('span').textContent=confirmLabel;}else{var newPmId=result.setupIntent.payment_method;try{await fetch('/account/payment-method/'+newPmId+'/set-default',{method:'POST'});}catch(e){}window.location.reload();}}catch(e){pmCardError.textContent=e.message||T('generic_error','Erreur.');pmConfirmBtn.disabled=false;pmConfirmBtn.querySelector('span').textContent=confirmLabel;}});}
             if(pmCancelBtn){pmCancelBtn.addEventListener('click',function(){pmFormWrap.style.display='none';if(pmAddBtn)pmAddBtn.classList.remove('is-open');});}
         })();
 
         // ── Annuler (Profil) ──────────────────────────────────────────────────
         (function(){ var c=document.getElementById('cancelChanges'); if(c)c.addEventListener('click',function(){location.reload();}); })();
+
+        // ── Supprimer l'établissement courant (soft-delete) ───────────────────
+        (function(){
+            var btn=document.getElementById('deleteEstabBtn');
+            if(!btn) return;
+            btn.addEventListener('click', async function(){
+                var name=btn.dataset.name||'cet établissement';
+                var ok=await window.confirmModal(
+                    "Supprimer l'établissement ?",
+                    'Vous êtes sur le point de supprimer « '+name+' ». Sa page de réservation publique sera masquée. Vos données (rendez-vous, clients, historique) restent conservées.',
+                    { danger:true, confirmLabel:'Oui, supprimer', icon:'delete' }
+                );
+                if(!ok) return;
+                btn.disabled=true;
+                try{
+                    var res=await fetch('/account/establishments/'+btn.dataset.id,{method:'DELETE'});
+                    var data=await res.json();
+                    if(data.success){ window.location.href='/etablissement/mes-etablissements'; }
+                    else { btn.disabled=false; await window.alertModal(data.error||'Erreur lors de la suppression.'); }
+                }catch(e){ btn.disabled=false; await window.alertModal('Erreur réseau.'); }
+            });
+        })();
 
         // ── Nom : prénom + nom → champ caché fullName ─────────────────────────
         (function(){

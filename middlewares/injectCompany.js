@@ -127,18 +127,38 @@ module.exports = async (req, res, next) => {
     // `injectSubscription` (middleware global, tourne AVANT celui-ci) a déjà
     // posé isPro/currentPlan/... à partir de req.user — on les recalcule ici
     // à partir de l'owner quand ce n'est pas lui qui est connecté.
+    // Le forfait appartient à l'ÉTABLISSEMENT. On résout le plan EFFECTIF de
+    // `currentCompany` (`company.plan` s'il est défini/actif, sinon hérité du
+    // forfait de l'owner — cf. getCompanyPlan) et on expose un `billingUser`
+    // « shim » qui porte ce plan. Ainsi TOUTES les vérifs getLimit/atLeast/
+    // getPlan en aval deviennent per-établissement sans toucher aux ~30 appels.
+    const { getCompanyPlan, atLeast: _atLeast, PLANS: _PLANS } = require("../utils/planLimits");
+    let ownerUser;
     if (isOwner) {
-      res.locals.billingUser = req.user;
+      ownerUser = req.user;
     } else {
-      const owner = await User.findById(currentCompany.owner)
-        .select("subscription isPremium manualPremium manualPremiumExpiry")
+      ownerUser = await User.findById(currentCompany.owner)
+        .select("subscription isPremium manualPremium manualPremiumExpiry addons")
         .lean();
-      res.locals.billingUser = owner || req.user;
-      if (owner) {
+      if (ownerUser) {
         const { resolveSubscriptionState } = require("./injectSubscription");
-        Object.assign(res.locals, await resolveSubscriptionState(owner));
+        Object.assign(res.locals, await resolveSubscriptionState(ownerUser));
       }
     }
+
+    const effectivePlan = getCompanyPlan(currentCompany, ownerUser || req.user);
+    // Shim lu par getPlan() : subscription.plan/status + isPremium/manualPremium.
+    // On garde les `addons` de l'owner (customUrl, sièges collaborateurs).
+    res.locals.billingUser = {
+      _id:           (ownerUser && ownerUser._id) || req.user._id,
+      addons:        (ownerUser && ownerUser.addons) || req.user.addons || {},
+      isPremium:     false,
+      manualPremium: false,
+      subscription:  { plan: effectivePlan, status: effectivePlan === "basic" ? "inactive" : "active" },
+    };
+    // Refléter le plan de l'établissement dans les locals lus par les vues.
+    res.locals.currentPlan = effectivePlan;
+    res.locals.isPro       = _atLeast(res.locals.billingUser, "pro");
 
     // 4a. Vocabulaire "client" vs "patient" selon le métier (kiné, dentiste,
     // psy... → patient ; coiffeur, coach... → client) — dispo dans TOUTES

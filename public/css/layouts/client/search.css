@@ -234,6 +234,10 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  /* Plafond de largeur : un intitulé très long (ex. « Réflexologue
+     thérapeutique et Soins… ») est tronqué proprement (…) au lieu d'être coupé
+     en plein milieu au bord du défilement. Le libellé complet reste en title. */
+  max-width: 230px;
   padding: 9px 15px;
   border-radius: 999px;
   border: 1px solid var(--border-light, #e5e7eb);
@@ -245,6 +249,12 @@
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s;
+}
+.sx-chip__t {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .sx-chip:hover { border-color: var(--border-medium, #d1d5db); }
 .sx-chip.is-active { background: var(--accent, #16a34a); border-color: var(--accent, #16a34a); color: #fff; }
@@ -460,7 +470,9 @@
   padding: 72px 20px;
   color: var(--text-muted, #94a3b8);
 }
-.sx-empty svg { color: var(--border-medium, #cbd5e1); margin-bottom: 14px; }
+/* Sans width/height explicites, le SVG (viewBox seul) s'affichait en pleine
+   page. On le borne à une taille d'icône. */
+.sx-empty svg { width: 64px; height: 64px; color: var(--border-medium, #cbd5e1); margin-bottom: 14px; }
 .sx-empty__t { font-size: 18px; font-weight: 800; color: var(--ink, #0f172a); margin: 0 0 6px; }
 .sx-empty__s { font-size: 14px; margin: 0 0 22px; }
 .sx-empty__btn {

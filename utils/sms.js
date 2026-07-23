@@ -5,7 +5,9 @@ const _env = require(`../environment/${process.env.NODE_ENV || "development"}`);
 //   SPRYNG_API_TOKEN   → clé API (Bearer) depuis le dashboard Spryng
 //   SPRYNG_ORIGINATOR  → expéditeur affiché (nom alphanumérique ≤ 11 car., ou un numéro)
 //   SPRYNG_DEFAULT_CC  → indicatif pays par défaut pour les numéros locaux (défaut "32" = Belgique)
-const SPRYNG_ENDPOINT   = "https://rest.spryng.eu/v1/messages";
+// Hôte API Spryng. NB : `rest.spryng.eu` (ancien) est injoignable (timeout) —
+// le bon hôte est `api.spryngsms.com`. Surchargable via SPRYNG_ENDPOINT.
+const SPRYNG_ENDPOINT   = _env.spryngEndpoint || process.env.SPRYNG_ENDPOINT || "https://api.spryngsms.com/v1/messages";
 const SPRYNG_TOKEN      = _env.spryngApiToken   || process.env.SPRYNG_API_TOKEN   || "";
 const SPRYNG_ORIGINATOR = _env.spryngOriginator || process.env.SPRYNG_ORIGINATOR || "BranShee";
 const SPRYNG_DEFAULT_CC = _env.spryngDefaultCC  || process.env.SPRYNG_DEFAULT_CC  || "32";
@@ -40,21 +42,31 @@ async function sendSms(to, body) {
   if (!recipient) return null;
 
   try {
-    const res = await fetch(SPRYNG_ENDPOINT, {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + SPRYNG_TOKEN,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        encoding: "auto",
-        body: String(body || ""),
-        originator: SPRYNG_ORIGINATOR,
-        recipients: [recipient],
-        route: "business", // route qualité (délivrabilité) pour le transactionnel
-      }),
-    });
+    // Timeout dur : l'appel externe ne doit jamais faire traîner la requête
+    // appelante (réservation). 8 s max, sinon on abandonne (repli email).
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    let res;
+    try {
+      res = await fetch(SPRYNG_ENDPOINT, {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: {
+          Authorization: "Bearer " + SPRYNG_TOKEN,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          encoding: "auto",
+          body: String(body || ""),
+          originator: SPRYNG_ORIGINATOR,
+          recipients: [recipient],
+          route: "business", // route qualité (délivrabilité) pour le transactionnel
+        }),
+      });
+    } finally {
+      clearTimeout(timer);
+    }
 
     if (!res.ok) {
       const txt = await res.text().catch(() => "");
@@ -224,4 +236,9 @@ async function sendReminderSmsIfAllowed(owner, to, body) {
   return { sent: true, mode: "balance", balanceCents: debited.smsBalanceCents };
 }
 
-module.exports = { sendSms, sendReminderSmsIfAllowed, tryAutoRecharge, SMS_PRICE_CENTS };
+// La logique de facturation (quota inclus → solde prépayé → repli email) est
+// identique pour un rappel ou une confirmation : on expose un alias sémantique
+// pour que les appels de confirmation soient explicites côté controllers.
+const sendBillableSmsIfAllowed = sendReminderSmsIfAllowed;
+
+module.exports = { sendSms, sendReminderSmsIfAllowed, sendBillableSmsIfAllowed, tryAutoRecharge, SMS_PRICE_CENTS };

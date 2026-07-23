@@ -36,8 +36,7 @@ aside.sidebar#sidebar
                                     if !c.isOwner
                                         span.sb-estab__opt-tag= t.sidebar.tag_collaborator
                                 if isCurrent
-                                    svg(viewBox="0 0 24 24" height="13" width="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
-                                        polyline(points="20 6 9 17 4 12")
+                                    span.material-symbols-outlined.sb-estab__opt-check check_circle
                     .sb-estab__sep
                     a.sb-estab__add(href="/etablissement/mes-etablissements")
                         svg(viewBox="0 -960 960 960" height="15" width="15" fill="currentColor")
@@ -115,6 +114,10 @@ aside.sidebar#sidebar
                             svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
                                 path(d="M160-80q-33 0-56.5-23.5T80-160v-440q0-33 23.5-56.5T160-680h200v-120q0-33 23.5-56.5T440-880h80q33 0 56.5 23.5T600-800v120h200q33 0 56.5 23.5T880-600v440q0 33-23.5 56.5T800-80H160Zm0-80h640v-440H600q0 33-23.5 56.5T520-520h-80q-33 0-56.5-23.5T360-600H160v440Zm200-40h240v-40q0-50-35-85t-85-35q-50 0-85 35t-35 85v40ZM440-600h80v-200h-80v200Zm80 160Z")
                             span Parrainage
+                        a.sb-link(href="/sms" class=pageName === 'Sms' ? 'active' : '')
+                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                path(d="M240-400h480v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z")
+                            span SMS
 
                 //- ── 4. Équipe ────────────────────────────────────────
                 - const canSeeCollaborators = !!(currentCompany && permissions && permissions.collaborators.view)

@@ -2,7 +2,7 @@ const User = require("../db/models/user.model");
 const Company = require("../db/models/company/company.model");
 const CompanyMembership = require("../db/models/company/companyMembership.model");
 const CompanyGrade = require("../db/models/company/companyGrade.model");
-const { getPlan, getLimit, getCollaboratorLimit } = require("../utils/planLimits");
+const { getPlan, getLimit, getCollaboratorLimit, canCreateEstablishment } = require("../utils/planLimits");
 const getServices = require("../utils/services");
 const { logActivity } = require("../utils/activityLog");
 
@@ -112,7 +112,10 @@ exports.listMyEstablishments = async (req, res) => {
     .populate("grade", "name")
     .lean();
 
-  const companiesLimit = getLimit("companies", owner);
+  // Règle de création portée par l'établissement (cf. canCreateEstablishment) :
+  // 1 gratuit inclus, + 1 gratuit par Business, sinon tous les établissements
+  // doivent être payants (Pro min.) pour en créer un de plus.
+  const createInfo = canCreateEstablishment(owned, owner);
   const ownedFormatted = owned.map((c) => formatCompanyForList(c, owner));
 
   function companyLabel(m) {
@@ -149,9 +152,8 @@ exports.listMyEstablishments = async (req, res) => {
     pendingRequests,
     pendingInvitations,
     rejectedRequests,
-    companiesLimit: companiesLimit === Infinity ? null : companiesLimit,
     companiesCount: owned.length,
-    atCompanyLimit: owned.length >= companiesLimit,
+    canCreateEstab: createInfo.canCreate,
     currentPlan: getPlan(owner),
     services: getServices(res.locals.lang),
   });
@@ -161,13 +163,10 @@ exports.listMyEstablishments = async (req, res) => {
 exports.createEstablishment = async (req, res) => {
   try {
     const owner = req.user;
-    const ownedCount = await Company.countDocuments({ owner: owner._id, isDeleted: { $ne: true } });
-    const limit = getLimit("companies", owner);
-    if (ownedCount >= limit) {
+    const owned = await Company.find({ owner: owner._id, isDeleted: { $ne: true } }).lean();
+    if (!canCreateEstablishment(owned, owner).canCreate) {
       return res.status(403).json({
-        error: limit <= 1
-          ? "Votre forfait ne permet de gérer qu'un seul établissement. Passez à un forfait supérieur pour en créer plusieurs."
-          : `Votre forfait ne permet de gérer que ${limit} établissements maximum.`,
+        error: "Pour créer un nouvel établissement, vos établissements existants doivent être sur un forfait payant (Pro minimum). Passez au Pro, ou supprimez un établissement gratuit.",
       });
     }
 
@@ -857,9 +856,10 @@ exports.quickStartPage = async (req, res) => {
     // Le wizard est AUSSI le flux « Créer un nouvel établissement » (multi-
     // établissements) : on ne redirige que si l'utilisateur a atteint la limite
     // de son forfait — pas dès qu'il en a déjà un.
-    const existing = await Company.countDocuments({ owner: req.user._id, isDeleted: { $ne: true } });
-    const limit = getLimit("companies", req.user);
-    if (existing >= limit) return res.redirect("/etablissement/mes-etablissements");
+    const owned = await Company.find({ owner: req.user._id, isDeleted: { $ne: true } }).lean();
+    if (owned.length && !canCreateEstablishment(owned, req.user).canCreate) {
+      return res.redirect("/etablissement/mes-etablissements");
+    }
   } catch (_) { /* on laisse passer, le POST re-vérifie de toute façon */ }
 
   return res.render("client/quick-start", {
@@ -879,10 +879,9 @@ exports.quickStartCreate = async (req, res) => {
     // Un compte gratuit ne peut avoir qu'un établissement — garde-fou (le
     // parcours n'est proposé qu'aux comptes sans établissement, mais on
     // revérifie côté serveur pour ne jamais créer de doublon).
-    const ownedCount = await Company.countDocuments({ owner: owner._id, isDeleted: { $ne: true } });
-    const limit = getLimit("companies", owner);
-    if (ownedCount >= limit) {
-      return res.status(403).json({ error: "Vous avez déjà un établissement.", redirect: "/panel" });
+    const owned = await Company.find({ owner: owner._id, isDeleted: { $ne: true } }).lean();
+    if (!canCreateEstablishment(owned, owner).canCreate) {
+      return res.status(403).json({ error: "Pour créer un nouvel établissement, vos établissements existants doivent être sur un forfait payant (Pro minimum).", redirect: "/etablissement/mes-etablissements" });
     }
 
     const name = (req.body.name || "").trim();

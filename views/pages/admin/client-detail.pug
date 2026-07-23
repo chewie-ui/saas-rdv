@@ -632,6 +632,12 @@ block scripts
                 var _keep = sessionStorage.getItem('cdTab');
                 if (_keep) { sessionStorage.removeItem('cdTab'); activateTab(_keep); }
             } catch (e) {}
+            // Ouverture directe sur un onglet via ?tab=… (ex. « Dossier patient »
+            // depuis le popover d'un rendez-vous).
+            try {
+                var _wanted = new URLSearchParams(location.search).get('tab');
+                if (_wanted && document.getElementById('panel-' + _wanted)) activateTab(_wanted);
+            } catch (e) {}
 
             // ── Menu « 3 points » ─────────────────────────────────────
             var kebab = document.getElementById('cdKebab');

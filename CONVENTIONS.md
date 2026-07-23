@@ -66,6 +66,30 @@ tous légèrement différents.
 | Pagination | `.ds-pager` |
 | Alerte, notification | `.ds-alert` (+ `--info/--success/--warning/--danger`, `--row`) |
 | **Select habillé** | `data-ds-select` sur le `<select>` (+ `data-ds-select-size="sm"`) — le natif reste dans le DOM, `.value` et `change` inchangés |
+| **Glisser-déposer (tri)** | `public/js/components/ds-drag.js` — voir ci-dessous |
+
+**Drag & drop réutilisable** (`ds-drag.js` + styles `.ds-drag-handle` / `.ds-dragging` dans `ds.css`) :
+
+```pug
+//- Charger le script sur la page : script(src="/js/components/ds-drag.js")
+ul#maListe
+  each x in items
+    li(data-ds-drag data-ds-drag-id=x.id)
+      span.ds-drag-handle(data-ds-handle)
+        span.material-symbols-outlined drag_indicator
+      | #{x.nom}
+```
+```js
+DsDragSort.init(document.getElementById('maListe'), {
+  handleSelector: '[data-ds-handle]',        // option ; sinon tout l'item est saisissable
+  onReorder: function (ids /* nouvel ordre des data-ds-drag-id */, info /* {item, from, to} */) {
+    fetch('/api/.../reorder', { method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: ids }) });
+  }
+});
+```
+Pointer Events (souris + tactile), animation FLIP des voisins, défilement auto
+près des bords, un clic normal reste possible. Ne pas réécrire de DnD ailleurs.
 
 Règles :
 

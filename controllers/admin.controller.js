@@ -1010,14 +1010,21 @@ exports.createAdminBooking = async (req, res) => {
 
     await sendEmail(email, "Confirmation de votre rendez-vous — BranShee", htmlTemplate);
 
-    // ── SMS de confirmation au client (fonctionnalité cachée, désactivée par défaut) ──
+    // ── SMS de confirmation au client (via crédits + toggle établissement) ──
     try {
-      if (phone && (await isFeatureEnabled("sms_notifications"))) {
-        const { sendSms } = require("../utils/sms");
-        await sendSms(
+      if (
+        phone &&
+        companyOwner?.calendarSettings?.smsConfirmationEnabled &&
+        (await isFeatureEnabled("sms_notifications"))
+      ) {
+        const { sendBillableSmsIfAllowed } = require("../utils/sms");
+        const bizName = companyOwner.businessName || companyOwner.fullName || "";
+        // Fire-and-forget : ne bloque pas la réponse sur l'appel externe Spryng.
+        sendBillableSmsIfAllowed(
+          companyOwner,
           phone,
-          `BranShee : votre rendez-vous est confirmé pour le ${formattedDate} à ${startTime}.`,
-        );
+          `${bizName ? bizName + " : " : ""}votre rendez-vous est confirmé pour le ${formattedDate} à ${startTime}.`,
+        ).catch((e) => console.error("SMS confirmation error:", e.message));
       }
     } catch (smsErr) {
       console.error("SMS confirmation error:", smsErr.message);
@@ -2771,9 +2778,26 @@ exports.paymentVerification = async (req, res) => {
       req.user.subscription.status = "active";
     }
 
-    console.log(`✅ [paymentVerification] Plan "${planName}" activé pour user ${userId}`);
+    // ── Écriture PER-ÉTABLISSEMENT (source de vérité cible, idempotent avec le
+    // webhook) : forfait rattaché à l'établissement ciblé au checkout.
+    const Company = require("../db/models/company/company.model");
+    let companyId = session.metadata?.companyId || "";
+    if (!companyId) {
+      const firstOwned = await Company.findOne({ owner: userId, isDeleted: { $ne: true } })
+        .sort({ createdAt: 1 }).select("_id").lean();
+      companyId = firstOwned?._id ? String(firstOwned._id) : "";
+    }
+    if (companyId) {
+      await Company.findByIdAndUpdate(companyId, {
+        plan: planName,
+        planStatus: "active",
+        stripeSubscriptionId: session.subscription || null,
+      });
+    }
+
+    console.log(`✅ [paymentVerification] Plan "${planName}" activé pour user ${userId} (établissement ${companyId || "—"})`);
     const { enforcePlanLimits } = require("./account.controller");
-    enforcePlanLimits(userId, planName).catch(() => {});
+    enforcePlanLimits(userId, planName, companyId || null).catch(() => {});
 
     // ── Parrainage : compter ce filleul comme "payant" pour son parrain ────────
     // Seulement la 1ère fois qu'il devient payant (un désabonnement/réabonnement
@@ -2987,6 +3011,50 @@ exports.customizeCalendarPage = async (req, res) => {
       enabled:        !!smsAutoRecharge.enabled,
       thresholdEuros: Math.round((smsAutoRecharge.thresholdCents || 500) / 100),
       amountEuros:    Math.round((smsAutoRecharge.amountCents || 2000) / 100),
+    },
+  });
+};
+
+// ── Page SMS dédiée ────────────────────────────────────────────────────────
+exports.smsPage = async (req, res) => {
+  // Retour d'une recharge SMS (Stripe Checkout) : créditer tout de suite.
+  if (req.query.smsTopupSuccess && req.query.session_id) {
+    try {
+      const s = await stripe.checkout.sessions.retrieve(req.query.session_id);
+      if (["paid", "no_payment_required"].includes(s.payment_status) && s.metadata?.type === "sms_topup") {
+        const { creditSmsTopup } = require("./account.controller");
+        await creditSmsTopup(s.metadata.userId, s.id, parseInt(s.metadata.amountCents, 10) || 0);
+        const fresh = await User.findById(req.user._id).select("smsBalanceCents").lean();
+        if (fresh) req.user.smsBalanceCents = fresh.smsBalanceCents;
+      }
+    } catch (e) { console.error("[smsTopup fallback]", e.message); }
+  }
+
+  const cs = req.user.calendarSettings || {};
+  const { getSmsQuota } = require("../utils/planLimits");
+  const { SMS_PRICE_CENTS } = require("../utils/sms");
+  const smsQuota = getSmsQuota(res.locals.billingUser);
+  const smsUsage = req.user.smsUsage || {};
+  const currentMonthKey = new Date().toISOString().slice(0, 7);
+  const smsUsedThisMonth = smsUsage.monthKey === currentMonthKey ? (smsUsage.count || 0) : 0;
+  const ar = req.user.smsAutoRecharge || {};
+
+  return res.render("admin/sms", {
+    pageName: "Sms",
+    title: "SMS — BranShee",
+    calendarSettings: cs,
+    isPro:       res.locals.isPro,
+    currentPlan: res.locals.currentPlan,
+    currentCompany: res.locals.currentCompany,
+    smsQuota,
+    smsUsedThisMonth,
+    smsBalanceCents: req.user.smsBalanceCents || 0,
+    smsPriceCents:   SMS_PRICE_CENTS,
+    smsAutoRecharge: {
+      enabled:        !!ar.enabled,
+      thresholdEuros: Math.round((ar.thresholdCents || 500) / 100),
+      amountEuros:    Math.round((ar.amountCents || 2000) / 100),
+      lastFailureAt:  ar.lastFailureAt || null,
     },
   });
 };

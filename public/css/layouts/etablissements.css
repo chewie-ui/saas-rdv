@@ -2,146 +2,62 @@
    MES ÉTABLISSEMENTS + COLLABORATEURS
    ═══════════════════════════════════════════════════════════════ */
 
-.estab-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1rem;
-}
+/* Fond blanc plein — pas de gris de fond. */
+body:has(.estab-page) .main { background: #fff; }
+.estab-page { max-width: none; padding-bottom: 40px; }
+
+/* ── Barre d'action (titre déjà dans la barre du haut) ─────────────────── */
+.estab-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+.estab-toolbar__count { font-size: 14px; color: var(--text-muted, #6b7280); margin: 0; }
+.estab-toolbar__actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ── Grille de cartes ──────────────────────────────────────────────────── */
+.estab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
 
 .estab-card {
-  display: flex;
-  flex-direction: column;
-  border-radius: var(--radius-lg, 14px);
-  border: 1px solid var(--border-light);
-  background: var(--color-white);
-  box-shadow: var(--shadow);
-  overflow: hidden;
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 18px; border: 1px solid var(--border-light, #eceae6); border-radius: 16px; background: #fff;
+  transition: box-shadow .15s, border-color .15s;
 }
+.estab-card:hover { box-shadow: 0 8px 26px -14px rgba(16, 24, 40, .22); }
+.estab-card.is-paused { opacity: .82; }
 
-.estab-card__cover {
-  width: 100%;
-  height: 120px;
-  overflow: hidden;
-  background: var(--color-surface-2, #f1f5f9);
+.estab-card__hd { display: flex; align-items: flex-start; gap: 13px; }
+.estab-card__ava { width: 52px; height: 52px; border-radius: 13px; object-fit: cover; flex-shrink: 0; background: var(--surface, #f1f5f9); border: 1px solid var(--border-light, #eceae6); }
+.estab-card__ava--ph { display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted, #94a3b8); }
+.estab-card__ava--ph .material-symbols-outlined { font-size: 26px; }
+.estab-card__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.estab-card__namerow { display: flex; align-items: center; gap: 9px; min-width: 0; flex-wrap: wrap; }
+.estab-card__name { font-size: 15px; font-weight: 700; color: var(--text-primary, #0f172a); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.estab-card__type { font-size: 12.5px; color: var(--text-muted, #6b7280); }
+.estab-card__since { font-size: 12px; color: var(--text-muted, #94a3b8); }
+
+/* ── Badges (scopés .estab-card pour battre la règle générique plus bas) ── */
+.estab-card .estab-badge {
+  display: inline-flex; align-items: center; gap: 5px; width: fit-content;
+  font-size: 11.5px; font-weight: 700; text-transform: none; letter-spacing: 0;
+  padding: 3px 10px; border-radius: 999px;
 }
+.estab-card .estab-badge .material-symbols-outlined { font-size: 14px; }
+.estab-card .estab-badge--active   { background: #f0fdf4; color: #15803d; }
+.estab-card .estab-badge--paused   { background: #fef2f2; color: #dc2626; }
+.estab-card .estab-badge--role     { background: var(--surface, #f1f5f9); color: var(--text-secondary, #475569); }
+.estab-card .estab-badge--pending  { background: #fffbeb; color: #b45309; }
+.estab-card .estab-badge--rejected { background: #fef2f2; color: #dc2626; }
 
-.estab-card__cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
+/* ── Bouton d'accès (pleine largeur) ───────────────────────────────────── */
+.estab-card__go { width: 100%; justify-content: center; }
 
-.estab-card__body {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px 16px 4px;
-}
+/* ── État vide ─────────────────────────────────────────────────────────── */
+.estab-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 54px 24px; border: 1px solid var(--border-light, #eceae6); border-radius: 16px; }
+.estab-empty__ic { display: inline-flex; align-items: center; justify-content: center; width: 58px; height: 58px; margin-bottom: 10px; border-radius: 16px; background: #dcfce7; color: #16a34a; }
+.estab-empty__ic .material-symbols-outlined { font-size: 30px; }
+.estab-empty__title { font-size: 16px; font-weight: 700; margin: 0; }
+.estab-empty__sub { font-size: 13px; color: var(--text-muted, #6b7280); margin: 5px 0 18px; max-width: 380px; }
 
-.estab-card__top { display: flex; flex-direction: column; gap: 2px; }
-
-.estab-card__name { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
-.estab-card__type { font-size: 0.78rem; color: var(--text-muted); }
-.estab-card__since { font-size: 0.76rem; color: var(--text-muted); }
-
-.estab-badge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 3px 9px;
-  border-radius: 999px;
-  width: fit-content;
-}
-
-.estab-badge--active  { background: #f0fdf4; color: #15803d; }
-.estab-badge--paused  { background: #fef2f2; color: #dc2626; }
-.estab-badge--role    { background: var(--color-surface-2, #f1f5f9); color: var(--text-muted); }
-.estab-badge--pending { background: #fffbeb; color: #b45309; }
-.estab-badge--rejected { background: #fef2f2; color: #dc2626; }
-
-.estab-card__actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px 16px;
-  margin-top: auto;
-}
-
-.estab-card__actions .sm-btn { font-size: 12.5px; padding: 6px 10px; }
-
-/* ── Toggle actif/en pause (remplace le bouton "Désactiver") ──────────── */
-.estab-active-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-left: auto;
-  cursor: pointer;
-  user-select: none;
-}
-
-.estab-active-toggle input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.estab-active-toggle__track {
-  position: relative;
-  width: 34px;
-  height: 20px;
-  border-radius: 999px;
-  background: #d1d5db;
-  transition: background .15s;
-  flex-shrink: 0;
-}
-
-.estab-active-toggle__thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,.2);
-  transition: transform .15s;
-}
-
-.estab-active-toggle input:checked + .estab-active-toggle__track {
-  background: #16a34a;
-}
-
-.estab-active-toggle input:checked + .estab-active-toggle__track .estab-active-toggle__thumb {
-  transform: translateX(14px);
-}
-
-.estab-active-toggle__label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.estab-card--add {
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: var(--text-muted);
-  border-style: dashed;
-  cursor: pointer;
-  background: transparent;
-  min-height: 180px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: border-color 0.15s, color 0.15s;
-}
-
-.estab-card--add:hover { border-color: var(--accent, #16a34a); color: var(--accent, #16a34a); }
+/* ── Bloc secondaire (collaboration, invitations, demandes) ────────────── */
+.estab-block { margin-top: 34px; }
+.estab-block__title { font-size: 15px; font-weight: 800; margin: 0 0 14px; letter-spacing: -.01em; }
 
 /* ── Collaborateurs ── */
 .collab-row {
@@ -862,3 +778,76 @@
   line-height: 1.5;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   PAGE GRADES — tableau (design commun .ds-table) + modale d'édition.
+   ══════════════════════════════════════════════════════════════════════════ */
+body:has(.gr-page) .main { background: #fff; }
+
+.gr-page { max-width: none; }
+.gr-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.gr-head__title { font-size: 20px; font-weight: 800; letter-spacing: -.02em; margin: 0; }
+.gr-head__sub { font-size: 13.5px; color: var(--text-muted, #6b7280); margin: 4px 0 0; }
+
+/* Pastille d'initiale du grade */
+.gr-av {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Lignes cliquables */
+.gr-table tbody tr { cursor: pointer; }
+
+/* État vide */
+.gr-empty {
+  text-align: center;
+  padding: 60px 24px;
+  border: 1px solid var(--border-light, #eceae6);
+  border-radius: 16px;
+  background: #fff;
+}
+.gr-empty__ic {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 56px; height: 56px; margin-bottom: 14px;
+  border-radius: 15px; background: var(--surface, #f1f5f9); color: var(--text-muted, #94a3b8);
+}
+.gr-empty__ic .material-symbols-outlined { font-size: 28px; }
+.gr-empty__title { font-size: 15px; font-weight: 700; margin: 0; }
+.gr-empty__desc { font-size: 13.5px; color: var(--text-muted, #6b7280); margin: 5px 0 16px; }
+
+/* Badge « Personnalisé » par défaut (base .estab-badge déjà définie) */
+.estab-badge { background: var(--surface, #f1f5f9); color: var(--text-secondary, #475569); }
+
+/* Overlay de la modale d'édition */
+.gr-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, .5);
+  backdrop-filter: blur(2px);
+}
+.gr-modal-hd-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.gr-modal-x {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; flex-shrink: 0;
+  border: none; border-radius: 50%; background: none;
+  color: var(--text-muted, #94a3b8); cursor: pointer;
+}
+.gr-modal-x:hover { background: var(--surface, #f1f5f9); color: var(--text-primary, #0f172a); }

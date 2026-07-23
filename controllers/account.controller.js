@@ -28,7 +28,7 @@ const PLAN_LIMITS = {
  * Applique les limites du plan en désactivant/supprimant ce qui dépasse.
  * Appelé automatiquement après chaque changement de plan.
  */
-exports.enforcePlanLimits = async (userId, planName) => {
+exports.enforcePlanLimits = async (userId, planName, companyId = null) => {
   try {
     const CompanyMembership = require("../db/models/company/companyMembership.model");
     const Service  = require("../db/models/company/service.model");
@@ -36,10 +36,15 @@ exports.enforcePlanLimits = async (userId, planName) => {
     const Company  = require("../db/models/company/company.model");
 
     const limits = PLAN_LIMITS[planName] || PLAN_LIMITS.basic;
-    const user   = await User.findById(userId).select("company").lean();
-    if (!user?.company) return;
 
-    const companyId = user.company;
+    // Facturation par établissement : on cible l'établissement passé en
+    // paramètre (le forfait lui appartient). Rétrocompat : si absent, on
+    // retombe sur `user.company` (comportement mono-établissement d'origine).
+    if (!companyId) {
+      const user = await User.findById(userId).select("company").lean();
+      if (!user?.company) return;
+      companyId = user.company;
+    }
 
     // ── Employés (= collaborateurs affichés comme employé bookable, le
     // patron n'est jamais compté contre cette limite) ─────────────────────────
@@ -238,16 +243,32 @@ exports.createCheckout = async (req, res) => {
 
     const planName = plan === "essentiel" ? "essentiel" : plan === "business" ? "business" : "pro";
 
+    // ── Établissement ciblé = l'établissement actif (celui du switcher) ───────
+    // Le forfait est porté par l'établissement : la souscription s'applique à
+    // celui auquel l'utilisateur est connecté.
+    let companyId = req.session?.activeCompanyId || null;
+    if (!companyId) {
+      const firstOwned = await Company.findOne({ owner: req.user._id, isDeleted: { $ne: true } })
+        .sort({ createdAt: 1 }).select("_id").lean();
+      companyId = firstOwned?._id ? String(firstOwned._id) : null;
+    }
+    const targetCompany = companyId ? await Company.findById(companyId) : null;
+
     // ── Upgrade via Stripe subscription update (proration automatique) ────────
+    // On privilégie l'abonnement déjà rattaché à CET établissement
+    // (per-company) ; à défaut, l'abonnement legacy du compte (avant migration).
     const existingSub = await Subscription.findOne({
       user: req.user._id,
       status: "active",
       stripeSubscriptionId: { $exists: true, $ne: null },
     }).lean();
+    const existingStripeSubId =
+      (targetCompany && targetCompany.stripeSubscriptionId) ||
+      existingSub?.stripeSubscriptionId || null;
 
-    if (existingSub?.stripeSubscriptionId) {
+    if (existingStripeSubId) {
       try {
-        const stripeSub = await stripe.subscriptions.retrieve(existingSub.stripeSubscriptionId);
+        const stripeSub = await stripe.subscriptions.retrieve(existingStripeSubId);
         // S'assurer que l'abonnement est actif en live (pas annulé, pas test)
         if (stripeSub.status !== "active" && stripeSub.status !== "trialing") {
           throw new Error(`Subscription status invalide: ${stripeSub.status}`);
@@ -265,7 +286,7 @@ exports.createCheckout = async (req, res) => {
           if (paymentMethodId) {
             updateParams.default_payment_method = paymentMethodId;
           }
-          await stripe.subscriptions.update(existingSub.stripeSubscriptionId, updateParams);
+          await stripe.subscriptions.update(existingStripeSubId, updateParams);
 
           // Recalculer la date de fin à partir d'aujourd'hui selon le nouveau billing
           const newStartDate = new Date();
@@ -278,32 +299,46 @@ exports.createCheckout = async (req, res) => {
             newEndDate.setMonth(newEndDate.getMonth() + 1);
           }
 
+          // ── Écriture PER-ÉTABLISSEMENT (source de vérité cible) ────────────
+          if (targetCompany) {
+            targetCompany.plan = planName;
+            targetCompany.planStatus = "active";
+            targetCompany.stripeSubscriptionId = existingStripeSubId;
+            await targetCompany.save();
+          }
+
+          // ── Dual-write LEGACY (compte) — conservé le temps de la transition
+          // pour ne rien casser (superadmin, vues, scripts qui lisent encore
+          // user.subscription). À retirer une fois la migration terminée.
           await User.findByIdAndUpdate(req.user._id, {
             isPremium: true,
             "subscription.plan":   planName,
             "subscription.status": "active",
           });
-          await Subscription.findByIdAndUpdate(existingSub._id, {
-            plan:      planName,
-            startDate: newStartDate,
-            endDate:   newEndDate,
-          });
+          if (existingSub?._id) {
+            await Subscription.findByIdAndUpdate(existingSub._id, {
+              plan:      planName,
+              startDate: newStartDate,
+              endDate:   newEndDate,
+            });
+          }
 
           if (req.user) {
             req.user.isPremium = true;
             if (req.user.subscription) req.user.subscription.plan = planName;
           }
 
-          // Downgrade (ex: pro → essentiel) : rogner le contenu excédentaire.
-          exports.enforcePlanLimits(req.user._id, planName).catch(() => {});
+          // Downgrade (ex: pro → essentiel) : rogner le contenu excédentaire
+          // de l'établissement concerné.
+          exports.enforcePlanLimits(req.user._id, planName, companyId).catch(() => {});
 
-          console.log(`✅ Upgrade inline vers ${planName} pour user ${req.user._id}`);
+          console.log(`✅ Upgrade inline vers ${planName} pour établissement ${companyId} (user ${req.user._id})`);
           return res.json({ upgraded: true, plan: planName });
         }
       } catch (upgradeErr) {
         console.error("Subscription update failed, fallback to checkout:", upgradeErr.message);
         // Nettoyer l'ID invalide en base pour éviter de le réutiliser
-        await Subscription.findByIdAndUpdate(existingSub._id, { status: "superseded" }).catch(() => {});
+        if (existingSub?._id) await Subscription.findByIdAndUpdate(existingSub._id, { status: "superseded" }).catch(() => {});
       }
     }
 
@@ -313,9 +348,10 @@ exports.createCheckout = async (req, res) => {
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
       client_reference_id: req.user._id.toString(),
-      // Stocker le plan dans metadata → fallback fiable dans paymentVerification
-      metadata: { plan: planName, userId: req.user._id.toString() },
-      subscription_data: { metadata: { plan: planName, userId: req.user._id.toString() } },
+      // Stocker le plan + l'établissement ciblé dans metadata → le webhook et
+      // paymentVerification écrivent le forfait sur CET établissement.
+      metadata: { plan: planName, userId: req.user._id.toString(), companyId: companyId || "" },
+      subscription_data: { metadata: { plan: planName, userId: req.user._id.toString(), companyId: companyId || "" } },
       // Pour les achats 0€ (coupon 100%) : ne pas forcer la carte si inutile
       payment_method_collection: "if_required",
       success_url: `${env.stripeSuccessUrl || "https://branshee.com"}`,
@@ -655,8 +691,8 @@ exports.topUpSmsBalance = async (req, res) => {
       // Enregistre la carte pour permettre la recharge automatique off-session.
       payment_intent_data: { setup_future_usage: "off_session" },
       metadata: { type: "sms_topup", userId: req.user._id.toString(), amountCents: String(amountCents) },
-      success_url: `${env.appBaseUrl || "https://www.branshee.com"}/customize?smsTopupSuccess=1&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url:  `${env.appBaseUrl || "https://www.branshee.com"}/customize`,
+      success_url: `${env.appBaseUrl || "https://www.branshee.com"}/sms?smsTopupSuccess=1&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${env.appBaseUrl || "https://www.branshee.com"}/sms`,
     });
 
     res.json({ url: session.url });
@@ -893,6 +929,28 @@ exports.editBusinessInfo = async (req, res) => {
     // fichier multipart ici, juste le path renvoyé par l'upload précédent.
     if (businessPicture) update.businessPicture = businessPicture;
     await User.findByIdAndUpdate(req.user._id, update);
+
+    // Le "nom de l'établissement" édité dans Personnaliser est le nom de
+    // l'ÉTABLISSEMENT ACTIF (company.name) — c'est lui qui s'affiche dans le
+    // sélecteur en haut à gauche et sur la page publique. On l'écrit donc aussi
+    // sur la Company active (dual-write ; user.businessName reste le fallback).
+    try {
+      const Company = require("../db/models/company/company.model");
+      let companyId = req.session?.activeCompanyId || null;
+      if (!companyId) {
+        const first = await Company.findOne({ owner: req.user._id, isDeleted: { $ne: true } })
+          .sort({ createdAt: 1 }).select("_id").lean();
+        companyId = first?._id || null;
+      }
+      if (companyId) {
+        const cUpd = {};
+        if (businessName !== undefined) cUpd.name = businessName || "";
+        if (businessType !== undefined) cUpd.businessType = businessType || "";
+        if (businessPicture) cUpd.photo = businessPicture;
+        if (Object.keys(cUpd).length) await Company.findByIdAndUpdate(companyId, cUpd);
+      }
+    } catch (e) { console.error("[editBusinessInfo] sync company:", e.message); }
+
     return res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -1324,19 +1382,38 @@ exports.updateReminderSettings = async (req, res) => {
       .filter((m) => allowedPaymentMethods.includes(m));
     const paymentNote = (req.body.reminderPaymentNote || "").trim().slice(0, 200);
 
-    const smsRemindersEnabled = !!req.body.smsRemindersEnabled;
-    const smsAllowOverage     = !!req.body.smsAllowOverage;
+    const smsRemindersEnabled    = !!req.body.smsRemindersEnabled;
+    const smsConfirmationEnabled = !!req.body.smsConfirmationEnabled;
+    const smsAllowOverage        = !!req.body.smsAllowOverage;
 
     const update = {
-      "calendarSettings.reminderDelayHours":     delayHours,
-      "calendarSettings.reminderMessage":        message,
-      "calendarSettings.reminderPaymentMethods": paymentMethods,
-      "calendarSettings.reminderPaymentNote":    paymentNote,
-      "calendarSettings.smsRemindersEnabled":    smsRemindersEnabled,
-      "calendarSettings.smsAllowOverage":        smsAllowOverage,
+      "calendarSettings.reminderDelayHours":       delayHours,
+      "calendarSettings.reminderMessage":          message,
+      "calendarSettings.reminderPaymentMethods":   paymentMethods,
+      "calendarSettings.reminderPaymentNote":      paymentNote,
+      "calendarSettings.smsRemindersEnabled":      smsRemindersEnabled,
+      "calendarSettings.smsConfirmationEnabled":   smsConfirmationEnabled,
+      "calendarSettings.smsAllowOverage":          smsAllowOverage,
     };
 
     await User.findByIdAndUpdate(req.user._id, { $set: update });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false });
+  }
+};
+
+// ── Réglages SMS (page SMS dédiée) : uniquement les 3 bascules ──────────────
+exports.updateSmsSettings = async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: {
+        "calendarSettings.smsRemindersEnabled":    !!req.body.smsRemindersEnabled,
+        "calendarSettings.smsConfirmationEnabled": !!req.body.smsConfirmationEnabled,
+        "calendarSettings.smsAllowOverage":        !!req.body.smsAllowOverage,
+      },
+    });
     return res.json({ success: true });
   } catch (err) {
     console.error(err);

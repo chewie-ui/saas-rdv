@@ -39,6 +39,14 @@ block content
             h1.sub-hero__title= t.subscription.hero_title || 'Des prix simples. Pas de surprises.'
             p.sub-hero__sub= t.subscription.hero_sub || 'Commencez gratuitement. Passez au Pro quand votre activité décolle.'
 
+            //- Le forfait est porté par l'établissement : on indique lequel sera
+            //- concerné (l'établissement actif). Pour en faire passer un autre,
+            //- basculer dessus via le sélecteur d'établissement.
+            if currentCompany
+                p.sub-hero__scope(style="margin-top:10px;font-size:13px;color:var(--text-muted,#6b7280)")
+                    span.material-symbols-outlined(style="font-size:16px;vertical-align:-3px;margin-right:5px") storefront
+                    | Forfait pour l'établissement : #[strong= currentCompany.name || 'Mon établissement']
+
             //- Billing toggle
             .sub-toggle
                 button.sub-toggle__btn#billMonthly(class="active")= t.subscription.monthly || 'Mensuel'

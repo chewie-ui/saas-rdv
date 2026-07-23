@@ -1,3 +1,125 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Espace client — « Mes rendez-vous » (refonte propre, icônes Material Symbols)
+   ══════════════════════════════════════════════════════════════════════════ */
+/* Pleine largeur (comme les pages admin) — plus de colonne centrée étroite. */
+.ec-page { max-width: none; color: var(--text-primary, #0f172a); padding-bottom: 40px; }
+
+.ec-toolbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  flex-wrap: wrap; margin-bottom: 22px;
+}
+.ec-toolbar__count { font-size: 14px; color: var(--text-muted, #6b7280); margin: 0; }
+
+/* Bannière « devenez pro » */
+.ec-pro {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 18px; margin-bottom: 24px;
+  border: 1px solid #bbf7d0; border-radius: 16px;
+  background: linear-gradient(180deg, #f0fdf4, #fff 70%);
+  text-decoration: none; color: inherit;
+}
+.ec-pro__ic {
+  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+  width: 46px; height: 46px; border-radius: 13px; background: #dcfce7; color: #16a34a;
+}
+.ec-pro__ic .material-symbols-outlined { font-size: 26px; }
+.ec-pro__txt { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.ec-pro__badge { align-self: flex-start; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #15803d; background: #dcfce7; border-radius: 999px; padding: 2px 8px; margin-bottom: 2px; }
+.ec-pro__title { font-size: 14.5px; font-weight: 700; }
+.ec-pro__sub { font-size: 12.5px; color: var(--text-secondary, #64748b); line-height: 1.45; }
+.ec-pro__arrow { color: #16a34a; flex-shrink: 0; }
+
+/* État vide */
+.ec-empty { text-align: center; padding: 54px 24px; border: 1px solid var(--border-light, #eceae6); border-radius: 16px; }
+.ec-empty--sm { padding: 34px 20px; }
+.ec-empty__ic { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; margin-bottom: 12px; border-radius: 15px; background: var(--surface, #f1f5f9); color: var(--text-muted, #94a3b8); }
+.ec-empty__ic .material-symbols-outlined { font-size: 28px; }
+.ec-empty__title { font-size: 15px; font-weight: 700; margin: 0; }
+.ec-empty__sub { font-size: 13px; color: var(--text-muted, #6b7280); margin: 5px 0 16px; }
+
+/* ── Cartes « Rendez-vous à venir » ─────────────────────────────────────────
+   En-tête (photo + nom / pastille date) · bande d'infos · pied d'actions. */
+.ec-cards { display: flex; flex-direction: column; gap: 14px; }
+.ec-card {
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 20px 22px; border: 1px solid var(--border-light, #eceae6); border-radius: 18px; background: #fff;
+  transition: box-shadow .15s, border-color .15s;
+}
+.ec-card:hover { box-shadow: 0 10px 30px -16px rgba(16, 24, 40, .25); }
+.ec-card--next { border-color: #c9efd6; background: linear-gradient(180deg, #f7fefb, #fff 55%); }
+
+/* En-tête */
+.ec-card__top { display: flex; align-items: center; gap: 15px; }
+.ec-card__photo { flex-shrink: 0; width: 58px; height: 58px; border-radius: 14px; object-fit: cover; background: var(--surface, #f1f5f9); }
+.ec-card__id { flex: 1; min-width: 0; }
+.ec-card__head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ec-card__pro { font-size: 16px; font-weight: 700; }
+.ec-card__type { font-size: 11px; font-weight: 700; color: var(--text-secondary, #64748b); background: var(--surface, #f1f5f9); border-radius: 6px; padding: 2px 8px; }
+.ec-card__svc { display: inline-flex; align-items: center; gap: 6px; margin-top: 5px; font-size: 13px; color: var(--text-secondary, #475569); }
+.ec-card__svc .material-symbols-outlined { font-size: 16px; color: var(--text-muted, #94a3b8); }
+
+/* Pastille date & heure (à droite) */
+.ec-when { display: flex; align-items: center; gap: 11px; flex-shrink: 0; padding: 9px 15px; border-radius: 13px; background: #fff; border: 1px solid #c9efd6; }
+.ec-when .material-symbols-outlined { font-size: 24px; color: #16a34a; }
+.ec-when__txt { display: flex; flex-direction: column; line-height: 1.25; }
+.ec-when__d { font-size: 13.5px; font-weight: 700; text-transform: capitalize; }
+.ec-when__t { font-size: 12px; color: var(--text-muted, #6b7280); }
+
+/* Bande d'infos */
+.ec-card__info { display: flex; flex-wrap: wrap; gap: 9px 30px; padding-top: 15px; border-top: 1px solid var(--border-light, #eceae6); }
+.ec-meta { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary, #475569); min-width: 0; max-width: 100%; }
+.ec-meta .material-symbols-outlined { font-size: 17px; color: var(--text-muted, #94a3b8); flex-shrink: 0; }
+.ec-meta span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ec-meta--link { text-decoration: none; color: var(--accent, #16a34a); }
+.ec-meta--link:hover { text-decoration: underline; }
+.ec-meta--link .material-symbols-outlined { color: var(--accent, #16a34a); }
+
+/* Pied d'actions */
+.ec-card__foot { display: flex; flex-wrap: wrap; gap: 10px; }
+.ec-card__cancel { margin-left: auto; }
+
+@media (max-width: 720px) {
+  .ec-card__top { flex-wrap: wrap; }
+  .ec-when { order: 3; width: 100%; justify-content: flex-start; }
+  .ec-card__foot .sm-btn { flex: 1 1 auto; justify-content: center; }
+  .ec-card__cancel { margin-left: 0; }
+}
+
+/* ── Tableaux (Historique / Avis) ───────────────────────────────────────────
+   Réutilise .ds-table / .ds-person / .ds-menu du design system commun.
+   Ici : seulement les helpers de cellule propres à cette page. */
+.ec-table { min-width: 720px; }                       /* évite l'écrasement ; .ds-table-wrap scrolle en dessous */
+.ec-table tbody tr.is-canceled td { opacity: .6; }
+.ec-table .ds-person__img { border-radius: 11px; }    /* photos établissement = carré arrondi */
+
+/* Cellule « Prestation » */
+.ec-cell__main { font-weight: 600; color: var(--text-primary, #0f172a); }
+.ec-cell__sub { display: flex; align-items: center; gap: 5px; margin-top: 3px; font-size: 12.5px; color: var(--text-muted, #6b7280); }
+.ec-cell__sub .material-symbols-outlined { font-size: 15px; }
+
+/* Cellule « Date & heure » */
+.ec-when { display: flex; flex-direction: column; gap: 2px; }
+.ec-when__d { font-weight: 600; color: var(--text-primary, #0f172a); text-transform: capitalize; }
+.ec-when__t { font-size: 12.5px; color: var(--text-muted, #6b7280); }
+
+.ec-addr { display: inline-block; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary, #475569); vertical-align: bottom; }
+.ec-dash { color: var(--text-muted, #cbd5e1); }
+
+/* Badges de statut */
+.ec-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 4px 11px; }
+.ec-badge .material-symbols-outlined { font-size: 15px; }
+.ec-badge--past { background: var(--surface, #f1f5f9); color: var(--text-muted, #6b7280); }
+.ec-badge--canceled { background: #fef2f2; color: #dc2626; }
+.ec-badge--reviewed { background: #f0fdf4; color: #15803d; }
+
+/* Cellule « Note » (avis) */
+.ec-stars { display: inline-flex; gap: 1px; }
+.ec-stars .material-symbols-outlined { font-size: 18px; color: #d1d5db; }
+.ec-stars .material-symbols-outlined.is-on { color: #f59e0b; font-variation-settings: "FILL" 1; }
+.ec-comment { display: inline-block; max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: italic; color: var(--text-secondary, #64748b); vertical-align: bottom; }
+
+a.ds-ico { text-decoration: none; }
+
 /* ═══════════════════════════════════════════════════════════════
    CLIENT DASHBOARD — redesign
    ═══════════════════════════════════════════════════════════════ */

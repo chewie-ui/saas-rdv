@@ -36,6 +36,37 @@ const clientSchema = schema(
       default: "",
       trim: true,
     },
+    // Infos personnelles (facultatives) — affichées dans l'espace client.
+    birthDate: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    gender: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    address: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    postalCode: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    city: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    country: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     languages: {
       type: [String],
       default: [],

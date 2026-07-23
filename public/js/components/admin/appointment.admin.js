@@ -183,10 +183,12 @@ export const initAppointmentPopup = function () {
     if (detailBtn) detailBtn.href = `/clients-hub/${currentId}`;
     if (detailBtn) detailBtn.style.display = d.isBlock === "1" ? "none" : "";
 
-    // Dossier client (caché si pas d'email — événement "autre" sans client)
+    // Dossier client → fiche clients-hub, onglet « Dossier » (et non plus
+    // l'ancienne page /clients/:email). Caché si pas d'email (événement
+    // "autre" sans client, ou dossier impossible à tenir sans email).
     if (dossierBtn) {
-      if (d.email) {
-        dossierBtn.href = `/clients/${encodeURIComponent(d.email)}`;
+      if (d.email && d.isBlock !== "1") {
+        dossierBtn.href = `/clients-hub/${currentId}?tab=dossier`;
         dossierBtn.style.display = "";
       } else {
         dossierBtn.style.display = "none";

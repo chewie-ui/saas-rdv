@@ -203,6 +203,9 @@ router.post("/forms/save", isVerified, requirePermission("forms.manage"), adminC
 
 router.get("/customize-calendar", isAuth, injectCompany, requirePermission("customization.manage"), adminController.customizeCalendarPage);
 
+// Page SMS dédiée (rappels + confirmation + crédits).
+router.get("/sms", isAuth, injectCompany, requirePermission("customization.manage"), adminController.smsPage);
+
 router.get("/support", isVerified, adminController.supportPage);
 router.get("/support/chat", isAuth, adminController.getSupportChat);
 router.get("/support/chat/unread-count", isAuth, adminController.getSupportChatUnreadCount);

@@ -57,8 +57,12 @@ const LIMITS = {
   // Max employees (0 = feature locked on free — team is a Pro differentiator)
   employees: { basic: 0, essentiel: 0, pro: 5, business: 10 },
 
-  // Max établissements possédés
-  companies: { basic: 1, essentiel: 1, pro: 1, business: 5 },
+  // Max établissements possédés.
+  // Le forfait est porté par l'établissement, pas par l'utilisateur : tout le
+  // monde peut créer 1 établissement gratuitement. Pour en créer d'autres, il
+  // faut qu'un établissement soit sur un forfait payant à partir de Pro
+  // (essentiel reste limité à 1, comme le gratuit).
+  companies: { basic: 1, essentiel: 1, pro: Infinity, business: Infinity },
 
   // Max collaborateurs (CompanyMembership) inclus gratuitement par établissement.
   // Au-delà : sièges supplémentaires à +10€/mois chacun (voir getCollaboratorLimit).
@@ -140,7 +144,45 @@ function getSmsQuota(user) {
   return LIMITS.smsReminders[getPlan(user)] || 0;
 }
 
+/**
+ * Forfait EFFECTIF d'un établissement.
+ * Le forfait est porté par l'établissement (company.plan). Tant que la
+ * facturation par établissement n'est pas branchée, `company.plan` est vide
+ * et on hérite du forfait du compte owner (compat).
+ */
+function getCompanyPlan(company, owner) {
+  if (company && company.plan && PLANS[company.plan] != null) {
+    if (!company.planStatus || company.planStatus === "active") return company.plan;
+  }
+  return getPlan(owner);
+}
+
+/**
+ * Peut-on créer un nouvel établissement ? (règle métier exacte)
+ *
+ * - Chaque compte a droit à 1 établissement gratuit.
+ * - Pour en créer un de plus, TOUS les établissements existants doivent être
+ *   payants (Pro minimum) — un seul gratuit toléré à la fois.
+ * - Exception : chaque établissement Business ouvre droit à 1 gratuit
+ *   supplémentaire.
+ *
+ *   nbGratuitsAutorisés = 1 + nbBusiness
+ *   création autorisée   ⇔  nbGratuitsActuels < nbGratuitsAutorisés
+ *
+ * @param {Array} companies  établissements possédés (docs Company)
+ * @param {Object} owner     compte propriétaire (fallback forfait)
+ * @returns {{canCreate:boolean, freeCount:number, businessCount:number, allowedFree:number}}
+ */
+function canCreateEstablishment(companies, owner) {
+  const plans = (companies || []).map((c) => getCompanyPlan(c, owner));
+  const freeCount = plans.filter((p) => PLANS[p] < PLANS.pro).length; // basic/essentiel
+  const businessCount = plans.filter((p) => p === "business").length;
+  const allowedFree = 1 + businessCount;
+  return { canCreate: freeCount < allowedFree, freeCount, businessCount, allowedFree };
+}
+
 module.exports = {
   getPlan, atLeast, getLimit, getCollaboratorLimit, getSmsQuota,
+  getCompanyPlan, canCreateEstablishment,
   LIMITS, PLANS,
 };

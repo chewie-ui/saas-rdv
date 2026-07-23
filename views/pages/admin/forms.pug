@@ -4,156 +4,144 @@ block links
     link(rel="stylesheet", href="/css/layouts/forms.css")
 
 block content
-    .forms-page
+    .fm-page
         - var formsLocked = (maxQuestions === 0)
+        - var qCount = (form && form.questions) ? form.questions.length : 0
+        - var isActive = !!(form && form.active)
 
-        //- ── Page header ────────────────────────────────────────────
-        .forms-page__header
-            .forms-page__header-left
-                h2= t.forms.title
-                p.forms-page__subtitle= t.forms.subtitle
-            .forms-page__header-right
-                .forms-status-badge#formStatusBadge(class=(form && form.active) ? 'forms-status-badge--on' : '')
-                    span#formStatusLabel= (form && form.active) ? t.forms.active_label : t.forms.inactive_label
-                label.forms-active-toggle
-                    input#formActiveToggle(type="checkbox" checked=(form && form.active) disabled=formsLocked)
-                    .forms-active-toggle__track
+        section.fm-section
+            //- ── En-tête de section ─────────────────────────────────────────
+            .fm-section__head
+                .fm-section__headtext
+                    h2.fm-section__title= t.forms.title
+                    p.fm-section__desc= t.forms.subtitle
                 button.sm-btn.sm-btn--primary#saveFormBtn(type="button" disabled=formsLocked)
-                    span.material-symbols-outlined(style=`font-size:18px`) save
+                    span.material-symbols-outlined(style="font-size:18px") save
                     span= t.forms.save
 
-        //- ── Aperçu verrouillé (plan Basic) ──────────────────────────
-        //- Plan basic : 1 question gratuite visible + upsell banner au-dessus.
-        //- Plan sans formulaire (maxQuestions === 0) : aperçu flouté complet.
-        if formsLocked
-            .plan-gate
-                span.plan-gate__lock 🔒
-                .plan-gate__body
-                    strong.plan-gate__title Formulaire de pré-réservation
-                    span.plan-gate__sub Disponible uniquement dans les plans Pro & Business.
-                a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
-        else if currentPlan === 'basic'
-            .plan-gate
-                span.plan-gate__lock 🔒
-                .plan-gate__body
-                    strong.plan-gate__title 1 question incluse (plan gratuit)
-                    span.plan-gate__sub Passez au plan Pro pour créer jusqu'à 5 questions.
-                a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
+            //- ── Verrous de plan ────────────────────────────────────────────
+            if formsLocked
+                .fm-gate
+                    span.material-symbols-outlined.fm-gate__ic lock
+                    .fm-gate__body
+                        strong Formulaire de pré-réservation
+                        span Disponible dans les plans Pro & Business.
+                    a.fm-gate__cta(href="/subscription") Passer au Pro
+            else if currentPlan === 'basic'
+                .fm-gate
+                    span.material-symbols-outlined.fm-gate__ic lock
+                    .fm-gate__body
+                        strong 1 question incluse (plan gratuit)
+                        span Passez au Pro pour créer jusqu'à 5 questions.
+                    a.fm-gate__cta(href="/subscription") Passer au Pro
 
-        //- ── Plan limit banner ─────────────────────────────────────
-        if maxQuestions > 0
-            - var qCount = (form && form.questions) ? form.questions.length : 0
-            - var qAtLimit = qCount >= maxQuestions
-            if currentPlan === 'basic'
-                .plan-gate#questionLimitBanner(style=!qAtLimit ? 'display:none' : '')
-                    span.plan-gate__lock 🔒
-                    .plan-gate__body
-                        strong.plan-gate__title Limite atteinte — #{maxQuestions}/#{maxQuestions} question
-                        span.plan-gate__sub Disponible uniquement dans les plans Pro & Business.
-                    a.btn-upgrade-pro.plan-gate__cta(href="/subscription") Passer au Pro →
-            else if currentPlan === 'pro'
-                .plan-gate#questionLimitBanner(style=!qAtLimit ? 'display:none' : '')
-                    span.plan-gate__lock 🔒
-                    .plan-gate__body
-                        strong.plan-gate__title Limite Pro atteinte — #{maxQuestions}/#{maxQuestions} questions
-                        span.plan-gate__sub Disponible uniquement dans le plan Business.
-                    a.btn-upgrade-business.plan-gate__cta(href="/subscription") Passer au Business →
-            else if currentPlan === 'business'
-                .plan-gate#questionLimitBanner(style=!qAtLimit ? 'display:none' : '')
-                    span.plan-gate__lock 🔒
-                    .plan-gate__body
-                        strong.plan-gate__title Limite maximale atteinte — #{maxQuestions}/#{maxQuestions} questions
-                        span.plan-gate__sub Vous avez atteint la limite de votre plan Business.
+            if maxQuestions > 0
+                - var qAtLimit = qCount >= maxQuestions
+                .fm-gate.fm-gate--warn#questionLimitBanner(style=!qAtLimit ? 'display:none' : '')
+                    span.material-symbols-outlined.fm-gate__ic bolt
+                    .fm-gate__body
+                        strong= 'Limite atteinte — ' + maxQuestions + '/' + maxQuestions + (maxQuestions > 1 ? ' questions' : ' question')
+                        if currentPlan === 'business'
+                            span Vous avez atteint la limite maximale de votre plan.
+                        else
+                            span= currentPlan === 'pro' ? 'Passez au Business pour davantage de questions.' : 'Passez au Pro pour créer jusqu\'à 5 questions.'
+                    if currentPlan !== 'business'
+                        a.fm-gate__cta(href="/subscription")= currentPlan === 'pro' ? 'Passer au Business' : 'Passer au Pro'
 
-        //- ── Two-column grid ────────────────────────────────────────
-        //- Toujours rendu — y compris pour le plan Basic — afin que
-        //- l'utilisateur voie un aperçu (verrouillé/flouté en CSS via
-        //- `.forms-grid--locked`) plutôt qu'un bloc entièrement masqué.
-        .forms-grid(class=formsLocked ? 'forms-grid--locked' : '')
+            //- ── Ligne : statut (activé / désactivé) ────────────────────────
+            .fm-row#fmStateCard(class=isActive ? 'is-on' : '')
+                .fm-row__label
+                    | Statut du formulaire
+                    p.fm-row__desc Activé, vos clients répondent à vos questions avant de confirmer leur rendez-vous.
+                .fm-row__field
+                    .fm-status
+                        span.fm-status__txt
+                            span.fm-status__dot
+                            span#fmStateTitle= isActive ? 'Activé — vos clients voient le formulaire' : 'Désactivé — réservation directe'
+                        label.fm-switch(for="formActiveToggle")
+                            input#formActiveToggle(type="checkbox" checked=isActive disabled=formsLocked)
+                            span.fm-switch__track
 
-            //- ── LEFT: Form builder ─────────────────────────────
-            .forms-builder-card
-                .forms-builder-card__head
-                    h3.forms-card-title= t.forms.builder_title
-                    if !formsLocked
-                        span.forms-autosave
-                            span.material-symbols-outlined(style=`font-size:12px`) check
-                            | Auto-sauvegardé
+            //- ── Ligne : questions ──────────────────────────────────────────
+            .fm-row.fm-row--top
+                .fm-row__label
+                    | Questions
+                    p.fm-row__desc
+                        span= t.forms.empty_desc
+                        span.fm-counter#questionsCounter
+                .fm-row__field
+                    .fm-qlist#questionsList
+                    .fm-empty#emptyState(style=(qCount > 0) ? 'display:none' : '')
+                        span.fm-empty__ic
+                            span.material-symbols-outlined list_alt
+                        p.fm-empty__title= t.forms.empty
+                    button.fm-add#addQuestionBtn(type="button" disabled=formsLocked)
+                        span.material-symbols-outlined(style="font-size:18px") add
+                        span= t.forms.add_question
 
-                .forms-question-list#questionsList
+            //- ── Ligne : aperçu client ──────────────────────────────────────
+            .fm-row.fm-row--top
+                .fm-row__label
+                    | Aperçu client
+                    p.fm-row__desc Ce que voient vos clients avant de confirmer.
+                .fm-row__field
+                    .fm-preview__sheet
+                        .fm-preview__title#previewTitle= t.forms.form_step_title
+                        .fm-preview__sub#previewSubtitle= t.forms.form_step_subtitle
+                        .fm-preview__questions#previewQuestions
+                        button.fm-preview__btn(disabled)= t.forms.form_next
 
-                .forms-builder__empty#emptyState(style=(form && form.questions && form.questions.length > 0) ? "display:none" : "")
-                    span.material-symbols-outlined(style=`font-size:40px`) list_alt
-                    p.forms-empty__title= t.forms.empty
-                    p.forms-empty__desc= t.forms.empty_desc
+    //- ── Modale : ajouter / modifier une question ───────────────────────────
+    .fm-modal#modalOverlay
+        .fm-modal__box
+            .fm-modal__head
+                h3#modalTitle= t.forms.add_question
+                button.fm-modal__x#closeModalBtn(type="button" aria-label="Fermer")
+                    span.material-symbols-outlined(style="font-size:20px") close
+            .fm-modal__body
+                .fm-field
+                    label.fm-label= t.forms.question_label
+                    input.fm-input#questionLabelInput(type="text" placeholder=t.forms.question_placeholder maxlength="140")
+                .fm-field
+                    label.fm-label= t.forms.question_type
+                    .fm-types#typeSelector
+                        button.fm-type.is-active(type="button" data-type="text")
+                            span.material-symbols-outlined notes
+                            span= t.forms.type_text
+                        button.fm-type(type="button" data-type="yes_no")
+                            span.material-symbols-outlined rule
+                            span= t.forms.type_yes_no
+                        button.fm-type(type="button" data-type="choice")
+                            span.material-symbols-outlined list
+                            span= t.forms.type_choice
+                .fm-field#optionsSection(style="display:none")
+                    label.fm-label= t.forms.options_label
+                    #optionsList.fm-options
+                    button.fm-add-opt#addOptionBtn(type="button")
+                        span.material-symbols-outlined(style="font-size:16px") add
+                        span= t.forms.add_option
+                label.fm-req
+                    .fm-switch.fm-switch--sm
+                        input#questionRequired(type="checkbox")
+                        span.fm-switch__track
+                    span= t.forms.required
+            .fm-modal__foot
+                button.sm-btn.sm-btn--ghost#cancelModalBtn(type="button")= t.forms.cancel
+                button.sm-btn.sm-btn--primary#confirmModalBtn(type="button")= t.forms.confirm
 
-                button.forms-add-dashed#addQuestionBtn(type="button" disabled=formsLocked)
-                    span.material-symbols-outlined(style=`font-size:16px`) add
-                    span= t.forms.add_question
-
-            //- ── RIGHT: Live preview ─────────────────────────────
-            .forms-preview-card
-                .forms-preview-card__head
-                    h3.forms-card-title= t.forms.preview_title
-
-                .forms-preview-card__body
-                    .forms-preview-phone
-                        .forms-preview-phone__inner
-                            h3.preview-step-title#previewTitle= t.forms.form_step_title
-                            p.preview-step-sub#previewSubtitle= t.forms.form_step_subtitle
-                            .preview-phone__questions#previewQuestions
-                                //- Rendered by JS
-                            button.sm-btn.sm-btn--primary.preview-confirm-btn(disabled)= t.forms.form_next
-
-    //- ── Modal: add / edit question ─────────────────────────────────
-    .modal-overlay#modalOverlay
-    .forms-modal#questionModal
-        .forms-modal__header
-            h3#modalTitle= t.forms.add_question
-            button.btn--icon.modal-close#closeModalBtn(type="button")
-                span.material-symbols-outlined(style=`font-size:20px`) close
-
-        .forms-modal__body
-            .field
-                label.forms-modal__label= t.forms.question_label
-                input.input#questionLabelInput(type="text" placeholder=t.forms.question_placeholder)
-
-            .field
-                label.forms-modal__label= t.forms.question_type
-                .forms-type-selector#typeSelector
-                    button.forms-type-btn.active(type="button" data-type="text")= t.forms.type_text
-                    button.forms-type-btn(type="button" data-type="yes_no")= t.forms.type_yes_no
-                    button.forms-type-btn(type="button" data-type="choice")= t.forms.type_choice
-
-            .field#optionsSection(style="display:none")
-                label.forms-modal__label= t.forms.options_label
-                #optionsList.forms-options-list
-                button.sm-btn.sm-btn--ghost#addOptionBtn(type="button")
-                    span.material-symbols-outlined(style=`font-size:14px`) add
-                    span= t.forms.add_option
-
-            label.forms-check-row
-                input#questionRequired(type="checkbox")
-                span= t.forms.required
-
-        .forms-modal__footer
-            button.sm-btn.sm-btn--ghost#cancelModalBtn(type="button")= t.forms.cancel
-            button.sm-btn.sm-btn--primary#confirmModalBtn(type="button")= t.forms.confirm
-
-    //- ── Sticky unsaved bar ─────────────────────────────────────────────
-    .forms-unsaved-bar#formsUnsavedBar
-        .forms-unsaved-bar__left
-            span.material-symbols-outlined(style=`font-size:16px`) info
-            span Modifications non sauvegardées
+    //- ── Barre « modifications non sauvegardées » ───────────────────────────
+    .fm-unsaved#formsUnsavedBar
+        span.material-symbols-outlined(style="font-size:18px") info
+        span Modifications non sauvegardées
         button.sm-btn.sm-btn--primary#unsavedSaveBtn(type="button")
-            span.material-symbols-outlined(style=`font-size:16px`) save
+            span.material-symbols-outlined(style="font-size:16px") save
             span Sauvegarder
 
-    //- Hidden data for JS
     script.
-        window.__formData    = !{JSON.stringify(form || { active: false, questions: [] })};
-        window.__tForms      = !{JSON.stringify(t.forms)};
+        window.__formData     = !{JSON.stringify(form || { active: false, questions: [] })};
+        window.__tForms       = !{JSON.stringify(t.forms)};
         window.__maxQuestions = !{maxQuestions || 0};
 
 block scripts
+    script(src="/js/components/ds-drag.js")
     script(src="/js/layouts/forms.admin.js" type="module")

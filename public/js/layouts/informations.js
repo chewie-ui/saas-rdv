@@ -31,7 +31,6 @@ if (uploadBtn && fileInput && avatarPreview) {
 // ── Business photo upload ─────────────────────────────────────────────────────
 const uploadBusinessBtn  = document.getElementById("uploadBusinessBtn");
 const businessFileInput  = document.getElementById("businessFileInput");
-const businessPicWrapper = document.getElementById("businessPicPreview");
 
 if (uploadBusinessBtn && businessFileInput) {
   uploadBusinessBtn.onclick = () => businessFileInput.click();
@@ -40,24 +39,20 @@ if (uploadBusinessBtn && businessFileInput) {
     const file = businessFileInput.files[0];
     if (!file) return;
 
-    // Show immediate preview — replace placeholder div with img if needed
-    let previewImg = businessPicWrapper;
-    if (previewImg) {
-      if (previewImg.tagName === "IMG") {
-        previewImg.src = URL.createObjectURL(file);
-      } else {
-        // Was a placeholder div — swap to an img
-        const img = document.createElement("img");
-        img.id = "businessPicPreview";
-        img.alt = "Photo établissement";
-        img.src = URL.createObjectURL(file);
-        img.style.width = "100%";
-        img.style.height = "100%";
-        img.style.objectFit = "cover";
-        previewImg.replaceWith(img);
-        previewImg = img;
-      }
-    }
+    const wrapper = document.querySelector(".biz-photo-preview");
+    // On mémorise s'il n'y avait pas de photo, pour pouvoir revenir exactement à
+    // l'état de départ si l'upload échoue.
+    const wasEmpty = wrapper ? wrapper.classList.contains("biz-photo-preview--empty") : true;
+    const blobUrl = URL.createObjectURL(file);
+
+    // Aperçu immédiat : on garantit un <img> visible dans le cadre, que l'état
+    // précédent soit le placeholder « appareil photo » (aucune photo) ou une
+    // photo existante. On re-cherche le nœud à chaque fois (pas de référence
+    // figée au chargement, qui devenait périmée après un cycle suppr./ajout).
+    const img = ensureBizPreviewImg();
+    if (img) img.src = blobUrl;
+    if (wrapper) wrapper.classList.remove("biz-photo-preview--empty");
+    updateBizIncompleteBanner();
 
     try {
       const data = await window.BkImageUpload.uploadImage({
@@ -66,20 +61,79 @@ if (uploadBusinessBtn && businessFileInput) {
         fieldName: "businessPicture",
         file,
       });
-      if (data.path && previewImg) {
-        previewImg.src = data.path;
-        // Si c'était un placeholder, l'img a été swappée — on récupère le nouveau nœud
-        const freshPreview = document.querySelector(".biz-photo-preview");
-        if (freshPreview) freshPreview.classList.remove("biz-photo-preview--empty");
+
+      if (!data || !data.path) {
+        // Pas d'erreur réseau, mais le serveur n'a pas renvoyé de chemin.
+        if (wasEmpty) restoreBizPlaceholder();
+        updateBizIncompleteBanner();
+        URL.revokeObjectURL(blobUrl);
+        if (typeof window.alertModal === "function") {
+          window.alertModal(
+            "Le serveur n'a pas pu enregistrer la photo. Réessayez avec une autre image.",
+            "Photo non ajoutée",
+            { icon: "error", danger: true }
+          );
+        }
+        return;
       }
+
+      // On ne bascule sur l'URL serveur qu'une fois qu'elle est réellement
+      // chargeable — évite un flash « image cassée » si l'écriture disque a un
+      // instant de retard. Tant que c'est en attente, l'aperçu blob reste visible.
+      await swapBizImgWhenLoaded(img, data.path);
+      URL.revokeObjectURL(blobUrl);
       updateBizDeleteBtn(true);
       updateBizIncompleteBanner();
     } catch (err) {
-      // L'erreur est déjà affichée à l'écran par BkImageUpload.
+      // BkImageUpload a déjà affiché un beau popup pour cette erreur : on se
+      // contente de revenir à l'état précédent.
+      URL.revokeObjectURL(blobUrl);
+      if (wasEmpty) restoreBizPlaceholder();
+      updateBizIncompleteBanner();
     } finally {
       businessFileInput.value = "";
     }
   };
+}
+
+// Garantit un <img id="businessPicPreview"> dans le cadre et le renvoie.
+function ensureBizPreviewImg() {
+  const wrapper = document.querySelector(".biz-photo-preview");
+  if (!wrapper) return null;
+  const current = wrapper.querySelector("#businessPicPreview");
+  if (current && current.tagName === "IMG") return current;
+  const img = document.createElement("img");
+  img.id = "businessPicPreview";
+  img.alt = "Photo de l'établissement";
+  if (current) current.replaceWith(img);
+  else wrapper.appendChild(img);
+  return img;
+}
+
+// Remet le placeholder « appareil photo » (état sans photo).
+function restoreBizPlaceholder() {
+  const wrapper = document.querySelector(".biz-photo-preview");
+  if (!wrapper) return;
+  const current = wrapper.querySelector("#businessPicPreview");
+  const ph = document.createElement("div");
+  ph.id = "businessPicPreview";
+  ph.className = "biz-photo-placeholder";
+  ph.innerHTML = '<span class="material-symbols-outlined" style="font-size:32px">photo_camera</span>';
+  if (current) current.replaceWith(ph);
+  else wrapper.appendChild(ph);
+  wrapper.classList.add("biz-photo-preview--empty");
+  updateBizDeleteBtn(false);
+}
+
+// Précharge l'URL serveur et ne l'applique que si elle se charge bien.
+function swapBizImgWhenLoaded(img, url) {
+  return new Promise((resolve) => {
+    if (!img) return resolve();
+    const probe = new Image();
+    probe.onload = () => { img.src = url; resolve(); };
+    probe.onerror = () => resolve(); // on garde l'aperçu blob, déjà affiché
+    probe.src = url;
+  });
 }
 
 // ── Supprimer photo établissement ─────────────────────────────────────────────

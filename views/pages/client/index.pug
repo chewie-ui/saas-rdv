@@ -694,6 +694,75 @@ block scripts
             }
         })();
     script.
+        // ── Auto-redimensionnement de l'iframe d'intégration ───────────────────
+        // Quand la page de réservation est chargée dans une iframe sur un site
+        // tiers, elle mesure sa propre hauteur et l'envoie au script du code
+        // d'intégration (voir « Personnaliser › Intégration »). Sans ça, l'iframe
+        // garde sa hauteur initiale : sur un écran peu haut, le bas du tunnel
+        // (bouton « Continuer », créneaux…) est coupé et impossible à atteindre.
+        (function () {
+            if (window.self === window.top) return; // pas dans une iframe
+
+            // Mode embed → hauteur auto. Indispensable pour la mesure : sinon le
+            // <html>/<body> hérite de la hauteur de l'iframe et la valeur boucle.
+            document.documentElement.classList.add('bk-embed');
+            document.body.classList.add('bk-embed');
+
+            var derniere = 0;
+            var enAttente = false;
+
+            function mesurer() {
+                // On mesure sur le <body> uniquement : le scrollHeight du <html>
+                // ne descend jamais sous la hauteur courante de l'iframe (il est
+                // « plafonné » à la fenêtre), ce qui empêcherait de rétrécir et
+                // pourrait faire dériver la hauteur de +N px à chaque tick.
+                var b = document.body;
+                if (!b) return 0;
+                return Math.max(b.scrollHeight, b.offsetHeight, Math.ceil(b.getBoundingClientRect().height));
+            }
+
+            function envoyer() {
+                enAttente = false;
+                var haut = mesurer();
+                // Seuil de 2px : évite un aller-retour permanent sur des écarts
+                // d'arrondi sub-pixel (et donc une boucle avec le parent).
+                if (!haut || Math.abs(haut - derniere) < 2) return;
+                derniere = haut;
+                try {
+                    window.parent.postMessage({ type: 'branshee-resize', height: haut }, '*');
+                } catch (e) {}
+            }
+
+            function planifier() {
+                if (enAttente) return;
+                enAttente = true;
+                // setTimeout plutôt que requestAnimationFrame : dans une iframe
+                // occultée, le navigateur throttle rAF (parfois ~1 img/s), ce qui
+                // retarderait le recalcul de hauteur d'une seconde ou plus.
+                setTimeout(envoyer, 16);
+            }
+
+            // Déclencheurs : chargement complet, redimensionnement, polices, et
+            // tout changement de contenu (étapes du tunnel, créneaux qui
+            // s'ouvrent, questionnaire…).
+            window.addEventListener('load', planifier);
+            window.addEventListener('resize', planifier);
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(planifier);
+
+            if (window.ResizeObserver) {
+                new ResizeObserver(planifier).observe(document.body);
+            }
+            if (window.MutationObserver) {
+                new MutationObserver(planifier).observe(document.body, {
+                    childList: true, subtree: true, attributes: true, characterData: true
+                });
+            }
+
+            // Filet de sécurité les premières secondes, le temps que les images
+            // et les polices finissent de se charger.
+            [0, 120, 350, 700, 1200, 2500].forEach(function (t) { setTimeout(planifier, t); });
+        })();
+    script.
         document.querySelectorAll('.bk-pill--copy').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 var val = btn.dataset.copy;

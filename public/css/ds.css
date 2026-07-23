@@ -878,6 +878,41 @@ input.ch-check {
 .ds-pager__btn:disabled { opacity: .45; cursor: default; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   DRAG & DROP (tri) — piloté par public/js/components/ds-drag.js
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* Poignée de saisie. touch-action:none = indispensable pour que le glisser
+   fonctionne au doigt (sinon le navigateur scrolle au lieu de déplacer). */
+.ds-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: grab;
+  touch-action: none;
+  border-radius: var(--ds-r-sm);
+  transition: color .12s, background .12s;
+}
+.ds-drag-handle:hover { color: var(--text-secondary); background: var(--surface-2); }
+.ds-drag-handle:active { cursor: grabbing; }
+.ds-drag-handle .material-symbols-outlined { font-size: 20px; }
+
+/* Item pendant qu'il est soulevé : ombre portée + léger agrandissement.
+   (Le script gère la position ; ici uniquement l'aspect « en l'air ».) */
+.ds-dragging {
+  box-shadow: var(--ds-shadow-lg, 0 16px 32px -8px rgba(16, 24, 40, .28));
+  transform-origin: center;
+  opacity: .98;
+  cursor: grabbing;
+}
+/* Pendant un glisser, on neutralise la sélection et on force le curseur. */
+body.ds-drag-active { cursor: grabbing; }
+body.ds-drag-active * { cursor: grabbing !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-dragging { box-shadow: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    ACCESSIBILITÉ
    ═══════════════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {

@@ -157,6 +157,13 @@
   }
 
   function showUploadErrorToast(message) {
+    // Popup soigné quand la modale commune est disponible (confirm-modal.js) —
+    // plus lisible qu'un toast pour une vraie erreur (image corrompue, trop
+    // grande, réseau…). Sinon, on retombe sur le toast autonome.
+    if (typeof window.alertModal === "function") {
+      window.alertModal(message, "Photo non ajoutée", { icon: "error", danger: true });
+      return;
+    }
     const existing = document.getElementById("bkUploadErrorToast");
     if (existing) existing.remove();
     const toast = document.createElement("div");

@@ -20,19 +20,13 @@ block content
                 //- chargement, l'onglet ouvert est « Général ».
                 h2.cz-header__title Général
                 p.cz-header__sub Le profil de votre établissement, votre présentation et vos sections.
-            .cz-tabs
-                button.cz-tab.is-active#czTabGeneral(type="button")
-                    span.material-symbols-outlined(style="font-size:16px") settings
-                    | &nbsp;Général
-                button.cz-tab#czTabRappels(type="button")
-                    span.material-symbols-outlined(style="font-size:16px") notifications
-                    | &nbsp;Rappels
-                button.cz-tab#czTabDesign(type="button")
-                    span.material-symbols-outlined(style="font-size:16px") palette
-                    | &nbsp;Design
-                button.cz-tab#czTabIntegration(type="button")
-                    span.material-symbols-outlined(style="font-size:16px") link
-                    | &nbsp;Intégration
+            //- Onglets partagés (.cz-tabs aliasé sur .ds-tabs dans ds.css) :
+            //- texte seul, comme la navigation commune (Clients, Collaborateurs).
+            nav.cz-tabs
+                button.cz-tab.is-active#czTabGeneral(type="button") Général
+                button.cz-tab#czTabRappels(type="button") Rappels
+                button.cz-tab#czTabDesign(type="button") Design
+                button.cz-tab#czTabIntegration(type="button") Intégration
 
         //- ── PANNEAU GÉNÉRAL ────────────────────────────────────────────────────
         .cz-panel#czPanelGeneral(style="display:none")
@@ -40,7 +34,7 @@ block content
         //- ── Profil de l'établissement ──────────────────────────────────────────
         -
             var _noPic  = !user.businessPicture
-            var _noName = !user.businessName
+            var _noName = !((currentCompany && currentCompany.name) || user.businessName)
             var _missingProfile = _noPic || _noName
             // Message ciblé sur ce qui manque VRAIMENT : afficher « ajoutez une
             // photo et un nom » alors que la photo est déjà là faisait douter.
@@ -76,14 +70,16 @@ block content
                             span Photo
                         button.sm-btn.sm-btn--ghost.sm-btn--danger#deleteBusinessPicBtn(type="button" style=user.businessPicture ? '' : 'display:none')
                             span Supprimer
+                - var _estName = (currentCompany && currentCompany.name) || user.businessName || ""
+                - var _estType = (currentCompany && currentCompany.businessType) || user.businessType || ""
                 .biz-fields
                     .field
                         label Nom de l'établissement
                         input.input#businessNameInput(
                             type="text"
-                            value=user.businessName || ""
+                            value=_estName
                             placeholder="Ex: Salon de Marie"
-                            class=!user.businessName ? 'input--warn' : ''
+                            class=!_estName ? 'input--warn' : ''
                         )
                     .field
                         label Type d'activité
@@ -92,7 +88,7 @@ block content
                                 type="text"
                                 placeholder="Ex: Coiffeur, Médecin, Coach sportif..."
                                 autocomplete="off"
-                                value=user.businessType || ""
+                                value=_estType
                             )
                             .service-dropdown#businessTypeDropdown
                         p.field-hint#businessTypeHint Ce métier n'est pas dans la liste conseillée.
@@ -108,9 +104,10 @@ block content
                         span.material-symbols-outlined(style="font-size:19px") article
                     h3 À propos
                     p.info-card__desc Présentez votre activité en détail — votre histoire, votre approche, ce qui vous distingue. Ce texte enrichi s'affiche dans la section « À propos » de votre page publique.
-                label.section-cb-label(for="toggleSectionAbout" title="Afficher la section « À propos » sur la page publique")
-                    input#toggleSectionAbout.toggle-cb(type="checkbox" checked=cs.showSectionAbout !== false)
-                    span.section-pill À propos
+                label.sec-vis(for="toggleSectionAbout" title="Afficher la section « À propos » sur la page publique")
+                    input#toggleSectionAbout.toggle-cb.sec-vis__cb(type="checkbox" checked=cs.showSectionAbout !== false)
+                    span.sec-vis__track
+                    span.sec-vis__name À propos
             .ds-alert.ds-alert--warning.section-off-banner(style="margin-bottom:16px")
                 span.ds-alert__ic.material-symbols-outlined visibility_off
                 .ds-alert__body
@@ -148,12 +145,14 @@ block content
                     h3 Localisation
                     p.info-card__desc Votre adresse est affichée sur la carte de votre page publique.
                 .info-card__header__cbs
-                    label.section-cb-label(for="toggleSectionMap" title="Afficher la carte sur la page publique")
-                        input#toggleSectionMap.toggle-cb(type="checkbox" checked=cs.showSectionMap !== false)
-                        span.section-pill Carte
-                    label.section-cb-label(for="toggleSectionHours" title="Afficher les horaires sur la page publique")
-                        input#toggleSectionHours.toggle-cb(type="checkbox" checked=cs.showSectionHours !== false)
-                        span.section-pill Horaires
+                    label.sec-vis(for="toggleSectionMap" title="Afficher la carte sur la page publique")
+                        input#toggleSectionMap.toggle-cb.sec-vis__cb(type="checkbox" checked=cs.showSectionMap !== false)
+                        span.sec-vis__track
+                        span.sec-vis__name Carte
+                    label.sec-vis(for="toggleSectionHours" title="Afficher les horaires sur la page publique")
+                        input#toggleSectionHours.toggle-cb.sec-vis__cb(type="checkbox" checked=cs.showSectionHours !== false)
+                        span.sec-vis__track
+                        span.sec-vis__name Horaires
             .location-layout
                 .location-map#mapContainer
                     if user.location && user.location.iframeUrl
@@ -308,9 +307,10 @@ block content
                         span.material-symbols-outlined(style="font-size:19px") photo_library
                     h3 Galerie photos
                     p.info-card__desc Ajoutez jusqu'à 12 photos pour illustrer votre espace.
-                label.section-cb-label(for="toggleSectionGallery" title="Afficher la galerie sur la page publique")
-                    input#toggleSectionGallery.toggle-cb(type="checkbox" checked=!!cs.showSectionGallery)
-                    span.section-pill Galerie
+                label.sec-vis(for="toggleSectionGallery" title="Afficher la galerie sur la page publique")
+                    input#toggleSectionGallery.toggle-cb.sec-vis__cb(type="checkbox" checked=!!cs.showSectionGallery)
+                    span.sec-vis__track
+                    span.sec-vis__name Galerie
             .ds-alert.ds-alert--warning.section-off-banner(style="margin-bottom:16px")
                 span.ds-alert__ic.material-symbols-outlined visibility_off
                 .ds-alert__body
@@ -526,8 +526,6 @@ block content
             else
                 .info-card
                     .info-card__header
-                        .cz-reminder-header-icon
-                            span.material-symbols-outlined(style="font-size:18px") notifications
                         .info-card__header__left
                             span.info-card__ic
                                 span.material-symbols-outlined(style="font-size:19px") notifications
@@ -588,69 +586,14 @@ block content
                                 span#czPaymentNoteCount= (cs.reminderPaymentNote || '').length
                                 | /200
 
-                    //- ── Rappel SMS ────────────────────────────────────────────
-                    .cz-reminder-section
-                        .cz-reminder-label
-                            span.material-symbols-outlined(style="font-size:15px") sms
-                            span Rappel par SMS
-
-                        //- Usage du quota inclus ce mois
-                        - var _smsPrice = (smsPriceCents / 100).toFixed(2)
-                        p.cz-reminder-hint(style="margin-bottom:6px")
-                            | Votre forfait inclut&nbsp;
-                            strong= `${smsQuota} SMS/mois`
-                            | . Une fois épuisé, comportement au choix ci-dessous.
-                        .cz-sms-usage-bar(style="height:8px;border-radius:99px;background:var(--border-light,#e5e7eb);overflow:hidden;margin-bottom:6px")
-                            - var _pct = smsQuota > 0 ? Math.min(100, Math.round(smsUsedThisMonth / smsQuota * 100)) : 0
-                            .cz-sms-usage-fill(style=`height:100%;width:${_pct}%;background:var(--accent,#1a7a4a);border-radius:99px`)
-                        p.cz-reminder-hint(style="margin-bottom:14px")
-                            strong= `${smsUsedThisMonth} / ${smsQuota}`
-                            | &nbsp;SMS inclus utilisés ce mois-ci
-
-                        //- Choix 1 : rappels par SMS ou par email
-                        label.cz-sms-toggle-row(style="display:flex;align-items:center;gap:10px;margin-bottom:6px")
-                            input#czSmsEnabled(type="checkbox" checked=calendarSettings.smsRemindersEnabled)
-                            span Envoyer les rappels par SMS (sinon par email)
-                        p.cz-reminder-hint(style="margin:0 0 16px 30px") Décoché = rappels uniquement par email. Coché = SMS, avec repli email automatique si l'envoi échoue.
-
-                        //- Choix 2 : autoriser le dépassement du forfait
-                        label.cz-sms-toggle-row(style="display:flex;align-items:center;gap:10px;margin-bottom:6px")
-                            input#czSmsOverage(type="checkbox" checked=calendarSettings.smsAllowOverage)
-                            span Continuer en SMS au-delà du forfait (utilise mon solde)
-                        p.cz-reminder-hint(style="margin:0 0 16px 30px")
-                            | Décoché (défaut) = une fois vos #{smsQuota} SMS inclus épuisés, on passe à l'email — votre solde n'est jamais touché.
-                            br
-                            | Coché = les SMS continuent, décomptés de votre solde (#{_smsPrice}€/SMS). Solde vide → repli email.
-
-                        //- Solde prépayé + recharge
-                        .cz-sms-balance-box(style="padding:14px;background:var(--surface,#f9fafb);border-radius:10px;border:1px solid var(--border-light,#e5e7eb);margin-bottom:12px")
-                            .cz-sms-balance-head(style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px")
-                                span(style="font-weight:600") Solde SMS prépayé
-                                strong#czSmsBalance(style="font-size:18px")= `${(smsBalanceCents / 100).toFixed(2)}€`
-                            p.cz-reminder-hint(style="margin:0 0 12px")
-                                = `Soit ~${Math.floor(smsBalanceCents / smsPriceCents)} SMS supplémentaires. Utilisé uniquement au-delà de votre quota inclus.`
-                            .cz-sms-topup-buttons(style="display:flex;gap:6px;flex-wrap:wrap")
-                                button.sm-btn.sm-btn--ghost.cz-sms-topup(type="button" data-pack="small") Recharger 10€
-                                button.sm-btn.sm-btn--ghost.cz-sms-topup(type="button" data-pack="medium") 20€
-                                button.sm-btn.sm-btn--ghost.cz-sms-topup(type="button" data-pack="large") 50€
-
-                        //- Recharge automatique (off-session)
-                        .cz-sms-autorecharge-box(style="padding:14px;background:var(--surface,#f9fafb);border-radius:10px;border:1px solid var(--border-light,#e5e7eb)")
-                            label(style="display:flex;align-items:center;gap:10px;margin-bottom:8px")
-                                input#czSmsArEnabled(type="checkbox" checked=smsAutoRecharge.enabled)
-                                span(style="font-weight:600") Recharge automatique
-                            p.cz-reminder-hint(style="margin:0 0 12px") Quand le solde passe sous le seuil, on reprélève automatiquement le montant choisi sur votre carte enregistrée. Vous n'êtes jamais à découvert, et jamais facturé après coup.
-                            .cz-sms-ar-config(style="display:flex;align-items:center;gap:10px;flex-wrap:wrap")
-                                span.cz-reminder-hint(style="margin:0") Si le solde &lt;
-                                select#czSmsArThreshold.cz-select(style="padding:6px 8px;border-radius:8px;border:1px solid var(--border-light,#e5e7eb)")
-                                    each v in [2,5,10,20]
-                                        option(value=v selected=smsAutoRecharge.thresholdEuros === v)= `${v}€`
-                                span.cz-reminder-hint(style="margin:0") recharger de
-                                select#czSmsArAmount.cz-select(style="padding:6px 8px;border-radius:8px;border:1px solid var(--border-light,#e5e7eb)")
-                                    each v in [10,20,50,100]
-                                        option(value=v selected=smsAutoRecharge.amountEuros === v)= `${v}€`
-                                button.sm-btn.sm-btn--primary#czSmsArSave(type="button") Enregistrer
-                                span.cz-reminder-hint#czSmsArStatus(style="margin:0")
+                    //- ── Rappel / confirmation SMS → page dédiée ────────────────
+                    a.cz-reminder-section.cz-sms-link(href="/sms" style="display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit;padding:16px;border:1px solid var(--border-light,#e5e7eb);border-radius:12px;background:var(--surface,#f9fafb)")
+                        span(style="flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:11px;background:#dcfce7;color:#16a34a")
+                            span.material-symbols-outlined sms
+                        span(style="flex:1;min-width:0")
+                            span(style="display:block;font-weight:700;font-size:14px") Rappels & confirmations par SMS
+                            span(style="display:block;font-size:12.5px;color:var(--text-muted,#6b7280);margin-top:2px") Activez les SMS, gérez votre solde et la recharge — tout se passe sur la page SMS dédiée.
+                        span.material-symbols-outlined(style="color:#16a34a") chevron_right
 
                     //- ── Preview ────────────────────────────────────────────────
                     .cz-reminder-section.cz-reminder-preview-section
@@ -1197,33 +1140,10 @@ block scripts
             color: var(--text-secondary);
             margin: 0;
         }
-        .cz-tabs {
-            display: flex;
-            gap: 0;
-            border-bottom: 1.5px solid var(--border-light);
-            margin-bottom: 24px;
-        }
-        .cz-tab {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 10px 18px;
-            background: none;
-            border: none;
-            border-bottom: 2.5px solid transparent;
-            margin-bottom: -1.5px;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: color 0.15s, border-color 0.15s;
-        }
-        .cz-tab:hover { color: var(--text-primary); }
-        .cz-tab.is-active {
-            color: var(--primary, #22c55e);
-            border-bottom-color: var(--primary, #22c55e);
-            font-weight: 600;
-        }
+        /* Onglets : aucun style ici — on laisse le composant commun (.cz-tabs /
+           .cz-tab aliasés sur .ds-tabs / .ds-tab dans ds.css) gouverner, comme
+           la navigation des autres pages. L'ancien style inline forçait l'onglet
+           actif en vert, ce qui cassait l'uniformité. */
         .cz-reminder-header-icon {
             display: flex;
             align-items: center;
@@ -1366,38 +1286,11 @@ block scripts
             margin-left: 10px;
         }
 
-        /* ── Responsive tabs ── */
-        @media (max-width: 700px) {
-            .cz-tabs {
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: none;
-                flex-wrap: nowrap;
-            }
-            .cz-tabs::-webkit-scrollbar { display: none; }
-            .cz-tab {
-                padding: 10px 13px;
-                font-size: 13px;
-                white-space: nowrap;
-                flex-shrink: 0;
-            }
-        }
+        /* Responsive : les onglets communs (.ds-tabs) gèrent déjà le défilement
+           horizontal sur petit écran, rien à surcharger ici. */
         @media (max-width: 480px) {
-            .cz-tab {
-                padding: 9px 10px;
-                font-size: 12px;
-                gap: 4px;
-            }
-            .cz-tab svg {
-                width: 14px;
-                height: 14px;
-                flex-shrink: 0;
-            }
             .cz-header__title {
                 font-size: 18px;
-            }
-            .cz-tabs {
-                margin-bottom: 18px;
             }
         }
 
@@ -1940,9 +1833,7 @@ block scripts
                                 reminderDelayHours: selectedDelay,
                                 reminderMessage: msgArea ? msgArea.value.trim() : '',
                                 reminderPaymentMethods: selectedPaymentMethods,
-                                reminderPaymentNote: payNoteArea ? payNoteArea.value.trim() : '',
-                                smsRemindersEnabled: document.getElementById('czSmsEnabled') ? document.getElementById('czSmsEnabled').checked : false,
-                                smsAllowOverage: document.getElementById('czSmsOverage') ? document.getElementById('czSmsOverage').checked : false
+                                reminderPaymentNote: payNoteArea ? payNoteArea.value.trim() : ''
                             })
                         });
                         var data = await res.json();

@@ -601,76 +601,87 @@
 .cz-page .location-map iframe { height: 260px; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Afficher / masquer une section — vrai interrupteur, état écrit en toutes
-   lettres. L'ancienne « pastille » ne disait ni qu'elle était cliquable, ni ce
-   que voulait dire sa couleur.
-   L'état vient du :checked (aucun JS à synchroniser).
+   Afficher / masquer une section — chip « pilule » : bordure + fond qui se
+   teintent selon l'état, interrupteur (repris du switch commun .ds-switch) et
+   état écrit en toutes lettres. Tout vient du :checked, aucun JS à synchroniser.
    ═══════════════════════════════════════════════════════════════════════════ */
-.cz-page .section-cb-label {
+.cz-page .sec-vis {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  justify-content: flex-start;
+  gap: 10px;
+  /* Largeur figée : le contenu ne change pas de taille au basculement, donc la
+     pastille ne « saute » pas, et toutes les pastilles d'un groupe sont
+     rigoureusement alignées (Carte / Horaires côte à côte). */
+  width: 138px;
+  box-sizing: border-box;
   cursor: pointer;
-  padding: 4px 2px;
+  user-select: none;
+  padding: 8px 12px;
+  border: 1.5px solid var(--border-light, #e5e7eb);
+  border-radius: 10px;
+  background: #fff;
+  transition: border-color .18s ease, background .18s ease;
 }
-/* piste */
-.cz-page .section-cb-label::before {
-  content: '';
-  width: 36px;
-  height: 20px;
+.cz-page .sec-vis:hover { border-color: #d1d5db; }
+.cz-page .sec-vis:has(.sec-vis__cb:checked) {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+/* Case native masquée */
+.cz-page .sec-vis__cb {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Interrupteur — mêmes proportions que .ds-switch (piste + bouton) */
+.cz-page .sec-vis__track {
+  position: relative;
+  width: 38px;
+  height: 21px;
   border-radius: 999px;
   background: #d1d5db;
   flex-shrink: 0;
   transition: background .18s ease;
 }
-/* bouton */
-.cz-page .section-cb-label::after {
+.cz-page .sec-vis__track::after {
   content: '';
   position: absolute;
-  left: 5px;
-  top: 50%;
-  width: 14px;
-  height: 14px;
+  top: 2.5px;
+  left: 2.5px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 3px rgba(16, 24, 40, .25);
-  transform: translateY(-50%);
+  box-shadow: 0 1px 3px rgba(16, 24, 40, .28);
   transition: transform .18s ease;
 }
-.cz-page .section-cb-label:has(.toggle-cb:checked)::before { background: var(--accent, #16a34a); }
-.cz-page .section-cb-label:has(.toggle-cb:checked)::after  { transform: translateY(-50%) translateX(16px); }
-.cz-page .section-cb-label:hover::before { filter: brightness(.97); }
+.cz-page .sec-vis__cb:checked ~ .sec-vis__track { background: var(--accent, #16a34a); }
+.cz-page .sec-vis__cb:checked ~ .sec-vis__track::after { transform: translateX(17px); }
+.cz-page .sec-vis__cb:focus-visible ~ .sec-vis__track { box-shadow: 0 0 0 3px rgba(22, 163, 74, .2); }
 
-/* Le libellé redevient du texte simple (plus de pastille ni de point) */
-.cz-page .section-cb-label .section-pill {
-  background: none;
-  border: none;
-  border-radius: 0;
-  padding: 0;
+/* Libellé — seul le nom de la section. L'état (visible / masqué) est porté par
+   la position + la couleur de l'interrupteur, donc aucun texte ne change de
+   longueur au basculement (plus de « saut » de largeur). */
+.cz-page .sec-vis__name {
   font-size: 12.5px;
   font-weight: 600;
-  color: #6b7280;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: color .18s ease;
 }
-.cz-page .section-cb-label .section-pill::before { display: none; }
-.cz-page .section-cb-label:has(.toggle-cb:checked) .section-pill { color: var(--text-primary, #111); }
+.cz-page .sec-vis:has(.sec-vis__cb:checked) .sec-vis__name { color: var(--text-primary, #111); }
 
-/* État écrit — se met à jour tout seul avec la case */
-.cz-page .section-cb-label .section-pill::after {
-  content: ' · masquée';
-  font-weight: 500;
-  color: #9ca3af;
-}
-.cz-page .section-cb-label:has(.toggle-cb:checked) .section-pill::after {
-  content: ' · visible';
-  color: var(--accent, #16a34a);
-}
-
-/* Accessibilité clavier */
-.cz-page .section-cb-label:focus-within::before {
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, .18);
-}
+/* Deux pastilles empilées (Carte / Horaires) : même largeur + espacement
+   régulier = parfaitement alignées. */
+.cz-page .info-card__header__cbs { gap: 8px; align-items: flex-end; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    « À propos » — barre d'outils détachée + zone de saisie autonome.

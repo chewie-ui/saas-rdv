@@ -1,0 +1,207 @@
+extends ../../layouts/admin
+
+block links
+    link(rel="stylesheet", href="/css/layouts/sms.css")
+
+block content
+    -
+        var _price = (smsPriceCents / 100).toFixed(2);
+        var _pct = smsQuota > 0 ? Math.min(100, Math.round(smsUsedThisMonth / smsQuota * 100)) : 0;
+        var _balSms = Math.floor(smsBalanceCents / smsPriceCents);
+        var _remaining = Math.max(0, smsQuota - smsUsedThisMonth);
+        var _bizName = (currentCompany && currentCompany.name) || user.businessName || 'Votre établissement';
+
+    .sms-page
+        .sms-head
+            h1.sms-head__title
+                span.material-symbols-outlined sms
+                | SMS
+            p.sms-head__sub Envoyez à vos clients un SMS de confirmation à la réservation et un rappel avant le rendez-vous. Repli automatique sur l'email si un SMS ne peut pas partir — vous n'êtes jamais bloqué.
+            span.sms-head__from
+                span.material-symbols-outlined(style="font-size:15px") send
+                | Expéditeur :&nbsp;
+                strong BranShee
+
+        //- ── Plan gratuit : SMS réservé au Pro ──────────────────────────────
+        if !isPro
+            .sms-locked
+                span.sms-locked__ic
+                    span.material-symbols-outlined sms
+                h2.sms-locked__title Les SMS sont inclus à partir du forfait Pro
+                p.sms-locked__sub Le Pro inclut 30 SMS/mois, le Business 100. Au-delà, rechargez un solde et payez au SMS (#{_price} €). Passez au Pro pour activer les rappels et confirmations par SMS.
+                a.sm-btn.sm-btn--primary(href="/subscription")
+                    span.material-symbols-outlined(style="font-size:18px") workspace_premium
+                    span Passer au Pro
+
+        else
+            //- ── Vue d'ensemble : quota + solde ─────────────────────────────
+            .sms-grid
+                .sms-card
+                    .sms-card__hd
+                        span.material-symbols-outlined calendar_month
+                        h2 Ce mois-ci
+                    .sms-metric
+                        span.sms-metric__big= smsUsedThisMonth
+                        span.sms-metric__unit= `/ ${smsQuota} SMS inclus`
+                    .sms-bar
+                        .sms-bar__fill(style=`width:${_pct}%`)
+                    p.sms-hint
+                        if _remaining > 0
+                            = `Il vous reste ${_remaining} SMS inclus ce mois-ci. Renouvelés chaque mois.`
+                        else
+                            = `Quota inclus épuisé. Les SMS suivants utilisent votre solde (si activé), sinon email.`
+
+                .sms-card
+                    .sms-card__hd
+                        span.material-symbols-outlined account_balance_wallet
+                        h2 Solde prépayé
+                    .sms-balance
+                        span.sms-balance__amount#smsBalanceAmount= `${(smsBalanceCents / 100).toFixed(2)} €`
+                        span.sms-balance__sms= `≈ ${_balSms} SMS`
+                    p.sms-hint Utilisé uniquement au-delà de votre quota inclus (#{_price} €/SMS).
+                    .sms-packs
+                        button.sm-btn.sm-btn--ghost.js-sms-topup(type="button" data-pack="small") Recharger 10 €
+                        button.sm-btn.sm-btn--ghost.js-sms-topup(type="button" data-pack="medium") 20 €
+                        button.sm-btn.sm-btn--ghost.js-sms-topup(type="button" data-pack="large") 50 €
+
+            //- ── Réglages d'envoi ───────────────────────────────────────────
+            .sms-card.sms-card--wide
+                .sms-card__hd
+                    span.material-symbols-outlined tune
+                    h2 Réglages d'envoi
+                .sms-toggle
+                    .sms-toggle__txt
+                        .sms-toggle__title Rappel par SMS
+                        .sms-toggle__sub Un SMS de rappel est envoyé avant le rendez-vous (sinon par email). Repli email automatique en cas d'échec.
+                    label.ds-switch
+                        input#smsRemindersEnabled(type="checkbox" checked=calendarSettings.smsRemindersEnabled)
+                        span.ds-switch__track
+                .sms-toggle
+                    .sms-toggle__txt
+                        .sms-toggle__title SMS de confirmation
+                        .sms-toggle__sub Le client reçoit un SMS confirmant son rendez-vous dès qu'il réserve. Décompté comme un SMS.
+                    label.ds-switch
+                        input#smsConfirmationEnabled(type="checkbox" checked=calendarSettings.smsConfirmationEnabled)
+                        span.ds-switch__track
+                .sms-toggle
+                    .sms-toggle__txt
+                        .sms-toggle__title Continuer au-delà du forfait
+                        .sms-toggle__sub Une fois vos #{smsQuota} SMS inclus épuisés : coché = continuer en SMS via votre solde (#{_price} €/SMS) ; décoché = repli email, solde jamais touché.
+                    label.ds-switch
+                        input#smsAllowOverage(type="checkbox" checked=calendarSettings.smsAllowOverage)
+                        span.ds-switch__track
+                .sms-actions
+                    button.sm-btn.sm-btn--primary#smsSaveBtn(type="button")
+                        span.material-symbols-outlined(style="font-size:18px") save
+                        span Enregistrer
+                    span.sms-actions__status#smsSaveStatus
+
+            //- ── Recharge automatique ───────────────────────────────────────
+            .sms-card.sms-card--wide
+                .sms-card__hd
+                    span.material-symbols-outlined autorenew
+                    h2 Recharge automatique
+                .sms-toggle(style="border-top:none;padding-top:4px")
+                    .sms-toggle__txt
+                        .sms-toggle__title Recharger mon solde automatiquement
+                        .sms-toggle__sub Quand le solde passe sous le seuil, on reprélève le montant choisi sur votre carte enregistrée. Jamais à découvert, jamais facturé après coup.
+                    label.ds-switch
+                        input#smsArEnabled(type="checkbox" checked=smsAutoRecharge.enabled)
+                        span.ds-switch__track
+                .sms-ar__row
+                    span Si le solde &lt;
+                    select#smsArThreshold.sms-ar__select
+                        each v in [2,5,10,20]
+                            option(value=v selected=smsAutoRecharge.thresholdEuros === v)= `${v} €`
+                    span recharger de
+                    select#smsArAmount.sms-ar__select
+                        each v in [10,20,50,100]
+                            option(value=v selected=smsAutoRecharge.amountEuros === v)= `${v} €`
+                    button.sm-btn.sm-btn--ghost#smsArSave(type="button") Enregistrer
+                    span.sms-actions__status#smsArStatus
+                if smsAutoRecharge.lastFailureAt
+                    .sms-alert
+                        span.material-symbols-outlined error
+                        span La dernière recharge automatique a échoué (carte refusée ou expirée). Vérifiez votre moyen de paiement dans Paramètres › Paiements.
+
+            //- ── Aperçu ─────────────────────────────────────────────────────
+            .sms-card.sms-card--wide
+                .sms-card__hd
+                    span.material-symbols-outlined visibility
+                    h2 Aperçu du message
+                .sms-preview
+                    .sms-preview__bubble= `${_bizName} : votre rendez-vous est confirmé pour le vendredi 21 août à 10:00.`
+                    p.sms-preview__meta Exemple de SMS de confirmation
+
+block scripts
+    script.
+        (function () {
+            var statusTimer;
+            function flash(el, msg, ok) {
+                if (!el) return;
+                el.textContent = msg;
+                el.style.color = ok ? '#16a34a' : '#ef4444';
+                clearTimeout(statusTimer);
+                statusTimer = setTimeout(function () { el.textContent = ''; }, 2800);
+            }
+
+            /* ── Enregistrer les réglages d'envoi ─────────────────────────── */
+            var saveBtn = document.getElementById('smsSaveBtn');
+            var saveStatus = document.getElementById('smsSaveStatus');
+            if (saveBtn) saveBtn.addEventListener('click', async function () {
+                saveBtn.disabled = true;
+                try {
+                    var res = await fetch('/account/sms-settings', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            smsRemindersEnabled: document.getElementById('smsRemindersEnabled').checked,
+                            smsConfirmationEnabled: document.getElementById('smsConfirmationEnabled').checked,
+                            smsAllowOverage: document.getElementById('smsAllowOverage').checked,
+                        }),
+                    });
+                    var data = await res.json();
+                    flash(saveStatus, data.success ? '✓ Enregistré' : 'Erreur', !!data.success);
+                } catch (e) { flash(saveStatus, 'Erreur réseau', false); }
+                saveBtn.disabled = false;
+            });
+
+            /* ── Recharge du solde (Stripe Checkout) ──────────────────────── */
+            document.querySelectorAll('.js-sms-topup').forEach(function (btn) {
+                btn.addEventListener('click', async function () {
+                    btn.disabled = true;
+                    try {
+                        var r = await fetch('/account/sms-topup', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pack: btn.dataset.pack }),
+                        });
+                        var d = await r.json();
+                        if (d.url) { window.location.href = d.url; return; }
+                        alert(d.error || 'Erreur lors de la recharge.');
+                    } catch (e) { alert('Erreur réseau.'); }
+                    btn.disabled = false;
+                });
+            });
+
+            /* ── Recharge automatique ─────────────────────────────────────── */
+            var arSave = document.getElementById('smsArSave');
+            var arStatus = document.getElementById('smsArStatus');
+            if (arSave) arSave.addEventListener('click', async function () {
+                arSave.disabled = true;
+                try {
+                    var res = await fetch('/account/sms-autorecharge', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            enabled: document.getElementById('smsArEnabled').checked,
+                            thresholdEuros: parseInt(document.getElementById('smsArThreshold').value, 10),
+                            amountEuros: parseInt(document.getElementById('smsArAmount').value, 10),
+                        }),
+                    });
+                    var data = await res.json();
+                    flash(arStatus, data.success ? '✓ Enregistré' : (data.error || 'Erreur'), !!data.success);
+                } catch (e) { flash(arStatus, 'Erreur réseau', false); }
+                arSave.disabled = false;
+            });
+        })();
