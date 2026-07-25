@@ -33,7 +33,10 @@ block content
 
         //- ── Profil de l'établissement ──────────────────────────────────────────
         -
-            var _noPic  = !user.businessPicture
+            //- Photo de l'ÉTABLISSEMENT actif (repli compte), cohérent avec le
+            //- nom juste en dessous et avec ce que sert la page publique.
+            var _estPic = (currentCompany && currentCompany.photo) || user.businessPicture || ""
+            var _noPic  = !_estPic
             var _noName = !((currentCompany && currentCompany.name) || user.businessName)
             var _missingProfile = _noPic || _noName
             // Message ciblé sur ce qui manque VRAIMENT : afficher « ajoutez une
@@ -58,9 +61,9 @@ block content
                     p.ds-alert__text#bizIncompleteText= _missingMsg
             .biz-row
                 .biz-photo-col
-                    .biz-photo-preview(class=!user.businessPicture ? 'biz-photo-preview--empty' : '')
-                        if user.businessPicture
-                            img#businessPicPreview(alt="Photo de l'établissement" src=user.businessPicture)
+                    .biz-photo-preview(class=!_estPic ? 'biz-photo-preview--empty' : '')
+                        if _estPic
+                            img#businessPicPreview(alt="Photo de l'établissement" src=_estPic)
                         else
                             .biz-photo-placeholder#businessPicPreview
                                 span.material-symbols-outlined(style="font-size:32px") photo_camera
@@ -68,7 +71,7 @@ block content
                     .biz-photo-btns
                         button.sm-btn.sm-btn--ghost#uploadBusinessBtn
                             span Photo
-                        button.sm-btn.sm-btn--ghost.sm-btn--danger#deleteBusinessPicBtn(type="button" style=user.businessPicture ? '' : 'display:none')
+                        button.sm-btn.sm-btn--ghost.sm-btn--danger#deleteBusinessPicBtn(type="button" style=_estPic ? '' : 'display:none')
                             span Supprimer
                 - var _estName = (currentCompany && currentCompany.name) || user.businessName || ""
                 - var _estType = (currentCompany && currentCompany.businessType) || user.businessType || ""
@@ -382,7 +385,7 @@ block content
                             p Incluse dans le plan Business, ou en add-on (+5€/mois) à partir du plan Pro.
                         .info-addon-gate__preview
                             span.info-addon-gate__preview-dim branshee.com/
-                            span.info-addon-gate__preview-slug= (currentCompany && currentCompany.slug) ? currentCompany.slug : (user.businessName ? user.businessName.toLowerCase().replace(/\s+/g, '-') : 'mon-salon')
+                            span.info-addon-gate__preview-slug= (currentCompany && currentCompany.slug) ? currentCompany.slug : (_estName ? _estName.toLowerCase().replace(/\s+/g, '-') : 'mon-salon')
                     if isPro
                         .addon-btns
                             button.sm-btn.sm-btn--primary#buyAddonCustomUrlBtn(type="button") Activer — 5€/mois

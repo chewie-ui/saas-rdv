@@ -46,11 +46,32 @@ module.exports = async (req, res, next) => {
       ? await Company.find({ _id: { $in: memberships.map((m) => m.company) }, isDeleted: { $ne: true } }).lean()
       : [];
 
+    // Repli d'affichage pour les établissements rejoints : quand la Company
+    // n'a pas encore de `name` (fiches historiques), on retombe sur le compte
+    // de SON patron — jamais sur celui du visiteur, qui afficherait le nom de
+    // sa propre activité. On charge les noms à part plutôt qu'avec un
+    // `.populate("owner")` : `currentCompany.owner` doit rester un ObjectId,
+    // des dizaines de contrôleurs font `String(company.owner) === ...`.
+    const memberOwnerNameById = {};
+    if (memberCompanies.length) {
+      const ownerIds = [...new Set(memberCompanies.map((c) => String(c.owner)))];
+      const owners = await User.find({ _id: { $in: ownerIds } })
+        .select("businessName fullName")
+        .lean();
+      owners.forEach((u) => {
+        memberOwnerNameById[String(u._id)] = u.businessName || u.fullName || "";
+      });
+    }
+
     // Disponible côté vue pour le switcher d'établissement (sidebar.pug) —
     // propriétaire d'abord, puis établissements rejoints comme collaborateur.
     res.locals.myCompanies = [
       ...ownedCompanies.map((c) => ({ id: String(c._id), name: c.name || req.user.businessName || "Établissement", isOwner: true })),
-      ...memberCompanies.map((c) => ({ id: String(c._id), name: c.name || "Établissement", isOwner: false })),
+      ...memberCompanies.map((c) => ({
+        id: String(c._id),
+        name: c.name || memberOwnerNameById[String(c.owner)] || "Établissement",
+        isOwner: false,
+      })),
     ];
 
     const activeId = req.session && req.session.activeCompanyId;
@@ -132,7 +153,7 @@ module.exports = async (req, res, next) => {
     // forfait de l'owner — cf. getCompanyPlan) et on expose un `billingUser`
     // « shim » qui porte ce plan. Ainsi TOUTES les vérifs getLimit/atLeast/
     // getPlan en aval deviennent per-établissement sans toucher aux ~30 appels.
-    const { getCompanyPlan, atLeast: _atLeast, PLANS: _PLANS } = require("../utils/planLimits");
+    const { billingUserFor, atLeast: _atLeast } = require("../utils/planLimits");
     let ownerUser;
     if (isOwner) {
       ownerUser = req.user;
@@ -141,32 +162,43 @@ module.exports = async (req, res, next) => {
         .select("subscription isPremium manualPremium manualPremiumExpiry addons")
         .lean();
       if (ownerUser) {
+        // readOnly : résoudre l'état d'abonnement de l'OWNER ne doit jamais
+        // écrire sur son compte (révocation isPremium, upsert Subscription)
+        // simplement parce qu'un collaborateur ouvre une page admin.
         const { resolveSubscriptionState } = require("./injectSubscription");
-        Object.assign(res.locals, await resolveSubscriptionState(ownerUser));
+        Object.assign(res.locals, await resolveSubscriptionState(ownerUser, { readOnly: true }));
       }
     }
 
-    const effectivePlan = getCompanyPlan(currentCompany, ownerUser || req.user);
-    // Shim lu par getPlan() : subscription.plan/status + isPremium/manualPremium.
-    // On garde les `addons` de l'owner (customUrl, sièges collaborateurs).
-    res.locals.billingUser = {
-      _id:           (ownerUser && ownerUser._id) || req.user._id,
-      addons:        (ownerUser && ownerUser.addons) || req.user.addons || {},
-      isPremium:     false,
-      manualPremium: false,
-      subscription:  { plan: effectivePlan, status: effectivePlan === "basic" ? "inactive" : "active" },
-    };
+    // Shim lu par getPlan() : porte le plan de l'ÉTABLISSEMENT + les `addons`
+    // de l'owner (customUrl, sièges collaborateurs). Repli sur req.user si
+    // l'owner a été supprimé, pour ne jamais perdre le `_id`.
+    res.locals.billingUser = billingUserFor(currentCompany, ownerUser || req.user);
+    const effectivePlan = res.locals.billingUser.subscription.plan;
     // Refléter le plan de l'établissement dans les locals lus par les vues.
     res.locals.currentPlan = effectivePlan;
     res.locals.isPro       = _atLeast(res.locals.billingUser, "pro");
 
+    // Nom d'affichage de l'établissement actif — company.name d'abord, repli
+    // sur le compte de SON patron (fiches historiques sans `name`), jamais
+    // sur le compte du visiteur (cf. règle 8).
+    res.locals.currentCompanyName = currentCompany.name
+      || (isOwner
+        ? (req.user.businessName || req.user.fullName)
+        : memberOwnerNameById[String(currentCompany.owner)])
+      || "Établissement";
+
     // 4a. Vocabulaire "client" vs "patient" selon le métier (kiné, dentiste,
     // psy... → patient ; coiffeur, coach... → client) — dispo dans TOUTES
     // les pages admin sans avoir à le repasser depuis chaque contrôleur.
-    res.locals.clientTerm           = clientWord(req.user.businessType);
-    res.locals.clientTermPlural     = clientWord(req.user.businessType, { plural: true });
-    res.locals.clientTermCap        = clientWord(req.user.businessType, { capitalize: true });
-    res.locals.clientTermCapPlural  = clientWord(req.user.businessType, { capitalize: true, plural: true });
+    // Le métier suit l'ÉTABLISSEMENT actif (repli sur le compte) : sinon un
+    // collaborateur voit le vocabulaire de SA propre activité, et un patron
+    // multi-établissements celui de son 1er métier partout.
+    const _bizType = currentCompany.businessType || req.user.businessType;
+    res.locals.clientTerm           = clientWord(_bizType);
+    res.locals.clientTermPlural     = clientWord(_bizType, { plural: true });
+    res.locals.clientTermCap        = clientWord(_bizType, { capitalize: true });
+    res.locals.clientTermCapPlural  = clientWord(_bizType, { capitalize: true, plural: true });
 
     // 4b. Fonctionnalités admin activables/désactivables depuis le superadmin
     // (ex: Cours collectifs, Temps tampon) — utilisées pour cacher des

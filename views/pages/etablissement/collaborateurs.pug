@@ -787,7 +787,7 @@ block scripts
                         body: JSON.stringify({ decision: btn.dataset.decision }),
                     })
                         .then(function (r) { return r.json(); })
-                        .then(function (data) { if (data.success) window.location.reload(); else showError(data.error || 'Erreur.'); })
+                        .then(function (data) { if (data.success) window.location.reload(); else showError(data.message || data.error || 'Erreur.'); })
                         .catch(function () { showError('Erreur réseau.'); });
                 });
             });

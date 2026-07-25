@@ -1,7 +1,7 @@
 const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
 const Stripe = require("stripe");
 const getServices = require("../utils/services");
-const { getLimit, atLeast } = require("../utils/planLimits");
+const { getLimit, atLeast, billingUserFor } = require("../utils/planLimits");
 const { getCoursesForDate, courseRangesFor } = require("../utils/recurringCourses");
 const { getBookableTeam } = require("../utils/bookableTeam");
 
@@ -172,7 +172,10 @@ exports.panel = async (req, res) => {
       return { ...l, ago, actionColor };
     });
 
-    const companyName = res.locals.currentCompany.name || req.user.businessName || "Établissement";
+    // Nom de l'établissement actif — jamais `req.user.businessName` : un
+    // collaborateur verrait sinon le nom de sa propre activité. Le repli sur
+    // le compte du VRAI patron est déjà résolu par injectCompany.
+    const companyName = res.locals.currentCompanyName || res.locals.currentCompany.name || "Établissement";
     const initials = companyName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "BS";
     const nextAppt = todayEnriched.find((a) => a.status === "confirmed" && a.startTime >= `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`);
 
@@ -752,64 +755,8 @@ exports.appointment = async (req, res) => {
 // publique, cf. booking.controller.js#getBooking : on ne bloque que si TOUS
 // les employés sont occupés). Partagé entre createAdminBooking et
 // createAdminBlock (absences). Retourne un message d'erreur ou null. ───────
-async function checkBookingConflict({ Booking, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, actualDuration }) {
-  const baseConflictQuery = { company: currentCompany, date: new Date(date), status: { $ne: "canceled" } };
-  function overlapsRange(b) {
-    const [bh, bm] = b.startTime.split(":").map(Number);
-    const bStart = bh * 60 + bm;
-    const bEnd = bStart + (b.slotTime || actualDuration);
-    return startTimeInMinutes < bEnd && endTimeInMinutes > bStart;
-  }
-
-  if (employeeId) {
-    // Include employee:null bookings (admin-created, no assignment) — they block everyone.
-    const overlapping = await Booking.find({ ...baseConflictQuery, $or: [{ employee: employeeId }, { employee: null }] }).select("startTime slotTime").lean();
-    if (overlapping.some(overlapsRange)) return "Cet employé a déjà un rendez-vous sur ce créneau.";
-
-    const coursesForThisDate = await getCoursesForDate(currentCompany, date);
-    const courseConflict = courseRangesFor(coursesForThisDate, employeeId)
-      .some(([rs, re]) => startTimeInMinutes < re && endTimeInMinutes > rs);
-    if (courseConflict) return "Cet employé est en cours collectif sur ce créneau.";
-    return null;
-  }
-
-  // Aucun employé précisé — bloqué seulement quand TOUTE l'équipe bookable
-  // est occupée. Se réduit naturellement au cas solo (équipe d'1 = le
-  // patron) et au cas "personne n'est bookable" (équipe vide → .every() sur
-  // un tableau vide vaut toujours true, donc tout est bloqué) sans branche à part.
-  const team = await getBookableTeam(currentCompany);
-
-  const teamBookings = await Booking.find({
-    ...baseConflictQuery,
-    $or: [
-      { employee: { $in: team.map((m) => m.id) } },
-      { employee: null },
-    ],
-  }).select("startTime slotTime employee").lean();
-
-  const coursesForThisDate = await getCoursesForDate(currentCompany, date);
-  const busyByEmployee = new Map();
-  team.forEach((m) => busyByEmployee.set(m.id, courseRangesFor(coursesForThisDate, m.id)));
-  teamBookings.forEach((b) => {
-    const [bh, bm] = b.startTime.split(":").map(Number);
-    const bStart = bh * 60 + bm;
-    const range = [bStart, bStart + (b.slotTime || actualDuration)];
-    if (b.employee == null) {
-      // RDV sans employé → bloque toute l'équipe
-      team.forEach((m) => busyByEmployee.get(m.id).push(range));
-    } else {
-      const empId = String(b.employee);
-      if (!busyByEmployee.has(empId)) return;
-      busyByEmployee.get(empId).push(range);
-    }
-  });
-
-  const allBusy = team.every((m) => {
-    const ranges = busyByEmployee.get(m.id) || [];
-    return ranges.some(([rs, re]) => startTimeInMinutes < re && endTimeInMinutes > rs);
-  });
-  return allBusy ? "Tous les employés sont déjà occupés sur ce créneau." : null;
-}
+// Implémentation partagée avec l'API mobile — cf. utils/bookingConflict.js
+const { checkBookingConflict } = require("../utils/bookingConflict");
 
 // ── Création manuelle d'un rendez-vous depuis le panel admin ─────────────────
 exports.createAdminBooking = async (req, res) => {
@@ -1000,7 +947,8 @@ exports.createAdminBooking = async (req, res) => {
         employeeName,
         formAnswers: [],
         locationText,
-        businessName:  (companyOwner?.businessName || "").trim(),
+        // Nom de l'ÉTABLISSEMENT (repli compte pour les fiches historiques).
+        businessName:  (company?.name || companyOwner?.businessName || "").trim(),
         businessPhone: (companyOwner?.phonePro || "").trim(),
         cancelUrl,
         bookingId: newBooking._id,
@@ -1010,24 +958,47 @@ exports.createAdminBooking = async (req, res) => {
 
     await sendEmail(email, "Confirmation de votre rendez-vous — BranShee", htmlTemplate);
 
-    // ── SMS de confirmation au client (via crédits + toggle établissement) ──
+    // ── Confirmation WhatsApp / SMS au client (canal prioritaire WhatsApp,
+    // repli SMS ; même système de crédits + toggles établissement) ──────────
     try {
-      if (
-        phone &&
-        companyOwner?.calendarSettings?.smsConfirmationEnabled &&
-        (await isFeatureEnabled("sms_notifications"))
-      ) {
-        const { sendBillableSmsIfAllowed } = require("../utils/sms");
-        const bizName = companyOwner.businessName || companyOwner.fullName || "";
-        // Fire-and-forget : ne bloque pas la réponse sur l'appel externe Spryng.
-        sendBillableSmsIfAllowed(
-          companyOwner,
-          phone,
-          `${bizName ? bizName + " : " : ""}votre rendez-vous est confirmé pour le ${formattedDate} à ${startTime}.`,
-        ).catch((e) => console.error("SMS confirmation error:", e.message));
+      const cs = companyOwner?.calendarSettings || {};
+      // Nom de l'ÉTABLISSEMENT (règle 8) ; espaces normalisés car Meta rejette
+      // un paramètre de template contenant un saut de ligne.
+      const bizName = (company?.name || companyOwner?.businessName || companyOwner?.fullName || "")
+        .replace(/\s+/g, " ")
+        .trim();
+      // Quota inclus SMS/WhatsApp = propriété du forfait de l'établissement.
+      const billingPlan = billingUserFor(company, companyOwner).subscription.plan;
+      if (phone && (cs.whatsappConfirmationEnabled || cs.smsConfirmationEnabled)) {
+        // Fire-and-forget : ne bloque pas la réponse sur l'appel externe.
+        (async () => {
+          const { isWhatsappConfigured, sendWhatsappIfAllowed, WA_TPL_CONFIRMATION } = require("../utils/whatsapp");
+          if (cs.whatsappConfirmationEnabled && isWhatsappConfigured()) {
+            const wa = await sendWhatsappIfAllowed(companyOwner, phone, {
+              plan: billingPlan,
+              template: WA_TPL_CONFIRMATION,
+              params: [
+                (name || "").trim() || (surname || "").trim() || "",
+                bizName || "votre établissement",
+                formattedDate,
+                startTime || "",
+              ],
+            }).catch((e) => { console.error("WhatsApp confirmation error:", e.message); return { sent: false }; });
+            if (wa && wa.sent) return;
+          }
+          if (cs.smsConfirmationEnabled && (await isFeatureEnabled("sms_notifications"))) {
+            const { sendBillableSmsIfAllowed } = require("../utils/sms");
+            await sendBillableSmsIfAllowed(
+              companyOwner,
+              phone,
+              `${bizName ? bizName + " : " : ""}votre rendez-vous est confirmé pour le ${formattedDate} à ${startTime}.`,
+              { plan: billingPlan },
+            ).catch((e) => console.error("SMS confirmation error:", e.message));
+          }
+        })().catch((e) => console.error("Confirmation notif error:", e.message));
       }
-    } catch (smsErr) {
-      console.error("SMS confirmation error:", smsErr.message);
+    } catch (notifErr) {
+      console.error("Confirmation notif error:", notifErr.message);
     }
 
     try {
@@ -1057,7 +1028,8 @@ exports.createAdminBlock = async (req, res) => {
     const currentCompany = res.locals.currentCompany;
     if (!currentCompany) return res.status(401).json({ success: false, error: "unauthorized" });
 
-    const { date, startTime, endTime, employeeId, note } = req.body;
+    const { date, startTime, endTime, note } = req.body;
+    let { employeeId } = req.body;
     if (!date || !startTime || !endTime) {
       return res.json({ success: false, error: "missing_fields", message: "Date et horaires requis." });
     }
@@ -1077,7 +1049,11 @@ exports.createAdminBlock = async (req, res) => {
     if (employeeId) {
       const team = await getBookableTeam(currentCompany);
       const emp = team.find((m) => m.id === String(employeeId));
+      // Praticien inconnu de cette équipe (id falsifié / autre établissement) →
+      // on n'enregistre PAS cet id, comme dans createAdminBooking : sinon le
+      // bloc affichait le nom et la photo d'un membre d'un autre établissement.
       if (emp) employeeName = `${emp.firstName} ${emp.lastName}`.trim();
+      else employeeId = null;
     }
 
     const conflictMessage = await checkBookingConflict({
@@ -1540,7 +1516,8 @@ exports.sendManualReminder = async (req, res) => {
       .select("calendarSettings location isPremium manualPremium subscription businessName phonePro")
       .lean();
 
-    if (!atLeast(owner, "pro")) {
+    // Gate sur le forfait de L'ÉTABLISSEMENT, comme partout ailleurs.
+    if (!atLeast(billingUserFor(companyDoc, owner), "pro")) {
       return res.status(403).json({ error: "plan_limit", message: "Nécessite un abonnement Pro ou Business." });
     }
 
@@ -1567,7 +1544,8 @@ exports.sendManualReminder = async (req, res) => {
       locationText = [loc.address, loc.city].filter(Boolean).join(", ");
     }
 
-    const businessName = (owner?.businessName || "").trim();
+    // Nom de l'ÉTABLISSEMENT (repli compte pour les fiches historiques).
+    const businessName = (companyDoc?.name || owner?.businessName || "").trim();
     const businessPhone = (owner?.phonePro || "").trim();
 
     const formattedDate = new Date(booking.date).toLocaleDateString("fr-FR", {
@@ -2400,12 +2378,16 @@ exports.settingsInit = async (req, res) => {
   if (!res.locals.currentCompany) {
     const membership = await CompanyMembership.findOne({ user: req.user._id })
       .sort("-createdAt")
-      .populate({ path: "company", select: "owner", populate: { path: "owner", select: "businessName fullName" } })
+      .populate({ path: "company", select: "name owner", populate: { path: "owner", select: "businessName fullName" } })
       .lean();
     if (membership && membership.company) {
       myJoinRequest = {
         status: membership.status,
-        companyName: membership.company.owner?.businessName || membership.company.owner?.fullName || "Établissement",
+        // Nom de l'établissement demandé (repli sur son patron).
+        companyName: membership.company.name
+          || membership.company.owner?.businessName
+          || membership.company.owner?.fullName
+          || "Établissement",
       };
     }
   }
@@ -2519,6 +2501,19 @@ exports.historyEditRowPatch = async (req, res) => {
       if (computedDuration > 0) updateFields.slotTime = computedDuration;
     }
     if (status && ["confirmed", "canceled"].includes(status)) {
+      // Annuler un RDV exige `appointments.cancelDelete` partout ailleurs
+      // (PATCH /appointment/:id/cancel, DELETE /history…). Cette route n'est
+      // protégée que par `appointments.manage` : sans ce contrôle, un
+      // collaborateur autorisé à modifier les RDV pouvait les annuler malgré
+      // l'interdiction, en passant par l'édition d'historique.
+      const { hasPermission } = require("../utils/permissions");
+      if (status === "canceled" && !hasPermission(res, "appointments.cancelDelete")) {
+        return res.status(403).json({
+          success: false,
+          error: "forbidden",
+          message: "Vous n'avez pas la permission d'annuler un rendez-vous.",
+        });
+      }
       updateFields.status = status;
     }
     // Service update
@@ -3033,6 +3028,7 @@ exports.smsPage = async (req, res) => {
   const cs = req.user.calendarSettings || {};
   const { getSmsQuota } = require("../utils/planLimits");
   const { SMS_PRICE_CENTS } = require("../utils/sms");
+  const { isWhatsappConfigured, WHATSAPP_PRICE_CENTS } = require("../utils/whatsapp");
   const smsQuota = getSmsQuota(res.locals.billingUser);
   const smsUsage = req.user.smsUsage || {};
   const currentMonthKey = new Date().toISOString().slice(0, 7);
@@ -3041,7 +3037,7 @@ exports.smsPage = async (req, res) => {
 
   return res.render("admin/sms", {
     pageName: "Sms",
-    title: "SMS — BranShee",
+    title: "SMS & WhatsApp — BranShee",
     calendarSettings: cs,
     isPro:       res.locals.isPro,
     currentPlan: res.locals.currentPlan,
@@ -3050,6 +3046,8 @@ exports.smsPage = async (req, res) => {
     smsUsedThisMonth,
     smsBalanceCents: req.user.smsBalanceCents || 0,
     smsPriceCents:   SMS_PRICE_CENTS,
+    whatsappConfigured: isWhatsappConfigured(),
+    whatsappPriceCents: WHATSAPP_PRICE_CENTS,
     smsAutoRecharge: {
       enabled:        !!ar.enabled,
       thresholdEuros: Math.round((ar.thresholdCents || 500) / 100),

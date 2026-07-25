@@ -166,23 +166,36 @@ async function tryAutoRecharge(userId, user) {
 }
 
 /**
- * Envoie un SMS de rappel selon la logique :
+ * Cœur de facturation d'une notification payante, INDÉPENDANT du canal
+ * (SMS Spryng ou WhatsApp Cloud API). Logique :
  *   1) quota inclus du plan (gratuit) → envoi, compteur du mois incrémenté.
- *   2) sinon, solde prépayé → débit atomique de SMS_PRICE_CENTS puis envoi
+ *   2) sinon, solde prépayé → débit atomique de `priceCents` puis envoi
  *      (recharge auto déclenchée si le solde passe sous le seuil configuré).
- *   3) sinon (solde vide / recharge impossible) → { sent:false } : l'appelant
- *      bascule sur l'email de rappel (gratuit). Jamais d'impayé : on ne débite
- *      jamais après coup, on ne dépense le solde que s'il est déjà provisionné.
+ *   3) sinon (solde vide / recharge impossible / dépassement non autorisé) →
+ *      { sent:false } : l'appelant bascule sur l'email (gratuit). Jamais
+ *      d'impayé : on ne débite jamais après coup, on ne dépense le solde que
+ *      s'il est déjà provisionné, et on rembourse si l'envoi échoue.
+ *
+ * Le quota mensuel (`smsUsage`), le solde (`smsBalanceCents`) et le toggle de
+ * dépassement (`smsAllowOverage`) sont PARTAGÉS entre les canaux : un rappel
+ * WhatsApp et un rappel SMS puisent dans le même pot, seul le prix diffère.
+ *
+ * @param owner  Document/objet propriétaire (doit contenir _id et calendarSettings)
+ * @param opts.priceCents  Prix à débiter du solde au-delà du quota (centimes)
+ * @param opts.send        Fonction async d'envoi → identifiant (truthy) ou null
+ * @param opts.plan        Forfait de l'ÉTABLISSEMENT concerné. Le quota inclus
+ *   est une propriété du forfait, donc de l'établissement — pas du compte.
+ *   Omis ⇒ repli sur le forfait du compte owner (comportement historique).
  * Ne lève jamais d'exception.
  */
-async function sendReminderSmsIfAllowed(owner, to, body) {
-  const { getSmsQuota } = require("./planLimits");
+async function chargeAndSend(owner, { priceCents, send, plan }) {
+  const { getSmsQuota, LIMITS } = require("./planLimits");
   const User = require("../db/models/user.model");
 
-  if (!owner || !to) return { sent: false, reason: "missing_owner_or_phone" };
+  if (!owner) return { sent: false, reason: "missing_owner" };
 
   const monthKey = new Date().toISOString().slice(0, 7); // "2026-07"
-  const quota = getSmsQuota(owner);
+  const quota = plan ? (LIMITS.smsReminders[plan] || 0) : getSmsQuota(owner);
 
   // État frais (l'objet owner du batch cron peut être périmé).
   const fresh = await User.findById(owner._id)
@@ -196,8 +209,8 @@ async function sendReminderSmsIfAllowed(owner, to, body) {
 
   // ── 1) Quota inclus (gratuit) ─────────────────────────────────────────────
   if (quota > 0 && used < quota) {
-    const sid = await sendSms(to, body);
-    if (!sid) return { sent: false, reason: "twilio_error" };
+    const sid = await send();
+    if (!sid) return { sent: false, reason: "provider_error" };
     await User.findByIdAndUpdate(owner._id, {
       $set: { "smsUsage.monthKey": monthKey, "smsUsage.count": used + 1 },
     }).catch(() => {});
@@ -220,20 +233,34 @@ async function sendReminderSmsIfAllowed(owner, to, body) {
 
   // Débit atomique conditionnel (jamais de solde négatif, pas de double-dépense).
   const debited = await User.findOneAndUpdate(
-    { _id: owner._id, smsBalanceCents: { $gte: SMS_PRICE_CENTS } },
-    { $inc: { smsBalanceCents: -SMS_PRICE_CENTS } },
+    { _id: owner._id, smsBalanceCents: { $gte: priceCents } },
+    { $inc: { smsBalanceCents: -priceCents } },
     { new: true }
   );
   if (!debited) return { sent: false, reason: "no_balance" }; // → repli email
 
-  const sid = await sendSms(to, body);
+  const sid = await send();
   if (!sid) {
     // Envoi échoué → on rembourse le débit.
-    await User.findByIdAndUpdate(owner._id, { $inc: { smsBalanceCents: SMS_PRICE_CENTS } }).catch(() => {});
-    return { sent: false, reason: "twilio_error" };
+    await User.findByIdAndUpdate(owner._id, { $inc: { smsBalanceCents: priceCents } }).catch(() => {});
+    return { sent: false, reason: "provider_error" };
   }
 
   return { sent: true, mode: "balance", balanceCents: debited.smsBalanceCents };
+}
+
+/**
+ * Envoie un SMS (rappel ou confirmation) via le cœur de facturation partagé
+ * `chargeAndSend`, au prix SMS_PRICE_CENTS. Ne lève jamais d'exception.
+ */
+// `opts.plan` : forfait de l'établissement émetteur (cf. chargeAndSend).
+async function sendReminderSmsIfAllowed(owner, to, body, opts = {}) {
+  if (!owner || !to) return { sent: false, reason: "missing_owner_or_phone" };
+  return chargeAndSend(owner, {
+    priceCents: SMS_PRICE_CENTS,
+    send: () => sendSms(to, body),
+    plan: opts.plan,
+  });
 }
 
 // La logique de facturation (quota inclus → solde prépayé → repli email) est
@@ -241,4 +268,4 @@ async function sendReminderSmsIfAllowed(owner, to, body) {
 // pour que les appels de confirmation soient explicites côté controllers.
 const sendBillableSmsIfAllowed = sendReminderSmsIfAllowed;
 
-module.exports = { sendSms, sendReminderSmsIfAllowed, sendBillableSmsIfAllowed, tryAutoRecharge, SMS_PRICE_CENTS };
+module.exports = { sendSms, chargeAndSend, sendReminderSmsIfAllowed, sendBillableSmsIfAllowed, tryAutoRecharge, SMS_PRICE_CENTS };

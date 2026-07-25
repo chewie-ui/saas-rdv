@@ -6,23 +6,17 @@ const mongoose = require("mongoose");
 const Company = require("../db/models/company/company.model");
 const CompanyMembership = require("../db/models/company/companyMembership.model");
 const { sendEmail } = require("../utils/mailer");
-const { getPlan } = require("../utils/planLimits");
+const { getCompanyPlan } = require("../utils/planLimits");
 const getServices = require("../utils/services");
 const { isSafePlainText } = require("../utils/validateName");
+const { readFirstTouch } = require("../utils/attribution");
 const pug = require("pug");
 const path = require("path");
 
-/** Génère un code parrainage unique de la forme PRENOM-XXXXXX */
-async function generateReferralCode(fullName) {
-  const base = (fullName || "USER").trim().split(" ")[0]
-    .toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7);
-  for (let i = 0; i < 10; i++) {
-    const code = `${base}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
-    const exists = await User.exists({ referralCode: code });
-    if (!exists) return code;
-  }
-  return `USER-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
-}
+// Génère un code parrainage unique de la forme PRENOM-XXXXXX.
+// Déplacé dans utils/referralCode.js pour être partagé avec l'inscription
+// depuis l'app mobile (même format de code des deux côtés).
+const { generateReferralCode } = require("../utils/referralCode");
 
 exports.createUser = async (req, res) => {
   const isAjax = req.headers["x-requested-with"] === "fetch";
@@ -70,8 +64,11 @@ exports.createUser = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(joinCompanyId)) {
       return fail("Veuillez choisir un établissement dans la liste.");
     }
-    joinCompany = await Company.findById(joinCompanyId).populate("owner", "subscription isPremium manualPremium");
-    if (!joinCompany || getPlan(joinCompany.owner) !== "business") {
+    // « Rejoignable » = l'ÉTABLISSEMENT est Business (company.plan), pas le
+    // compte de son patron — le forfait appartient à l'établissement.
+    joinCompany = await Company.findOne({ _id: joinCompanyId, isDeleted: { $ne: true } })
+      .populate("owner", "subscription isPremium manualPremium");
+    if (!joinCompany || getCompanyPlan(joinCompany, joinCompany.owner) !== "business") {
       return fail("Cet établissement n'est plus disponible pour être rejoint.");
     }
   }
@@ -115,6 +112,11 @@ exports.createUser = async (req, res) => {
 
     const referralCode = await generateReferralCode(fullname);
 
+    // Attribution « premier contact » : figée à la création, jamais recalculée.
+    // Sans ça, un inscrit venu d'une pub est indiscernable d'un inscrit venu
+    // du bouche-à-oreille, et le budget Ads se pilote à l'aveugle.
+    const acquisition = readFirstTouch(req) || undefined;
+
     const user = await User.create({
       fullName: fullname,
       email,
@@ -124,6 +126,7 @@ exports.createUser = async (req, res) => {
       businessType: wantsCompany ? businessType : "",
       referralCode,
       referredBy: referrerId,
+      acquisition,
     });
 
     // Incrémenter les stats du parrain
@@ -219,12 +222,14 @@ exports.logout = (req, res, next) => {
 };
 
 exports.getCompanyIfExist = async (identifier) => {
+  // Un établissement supprimé (soft delete) ne doit plus être servi sur son
+  // URL publique — l'appelant rend alors un 404.
   // 1. Essayer par slug d'abord
-  const bySlug = await Company.findOne({ slug: identifier });
+  const bySlug = await Company.findOne({ slug: identifier, isDeleted: { $ne: true } });
   if (bySlug) return bySlug;
   // 2. Fallback sur ObjectId
   if (!mongoose.Types.ObjectId.isValid(identifier)) return null;
-  return await Company.findById(identifier);
+  return await Company.findOne({ _id: identifier, isDeleted: { $ne: true } });
 };
 
 exports.forgotPasswordVerifyCode = async (req, res) => {
@@ -317,7 +322,13 @@ exports.newPwd = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.findOneAndUpdate({ email }, { password: hashedPassword });
+    // `$inc: tokenEpoch` révoque les jetons de l'app mobile déjà émis pour ce
+    // compte : une réinitialisation doit couper l'accès des appareils encore
+    // connectés (leur refresh vit sinon 60 jours).
+    const user = await User.findOneAndUpdate(
+      { email },
+      { $set: { password: hashedPassword }, $inc: { tokenEpoch: 1 } },
+    );
 
     // Usage unique : on purge la session quel que soit le résultat.
     delete req.session.forgotPwd;

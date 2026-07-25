@@ -35,7 +35,9 @@ block content
                 span.ms-topbar__dot .
             span.ms-topbar__crumb
                 span.material-symbols-outlined chevron_right
-                span= 'Site de ' + ((currentCompany && currentCompany.businessName) || companySlug)
+                //- `currentCompany.businessName` n'existe pas sur le schéma
+                //- Company : c'était toujours `undefined`. Le nom vit dans `name`.
+                span= 'Site de ' + ((currentCompany && currentCompany.name) || companySlug)
             .ms-topbar__spacer
             .ms-seg
                 button.ms-device-btn.active(type="button" data-device="desktop" title="Bureau")

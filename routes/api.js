@@ -5,18 +5,7 @@ const User   = require("../db/models/user.model");
 const PageView = require("../db/models/pageView.model");
 const { isBotUserAgent } = require("../utils/botDetection");
 
-// Domaine du referrer ("google.com", "instagram.com"...), ou "direct" si la
-// visite arrive sans referrer (lien direct, app, favoris, navigation interne).
-function getViewSource(referrerUrl, ownHostname) {
-  if (!referrerUrl) return "direct";
-  try {
-    const host = new URL(referrerUrl).hostname.replace(/^www\./, "");
-    if (host === (ownHostname || "").replace(/^www\./, "")) return "direct";
-    return host;
-  } catch (_) {
-    return "direct";
-  }
-}
+const { parseAttribution } = require("../utils/attribution");
 
 // Compteur de vues "réelles" : appelé par un petit script JS depuis le
 // navigateur (public/js/pageview-beacon.js) une fois la page chargée. Un
@@ -32,8 +21,30 @@ router.post("/track-view", (req, res) => {
     if (!visitorId) return;
     const path = (req.body && req.body.path) || "";
     if (!path) return;
-    const source = getViewSource(req.body && req.body.referrer, req.hostname);
-    PageView.create({ visitorId, path, source }).catch(() => {});
+
+    // Attribution de CETTE visite : les `utm_*` / `gclid` de la page courante
+    // priment sur le referrer (un clic Google Ads arrive très souvent sans
+    // referrer et tombait donc en "direct"). Le cookie first-touch n'est
+    // délibérément PAS utilisé ici : il vaut 90 jours et attribuerait toutes
+    // les visites suivantes à la pub, ce qui gonflerait artificiellement.
+    let query = {};
+    try {
+      query = Object.fromEntries(
+        new URLSearchParams(String((req.body && req.body.query) || "")),
+      );
+    } catch (_) {
+      query = {};
+    }
+    const attr = parseAttribution(query, req.body && req.body.referrer, req.hostname);
+
+    PageView.create({
+      visitorId,
+      path,
+      source:   attr.source,
+      medium:   attr.medium,
+      campaign: attr.campaign,
+      gclid:    attr.gclid,
+    }).catch(() => {});
   } catch (_) {
     // Le tracking ne doit jamais casser une requête.
   }
@@ -145,42 +156,43 @@ router.get("/joinable-companies", async (req, res) => {
   const limit = q.length >= 2 ? 8 : 3;
   try {
     const Company = require("../db/models/company/company.model");
-    const { getPlan } = require("../utils/planLimits");
-    const userFilter = { isDisabled: { $ne: true } };
+    const { getCompanyPlan } = require("../utils/planLimits");
+
+    // On part des ÉTABLISSEMENTS (et non des comptes) : le forfait leur
+    // appartient, et un patron avec 2 établissements doit apparaître 2 fois
+    // avec DEUX noms distincts — pas deux fois le même libellé (règle 6/8).
+    const companyFilter = { isDeleted: { $ne: true }, isPaused: { $ne: true } };
     if (q.length >= 2) {
       const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-      userFilter.$or = [{ businessName: regex }, { fullName: regex }];
+      // Le nom cherché peut vivre sur l'établissement (cas normal) ou, pour
+      // les fiches historiques sans `name`, sur le compte propriétaire.
+      const owners = await User.find({ isDisabled: { $ne: true }, $or: [{ businessName: regex }, { fullName: regex }] })
+        .select("_id")
+        .limit(30)
+        .lean();
+      companyFilter.$or = [
+        { name: regex },
+        { businessType: regex },
+        ...(owners.length ? [{ owner: { $in: owners.map((u) => u._id) } }] : []),
+      ];
     }
 
-    const candidates = await User.find(userFilter)
-      .select("_id businessName fullName businessType subscription isPremium manualPremium")
-      .limit(30)
+    // Borne explicite : le filtrage « Business » se fait en mémoire, il ne
+    // faut donc jamais charger toute la collection.
+    const companies = await Company.find(companyFilter)
+      .select("_id owner name businessType plan planStatus")
+      .populate("owner", "_id businessName fullName businessType subscription isPremium manualPremium isDisabled")
+      .sort({ createdAt: -1 })
+      .limit(60)
       .lean();
-
-    const businessUserIds = candidates
-      .filter((u) => getPlan(u) === "business")
-      .map((u) => u._id);
-    if (!businessUserIds.length) return res.json({ companies: [] });
-
-    const companies = await Company.find({ owner: { $in: businessUserIds } })
-      .select("_id owner")
-      .limit(limit)
-      .lean();
-
-    const userMap = {};
-    candidates.forEach((u) => { userMap[String(u._id)] = u; });
 
     const results = companies
-      .map((c) => {
-        const owner = userMap[String(c.owner)];
-        if (!owner) return null;
-        return {
-          id: String(c._id),
-          name: owner.businessName || owner.fullName,
-          businessType: owner.businessType || "",
-        };
-      })
-      .filter(Boolean)
+      .filter((c) => c.owner && !c.owner.isDisabled && getCompanyPlan(c, c.owner) === "business")
+      .map((c) => ({
+        id: String(c._id),
+        name: c.name || c.owner.businessName || c.owner.fullName || "Établissement",
+        businessType: c.businessType || c.owner.businessType || "",
+      }))
       .slice(0, limit);
 
     return res.json({ companies: results });

@@ -58,6 +58,11 @@ block content
                                         span.estab-badge.estab-badge--active
                                             span.material-symbols-outlined check_circle
                                             span Actif
+                                    //- Le forfait appartient à l'établissement,
+                                    //- pas au compte : un même patron peut avoir
+                                    //- un établissement Business et un gratuit.
+                                    - var _planLabels = { basic: 'Gratuit', essentiel: 'Essentiel', pro: 'Pro', business: 'Business' }
+                                    span.estab-badge.estab-badge--role= _planLabels[estab.plan] || 'Gratuit'
                                 if estab.businessType
                                     span.estab-card__type= estab.businessType
                             .ds-menu
@@ -557,7 +562,7 @@ block scripts
                         .then(function (r) { return r.json(); })
                         .then(function (data) {
                             if (data.success) window.location.reload();
-                            else { btn.disabled = false; alert(data.error || 'Erreur.'); }
+                            else { btn.disabled = false; alert(data.message || data.error || 'Erreur.'); }
                         })
                         .catch(function () { btn.disabled = false; });
                 });

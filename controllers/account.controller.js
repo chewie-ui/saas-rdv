@@ -503,6 +503,9 @@ exports.updatePassword = async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
+    // Révoque les jetons de l'app mobile déjà émis pour ce compte : sans cela,
+    // un refresh token volé resterait valable 60 jours malgré ce changement.
+    user.tokenEpoch = (user.tokenEpoch || 0) + 1;
     await user.save();
 
     if (isAjax) return res.json({ success: true });
@@ -908,6 +911,30 @@ exports.updateBusinessType = async (req, res) => {
   }
 };
 
+/**
+ * Établissement ACTIF et POSSÉDÉ par le compte connecté (session
+ * activeCompanyId, repli sur le plus ancien possédé). Le filtre
+ * `owner: req.user._id` est essentiel : un collaborateur qui modifie « son »
+ * profil ne doit jamais écrire sur l'établissement de son patron.
+ * Retourne null si le compte ne possède aucun établissement.
+ */
+async function resolveActiveOwnedCompanyId(req) {
+  const activeId = req.session?.activeCompanyId || null;
+  if (activeId) {
+    const owned = await Company.findOne({
+      _id: activeId,
+      owner: req.user._id,
+      isDeleted: { $ne: true },
+    }).select("_id").lean();
+    if (owned) return owned._id;
+  }
+  const first = await Company.findOne({ owner: req.user._id, isDeleted: { $ne: true } })
+    .sort({ createdAt: 1 })
+    .select("_id")
+    .lean();
+  return first?._id || null;
+}
+
 // Sauvegarde nom + description + businessType en une seule requête
 exports.editBusinessInfo = async (req, res) => {
   try {
@@ -935,13 +962,7 @@ exports.editBusinessInfo = async (req, res) => {
     // sélecteur en haut à gauche et sur la page publique. On l'écrit donc aussi
     // sur la Company active (dual-write ; user.businessName reste le fallback).
     try {
-      const Company = require("../db/models/company/company.model");
-      let companyId = req.session?.activeCompanyId || null;
-      if (!companyId) {
-        const first = await Company.findOne({ owner: req.user._id, isDeleted: { $ne: true } })
-          .sort({ createdAt: 1 }).select("_id").lean();
-        companyId = first?._id || null;
-      }
+      const companyId = await resolveActiveOwnedCompanyId(req);
       if (companyId) {
         const cUpd = {};
         if (businessName !== undefined) cUpd.name = businessName || "";
@@ -974,11 +995,18 @@ exports.updateAbout = async (req, res) => {
 };
 
 // Upload photo établissement
+// Dual-write User + Company, comme editBusinessInfo : la page publique lit
+// `company.photo` EN PRIORITÉ, donc sans cette écriture la nouvelle photo
+// n'apparaissait jamais et l'ancienne restait affichée partout.
 exports.editBusinessPicture = async (req, res) => {
   try {
     const { filename } = req.file;
     const imagePath = `/uploads/profiles/${filename}`;
     await User.findByIdAndUpdate(req.user._id, { businessPicture: imagePath });
+    try {
+      const companyId = await resolveActiveOwnedCompanyId(req);
+      if (companyId) await Company.findByIdAndUpdate(companyId, { photo: imagePath });
+    } catch (e) { console.error("[editBusinessPicture] sync company:", e.message); }
     return res.json({ success: true, path: imagePath });
   } catch (err) {
     console.error(err);
@@ -990,6 +1018,10 @@ exports.editBusinessPicture = async (req, res) => {
 exports.deleteBusinessPicture = async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.user._id, { $unset: { businessPicture: "" } });
+    try {
+      const companyId = await resolveActiveOwnedCompanyId(req);
+      if (companyId) await Company.findByIdAndUpdate(companyId, { photo: "" });
+    } catch (e) { console.error("[deleteBusinessPicture] sync company:", e.message); }
     return res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -1034,14 +1066,24 @@ exports.deleteAccount = async (req, res) => {
     const DaysOff = require("../db/models/company/daysOff.model");
     const Booking = require("../db/models/book.model");
 
-    const company = await Company.findOne({ owner: userId });
-    if (company) {
-      await Booking.deleteMany({ company: company._id });
-      await DaysOff.deleteMany({ company: company._id });
-      await Company.findByIdAndDelete(company._id);
+    const CompanyMembership = require("../db/models/company/companyMembership.model");
+
+    // Un compte peut posséder PLUSIEURS établissements (multi-établissements) :
+    // n'en supprimer qu'un laissait les autres orphelins — invisibles dans
+    // /search et en erreur sur leur URL publique (owner inexistant).
+    const companies = await Company.find({ owner: userId }).select("_id name").lean();
+    if (companies.length) {
+      const ids = companies.map((c) => c._id);
+      console.log(
+        `[deleteAccount] suppression de ${ids.length} établissement(s) du compte ${userId}:`,
+        companies.map((c) => `${c.name || "(sans nom)"}#${c._id}`).join(", ")
+      );
+      await Booking.deleteMany({ company: { $in: ids } });
+      await DaysOff.deleteMany({ company: { $in: ids } });
+      await CompanyMembership.deleteMany({ company: { $in: ids } });
+      await Company.deleteMany({ _id: { $in: ids } });
     }
 
-    const CompanyMembership = require("../db/models/company/companyMembership.model");
     await CompanyMembership.deleteMany({ user: userId });
 
     await Subscription.findOneAndDelete({ user: userId });
@@ -1404,16 +1446,27 @@ exports.updateReminderSettings = async (req, res) => {
   }
 };
 
-// ── Réglages SMS (page SMS dédiée) : uniquement les 3 bascules ──────────────
+// ── Réglages SMS / WhatsApp (page SMS dédiée) : bascules d'envoi ────────────
+// On ne persiste QUE les clés présentes dans le corps : le bouton « SMS » et le
+// bouton « WhatsApp » enregistrent chacun leur sous-ensemble sans écraser
+// l'autre. Toutes les clés partagent le même modèle de crédits (cf. sms.js).
 exports.updateSmsSettings = async (req, res) => {
   try {
-    await User.findByIdAndUpdate(req.user._id, {
-      $set: {
-        "calendarSettings.smsRemindersEnabled":    !!req.body.smsRemindersEnabled,
-        "calendarSettings.smsConfirmationEnabled": !!req.body.smsConfirmationEnabled,
-        "calendarSettings.smsAllowOverage":        !!req.body.smsAllowOverage,
-      },
-    });
+    const KEYS = [
+      "smsRemindersEnabled",
+      "smsConfirmationEnabled",
+      "smsAllowOverage",
+      "whatsappRemindersEnabled",
+      "whatsappConfirmationEnabled",
+    ];
+    const set = {};
+    for (const k of KEYS) {
+      if (Object.prototype.hasOwnProperty.call(req.body, k)) {
+        set["calendarSettings." + k] = !!req.body[k];
+      }
+    }
+    if (Object.keys(set).length === 0) return res.json({ success: true });
+    await User.findByIdAndUpdate(req.user._id, { $set: set });
     return res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -1749,6 +1802,7 @@ exports.createCompanyForExistingUser = async (req, res) => {
         { weekdayIndex: 0, dayOff: true },
       ],
     });
+
     await User.findByIdAndUpdate(req.user._id, {
       company: company._id,
       accountIntent: "pro",
@@ -1802,7 +1856,7 @@ exports.resumeCompany = async (req, res) => {
 exports.requestJoinCompany = async (req, res) => {
   try {
     const CompanyMembership = require("../db/models/company/companyMembership.model");
-    const { getPlan } = require("../utils/planLimits");
+    const { getCompanyPlan } = require("../utils/planLimits");
 
     const existing = await Company.findOne({ owner: req.user._id }).lean();
     if (existing) {
@@ -1812,8 +1866,11 @@ exports.requestJoinCompany = async (req, res) => {
     const { companyId } = req.body;
     if (!companyId) return res.status(400).json({ error: "Établissement manquant." });
 
-    const target = await Company.findById(companyId).populate("owner", "subscription isPremium manualPremium");
-    if (!target || getPlan(target.owner) !== "business") {
+    // « Rejoignable » = l'ÉTABLISSEMENT est Business, pas le compte de son
+    // patron (le forfait est porté par l'établissement — cf. getCompanyPlan).
+    const target = await Company.findOne({ _id: companyId, isDeleted: { $ne: true } })
+      .populate("owner", "subscription isPremium manualPremium");
+    if (!target || getCompanyPlan(target, target.owner) !== "business") {
       return res.status(400).json({ error: "Cet établissement n'est plus disponible pour être rejoint." });
     }
 
@@ -1849,6 +1906,34 @@ exports.respondToInvitation = async (req, res) => {
     if (!membership) {
       return res.status(404).json({ error: "Invitation introuvable." });
     }
+
+    // Revérifier la limite de sièges AU MOMENT de l'acceptation : une
+    // invitation émise quand il restait de la place reste acceptable des mois
+    // plus tard, alors que l'établissement est entre-temps plein ou retombé
+    // sur un forfait inférieur.
+    if (decision === "accepted") {
+      const { getCollaboratorLimit, billingUserFor } = require("../utils/planLimits");
+      const company = await Company.findById(membership.company)
+        .select("_id owner plan planStatus")
+        .lean();
+      if (!company) return res.status(404).json({ error: "Établissement introuvable." });
+      const ownerUser = await User.findById(company.owner)
+        .select("subscription isPremium manualPremium addons")
+        .lean();
+      const limit = getCollaboratorLimit(billingUserFor(company, ownerUser));
+      const activeCount = await CompanyMembership.countDocuments({
+        company: company._id,
+        status: "accepted",
+        isActive: { $ne: false },
+      });
+      if (activeCount >= limit) {
+        return res.status(403).json({
+          error: "plan_limit",
+          message: "Cet établissement a atteint le nombre de collaborateurs permis par son forfait. Contactez son responsable.",
+        });
+      }
+    }
+
     membership.status = decision;
     if (decision === "accepted") {
       membership.acceptedAt = new Date();
@@ -1881,6 +1966,27 @@ exports.respondJoinRequest = async (req, res) => {
     if (!membership) {
       return res.status(404).json({ error: "Demande introuvable." });
     }
+
+    // Limite de sièges revérifiée à l'acceptation (cf. inviteCollaborator) —
+    // `res.locals.billingUser` porte déjà le forfait de l'établissement actif.
+    if (decision === "accepted") {
+      const { getCollaboratorLimit } = require("../utils/planLimits");
+      const limit = getCollaboratorLimit(res.locals.billingUser);
+      const activeCount = await CompanyMembership.countDocuments({
+        company: res.locals.currentCompany._id,
+        status: "accepted",
+        isActive: { $ne: false },
+      });
+      if (activeCount >= limit) {
+        return res.status(403).json({
+          error: "plan_limit",
+          message: limit <= 0
+            ? "Votre forfait ne permet pas d'ajouter de collaborateurs. Passez au forfait Pro ou Business."
+            : `Votre forfait permet ${limit} collaborateur(s) au maximum. Passez à un forfait supérieur pour en ajouter davantage.`,
+        });
+      }
+    }
+
     membership.status = decision;
     if (decision === "accepted") {
       membership.acceptedAt = new Date();

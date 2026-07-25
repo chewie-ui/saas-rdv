@@ -267,6 +267,22 @@ block content
                                 .sa-bar__n= s.count.toLocaleString('fr-FR')
                 else
                     .sa-muted Aucune donnée de provenance.
+            .sa-card
+                .sa-card__t Provenance des inscrits
+                if trafic.inscritsParSource && trafic.inscritsParSource.length
+                    - var maxInscrit = Math.max.apply(null, trafic.inscritsParSource.map(function (s) { return s.count; }))
+                    .sa-bars
+                        each s in trafic.inscritsParSource
+                            .sa-bar
+                                .sa-bar__name= s._id
+                                .sa-bar__track
+                                    .sa-bar__fill(style='width:' + Math.round((s.count / maxInscrit) * 100) + '%')
+                                .sa-bar__n= s.count.toLocaleString('fr-FR')
+                else
+                    .sa-muted Aucun inscrit tracé pour l'instant.
+                if trafic.inscritsSansSource
+                    .sa-muted(style="margin-top:10px")
+                        = trafic.inscritsSansSource.toLocaleString('fr-FR') + ' compte' + (trafic.inscritsSansSource > 1 ? 's' : '') + ' sans provenance (créé' + (trafic.inscritsSansSource > 1 ? 's' : '') + ' avant le suivi, ou via l\'app mobile)'
 
     //- ── Fiche détaillée ───────────────────────────────────────────────────
     .sa-drawer#drawer

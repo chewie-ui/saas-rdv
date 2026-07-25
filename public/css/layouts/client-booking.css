@@ -114,6 +114,23 @@ img { display: block; max-width: 100%; }
   transition: background 0.15s, border-color 0.15s;
 }
 .bk-sign-btn:hover { background: var(--bk-subtle); border-color: var(--bk-border-strong); }
+.bk-sign-btn svg { flex-shrink: 0; }
+
+/* Deux boutons alignés (Espace client + Établissement) */
+.bk-top__right { display: flex; align-items: center; gap: 8px; }
+
+/* Bouton principal — reprend la couleur d'accent de l'établissement */
+.bk-sign-btn--primary {
+  background: var(--bk-accent, #16a34a);
+  border-color: var(--bk-accent, #16a34a);
+  color: var(--bk-accent-text, #fff);
+}
+.bk-sign-btn--primary:hover { background: var(--bk-accent, #16a34a); border-color: var(--bk-accent, #16a34a); filter: brightness(0.94); }
+
+@media (max-width: 520px) {
+  /* Sur mobile : icônes seules pour les 2 boutons, gain de place */
+  .bk-top__right .bk-sign-btn { padding: 0 10px; }
+}
 
 /* ── Main ───────────────────────────────────────────────────────────────── */
 .bk-main {

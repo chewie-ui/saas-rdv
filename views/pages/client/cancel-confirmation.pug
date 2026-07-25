@@ -1,5 +1,6 @@
 -
-    var _bizName = (coach && (coach.businessName || coach.fullName)) || 'BranShee'
+    //- Nom de l'ÉTABLISSEMENT d'abord (repli compte pour les fiches historiques)
+    var _bizName = (company && company.name) || (coach && (coach.businessName || coach.fullName)) || 'BranShee'
     var _bizSlug = company ? (company.slug || String(company._id)) : null
 
 doctype html

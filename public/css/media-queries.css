@@ -12,7 +12,7 @@
    ============================================================ */
 
 /* On mobile/tablet the hamburger is always visible (sidebar is overlay) */
-@media (max-width: 1279px) {
+@media (max-width: 1023px) {
   #openMenu {
     display: flex;
   }
@@ -435,9 +435,15 @@
    ============================================================ */
 
 @media (max-width: 819px) {
+  /* `clip` (et non `hidden`) : `hidden` fait de `body` un conteneur de
+     défilement, ce qui CASSE tout `position: sticky` en dessous de 820px
+     (la barre d'outils de /search ne collait plus). `clip` bloque le scroll
+     horizontal sans créer de scrollport.
+     `max-width: 100vw` retiré : 100vw inclut la barre de défilement et
+     provoque lui-même un léger débordement. */
   html, body {
-    overflow-x: hidden;
-    max-width: 100vw;
+    overflow-x: clip;
+    max-width: none;
   }
 
   img {

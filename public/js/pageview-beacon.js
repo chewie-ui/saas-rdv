@@ -10,6 +10,9 @@
         credentials: "same-origin",
         body: JSON.stringify({
           path: window.location.pathname,
+          // La query string porte les `utm_*` et le `gclid` : sans elle, un
+          // clic Google Ads est indiscernable d'une visite directe.
+          query: window.location.search || "",
           referrer: document.referrer || "",
         }),
       }).catch(function () {});

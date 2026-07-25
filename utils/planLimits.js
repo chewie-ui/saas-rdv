@@ -181,8 +181,27 @@ function canCreateEstablishment(companies, owner) {
   return { canCreate: freeCount < allowedFree, freeCount, businessCount, allowedFree };
 }
 
+/**
+ * Construit un « billingUser » : objet minimal lu par getPlan()/getLimit()/
+ * atLeast(), portant le forfait de l'ÉTABLISSEMENT et non celui du compte.
+ * `owner` doit être déjà chargé (aucun accès base ici).
+ *
+ * C'est LA façon de rendre per-établissement une vérification de plan écrite
+ * pour un User : `getLimit("x", billingUserFor(company, owner))`.
+ */
+function billingUserFor(company, owner) {
+  const plan = getCompanyPlan(company, owner);
+  return {
+    _id:           (owner && owner._id) || null,
+    addons:        (owner && owner.addons) || {},
+    isPremium:     false,
+    manualPremium: false,
+    subscription:  { plan, status: plan === "basic" ? "inactive" : "active" },
+  };
+}
+
 module.exports = {
   getPlan, atLeast, getLimit, getCollaboratorLimit, getSmsQuota,
-  getCompanyPlan, canCreateEstablishment,
+  getCompanyPlan, canCreateEstablishment, billingUserFor,
   LIMITS, PLANS,
 };

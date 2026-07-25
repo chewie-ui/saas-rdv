@@ -6,9 +6,10 @@ const Booking = require("../db/models/book.model");
 const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
 const Service = require("../db/models/company/service.model");
-const { atLeast } = require("./planLimits");
+const { atLeast, billingUserFor } = require("./planLimits");
 const { sendEmail } = require("./mailer");
 const { sendReminderSmsIfAllowed } = require("./sms");
+const { sendWhatsappIfAllowed, isWhatsappConfigured, WA_TPL_REMINDER } = require("./whatsapp");
 const { isFeatureEnabled } = require("../middlewares/featureFlag");
 
 /**
@@ -57,14 +58,22 @@ async function sendDueReminders() {
   // Pre-fetch company owners in batch (avoid N+1 queries)
   const companyIds = [...new Set(candidates.map((b) => String(b.company)).filter(Boolean))];
   const companyOwnerMap = {};
+  // Le forfait ET le nom affiché appartiennent à l'ÉTABLISSEMENT : on garde le
+  // document Company sous la main (plan/planStatus/name), pas seulement l'owner.
+  const companyById = {};
   try {
-    const companies = await Company.find({ _id: { $in: companyIds } }).select("_id owner").lean();
+    const companies = await Company.find({ _id: { $in: companyIds } })
+      .select("_id owner name plan planStatus")
+      .lean();
     const ownerIds = [...new Set(companies.map((c) => String(c.owner)).filter(Boolean))];
     const owners = await User.find({ _id: { $in: ownerIds } })
       .select("_id isPremium manualPremium subscription calendarSettings location businessName phonePro addons smsUsage")
       .lean();
     const ownerById = Object.fromEntries(owners.map((o) => [String(o._id), o]));
-    companies.forEach((c) => { companyOwnerMap[String(c._id)] = ownerById[String(c.owner)] || null; });
+    companies.forEach((c) => {
+      companyOwnerMap[String(c._id)] = ownerById[String(c.owner)] || null;
+      companyById[String(c._id)] = c;
+    });
   } catch (err) {
     console.error("[reminderScheduler] Erreur pre-fetch owners ❌", err);
   }
@@ -74,8 +83,13 @@ async function sendDueReminders() {
     if (!booking.email) continue;
 
     // ── Plan gate: reminders only for Pro / Business ──────────────────────
+    // Le forfait est celui de l'ÉTABLISSEMENT (repli sur le compte owner tant
+    // que company.plan n'est pas renseigné — cf. getCompanyPlan).
     const owner = companyOwnerMap[String(booking.company)];
-    if (!atLeast(owner, "pro")) continue;
+    const companyDoc = companyById[String(booking.company)];
+    const billing = billingUserFor(companyDoc, owner);
+    const billingPlan = billing.subscription.plan;
+    if (!atLeast(billing, "pro")) continue;
 
     // ── Délai personnalisé (défaut 24h) ───────────────────────────────────
     const delayHours = owner?.calendarSettings?.reminderDelayHours || 24;
@@ -109,7 +123,13 @@ async function sendDueReminders() {
     const servicePrice = (booking.payment && booking.payment.amount) ? Number(booking.payment.amount) : null;
 
     // ── Infos établissement ──────────────────────────────────────────────
-    const businessName = (owner?.businessName || "").trim();
+    // Nom de L'ÉTABLISSEMENT d'abord (repli compte pour les fiches
+    // historiques). Alimente WhatsApp {{2}}, le corps du SMS et l'email : un
+    // patron multi-établissements envoyait sinon partout le même nom.
+    // Les sauts de ligne sont écrasés : Meta rejette un paramètre multi-ligne.
+    const businessName = (companyDoc?.name || owner?.businessName || "")
+      .replace(/\s+/g, " ")
+      .trim();
     const businessPhone = (owner?.phonePro || "").trim();
 
     // ── Lieu du rendez-vous ──────────────────────────────────────────────
@@ -133,6 +153,41 @@ async function sendDueReminders() {
       weekday: "long", day: "2-digit", month: "long", year: "numeric",
     });
 
+    // ── Rappel WhatsApp (canal prioritaire : moins cher que le SMS) ─────────
+    // Si activé par le pro ET WhatsApp configuré côté serveur, on tente WhatsApp
+    // en premier. Même pot de crédits que le SMS. En cas d'échec (quota épuisé,
+    // solde vide, erreur Meta) → repli SMS ci-dessous, puis email. Jamais
+    // bloquant : une erreur ici n'empêche pas les canaux suivants.
+    if (
+      booking.phone &&
+      owner?.calendarSettings?.whatsappRemindersEnabled &&
+      isWhatsappConfigured()
+    ) {
+      try {
+        const clientFirstName = (booking.name || "").trim() || (booking.surname || "").trim() || "";
+        const result = await sendWhatsappIfAllowed(owner, booking.phone, {
+          plan: billingPlan, // quota inclus = propriété du forfait de l'établissement
+          template: WA_TPL_REMINDER,
+          // Ordre des variables {{1..4}} du template « rdv_rappel » (cf. WHATSAPP_SETUP.md)
+          params: [
+            clientFirstName,
+            businessName || "votre établissement",
+            formattedDate,
+            booking.startTime || "",
+          ],
+        });
+        if (result.sent) {
+          booking.reminderSent = true;
+          await booking.save();
+          console.log(`[reminderScheduler] Rappel WhatsApp (${result.mode}) envoyé à ${booking.phone}`);
+          continue; // WhatsApp envoyé — pas de SMS ni d'email
+        }
+        // result.sent === false → on continue vers le SMS ci-dessous
+      } catch (waErr) {
+        console.error(`[reminderScheduler] Erreur WhatsApp ${booking._id} ❌`, waErr);
+      }
+    }
+
     // ── Rappel SMS (si activé par le pro) — repli automatique sur l'email
     // ci-dessous si le quota mensuel est dépassé et qu'aucun crédit n'est
     // disponible. Jamais bloquant : une erreur ici n'empêche pas l'email.
@@ -143,7 +198,7 @@ async function sendDueReminders() {
     ) {
       try {
         const smsBody = `Rappel : votre rendez-vous ${businessName ? `avec ${businessName} ` : ""}est ${delayLabel} (${formattedDate} à ${booking.startTime}).`;
-        const result = await sendReminderSmsIfAllowed(owner, booking.phone, smsBody);
+        const result = await sendReminderSmsIfAllowed(owner, booking.phone, smsBody, { plan: billingPlan });
         if (result.sent) {
           booking.reminderSent = true;
           await booking.save();
@@ -264,7 +319,10 @@ async function sendOnboardingNudges() {
     users = await User.find({
       createdAt: { $gte: notOlderThan, $lte: atLeastOneDay },
       "onboarding.dismissed": { $ne: true },
-      "onboarding.nudgeStage": { $lt: 2 },
+      // Même piège que ci-dessus : `$lt: 2` seul écarte les comptes dont
+      // `onboarding.nudgeStage` n'existe pas (docs antérieurs au champ), qui
+      // n'ont donc jamais reçu la moindre relance. `$not/$gte` les inclut.
+      "onboarding.nudgeStage": { $not: { $gte: 2 } },
       isDisabled: { $ne: true },
       email: { $exists: true, $ne: "" },
     })
@@ -350,7 +408,12 @@ async function sendCreateEstablishmentNudges() {
   let candidates;
   try {
     candidates = await User.find({
-      accountIntent: { $in: ["pro", "undecided"] },
+      // `$nin` et non `$in: ["pro","undecided"]` : en Mongo, `$in` ne matche
+      // JAMAIS un document où le champ est absent. Les comptes créés avant
+      // l'ajout de `accountIntent` (le défaut du schéma ne s'applique qu'à la
+      // création) étaient donc exclus à vie de cette relance. « Tout sauf un
+      // client déclaré » couvre pro + undecided + champ absent.
+      accountIntent: { $nin: ["client"] },
       createdAt: { $gte: notOlderThan, $lte: atLeastOneDay },
       "onboarding.createEstabNudged": { $ne: true },
       isDisabled: { $ne: true },

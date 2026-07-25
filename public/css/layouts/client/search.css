@@ -1,185 +1,154 @@
 /* ═══════════════════════════════════════════════════════════════
-   SEARCH / ANNUAIRE — BranShee (refonte)
-   Design system · Plus Jakarta Sans · accent vert
+   SEARCH / ANNUAIRE — BranShee
+   Liste épurée : filets fins, fond blanc, aucun cadre empilé.
+   Tokens consommés depuis import.css + ds.css (jamais redéfinis ici).
    ═══════════════════════════════════════════════════════════════ */
 
 .sx {
-  --sx-radius: 16px;
-  background: var(--surface, #f4f6f5);
-  min-height: 100vh;
+  /* Hauteur de la topbar fixe (topbar.index.css : 64px, 68px ≥820).
+     SEULE source de vérité pour compenser le header et caler le sticky. */
+  --sx-header-h: 64px;
+  --sx-gut: 16px;
+  --sx-max: 1200px;
+  --sx-measure: 100%; /* mesure de lecture de la liste */
+  --sx-thumb: 72px;
+  --sx-row-py: 16px;
+
+  background: var(--surface-card);
+  min-height: 100dvh;
+  /* `clip` et non `hidden` : ne crée pas de conteneur de défilement, donc
+     ne casse pas le position:sticky de la barre d'outils. Associé à un
+     overflow-y qui reste `visible`, les dropdowns ne sont pas rognés. */
+  overflow-x: clip;
+}
+
+@media (min-width: 820px) {
+  .sx {
+    --sx-header-h: 68px;
+    --sx-gut: 24px;
+    --sx-thumb: 88px;
+    --sx-row-py: 18px;
+  }
+}
+@media (min-width: 1280px) {
+  .sx {
+    --sx-gut: 32px;
+    --sx-thumb: 96px;
+    --sx-measure: 880px;
+  }
+}
+
+/* Shell fluide (remplace .container) : pas de palier figé à 800px. */
+.sx-body {
+  width: min(100% - 2 * var(--sx-gut), var(--sx-max));
+  margin-inline: auto;
+  padding-block: 0 64px;
 }
 
 /* ═══ HERO ═══════════════════════════════════════════════════════ */
 .sx-hero {
   position: relative;
-  padding: 104px 20px 40px;
+  /* z-index > .sx-toolbar (30) : les menus d'autocomplétion passent
+     au-dessus de la barre d'outils collante. */
+  z-index: 40;
+  padding: calc(var(--sx-header-h) + clamp(24px, 5vw, 56px)) var(--sx-gut) clamp(24px, 4vw, 40px);
   text-align: center;
-  /* Pas d'overflow:hidden ici : il rognerait les menus d'autocomplétion qui
-     dépassent sous le hero. Le dégradé de fond (.sx-hero__bg) est déjà borné
-     par inset:0, il ne déborde donc pas. */
+  background: var(--surface-card);
+  /* JAMAIS overflow:hidden ici : rognerait les .sx-dd. */
 }
-.sx-hero__bg {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(1100px 380px at 50% -60px, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
-    linear-gradient(180deg, var(--accent-soft, #eafaf0) 0%, var(--surface, #f4f6f5) 100%);
-  pointer-events: none;
-}
-.sx-hero__inner {
-  position: relative;
-  max-width: 760px;
-  margin: 0 auto;
-}
+.sx-hero__inner { max-width: 720px; margin-inline: auto; }
 .sx-hero__title {
-  font-family: var(--font-primary, "Plus Jakarta Sans", sans-serif);
-  font-size: clamp(28px, 4vw, 44px);
+  font-size: clamp(26px, 4.2vw, 40px);
   font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.08;
-  color: var(--ink, #0f172a);
-  margin: 0 0 12px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--ink);
+  margin: 0 0 10px;
   text-wrap: balance;
 }
-.sx-dot { color: var(--accent, #16a34a); }
+.sx-dot { color: var(--accent); }
 .sx-hero__sub {
-  font-size: clamp(14px, 1.4vw, 16px);
-  color: var(--text-muted, #64748b);
-  margin: 0 0 26px;
+  font-size: clamp(14px, 1.3vw, 15px);
   line-height: 1.55;
+  color: var(--text-muted);
+  margin: 0 0 22px;
 }
 
-/* ── Barre de recherche ── */
+/* ── Barre de recherche : UN SEUL contenant bordé ── */
 .sx-search {
   display: flex;
+  flex-wrap: wrap;
   align-items: stretch;
-  gap: 6px;
-  background: var(--surface-card, #fff);
-  border: 1px solid var(--border-light, #e5e7eb);
-  border-radius: var(--sx-radius);
-  box-shadow: 0 14px 40px -12px rgba(16, 40, 28, 0.18);
+  gap: 4px;
   padding: 6px;
   max-width: 720px;
-  margin: 0 auto;
+  margin-inline: auto;
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  box-shadow: var(--ds-shadow-sm);
 }
+.sx-search:focus-within { border-color: var(--accent); box-shadow: var(--ds-ring); }
+
 .sx-field {
-  position: relative;
-  flex: 1;
+  position: relative; /* ancre des .sx-dd */
+  flex: 1 1 200px;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 9px;
   padding: 0 12px;
-  min-width: 0;
 }
-.sx-field__ic {
-  width: 18px;
-  height: 18px;
-  color: var(--text-muted, #94a3b8);
-  flex-shrink: 0;
-}
+.sx-field__ic { font-size: 20px; color: var(--text-muted); flex: none; }
 .sx-field input {
-  width: 100%;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-family: inherit;
-  font-size: 15px;
-  color: var(--ink, #0f172a);
-  padding: 15px 0;
+  flex: 1;
   min-width: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font-family: inherit;
+  /* 16px : en dessous, iOS Safari zoome à la mise au point du champ. */
+  font-size: 16px;
+  color: var(--ink);
+  padding: 13px 0;
 }
-.sx-field input::placeholder { color: var(--text-muted, #9ca3af); }
-.sx-search__sep {
-  width: 1px;
-  background: var(--border-light, #e5e7eb);
-  margin: 10px 0;
-  flex-shrink: 0;
+.sx-field input::placeholder { color: var(--text-muted); }
+
+/* Le filet pivote selon l'orientation au lieu d'ajouter des cadres imbriqués. */
+.sx-search__sep { background: var(--border-light); flex: 0 0 auto; }
+@media (max-width: 599px) { .sx-search__sep { height: 1px; width: auto; margin: 0 12px; } }
+@media (min-width: 600px) { .sx-search__sep { width: 1px; margin: 8px 0; } }
+
+/* `.sx .sm-btn.sx-submit` : `.sx .sm-btn { height: 40px }`, déclaré plus bas,
+   a la même spécificité que `.sx .sx-submit` et l'emportait par l'ordre.
+   Ajouter `.sm-btn` au sélecteur le fait gagner proprement (0,3,0). */
+.sx .sm-btn.sx-submit { flex: 0 0 auto; height: 44px; padding: 0 22px; border-radius: 12px; }
+@media (max-width: 819px) { .sx-submit { flex: 1 0 100%; } }
+@media (max-width: 599px) {
+  .sx-search { flex-direction: column; }
+  .sx-field  { flex: 1 1 auto; }
+  /* En colonne, un flex-basis en % se résout sur une hauteur indéfinie :
+     on fixe explicitement la largeur pour éviter tout comportement limite. */
+  .sx-submit { flex: 0 0 auto; width: 100%; }
 }
 
 /* Bouton « autour de moi » (dans le champ ville) */
 .sx-geo {
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  border: 1px solid var(--border-light, #e5e7eb);
-  background: var(--surface, #f8faf9);
-  color: var(--text-muted, #64748b);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 10px;
+  align-self: center;
 }
-.sx-geo svg { width: 17px; height: 17px; }
-.sx-geo:hover { color: var(--accent, #16a34a); border-color: var(--accent-border, #bbf7d0); background: var(--accent-soft, #f0fdf4); }
-.sx-geo.is-active { color: #fff; background: var(--accent, #16a34a); border-color: var(--accent, #16a34a); }
-.sx-geo.is-loading { animation: sxSpin 0.8s linear infinite; }
+.sx-geo .material-symbols-outlined { font-size: 20px; }
+/* `:hover` inclus : le hover de `.sm-btn--ghost` (spécificité supérieure)
+   repassait le bouton en blanc alors que la géoloc est active. */
+.sx-geo.is-active,
+.sx-geo.is-active:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* Seule l'icône tourne : faire tourner le bouton entier déplaçait sa bordure. */
+.sx-geo.is-loading .material-symbols-outlined { animation: sxSpin 0.8s linear infinite; }
 @keyframes sxSpin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .sx-geo.is-loading { animation: none; } }
-
-.sx-submit {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 24px;
-  border: none;
-  border-radius: 12px;
-  background: var(--accent, #16a34a);
-  color: #fff;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: filter 0.15s;
-}
-.sx-submit svg { width: 17px; height: 17px; }
-.sx-submit:hover { filter: brightness(1.06); }
-
-/* ── Dropdown autocomplétion ── */
-.sx-dd {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: -12px;
-  right: -12px;
-  background: var(--surface-card, #fff);
-  border: 1px solid var(--border-light, #e5e7eb);
-  border-radius: 13px;
-  box-shadow: 0 18px 44px -12px rgba(0, 0, 0, 0.22);
-  padding: 6px;
-  z-index: 60;
-  display: none;
-  max-height: 340px;
-  overflow-y: auto;
-  text-align: left;
-}
-.sx-dd.is-open { display: block; animation: sxDDin 0.16s ease both; }
-@keyframes sxDDin { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-.sx-dd__item {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 11px 13px;
-  border-radius: 9px;
-  font-size: 14px;
-  color: var(--ink-2, #374151);
-  cursor: pointer;
-  transition: background 0.1s;
-  min-width: 0;
-}
-.sx-dd__item:hover { background: var(--accent-soft, #f0fdf4); color: var(--accent-strong, #15803d); }
-.sx-dd__item svg { width: 15px; height: 15px; color: var(--text-muted, #9ca3af); flex-shrink: 0; }
-/* Longs noms (villes/régions) : une seule ligne, tronquée — jamais de retour
-   à la ligne qui casse la hauteur de la ligne du menu. */
-.sx-dd__item span {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.sx-dd__item:hover svg { color: var(--accent, #16a34a); }
 
 /* ── Raccourcis populaires ── */
 .sx-hero__quick {
@@ -187,324 +156,377 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   margin-top: 20px;
 }
-.sx-hero__quick-lbl { font-size: 12.5px; font-weight: 700; color: var(--text-muted, #94a3b8); }
-.sx-quick {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink-2, #374151);
-  background: var(--surface-card, #fff);
-  border: 1px solid var(--border-light, #e5e7eb);
-  border-radius: 999px;
-  padding: 7px 14px;
-  text-decoration: none;
-  transition: all 0.15s;
-}
-.sx-quick:hover { border-color: var(--accent, #16a34a); color: var(--accent-strong, #15803d); background: var(--accent-soft, #f0fdf4); }
+.sx-hero__quick-lbl { font-size: var(--ds-fs-sm); font-weight: 700; color: var(--text-muted); }
+/* `businessType` est du texte libre saisi par les pros : sans plafond ni
+   ellipsis, un libellé à rallonge était coupé en silence par l'overflow-x
+   de `.sx` sur petit écran. */
+.sx-quick { height: 40px; border-radius: 999px; text-decoration: none; max-width: min(100%, 62vw); overflow: hidden; }
+.sx-quick > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ═══ CORPS ══════════════════════════════════════════════════════ */
-.sx-body {
-  padding: 12px 20px 72px;
+/* ── Dropdown autocomplétion ── */
+.sx-dd {
+  position: absolute;
+  top: calc(100% + 8px);
+  /* Calé sur le champ (et non débordant de -12px) : plus de scroll horizontal. */
+  left: 0;
+  right: 0;
+  z-index: 60;
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-md);
+  box-shadow: var(--ds-shadow-pop);
+  padding: 6px;
+  display: none;
+  text-align: left;
+  /* 50vh : en paysage sur téléphone, 340px déborderait de l'écran. */
+  max-height: min(340px, 50vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
-
-/* Barre d'outils : chips + tri */
-.sx-toolbar {
+.sx-dd.is-open { display: block; }
+.sx-dd__item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 0;
-  position: sticky;
-  top: 60px;
-  background: var(--surface, #f4f6f5);
-  z-index: 30;
-}
-.sx-chips {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  flex: 1;
-  padding-bottom: 2px;
-  scrollbar-width: none;
-}
-.sx-chips::-webkit-scrollbar { display: none; }
-.sx-chip {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  /* Plafond de largeur : un intitulé très long (ex. « Réflexologue
-     thérapeutique et Soins… ») est tronqué proprement (…) au lieu d'être coupé
-     en plein milieu au bord du défilement. Le libellé complet reste en title. */
-  max-width: 230px;
-  padding: 9px 15px;
-  border-radius: 999px;
-  border: 1px solid var(--border-light, #e5e7eb);
-  background: var(--surface-card, #fff);
-  color: var(--ink-2, #374151);
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
+  gap: 11px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--ds-r-sm);
+  font-size: 14px;
+  color: var(--text-secondary);
   cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s;
 }
-.sx-chip__t {
+/* Ne JAMAIS cibler « .sx-dd__item span » : l'icône est elle-même un <span>. */
+.sx-dd__item .material-symbols-outlined,
+.sx-dd__item svg { font-size: 18px; width: 18px; height: 18px; color: var(--text-muted); flex: none; }
+.sx-dd__txt {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.sx-chip:hover { border-color: var(--border-medium, #d1d5db); }
-.sx-chip.is-active { background: var(--accent, #16a34a); border-color: var(--accent, #16a34a); color: #fff; }
+
+/* ═══ BARRE D'OUTILS COLLANTE ════════════════════════════════════ */
+.sx-toolbar {
+  position: sticky;
+  top: var(--sx-header-h);
+  z-index: 30;
+  background: var(--surface-card);
+}
+/* Le filet est porté par le contenu interne, pas par la barre : sinon il
+   faisait 1200px de large sous un contenu de 880px (dépassement de 160px de
+   chaque côté au-delà de 1280px). */
+.sx-toolbar__in {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: var(--sx-measure);
+  margin-inline: auto;
+  padding-block: 8px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.sx-chips {
+  display: flex;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  /* `overflow-x:auto` force `overflow-y:auto`, qui rognait l'anneau de focus
+     (box-shadow 3px) des chips au clavier. On respire de 4px puis on annule
+     la place prise par la marge négative. */
+  padding: 4px;
+  margin: -4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline proximity;
+  scroll-padding-inline-end: 24px;
+  /* Fondu de bord : signale qu'il reste des catégories à faire défiler. */
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+          mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+}
+.sx-chips::-webkit-scrollbar { display: none; }
+
+.sx-chip {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  /* Plafond de largeur : un intitulé à rallonge est tronqué (…) au lieu
+     d'occuper toute la barre. Le libellé complet reste dans title. */
+  max-width: min(230px, 62vw);
+  padding: 0 15px;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: var(--surface-card);
+  font: 600 var(--ds-fs-md) var(--font-primary);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sx-chip__t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.sx-chip.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
 .sx-chip__n {
-  font-size: 11.5px;
+  font-size: var(--ds-fs-xs);
   font-weight: 700;
-  color: var(--text-muted, #9ca3af);
-  background: var(--surface, #f1f5f4);
+  /* --text-secondary et non --text-muted : sur --surface-2, `muted` tombe à
+     ~2,6:1 en clair et ~3,0:1 en sombre (sous le seuil AA). */
+  color: var(--text-secondary);
+  background: var(--surface-2);
   border-radius: 999px;
   padding: 1px 7px;
 }
 .sx-chip.is-active .sx-chip__n { background: rgba(255, 255, 255, 0.24); color: #fff; }
+.sx-chip:focus-visible { outline: none; box-shadow: var(--ds-ring); }
 
-/* Tri (select stylé) */
-.sx-sort { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.sx-sort__lbl { font-size: 13px; font-weight: 600; color: var(--text-muted, #64748b); }
-.sx-select { position: relative; }
-.sx-select select {
-  appearance: none;
-  -webkit-appearance: none;
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--ink, #0f172a);
-  background: var(--surface-card, #fff);
-  border: 1px solid var(--border-light, #e5e7eb);
-  border-radius: 10px;
-  padding: 9px 34px 9px 14px;
-  cursor: pointer;
+/* Tri — <select> natif habillé par .ds-select (chevron en data-URI). */
+.sx-sort { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.sx-sort__lbl { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.sx-sort__sel { height: 40px; width: auto; }
+@media (max-width: 599px) {
+  /* Libellé masqué visuellement mais conservé pour les lecteurs d'écran. */
+  .sx-sort__lbl {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  /* 148px : « Recommandés » (l'option par défaut) mesure ~94px et .ds-select
+     réserve 44px de padding + chevron — à 132px le libellé était coupé. */
+  .sx-sort__sel { width: 148px; }
 }
-.sx-select select:focus { outline: none; border-color: var(--accent, #16a34a); }
-.sx-select__ic {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 14px;
-  height: 14px;
-  color: var(--text-muted, #64748b);
-  pointer-events: none;
+/* Anti-zoom iOS jusqu'à 819px (iPhone en paysage : 667/736/812px de large). */
+@media (max-width: 819px) {
+  .sx-sort__sel { font-size: 16px; }
 }
 
 /* En-tête résultats */
 .sx-results-hd {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin: 8px 0 20px;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  max-width: var(--sx-measure);
+  margin: 14px auto 4px;
 }
-.sx-count { font-size: 15px; color: var(--text-muted, #64748b); }
-.sx-count strong { color: var(--ink, #0f172a); font-weight: 800; }
-.sx-geo-status {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-muted, #94a3b8);
-}
-.sx-geo-status.is-on { color: var(--accent-strong, #15803d); }
-.sx-geo-status__pin { color: var(--accent, #16a34a); }
+/* inline-flex + gap : l'espace entre le nombre et le nom commun ne dépend
+   pas d'un nœud texte, que le JS pourrait écraser au re-rendu. */
+.sx-count { display: inline-flex; align-items: baseline; gap: 5px; font-size: var(--ds-fs-md); color: var(--text-muted); }
+.sx-count strong { color: var(--ink); font-weight: 800; }
+.sx-geo-status { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.sx-geo-status.is-on { color: var(--accent); }
+.sx-geo-status__pin { color: var(--accent); }
 
-/* ═══ GRILLE DE CARTES ═══════════════════════════════════════════ */
-.sx-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  /* Sans ceci, chaque LIGNE se dimensionne seule : la 2e rangée était plus
-     courte que la 1re. Là, toutes les cartes de la page ont la même hauteur. */
-  grid-auto-rows: 1fr;
-  gap: 18px;
+/* ═══ LISTE DE RÉSULTATS ═════════════════════════════════════════ */
+.sx-list {
+  max-width: var(--sx-measure);
+  margin-inline: auto;
+  border-top: 1px solid var(--border-light);
 }
 
 .srp-card {
-  display: flex;
-  flex-direction: column;
-  background: var(--surface-card, #fff);
-  border: 1px solid var(--border-light, #e5e7eb);
-  border-radius: 16px;
-  overflow: hidden;
+  /* `grid` doit venir de la feuille de style : render() restaure l'affichage
+     via c.style.display = '' (suppression de la propriété inline). */
+  display: grid;
+  grid-template-columns: var(--sx-thumb) minmax(0, 1fr) auto;
+  gap: 12px 14px;
+  align-items: start;
+  padding: var(--sx-row-py) 0;
+  /* Filet sur TOUTES les lignes, jamais de :last-child { border:0 } : le
+     filtrage masque en display:none sans retirer du DOM, la « dernière »
+     ligne serait donc souvent invisible. */
+  border-bottom: 1px solid var(--border-light);
   text-decoration: none;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  color: inherit;
+  /* Pas d'overflow:hidden : rognerait le texte sans ellipsis. */
 }
-.srp-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 18px 40px -16px rgba(16, 40, 28, 0.28);
-  border-color: var(--accent-border, #bbf7d0);
-}
-.srp-card__img-wrap {
-  position: relative;
-  aspect-ratio: 4 / 3;
-  background: var(--surface, #f1f5f4);
+.srp-card__thumb {
+  /* Largeur pilotée par la piste de grille (--sx-thumb), pas redéclarée ici :
+     une seule source de vérité, donc aucun désaccord piste/vignette possible
+     au redimensionnement de la fenêtre. */
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
   overflow: hidden;
+  background: var(--surface-2);
 }
 .srp-card__img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Cadrage haut : un `cover` centré rogne autant en haut qu'en bas et
-     décapite les portraits. */
+  /* Cadrage haut : un `cover` centré décapite les portraits. */
   object-position: center 25%;
-  transition: transform 0.4s ease;
+  display: block;
 }
-.srp-card:hover .srp-card__img { transform: scale(1.05); }
-.srp-card__badge {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.01em;
-  backdrop-filter: blur(6px);
-}
-.srp-card__badge--boost { background: rgba(245, 158, 11, 0.95); color: #fff; }
-.srp-card__badge--pro { background: rgba(22, 163, 74, 0.95); color: #fff; }
-
-.srp-card__body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 15px 16px 16px;
-  flex: 1;
-}
-.srp-card__top { display: flex; align-items: center; gap: 6px; }
+.srp-card__body { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.srp-card__top { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; }
 .srp-card__name {
   font-size: 16px;
-  font-weight: 800;
-  color: var(--ink, #0f172a);
+  font-weight: 700;
   letter-spacing: -0.01em;
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.25;
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
-.srp-card__verified { color: var(--accent, #16a34a); flex-shrink: 0; }
+.srp-card__verified { font-size: 17px; color: var(--accent); flex: none; font-variation-settings: 'FILL' 1; }
+
 .srp-card__meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 10px;
-  /* Réservé : un professionnel sans métier renseigné faisait disparaître cette
-     ligne, et les 26 px se reportaient en vide juste avant « Réserver ». */
-  min-height: 26px;
-  font-size: 12.5px;
-  color: var(--text-muted, #64748b);
+  gap: 4px 10px;
+  font-size: var(--ds-fs-sm);
+  color: var(--text-muted);
+  min-width: 0;
 }
+/* `font-size: inherit` explicite : import.css pose `*, *::before, *::after
+   { font-size: 14px }`, et une déclaration sur `*` bat toujours l'héritage —
+   les enfants rendaient donc 14px au lieu des 12,5px du conteneur (retours à
+   la ligne parasites à 320px). */
+.srp-card__meta > * { min-width: 0; overflow-wrap: anywhere; font-size: inherit; }
 .srp-card__type {
-  /* Un métier à rallonge tenait sur 3 lignes et déséquilibrait la carte. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
   font-weight: 600;
-  color: var(--accent-strong, #15803d);
-  background: var(--accent-soft, #f0fdf4);
+  color: var(--accent);
+  background: var(--accent-soft);
   border-radius: 6px;
   padding: 2px 8px;
 }
-.srp-card__city { display: inline-flex; align-items: center; gap: 3px; }
-.srp-card__city svg { flex-shrink: 0; }
-.srp-card__dist {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-weight: 700;
-  color: var(--accent-strong, #15803d);
-  background: var(--accent-soft, #f0fdf4);
-  border: 1px solid var(--accent-border, #bbf7d0);
-  border-radius: 999px;
-  padding: 2px 8px;
-}
-.srp-card__rating { display: flex; align-items: center; gap: 6px; }
-.srp-card__stars { display: inline-flex; gap: 1px; }
-.srp-card__rating-val { font-size: 13px; font-weight: 800; color: var(--ink, #0f172a); }
-.srp-card__rating-n { font-size: 12px; color: var(--text-muted, #9ca3af); }
-.srp-card__rating--empty {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted, #9ca3af);
-}
+.srp-card__city,
+.srp-card__dist { display: inline-flex; align-items: center; gap: 3px; }
+.srp-card__dist { font-weight: 700; color: var(--accent); } /* injecté en JS */
+.srp-card__meta .material-symbols-outlined { font-size: 15px; flex: none; }
+.srp-card__dist svg { width: 14px; height: 14px; flex: none; } /* filet de sécurité */
+
+.srp-card__rating { display: flex; align-items: center; gap: 5px; font-size: 13px; }
+.srp-card__star { font-size: 16px; color: var(--warning); font-variation-settings: 'FILL' 1; }
+.srp-card__rating-val { font-weight: 800; color: var(--ink); }
+.srp-card__rating-n { color: var(--text-muted); font-size: var(--ds-fs-sm); }
+.srp-card__rating--empty { font-size: var(--ds-fs-sm); font-weight: 600; color: var(--text-muted); }
+
 .srp-card__desc {
-  /* Réservé même sans texte : sinon les cartes sans description avaient un
-     grand vide entre la note et « Réserver ». */
-  min-height: 39px;
+  margin: 2px 0 0;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--text-muted, #64748b);
-  margin: 0;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.srp-card__footer {
-  margin-top: auto;
-  padding-top: 10px;
-}
-.srp-card__book {
+
+.srp-card__badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13.5px;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--ds-fs-xs);
   font-weight: 700;
-  color: var(--accent-strong, #15803d);
-  transition: gap 0.15s;
 }
-.srp-card:hover .srp-card__book { gap: 10px; }
+.srp-card__badge .material-symbols-outlined { font-size: 13px; }
+.srp-card__badge--boost { background: var(--warning-pale); color: var(--warning); }
+.srp-card__badge--pro { background: var(--accent-soft); color: var(--accent); }
+
+.srp-card__cta {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--ds-fs-md);
+  font-weight: 700;
+  color: var(--accent);
+}
+.srp-card__chev { font-size: 20px; }
+@media (max-width: 599px) { .srp-card__book { display: none; } }
 
 /* ═══ ÉTAT VIDE ══════════════════════════════════════════════════ */
 .sx-empty {
   text-align: center;
-  padding: 72px 20px;
-  color: var(--text-muted, #94a3b8);
+  padding: clamp(40px, 8vw, 64px) 16px;
+  max-width: 420px;
+  margin-inline: auto;
 }
-/* Sans width/height explicites, le SVG (viewBox seul) s'affichait en pleine
-   page. On le borne à une taille d'icône. */
-.sx-empty svg { width: 64px; height: 64px; color: var(--border-medium, #cbd5e1); margin-bottom: 14px; }
-.sx-empty__t { font-size: 18px; font-weight: 800; color: var(--ink, #0f172a); margin: 0 0 6px; }
-.sx-empty__s { font-size: 14px; margin: 0 0 22px; }
-.sx-empty__btn {
-  display: inline-block;
-  padding: 12px 24px;
-  border-radius: 11px;
-  background: var(--accent, #16a34a);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  text-decoration: none;
-}
-.sx-empty__btn:hover { filter: brightness(1.06); }
+.sx-empty__ic { font-size: 44px; color: var(--border-medium); }
+.sx-empty__t { font-size: 17px; font-weight: 800; color: var(--ink); margin: 12px 0 6px; }
+.sx-empty__s { font-size: 14px; color: var(--text-muted); margin: 0 0 20px; line-height: 1.5; }
+.sx-empty .sm-btn { text-decoration: none; } /* .sm-btn ne pose pas text-decoration */
 
-/* ═══ RESPONSIVE ═════════════════════════════════════════════════ */
-@media (max-width: 720px) {
-  .sx-hero { padding: 88px 16px 32px; }
-  .sx-search {
-    flex-direction: column;
-    gap: 4px;
-    padding: 8px;
+/* ═══ ICÔNES & INTERACTIONS ══════════════════════════════════════ */
+.sx .sm-btn { height: 40px; } /* 38 → 40 : page publique, cible tactile */
+.sx .material-symbols-outlined {
+  line-height: 1;
+  flex-shrink: 0;
+  user-select: none;
+  font-variation-settings: 'opsz' 20, 'wght' 400, 'FILL' 0, 'GRAD' 0;
+}
+
+/* Survol réservé aux pointeurs fins : au tap, l'état resterait « collé ». */
+@media (hover: hover) and (pointer: fine) {
+  .srp-card:hover    { background: var(--accent-soft); }
+  .sx-chip:hover     { border-color: var(--border-medium); }
+  .sx-dd__item:hover { background: var(--surface-2); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sx *,
+  .sx *::before,
+  .sx *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
-  .sx-search__sep { display: none; }
-  .sx-field {
-    border: 1px solid var(--border-light, #e5e7eb);
-    border-radius: 12px;
-    padding: 2px 12px;
-  }
-  .sx-field input { padding: 13px 0; }
-  .sx-dd { left: 0; right: 0; }
-  .sx-submit { padding: 14px; border-radius: 12px; justify-content: center; }
-  .sx-toolbar { top: 56px; flex-direction: column; align-items: stretch; gap: 10px; }
-  .sx-sort { justify-content: flex-end; }
-  .sx-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+}
+
+/* ═══ PAGINATION ═════════════════════════════════════════════════ */
+.sx-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: var(--sx-measure);
+  margin: 28px auto 0;
+}
+.sx-pager__n,
+.sx-pager__nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--surface-card);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color .12s, background .12s;
+}
+.sx-pager__n:hover,
+.sx-pager__nav:hover { border-color: var(--border-strong); background: var(--subtle); }
+.sx-pager__n.is-current {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  cursor: default;
+}
+.sx-pager__nav.is-disabled { opacity: .4; pointer-events: none; }
+.sx-pager__nav .material-symbols-outlined { font-size: 20px; }
+.sx-pager__gap { padding: 0 4px; color: var(--text-muted); user-select: none; }
+.sx-pager__info {
+  max-width: var(--sx-measure);
+  margin: 10px auto 0;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-muted);
 }

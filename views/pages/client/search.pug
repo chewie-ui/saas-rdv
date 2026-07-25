@@ -1,160 +1,217 @@
 extends ../../layouts/index
 
 block links
+    //- Material Symbols n'est PAS chargée par layouts/index.pug (ni la topbar ni
+    //- le footer n'en utilisent). On la charge donc au niveau de cette page
+    //- seule, pour ne pas peser sur le LCP de toutes les pages publiques.
+    //- `display=block` (comme admin.pug / client.pug) évite d'afficher les
+    //- ligatures en texte brut (« search », « location_on ») avant chargement.
+    link(rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block")
     link(rel="stylesheet", href="/css/layouts/client/search.css")
 
 block content
     -
         var _cats    = (allCategories || []).filter(function(c){ return c.count > 0; })
         var _topCats = _cats.slice(0, 8)
-        var _total   = coachs ? coachs.length : 0
+        //- Total RÉEL (toutes pages), fourni par le serveur — pas la longueur
+        //- de la page courante, sinon on afficherait « 24 résultats ».
+        var _total   = (typeof totalResults !== 'undefined') ? totalResults : (coachs ? coachs.length : 0)
+        var _page      = (typeof page !== 'undefined') ? page : 1
+        var _totalPages = (typeof totalPages !== 'undefined') ? totalPages : 1
+        //- Construit une URL /search en conservant les critères courants.
+        function _url(over) {
+            var p = {}
+            if (searchName) p.name = searchName
+            if (searchLocation) p.location = searchLocation
+            if (searchCategory) p.category = searchCategory
+            Object.assign(p, over || {})
+            Object.keys(p).forEach(function (k) { if (!p[k]) delete p[k] })
+            var qs = new URLSearchParams(p).toString()
+            return '/search' + (qs ? '?' + qs : '')
+        }
 
     main.sx
 
         //- ═══ HERO + RECHERCHE ═══════════════════════════════════════════════
         section.sx-hero
-            .sx-hero__bg
             .sx-hero__inner
                 h1.sx-hero__title
                     | Trouvez et réservez votre pro
                     span.sx-dot .
                 p.sx-hero__sub Coiffure, santé, coaching, bien-être… la prise de rendez-vous en ligne, en quelques secondes.
 
-                form.sx-search#sxForm(action="/search" method="get" autocomplete="off")
+                //- La classe .sx-search doit rester SUR le <form> : closeAll()
+                //- ferme les menus via e.target.closest('.sx-search').
+                form.sx-search#sxForm(action="/search" method="get" autocomplete="off" role="search")
                     .sx-field
-                        svg.sx-field__ic(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                            circle(cx="11" cy="11" r="8")
-                            line(x1="21" y1="21" x2="16.65" y2="16.65")
-                        input#inputName(type="text" name="name" placeholder="Métier ou spécialité (coiffeur, kiné…)" value=searchName || "")
+                        span.material-symbols-outlined.sx-field__ic(aria-hidden="true") search
+                        input#inputName(type="text" name="name" placeholder="Métier ou spécialité" value=searchName || "" aria-label="Métier ou spécialité")
                         .sx-dd#menuNames
-                    .sx-search__sep
-                    .sx-field
-                        svg.sx-field__ic(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                            path(d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z")
-                            circle(cx="12" cy="10" r="3")
-                        input#inputLocation(type="text" name="location" placeholder="Ville ou code postal" value=searchLocation || "")
-                        button.sx-geo#geoBtn(type="button" title="Utiliser ma position" aria-label="Autour de moi")
-                            svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
-                                circle(cx="12" cy="12" r="3")
-                                path(d="M12 2v3M12 19v3M2 12h3M19 12h3")
-                                circle(cx="12" cy="12" r="8")
+                    .sx-search__sep(aria-hidden="true")
+                    .sx-field.sx-field--loc
+                        span.material-symbols-outlined.sx-field__ic(aria-hidden="true") location_on
+                        input#inputLocation(type="text" name="location" placeholder="Ville ou code postal" value=searchLocation || "" aria-label="Ville ou code postal")
+                        //- #geoBtn doit TOUJOURS être rendu : le gestionnaire de
+                        //- tri fait geoBtn.click() sans garde de nullité.
+                        button.sm-btn.sm-btn--ghost.sx-geo#geoBtn(type="button" title="Utiliser ma position" aria-label="Autour de moi")
+                            span.material-symbols-outlined(aria-hidden="true") my_location
                         .sx-dd#menuLocations
-                    button.sx-submit#searchBtn(type="submit")
-                        svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
-                            circle(cx="11" cy="11" r="8")
-                            line(x1="21" y1="21" x2="16.65" y2="16.65")
-                        span Rechercher
+                    button.sm-btn.sm-btn--primary.sx-submit#searchBtn(type="submit")
+                        span.material-symbols-outlined(aria-hidden="true") search
+                        span.sx-submit__t Rechercher
 
                 if _topCats.length
                     .sx-hero__quick
                         span.sx-hero__quick-lbl Populaire
                         each cat in _topCats.slice(0, 6)
-                            a.sx-quick(href=`/search?name=${encodeURIComponent(cat.name)}`)= cat.name
+                            a.sm-btn.sm-btn--ghost.sx-quick(href=`/search?name=${encodeURIComponent(cat.name)}`)= cat.name
 
         //- ═══ CORPS : filtres + résultats ════════════════════════════════════
-        section.sx-body.container
+        //- Pas de .container ici : .sx-body est un shell fluide (voir CSS), ce
+        //- qui évite le palier figé à 800px entre 820 et 1279.
+        section.sx-body
 
-            //- Barre d'outils : chips catégories + tri
+            //- Barre d'outils collante : chips catégories + tri, sur UNE rangée
+            //- à toutes les largeurs (les chips défilent horizontalement).
             .sx-toolbar
-                .sx-chips#sxChips
-                    button.sx-chip.is-active(data-cat="") Tous
-                    each cat in _topCats
-                        button.sx-chip(
-                            data-cat=cat.name.toLowerCase()
-                            title=cat.name
-                            class=(searchCategory && searchCategory.toLowerCase() === cat.name.toLowerCase() ? 'is-active' : '')
-                        )
-                            span.sx-chip__t= cat.name
-                            span.sx-chip__n= cat.count
-                .sx-sort
-                    label.sx-sort__lbl(for="sxSort") Trier
-                    .sx-select
-                        select#sxSort
+                .sx-toolbar__in
+                    //- Liens serveur (et non un filtre JS) : avec la pagination,
+                    //- filtrer côté client ne verrait que la page courante.
+                    .sx-chips#sxChips
+                        a.sx-chip(href=_url({ category: '', page: '' }) class=(!searchCategory ? 'is-active' : ''))
+                            span.sx-chip__t Tous
+                        each cat in _topCats
+                            a.sx-chip(
+                                href=_url({ category: cat.name, page: '' })
+                                title=cat.name
+                                class=(searchCategory && searchCategory.toLowerCase() === cat.name.toLowerCase() ? 'is-active' : '')
+                            )
+                                span.sx-chip__t= cat.name
+                                span.sx-chip__n= cat.count
+                    .sx-sort
+                        label.sx-sort__lbl(for="sxSort") Trier
+                        //- <select> natif : le JS fait sel.value = 'distance'.
+                        select#sxSort.ds-select.sx-sort__sel
                             option(value="default") Recommandés
                             option(value="rating") Mieux notés
                             option(value="distance") Plus proches
                             option(value="name") A–Z
-                        svg.sx-select__ic(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
-                            polyline(points="6 9 12 15 18 9")
 
             //- En-tête résultats
             .sx-results-hd
-                span.sx-count
+                //- .sx-count est en inline-flex avec gap : pas de nœud texte
+                //- « espace » à maintenir entre le nombre et le nom commun.
+                span.sx-count(aria-live="polite")
                     strong#srpCount= _total
-                    |  professionnel#{_total > 1 ? 's' : ''}
+                    span#srpNoun= _total > 1 ? 'résultats' : 'résultat'
                 span.sx-geo-status#geoStatus
 
             //- Résultats
             if !coachs || coachs.length === 0
                 .sx-empty
-                    svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5")
-                        circle(cx="11" cy="11" r="8")
-                        line(x1="21" y1="21" x2="16.65" y2="16.65")
+                    span.material-symbols-outlined.sx-empty__ic(aria-hidden="true") search_off
                     p.sx-empty__t Aucun professionnel trouvé
                     p.sx-empty__s Essayez un autre métier, une autre ville, ou explorez toutes les catégories.
-                    a.sx-empty__btn(href="/search") Voir tous les professionnels
+                    a.sm-btn.sm-btn--primary(href="/search") Voir tous les professionnels
             else
-                .sx-grid#srpGrid
+                //- #srpGrid doit rester le parent DIRECT des .srp-card :
+                //- render() réordonne par grid.appendChild(card).
+                .sx-list#srpGrid
                     each coach in coachs
                         -
                             var roundedRating = Math.round((coach.avgRating || 0) * 10) / 10
-                            var photo = coach.owner.businessPicture || coach.owner.profilePicture || '/images/no-user.webp'
-                            var name  = coach.owner.businessName || coach.owner.fullName || 'Professionnel'
+                            //- Nom/photo/métier de l'ÉTABLISSEMENT d'abord : depuis le
+                            //- multi-établissements c'est la source de vérité. Le compte
+                            //- propriétaire ne sert que de repli pour les fiches anciennes.
+                            var photo = coach.photo || coach.owner.businessPicture || coach.owner.profilePicture || '/images/no-user.webp'
+                            var name  = coach.name || coach.owner.businessName || coach.owner.fullName || 'Professionnel'
+                            var btype = coach.businessType || coach.owner.businessType || ''
                             var city  = coach.owner.location && coach.owner.location.city ? coach.owner.location.city : ''
                             var lat   = coach.owner.location && coach.owner.location.lat  ? coach.owner.location.lat  : ''
                             var lon   = coach.owner.location && coach.owner.location.lon  ? coach.owner.location.lon  : ''
                             var slug  = coach.slug || String(coach._id)
                         a.srp-card(
                             href=`/${slug}`
-                            data-type=(coach.owner.businessType || '').toLowerCase()
+                            data-type=(btype || '').toLowerCase()
                             data-name=(name).toLowerCase()
                             data-rating=roundedRating
                             data-lat=lat
                             data-lon=lon
                         )
-                            .srp-card__img-wrap
-                                img.srp-card__img(src=photo alt=name loading="lazy")
-                                if coach.boostPosition > 0
-                                    span.srp-card__badge.srp-card__badge--boost
-                                        svg(viewBox="0 0 20 20" fill="currentColor" width="11" height="11")
-                                            path(d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z")
-                                        | En avant
-                                else if coach.featured
-                                    span.srp-card__badge.srp-card__badge--pro Pro
+                            .srp-card__thumb
+                                //- alt="" : le nom du pro est déjà dans le lien.
+                                img.srp-card__img(src=photo alt="" loading="lazy" decoding="async" width="96" height="96")
                             .srp-card__body
                                 .srp-card__top
                                     span.srp-card__name= name
                                     if coach.owner.verified
-                                        svg.srp-card__verified(viewBox="0 0 20 20" fill="currentColor" width="15" height="15")
-                                            path(fill-rule="evenodd" d="M16.403 12.652a3 3 0 0 0 0-5.304 3 3 0 0 0-3.75-3.751 3 3 0 0 0-5.305 0 3 3 0 0 0-3.751 3.75 3 3 0 0 0 0 5.305 3 3 0 0 0 3.75 3.751 3 3 0 0 0 5.305 0 3 3 0 0 0 3.751-3.75Zm-2.546-4.46a.75.75 0 0 0-1.214-.883l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd")
+                                        span.material-symbols-outlined.srp-card__verified(title="Profil vérifié") verified
+                                    if coach.boostPosition > 0
+                                        span.srp-card__badge.srp-card__badge--boost
+                                            span.material-symbols-outlined(aria-hidden="true") bolt
+                                            | En avant
+                                    else if coach.featured
+                                        span.srp-card__badge.srp-card__badge--pro Pro
+                                //- .srp-card__meta est TOUJOURS rendu, même vide :
+                                //- c'est la cible d'injection de .srp-card__dist.
                                 .srp-card__meta
-                                    if coach.owner.businessType
-                                        span.srp-card__type= coach.owner.businessType
+                                    if btype
+                                        span.srp-card__type= btype
                                     if city
                                         span.srp-card__city
-                                            svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11")
-                                                path(d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z")
-                                                circle(cx="12" cy="10" r="3")
+                                            span.material-symbols-outlined(aria-hidden="true") location_on
                                             = city
                                 if coach.reviewCount > 0
                                     .srp-card__rating
-                                        .srp-card__stars
-                                            - for (var s = 1; s <= 5; s++)
-                                                svg(viewBox="0 0 20 20" width="13" height="13" fill=s <= Math.round(coach.avgRating) ? '#f59e0b' : 'none' stroke="#f59e0b" stroke-width="1.5")
-                                                    path(d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z")
+                                        span.material-symbols-outlined.srp-card__star(aria-hidden="true") star
                                         span.srp-card__rating-val= roundedRating.toFixed(1)
                                         span.srp-card__rating-n (#{coach.reviewCount})
                                 else
                                     .srp-card__rating.srp-card__rating--empty Nouveau sur BranShee
-                                //- Toujours rendu, même vide : le CSS lui réserve deux
-                                //- lignes, sinon les cartes sans description avaient un
-                                //- grand vide avant « Réserver ».
-                                p.srp-card__desc= coach.owner.description ? (coach.owner.description.length > 88 ? coach.owner.description.slice(0, 88) + '…' : coach.owner.description) : ''
-                                .srp-card__footer
-                                    span.srp-card__book
-                                        | Réserver
-                                        svg(viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14")
-                                            path(d="M5 12h14M13 6l6 6-6 6")
+                                if coach.owner.description
+                                    p.srp-card__desc= coach.owner.description.length > 120 ? coach.owner.description.slice(0, 120) + '…' : coach.owner.description
+                            .srp-card__cta
+                                span.srp-card__book Réserver
+                                span.material-symbols-outlined.srp-card__chev(aria-hidden="true") chevron_right
+
+                //- ── Pagination (liens serveur : tient à n'importe quel volume) ──
+                if _totalPages > 1
+                    -
+                        //- Fenêtre glissante de 5 pages autour de la page courante,
+                        //- pour ne jamais afficher 4000 numéros.
+                        var _from = Math.max(1, Math.min(_page - 2, _totalPages - 4))
+                        var _to   = Math.min(_totalPages, Math.max(_page + 2, 5))
+                    nav.sx-pager(aria-label="Pagination")
+                        if _page > 1
+                            a.sx-pager__nav(href=_url({ page: _page - 1 }) rel="prev" aria-label="Page précédente")
+                                span.material-symbols-outlined(aria-hidden="true") chevron_left
+                        else
+                            span.sx-pager__nav.is-disabled(aria-hidden="true")
+                                span.material-symbols-outlined chevron_left
+
+                        if _from > 1
+                            a.sx-pager__n(href=_url({ page: 1 })) 1
+                            if _from > 2
+                                span.sx-pager__gap …
+
+                        - for (var _p = _from; _p <= _to; _p++)
+                            if _p === _page
+                                span.sx-pager__n.is-current(aria-current="page")= _p
+                            else
+                                a.sx-pager__n(href=_url({ page: _p }))= _p
+
+                        if _to < _totalPages
+                            if _to < _totalPages - 1
+                                span.sx-pager__gap …
+                            a.sx-pager__n(href=_url({ page: _totalPages }))= _totalPages
+
+                        if _page < _totalPages
+                            a.sx-pager__nav(href=_url({ page: _page + 1 }) rel="next" aria-label="Page suivante")
+                                span.material-symbols-outlined(aria-hidden="true") chevron_right
+                        else
+                            span.sx-pager__nav.is-disabled(aria-hidden="true")
+                                span.material-symbols-outlined chevron_right
+                    p.sx-pager__info Page #{_page} sur #{_totalPages}
 
 block scripts
     script.
@@ -185,7 +242,10 @@ block scripts
                 items.forEach(function (it) {
                     var row = document.createElement('div');
                     row.className = 'sx-dd__item';
-                    row.innerHTML = iconSvg + '<span>' + it.replace(/</g, '&lt;') + '</span>';
+                    // Le libellé porte .sx-dd__txt : l'icône étant elle-même un
+                    // <span>, un sélecteur générique « .sx-dd__item span »
+                    // écraserait la mise en forme du libellé.
+                    row.innerHTML = iconSvg + '<span class="sx-dd__txt">' + it.replace(/</g, '&lt;') + '</span>';
                     row.addEventListener('mousedown', function (e) { e.preventDefault(); onPick(it); });
                     menu.appendChild(row);
                 });
@@ -193,8 +253,8 @@ block scripts
             }
             function closeAll() { menuNames.classList.remove('is-open'); menuLoc.classList.remove('is-open'); }
 
-            var ICON_JOB = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
-            var ICON_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+            var ICON_JOB = '<span class="material-symbols-outlined" aria-hidden="true">search</span>';
+            var ICON_PIN = '<span class="material-symbols-outlined" aria-hidden="true">location_on</span>';
 
             // ── Métiers ──
             function suggestJobs() {
@@ -250,10 +310,8 @@ block scripts
             // ══════════ Filtres, tri, distance, géoloc ══════════
             var grid     = document.getElementById('srpGrid');
             if (!grid) return;
-            var countEl  = document.getElementById('srpCount');
             var geoStatus = document.getElementById('geoStatus');
             var allCards = Array.from(grid.querySelectorAll('.srp-card'));
-            var activeCat  = '#{searchCategory ? searchCategory.toLowerCase() : ""}';
             var activeSort = 'default';
             var refLat = null, refLon = null;
 
@@ -272,7 +330,7 @@ block scripts
                     c.dataset.distance = d.toFixed(1);
                     var chip = document.createElement('span');
                     chip.className = 'srp-card__dist';
-                    chip.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>' + (d < 1 ? '< 1 km' : Math.round(d) + ' km');
+                    chip.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">near_me</span>' + (d < 1 ? '< 1 km' : Math.round(d) + ' km');
                     var meta = c.querySelector('.srp-card__meta');
                     if (meta) meta.appendChild(chip);
                 });
@@ -300,7 +358,8 @@ block scripts
             });
 
             // Si une ville est déjà recherchée → géocoder pour activer les distances
-            var initLoc = '#{searchLocation || ""}';
+            //- Idem : « L'Isle-Adam » (apostrophe) cassait le script entier.
+            var initLoc = !{JSON.stringify(searchLocation || "")};
             if (initLoc.trim()) {
                 fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(initLoc))
                     .then(function (r) { return r.json(); })
@@ -308,12 +367,13 @@ block scripts
                     .catch(function () {});
             }
 
-            // ── Rendu (filtre catégorie + tri) ──
+            // ── Rendu : TRI de la page courante uniquement ──
+            // Le filtre par catégorie et le comptage sont désormais faits par
+            // le serveur (chips = liens, pagination) : on ne touche plus ni à
+            // l'affichage des cartes ni au compteur, sinon on afficherait le
+            // nombre d'éléments de la page au lieu du total réel.
             function render() {
-                var visible = allCards.filter(function (c) {
-                    if (activeCat) { return (c.dataset.type || '').toLowerCase().indexOf(activeCat) !== -1; }
-                    return true;
-                });
+                var visible = allCards.slice();
                 visible.sort(function (a, b) {
                     if (activeSort === 'rating') return parseFloat(b.dataset.rating||0) - parseFloat(a.dataset.rating||0);
                     if (activeSort === 'name')   return (a.dataset.name||'').localeCompare(b.dataset.name||'');
@@ -325,20 +385,8 @@ block scripts
                     }
                     return 0;
                 });
-                allCards.forEach(function (c) { c.style.display = 'none'; });
-                visible.forEach(function (c) { c.style.display = ''; grid.appendChild(c); });
-                if (countEl) countEl.textContent = visible.length;
+                visible.forEach(function (c) { grid.appendChild(c); });
             }
-
-            // ── Chips catégories ──
-            document.querySelectorAll('.sx-chip').forEach(function (chip) {
-                chip.addEventListener('click', function () {
-                    activeCat = this.dataset.cat || '';
-                    document.querySelectorAll('.sx-chip').forEach(function (b) { b.classList.remove('is-active'); });
-                    this.classList.add('is-active');
-                    render();
-                });
-            });
 
             // ── Tri ──
             var sortSel = document.getElementById('sxSort');
@@ -347,6 +395,4 @@ block scripts
                 if (activeSort === 'distance' && refLat == null) { geoBtn.click(); return; }
                 render();
             });
-
-            if (activeCat) render();
         })();

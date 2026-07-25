@@ -33,7 +33,7 @@ block content
                 .sa-kpi__label
                     span.material-symbols-outlined looks_one
                     span Première place
-                .sa-kpi__value(style="font-size:17px;line-height:1.5")= enAvant.length ? ((enAvant[0].owner && (enAvant[0].owner.businessName || enAvant[0].owner.fullName)) || 'Sans nom') : '—'
+                .sa-kpi__value(style="font-size:17px;line-height:1.5")= enAvant.length ? (enAvant[0].name || (enAvant[0].owner && (enAvant[0].owner.businessName || enAvant[0].owner.fullName)) || 'Sans nom') : '—'
                 .sa-kpi__delta Tout en haut de l'accueil
 
         .sa-alerte
@@ -58,10 +58,11 @@ block content
                         th(style="width:210px") Position
                 tbody
                     each c in liste
-                        - var nom = (c.owner && (c.owner.businessName || c.owner.fullName)) || 'Sans nom'
-                        - var metier = (c.owner && c.owner.businessType) || ''
+                        //- Établissement d'abord, compte propriétaire en repli.
+                        - var nom = c.name || (c.owner && (c.owner.businessName || c.owner.fullName)) || 'Sans nom'
+                        - var metier = c.businessType || (c.owner && c.owner.businessType) || ''
                         - var ville = (c.owner && c.owner.location && c.owner.location.city) || ''
-                        - var photo = (c.owner && (c.owner.businessPicture || c.owner.profilePicture)) || null
+                        - var photo = c.photo || (c.owner && (c.owner.businessPicture || c.owner.profilePicture)) || null
                         - var slug = c.slug || String(c._id)
                         - var pos = c.boostPosition || 0
                         tr(

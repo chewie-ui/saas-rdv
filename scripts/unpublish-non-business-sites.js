@@ -19,7 +19,7 @@ const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
 const Site = require("../db/models/site.model");
 const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
-const { getPlan } = require("../utils/planLimits");
+const { getCompanyPlan } = require("../utils/planLimits");
 
 async function run() {
   await mongoose.connect(env.dbUri);
@@ -29,12 +29,15 @@ async function run() {
 
   let unpublished = 0;
   for (const site of publishedSites) {
-    const company = await Company.findById(site.company).select("owner slug").lean();
+    // plan/planStatus indispensables : le forfait appartient à
+    // l'ÉTABLISSEMENT. Sans eux, ce script dépubliait le site d'un
+    // établissement Business dont le compte owner ne l'est pas.
+    const company = await Company.findById(site.company).select("owner slug plan planStatus").lean();
     if (!company) continue;
     const owner = await User.findById(company.owner)
       .select("subscription isPremium manualPremium fullName email")
       .lean();
-    const plan = getPlan(owner);
+    const plan = getCompanyPlan(company, owner);
     if (plan !== "business") {
       await Site.findByIdAndUpdate(site._id, { isPublished: false });
       unpublished++;

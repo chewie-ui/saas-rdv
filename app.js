@@ -370,6 +370,12 @@ app.use(express.json());
 // toute route/session (protège aussi la lecture de la session/passport).
 app.use(require("./middlewares/mongoSanitize"));
 
+// ── API mobile (app pro Branshee) ─────────────────────────────────────────
+// Montée AVANT la session : elle est stateless (JWT via en-tête Authorization),
+// n'utilise ni cookie ni Passport, et ne doit pas créer de session. L'app web
+// (tout ce qui suit) reste inchangée.
+app.use("/api/v1", require("./routes/mobile"));
+
 app.use(require("./config/session"));
 
 app.use(passport.initialize());

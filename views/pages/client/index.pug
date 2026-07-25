@@ -1,9 +1,11 @@
 extends ../../layouts/booking
 
 block jsonld
-    - var _bizName    = (coach && (coach.businessName || coach.fullName)) || 'BranShee Pro'
+    //- Nom/photo de l'ÉTABLISSEMENT d'abord (source de vérité depuis le
+    //- multi-établissements) ; le compte propriétaire n'est qu'un repli.
+    - var _bizName    = (company && company.name) || (coach && (coach.businessName || coach.fullName)) || 'BranShee Pro'
     - var _bizDesc    = (coach && coach.description) || ('Réservez en ligne avec ' + _bizName + ' sur BranShee.')
-    - var _bizImg     = (coach && (coach.businessPicture || coach.profilePicture)) || ''
+    - var _bizImg     = (company && company.photo) || (coach && (coach.businessPicture || coach.profilePicture)) || ''
     - var _bizCity    = (coach && coach.location && coach.location.city) || ''
     - var _bizAddr    = (coach && coach.location && coach.location.address) || ''
     - var _bizZip     = (coach && coach.location && coach.location.zip) ? String(coach.location.zip) : ''
@@ -60,13 +62,13 @@ block content
         var dayBusyRgb        = hexToRgb(dayBusyColor)
         var dayFullRgb        = hexToRgb(dayFullColor)
 
-        var bizName    = (coach && (coach.businessName || coach.fullName)) || 'BranShee'
-        var bizType    = (coach && coach.businessType) || ''
+        var bizName    = (company && company.name) || (coach && (coach.businessName || coach.fullName)) || 'BranShee'
+        var bizType    = (company && company.businessType) || (coach && coach.businessType) || ''
         var bizStreet  = (coach && coach.location && coach.location.address) || ''
         var bizCity    = (coach && coach.location && coach.location.city)    || ''
         var bizZip     = (coach && coach.location && coach.location.zip)     || ''
         var bizAddress = [bizStreet, bizCity].filter(Boolean).join(', ')
-        var bizPic     = coach && (coach.businessPicture || coach.profilePicture) ? (coach.businessPicture || coach.profilePicture) : null
+        var bizPic     = (company && company.photo) || (coach && (coach.businessPicture || coach.profilePicture)) || null
         var initials   = bizName.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase()
 
         // Google Maps link — priorité : gmapUrl stocké, puis coordonnées, puis adresse
@@ -214,8 +216,18 @@ block content
             img.bk-brand__mark(src="/images/icon.svg" alt="" width="28" height="28")
             span.bk-brand__name BranShee
         .bk-top__right
+            //- Connecté AVEC établissement : accès à son espace client ET à son
+            //- établissement (comptes unifiés). Sinon : juste l'espace client,
+            //- ou « Se connecter » pour un visiteur anonyme.
             if visitorIsAdmin
-                a.bk-sign-btn(href="/appointment") Dashboard
+                a.bk-sign-btn(href="/espace-client")
+                    svg(width="14" height="14" viewBox="0 -960 960 960" fill="currentColor")
+                        path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 129-46.5T480-440q68 0 135 15.5T744-378q29 15 46.5 43.5T808-272v112H160Z")
+                    | Espace client
+                a.bk-sign-btn.bk-sign-btn--primary(href="/appointment")
+                    svg(width="14" height="14" viewBox="0 -960 960 960" fill="currentColor")
+                        path(d="M160-120v-660l320-180 320 180v660H560v-200H400v200H160Zm240-360h80v-80h-80v80Zm-160 0h80v-80h-80v80Zm320 0h80v-80h-80v80Z")
+                    | Établissement
             else if clientUser
                 a.bk-sign-btn(href="/espace-client")
                     svg(width="14" height="14" viewBox="0 -960 960 960" fill="currentColor")
@@ -556,7 +568,11 @@ block scripts
         var _companyInfo = {
             address:     (coach && coach.location && coach.location.address)     ? coach.location.address     : '',
             city:        (coach && coach.location && coach.location.city)        ? coach.location.city        : '',
-            serviceType: (coach && coach.location && coach.location.serviceType) ? coach.location.serviceType : 'sur_place'
+            serviceType: (coach && coach.location && coach.location.serviceType) ? coach.location.serviceType : 'sur_place',
+            //- Nom de l'établissement (déjà résolu plus haut, repli compte
+            //- inclus) : utilisé par les messages d'erreur et le titre de
+            //- l'événement Google Agenda côté client.
+            businessName: _bizName
         }
     if prepaymentConfig && prepaymentConfig.stripeActive && stripePublishableKey && (prepaymentConfig.enabled || (prepaymentConfig.cancellationRule && prepaymentConfig.cancellationRule !== 'free'))
         script(src="https://js.stripe.com/v3/")

@@ -6,7 +6,7 @@ const { getPlan } = require("../utils/planLimits");
  * Révoque isPremium en DB + en mémoire si nécessaire.
  * Appelé quand l'abonnement est expiré ou inexistant.
  */
-async function revokePremium(user) {
+async function revokePremium(user, readOnly) {
   // Ne jamais révoquer un accès accordé manuellement (bêta testeurs)
   if (user && user.manualPremium) return;
   // Ne pas révoquer si l'utilisateur a un plan payant dans son User doc
@@ -15,7 +15,7 @@ async function revokePremium(user) {
   if (["essentiel", "pro", "business"].includes(embeddedPlan)) return;
   if (user && user.isPremium) {
     user.isPremium = false;
-    await User.findByIdAndUpdate(user._id, { isPremium: false });
+    if (!readOnly) await User.findByIdAndUpdate(user._id, { isPremium: false });
   }
 }
 
@@ -26,8 +26,14 @@ async function revokePremium(user) {
  * d'un établissement quand l'utilisateur connecté n'est qu'un collaborateur
  * (cf. middlewares/injectCompany.js — le plan suit l'établissement, pas le
  * compte connecté).
+ *
+ * `options.readOnly` : calcule les mêmes locals SANS aucune écriture en base.
+ * Indispensable quand on résout l'état d'un compte qui n'est pas celui du
+ * visiteur (un collaborateur ne doit pas déclencher de révocation/upsert sur
+ * le compte de son patron simplement en ouvrant une page admin).
  */
-async function resolveSubscriptionState(user) {
+async function resolveSubscriptionState(user, options = {}) {
+  const readOnly = !!options.readOnly;
   const locals = {};
   if (!user) return locals;
 
@@ -38,18 +44,20 @@ async function resolveSubscriptionState(user) {
 
     // Si la durée de test est dépassée → révoquer automatiquement
     if (expiry && new Date(expiry) < now) {
-      await User.findByIdAndUpdate(user._id, {
-        manualPremium: false,
-        isPremium: false,
-        manualPremiumExpiry: null,
-        "subscription.status": "inactive",
-      });
+      if (!readOnly) {
+        await User.findByIdAndUpdate(user._id, {
+          manualPremium: false,
+          isPremium: false,
+          manualPremiumExpiry: null,
+          "subscription.status": "inactive",
+        });
+      }
       user.manualPremium = false;
       user.isPremium     = false;
       // Fall through → sera traité comme free ci-dessous
     } else {
       if (!user.isPremium) {
-        await User.findByIdAndUpdate(user._id, { isPremium: true });
+        if (!readOnly) await User.findByIdAndUpdate(user._id, { isPremium: true });
         user.isPremium = true;
       }
 
@@ -138,7 +146,7 @@ async function resolveSubscriptionState(user) {
       locals.hoursLeft  = 0;
       locals.isExpired  = true;
       locals.isExpiring = false;
-      await revokePremium(user); // DB + mémoire
+      await revokePremium(user, readOnly); // DB + mémoire
     } else if (diffDays <= 1) {
       // ── Moins de 24h restantes ──
       locals.isPro      = true;
@@ -185,7 +193,7 @@ async function resolveSubscriptionState(user) {
       // (avec son daysLeft figé) tournait en boucle pour tout le monde après lui.
       const stripeSubId = user.subscription?.stripeSubscriptionId || undefined;
       try {
-        await Subscription.findOneAndUpdate(
+        if (!readOnly) await Subscription.findOneAndUpdate(
           { user: user._id, status: "active" },
           {
             user:     user._id,
@@ -245,7 +253,7 @@ async function resolveSubscriptionState(user) {
       locals.hoursLeft    = null;
       locals.isExpired    = false;
       locals.isExpiring   = false;
-      await revokePremium(user);
+      await revokePremium(user, readOnly);
     }
   }
 

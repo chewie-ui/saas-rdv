@@ -384,6 +384,32 @@ exports.usersPage = async (req, res) => {
     Company.countDocuments({}),
   ]);
 
+  // Provenance des INSCRITS (≠ provenance des vues) : c'est la seule mesure
+  // qui relie une campagne à un compte réellement créé. `campaign` est ajouté
+  // à la clé quand il existe, pour comparer deux campagnes d'une même source.
+  const inscritsParSource = await User.aggregate([
+    { $match: { "acquisition.source": { $nin: [null, ""] } } },
+    {
+      $group: {
+        _id: {
+          $cond: [
+            { $in: [{ $ifNull: ["$acquisition.campaign", ""] }, ["", null]] },
+            "$acquisition.source",
+            { $concat: ["$acquisition.source", " · ", "$acquisition.campaign"] },
+          ],
+        },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { count: -1 } },
+    { $limit: 8 },
+  ]);
+  // Comptes créés avant le suivi (ou via l'app mobile) : à afficher tel quel
+  // plutôt que de les faire passer pour du "direct", ce qui serait faux.
+  const inscritsSansSource = await User.countDocuments({
+    $or: [{ "acquisition.source": { $exists: false } }, { "acquisition.source": "" }],
+  });
+
   const triee = trierComptes(liste, filtres.tri);
   const pages = Math.max(1, Math.ceil(triee.length / COMPTES_PAR_PAGE));
   const page = Math.min(Math.max(1, parseInt(req.query.page, 10) || 1), pages);
@@ -413,6 +439,8 @@ exports.usersPage = async (req, res) => {
       totalClients,
       clientsToday,
       topSources,
+      inscritsParSource,
+      inscritsSansSource,
     },
     // Compat : d'anciens gabarits lisent encore ces variables à plat.
     search: filtres.search,
@@ -1002,10 +1030,12 @@ exports.logsPage = async (req, res) => {
 // ── Boost (mise en avant homepage) ───────────────────────────────────────────
 
 exports.boostPage = async (req, res) => {
+  // name/photo/businessType de l'ÉTABLISSEMENT : sans eux, deux
+  // établissements d'un même patron étaient indiscernables dans la liste.
   const companies = await Company.find({})
-    .select("_id slug boostPosition owner")
+    .select("_id slug boostPosition owner name photo businessType")
     .populate("owner", "fullName businessName businessType location profilePicture businessPicture")
-    .sort({ boostPosition: -1, "owner.businessName": 1 })
+    .sort({ boostPosition: -1, name: 1 })
     .lean();
   res.render("superadmin/boost", { saPage: "boost", companies });
 };

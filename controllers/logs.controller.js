@@ -23,6 +23,10 @@ const ACTION_LABELS = {
   "collaborator.reject": "Demande refusée",
 };
 
+// Réutilisé tel quel par l'API mobile (controllers/mobile/logs.mobile.controller.js)
+// pour que les deux surfaces affichent exactement les mêmes libellés.
+exports.ACTION_LABELS = ACTION_LABELS;
+
 // ── Page "Logs" : historique des actions sur l'établissement ─────────────────
 // Visible par le propriétaire et tout grade avec logs.view (cf. routes/admin.js
 // — déjà gardé par requirePermission("logs.view"), pas de check ici).

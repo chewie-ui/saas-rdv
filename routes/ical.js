@@ -61,7 +61,16 @@ router.get("/ical/:token", async (req, res) => {
     }
 
     const stamp = toICS(new Date().toISOString());
-    const calName = (user.fullName || "BranShee") + " — Rendez-vous";
+    // Nom de l'ÉTABLISSEMENT du flux (repli compte) — le nom du compte seul
+    // était indiscernable entre deux établissements du même patron.
+    let feedCompany = null;
+    if (user.company) {
+      try {
+        const Company = require("../db/models/company/company.model");
+        feedCompany = await Company.findById(user.company).select("name").lean();
+      } catch (_) { /* repli sur le compte ci-dessous */ }
+    }
+    const calName = (feedCompany?.name || user.businessName || user.fullName || "BranShee") + " — Rendez-vous";
 
     const lines = [
       "BEGIN:VCALENDAR",

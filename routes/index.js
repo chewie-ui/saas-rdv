@@ -106,7 +106,9 @@ router.get("/sitemap.xml", async (req, res) => {
   // Tous les pros (premium ET gratuits) — slug en priorité, fallback sur _id
   let companyUrls = "";
   try {
-    const companies = await Companies.find({})
+    // Ne jamais soumettre à Google une URL qui répond 403/404 : les
+    // établissements en pause ou supprimés sont exclus du sitemap.
+    const companies = await Companies.find({ isPaused: { $ne: true }, isDeleted: { $ne: true } })
       .select("_id slug updatedAt owner")
       .populate("owner", "_id")
       .lean();
@@ -216,81 +218,146 @@ router.get("/", requireFeatureActive("home"), (req, res) => {
 router.get("/search", requireFeatureActive("search"), async (req, res) => {
   try {
     const { name, location, category } = req.query;
-    let userQuery = {};
+
+    // Critères appliqués APRÈS la jointure de l'agrégation : on cherche donc
+    // à la fois sur l'ÉTABLISSEMENT (`name`, `businessType` — source de vérité
+    // depuis le multi-établissements) et sur son compte propriétaire (repli
+    // pour les fiches créées avant, où ces champs vivaient sur le User).
     const conditions = [];
 
     if (name) {
-      // Recherche sur le nom complet OU le type de service/métier
-      const flexibleName = escapeRegex(name.trim()).replace(/[\s\-\']/g, ".*");
+      const rx = { $regex: escapeRegex(name.trim()).replace(/[\s\-\']/g, ".*"), $options: "i" };
       conditions.push({
-        $or: [{ fullName: { $regex: flexibleName, $options: "i" } }, { businessType: { $regex: flexibleName, $options: "i" } }],
+        $or: [
+          { name: rx },                    // nom de l'établissement
+          { businessType: rx },            // métier de l'établissement
+          { "owner.businessName": rx },
+          { "owner.fullName": rx },
+          { "owner.businessType": rx },
+        ],
       });
     }
 
     if (location) {
-      const flexibleLocation = escapeRegex(location.trim()).replace(/[\s\-\']/g, ".*");
-      const locationFilters = [{ "location.city": { $regex: flexibleLocation, $options: "i" } }, { "location.address": { $regex: flexibleLocation, $options: "i" } }];
+      const rx = { $regex: escapeRegex(location.trim()).replace(/[\s\-\']/g, ".*"), $options: "i" };
+      const locationFilters = [
+        { "owner.location.city": rx },
+        { "owner.location.address": rx },
+      ];
       const zipValue = parseInt(location);
-      if (!isNaN(zipValue)) locationFilters.push({ "location.zip": zipValue });
+      if (!isNaN(zipValue)) locationFilters.push({ "owner.location.zip": zipValue });
       conditions.push({ $or: locationFilters });
     }
 
     // Filtre par catégorie (optionnel) — valeur exacte (insensible à la
     // casse) plutôt qu'une regex partielle : la catégorie vient du clic sur
-    // un nom déjà connu (sidebar/onglets), pas d'une saisie libre, donc on
-    // évite tout faux positif par sous-chaîne entre deux métiers différents.
+    // un nom déjà connu (chips), pas d'une saisie libre, donc on évite tout
+    // faux positif par sous-chaîne entre deux métiers différents.
     if (category && category.trim()) {
       // \s* en bordure : tolère un éventuel espace résiduel en base (cf.
       // normalisation faite dans getDynamicCategories pour fusionner les
       // doublons "Développeur freelance" / "développeur freelance ").
-      conditions.push({ businessType: { $regex: `^\\s*${escapeRegex(category.trim())}\\s*$`, $options: "i" } });
+      const crx = { $regex: `^\\s*${escapeRegex(category.trim())}\\s*$`, $options: "i" };
+      conditions.push({ $or: [{ businessType: crx }, { "owner.businessType": crx }] });
     }
 
-    // PAS de filtre isPremium — tous les établissements, gratuits ET premium
-    // Mais on exclut les comptes désactivés par le superadmin
-    const disabledFilter = { $or: [{ isDisabled: false }, { isDisabled: { $exists: false } }] };
-    if (conditions.length === 0) {
-      userQuery = disabledFilter;
-    } else if (conditions.length === 1) {
-      userQuery = { $and: [conditions[0], disabledFilter] };
-    } else {
-      userQuery = { $and: [...conditions, disabledFilter] };
-    }
+    // PAS de filtre isPremium — tous les établissements, gratuits ET premium.
+    // Mais on exclut les comptes désactivés par le superadmin.
+    // `$ne: true` plutôt qu'un $or explicite : un `isDisabled: null` hérité
+    // des vieux documents excluait l'établissement à tort.
+    conditions.push({ "owner.isDisabled": { $ne: true } });
 
-    const matchingUsers = await User.find(userQuery).select("_id isPremium manualPremium subscription").lean();
-    const matchingIds   = matchingUsers.map((u) => u._id);
-    const premiumSet    = new Set(matchingUsers.filter(u => u.isPremium || u.manualPremium).map(u => String(u._id)));
+    const searchMatch = { $and: conditions };
 
-    const filteredCoachs = await Companies.find({ owner: { $in: matchingIds }, isPaused: { $ne: true } })
-      .populate("owner", "_id fullName businessName businessType businessPicture profilePicture description location verified subscription isPremium manualPremium")
-      .select("_id owner slug boostPosition")
-      .limit(100)
-      .lean();
+    // ── Pagination côté BASE ────────────────────────────────────────────────
+    // Avant : on chargeait TOUS les users correspondants en mémoire, puis 100
+    // établissements triés en JS — intenable à l'échelle (100 000 fiches) et
+    // le tri s'appliquait à un échantillon arbitraire. Ici tout (filtre, tri,
+    // note moyenne, découpage en pages) est fait par MongoDB en une passe.
+    const PAGE_SIZE = 24;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
 
-    const filteredIds = filteredCoachs.map(c => c._id);
-    const filteredRatings = await Review.aggregate([
-      { $match: { company: { $in: filteredIds } } },
-      { $group: { _id: "$company", avgRating: { $avg: "$rating" }, reviewCount: { $sum: 1 } } }
-    ]);
-    const filteredRatingMap = {};
-    filteredRatings.forEach(r => { filteredRatingMap[r._id.toString()] = r; });
+    const OWNER_FIELDS = {
+      _id: 1, fullName: 1, businessName: 1, businessType: 1, businessPicture: 1,
+      profilePicture: 1, description: 1, location: 1, verified: 1,
+      subscription: 1, isPremium: 1, manualPremium: 1,
+    };
+    const PAID = ["essentiel", "pro", "business"];
+    // getCompanyPlan fait confiance à TOUT plan connu posé sur la Company,
+    // y compris "basic" (choix explicite ≠ absence de valeur).
+    const KNOWN_PLANS = ["basic", "essentiel", "pro", "business"];
 
-    const { getPlan } = require("../utils/planLimits");
-    const coachsWithRating = filteredCoachs
-      .filter(c => c.owner)
-      .map(c => {
-        const plan     = getPlan(c.owner);
-        const featured = plan === "pro" || plan === "business" || c.owner.isPremium;
-        return {
-          ...c,
-          avgRating:    filteredRatingMap[c._id.toString()]?.avgRating   || 0,
-          reviewCount:  filteredRatingMap[c._id.toString()]?.reviewCount || 0,
-          featured,
-          plan,
-          boostPosition: c.boostPosition || 0,
-        };
-      })
-      .sort(sortEstablishments);
+    const pipeline = [
+      { $match: { isPaused: { $ne: true }, isDeleted: { $ne: true } } },
+      { $lookup: { from: User.collection.name, localField: "owner", foreignField: "_id", as: "owner" } },
+      { $unwind: "$owner" },
+      // Les critères de recherche portent sur le compte propriétaire : on les
+      // applique après la jointure (plus de requête User séparée non bornée).
+      { $match: searchMatch },
+      // Note moyenne + nombre d'avis, calculés en base.
+      { $lookup: {
+          from: Review.collection.name,
+          let: { cid: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$company", "$$cid"] } } },
+            { $group: { _id: null, avg: { $avg: "$rating" }, n: { $sum: 1 } } },
+          ],
+          as: "_r",
+      } },
+      { $addFields: {
+          avgRating:   { $ifNull: [{ $first: "$_r.avg" }, 0] },
+          reviewCount: { $ifNull: [{ $first: "$_r.n" }, 0] },
+          boostPosition: { $ifNull: ["$boostPosition", 0] },
+          // Réplique exacte de utils/planLimits.getCompanyPlan() : le forfait
+          // appartient à l'ÉTABLISSEMENT (company.plan/planStatus) et ne
+          // retombe sur celui du compte owner (getPlan) qu'à défaut.
+          // NB : `$$cp` est évalué AVANT que ce $addFields n'écrase `plan`.
+          plan: { $let: {
+            vars: {
+              cp: { $ifNull: ["$plan", ""] },
+              // planStatus absent / null / "" ⇒ actif (cf. getCompanyPlan).
+              cpActive: { $in: [{ $ifNull: ["$planStatus", "active"] }, ["active", "", null]] },
+              sp: { $ifNull: ["$owner.subscription.plan", ""] },
+              active: { $eq: ["$owner.subscription.status", "active"] },
+              manual: { $or: [{ $eq: ["$owner.manualPremium", true] }, { $eq: ["$owner.isPremium", true] }] },
+            },
+            in: { $cond: [
+              { $and: [{ $in: ["$$cp", KNOWN_PLANS] }, "$$cpActive"] },
+              "$$cp",
+              { $cond: [
+                "$$manual",
+                { $cond: [{ $in: ["$$sp", PAID] }, "$$sp", "pro"] },
+                { $cond: [{ $and: ["$$active", { $in: ["$$sp", PAID] }] }, "$$sp", "basic"] },
+              ] },
+            ] },
+          } },
+      } },
+      { $addFields: {
+          featured: { $in: ["$plan", ["pro", "business"]] },
+          // Même ordre que sortEstablishments() : boostés d'abord, puis
+          // Business > Pro > Essentiel > Gratuit, puis note, puis nb d'avis.
+          boostRank: { $cond: [{ $gt: ["$boostPosition", 0] }, 0, 1] },
+          planRank: { $switch: { branches: [
+            { case: { $eq: ["$plan", "business"] }, then: 3 },
+            { case: { $eq: ["$plan", "pro"] },      then: 2 },
+            { case: { $eq: ["$plan", "essentiel"] }, then: 1 },
+          ], default: 0 } },
+      } },
+      { $sort: { boostRank: 1, boostPosition: 1, planRank: -1, avgRating: -1, reviewCount: -1, _id: 1 } },
+      // `name` / `businessType` / `photo` de l'ÉTABLISSEMENT : c'est ce qui doit
+      // s'afficher sur la carte (le compte propriétaire ne sert que de repli).
+      { $project: { _id: 1, slug: 1, name: 1, businessType: 1, photo: 1, boostPosition: 1, avgRating: 1, reviewCount: 1, plan: 1, featured: 1, owner: OWNER_FIELDS } },
+      // $facet : la page ET le total en une seule requête.
+      { $facet: {
+          rows:  [{ $skip: (page - 1) * PAGE_SIZE }, { $limit: PAGE_SIZE }],
+          total: [{ $count: "n" }],
+      } },
+    ];
+
+    const agg = await Companies.aggregate(pipeline).allowDiskUse(true);
+    const coachsWithRating = (agg[0] && agg[0].rows) || [];
+    const totalResults = (agg[0] && agg[0].total[0] && agg[0].total[0].n) || 0;
+    const totalPages = Math.max(1, Math.ceil(totalResults / PAGE_SIZE));
 
     const allCategories = await getDynamicCategories();
 
@@ -302,6 +369,10 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
       searchCategory: category || "",
       allCategories,
       services: getServices(res.locals.lang),
+      page,
+      totalPages,
+      totalResults,
+      pageSize: PAGE_SIZE,
     });
   } catch (err) {
     console.error(err);
@@ -471,6 +542,13 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
   const ID = company.owner;
   const coach = await User.findById(ID);
 
+  // Établissement orphelin (compte propriétaire supprimé) : tout le reste de
+  // cette route déréférence `coach` — sans ce garde on renvoyait un 500 sur
+  // une URL publique.
+  if (!coach) {
+    return res.status(404).render("client/404");
+  }
+
   // Compte désactivé par le superadmin → page de blocage
   if (coach && coach.isDisabled) {
     return res.status(403).render("client/account-disabled");
@@ -488,8 +566,9 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
   // `?embedded=1` = appel venant de CETTE iframe interne → on l'ignore pour
   // ne jamais boucler et toujours servir la page de réservation pure ici.
   if (!req.query.embedded) {
-    const { getLimit } = require("../utils/planLimits");
-    if (getLimit("mySite", coach)) {
+    const { getLimit, billingUserFor } = require("../utils/planLimits");
+    // « Mon Site » est un droit de l'ÉTABLISSEMENT, pas du compte owner.
+    if (getLimit("mySite", billingUserFor(company, coach))) {
       const rendered = await require("../controllers/site.controller").renderSiteForCompany(company, res);
       if (rendered) return;
     }
@@ -677,8 +756,11 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
     }
   } catch (_) {}
 
-  const profileTitle = `${coach.businessName || coach.fullName} — Réserver en ligne | BranShee`;
-  const profileDesc = coach.description ? `${coach.description.slice(0, 150)}…` : `Réservez en ligne avec ${coach.businessName || coach.fullName}. Prise de rendez-vous rapide et gratuite sur BranShee.`;
+  // Nom de l'ÉTABLISSEMENT en priorité (le compte propriétaire n'est qu'un
+  // repli pour les fiches créées avant le multi-établissements).
+  const bizLabel = company.name || coach.businessName || coach.fullName;
+  const profileTitle = `${bizLabel} — Réserver en ligne | BranShee`;
+  const profileDesc = coach.description ? `${coach.description.slice(0, 150)}…` : `Réservez en ligne avec ${bizLabel}. Prise de rendez-vous rapide et gratuite sur BranShee.`;
 
   const cs = coach.calendarSettings || {};
 
@@ -718,7 +800,8 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
     title: profileTitle,
     metaDescription: profileDesc,
     ogType: "profile",
-    ogImage: coach.businessPicture || coach.profilePicture || "https://www.branshee.com/images/og-cover.jpg",
+    // Photo de l'ÉTABLISSEMENT : c'est l'aperçu de tout lien partagé.
+    ogImage: company.photo || coach.businessPicture || coach.profilePicture || "https://www.branshee.com/images/og-cover.jpg",
     canonical: `https://www.branshee.com/${company.slug || company._id}`,
     company,
     coach,

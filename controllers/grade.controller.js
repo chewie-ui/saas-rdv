@@ -29,6 +29,21 @@ function sanitizePermissions(raw) {
   return out;
 }
 
+// Règle anti-élévation, pendant de celle d'updateCollaboratorGrade
+// (« Vous ne pouvez pas modifier votre propre grade ») : sans elle, au lieu de
+// s'attribuer un grade puissant, il suffirait de rendre tout-puissant celui
+// qu'on porte déjà. Le patron n'a pas d'adhésion à son propre établissement :
+// il n'est jamais concerné. Identique à controllers/mobile/grades.mobile.controller.js.
+async function carriesGrade(req, company, gradeId) {
+  if (String(company.owner) === String(req.user._id)) return false;
+  const membership = await CompanyMembership.findOne({
+    company: company._id,
+    user: req.user._id,
+    status: "accepted",
+  }).select("grade").lean();
+  return !!(membership && membership.grade && String(membership.grade) === String(gradeId));
+}
+
 exports.listGrades = async (req, res) => {
   try {
     const company = await loadCompanyOr404(req, res);
@@ -71,6 +86,13 @@ exports.updateGrade = async (req, res) => {
     const company = await loadCompanyOr404(req, res);
     if (!company) return;
 
+    if (await carriesGrade(req, company, req.params.gradeId)) {
+      return res.status(403).json({
+        error: "forbidden",
+        message: "Vous ne pouvez pas modifier le grade que vous portez vous-même.",
+      });
+    }
+
     const update = {};
     if (req.body.name !== undefined) {
       const name = String(req.body.name).trim().slice(0, 60);
@@ -104,6 +126,15 @@ exports.deleteGrade = async (req, res) => {
   try {
     const company = await loadCompanyOr404(req, res);
     if (!company) return;
+
+    // Par cohérence avec `updateGrade` : supprimer son propre grade reviendrait
+    // à se faire réassigner un grade choisi par soi-même.
+    if (await carriesGrade(req, company, req.params.gradeId)) {
+      return res.status(403).json({
+        error: "forbidden",
+        message: "Vous ne pouvez pas supprimer le grade que vous portez vous-même.",
+      });
+    }
 
     const memberCount = await CompanyMembership.countDocuments({ company: company._id, grade: req.params.gradeId });
 

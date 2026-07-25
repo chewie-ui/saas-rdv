@@ -72,6 +72,16 @@ svg {
   fill: currentColor;
 }
 
+/* Hamburger masqué dès que la sidebar est fixe (≥1024px) — elle ne sert qu'à
+   ouvrir la sidebar en overlay sur mobile. On utilise un sélecteur PLUS
+   SPÉCIFIQUE (`.admin-nav #openMenu`, 0-1-1) que la règle de base (`#openMenu`,
+   0-1-0) : ainsi la règle de masquage gagne la cascade PEU IMPORTE l'ordre de
+   chargement des CSS (media-queries.css et sidebar.admin.css se chargent avant
+   ce fichier). Sous 1024px, media-queries.css réaffiche le bouton. */
+@media (min-width: 1024px) {
+  .admin-nav #openMenu { display: none; }
+}
+
 .admin-nav__title {
   flex: 1;
   font-size: 16px;
@@ -137,8 +147,8 @@ svg {
 /* ── Responsive admin layout ── */
 @media (min-width: 820px) {
   /* Le hamburger reste visible tant que la sidebar n'est PAS fixe
-     (elle ne le devient qu'à ≥1280px, cf. sidebar.admin.css). Le cacher
-     dès 820px créait une zone morte 820–1279px : ni sidebar, ni bouton. */
+     (elle ne le devient qu'à ≥1024px, cf. sidebar.admin.css). Le cacher
+     dès 820px créait une zone morte : ni sidebar, ni bouton. */
   .main-wrapper {
     padding: 24px;
     gap: 24px;

@@ -7,7 +7,7 @@ const DaysOff  = require("../db/models/company/daysOff.model");
 const { getAppointments } = require("../queries/booking.queries");
 const pug  = require("pug");
 const path = require("path");
-const { getLimit, atLeast } = require("../utils/planLimits");
+const { getLimit, atLeast, billingUserFor } = require("../utils/planLimits");
 const { sendEmail } = require("../utils/mailer");
 const { isFeatureEnabled } = require("../middlewares/featureFlag");
 const { getCoursesForDate, courseRangesFor } = require("../utils/recurringCourses");
@@ -324,7 +324,9 @@ exports.createBooking = async (req, res) => {
     // ── Plan gate: monthly bookings cap for basic (free) plan ─────────────
     if (response.owner) {
       const companyOwner = await User.findById(response.owner).lean();
-      const monthlyLimit = getLimit("monthlyBookings", companyOwner);
+      // Le plafond mensuel est celui de L'ÉTABLISSEMENT : un établissement Pro
+      // dont le compte owner est retombé en gratuit refusait les réservations.
+      const monthlyLimit = getLimit("monthlyBookings", billingUserFor(response, companyOwner));
       if (monthlyLimit !== Infinity) {
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -352,7 +354,8 @@ exports.createBooking = async (req, res) => {
                   path.join(__dirname, "../views/templates/emails/blocked-booking-attempt.pug"),
                   {
                     ownerName:   owner.fullName || "",
-                    companyName: owner.businessName || owner.fullName || "",
+                    // Nom de l'établissement concerné, pas du compte (règle 8).
+                    companyName: response.name || owner.businessName || owner.fullName || "",
                     monthlyLimit,
                   },
                 );
@@ -652,7 +655,9 @@ exports.createBooking = async (req, res) => {
     // vient d'être créée fait passer le compteur au-delà de la limite du plan.
     try {
       if (companyOwner) {
-        const monthlyLimitForAlert = getLimit("monthlyBookings", companyOwner);
+        // Même valeur que le blocage ci-dessus (plan de l'établissement),
+        // sinon l'alerte et le blocage divergent.
+        const monthlyLimitForAlert = getLimit("monthlyBookings", billingUserFor(response, companyOwner));
         if (monthlyLimitForAlert !== Infinity) {
           const now = new Date();
           const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -670,7 +675,8 @@ exports.createBooking = async (req, res) => {
                   path.join(__dirname, "../views/templates/emails/monthly-limit-reached.pug"),
                   {
                     ownerName:   companyOwner.fullName || "",
-                    companyName: companyOwner.businessName || companyOwner.fullName || "",
+                    // Nom de l'établissement concerné, pas du compte (règle 8).
+                    companyName: response.name || companyOwner.businessName || companyOwner.fullName || "",
                     monthlyLimit: monthlyLimitForAlert,
                   },
                 );
@@ -726,7 +732,8 @@ exports.createBooking = async (req, res) => {
                            (a) => a.required || (a.answer !== undefined && a.answer !== null && String(a.answer).trim() !== "")
                          ),
         locationText,
-        businessName:  (companyOwner?.businessName || "").trim(),
+        // Nom de l'ÉTABLISSEMENT (repli compte pour les fiches historiques).
+        businessName:  (response?.name || companyOwner?.businessName || "").trim(),
         businessPhone: (companyOwner?.phonePro || "").trim(),
         cancelUrl,
         bookingId:   newBooking._id,
@@ -736,32 +743,57 @@ exports.createBooking = async (req, res) => {
 
     await sendEmail(email, "Confirmation de votre rendez-vous — BranShee", htmlTemplate);
 
-    // ── SMS de confirmation au client ─────────────────────────────────────
-    // Passe par le système de crédits (quota inclus → solde prépayé → repli
-    // email déjà envoyé ci-dessus). Conditions : flag global + toggle de
-    // l'établissement (smsConfirmationEnabled). Jamais bloquant.
+    // ── Confirmation WhatsApp / SMS au client ─────────────────────────────
+    // Canal prioritaire WhatsApp (moins cher), repli SMS. Les deux passent par
+    // le même système de crédits (quota inclus → solde prépayé → repli email
+    // déjà envoyé ci-dessus). Jamais bloquant : fire-and-forget pour ne PAS
+    // faire traîner la réponse de réservation sur un appel externe.
     try {
-      if (
-        phone &&
-        companyOwner?.calendarSettings?.smsConfirmationEnabled &&
-        (await isFeatureEnabled("sms_notifications"))
-      ) {
-        const { sendBillableSmsIfAllowed } = require("../utils/sms");
-        const bizName = (companyOwner.businessName || companyOwner.fullName || "").trim();
-        const clientName = [name, surname].filter(Boolean).join(" ").trim();
-        const smsBody =
-          "Confirmation de rendez-vous" +
-          (clientName ? " — " + clientName : "") +
-          "\n" + (bizName ? bizName + " · " : "") + formattedDate + " à " + startTime +
-          (locationText ? "\nLieu : " + locationText : "");
-        // Fire-and-forget : on NE bloque PAS la réponse de réservation sur
-        // l'appel externe Spryng (sinon la page reste sur « Envoi… »). Le SMS
-        // part en arrière-plan ; en cas d'échec on log simplement.
-        sendBillableSmsIfAllowed(companyOwner, phone, smsBody)
-          .catch((e) => console.error("SMS confirmation error:", e.message));
+      const cs = companyOwner?.calendarSettings || {};
+      // Nom de l'ÉTABLISSEMENT en tête (règle 8). Espaces normalisés : Meta
+      // rejette un paramètre de template contenant un saut de ligne.
+      const bizName = (response?.name || companyOwner?.businessName || companyOwner?.fullName || "")
+        .replace(/\s+/g, " ")
+        .trim();
+      // Quota inclus SMS/WhatsApp = propriété du forfait de l'établissement.
+      const billingPlan = billingUserFor(response, companyOwner).subscription.plan;
+      const clientName = [name, surname].filter(Boolean).join(" ").trim();
+
+      if (phone && (cs.whatsappConfirmationEnabled || cs.smsConfirmationEnabled)) {
+        (async () => {
+          const { isWhatsappConfigured, sendWhatsappIfAllowed, WA_TPL_CONFIRMATION } = require("../utils/whatsapp");
+
+          // 1) WhatsApp d'abord (si activé + configuré)
+          if (cs.whatsappConfirmationEnabled && isWhatsappConfigured()) {
+            const wa = await sendWhatsappIfAllowed(companyOwner, phone, {
+              plan: billingPlan,
+              template: WA_TPL_CONFIRMATION,
+              // Variables {{1..4}} du template « rdv_confirmation » (cf. WHATSAPP_SETUP.md)
+              params: [
+                (name || "").trim() || (surname || "").trim() || "",
+                bizName || "votre établissement",
+                formattedDate,
+                startTime || "",
+              ],
+            }).catch((e) => { console.error("WhatsApp confirmation error:", e.message); return { sent: false }; });
+            if (wa && wa.sent) return; // envoyé en WhatsApp — pas de SMS
+          }
+
+          // 2) Repli SMS (si activé + flag global)
+          if (cs.smsConfirmationEnabled && (await isFeatureEnabled("sms_notifications"))) {
+            const { sendBillableSmsIfAllowed } = require("../utils/sms");
+            const smsBody =
+              "Confirmation de rendez-vous" +
+              (clientName ? " — " + clientName : "") +
+              "\n" + (bizName ? bizName + " · " : "") + formattedDate + " à " + startTime +
+              (locationText ? "\nLieu : " + locationText : "");
+            await sendBillableSmsIfAllowed(companyOwner, phone, smsBody, { plan: billingPlan })
+              .catch((e) => console.error("SMS confirmation error:", e.message));
+          }
+        })().catch((e) => console.error("Confirmation notif error:", e.message));
       }
-    } catch (smsErr) {
-      console.error("SMS confirmation error:", smsErr.message);
+    } catch (notifErr) {
+      console.error("Confirmation notif error:", notifErr.message);
     }
 
     // ── Email de notification à l'admin (si activé) ────────────────────────
@@ -791,6 +823,23 @@ exports.createBooking = async (req, res) => {
       }
     } catch (notifErr) {
       console.error("Admin notification email error:", notifErr.message);
+    }
+
+    // ── Notification push vers l'app mobile du pro ────────────────────────
+    // Même préférence que l'email (notifications.newBooking) : couper l'un
+    // coupe l'autre. N'échoue jamais — la réservation est déjà enregistrée.
+    try {
+      if (companyOwner && companyOwner.notifications?.newBooking !== false) {
+        const { notifyCompanyOwner } = require("../utils/push");
+        const clientDisplay = [name, surname].filter(Boolean).join(" ") || email;
+        notifyCompanyOwner(companyOwner._id, {
+          title: "Nouvelle réservation",
+          body: `${clientDisplay} — ${formattedDate} à ${startTime}`,
+          data: { type: "booking.created", bookingId: String(newBooking._id) },
+        }).catch(() => {});
+      }
+    } catch (pushErr) {
+      console.error("Admin push notification error:", pushErr.message);
     }
 
     // Sync Google Calendar
@@ -1690,6 +1739,18 @@ exports.cancelBooking = async (req, res) => {
           },
         );
         await sendEmail(adminEmail, `❌ Annulation — ${clientDisplay}`, adminHtml);
+      }
+
+      // Notification push vers l'app mobile du pro (même préférence).
+      try {
+        const { notifyCompanyOwner } = require("../utils/push");
+        notifyCompanyOwner(coach._id, {
+          title: "Rendez-vous annulé",
+          body: `${clientDisplay} — ${formattedCancelDate} à ${canceledBooking.startTime}`,
+          data: { type: "booking.canceled", bookingId: String(canceledBooking._id) },
+        }).catch(() => {});
+      } catch (pushErr) {
+        console.error("Cancellation push error:", pushErr.message);
       }
     }
   } catch (emailErr) {

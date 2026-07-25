@@ -2,7 +2,7 @@ const User = require("../db/models/user.model");
 const Company = require("../db/models/company/company.model");
 const CompanyMembership = require("../db/models/company/companyMembership.model");
 const CompanyGrade = require("../db/models/company/companyGrade.model");
-const { getPlan, getLimit, getCollaboratorLimit, canCreateEstablishment } = require("../utils/planLimits");
+const { getCollaboratorLimit, canCreateEstablishment, getCompanyPlan, billingUserFor } = require("../utils/planLimits");
 const getServices = require("../utils/services");
 const { logActivity } = require("../utils/activityLog");
 
@@ -40,6 +40,11 @@ async function ensureBuiltInGrades(companyId) {
     });
   }
 }
+
+// Réutilisés tels quels par l'API mobile (controllers/mobile/team.mobile.controller.js)
+// pour garantir une seule source de vérité sur les grades par défaut.
+exports.ensureDefaultGrade = ensureDefaultGrade;
+exports.ensureBuiltInGrades = ensureBuiltInGrades;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -85,12 +90,24 @@ async function loadAccessibleCompanyOr403(req, res) {
   return company;
 }
 
+// Compte PROPRIÉTAIRE de l'établissement — c'est lui qui porte la facturation
+// et le repli d'identité, jamais `req.user` (qui peut n'être qu'un
+// collaborateur ayant la permission d'agir sur cet établissement).
+async function loadCompanyOwner(company, req) {
+  if (String(company.owner) === String(req.user._id)) return req.user;
+  return await User.findById(company.owner)
+    .select("subscription isPremium manualPremium addons businessName fullName businessPicture")
+    .lean();
+}
+
 function formatCompanyForList(company, owner) {
   return {
     id: String(company._id),
-    name: company.name || owner.businessName || "Établissement sans nom",
-    businessType: company.businessType || owner.businessType || "",
-    photo: company.photo || owner.businessPicture || "/images/no-user.webp",
+    // Repli sur le compte propriétaire pour les fiches historiques (Company
+    // créée avant que name/photo ne vivent sur l'établissement).
+    name: company.name || (owner && (owner.businessName || owner.fullName)) || "Établissement sans nom",
+    businessType: company.businessType || (owner && owner.businessType) || "",
+    photo: company.photo || (owner && owner.businessPicture) || "/images/no-user.webp",
     slug: company.slug || "",
     isPaused: !!company.isPaused,
     createdAt: company.createdAt,
@@ -116,7 +133,12 @@ exports.listMyEstablishments = async (req, res) => {
   // 1 gratuit inclus, + 1 gratuit par Business, sinon tous les établissements
   // doivent être payants (Pro min.) pour en créer un de plus.
   const createInfo = canCreateEstablishment(owned, owner);
-  const ownedFormatted = owned.map((c) => formatCompanyForList(c, owner));
+  // Le forfait appartient à l'établissement : chaque ligne porte le sien
+  // (getCompanyPlan retombe sur le compte tant que company.plan est vide).
+  const ownedFormatted = owned.map((c) => ({
+    ...formatCompanyForList(c, owner),
+    plan: getCompanyPlan(c, owner),
+  }));
 
   function companyLabel(m) {
     return (m.company && (m.company.name || (m.company.owner && (m.company.owner.businessName || m.company.owner.fullName)))) || "Établissement sans nom";
@@ -154,7 +176,9 @@ exports.listMyEstablishments = async (req, res) => {
     rejectedRequests,
     companiesCount: owned.length,
     canCreateEstab: createInfo.canCreate,
-    currentPlan: getPlan(owner),
+    // `currentPlan` n'est PAS repassé ici : celui d'injectCompany (plan de
+    // l'établissement actif) doit rester en place pour la sidebar. Le plan
+    // propre à chaque ligne est porté par `establishments[].plan`.
     services: getServices(res.locals.lang),
   });
 };
@@ -412,7 +436,10 @@ exports.renderCollaboratorsPage = async (req, res) => {
       invitedAt: m.createdAt,
     }));
 
-  const collaboratorsLimit = getCollaboratorLimit(owner);
+  // Limites lues sur le forfait de L'ÉTABLISSEMENT (pas du compte owner) :
+  // avec plusieurs établissements, un seul chiffre pour tous était faux.
+  const billing = billingUserFor(company, owner);
+  const collaboratorsLimit = getCollaboratorLimit(billing);
 
   const ownerProfile = company.ownerEmployeeProfile || {};
   const { PERMISSION_SCHEMA, PERMISSION_GROUPS } = require("../utils/permissions");
@@ -430,8 +457,8 @@ exports.renderCollaboratorsPage = async (req, res) => {
     pendingInvitations,
     collaboratorsLimit: collaboratorsLimit === Infinity ? null : collaboratorsLimit,
     atCollaboratorsLimit: accepted.length >= collaboratorsLimit,
-    currentPlan: getPlan(owner),
-    extraCollaboratorSeats: (owner.addons && owner.addons.extraCollaboratorSeats) || 0,
+    currentPlan: getCompanyPlan(company, owner),
+    extraCollaboratorSeats: billing.addons.extraCollaboratorSeats || 0,
     ownerProfile: {
       isEmployee: ownerProfile.isEmployee !== false,
       displayName: ownerProfile.displayName || "",
@@ -591,8 +618,11 @@ exports.inviteCollaborator = async (req, res) => {
     const company = await loadAccessibleCompanyOr403(req, res);
     if (!company) return;
 
-    const owner = req.user;
-    const limit = getCollaboratorLimit(owner);
+    // La limite de sièges est celle de L'ÉTABLISSEMENT (donc de son owner) :
+    // `loadAccessibleCompanyOr403` laisse passer un collaborateur, dont le
+    // forfait personnel n'a rien à voir avec celui de l'établissement.
+    const ownerUser = await loadCompanyOwner(company, req);
+    const limit = getCollaboratorLimit(billingUserFor(company, ownerUser));
     if (limit <= 0) {
       return res.status(403).json({ error: "Votre forfait ne permet pas d'inviter de collaborateurs. Passez au forfait Pro ou Business." });
     }
@@ -613,12 +643,23 @@ exports.inviteCollaborator = async (req, res) => {
     if (!target) {
       return res.status(404).json({ error: "Aucun compte BranShee trouvé avec cet email. La personne doit d'abord créer un compte." });
     }
-    if (String(target._id) === String(owner._id)) {
-      return res.status(400).json({ error: "Vous êtes déjà le propriétaire de cet établissement." });
+    // On compare au PATRON de l'établissement, pas à l'inviteur : sinon un
+    // collaborateur pouvait « inviter » le patron dans son propre établissement.
+    if (String(target._id) === String(company.owner)) {
+      return res.status(400).json({ error: "Cette personne est déjà le propriétaire de cet établissement." });
     }
 
+    // Choisir le grade d'un invité = distribuer des permissions : cela exige
+    // AUSSI `grades.manage`, comme le changement de grade d'un collaborateur
+    // déjà en place (cf. routes/user/account.js). Sinon `collaborators.manage`
+    // seul permettait d'inviter quelqu'un directement avec le grade le plus
+    // permissif. Sans cette permission, on retombe sur le grade par défaut.
+    const { getPermissionsForCompanyAndUser } = require("../utils/permissions");
+    const inviterPerms = await getPermissionsForCompanyAndUser(company._id, req.user._id);
+    const canAssignGrade = !!inviterPerms?.grades?.manage;
+
     let grade = null;
-    if (req.body.gradeId) {
+    if (canAssignGrade && req.body.gradeId) {
       grade = await CompanyGrade.findOne({ _id: req.body.gradeId, company: company._id });
     }
     if (!grade) grade = await ensureDefaultGrade(company._id);
@@ -639,7 +680,7 @@ exports.inviteCollaborator = async (req, res) => {
 
     logActivity({
       company: company._id,
-      user: owner,
+      user: req.user, // identité de l'auteur de l'action, pas du patron
       role: "owner",
       action: "collaborator.invite",
       description: `a invité "${target.fullName}" comme collaborateur (${grade.name}) — en attente d'acceptation`,
@@ -787,6 +828,27 @@ exports.respondJoinRequestForCompany = async (req, res) => {
       status: "pending",
     }).populate("user", "fullName");
     if (!membership) return res.status(404).json({ error: "Demande introuvable." });
+
+    // La limite de sièges doit être revérifiée à l'ACCEPTATION : une demande
+    // reçue quand il restait de la place peut être approuvée des mois plus
+    // tard, l'établissement étant entre-temps plein ou retombé en gratuit.
+    if (decision === "accepted") {
+      const ownerUser = await loadCompanyOwner(company, req);
+      const limit = getCollaboratorLimit(billingUserFor(company, ownerUser));
+      const activeCount = await CompanyMembership.countDocuments({
+        company: company._id,
+        status: "accepted",
+        isActive: { $ne: false },
+      });
+      if (activeCount >= limit) {
+        return res.status(403).json({
+          error: "plan_limit",
+          message: limit <= 0
+            ? "Votre forfait ne permet pas d'ajouter de collaborateurs. Passez au forfait Pro ou Business."
+            : `Votre forfait permet ${limit} collaborateur(s) au maximum. Passez à un forfait supérieur pour en ajouter davantage.`,
+        });
+      }
+    }
 
     membership.status = decision;
     if (decision === "accepted") {

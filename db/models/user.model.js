@@ -23,6 +23,13 @@ const userSchema = schema(
       type: String,
       default: null,
     },
+    // Identifiant stable « Se connecter avec Apple » (le `sub` du jeton). Même
+    // rôle que googleId : il survit au changement d'email, y compris quand
+    // l'utilisateur masque son adresse derrière un relais privé Apple.
+    appleId: {
+      type: String,
+      default: null,
+    },
     // Intention déclarée à l'inscription — affichage seulement (quel CTA
     // montrer dans Paramètres), n'affecte jamais l'accès aux données. La
     // présence d'un Company doc (owner = ce User) reste l'unique source de
@@ -256,6 +263,13 @@ const userSchema = schema(
       // Au-delà du quota inclus : true = continuer en SMS en dépensant le solde
       // prépayé ; false (défaut) = passer à l'email, ne jamais dépenser le solde.
       smsAllowOverage: { type: Boolean, default: false },
+      // ── Rappels WhatsApp (Meta Cloud API, canal prioritaire car moins cher) ─
+      // Même pot de crédits que le SMS (quota mensuel → solde prépayé → repli).
+      // Quand activé ET WhatsApp configuré côté serveur, le rappel part en
+      // WhatsApp d'abord ; en cas d'échec/quota épuisé → repli SMS puis email.
+      whatsappRemindersEnabled:    { type: Boolean, default: false },
+      // Message WhatsApp de CONFIRMATION à la réservation (distinct du rappel).
+      whatsappConfirmationEnabled: { type: Boolean, default: false },
       gallery:     { type: [String], default: [] },
       equipment:   { type: [String], default: [] },
       categories:  { type: [{ name: String, icon: { type: String, default: '' }, _id: false }], default: [] },
@@ -346,6 +360,32 @@ const userSchema = schema(
       // établissement) déjà envoyé — un seul, jamais répété.
       createEstabNudged: { type: Boolean, default: false },
     },
+
+    // D'où vient ce compte : attribution « premier contact » recopiée du
+    // cookie bs_attr au moment de l'inscription (cf. utils/attribution.js).
+    // Figée à la création et jamais recalculée — c'est ce qui permet de dire
+    // « ce client qui paie vient de telle campagne », et donc de savoir quelle
+    // dépense publicitaire rapporte réellement.
+    // Vide pour les comptes créés avant la mise en place du suivi, et pour les
+    // inscriptions via l'app mobile (pas de cookie navigateur).
+    acquisition: {
+      source:     { type: String, default: "" }, // google-ads, instagram.com...
+      medium:     { type: String, default: "" }, // cpc, referral, email...
+      campaign:   { type: String, default: "" },
+      term:       { type: String, default: "" },
+      content:    { type: String, default: "" },
+      gclid:      { type: String, default: "" },
+      referrer:   { type: String, default: "" },
+      landing:    { type: String, default: "" }, // page d'atterrissage du 1er contact
+      capturedAt: { type: Date,   default: null },
+    },
+
+    // Génération des jetons de l'API mobile. Les JWT sont stateless : rien ne
+    // permet de les révoquer une fois émis (le refresh vit 60 jours). Ce
+    // compteur est embarqué dans chaque jeton et revérifié à chaque requête —
+    // l'incrémenter (changement ou réinitialisation de mot de passe) coupe
+    // instantanément l'accès de tous les appareils déjà connectés.
+    tokenEpoch: { type: Number, default: 0 },
 
     // Compte désactivé par le superadmin (masqué de /search + URL bloquée)
     isDisabled: {

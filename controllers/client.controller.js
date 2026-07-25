@@ -162,7 +162,10 @@ exports.getDashboard = async (req, res) => {
   const companyIds = [...new Set(allBookings.map(b => b.company?.toString()).filter(Boolean))];
   const companies  = await Company.find({ _id: { $in: companyIds } })
     .populate("owner", "fullName businessName businessType businessPicture profilePicture description location phone phonePro emailPro website")
-    .select("_id owner slug cancellationPolicy")
+    // name/photo/businessType de l'ÉTABLISSEMENT : sans eux, un client ayant
+    // réservé dans 2 établissements d'un même patron voyait deux fois le même
+    // nom et la même photo (le `.select` les excluait par omission).
+    .select("_id owner slug name photo businessType cancellationPolicy")
     .lean();
 
   const companyMap = {};
@@ -174,9 +177,10 @@ exports.getDashboard = async (req, res) => {
     return {
       ...b,
       companySlug:        comp ? (comp.slug || comp._id.toString()) : null,
-      companyName:        owner ? (owner.businessName || owner.fullName || "Professionnel") : "Professionnel",
-      companyType:        owner?.businessType || "",
-      companyPhoto:       owner ? (owner.businessPicture || owner.profilePicture || "/images/no-user.webp") : "/images/no-user.webp",
+      // Établissement d'abord, compte propriétaire en repli (règle 8).
+      companyName:        comp?.name || owner?.businessName || owner?.fullName || "Professionnel",
+      companyType:        comp?.businessType || owner?.businessType || "",
+      companyPhoto:       comp?.photo || owner?.businessPicture || owner?.profilePicture || "/images/no-user.webp",
       // `location` peut être un objet {address,city,…} (format courant) ou
       // un String hérité (vieilles données) — on gère les deux cas.
       companyCity:        (typeof owner?.location === "object" ? owner.location?.city  : "") || "",
@@ -207,7 +211,7 @@ exports.getDashboard = async (req, res) => {
   const reviewCompanyIds = [...new Set(myReviews.map(r => r.company?.toString()).filter(Boolean))];
   const reviewCompanies  = await Company.find({ _id: { $in: reviewCompanyIds } })
     .populate("owner", "fullName businessName businessPicture profilePicture")
-    .select("_id owner slug")
+    .select("_id owner slug name photo")
     .lean();
   const reviewCompanyMap = {};
   reviewCompanies.forEach(c => { reviewCompanyMap[c._id.toString()] = c; });
@@ -218,8 +222,8 @@ exports.getDashboard = async (req, res) => {
     return {
       ...r,
       companySlug: comp ? (comp.slug || comp._id.toString()) : null,
-      companyName: owner ? (owner.businessName || owner.fullName || "Établissement") : "Établissement",
-      companyPhoto: owner ? (owner.businessPicture || owner.profilePicture || "/images/no-user.webp") : "/images/no-user.webp",
+      companyName: comp?.name || owner?.businessName || owner?.fullName || "Établissement",
+      companyPhoto: comp?.photo || owner?.businessPicture || owner?.profilePicture || "/images/no-user.webp",
     };
   });
 

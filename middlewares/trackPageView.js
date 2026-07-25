@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { parseAttribution, rememberFirstTouch } = require("../utils/attribution");
 
 const STATIC_EXT_RE = /\.(css|js|mjs|map|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|eot|mp4|webm|json|txt|xml|pdf)$/i;
 const EXCLUDED_PREFIXES = ["/superadmin", "/socket.io", "/api", "/css", "/js", "/images", "/fonts"];
@@ -23,6 +24,17 @@ module.exports = function trackPageView(req, res, next) {
         secure: process.env.NODE_ENV === "production",
       });
     }
+
+    // Attribution « premier contact », capturée ICI (côté serveur) et pas dans
+    // le beacon : la requête d'atterrissage est la seule à porter les `utm_*`
+    // et le `gclid` de Google Ads. Un visiteur qui clique une pub puis navigue
+    // ailleurs perd ces paramètres dès la 2ᵉ page — s'il s'inscrit plus tard,
+    // seul ce cookie permet encore de rattacher son compte à la campagne.
+    rememberFirstTouch(
+      req,
+      res,
+      parseAttribution(req.query, req.get("referer"), req.hostname),
+    );
   } catch (_) {
     // Le tracking ne doit jamais casser une requête.
   }
