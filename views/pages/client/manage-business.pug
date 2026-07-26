@@ -72,7 +72,7 @@ block content
                         h1.pro-h1!= pl.hero.title_1.replace(/\.\s*$/, '<span class="pro-h1__dot">.</span>')
                         p.pro-sub= pl.hero.sub
                         .pro-actions
-                            a.sm-btn.sm-btn--primary(href="/register")= pl.hero.cta_free
+                            a.sm-btn.sm-btn--primary(href="/register?intent=pro")= pl.hero.cta_free
                         .pro-micro
                             span
                                 svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
@@ -91,7 +91,7 @@ block content
                     //- Mockup calendrier (UI démo, non traduit sauf pastilles)
                     .pro-hero__right
                         .pro-mock
-                            a.pro-mock__price-pill(href="/register")= pl.hero.mock_pill
+                            a.pro-mock__price-pill(href="/register?intent=pro")= pl.hero.mock_pill
                             .pro-mock__bar
                                 span.dot-r
                                 span.dot-y
@@ -247,7 +247,7 @@ block content
                     .pro-stack__final-body
                         .pro-stack__final-name BranShee
                         p.pro-stack__final-desc= pl.stack.final_desc
-                    a.sm-btn.sm-btn--soft(href="/register")= pl.stack.cta
+                    a.sm-btn.sm-btn--soft(href="/register?intent=pro")= pl.stack.cta
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //- 5. FONCTIONNALITÉS — 3 rangées alternées
@@ -333,7 +333,7 @@ block content
                             h3.pro-step__title= step.title
                             p.pro-step__desc= step.desc
                 .pro-hiw__cta
-                    a.sm-btn.sm-btn--primary(href="/register")= pl.hiw.cta
+                    a.sm-btn.sm-btn--primary(href="/register?intent=pro")= pl.hiw.cta
                     p.pro-hiw__cta-note= pl.hiw.note
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -399,7 +399,7 @@ block content
                                     svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
                                         path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
                                     span= feature
-                        a.sm-btn.sm-btn--soft.pro-plan__cta(href="/register")= pl.pricing.plan_1_cta
+                        a.sm-btn.sm-btn--soft.pro-plan__cta(href="/register?intent=pro")= pl.pricing.plan_1_cta
                         p.pro-plan__note= pl.pricing.plan_1_note
 
                     .pro-plan.pro-plan--featured
@@ -416,7 +416,7 @@ block content
                                     svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
                                         path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
                                     span= feature
-                        a.sm-btn.sm-btn--primary.pro-plan__cta(href="/register?plan=pro&billing=monthly")= pl.pricing.plan_2_cta
+                        a.sm-btn.sm-btn--primary.pro-plan__cta(href="/register?intent=pro&plan=pro&billing=monthly")= pl.pricing.plan_2_cta
                         p.pro-plan__note= pl.pricing.plan_2_note
 
                     .pro-plan
@@ -432,7 +432,7 @@ block content
                                     svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
                                         path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
                                     span= feature
-                        a.sm-btn.sm-btn--soft.pro-plan__cta(href="/register?plan=business&billing=monthly")= pl.pricing.plan_3_cta
+                        a.sm-btn.sm-btn--soft.pro-plan__cta(href="/register?intent=pro&plan=business&billing=monthly")= pl.pricing.plan_3_cta
 
                 p.pro-pricing__note
                     svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
@@ -456,7 +456,7 @@ block content
                             p.pro-job__desc= job.desc
                 p.pro-jobs__closing= pl.jobs.closing
                 .pro-jobs__actions
-                    a.sm-btn.sm-btn--primary(href="/register")= pl.jobs.cta
+                    a.sm-btn.sm-btn--primary(href="/register?intent=pro")= pl.jobs.cta
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //- 11. FAQ — 10 questions anti-objections
@@ -492,14 +492,14 @@ block content
                     span= pl.cta.title_em
                 p.pro-cta__sub= pl.cta.desc
                 .pro-cta__actions
-                    a.sm-btn.sm-btn--primary(href="/register")= pl.cta.btn_1
-                    a.sm-btn.sm-btn--ghost(href="/register?plan=pro&billing=monthly")= pl.cta.btn_2
+                    a.sm-btn.sm-btn--primary(href="/register?intent=pro")= pl.cta.btn_1
+                    a.sm-btn.sm-btn--ghost(href="/register?intent=pro&plan=pro&billing=monthly")= pl.cta.btn_2
                 a.pro-cta__contact(href="/contact")= pl.cta.contact
 
         //- Barre d'action collante — mobile uniquement. Le trafic Ads est
         //- surtout mobile et la page est longue : sans ça, le CTA disparaît dès
         //- qu'on scrolle passé le hero. Toujours accessible en bas d'écran.
-        a.pro-sticky-cta(href="/register")= pl.hero.cta_free
+        a.pro-sticky-cta(href="/register?intent=pro")= pl.hero.cta_free
 
 block scripts
     script(src="/js/layouts/landing-page.js" type="module")
