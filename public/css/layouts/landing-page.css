@@ -27,6 +27,13 @@ html {
   min-height: 100vh;
   min-height: 100svh;
   display: grid;
+  /* Sans ceci, la colonne implicite unique s'auto-dimensionne au contenu
+     (grid "blowout" classique) au lieu de respecter la largeur du parent —
+     c'était la vraie cause du débordement à droite sur mobile (texte et
+     mockup calendrier tronqués), pas un souci de responsive du contenu
+     lui-même. `minmax(0, 1fr)` force la colonne à ne jamais dépasser
+     l'espace disponible. */
+  grid-template-columns: minmax(0, 1fr);
   align-content: center;
   padding: 88px 0 48px;
   background: linear-gradient(180deg, var(--accent-soft) 0%, var(--surface) 72%);
@@ -43,7 +50,7 @@ html {
 
 .pro-hero__inner {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 48px;
   align-items: center;
   position: relative;
@@ -267,7 +274,10 @@ html {
 
 .pro-mock__grid {
   display: grid;
-  grid-template-columns: 40px repeat(5, 1fr);
+  /* Même piège que .pro-hero__inner plus haut : un `1fr` nu a un minimum
+     implicite `auto` (contenu), donc les colonnes de jour peuvent forcer la
+     grille plus large que sa carte sur les tout petits écrans (<370px). */
+  grid-template-columns: 40px repeat(5, minmax(0, 1fr));
   gap: 1px;
   background: var(--border-light);
   border-radius: 10px;
@@ -347,7 +357,12 @@ html {
 .pro-mock__notif {
   position: absolute;
   bottom: -22px;
-  right: -12px;
+  /* `right` négatif = débordement décoratif volontaire du mock desktop, où
+     il y a de la marge autour. Sur mobile, `.pro-mock` touche déjà presque
+     le bord de l'écran : ce décalage poussait la carte hors du viewport
+     (débordement horizontal). Flush par défaut, le décalage desktop est
+     réappliqué dans le bloc @media (min-width: 1024px) plus bas. */
+  right: 0;
   background: var(--surface-card);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
@@ -509,7 +524,7 @@ html {
 }
 .pro-features__grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 .pro-feat {
@@ -573,7 +588,7 @@ html {
 
 .pro-func {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 40px;
   align-items: center;
   padding: 44px 0;
@@ -684,7 +699,7 @@ html {
 }
 .pro-hiw__steps {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 32px;
   position: relative;
 }
@@ -730,7 +745,7 @@ html {
 }
 .pro-plans {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   max-width: 1000px;
   margin: 0 auto;
@@ -1020,12 +1035,17 @@ html {
     padding: 96px 0 80px;
   }
   .pro-hero__inner {
-    grid-template-columns: 1.1fr 1fr;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
     gap: clamp(56px, 6vw, 112px);
   }
   /* Le contenu du hero respire davantage à mesure que l'écran grandit */
   .pro-hero__left {
     gap: clamp(20px, 1.8vw, 32px);
+  }
+  /* Débordement décoratif volontaire de la carte de notification — assez de
+     marge autour du mock à partir du desktop pour se le permettre. */
+  .pro-mock__notif {
+    right: -12px;
   }
   .pro-features__grid {
     grid-template-columns: repeat(3, 1fr);
@@ -1138,7 +1158,7 @@ html {
 }
 .pro-compare__grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   max-width: 1000px;
   margin: 0 auto;
@@ -1212,7 +1232,7 @@ html {
 }
 .pro-stack__grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   max-width: 1000px;
   margin: 0 auto;
@@ -1342,7 +1362,7 @@ html {
 }
 .pro-honest__cols {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   max-width: 1000px;
   margin: 0 auto;
@@ -1455,7 +1475,7 @@ html {
 }
 .pro-honest__guarantees {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   max-width: 1000px;
   margin: 20px auto 0;
@@ -1505,7 +1525,7 @@ html {
 }
 .pro-jobs__grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
 }
 .pro-job {

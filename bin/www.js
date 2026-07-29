@@ -25,6 +25,10 @@ const io = new Server(server);
 // Accessible depuis les contrôleurs via req.app.get("io") pour émettre des
 // événements temps réel (ex: nouveau message de chat support).
 app.set("io", io);
+// Même instance, exposée globalement pour les modules SANS accès à `req`
+// (jobs cron, utils appelés en dehors d'une requête HTTP — ex. l'alerte
+// automatique de solde SMS bas dans utils/sms.js).
+global.__branshee_io = io;
 
 const reminderScheduler = require("../utils/reminderScheduler");
 

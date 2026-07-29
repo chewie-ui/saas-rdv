@@ -18,15 +18,24 @@ aside.sidebar#sidebar
             //- collaborateur voyait sinon le nom de sa propre activité.
             - const estabName = currentCompanyName || currentCompany.name || 'Établissement'
             - const estabInitial = estabName.charAt(0).toUpperCase()
+            - const estabPhoto = currentCompany.photo || ''
             .sb-estab.sb-estab--switchable#sidebarEstab
                 button.sb-estab__current(type="button")
-                    .sb-estab__avatar= estabInitial
+                    .sb-estab__avatar
+                        if estabPhoto
+                            img(src=estabPhoto alt="")
+                        else
+                            = estabInitial
                     span.sb-estab__name= estabName
                     svg.sb-estab__caret(viewBox="0 0 24 24" height="12" width="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
                         polyline(points="6 9 12 15 18 9")
                 .sb-estab__panel
                     .sb-estab__panel-head
-                        .sb-estab__panel-avatar= estabInitial
+                        .sb-estab__panel-avatar
+                            if estabPhoto
+                                img(src=estabPhoto alt="")
+                            else
+                                = estabInitial
                         span.sb-estab__panel-name= estabName
                     if myCompanies && myCompanies.length > 0
                         .sb-estab__sep
@@ -34,7 +43,11 @@ aside.sidebar#sidebar
                             - const cInitial = (c.name || 'E').charAt(0).toUpperCase()
                             - const isCurrent = String(c.id) === String(currentCompany._id)
                             button.sb-estab__opt(type="button" class=isCurrent ? 'is-active' : '' data-id=c.id)
-                                .sb-estab__opt-avatar(class=isCurrent ? 'is-active' : '')= cInitial
+                                .sb-estab__opt-avatar(class=isCurrent ? 'is-active' : '')
+                                    if c.photo
+                                        img(src=c.photo alt="")
+                                    else
+                                        = cInitial
                                 .sb-estab__opt-info
                                     span.sb-estab__opt-name= c.name
                                     if !c.isOwner

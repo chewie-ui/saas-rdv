@@ -913,6 +913,104 @@ body.ds-drag-active * { cursor: grabbing !important; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   CLOCHE DE NOTIFICATIONS (topbar admin) — messages du fondateur ET alertes
+   automatiques (solde bas, limite de plan, nouveautés…). Même source que le
+   popup existant (AdminMessage, cf. controllers/account.controller.js) : la
+   cloche n'ajoute qu'un accès non intrusif à l'historique, elle ne duplique
+   pas la logique d'envoi.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.notif-bell { position: relative; display: inline-block; }
+.notif-bell__trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ds-h-sm);
+  height: var(--ds-h-sm);
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-sm);
+  background: var(--surface-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.notif-bell__trigger .material-symbols-outlined { font-size: 19px; }
+.notif-bell__trigger:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+.notif-bell__badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  border: 2px solid var(--surface-card);
+}
+.notif-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 60;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-md);
+  background: var(--surface-card);
+  box-shadow: var(--ds-shadow-pop);
+  display: none;
+}
+.notif-bell.is-open .notif-panel { display: block; }
+.notif-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.notif-panel__empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.notif-item {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  border-bottom: 1px solid var(--border-light);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background .12s;
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-item:hover { background: var(--surface, #f7f7f5); }
+.notif-item__top { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.notif-item__icon { font-size: 15px; flex-shrink: 0; }
+.notif-item__title { font-size: 13px; font-weight: 700; color: var(--text-primary); flex: 1; min-width: 0; }
+.notif-item__time { font-size: 11px; color: var(--text-muted); flex-shrink: 0; white-space: nowrap; }
+.notif-item__body { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
+.notif-item__cta { display: inline-block; margin-top: 6px; font-size: 12.5px; font-weight: 700; color: var(--accent); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
    ACCESSIBILITÉ
    ═══════════════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {

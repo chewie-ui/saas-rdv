@@ -138,6 +138,14 @@ const userSchema = schema(
       inProgress:    { type: Boolean, default: false }, // verrou anti-double-recharge
       lastFailureAt: { type: Date },                    // dernière recharge auto échouée
     },
+    // Garde anti-spam ET anti-silence pour l'alerte "solde SMS bas" (cf.
+    // utils/sms.js maybeAlertLowBalance). Un niveau, pas un simple booléen :
+    // "" → "info" (ça s'épuise) → "warning" (c'est épuisé, on bascule sur
+    // l'email). Chaque niveau ne s'envoie qu'une fois, MAIS l'escalade
+    // info→warning reste possible — sinon la 1ʳᵉ alerte (mineure) empêcherait
+    // à jamais la 2ᵉ (bien plus importante) de partir. Remis à "" dès que le
+    // solde est crédité (recharge manuelle ou auto), pour réarmer les deux.
+    smsLowBalanceAlertLevel: { type: String, enum: ["", "info", "warning"], default: "" },
     // Compteur d'usage du mois courant (réinitialisé automatiquement au
     // changement de mois via la clé "YYYY-MM"). Sert au quota inclus du plan.
     smsUsage: {

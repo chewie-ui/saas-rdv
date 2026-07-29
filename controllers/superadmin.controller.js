@@ -1825,10 +1825,12 @@ exports.messagesPage = async (req, res) => {
   res.render("superadmin/messages", { saPage: "messages", messages, totalUsers, userList });
 };
 
-// Envoi d'un message ciblé (recipientId) ou en diffusion (broadcast=true).
+// Envoi d'un message ciblé (recipientId), à une sélection (recipientIds) ou
+// en diffusion (broadcast=true).
 exports.sendMessage = async (req, res) => {
   try {
-    const { recipientId, broadcast, title, body, type, ctaLabel, ctaUrl } = req.body;
+    const mongoose = require("mongoose");
+    const { recipientId, recipientIds, broadcast, title, body, type, ctaLabel, ctaUrl } = req.body;
 
     const cleanTitle = (title || "").toString().trim();
     const cleanBody = (body || "").toString().trim();
@@ -1837,9 +1839,31 @@ exports.sendMessage = async (req, res) => {
     }
     const msgType = MSG_TYPES.includes(type) ? type : "info";
     const isBroadcast = broadcast === true || broadcast === "true" || broadcast === "1";
+    const isMulti = !isBroadcast && Array.isArray(recipientIds) && recipientIds.length > 0;
 
-    let recipient = null;
-    if (!isBroadcast) {
+    const base = {
+      broadcast: isBroadcast,
+      title: cleanTitle.slice(0, 140),
+      body: cleanBody.slice(0, 4000),
+      type: msgType,
+      ctaLabel: (ctaLabel || "").toString().trim().slice(0, 60),
+      ctaUrl: (ctaUrl || "").toString().trim().slice(0, 500),
+    };
+
+    let created;
+    if (isBroadcast) {
+      created = [await AdminMessage.create({ ...base, recipient: null })];
+    } else if (isMulti) {
+      // Un document par destinataire — même modèle que l'envoi ciblé unique,
+      // pour ne rien changer à la lecture côté pro (getMyMessages matche
+      // `recipient: uid`, que le message vienne d'un envoi seul ou groupé).
+      const validIds = [...new Set(recipientIds)]
+        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+        .slice(0, 500); // filet de sécurité, la liste vient de la page superadmin (~qqes dizaines)
+      const users = await User.find({ _id: { $in: validIds } }).select("_id").lean();
+      if (!users.length) return res.status(404).json({ error: "Aucun destinataire valide sélectionné." });
+      created = await AdminMessage.insertMany(users.map((u) => ({ ...base, recipient: u._id })));
+    } else {
       let user = null;
       if (recipientId) {
         user = await User.findById(recipientId).select("_id").lean();
@@ -1848,18 +1872,9 @@ exports.sendMessage = async (req, res) => {
         user = await User.findOne({ email }).select("_id").lean();
       }
       if (!user) return res.status(404).json({ error: "Destinataire introuvable (vérifiez l'email)." });
-      recipient = user._id;
+      created = [await AdminMessage.create({ ...base, recipient: user._id })];
     }
-
-    const msg = await AdminMessage.create({
-      recipient,
-      broadcast: isBroadcast,
-      title: cleanTitle.slice(0, 140),
-      body: cleanBody.slice(0, 4000),
-      type: msgType,
-      ctaLabel: (ctaLabel || "").toString().trim().slice(0, 60),
-      ctaUrl: (ctaUrl || "").toString().trim().slice(0, 500),
-    });
+    const msg = created[0];
 
     // Notification temps réel : on émet globalement, chaque client recharge
     // SES propres messages via /api/my-messages (scopé par req.user). Évite de
@@ -1869,7 +1884,7 @@ exports.sendMessage = async (req, res) => {
       if (io) io.emit("adminMessage:new");
     } catch (_) {}
 
-    res.json({ success: true, id: msg._id });
+    res.json({ success: true, id: msg._id, count: created.length });
   } catch (err) {
     console.error("sendMessage error:", err);
     res.status(500).json({ error: "Erreur serveur." });

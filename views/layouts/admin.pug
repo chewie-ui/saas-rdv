@@ -120,6 +120,19 @@ html(lang="fr")
                     //- haut, la marque n'apporte rien : on la retire à l'affichage.
                     h2.admin-nav__title= String(title || pageName || "Undefined page").replace(/\s*[—–-]\s*BranShee.*$/i, '')
                     .admin-nav__actions
+                        //- ── Cloche de notifications ─────────────────────────────
+                        //- Réutilise l'API existante (AdminMessage) déjà branchée sur
+                        //- le popup centré plus bas dans ce layout — même source de
+                        //- données, juste un accès non intrusif à l'historique.
+                        .notif-bell#notifBell
+                            button.notif-bell__trigger(type="button" id="notifBellTrigger" aria-label="Notifications" title="Notifications")
+                                span.material-symbols-outlined notifications
+                                span.notif-bell__badge#notifBellBadge(style="display:none")
+                            .notif-panel#notifPanel
+                                .notif-panel__head
+                                    span Notifications
+                                #notifPanelList
+                                    .notif-panel__empty Aucune notification pour l'instant.
                         -
                             var navCtaMap = {
                                 'Appointment':   { label: t.sidebar.new_appointment || 'New appointment', href: '/appointment/new' },
@@ -782,6 +795,122 @@ html(lang="fr")
 
                 load();
                 // Rafraîchissement live via le socket partagé (émis par le superadmin).
+                function hook() {
+                    if (window.__supportSocket) {
+                        window.__supportSocket.on('adminMessage:new', load);
+                        return true;
+                    }
+                    return false;
+                }
+                if (!hook()) document.addEventListener('support:socketReady', hook);
+            })();
+
+        //- ── Cloche de notifications (topbar) — liste non intrusive ───────────
+        script.
+            (function() {
+                var bell    = document.getElementById('notifBell');
+                var trigger = document.getElementById('notifBellTrigger');
+                var badge   = document.getElementById('notifBellBadge');
+                var list    = document.getElementById('notifPanelList');
+                if (!bell || !trigger || !badge || !list || !window.__userId) return;
+
+                var ICONS = { info: 'ℹ️', tip: '💡', success: '✅', warning: '⚠️', security: '🔒' };
+                var items = []; // messages actuellement affichés
+
+                function esc(s) {
+                    return String(s == null ? '' : s)
+                        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;');
+                }
+                function safeUrl(u) {
+                    u = String(u || '').trim();
+                    if (/^https?:\/\//i.test(u) || u.charAt(0) === '/') return u;
+                    return '';
+                }
+                function timeAgo(iso) {
+                    var d = new Date(iso);
+                    if (isNaN(d)) return '';
+                    var mins = Math.round((Date.now() - d.getTime()) / 60000);
+                    if (mins < 1)  return 'à l\'instant';
+                    if (mins < 60) return mins + ' min';
+                    var hrs = Math.round(mins / 60);
+                    if (hrs < 24) return hrs + ' h';
+                    var days = Math.round(hrs / 24);
+                    return days + ' j';
+                }
+
+                function renderBadge() {
+                    if (items.length) {
+                        badge.textContent = items.length > 9 ? '9+' : String(items.length);
+                        badge.style.display = '';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+
+                function renderList() {
+                    if (!items.length) {
+                        list.innerHTML = '<div class="notif-panel__empty">Aucune notification pour l\'instant.</div>';
+                        return;
+                    }
+                    list.innerHTML = items.map(function(m) {
+                        var type = ['info','tip','success','warning','security'].indexOf(m.type) >= 0 ? m.type : 'info';
+                        var url = safeUrl(m.ctaUrl);
+                        var hasCta = m.ctaLabel && url;
+                        return (
+                            '<button class="notif-item" type="button" data-id="' + esc(String(m._id)) + '">' +
+                                '<div class="notif-item__top">' +
+                                    '<span class="notif-item__icon">' + (ICONS[type] || 'ℹ️') + '</span>' +
+                                    '<span class="notif-item__title">' + esc(m.title) + '</span>' +
+                                    '<span class="notif-item__time">' + esc(timeAgo(m.createdAt)) + '</span>' +
+                                '</div>' +
+                                '<div class="notif-item__body">' + esc(m.body) + '</div>' +
+                                (hasCta ? '<span class="notif-item__cta">' + esc(m.ctaLabel) + ' →</span>' : '') +
+                            '</button>'
+                        );
+                    }).join('');
+                }
+
+                function dismiss(id) {
+                    items = items.filter(function(m) { return String(m._id) !== id; });
+                    renderBadge();
+                    renderList();
+                    fetch('/account/my-messages/' + id + '/dismiss', { method: 'POST' }).catch(function() {});
+                }
+
+                list.addEventListener('click', function(e) {
+                    var btn = e.target.closest('.notif-item');
+                    if (!btn) return;
+                    var id = btn.dataset.id;
+                    var m = items.find(function(x) { return String(x._id) === id; });
+                    var url = m ? safeUrl(m.ctaUrl) : '';
+                    dismiss(id);
+                    if (url) window.location = url;
+                });
+
+                function load() {
+                    fetch('/account/my-messages')
+                        .then(function(r) { return r.json(); })
+                        .then(function(d) {
+                            items = d.messages || [];
+                            renderBadge();
+                            renderList();
+                        })
+                        .catch(function() {});
+                }
+
+                trigger.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    bell.classList.toggle('is-open');
+                });
+                document.addEventListener('click', function(e) {
+                    if (bell.classList.contains('is-open') && !bell.contains(e.target)) bell.classList.remove('is-open');
+                });
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && bell.classList.contains('is-open')) bell.classList.remove('is-open');
+                });
+
+                load();
                 function hook() {
                     if (window.__supportSocket) {
                         window.__supportSocket.on('adminMessage:new', load);

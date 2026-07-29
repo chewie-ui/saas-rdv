@@ -46,6 +46,9 @@ block content
                     button.sa-choice__btn(type="button" data-mode="targeted")
                         span.material-symbols-outlined person
                         span Un utilisateur
+                    button.sa-choice__btn(type="button" data-mode="multi")
+                        span.material-symbols-outlined checklist
+                        span Plusieurs utilisateurs
 
                 .sa-field#champDestinataire(style="margin-top:14px;display:none")
                     span.sa-field__label Email du destinataire
@@ -54,6 +57,22 @@ block content
                         if userList
                             each u in userList
                                 option(value=u.email)= (u.fullName ? u.fullName + ' — ' : '') + u.email
+
+                .sa-field#champDestinataires(style="margin-top:14px;display:none")
+                    span.sa-field__label Destinataires
+                    input.sa-input.sa-multi-list__search#multiSearch(type="text" placeholder="Filtrer par nom ou email…")
+                    .sa-multi-list#multiList
+                        if userList && userList.length
+                            each u in userList
+                                label.sa-multi-list__row(data-search=((u.fullName || '') + ' ' + u.email).toLowerCase())
+                                    input.sa-check(type="checkbox" value=String(u._id))
+                                    div
+                                        div.sa-multi-list__name= u.fullName || u.email
+                                        if u.fullName
+                                            div.sa-multi-list__email= u.email
+                        else
+                            .sa-multi-list__empty Aucun utilisateur.
+                    .sa-multi-list__count#multiCount 0 sélectionné(s)
 
                 .sa-field(style="margin-top:14px")
                     span.sa-field__label Tonalité

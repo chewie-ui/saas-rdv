@@ -69,12 +69,12 @@ router.patch(
   processSingleImage("businessPicture"),
   accountController.editBusinessPicture,
 );
-router.delete("/business-picture", accountController.deleteBusinessPicture);
+router.delete("/business-picture", isAuth, accountController.deleteBusinessPicture);
 
 router.post("/send-delete-code", isAuth, accountController.sendDeleteCode);
 router.delete("/delete-account", isAuth, codeLimiter, accountController.deleteAccount);
 
-router.patch("/calendar-settings", accountController.updateCalendarSettings);
+router.patch("/calendar-settings", isAuth, injectCompany, accountController.updateCalendarSettings);
 router.patch("/embed-settings", isAuth, accountController.updateEmbedSettings);
 router.patch(
   "/calendar-bg-image",

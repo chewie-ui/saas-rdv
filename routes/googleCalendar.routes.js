@@ -7,11 +7,24 @@ const User = require("../db/models/user.model");
 const Company = require("../db/models/company/company.model");
 const Booking = require("../db/models/book.model");
 const { addEventToCalendar } = require("../utils/googleCalendarSync");
+const { atLeast, billingUserFor } = require("../utils/planLimits");
 
 // middleware simple
 function isAuthenticated(req, res, next) {
   if (!req.user) return res.redirect("/login");
   next();
+}
+
+// Déclaré Pro dans LIMITS.googleCalendar mais jamais vérifié nulle part — un
+// compte gratuit pouvait déjà connecter Google Calendar. Vérifié aux DEUX
+// bouts du flux OAuth : à l'initiation (chemin normal) et à nouveau au
+// callback (défense en profondeur — rien n'empêche un appel direct forgé sur
+// le callback avec un `state` valide, sans repasser par l'étape 1).
+async function isEligibleForGoogleCalendar(userId) {
+  const owner = await User.findById(userId).select("subscription isPremium manualPremium addons").lean();
+  if (!owner) return false;
+  const company = await Company.findOne({ owner: userId, isDeleted: { $ne: true } }).select("plan planStatus").lean();
+  return atLeast(billingUserFor(company, owner), "pro");
 }
 
 /** Construit l'URI de callback à partir du domaine de la requête courante */
@@ -24,6 +37,9 @@ function buildRedirectUri(req) {
 // 1) redirection vers Google
 router.get("/auth/google/calendar", isAuthenticated, async (req, res) => {
   try {
+    if (!(await isEligibleForGoogleCalendar(req.user._id))) {
+      return res.redirect("/subscription?locked=googleCalendar");
+    }
     const redirectUri  = buildRedirectUri(req);
     console.log("[GCal] redirect_uri utilisé :", redirectUri);
     const oauth2Client = createOAuthClient(redirectUri);
@@ -46,6 +62,13 @@ router.get("/auth/google/calendar", isAuthenticated, async (req, res) => {
 router.get("/auth/google/calendar/callback", async (req, res) => {
   try {
     const { code, state } = req.query;
+
+    // Défense en profondeur : re-vérifié ici même si l'étape 1 bloque déjà
+    // les comptes non éligibles — rien n'empêche un appel direct forgé sur ce
+    // callback avec un `state` valide sans repasser par l'étape 1.
+    if (!state || !(await isEligibleForGoogleCalendar(state))) {
+      return res.redirect("/subscription?locked=googleCalendar");
+    }
 
     const redirectUri  = buildRedirectUri(req);
     const oauth2Client = createOAuthClient(redirectUri);

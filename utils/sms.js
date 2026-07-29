@@ -148,7 +148,9 @@ async function tryAutoRecharge(userId, user) {
         userId,
         {
           $inc: { smsBalanceCents: amount },
-          $set: { "smsAutoRecharge.inProgress": false, "smsAutoRecharge.lastFailureAt": null },
+          // `smsLowBalanceAlertLevel` réarmé : ce crédit sort le solde de la
+          // zone basse, une future rechute en-dessous doit pouvoir réalerter.
+          $set: { "smsAutoRecharge.inProgress": false, "smsAutoRecharge.lastFailureAt": null, smsLowBalanceAlertLevel: "" },
         },
         { new: true }
       );
@@ -163,6 +165,82 @@ async function tryAutoRecharge(userId, user) {
     }).catch(() => {});
     return currentBalance;
   }
+}
+
+// "" < "info" < "warning" — une alerte ne s'envoie que si elle FAIT MONTER le
+// niveau (escalade), jamais deux fois pour le même niveau, jamais en
+// redescendant (avertir "épuisé" puis reharceler avec "ça s'épuise" n'a pas
+// de sens tant qu'il n'y a pas eu de recharge entre-temps).
+const ALERT_RANK = { "": 0, info: 1, warning: 2 };
+
+/**
+ * Alerte "solde SMS bas" — crée un AdminMessage (même système que le popup +
+ * la cloche de notifications, cf. controllers/account.controller.js) dès que
+ * le solde prépayé passe sous le seuil de recharge. Idempotent PAR NIVEAU :
+ * `smsLowBalanceAlertLevel` empêche de renvoyer deux fois la même alerte,
+ * mais laisse passer une escalade info→warning. Remis à "" dès que le solde
+ * est crédité, cf. `resetLowBalanceAlert`.
+ *
+ * `empty` distingue deux gravités : le solde est encore là mais s'épuise
+ * (info) vs il vient de manquer et l'envoi est retombé sur l'email (warning).
+ */
+async function maybeAlertLowBalance(userId, balanceCentsAfter, thresholdCents, empty) {
+  try {
+    if (balanceCentsAfter >= thresholdCents) return;
+    const User = require("../db/models/user.model");
+    const desiredLevel = empty ? "warning" : "info";
+    const lowerLevels = Object.keys(ALERT_RANK).filter((k) => ALERT_RANK[k] < ALERT_RANK[desiredLevel]);
+    // Verrou atomique : ne fire que si le niveau actuel est STRICTEMENT plus
+    // bas que celui qu'on s'apprête à envoyer. `$exists: false` est
+    // nécessaire en plus du `$in` : sur tout compte créé avant l'ajout de ce
+    // champ, il est absent (pas égal à ""), et `$in: [""]` ne matche jamais
+    // un champ manquant — sans ce filet, l'alerte ne se déclenchait jamais.
+    const locked = await User.findOneAndUpdate(
+      {
+        _id: userId,
+        $or: [
+          { smsLowBalanceAlertLevel: { $in: lowerLevels } },
+          { smsLowBalanceAlertLevel: { $exists: false } },
+        ],
+      },
+      { $set: { smsLowBalanceAlertLevel: desiredLevel } },
+    );
+    if (!locked) return; // déjà alerté à ce niveau (ou plus haut) depuis la dernière recharge
+
+    const AdminMessage = require("../db/models/adminMessage.model");
+    const eur = (c) => (c / 100).toFixed(2).replace(/\.00$/, "");
+    await AdminMessage.create({
+      recipient: userId,
+      broadcast: false,
+      type: empty ? "warning" : "info",
+      title: empty ? "Solde SMS épuisé" : "Solde SMS bientôt épuisé",
+      body: empty
+        ? `Votre solde de rappels SMS/WhatsApp est à 0 €. Les prochains rappels partent par email en attendant une recharge.`
+        : `Il vous reste ${eur(balanceCentsAfter)} € de crédit SMS/WhatsApp — pensez à recharger pour ne pas interrompre vos rappels.`,
+      ctaLabel: "Recharger mon solde",
+      ctaUrl: "/sms",
+    });
+
+    try {
+      const io = global.__branshee_io || null; // posé par app.js si le socket est prêt
+      if (io) io.emit("adminMessage:new");
+    } catch (_) {}
+  } catch (err) {
+    console.error("[sms] maybeAlertLowBalance erreur:", err.message);
+  }
+}
+
+/**
+ * Réarme l'alerte solde bas — à appeler partout où `smsBalanceCents` est
+ * CRÉDITÉ (recharge manuelle Stripe, recharge auto réussie). Sans ça, un pro
+ * qui recharge après avoir reçu l'alerte n'en recevrait plus jamais si son
+ * solde repasse sous le seuil plus tard.
+ */
+async function resetLowBalanceAlert(userId) {
+  try {
+    const User = require("../db/models/user.model");
+    await User.findByIdAndUpdate(userId, { $set: { smsLowBalanceAlertLevel: "" } });
+  } catch (_) {}
 }
 
 /**
@@ -237,7 +315,13 @@ async function chargeAndSend(owner, { priceCents, send, plan }) {
     { $inc: { smsBalanceCents: -priceCents } },
     { new: true }
   );
-  if (!debited) return { sent: false, reason: "no_balance" }; // → repli email
+  if (!debited) {
+    // Solde insuffisant pour CE message précis : il part par email à la
+    // place. C'est le moment le plus parlant pour le pro — pas juste "ça
+    // s'épuise", mais "ça vient de manquer".
+    maybeAlertLowBalance(owner._id, balance, threshold, true);
+    return { sent: false, reason: "no_balance" }; // → repli email
+  }
 
   const sid = await send();
   if (!sid) {
@@ -245,6 +329,10 @@ async function chargeAndSend(owner, { priceCents, send, plan }) {
     await User.findByIdAndUpdate(owner._id, { $inc: { smsBalanceCents: priceCents } }).catch(() => {});
     return { sent: false, reason: "provider_error" };
   }
+
+  // Best-effort, ne doit jamais retarder ni faire échouer l'envoi qui vient
+  // de réussir : l'alerte part en tâche de fond après le `return`.
+  maybeAlertLowBalance(owner._id, debited.smsBalanceCents, threshold, false);
 
   return { sent: true, mode: "balance", balanceCents: debited.smsBalanceCents };
 }
@@ -268,4 +356,4 @@ async function sendReminderSmsIfAllowed(owner, to, body, opts = {}) {
 // pour que les appels de confirmation soient explicites côté controllers.
 const sendBillableSmsIfAllowed = sendReminderSmsIfAllowed;
 
-module.exports = { sendSms, chargeAndSend, sendReminderSmsIfAllowed, sendBillableSmsIfAllowed, tryAutoRecharge, SMS_PRICE_CENTS };
+module.exports = { sendSms, chargeAndSend, sendReminderSmsIfAllowed, sendBillableSmsIfAllowed, tryAutoRecharge, resetLowBalanceAlert, maybeAlertLowBalance, SMS_PRICE_CENTS };

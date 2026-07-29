@@ -66,10 +66,11 @@ module.exports = async (req, res, next) => {
     // Disponible côté vue pour le switcher d'établissement (sidebar.pug) —
     // propriétaire d'abord, puis établissements rejoints comme collaborateur.
     res.locals.myCompanies = [
-      ...ownedCompanies.map((c) => ({ id: String(c._id), name: c.name || req.user.businessName || "Établissement", isOwner: true })),
+      ...ownedCompanies.map((c) => ({ id: String(c._id), name: c.name || req.user.businessName || "Établissement", photo: c.photo || "", isOwner: true })),
       ...memberCompanies.map((c) => ({
         id: String(c._id),
         name: c.name || memberOwnerNameById[String(c.owner)] || "Établissement",
+        photo: c.photo || "",
         isOwner: false,
       })),
     ];

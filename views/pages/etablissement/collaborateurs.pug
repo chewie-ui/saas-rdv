@@ -600,7 +600,11 @@ block scripts
                         body: JSON.stringify({ canManageOwnTimeOff: value }),
                     })
                         .then(function (r) { return r.json(); })
-                        .then(function (data) { if (!data.success) showError(data.error || 'Erreur.'); else window.location.reload(); })
+                        // Pas de reload : le select affiche déjà la valeur qui vient
+                        // d'être choisie, recharger toute la page ne fait que casser
+                        // brièvement son habillage ds-select (flash + élargissement
+                        // le temps que le JS le restylise depuis zéro).
+                        .then(function (data) { if (!data.success) showError(data.error || 'Erreur.'); })
                         .catch(function () { showError('Erreur réseau.'); });
                 });
             });

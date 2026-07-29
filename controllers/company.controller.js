@@ -1,6 +1,7 @@
 const Company = require("../db/models/company/company.model");
 const DaysOff = require("../db/models/company/daysOff.model");
 const CompanyMembership = require("../db/models/company/companyMembership.model");
+const { atLeast } = require("../utils/planLimits");
 
 // Endpoint PUBLIC (page de réservation, sans authentification) — ne doit
 // renvoyer QUE ce que le calendrier client a besoin de connaître (durée des
@@ -218,6 +219,11 @@ exports.setScheduleDayOff = async (req, res) => {
 
 exports.updateBuffer = async (req, res) => {
   try {
+    // Déclaré Pro dans LIMITS.availability mais jamais vérifié ici jusqu'à
+    // présent — un compte gratuit pouvait déjà activer ce réglage.
+    if (!atLeast(res.locals.billingUser, "pro")) {
+      return res.status(403).json({ success: false, error: "Fonctionnalité réservée au forfait Pro." });
+    }
     const { bufferBefore, bufferAfter } = req.body;
     const before = Math.max(0, Math.min(120, Number(bufferBefore) || 0));
     const after  = Math.max(0, Math.min(120, Number(bufferAfter) || 0));
@@ -231,6 +237,11 @@ exports.updateBuffer = async (req, res) => {
 
 exports.updateSlotMode = async (req, res) => {
   try {
+    // Même bug que updateBuffer : "slotDuration" est déclaré Pro dans
+    // LIMITS.availability mais n'était jamais réellement vérifié.
+    if (!atLeast(res.locals.billingUser, "pro")) {
+      return res.status(403).json({ success: false, error: "Fonctionnalité réservée au forfait Pro." });
+    }
     const { slotMode, slotInterval } = req.body;
     const update = {};
 

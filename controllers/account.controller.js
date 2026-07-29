@@ -715,7 +715,12 @@ exports.creditSmsTopup = async (userId, sessionId, amountCents) => {
     { $inc: { smsBalanceCents: amountCents }, $addToSet: { smsTopupSessions: sessionId } },
     { new: true }
   );
-  if (upd) console.log(`✅ Recharge SMS +${amountCents}c créditée (session ${sessionId})`);
+  if (upd) {
+    console.log(`✅ Recharge SMS +${amountCents}c créditée (session ${sessionId})`);
+    // Réarme l'alerte "solde bas" (cf. utils/sms.js) : ce crédit sort le
+    // compte de la zone d'alerte, une future rechute doit pouvoir réalerter.
+    require("../utils/sms").resetLowBalanceAlert(userId).catch(() => {});
+  }
   return !!upd;
 };
 
@@ -1102,6 +1107,13 @@ exports.deleteAccount = async (req, res) => {
 
 exports.updateCalendarSettings = async (req, res) => {
   try {
+    // Déclaré Pro dans LIMITS.calendarCustomization mais jamais vérifié nulle
+    // part jusqu'à présent — un compte gratuit pouvait déjà tout personnaliser
+    // (couleurs, police, mise en page, fond...).
+    const { atLeast } = require("../utils/planLimits");
+    if (!atLeast(res.locals.billingUser, "pro")) {
+      return res.status(403).json({ success: false, error: "Personnalisation réservée au forfait Pro." });
+    }
     const {
       pageBg, calBg, accentColor, accentText, dayBg,
       dayAvailableColor, dayBusyColor, dayFullColor,
