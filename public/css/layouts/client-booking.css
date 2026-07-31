@@ -1393,6 +1393,14 @@ body.bk-embed #bkCart .bk-cart {
      n'a plus de calendrier à côté pour lui donner une hauteur. */
   flex: 1 1 auto;
   min-height: 180px;
+  /* PLAFOND INDISPENSABLE. `.bk-slots` est une cellule de grille : sa hauteur
+     suit son contenu, donc `flex: 1 1 auto` n'a aucune borne contre laquelle
+     rétrécir. Avec un intervalle de 10 min (52 créneaux), la carte atteignait
+     1200 px de haut, ne défilait jamais — et le dégradé « il y en a plus bas »
+     ne pouvait donc jamais apparaître, puisqu'il dépend d'un débordement réel.
+     `min()` : proportionnel à l'écran, mais jamais démesuré sur un grand
+     moniteur. */
+  max-height: min(56vh, 560px);
   align-content: start;
   overflow-y: auto;
   padding-right: 8px;
