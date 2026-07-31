@@ -25,7 +25,11 @@ function sanitizeSessions(raw) {
   const out = [];
   for (const s of raw) {
     if (!s || !TIME_RE.test(s.startTime || "") || !TIME_RE.test(s.endTime || "")) return null;
-    if (s.startTime === s.endTime) return null;
+    // Fin STRICTEMENT après le début. `===` seul laissait passer une fin
+    // antérieure (ex. 13:00 → 00:00, cas réel) : la durée devenait négative,
+    // la plage occupée s'inversait et le cours ne bloquait plus RIEN.
+    const toMin = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+    if (toMin(s.endTime) <= toMin(s.startTime)) return null;
     const d = new Date(s.date);
     if (isNaN(d.getTime())) return null;
     out.push({ date: d, startTime: s.startTime, endTime: s.endTime });

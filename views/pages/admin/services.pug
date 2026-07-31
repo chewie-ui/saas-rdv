@@ -77,11 +77,8 @@ block content
         //- onglet) : on les marque avec `data-tab` et le JS bascule leur
         //- affichage. Ça évite de ré-indenter tout le tableau des services.
         .ds-tabs(role="tablist")
-            button.ds-tab.is-active(type="button" data-svtab="services")
-                span.material-symbols-outlined design_services
-                | Services
+            button.ds-tab.is-active(type="button" data-svtab="services") Services
             button.ds-tab(type="button" data-svtab="questionnaire")
-                span.material-symbols-outlined quiz
                 | Questionnaire
                 if _q.enabled
                     span.ds-tab__count(title="Questionnaire actif") ●

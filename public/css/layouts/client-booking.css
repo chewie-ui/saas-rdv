@@ -1299,7 +1299,38 @@ body.bk-embed #bkCart .bk-cart {
   border-radius: var(--bk-r-lg);
   padding: 16px;
   box-shadow: var(--bk-shadow-xs);
+  /* La carte s'étire à la hauteur du calendrier (grille `.bk-booker`) : en
+     colonne flex, la liste de créneaux peut occuper toute la place restante
+     au lieu de s'arrêter à mi-hauteur en laissant un grand vide blanc. */
+  display: flex;
+  flex-direction: column;
 }
+
+/* Conteneur de la zone défilante : porte le dégradé de bas de liste, qui doit
+   rester FIXE pendant que le contenu défile (d'où un parent positionné plutôt
+   qu'un ::after sur la liste elle-même, qui défilerait avec les créneaux). */
+.bk-slot-scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0; /* sans ça, un enfant flex refuse de rétrécir → pas de scroll */
+  display: flex;
+  flex-direction: column;
+}
+.bk-slot-scroll::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 10px; /* laisse la barre de défilement visible, non voilée */
+  bottom: 0;
+  height: 44px;
+  background: linear-gradient(to top, var(--bk-surface) 15%, transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+/* Classe posée par le JS uniquement quand il RESTE du contenu sous le pli —
+   le dégradé disparaît donc une fois arrivé en bas. */
+.bk-slot-scroll.has-more::after { opacity: 1; }
 
 .bk-slots h3 {
   font: 700 15px var(--bk-font);
@@ -1357,7 +1388,12 @@ body.bk-embed #bkCart .bk-cart {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 5px;
-  max-height: 280px;
+  /* Remplit la hauteur disponible de la carte (cf. .bk-slot-scroll). Le
+     plafond fixe de 280px est conservé UNIQUEMENT en mobile, où la carte
+     n'a plus de calendrier à côté pour lui donner une hauteur. */
+  flex: 1 1 auto;
+  min-height: 180px;
+  align-content: start;
   overflow-y: auto;
   padding-right: 8px;
   /* Barre de défilement TOUJOURS visible. Sur macOS, les barres sont masquées
@@ -2122,6 +2158,10 @@ body.bk-embed #bkCart .bk-cart {
   .bk-svc-grid { grid-template-columns: 1fr; }
 
   .bk-booker { grid-template-columns: 1fr; }
+
+  /* Une seule colonne : plus de calendrier à côté pour donner sa hauteur à la
+     carte, donc on replafonne la liste pour qu'elle ne pousse pas la page. */
+  .bk-slot-list { max-height: 280px; }
 
   .bk-form-row { grid-template-columns: 1fr; }
 

@@ -59,7 +59,13 @@ async function getCoursesForDate(companyId, dateInput) {
 function courseRange(course) {
   const [h, m] = course.recurring.startTime.split(":").map(Number);
   const start = h * 60 + m;
-  return [start, start + (course.duration || 30)];
+  // Filet de sécurité sur la durée : une séance enregistrée avec une heure de
+  // fin antérieure au début (ex. 13:00 → 00:00, possible avant le durcissement
+  // de sanitizeSessions) donnait une durée NÉGATIVE, donc une plage inversée
+  // [780, 0] qui ne chevauchait jamais rien — le cours ne bloquait plus aucun
+  // créneau, en silence. `> 0` et non `||` : -780 est « truthy ».
+  const duration = Number(course.duration) > 0 ? Number(course.duration) : 30;
+  return [start, Math.min(start + duration, 24 * 60)];
 }
 
 // Plages occupées (en minutes depuis minuit) par des cours collectifs pour un

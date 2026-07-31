@@ -1028,6 +1028,21 @@ function buildCalendar() {
   </div>`;
 }
 
+// Affiche/masque le dégradé « il reste des créneaux plus bas ». Lit toujours
+// l'élément courant dans le DOM : le panneau est re-rendu à chaque changement
+// de jour, une référence capturée deviendrait obsolète.
+function syncSlotFade() {
+  const wrap = document.querySelector(".bk-slot-scroll");
+  const list = wrap && wrap.querySelector(".bk-slot-list");
+  if (!wrap || !list) return;
+  const remaining = list.scrollHeight - list.clientHeight - list.scrollTop;
+  wrap.classList.toggle("has-more", remaining > 4); // 4px : tolérance d'arrondi
+}
+// Écouteur posé UNE fois (pas dans bindSlots, qui tourne à chaque re-rendu et
+// accumulerait les écouteurs). Indispensable : passer du bureau au mobile rend
+// la liste défilante sans qu'aucun scroll ni re-rendu n'ait lieu.
+window.addEventListener("resize", syncSlotFade, { passive: true });
+
 function buildSlotsPanel(slots) {
   if (!STATE.date) {
     return `<div class="bk-slots">
@@ -1083,11 +1098,13 @@ function buildSlotsPanel(slots) {
     <div class="bk-dayparts">
       ${dayparts.map(([id,lbl]) => `<button class="bk-daypart ${STATE.daypart===id?"is-active":""}" data-dp="${id}">${lbl}</button>`).join("")}
     </div>
-    <div class="bk-slot-list ${STATE.service && STATE.service.type === "group" ? "bk-slot-list--group" : ""}">
-      ${mainSlots.length === 0 && extraSlots.length === 0
-        ? `<div style="grid-column:1/-1; text-align:center; color:var(--bk-muted); font-size:12.5px; padding:20px 0;">Aucun créneau</div>`
-        : mainSlots.map(renderSlotBtn).join("")
-      }
+    <div class="bk-slot-scroll">
+      <div class="bk-slot-list ${STATE.service && STATE.service.type === "group" ? "bk-slot-list--group" : ""}">
+        ${mainSlots.length === 0 && extraSlots.length === 0
+          ? `<div style="grid-column:1/-1; text-align:center; color:var(--bk-muted); font-size:12.5px; padding:20px 0;">Aucun créneau</div>`
+          : mainSlots.map(renderSlotBtn).join("")
+        }
+      </div>
     </div>
     ${extraSlots.length > 0 ? `
     <button class="bk-slots__more" id="bkSlotsMore" type="button" aria-expanded="false">
@@ -1310,6 +1327,17 @@ function bindTimePane() {
 }
 
 function bindSlots() {
+  // Dégradé de bas de liste : visible seulement s'il reste des créneaux sous
+  // le pli, masqué dès qu'on atteint le bas (sinon l'indice « il y a la suite »
+  // mentirait une fois arrivé au bout).
+  const scroller = pane.querySelector(".bk-slot-scroll .bk-slot-list");
+  if (scroller) {
+    scroller.addEventListener("scroll", syncSlotFade, { passive: true });
+    // Recalcul après la mise en page (les boutons viennent d'être injectés).
+    requestAnimationFrame(syncSlotFade);
+    syncSlotFade();
+  }
+
   pane.querySelectorAll("[data-time]").forEach(el => {
     el.onclick = () => {
       if (el.disabled) return;
