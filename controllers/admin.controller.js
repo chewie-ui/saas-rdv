@@ -542,17 +542,37 @@ exports.appointment = async (req, res) => {
   const activeSchedule = (rowTime.schedule || []).filter((d) => !d.dayOff);
   const scheduleHours = activeSchedule.flatMap((d) => d.workingHours || []);
 
-  const scheduleMin = scheduleHours.length > 0 ? Math.min(...scheduleHours.map((wh) => parseInt(wh.start.split(":")[0], 10))) : null;
-  const scheduleMax = scheduleHours.length > 0 ? Math.max(...scheduleHours.map((wh) => parseInt(wh.end.split(":")[0], 10))) : null;
+  // Heure d'un "HH:MM", ou null si la valeur est absente/illisible.
+  //
+  // CRITIQUE : sans ce filtre, une seule plage enregistrée avec un début ou une
+  // fin vide (""/undefined) donnait parseInt("") = NaN. Or NaN n'est pas null :
+  // il passait le `.filter(v => v !== null)` plus bas, contaminait Math.min /
+  // Math.max, et minHour/maxHour devenaient NaN. `generateTimeSlots` boucle sur
+  // `hour < endHour` — toute comparaison avec NaN est fausse, la boucle ne
+  // tournait donc AUCUNE fois : zéro ligne d'heure, calendrier entièrement vide
+  // sur TOUTES les semaines, sans la moindre erreur dans les logs.
+  const hourOf = (value) => {
+    const h = parseInt(String(value ?? "").split(":")[0], 10);
+    return Number.isFinite(h) ? h : null;
+  };
+  const scheduleStarts = scheduleHours.map((wh) => hourOf(wh && wh.start)).filter((h) => h !== null);
+  const scheduleEnds = scheduleHours.map((wh) => hourOf(wh && wh.end)).filter((h) => h !== null);
+  const scheduleMin = scheduleStarts.length > 0 ? Math.min(...scheduleStarts) : null;
+  const scheduleMax = scheduleEnds.length > 0 ? Math.max(...scheduleEnds) : null;
 
   // Include special days (DaysOff with custom working hours) in range calculation
   const weekIsos = weekDays.map((d) => d.isoDate);
   const specialDayHours = (daysOffDoc?.dates || [])
     .filter((d) => weekIsos.includes(new Date(d.date).toISOString().split("T")[0]))
     .flatMap((d) => d.workingHours || [])
-    .filter((wh) => wh.start);
-  const specialMin = specialDayHours.length > 0 ? Math.min(...specialDayHours.map((wh) => parseInt(wh.start.split(":")[0], 10))) : null;
-  const specialMax = specialDayHours.length > 0 ? Math.max(...specialDayHours.map((wh) => parseInt(wh.end.split(":")[0], 10))) : null;
+    .filter((wh) => wh && wh.start);
+  // Même piège que pour scheduleMin/Max ci-dessus — et ici le filtre ne testait
+  // que `start`, alors que `specialMax` lit `end` : un jour spécial avec une
+  // heure de fin vide suffisait à faire passer NaN.
+  const specialStarts = specialDayHours.map((wh) => hourOf(wh.start)).filter((h) => h !== null);
+  const specialEnds = specialDayHours.map((wh) => hourOf(wh.end)).filter((h) => h !== null);
+  const specialMin = specialStarts.length > 0 ? Math.min(...specialStarts) : null;
+  const specialMax = specialEnds.length > 0 ? Math.max(...specialEnds) : null;
 
   // Compute appointment range — use total minutes so :30 appointments extend the range correctly.
   //
@@ -572,11 +592,17 @@ exports.appointment = async (req, res) => {
   // +1h buffer so the appointment slot itself is always visible even at the last row
   const apptMax = apptMinutesList.length > 0 ? Math.ceil((Math.max(...apptMinutesList) + 60) / 60) : null;
 
-  const candidates = [scheduleMin, specialMin, apptMin].filter((v) => v !== null);
-  const minHour = candidates.length > 0 ? Math.min(...candidates) : 8;
+  const candidates = [scheduleMin, specialMin, apptMin].filter((v) => Number.isFinite(v));
+  const candidatesMax = [scheduleMax, specialMax, apptMax].filter((v) => Number.isFinite(v));
 
-  const candidatesMax = [scheduleMax, specialMax, apptMax].filter((v) => v !== null);
-  const maxHour = candidatesMax.length > 0 ? Math.max(...candidatesMax) : 18;
+  // Filet de sécurité : la grille horaire doit TOUJOURS s'afficher. Peu importe
+  // ce que contient la configuration de l'établissement, on borne la plage à
+  // quelque chose d'affichable — un calendrier aux horaires approximatifs reste
+  // utilisable, un calendrier vide ne l'est pas.
+  let minHour = candidates.length > 0 ? Math.min(...candidates) : 8;
+  let maxHour = candidatesMax.length > 0 ? Math.max(...candidatesMax) : 18;
+  minHour = Math.min(Math.max(0, minHour), 23);
+  maxHour = Math.min(Math.max(minHour + 1, maxHour), 24);
 
   // ── Fill status per weekday (green / orange / red) ────────────────────────
   // Compare total MINUTES booked vs total available minutes so that services
@@ -1308,6 +1334,27 @@ exports.editAvailabilty = async (req, res) => {
 
   if (!workingHours || workingHours.length === 0) {
     return res.json({ success: false, message: "No working hours provided" });
+  }
+
+  // Format strictement "HH:MM", fin après début. Sans ce contrôle, une heure
+  // vide enregistrée ici (un clic sur une entrée de liste sans libellé suffit)
+  // se propageait jusqu'au calendrier : parseInt("") = NaN, plage horaire NaN,
+  // et la grille ne s'affichait plus DU TOUT, sur toutes les semaines, sans
+  // aucune erreur visible. Une donnée invalide ne doit jamais entrer en base.
+  const HHMM = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  const toMinutes = (t) => {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + m;
+  };
+  const invalid = workingHours.some(
+    (wh) =>
+      !wh ||
+      !HHMM.test(String(wh.start || "")) ||
+      !HHMM.test(String(wh.end || "")) ||
+      toMinutes(wh.end) <= toMinutes(wh.start)
+  );
+  if (invalid) {
+    return res.json({ success: false, message: "Horaires invalides : vérifiez l'heure de début et de fin." });
   }
 
   const target = await resolveScheduleUpdateTarget(companyId, employeeId);
