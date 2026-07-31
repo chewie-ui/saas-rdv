@@ -171,6 +171,24 @@ block content
             //- début/durée réelle sans jamais resserrer le pas de la grille.
             each day, dayIndex in weekDays
                 .day-events-col(data-iso=day.isoDate)
+                    //- Cours collectifs — bande de fond pleine largeur, sous les
+                    //- RDV. Toujours affichée, qu'elle bloque ou non les RDV
+                    //- individuels ; `data-course-band` porte cette distinction
+                    //- (voir existingRangesForDay dans appointment.js).
+                    each band in ((typeof courseBandsByDay !== 'undefined' && courseBandsByDay[day.isoDate]) || [])
+                        a.course-band(
+                            href="/services"
+                            class=(band.blocks ? "is-blocking" : "")
+                            style=(band.color ? `--band-color:${band.color}` : "")
+                            data-start-minutes=band.startMin
+                            data-slot-minutes=(band.endMin - band.startMin)
+                            data-course-band=(band.blocks ? "blocking" : "free")
+                            title=(band.name + " · " + band.startHour + "–" + band.endHour + " — " + (band.blocks ? "les rendez-vous individuels sont bloqués sur cette plage" : "les rendez-vous individuels restent possibles"))
+                        )
+                            span.course-band__label
+                                span.material-symbols-outlined.course-band__ico #{band.blocks ? "lock" : "groups"}
+                                span.course-band__name= band.name
+                            span.course-band__time= band.startHour + '–' + band.endHour
                     each box in (boxesByDay[day.isoDate] || [])
                         if box.kind === 'summary'
                             div.appt-pill.appt-pill--summary(

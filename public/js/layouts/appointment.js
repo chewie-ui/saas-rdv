@@ -754,11 +754,16 @@ setInterval(updateTimeline, 60000);
   function existingRangesForDay(iso) {
     const col = getEventsCol(iso);
     if (!col) return [];
-    return Array.from(col.querySelectorAll("[data-start-minutes]")).map((el) => {
-      const s = Number(el.dataset.startMinutes) || 0;
-      const d = Number(el.dataset.slotMinutes) || gridStep;
-      return [s, s + d];
-    });
+    return Array.from(col.querySelectorAll("[data-start-minutes]"))
+      // Un cours collectif qui NE bloque PAS les RDV individuels n'est pas un
+      // conflit : le pro a explicitement autorisé à réserver pendant ce cours,
+      // le fantôme de drag ne doit donc pas passer en rouge.
+      .filter((el) => el.dataset.courseBand !== "free")
+      .map((el) => {
+        const s = Number(el.dataset.startMinutes) || 0;
+        const d = Number(el.dataset.slotMinutes) || gridStep;
+        return [s, s + d];
+      });
   }
 
   // Cellule .cell.day du même jour la plus proche verticalement du point Y.

@@ -2,7 +2,7 @@ const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
 const Stripe = require("stripe");
 const getServices = require("../utils/services");
 const { getLimit, atLeast, billingUserFor } = require("../utils/planLimits");
-const { getCoursesForDate, courseRangesFor } = require("../utils/recurringCourses");
+const { getCoursesForDate, courseRange, courseRangesFor } = require("../utils/recurringCourses");
 const { getBookableTeam } = require("../utils/bookableTeam");
 
 const stripe = new Stripe(env.stripeSecretKey);
@@ -532,6 +532,60 @@ exports.appointment = async (req, res) => {
     }
   }
 
+  // ── Cours collectifs dans le calendrier ────────────────────────────────────
+  // Un cours est un Service (type "group"), pas un Booking : il n'apparaissait
+  // donc JAMAIS dans le calendrier, même quand il bloquait réellement des
+  // créneaux côté client — le pro voyait un trou inexplicable dans son agenda.
+  //
+  // Rendu comme BANDE DE FOND et non comme pastille dans `formatted` : une
+  // pastille se ferait replier dans le résumé « N RDV » dès 4 événements sur le
+  // même créneau — or un cours collectif attire justement plusieurs
+  // participants, donc il redisparaîtrait exactement quand il compte le plus.
+  // La bande occupe toute la largeur du jour, sous les RDV, et ne dispute
+  // aucune colonne à ses propres participants.
+  //
+  // Affichée TOUJOURS, que `blocksIndividualBookings` soit vrai ou non : dans
+  // les deux cas le pro a bien un cours à cette heure-là ; seul le blocage des
+  // RDV individuels change, ce que signale le cadenas.
+  //
+  // TOUT le bloc est sous try/catch : c'est un enrichissement d'affichage, il
+  // ne doit JAMAIS pouvoir empêcher le calendrier de se rendre. Une donnée de
+  // cours mal formée fait au pire disparaître les bandes, jamais l'agenda.
+  const courseBandsByDay = {};
+  try {
+    const hhmm = (min) =>
+      `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+    const coursesByDay = await Promise.all(
+      weekDays.map((d) => getCoursesForDate(currentCompany, d.isoDate).catch(() => []))
+    );
+    weekDays.forEach((d, i) => {
+      courseBandsByDay[d.isoDate] = (coursesByDay[i] || [])
+        .filter((course) => {
+          // Respecte le filtre employé de la barre du haut. Un cours sans
+          // employé assigné concerne tout le monde et reste toujours visible.
+          const assigned = (course.employees || []).map(String);
+          return employeeFilter === "all" || !assigned.length || assigned.includes(String(employeeFilter));
+        })
+        .map((course) => {
+          const [startMin, endMin] = courseRange(course);
+          if (!Number.isFinite(startMin) || !Number.isFinite(endMin) || endMin <= startMin) return null;
+          return {
+            id: String(course._id),
+            name: course.name || "Cours collectif",
+            color: course.color || "",
+            blocks: course.blocksIndividualBookings !== false,
+            startMin,
+            endMin,
+            startHour: hhmm(startMin),
+            endHour: hhmm(endMin),
+          };
+        })
+        .filter(Boolean);
+    });
+  } catch (err) {
+    console.error("courseBands error:", err);
+  }
+
   const firstDay = weekDays[0];
   const lastDay = weekDays[6];
   const weekLabel = `${firstDay.label} ${firstDay.date} - ${lastDay.label} ${lastDay.date}`;
@@ -758,6 +812,7 @@ exports.appointment = async (req, res) => {
     weekDays: weekDaysWithFill,
     appointments: formatted,
     boxesByDay,
+    courseBandsByDay,
     weekLabel,
     dayLabel,
     focusedDayName,
