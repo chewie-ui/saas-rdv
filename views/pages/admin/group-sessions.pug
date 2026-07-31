@@ -41,6 +41,7 @@ block content
                         data-start-time=(course.recurring.startTime || '')
                         data-sessions=JSON.stringify((course.sessions || []).map(function(s){ return { date: s.date.toISOString(), startTime: s.startTime, endTime: s.endTime }; }))
                         data-location=course.location || ''
+                        data-blocks-bookings=(course.blocksIndividualBookings === false ? 'false' : 'true')
                         data-employees=(course.employees || []).map(function(e){ return String(e._id); }).join(',')
                         class=(!course.active ? 'gs-course-card--inactive' : '')
                     )
@@ -158,6 +159,16 @@ block content
                     .field
                         label= t.group_sessions.field_location
                         input.input#courseLocation(type="text" placeholder=t.group_sessions.location_placeholder)
+
+                    //- Coché par défaut : un indépendant seul ne peut pas
+                    //- recevoir en individuel pendant qu'il anime son cours.
+                    .field
+                        label.svc-fee-label
+                            span= t.group_sessions.blocks_bookings_label
+                            label.sa-toggle
+                                input#courseBlocksBookings(type="checkbox" checked)
+                                .sa-toggle__track
+                        p.xs-comment= t.group_sessions.blocks_bookings_hint
 
                     if employees && employees.length > 0
                         .field

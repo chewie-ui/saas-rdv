@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const employeesField   = document.getElementById("courseEmployeesField");
   const employeeCheckboxes = Array.from(document.querySelectorAll("#courseEmployeeList input[type=checkbox]"));
   const locationInput    = document.getElementById("courseLocation");
+  const blocksChk        = document.getElementById("courseBlocksBookings");
 
   // ── Mode de planification : récurrent (hebdomadaire) ou dates ponctuelles ──
   const modeOptions       = document.getElementById("courseModeOptions");
@@ -153,6 +154,8 @@ document.addEventListener("DOMContentLoaded", () => {
     durationInput.value = String(window.__defaultDuration || 60);
     capacityInput.value = "10";
     if (locationInput) locationInput.value = "";
+    // Nouveau cours → coché (cas le plus courant : le pro anime seul).
+    if (blocksChk) blocksChk.checked = true;
     setSelectedWeekdays([]);
     startPicker.set("");
     setMode("recurring");
@@ -208,6 +211,9 @@ document.addEventListener("DOMContentLoaded", () => {
       durationInput.value = card.dataset.duration || "60";
       capacityInput.value = card.dataset.capacity || "10";
       if (locationInput) locationInput.value = card.dataset.location || "";
+      // Seul "false" explicite décoche : un cours créé avant l'ajout de cette
+      // option n'a pas l'attribut et doit rester bloquant (comme avant).
+      if (blocksChk) blocksChk.checked = card.dataset.blocksBookings !== "false";
       setSelectedWeekdays((card.dataset.weekdays || "").split(",").filter(Boolean).map(Number));
       startPicker.set(card.dataset.startTime || "");
 
@@ -257,6 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
       capacity,
       mode: currentMode,
       location: locationInput ? locationInput.value.trim() : "",
+      blocksIndividualBookings: blocksChk ? blocksChk.checked : true,
       employees: hasEmployeesChk && hasEmployeesChk.checked
         ? employeeCheckboxes.filter((cb) => cb.checked).map((cb) => cb.value)
         : [],

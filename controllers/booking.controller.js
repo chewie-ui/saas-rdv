@@ -1051,7 +1051,10 @@ exports.getBooking = async (req, res) => {
       // only checks the exact slot strings returned by /get-schedule).
       const cutoffG = Math.min(Math.max(nowMinutes, leadCutoffMinutesForDay), 24 * 60);
       if (cutoffG > 0) {
-        for (let t = 0; t < cutoffG; t += 5) {
+        // Minute par minute (et non tous les 5 min) : le créneau d'un cours
+        // ponctuel peut tomber sur n'importe quelle minute (ex: 19:07), il
+        // serait sinon oublié et resterait proposé alors qu'il est passé.
+        for (let t = 0; t < cutoffG; t += 1) {
           blockedSet.add(minutesToTimeStr(t));
         }
       }
@@ -1070,10 +1073,18 @@ exports.getBooking = async (req, res) => {
     ? Number(serviceDuration)
     : (companyDoc?.slotTime || 30);
 
-  // Pas d'itération entre deux créneaux candidats (doit correspondre à getSchedule).
-  const step = (companyDoc?.slotMode === "interval")
-    ? (companyDoc?.slotInterval || 30)
-    : newDuration;
+  // Pas d'itération des créneaux candidats à tester : 1 MINUTE, volontairement.
+  //
+  // À ne PAS remplacer par le "step" de getSchedule (durée de la prestation ou
+  // slotInterval). getSchedule aligne ses créneaux sur l'HEURE D'OUVERTURE
+  // (ex: 08:30, 09:30…) alors qu'ici on part de MINUIT — dès que l'ouverture
+  // n'est pas un multiple du step (ex: ouverture 08:30 + séance 60 min), les
+  // deux grilles ne tombent jamais sur les mêmes heures et AUCUN créneau
+  // affiché ne peut être marqué comme pris. Le client voyait donc tous les
+  // créneaux libres, puis se faisait refuser au dernier moment.
+  // Balayer chaque minute garantit que toute heure produite par getSchedule
+  // est couverte, quel que soit son alignement (1440 tours, coût négligeable).
+  const step = 1;
 
   // Temps tampon (en minutes) à respecter avant et après chaque RDV existant
   // (modulables indépendamment, ex: 0 min avant / 30 min après).

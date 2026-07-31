@@ -153,7 +153,7 @@ exports.createCourse = async (req, res) => {
       return res.status(403).json({ error: "plan_limit", message: `Limite de ${maxServices} services/cours atteinte.` });
     }
 
-    const { name, description, price, duration, capacity, weekdays, startTime, employees, mode, sessions, location } = req.body;
+    const { name, description, price, duration, capacity, weekdays, startTime, employees, mode, sessions, location, blocksIndividualBookings } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ error: "Le nom du cours est requis." });
@@ -198,6 +198,9 @@ exports.createCourse = async (req, res) => {
       recurring: recurringField,
       sessions: sessionsField,
       location: (location || "").trim(),
+      // Coché par défaut : seul un `false` explicite ouvre le créneau aux RDV
+      // individuels (un champ absent ne doit pas désactiver le blocage).
+      blocksIndividualBookings: blocksIndividualBookings !== false,
     });
 
     const populated = await Service.findById(course._id).populate("employees", "fullName profilePicture").lean();
@@ -212,7 +215,7 @@ exports.createCourse = async (req, res) => {
 exports.updateCourse = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, duration, capacity, weekdays, startTime, employees, active, mode, sessions, location } = req.body;
+    const { name, description, price, duration, capacity, weekdays, startTime, employees, active, mode, sessions, location, blocksIndividualBookings } = req.body;
 
     const update = {};
     if (name !== undefined) {
@@ -226,6 +229,7 @@ exports.updateCourse = async (req, res) => {
     if (employees !== undefined) update.employees = Array.isArray(employees) ? employees : [];
     if (active !== undefined) update.active = !!active;
     if (location !== undefined) update.location = (location || "").trim();
+    if (blocksIndividualBookings !== undefined) update.blocksIndividualBookings = !!blocksIndividualBookings;
 
     // ── Planning : l'UI envoie systématiquement "mode" à chaque sauvegarde
     // (création ET édition) — on bascule toujours PLEINEMENT d'un mode à

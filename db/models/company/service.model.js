@@ -104,6 +104,18 @@ const serviceSchema = new mongoose.Schema(
         endTime: { type: String, required: true }, // "HH:MM"
       },
     ],
+    // Ce cours collectif rend-il son créneau indisponible pour les RDV
+    // individuels ? (cf. utils/recurringCourses.js → courseRangesFor)
+    //
+    // `true` (défaut) = cas le plus courant : un indépendant seul qui anime un
+    // atelier le lundi 15h-17h ne peut évidemment pas recevoir quelqu'un en
+    // individuel pendant ce temps-là.
+    // `false` = le pro reste réservable en parallèle (plusieurs salles, un
+    // collaborateur qui prend le relais, cours animé par quelqu'un d'autre…).
+    //
+    // Qui exactement est bloqué dépend de `employees` ci-dessus : vide = tout
+    // le monde, sinon uniquement les employés qui animent.
+    blocksIndividualBookings: { type: Boolean, default: true },
     // Lieu spécifique à ce service (utilisé pour les cours collectifs, ex: un
     // studio loué pour l'occasion) — vide = adresse par défaut du compte
     // (User.location), résolue côté contrôleur au moment de l'affichage.

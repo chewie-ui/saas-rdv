@@ -1359,7 +1359,28 @@ body.bk-embed #bkCart .bk-cart {
   gap: 5px;
   max-height: 280px;
   overflow-y: auto;
-  padding-right: 2px;
+  padding-right: 8px;
+  /* Barre de défilement TOUJOURS visible. Sur macOS, les barres sont masquées
+     par défaut et n'apparaissent qu'au moment du scroll : le client ne voyait
+     donc pas qu'il restait des créneaux plus bas et croyait la liste complète.
+     `scrollbar-width/color` (standard, Firefox) + `::-webkit-scrollbar`
+     (Safari/Chrome, où `-webkit-appearance` force l'affichage permanent). */
+  scrollbar-width: thin;
+  scrollbar-color: var(--bk-border) transparent;
+}
+.bk-slot-list::-webkit-scrollbar {
+  width: 8px;
+  -webkit-appearance: none;
+}
+.bk-slot-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.bk-slot-list::-webkit-scrollbar-thumb {
+  background: var(--bk-border);
+  border-radius: 99px;
+}
+.bk-slot-list::-webkit-scrollbar-thumb:hover {
+  background: var(--bk-muted);
 }
 
 .bk-slot {

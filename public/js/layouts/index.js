@@ -1049,8 +1049,12 @@ function buildSlotsPanel(slots) {
     return true;
   };
 
-  const visible   = slots.filter(s => by(s.time));
-  const available = visible.filter(s => !s.taken && !s.isPast).length;
+  // Les créneaux pris/passés ne sont PLUS affichés du tout (avant : barrés en
+  // gris). Sur une journée déjà bien remplie, le client devait scroller au
+  // milieu de dizaines d'horaires barrés pour trouver les rares disponibles —
+  // on ne montre donc que ce qui est réellement réservable.
+  const visible   = slots.filter(s => by(s.time) && !s.taken && !s.isPast);
+  const available = visible.length;
 
   // Regroupement actif uniquement s'il y a déjà au moins un RDV ce jour-là
   // (le serveur ne renvoie des créneaux recommandés que dans ce cas).

@@ -38,7 +38,7 @@ async function getCoursesForDate(companyId, dateInput) {
       { "recurring.enabled": false, sessions: { $elemMatch: { date: { $gte: dayStart, $lt: dayEnd } } } },
     ],
   })
-    .select("name duration recurring sessions employees")
+    .select("name duration recurring sessions employees blocksIndividualBookings")
     .lean();
 
   return courses.map((c) => {
@@ -67,8 +67,16 @@ function courseRange(course) {
 // Un cours sans employé assigné bloque TOUT LE MONDE (y compris employeeId=null,
 // utilisé quand l'entreprise n'a aucun employé) ; un cours avec des employés
 // assignés ne bloque que ceux-là.
+//
+// Un cours dont `blocksIndividualBookings` est explicitement `false` n'occupe
+// personne : le pro reste réservable en individuel pendant le cours (plusieurs
+// salles, cours animé par un tiers…). `!== false` et non `=== true` : les cours
+// créés AVANT l'ajout de ce champ n'ont pas la propriété et doivent conserver
+// l'ancien comportement (bloquant), sinon ils libéreraient d'un coup des
+// créneaux que le pro n'a jamais voulu ouvrir.
 function courseRangesFor(courses, employeeId) {
   return courses
+    .filter((c) => c.blocksIndividualBookings !== false)
     .filter((c) => {
       const assigned = (c.employees || []).map(String);
       if (assigned.length === 0) return true;
