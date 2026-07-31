@@ -695,92 +695,6 @@
   color: #fff;
 }
 
-/* Cours collectif — bande de fond pleine largeur, PAS une pastille : les RDV
-   des participants se posent par-dessus (d'où le z-index bas) au lieu de se
-   partager les colonnes avec elle. `top`/`height` sont posés en JS comme pour
-   les pastilles, via data-start-minutes / data-slot-minutes. */
-.course-band {
-  position: absolute;
-  left: 0;
-  right: 0;
-  /* PAS de z-index ici, volontairement : une valeur numérique créerait un
-     contexte d'empilement qui enfermerait .course-band__label et l'empêcherait
-     de repasser au-dessus des pastilles (z-index 20). En `auto`, la bande reste
-     sous les pastilles (ordre du DOM) tout en laissant son étiquette remonter. */
-  z-index: auto;
-  /* .day-events-col est en pointer-events:none pour laisser cliquer la grille
-     en dessous ; chaque enfant cliquable doit le réactiver pour lui-même. */
-  pointer-events: auto;
-  box-sizing: border-box;
-  min-height: 20px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 6px;
-  overflow: hidden;
-  padding: 3px 6px;
-  border-radius: 6px;
-  border-left: 3px solid var(--band-color, #6366f1);
-  background: color-mix(in srgb, var(--band-color, #6366f1) 14%, transparent);
-  color: color-mix(in srgb, var(--band-color, #6366f1) 75%, #111827);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.25;
-  text-decoration: none;
-}
-/* Hachures = la plage est fermée aux RDV individuels (même langage visuel que
-   .appt-pill--external / --block). Sans hachures : simple repère d'agenda. */
-.course-band.is-blocking {
-  background-image: repeating-linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--band-color, #6366f1) 22%, transparent) 0px,
-    color-mix(in srgb, var(--band-color, #6366f1) 22%, transparent) 6px,
-    transparent 6px,
-    transparent 12px
-  );
-}
-.course-band:hover {
-  background-color: color-mix(in srgb, var(--band-color, #6366f1) 24%, transparent);
-}
-/* L'étiquette repasse AU-DESSUS des pastilles (z-index 20), sur un fond opaque.
-   Sans ça, le RDV d'un participant — qui occupe toute la largeur du créneau —
-   recouvrait le nom du cours : la bande devenait une tache de couleur muette,
-   exactement le problème qu'elle est censée résoudre. Le fond opaque est
-   indispensable : superposé sans lui, le texte se mélangeait à celui du RDV. */
-.course-band__label {
-  position: relative;
-  z-index: 25;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  /* Sans min-width:0, le nom du cours pousse l'heure hors de la bande. */
-  min-width: 0;
-  max-width: 100%;
-  padding: 1px 5px 1px 3px;
-  margin: -1px 0 0 -3px;
-  border-radius: 0 6px 6px 0;
-  background: color-mix(in srgb, var(--band-color, #6366f1) 16%, #fff);
-}
-.course-band__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.course-band__ico {
-  font-size: 14px;
-  flex: 0 0 auto;
-}
-.course-band__time {
-  flex: 0 0 auto;
-  opacity: 0.8;
-  font-variant-numeric: tabular-nums;
-}
-/* Bande trop courte pour deux informations : l'heure saute, le nom reste. */
-.course-band[data-slot-minutes="15"] .course-band__time,
-.course-band[data-slot-minutes="20"] .course-band__time {
-  display: none;
-}
-
 /* Status variants */
 .appt-pill[data-status="pending"] {
   background-color: var(--accent-soft);
@@ -1957,14 +1871,6 @@ body:has(.cal-month) .cal-month {
 }
 .appt-time-opt:hover { background: var(--accent-soft, #f0fdf4); }
 .appt-time-opt.is-hidden { display: none; }
-/* Heure exacte tapée par l'utilisateur, hors des paliers de 10 min (ex: 11:05).
-   Mise en avant pour qu'on comprenne qu'elle est bien sélectionnable. */
-.appt-time-opt--exact {
-  font-weight: 700;
-  color: var(--accent, #1e7a4e);
-  background: var(--accent-soft, #f0fdf4);
-  border-bottom: 1px solid var(--border-light, #e5e7eb);
-}
 
 .appt-duration-display {
   display: flex;

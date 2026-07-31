@@ -4,45 +4,6 @@
 // toutes les pages qui ont besoin de choisir une heure (RDV, cours collectifs…).
 // Requiert les classes CSS .appt-time-box / .appt-time-panel / .appt-time-search
 // / .appt-time-list / .appt-time-opt (définies dans appointment.admin.css).
-const pad2 = (n) => String(n).padStart(2, "0");
-
-// Interprète une suite de chiffres en heure EXACTE, à la minute près, quand
-// c'est possible sans ambiguïté. Conventions usuelles : "930" = 09:30,
-// "0930" = 09:30. Sur 1 ou 2 chiffres on ne devine rien (c'est un filtre
-// d'heure, pas une heure), et "093" est rejeté (0h93 n'existe pas) — il reste
-// alors traité comme un préfixe de "09:3x", ce qui est bien ce qu'on veut
-// pendant la frappe de "0930".
-export function parseTimeDigits(digits) {
-  let h, m;
-  if (digits.length === 3) {
-    h = Number(digits[0]);
-    m = Number(digits.slice(1));
-  } else if (digits.length === 4) {
-    h = Number(digits.slice(0, 2));
-    m = Number(digits.slice(2));
-  } else {
-    return null;
-  }
-  if (!(h >= 0 && h <= 23 && m >= 0 && m <= 59)) return null;
-  return `${pad2(h)}:${pad2(m)}`;
-}
-
-// Une option "HH:MM" correspond-elle à ce que l'utilisateur tape ?
-//
-// L'ancienne version comparait `"0900".startsWith("9")` : taper "9" ne
-// remontait donc AUCUNE heure, alors que le placeholder invite explicitement à
-// le faire. Sur 1 chiffre on compare donc l'heure seule, avec et sans son zéro
-// de tête.
-export function timeOptionMatches(optValue, digits, exact) {
-  if (!digits) return true;
-  const flat = optValue.replace(":", "");
-  const hh = optValue.slice(0, 2);
-  if (digits.length === 1) return hh === `0${digits}` || hh.startsWith(digits);
-  if (digits.length === 2) return hh === digits;
-  if (exact) return flat === exact.replace(":", "");
-  return flat.startsWith(digits);
-}
-
 export function createTimePicker(boxEl, panelEl, listEl, onChange) {
   // Le panneau est position:fixed et positionné via getBoundingClientRect()
   // (coordonnées relatives au viewport). Si un ancêtre a une transform CSS
@@ -65,15 +26,6 @@ export function createTimePicker(boxEl, panelEl, listEl, onChange) {
     listEl.appendChild(opt);
   });
 
-  // Option "à la minute près" — la liste ne propose que des paliers de 10 min,
-  // mais rien n'oblige un rendez-vous ou une absence à tomber dessus (11:05,
-  // 12:12…). Dès que ce qui est tapé forme une heure valide absente de la
-  // liste, cette option apparaît en tête et devient sélectionnable (clic ou
-  // Entrée). Sans elle, ces heures-là étaient tout simplement impossibles.
-  const exactOpt = document.createElement("div");
-  exactOpt.className = "appt-time-opt appt-time-opt--exact is-hidden";
-  listEl.insertBefore(exactOpt, listEl.firstChild);
-
   const searchInput = panelEl.querySelector(".appt-time-search");
   let value = "";
 
@@ -85,23 +37,10 @@ export function createTimePicker(boxEl, panelEl, listEl, onChange) {
 
   function filterOptions(query) {
     const q = query.replace(/[^0-9]/g, "");
-    const exact = parseTimeDigits(q);
-    let exactAlreadyListed = false;
-
     listEl.querySelectorAll(".appt-time-opt").forEach((opt) => {
-      if (opt === exactOpt) return;
-      const matches = timeOptionMatches(opt.dataset.value, q, exact);
+      const matches = !q || opt.dataset.value.replace(":", "").startsWith(q);
       opt.classList.toggle("is-hidden", !matches);
-      if (exact && opt.dataset.value === exact) exactAlreadyListed = true;
     });
-
-    // Inutile de proposer "11:20" en doublon quand le palier existe déjà.
-    const showExact = !!exact && !exactAlreadyListed;
-    exactOpt.classList.toggle("is-hidden", !showExact);
-    if (showExact) {
-      exactOpt.textContent = exact;
-      exactOpt.dataset.value = exact;
-    }
   }
 
   function open() {
@@ -141,11 +80,9 @@ export function createTimePicker(boxEl, panelEl, listEl, onChange) {
   });
 
   searchInput.addEventListener("input", () => {
-    const digits = searchInput.value.replace(/[^0-9]/g, "").slice(0, 4);
-    const exact = parseTimeDigits(digits);
-    // Affiche l'heure reconnue plutôt qu'un découpage aveugle : "930" devenait
-    // "93:0" avec l'ancien slice(0,2), une heure qui n'existe pas.
-    searchInput.value = exact || (digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits);
+    let digits = searchInput.value.replace(/[^0-9]/g, "").slice(0, 4);
+    if (digits.length > 2) digits = `${digits.slice(0, 2)}:${digits.slice(2)}`;
+    searchInput.value = digits;
     filterOptions(digits);
   });
   searchInput.addEventListener("keydown", (e) => {
