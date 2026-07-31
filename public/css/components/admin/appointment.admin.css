@@ -2187,6 +2187,40 @@ body.appt-group-open { overflow: hidden; }
   border-color: rgba(0, 0, 0, 0.08);
 }
 
+/* ── Pastille courte (< 30 min) ─────────────────────────────────────────────
+   La maquette place l'heure sur sa propre ligne SOUS le nom (flex 0 0 100%).
+   À 20 px de haut — la hauteur d'une absence de 15 min — cette deuxième ligne
+   est coupée en deux : on lisait « Absent » puis un « 14:00 » tranché au
+   milieu. Ici l'heure revient à côté du nom, sur une seule ligne, et le nom
+   est tronqué proprement. Le survol donne le détail complet. */
+/* `.appt-pill.appt-pill--short` et non `.appt-pill--short` seul : la règle de
+   base plus haut passe par `.appt-pill:not([data-status])`, dont la
+   spécificité (0,2,0) écrase une simple classe. Le `flex-wrap: nowrap` était
+   ignoré et l'heure repartait à la ligne. */
+.appt-pill.appt-pill--short {
+  flex-wrap: nowrap;
+  gap: 0 6px;
+  padding: 1px 7px;
+  align-items: center;
+}
+.appt-pill--short .appt-pill__name {
+  font-size: 11px;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.appt-pill--short .appt-pill__time {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  line-height: 1.15;
+}
+/* Chip employé et photo : pas la place, le survol les donne. */
+.appt-pill--short .appt-pill__emp,
+.appt-pill--short .appt-pill__photo {
+  display: none;
+}
+
 /* Annulé : gris, nom barré */
 .appt-pill--canceled {
   --pill-color: #9ca3af;
@@ -2292,4 +2326,54 @@ body.appt-group-open { overflow: hidden; }
 .cal-month__conge--special {
   color: #9ca3af;
   background: #f3f4f6;
+}
+
+/* ── Carte de survol des événements du calendrier ──────────────────────────
+   Une pastille courte ne montre qu'un nom tronqué. Cette carte donne le
+   détail au survol, sans clic. Rattachée à <body> en position:fixed pour ne
+   jamais être rognée par le débordement de la grille. */
+.cal-hover-card {
+  position: fixed;
+  z-index: 100000;
+  max-width: 280px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--color-white, #fff);
+  border: 1px solid var(--border-light, #e5e7eb);
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.14);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-primary, #1f2937);
+  /* JAMAIS cliquable, même ouverte : la carte se place sous la pastille
+     survolée, donc pile sur la suivante. Si elle interceptait la souris, on ne
+     pourrait plus ni survoler ni cliquer l'événement d'en dessous. En
+     `pointer-events: none` la souris la traverse. */
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-3px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.cal-hover-card.is-open {
+  opacity: 1;
+  transform: translateY(0);
+}
+.cal-hover-card__title {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 2px;
+  /* Un nom très long ne doit pas étirer la carte hors de l'écran. */
+  overflow-wrap: anywhere;
+}
+.cal-hover-card__when {
+  color: var(--text-secondary, #4b5563);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 4px;
+}
+.cal-hover-card__row {
+  color: var(--text-secondary, #4b5563);
+  overflow-wrap: anywhere;
+}
+.cal-hover-card__label {
+  color: var(--text-muted, #6b7280);
 }

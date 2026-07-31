@@ -1029,3 +1029,138 @@ setInterval(updateTimeline, 60000);
     if (!document.hidden) silentRefresh();
   });
 })();
+
+// ── Carte de survol sur les événements du calendrier ────────────────────────
+// Une pastille courte (absence de 15 min, RDV express) n'a la place d'afficher
+// qu'un nom tronqué : impossible de savoir de quoi il s'agit sans cliquer, et
+// plusieurs absences d'affilée deviennent illisibles. Cette carte donne le
+// détail complet au survol, sans clic.
+//
+// Rattachée à <body> et positionnée en `fixed` : ainsi elle n'est jamais
+// rognée par le débordement de la grille, contrairement à un pseudo-élément
+// CSS posé sur la pastille.
+(function () {
+  const section = document.querySelector(".grid-section") || document.querySelector(".calendar");
+  if (!section) return;
+
+  let card = null;
+  let hideTimer = null;
+
+  function ensureCard() {
+    if (card) return card;
+    card = document.createElement("div");
+    card.className = "cal-hover-card";
+    card.setAttribute("role", "tooltip");
+    document.body.appendChild(card);
+    // Pas de listener sur la carte : elle est en `pointer-events: none` (cf.
+    // CSS) pour laisser passer la souris vers l'événement qu'elle recouvre.
+    return card;
+  }
+
+  function hide() {
+    if (card) card.classList.remove("is-open");
+  }
+
+  // Chaque ligne est ajoutée en textContent (jamais innerHTML) : un nom de
+  // client ou un commentaire d'absence est une saisie libre.
+  function addRow(parent, label, value, cls) {
+    if (!value) return;
+    const row = document.createElement("div");
+    row.className = cls || "cal-hover-card__row";
+    if (label) {
+      const l = document.createElement("span");
+      l.className = "cal-hover-card__label";
+      l.textContent = label;
+      row.appendChild(l);
+    }
+    const v = document.createElement("span");
+    v.textContent = value;
+    row.appendChild(v);
+    parent.appendChild(row);
+  }
+
+  function build(el) {
+    const c = ensureCard();
+    c.textContent = "";
+    const d = el.dataset;
+
+    const isBlock = d.isBlock === "1";
+    const isCourse = !!d.courseBand;
+    const isExternal = el.classList.contains("appt-pill--external");
+
+    let title;
+    if (isCourse) title = (el.querySelector(".course-band__name") || {}).textContent || "Cours collectif";
+    else if (isBlock) title = "Absence";
+    else if (isExternal) title = "Autre événement";
+    else title = [d.name, d.surname].filter(Boolean).join(" ") || "Rendez-vous";
+
+    const head = document.createElement("div");
+    head.className = "cal-hover-card__title";
+    head.textContent = title;
+    c.appendChild(head);
+
+    // Horaire : les bandes de cours portent leur plage dans leur propre libellé.
+    let when = "";
+    if (isCourse) {
+      when = ((el.querySelector(".course-band__time") || {}).textContent || "").replace("–", " – ");
+    } else if (d.start) {
+      when = d.end ? `${d.start} – ${d.end}` : d.start;
+    } else if (el.querySelector(".appt-pill__time")) {
+      when = el.querySelector(".appt-pill__time").textContent;
+    }
+    addRow(c, "", when, "cal-hover-card__when");
+
+    if (isCourse) {
+      addRow(c, "", d.courseBand === "free"
+        ? "Les rendez-vous individuels restent possibles"
+        : "Les rendez-vous individuels sont bloqués sur cette plage");
+    } else if (isBlock) {
+      addRow(c, "Motif : ", d.service);
+      addRow(c, "Concerne : ", d.employee || "Toute l'entreprise");
+    } else if (!isExternal) {
+      addRow(c, "Prestation : ", d.service);
+      addRow(c, "Avec : ", d.employee);
+      if (d.status === "canceled") addRow(c, "", "Annulé");
+      else if (d.status === "pending") addRow(c, "", "En attente");
+      else if (d.status === "no-show") addRow(c, "", "Non présenté");
+    }
+    return c;
+  }
+
+  function place(c, el) {
+    const r = el.getBoundingClientRect();
+    // Mesurer une fois visible, sinon offsetWidth vaut 0 et le calcul de
+    // débordement est faux au tout premier survol.
+    c.classList.add("is-open");
+    const w = c.offsetWidth || 240;
+    const h = c.offsetHeight || 80;
+    let left = r.left;
+    if (left + w > window.innerWidth - 8) left = window.innerWidth - w - 8;
+    let top = r.bottom + 6;
+    if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+    c.style.left = `${Math.max(8, left)}px`;
+    c.style.top = `${top}px`;
+  }
+
+  const SELECTOR = ".appt-pill, .course-band";
+
+  section.addEventListener("mouseover", (e) => {
+    const el = e.target.closest(SELECTOR);
+    if (!el || el.classList.contains("appt-pill--summary")) return;
+    clearTimeout(hideTimer);
+    try {
+      place(build(el), el);
+    } catch (err) {
+      // Un simple confort d'affichage ne doit jamais casser le calendrier.
+      hide();
+    }
+  });
+
+  section.addEventListener("mouseout", (e) => {
+    if (!e.target.closest(SELECTOR)) return;
+    hideTimer = setTimeout(hide, 120);
+  });
+
+  // Un scroll déplace la pastille sous une carte restée en position fixe.
+  window.addEventListener("scroll", hide, { passive: true, capture: true });
+})();

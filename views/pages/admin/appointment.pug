@@ -233,6 +233,7 @@ block content
                             else if appointment.isBlock
                                 div.appt-pill.appt-pill--block(
                                     role="button" tabindex="0"
+                                    class={ 'appt-pill--short': (box.endMin - box.startMin) < 30 }
                                     style=`left:calc(${leftPct}% + 3px);width:calc(${widthPct}% - 6px)`
                                     data-start-minutes=box.startMin
                                     data-slot-minutes=(box.endMin - box.startMin)
@@ -253,7 +254,7 @@ block content
                                 - var canColor = appointment.serviceColor && appointment.status !== 'canceled' && appointment.status !== 'pending' && appointment.status !== 'no-show'
                                 div.appt-pill(
                                     role="button" tabindex="0"
-                                    class={ 'appt-pill--canceled': appointment.status === 'canceled' }
+                                    class={ 'appt-pill--canceled': appointment.status === 'canceled', 'appt-pill--short': (box.endMin - box.startMin) < 30 }
                                     style=`left:calc(${leftPct}% + 3px);width:calc(${widthPct}% - 6px);` + (canColor ? `--pill-color:${appointment.serviceColor}` : '')
                                     data-start-minutes=box.startMin
                                     data-slot-minutes=(box.endMin - box.startMin)
