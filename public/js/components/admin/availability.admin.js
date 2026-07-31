@@ -1,3 +1,5 @@
+import { parseTimeDigits, timeOptionMatches } from "../../utils/time-picker.js";
+
 const availability = document.querySelector(".body-weekly-hour");
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -1372,7 +1374,11 @@ function formatHourInput(raw) {
 }
 
 function injectPanelSearch(panel) {
-  if (panel.querySelector('.panel-search-input')) return; // déjà injecté
+  // Déjà injecté : on remet la recherche à zéro au lieu de sortir sans rien
+  // faire. Sinon le panneau se rouvrait avec le filtre de la fois précédente
+  // encore appliqué — donc quasiment aucune heure visible, et l'option exacte
+  // périmée toujours en tête de liste.
+  if (panel._resetHourSearch) { panel._resetHourSearch(); return; }
 
   var inp = document.createElement('input');
   inp.type = 'text';
@@ -1411,38 +1417,37 @@ function injectPanelSearch(panel) {
 
   panel.insertBefore(inp, panel.firstChild);
 
-  inp.addEventListener('input', function(e) {
-    var raw    = this.value;
-    var digits = raw.replace(/[^0-9]/g, '');
+  // Option "à la minute près" — la liste serveur ne descend qu'au palier de
+  // 10 min. Un horaire d'ouverture à 08:45 ou une absence à 11:05 étaient donc
+  // impossibles à saisir. Dès que la frappe forme une heure valide absente de
+  // la liste, cette entrée apparaît en tête et se sélectionne comme les autres
+  // (elle porte la classe .hour, donc les handlers existants la traitent
+  // exactement pareil).
+  var exactOpt = document.createElement('div');
+  exactOpt.className = 'hour hour--exact';
+  exactOpt.style.display = 'none';
+  exactOpt.style.fontWeight = '700';
+  exactOpt.style.color = 'var(--accent, #1e7a4e)';
+  exactOpt.style.background = 'var(--accent-soft, #f0fdf4)';
+  var scrollWrap = panel.querySelector('.panel-hours-scroll');
+  if (scrollWrap) scrollWrap.insertBefore(exactOpt, scrollWrap.firstChild);
 
-    // Auto-insérer ":" après le 2ème chiffre → "12:2" au lieu de "122"
-    if (digits.length >= 3 && raw.indexOf(':') === -1) {
-      var formatted = digits.slice(0, 2) + ':' + digits.slice(2, 4);
-      this.value = formatted;
-    } else if (digits.length === 2 && raw.slice(-1) !== ':') {
-      // Optionnel : ne pas forcer les 2 chiffres seuls
-    }
+  inp.addEventListener('input', function() {
+    var digits = this.value.replace(/[^0-9]/g, '').slice(0, 4);
+    var exact  = parseTimeDigits(digits);
+    this.value = exact || (digits.length > 2 ? digits.slice(0, 2) + ':' + digits.slice(2) : digits);
 
-    var hours = panel.querySelectorAll('.hour');
-
-    if (!digits) {
-      hours.forEach(function(h) { h.style.display = ''; });
-      return;
-    }
-
-    // Construire pattern de recherche
-    var pattern;
-    if (digits.length <= 2) {
-      pattern = digits; // "18" → cherche toutes heures commençant par "18"
-    } else {
-      var h = digits.slice(0, 2);
-      var m = digits.slice(2, 4).padEnd(2, '0');
-      pattern = h + ':' + m;
-    }
-
-    hours.forEach(function(h) {
-      h.style.display = h.textContent.startsWith(pattern) ? '' : 'none';
+    var exactAlreadyListed = false;
+    Array.from(panel.querySelectorAll('.hour')).forEach(function(h) {
+      if (h === exactOpt) return;
+      var val = h.textContent.trim();
+      h.style.display = timeOptionMatches(val, digits, exact) ? '' : 'none';
+      if (exact && val === exact) exactAlreadyListed = true;
     });
+
+    var showExact = !!exact && !exactAlreadyListed;
+    exactOpt.style.display = showExact ? '' : 'none';
+    if (showExact) exactOpt.textContent = exact;
   });
 
   inp.addEventListener('keydown', function(e) {
@@ -1461,6 +1466,14 @@ function injectPanelSearch(panel) {
     }
     e.stopPropagation();
   });
+
+  panel._resetHourSearch = function () {
+    inp.value = '';
+    Array.from(panel.querySelectorAll('.hour')).forEach(function (h) {
+      h.style.display = h === exactOpt ? 'none' : '';
+    });
+    setTimeout(function () { inp.focus(); }, 50);
+  };
 
   // Focus automatique à l'ouverture
   setTimeout(function() { inp.focus(); }, 50);

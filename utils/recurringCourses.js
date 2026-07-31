@@ -38,7 +38,7 @@ async function getCoursesForDate(companyId, dateInput) {
       { "recurring.enabled": false, sessions: { $elemMatch: { date: { $gte: dayStart, $lt: dayEnd } } } },
     ],
   })
-    .select("name duration recurring sessions employees blocksIndividualBookings")
+    .select("name duration recurring sessions employees blocksIndividualBookings color")
     .lean();
 
   return courses.map((c) => {

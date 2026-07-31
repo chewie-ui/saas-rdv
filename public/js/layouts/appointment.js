@@ -416,11 +416,41 @@ setInterval(updateTimeline, 60000);
   if (!overlay || !submitBtn) return;
 
   const dateEl      = document.getElementById("blockApptDate");
-  const rangeEl     = document.getElementById("blockApptRange");
+  const durationEl  = document.getElementById("blockApptDuration");
   const employeeSel = document.getElementById("blockApptEmployee");
   const noteInput   = document.getElementById("blockApptNote");
 
-  let current = null; // { date, time, endTime }
+  let current = null; // { date }
+
+  const toMin = (t) => {
+    const [h, m] = String(t).split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  function refreshDuration() {
+    if (!durationEl) return;
+    const start = startPicker.get();
+    const end = endPicker.get();
+    if (!start || !end) { durationEl.textContent = "—"; return; }
+    const mins = toMin(end) - toMin(start);
+    if (mins <= 0) { durationEl.textContent = "—"; return; }
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    durationEl.textContent = h ? (m ? `${h} h ${m} min` : `${h} h`) : `${m} min`;
+  }
+
+  const startPicker = createTimePicker(
+    document.getElementById("blockApptStartBox"),
+    document.getElementById("blockApptStartPanel"),
+    document.getElementById("blockApptStartList"),
+    refreshDuration
+  );
+  const endPicker = createTimePicker(
+    document.getElementById("blockApptEndBox"),
+    document.getElementById("blockApptEndPanel"),
+    document.getElementById("blockApptEndList"),
+    refreshDuration
+  );
 
   function showError(msg) {
     errorEl.textContent = msg;
@@ -441,7 +471,9 @@ setInterval(updateTimeline, 60000);
       const [y, m, d] = info.date.split("-");
       dateEl.textContent = `${d}/${m}/${y}`;
     }
-    if (rangeEl) rangeEl.textContent = `${info.time} – ${info.endTime}`;
+    startPicker.set(info.time);
+    endPicker.set(info.endTime);
+    refreshDuration();
     overlay.classList.add("show");
     noteInput.focus();
   }
@@ -459,6 +491,18 @@ setInterval(updateTimeline, 60000);
   submitBtn.addEventListener("click", async () => {
     if (!current) return;
     errorEl.style.display = "none";
+
+    const startTime = startPicker.get();
+    const endTime = endPicker.get();
+    if (!startTime || !endTime) {
+      showError("Choisissez une heure de début et de fin.");
+      return;
+    }
+    if (toMin(endTime) <= toMin(startTime)) {
+      showError("L'heure de fin doit être après l'heure de début.");
+      return;
+    }
+
     submitBtn.disabled = true;
     try {
       const res = await fetch("/appointment/block", {
@@ -466,8 +510,8 @@ setInterval(updateTimeline, 60000);
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: current.date,
-          startTime: current.time,
-          endTime: current.endTime,
+          startTime,
+          endTime,
           employeeId: employeeSel ? employeeSel.value : "",
           note: noteInput.value.trim(),
         }),
@@ -706,11 +750,16 @@ setInterval(updateTimeline, 60000);
   function existingRangesForDay(iso) {
     const col = getEventsCol(iso);
     if (!col) return [];
-    return Array.from(col.querySelectorAll("[data-start-minutes]")).map((el) => {
-      const s = Number(el.dataset.startMinutes) || 0;
-      const d = Number(el.dataset.slotMinutes) || gridStep;
-      return [s, s + d];
-    });
+    return Array.from(col.querySelectorAll("[data-start-minutes]"))
+      // Un cours collectif qui NE bloque PAS les RDV individuels n'est pas un
+      // conflit : le pro a explicitement autorisé à réserver pendant ce cours,
+      // le fantôme de drag ne doit donc pas passer en rouge.
+      .filter((el) => el.dataset.courseBand !== "free")
+      .map((el) => {
+        const s = Number(el.dataset.startMinutes) || 0;
+        const d = Number(el.dataset.slotMinutes) || gridStep;
+        return [s, s + d];
+      });
   }
 
   // Cellule .cell.day du même jour la plus proche verticalement du point Y.
