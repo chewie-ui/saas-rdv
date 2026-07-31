@@ -79,10 +79,7 @@ block content
         //- affichage. Ça évite de ré-indenter tout le tableau des services.
         .ds-tabs(role="tablist")
             button.ds-tab.is-active(type="button" data-svtab="services") Services
-            button.ds-tab(type="button" data-svtab="questionnaire")
-                | Questionnaire
-                if _q.enabled
-                    span.ds-tab__count(title="Questionnaire actif") ●
+            button.ds-tab(type="button" data-svtab="questionnaire") Questionnaire
 
         //- ── Questionnaire de réservation (multi-questions) ──────────
         .sq-block(class=(_q.enabled ? '' : 'is-off') data-tab="questionnaire")
