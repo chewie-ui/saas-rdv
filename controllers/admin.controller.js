@@ -646,8 +646,17 @@ exports.appointment = async (req, res) => {
   // +1h buffer so the appointment slot itself is always visible even at the last row
   const apptMax = apptMinutesList.length > 0 ? Math.ceil((Math.max(...apptMinutesList) + 60) / 60) : null;
 
-  const candidates = [scheduleMin, specialMin, apptMin].filter((v) => Number.isFinite(v));
-  const candidatesMax = [scheduleMax, specialMax, apptMax].filter((v) => Number.isFinite(v));
+  // Les cours collectifs élargissent aussi la grille. Un cours qui déborde des
+  // horaires d'ouverture (16:30 → 20:30 alors que la boutique ferme à 18:00)
+  // s'affichait sinon en dehors du calendrier, dans le vide sous la dernière
+  // ligne. Même logique que pour les RDV : la grille couvre ce qu'elle montre.
+  const bandMinutes = Object.values(courseBandsByDay).flat();
+  const courseMin = bandMinutes.length > 0 ? Math.floor(Math.min(...bandMinutes.map((b) => b.startMin)) / 60) : null;
+  // Arrondi au-dessus : un cours qui finit à 20:30 a besoin de la ligne de 21h.
+  const courseMax = bandMinutes.length > 0 ? Math.ceil(Math.max(...bandMinutes.map((b) => b.endMin)) / 60) : null;
+
+  const candidates = [scheduleMin, specialMin, apptMin, courseMin].filter((v) => Number.isFinite(v));
+  const candidatesMax = [scheduleMax, specialMax, apptMax, courseMax].filter((v) => Number.isFinite(v));
 
   // Filet de sécurité : la grille horaire doit TOUJOURS s'afficher. Peu importe
   // ce que contient la configuration de l'établissement, on borne la plage à
