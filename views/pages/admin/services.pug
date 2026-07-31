@@ -492,7 +492,11 @@ block content
                         .field
                             label Prix (€)
                             input.input#crsPrice(type="number" min="0" step="0.5" placeholder="Ex : 15")
-                        .field
+                        //- Masqué en mode "Dates ponctuelles" : là, la durée de
+                        //- chaque séance découle de son heure de début et de fin.
+                        //- Laisser les deux saisissables donnait deux sources de
+                        //- vérité contradictoires (durée 60 min vs séance 13:00→20:00).
+                        .field#crsDurationField
                             label Durée (min) *
                             input.input#crsDuration(type="number" min="5" step="5" value="60")
                         .field
@@ -566,7 +570,7 @@ block content
                                 input.input#crsSesStart(type="time")
                                 input.input#crsSesEnd(type="time")
                                 button.sm-btn.sm-btn--ghost#crsAddSession(type="button") + Ajouter
-                            p.xs-comment Ajoutez une ou plusieurs dates — vos clients choisiront parmi ces dates.
+                            p.xs-comment Ajoutez une ou plusieurs dates — vos clients choisiront parmi ces dates. La durée de chaque séance vient de son heure de début et de fin : il n'y a pas de champ « durée » dans ce mode.
             p.sv2-modal-err#crsErr(hidden)
         .service-modal__footer
             button.sm-btn.sm-btn--ghost#cancelCourseModal(type="button") Annuler
@@ -1262,6 +1266,11 @@ block content
                     byId('crsMode').querySelectorAll('.svc-type-option').forEach(function (x) { x.classList.toggle('is-active', x.dataset.mode === mode); });
                     byId('crsRecurring').style.display = mode === 'recurring' ? '' : 'none';
                     byId('crsFixed').style.display = mode === 'fixed' ? '' : 'none';
+                    // Une seule source de vérité pour la durée : le champ en mode
+                    // récurrent (heure de début + durée), les horaires de séance
+                    // en mode ponctuel. Jamais les deux en même temps.
+                    var df = byId('crsDurationField');
+                    if (df) df.style.display = mode === 'recurring' ? '' : 'none';
                 }
                 byId('crsMode').addEventListener('click', function (e) {
                     var b = e.target.closest('.svc-type-option'); if (b) setCrsMode(b.dataset.mode);
@@ -1272,17 +1281,40 @@ block content
                 // Employés assignés (optionnel) — la liste n'existe que s'il y a une équipe.
                 var crsHasEmp = byId('crsHasEmployees'), crsEmpField = byId('crsEmployeesField');
                 if (crsHasEmp) crsHasEmp.addEventListener('change', function () { crsEmpField.style.display = this.checked ? '' : 'none'; });
+                function crsToMin(t) { var p = String(t).split(':'); return Number(p[0]) * 60 + Number(p[1]); }
+                function crsDurLabel(mins) {
+                    // Une séance héritée peut avoir une durée négative (13:00 → 00:00).
+                    // On l'annonce explicitement plutôt que d'afficher "-13 h".
+                    if (!(mins > 0)) return 'durée invalide';
+                    var h = Math.floor(mins / 60), m = mins % 60;
+                    return h ? (m ? h + ' h ' + m : h + ' h') : m + ' min';
+                }
                 function addSessionRow(date, s, en) {
                     var row = document.createElement('div');
                     row.className = 'sv2-session'; row.dataset.date = date; row.dataset.start = s; row.dataset.end = en;
-                    var span = document.createElement('span'); span.textContent = date + ' · ' + s + ' – ' + en; // textContent = sûr
+                    // La durée réelle est affichée sur chaque ligne : c'est elle qui
+                    // fait foi pour le blocage et l'agenda. Sans ça, une séance
+                    // 13:00 → 00:00 passait pour "13h à minuit" alors qu'elle donne
+                    // une durée négative, et le cours ne bloquait plus rien.
+                    var mins = crsToMin(en) - crsToMin(s);
+                    var span = document.createElement('span');
+                    span.textContent = date + ' · ' + s + ' – ' + en + '  (' + crsDurLabel(mins) + ')'; // textContent = sûr
                     var x = document.createElement('button'); x.type = 'button'; x.className = 'sv2-session__x'; x.textContent = '✕';
                     row.appendChild(span); row.appendChild(x);
                     byId('crsSessions').appendChild(row);
                 }
                 byId('crsAddSession').addEventListener('click', function () {
+                    var err = byId('crsErr');
                     var date = byId('crsSesDate').value, s = byId('crsSesStart').value, en = byId('crsSesEnd').value;
-                    if (!date || !s || !en) return;
+                    if (!date || !s || !en) {
+                        err.textContent = 'Indiquez une date, une heure de début et une heure de fin.';
+                        err.hidden = false; return;
+                    }
+                    if (crsToMin(en) <= crsToMin(s)) {
+                        err.textContent = "L'heure de fin doit être après l'heure de début (pour finir à minuit, mettez 23:59).";
+                        err.hidden = false; return;
+                    }
+                    err.hidden = true;
                     addSessionRow(date, s, en);
                     byId('crsSesDate').value = ''; byId('crsSesStart').value = ''; byId('crsSesEnd').value = '';
                 });
@@ -1350,7 +1382,22 @@ block content
                             sessions.push({ date: r.dataset.date, startTime: r.dataset.start, endTime: r.dataset.end });
                         });
                         if (!sessions.length) { err.textContent = 'Ajoutez au moins une date.'; err.hidden = false; return; }
+                        // Une séance enregistrée AVANT ce contrôle peut encore avoir
+                        // une fin antérieure à son début (13:00 → 00:00). On refuse
+                        // de sauvegarder tant qu'elle est là, en la désignant : sinon
+                        // le cours repart en base avec une durée négative et ne
+                        // bloque plus aucun créneau, en silence.
+                        var ko = sessions.filter(function (ss) { return crsToMin(ss.endTime) <= crsToMin(ss.startTime); });
+                        if (ko.length) {
+                            err.textContent = 'Corrigez la séance du ' + ko[0].date + ' (' + ko[0].startTime + ' – ' + ko[0].endTime
+                                + ') : l’heure de fin doit être après celle de début. Supprimez-la puis rajoutez-la.';
+                            err.hidden = false; return;
+                        }
                         payload.sessions = sessions;
+                        // En mode ponctuel, la durée n'est PAS saisie : elle découle
+                        // de la première séance. On l'envoie quand même pour que la
+                        // fiche du service reste cohérente (affichage, exports).
+                        payload.duration = crsToMin(sessions[0].endTime) - crsToMin(sessions[0].startTime);
                     } else {
                         var wds = [];
                         byId('crsWeekdays').querySelectorAll('.sv2-wd.is-active').forEach(function (b) { wds.push(Number(b.dataset.day)); });

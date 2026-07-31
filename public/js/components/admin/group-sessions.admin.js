@@ -47,6 +47,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (recurringFieldsEl) recurringFieldsEl.style.display = currentMode === "recurring" ? "" : "none";
     if (fixedFieldsEl)     fixedFieldsEl.style.display     = currentMode === "fixed"     ? "" : "none";
+    // Une seule source de vérité pour la durée : le champ en mode récurrent,
+    // les horaires de séance en mode ponctuel. Jamais les deux à la fois.
+    const durField = document.getElementById("courseDurationField");
+    if (durField) durField.style.display = currentMode === "recurring" ? "" : "none";
   }
 
   if (modeOptions) {
@@ -110,7 +114,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const end   = newSessionEndPicker.get();
       if (!date)        { showError(T.required_session_date_error); return; }
       if (!start || !end) { showError(T.required_session_time_error); return; }
-      if (start === end) { showError(T.session_time_order_error); return; }
+      // `start === end` ne testait que l'égalité : une fin ANTÉRIEURE au début
+      // (13:00 → 00:00) passait, donnait une durée négative, et le cours ne
+      // bloquait plus aucun créneau — en silence.
+      const toMin = (t) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + m; };
+      if (toMin(end) <= toMin(start)) { showError(T.session_time_order_error); return; }
 
       sessionRows.push({ date, startTime: start, endTime: end });
       sessionRows.sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime));
