@@ -70,9 +70,24 @@ block content
                 else
                     span Limite de votre plan atteinte (#{_max} services). Passez à un plan supérieur pour en ajouter davantage.
 
-        //- ── Questionnaire de réservation (multi-questions) ──────────
         - var _q = questionnaire || { enabled: false, questions: [] }
-        .sq-block(class=(_q.enabled ? '' : 'is-off'))
+
+        //- ── Onglets Services / Questionnaire ────────────────────────
+        //- Les blocs ci-dessous restent des frères (pas de conteneur par
+        //- onglet) : on les marque avec `data-tab` et le JS bascule leur
+        //- affichage. Ça évite de ré-indenter tout le tableau des services.
+        .ds-tabs(role="tablist")
+            button.ds-tab.is-active(type="button" data-svtab="services")
+                span.material-symbols-outlined design_services
+                | Services
+            button.ds-tab(type="button" data-svtab="questionnaire")
+                span.material-symbols-outlined quiz
+                | Questionnaire
+                if _q.enabled
+                    span.ds-tab__count(title="Questionnaire actif") ●
+
+        //- ── Questionnaire de réservation (multi-questions) ──────────
+        .sq-block(class=(_q.enabled ? '' : 'is-off') data-tab="questionnaire")
             .sq-head
                 .sq-head__l
                     span.sq-head__ic.material-symbols-outlined quiz
@@ -134,7 +149,7 @@ block content
                         span.material-symbols-outlined close
 
         //- ── Barre d'outils (façon Clients / image de réf.) ──────────
-        .ch-toolbar-wrap
+        .ch-toolbar-wrap(data-tab="services")
             .ch-toolbar
                 .ch-search
                     span.ch-search__icon.material-symbols-outlined search
@@ -222,7 +237,7 @@ block content
 
         //- ── État vide (IDENTIQUE à la page Clients) ─────────────────
         if !services || services.length === 0
-            .ch-empty
+            .ch-empty(data-tab="services")
                 span.ch-empty__icon.material-symbols-outlined design_services
                 p.ch-empty__title Aucun service
                 p.ch-empty__sub Ajoutez votre premier service pour commencer.
@@ -231,7 +246,7 @@ block content
                     span Ajouter un service
         else
             //- ── Tableau des services ────────────────────────────────
-            .sv2-table-wrap
+            .sv2-table-wrap(data-tab="services")
                 table.sv2-table
                     thead
                         tr
@@ -1352,6 +1367,29 @@ block content
                 else { if (openSvc) openSvc(ed.dataset.id); }
             });
 
+            // ── Onglets Services / Questionnaire ──────────────────────
+            // Les blocs sont des frères marqués `data-tab` (cf. commentaire
+            // dans le gabarit) : on masque/affiche par groupe.
+            (function () {
+                var tabBtns = Array.prototype.slice.call(document.querySelectorAll('.ds-tab[data-svtab]'));
+                if (!tabBtns.length) return;
+                function showTab(name) {
+                    tabBtns.forEach(function (b) { b.classList.toggle('is-active', b.dataset.svtab === name); });
+                    document.querySelectorAll('[data-tab]').forEach(function (el) {
+                        el.style.display = el.dataset.tab === name ? '' : 'none';
+                    });
+                    try { sessionStorage.setItem('sv2Tab', name); } catch (e) {}
+                }
+                tabBtns.forEach(function (b) {
+                    b.addEventListener('click', function () { showTab(b.dataset.svtab); });
+                });
+                // On revient sur le même onglet après un rechargement de page
+                // (l'enregistrement du questionnaire recharge parfois la page).
+                var saved = null;
+                try { saved = sessionStorage.getItem('sv2Tab'); } catch (e) {}
+                showTab(saved === 'questionnaire' ? 'questionnaire' : 'services');
+            })();
+
             // ── Constructeur de questionnaire ─────────────────────────
             var sqBlock = document.querySelector('.sq-block');
             if (sqBlock) {
@@ -1361,9 +1399,42 @@ block content
                 var enabledEl = document.getElementById('sqEnabled');
                 var saveInd = document.getElementById('sqSaveInd');
 
+                // La bascule ENREGISTRE immédiatement. Avant, elle ne faisait que
+                // masquer le panneau en CSS : le bouton « Enregistrer » partant
+                // avec le panneau, l'état « désactivé » n'était jamais envoyé au
+                // serveur et réapparaissait activé au rafraîchissement.
                 enabledEl.addEventListener('change', function () {
-                    sqBlock.classList.toggle('is-off', !enabledEl.checked);
+                    var on = enabledEl.checked;
+                    sqBlock.classList.toggle('is-off', !on);
                     computeQuestionnaireCoverage();
+
+                    enabledEl.disabled = true;
+                    if (saveInd) { saveInd.textContent = 'Enregistrement…'; saveInd.className = 'sq-saveind'; }
+                    var c = collect();
+                    fetch('/api/services/questionnaire', {
+                        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(c.payload)
+                    }).then(function (r) { return r.json(); }).then(function (d) {
+                        enabledEl.disabled = false;
+                        if (d && d.success) {
+                            if (saveInd) {
+                                saveInd.textContent = on ? '✓ Questionnaire activé' : '✓ Questionnaire désactivé';
+                                saveInd.className = 'sq-saveind is-ok';
+                                clearTimeout(saveInd._t);
+                                saveInd._t = setTimeout(function () { saveInd.textContent = ''; saveInd.className = 'sq-saveind'; }, 2500);
+                            }
+                        } else {
+                            // Échec → on remet l'interrupteur dans son état réel,
+                            // sinon l'utilisateur croit que c'est enregistré.
+                            enabledEl.checked = !on;
+                            sqBlock.classList.toggle('is-off', on);
+                            if (saveInd) { saveInd.textContent = (d && d.error) || 'Échec'; saveInd.className = 'sq-saveind is-err'; }
+                        }
+                    }).catch(function () {
+                        enabledEl.disabled = false;
+                        enabledEl.checked = !on;
+                        sqBlock.classList.toggle('is-off', on);
+                        if (saveInd) { saveInd.textContent = 'Erreur réseau'; saveInd.className = 'sq-saveind is-err'; }
+                    });
                 });
 
                 // ── Avertissement admin : réponses sans service ───────────
