@@ -562,12 +562,24 @@ block content
                         .field
                             label Dates programmées *
                             .sv2-sessions#crsSessions
+                            //- Chaque champ porte son propre libellé : sans ça, trois
+                            //- boîtes côte à côte ne disent pas laquelle est la date,
+                            //- le début ou la fin — et les trois étaient si étroites
+                            //- que le contenu était illisible.
                             .sv2-addsession
-                                input.input#crsSesDate(type="date")
-                                input.input#crsSesStart(type="time")
-                                input.input#crsSesEnd(type="time")
-                                button.sm-btn.sm-btn--ghost#crsAddSession(type="button") + Ajouter
-                            p.xs-comment Ajoutez une ou plusieurs dates — vos clients choisiront parmi ces dates. La durée de chaque séance vient de son heure de début et de fin : il n'y a pas de champ « durée » dans ce mode.
+                                label.sv2-addsession__f
+                                    span.sv2-addsession__lab Date
+                                    input.input#crsSesDate(type="date")
+                                label.sv2-addsession__f
+                                    span.sv2-addsession__lab Début
+                                    input.input#crsSesStart(type="time" step="300")
+                                label.sv2-addsession__f
+                                    span.sv2-addsession__lab Fin
+                                    input.input#crsSesEnd(type="time" step="300")
+                                button.sm-btn.sm-btn--primary.sv2-addsession__btn#crsAddSession(type="button")
+                                    span.material-symbols-outlined(style="font-size:17px") add
+                                    span Ajouter
+                            p.xs-comment Vos clients choisiront parmi ces dates. La durée de chaque séance vient de son heure de début et de fin — il n'y a pas de champ « durée » dans ce mode.
             p.sv2-modal-err#crsErr(hidden)
         .service-modal__footer
             button.sm-btn.sm-btn--ghost#cancelCourseModal(type="button") Annuler
@@ -1286,19 +1298,52 @@ block content
                     var h = Math.floor(mins / 60), m = mins % 60;
                     return h ? (m ? h + ' h ' + m : h + ' h') : m + ' min';
                 }
+                // "2026-08-02" → "dim. 2 août 2026". Une date ISO brute dans une
+                // liste destinée au pro n'est ni lisible ni vérifiable d'un coup d'œil.
+                function crsDateLabel(iso) {
+                    var d = new Date(iso + 'T12:00:00');
+                    if (isNaN(d.getTime())) return iso;
+                    return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+                }
+                function crsRenderEmpty() {
+                    var box = byId('crsSessions');
+                    var already = box.querySelector('.sv2-sessions__empty');
+                    var has = box.querySelector('.sv2-session');
+                    if (has && already) already.remove();
+                    if (!has && !already) {
+                        var e = document.createElement('p');
+                        e.className = 'sv2-sessions__empty';
+                        e.textContent = 'Aucune date pour l’instant — ajoutez-en une ci-dessous.';
+                        box.appendChild(e);
+                    }
+                }
                 function addSessionRow(date, s, en) {
                     var row = document.createElement('div');
                     row.className = 'sv2-session'; row.dataset.date = date; row.dataset.start = s; row.dataset.end = en;
+
+                    var main = document.createElement('span'); main.className = 'sv2-session__main';
+                    var d = document.createElement('span'); d.className = 'sv2-session__date';
+                    d.textContent = crsDateLabel(date); // textContent = sûr
+                    var t = document.createElement('span'); t.className = 'sv2-session__time';
+                    t.textContent = s + ' – ' + en;
+                    main.appendChild(d); main.appendChild(t);
+
                     // La durée réelle est affichée sur chaque ligne : c'est elle qui
                     // fait foi pour le blocage et l'agenda. Sans ça, une séance
-                    // 13:00 → 00:00 passait pour "13h à minuit" alors qu'elle donne
+                    // 13:00 → 00:00 passait pour « 13h à minuit » alors qu'elle donne
                     // une durée négative, et le cours ne bloquait plus rien.
                     var mins = crsToMin(en) - crsToMin(s);
-                    var span = document.createElement('span');
-                    span.textContent = date + ' · ' + s + ' – ' + en + '  (' + crsDurLabel(mins) + ')'; // textContent = sûr
-                    var x = document.createElement('button'); x.type = 'button'; x.className = 'sv2-session__x'; x.textContent = '✕';
-                    row.appendChild(span); row.appendChild(x);
+                    var dur = document.createElement('span');
+                    dur.className = 'sv2-session__dur' + (mins > 0 ? '' : ' is-bad');
+                    dur.textContent = crsDurLabel(mins);
+
+                    var x = document.createElement('button');
+                    x.type = 'button'; x.className = 'sv2-session__x'; x.title = 'Retirer cette date';
+                    x.innerHTML = '<span class="material-symbols-outlined" style="font-size:17px">close</span>';
+
+                    row.appendChild(main); row.appendChild(dur); row.appendChild(x);
                     byId('crsSessions').appendChild(row);
+                    crsRenderEmpty();
                 }
                 byId('crsAddSession').addEventListener('click', function () {
                     var err = byId('crsErr');
@@ -1316,7 +1361,7 @@ block content
                     byId('crsSesDate').value = ''; byId('crsSesStart').value = ''; byId('crsSesEnd').value = '';
                 });
                 byId('crsSessions').addEventListener('click', function (e) {
-                    if (e.target.closest('.sv2-session__x')) e.target.closest('.sv2-session').remove();
+                    if (e.target.closest('.sv2-session__x')) { e.target.closest('.sv2-session').remove(); crsRenderEmpty(); }
                 });
                 openCrs = function (id) {
                     crsEditId = id || null;
@@ -1335,6 +1380,7 @@ block content
                     byId('crsWeekdays').querySelectorAll('.sv2-wd').forEach(function (b) { b.classList.remove('is-active'); });
                     byId('crsTime').value = '';
                     byId('crsSessions').innerHTML = '';
+                    crsRenderEmpty();
                     byId('crsSesDate').value = ''; byId('crsSesStart').value = ''; byId('crsSesEnd').value = '';
                     // Employés assignés
                     if (crsHasEmp) {

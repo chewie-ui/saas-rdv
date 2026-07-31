@@ -445,22 +445,96 @@ select.sv2-input { cursor: pointer; }
 }
 .sv2-wd.is-active { border-color: var(--accent, #1e7a4e); background: var(--accent, #1e7a4e); color: #fff; }
 
-/* Dates ponctuelles */
-.sv2-sessions { display: flex; flex-direction: column; gap: 7px; margin-bottom: 8px; }
-.sv2-session {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  background: var(--accent-soft, #e7f2ec);
-  border-radius: 9px; padding: 7px 8px 7px 12px;
-  font-size: 13px; font-weight: 600; color: var(--accent, #1e7a4e);
+/* ── Dates ponctuelles ────────────────────────────────────────────────────── */
+.sv2-sessions { display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
+
+.sv2-sessions__empty {
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed var(--border-light, #e5e7eb);
+  border-radius: 10px;
+  font-size: 12.5px;
+  color: var(--text-muted, #6b7280);
+  text-align: center;
 }
-.sv2-session__x { border: none; background: transparent; cursor: pointer; color: var(--accent, #1e7a4e); font-size: 13px; opacity: .7; }
-.sv2-session__x:hover { opacity: 1; }
-.sv2-addsession { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: center; }
+
+.sv2-session {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--accent-soft, #e7f2ec);
+  border-radius: 10px; padding: 8px 8px 8px 12px;
+  font-size: 13px; color: var(--accent, #1e7a4e);
+}
+/* Date et horaire empilés : la date en clair sur une ligne, l'horaire dessous.
+   Tout sur une seule ligne, la date longue ("dim. 2 août 2026") repoussait la
+   durée et la croix hors de la carte. */
+.sv2-session__main { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
+.sv2-session__date {
+  font-weight: 700;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sv2-session__time { font-size: 12px; font-weight: 600; opacity: .8; font-variant-numeric: tabular-nums; }
+.sv2-session__dur {
+  flex: 0 0 auto;
+  background: #fff;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11.5px; font-weight: 700;
+}
+/* Séance héritée dont la fin précède le début : durée négative, donc invalide.
+   Rouge pour qu'on la repère et la corrige — l'enregistrement la refuse. */
+.sv2-session__dur.is-bad { background: #fee2e2; color: #b91c1c; }
+.sv2-session__x {
+  flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  border: none; border-radius: 8px; background: transparent;
+  cursor: pointer; color: var(--accent, #1e7a4e); opacity: .65;
+  transition: opacity .12s, background .12s;
+}
+.sv2-session__x:hover { opacity: 1; background: rgba(255, 255, 255, .7); }
+
+/* Formulaire d'ajout : chaque champ avec son libellé au-dessus. Les trois
+   boîtes nues côte à côte étaient trop étroites pour qu'on lise leur contenu,
+   et rien ne disait laquelle était le début ou la fin. */
+.sv2-addsession {
+  display: grid;
+  /* Trois champs sur une ligne, le bouton sur la sienne. L'ancienne version
+     mettait les quatre côte à côte : dans une colonne de modale (~430 px) le
+     bouton était écrasé et les champs trop étroits pour qu'on lise leur
+     contenu. Et une media query n'aurait rien réglé — elle mesure la FENÊTRE,
+     pas la colonne, qui reste étroite même sur un grand écran.
+     minmax(0,…) obligatoire : sans lui un `input[type=date]` impose sa largeur
+     intrinsèque et fait déborder la grille au lieu de se comprimer. */
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: end;
+}
+.sv2-addsession__f { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sv2-addsession__lab {
+  font-size: 11px; font-weight: 700; letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6b7280);
+}
+.sv2-addsession__f .input { width: 100%; min-width: 0; }
+/* Le bouton occupe sa propre ligne, pleine largeur : l'action « ajouter cette
+   date » se distingue nettement de la saisie, et reste lisible partout. */
+.sv2-addsession__btn {
+  grid-column: 1 / -1;
+  gap: 5px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+/* Très étroit (téléphone) : la date prend toute la ligne, début et fin se
+   partagent la suivante. */
+@media (max-width: 480px) {
+  .sv2-addsession { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .sv2-addsession__f:first-child { grid-column: 1 / -1; }
+}
 
 @media (max-width: 560px) {
   .sv2-row3 { grid-template-columns: 1fr; }
   .sv2-seg { grid-template-columns: 1fr; }
-  .sv2-addsession { grid-template-columns: 1fr 1fr; }
 }
 
 /* ── Ciblage par question dans la modale service ("Afficher ce service pour") ── */
