@@ -37,6 +37,7 @@ block content
                 employees: (s.employees || []).map(function (e) { return String(e._id || e); }),
                 fee: s.cancellationFee || { enabled: false, type: 'percent', value: '' },
                 recurring: s.recurring || { enabled: false, weekdays: [], startTime: '' },
+                blocksIndividualBookings: s.blocksIndividualBookings !== false,
                 sessions: sess,
                 questionRules: rules
             };
@@ -500,6 +501,15 @@ block content
                     .field
                         label Lieu (optionnel)
                         input.input#crsLocation(type="text" placeholder="Laissez vide pour utiliser votre adresse habituelle")
+                    //- Coché par défaut : un indépendant seul ne peut pas recevoir
+                    //- en individuel pendant qu'il anime son cours.
+                    .field
+                        label.svc-fee-label
+                            span BLOQUER LES RENDEZ-VOUS PENDANT CE COURS
+                            label.sa-toggle
+                                input#crsBlocksBookings(type="checkbox" checked)
+                                .sa-toggle__track
+                        p.xs-comment Activé : personne ne peut réserver un rendez-vous individuel pendant le cours. Désactivé : vos clients peuvent continuer à réserver en parallèle.
                     if employees && employees.length > 0
                         .field
                             label.svc-fee-label
@@ -1288,6 +1298,11 @@ block content
                     byId('crsDuration').value = d ? d.duration : 60;
                     byId('crsCapacity').value = d ? (d.capacity || 10) : 10;
                     byId('crsLocation').value = d ? d.location : '';
+                    // `!== false` et non `=== true` : les cours créés avant l'ajout
+                    // de ce champ n'ont pas la propriété et doivent rester bloquants,
+                    // sinon on leur ouvrirait d'un coup des créneaux jamais voulus.
+                    var crsBlocks = byId('crsBlocksBookings');
+                    if (crsBlocks) crsBlocks.checked = d ? d.blocksIndividualBookings !== false : true;
                     byId('crsWeekdays').querySelectorAll('.sv2-wd').forEach(function (b) { b.classList.remove('is-active'); });
                     byId('crsTime').value = '';
                     byId('crsSessions').innerHTML = '';
@@ -1327,6 +1342,7 @@ block content
                         name: name, description: byId('crsDesc').value.trim(), price: byId('crsPrice').value,
                         duration: Number(byId('crsDuration').value) || 60, capacity: Number(byId('crsCapacity').value) || 1,
                         location: byId('crsLocation').value.trim(), mode: crsMode, employees: employees,
+                        blocksIndividualBookings: !byId('crsBlocksBookings') || byId('crsBlocksBookings').checked,
                     };
                     if (crsMode === 'fixed') {
                         var sessions = [];
