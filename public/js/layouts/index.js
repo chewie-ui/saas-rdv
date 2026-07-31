@@ -1031,7 +1031,42 @@ function buildCalendar() {
 // Affiche/masque le dégradé « il reste des créneaux plus bas ». Lit toujours
 // l'élément courant dans le DOM : le panneau est re-rendu à chaque changement
 // de jour, une référence capturée deviendrait obsolète.
+// Cale la hauteur de la liste sur celle du calendrier, à côté.
+//
+// Les deux cartes sont les cellules d'une même grille : la plus haute impose
+// la hauteur de la ligne. Sans ça, la carte des créneaux (plafonnée en CSS)
+// étirait celle du calendrier bien au-delà de son contenu — ~200 px de blanc
+// sous la grille des jours. On inverse la dépendance : le calendrier garde sa
+// taille naturelle (`align-items: start` en CSS) et la liste s'y ajuste.
+//
+// Plancher à 280 px : sur un mois court (4 lignes), le calendrier ne doit pas
+// réduire la liste à une hauteur inutilisable.
+const SLOT_LIST_MIN_H = 280;
+
+function syncSlotPanelHeight() {
+  const list = document.querySelector(".bk-slot-list");
+  const panel = document.querySelector(".bk-slots");
+  const cal = document.querySelector(".bk-cal");
+  if (!list || !panel || !cal) return;
+
+  // En mobile les cartes sont empilées : plus de calendrier à côté dont
+  // s'inspirer, le plafond CSS (280px) reste le bon.
+  if (window.matchMedia("(max-width: 900px)").matches) {
+    list.style.maxHeight = "";
+    return;
+  }
+
+  // Tout ce qui, dans le panneau, n'est pas la liste : titre, compteur, onglets.
+  const chrome = panel.getBoundingClientRect().height - list.getBoundingClientRect().height;
+  const target = cal.getBoundingClientRect().height - chrome;
+  list.style.maxHeight = `${Math.max(SLOT_LIST_MIN_H, Math.round(target))}px`;
+}
+
+// Affiche/masque le dégradé « il reste des créneaux plus bas ». Lit toujours
+// l'élément courant dans le DOM : le panneau est re-rendu à chaque changement
+// de jour, une référence capturée deviendrait obsolète.
 function syncSlotFade() {
+  syncSlotPanelHeight();
   const wrap = document.querySelector(".bk-slot-scroll");
   const list = wrap && wrap.querySelector(".bk-slot-list");
   if (!wrap || !list) return;

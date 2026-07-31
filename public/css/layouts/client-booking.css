@@ -1293,6 +1293,15 @@ body.bk-embed #bkCart .bk-cart {
 .bk-cal-cell.is-selected::after { display: none; }
 
 /* Slots panel */
+/* Le calendrier garde sa hauteur naturelle : sans `start`, les deux cartes
+   s'étirent à la plus haute des deux, et celle des créneaux tirait celle du
+   calendrier ~200 px au-delà de son contenu — un grand vide blanc sous la
+   grille des jours. C'est désormais la liste qui s'aligne sur le calendrier
+   (cf. syncSlotPanelHeight dans index.js). */
+.bk-booker {
+  align-items: start;
+}
+
 .bk-slots {
   background: var(--bk-surface);
   border: 1px solid var(--bk-border);
