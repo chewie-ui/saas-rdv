@@ -4,6 +4,32 @@
 // toutes les pages qui ont besoin de choisir une heure (RDV, cours collectifs…).
 // Requiert les classes CSS .appt-time-box / .appt-time-panel / .appt-time-search
 // / .appt-time-list / .appt-time-opt (définies dans appointment.admin.css).
+// Une option "HH:MM" correspond-elle aux chiffres tapés ?
+//
+// L'ancienne version faisait `"0900".startsWith("9")` → taper "9" ne remontait
+// AUCUNE heure, alors que le placeholder invite explicitement à le faire. Sur
+// 1 chiffre on compare donc l'heure seule, avec et sans son zéro de tête ; sur
+// 3 chiffres on essaie aussi la lecture "H MM" ("930" = 09:30).
+export function timeOptionMatches(optValue, digits) {
+  if (!digits) return true;
+  const flat = optValue.replace(":", "");
+  const hh = optValue.slice(0, 2);
+  if (digits.length === 1) return hh === `0${digits}` || hh.startsWith(digits);
+  if (digits.length === 2) return hh === digits;
+  if (digits.length === 3) return flat === `0${digits}` || flat.startsWith(digits);
+  return flat.startsWith(digits);
+}
+
+// Rendu lisible de la frappe en cours. L'ancien code découpait aveuglément aux
+// 2 premiers chiffres : "930" s'affichait "93:0", une heure qui n'existe pas.
+export function formatTimeQuery(digits) {
+  if (digits.length <= 2) return digits;
+  const mm = digits.slice(-2);
+  const hh = digits.slice(0, -2);
+  if (Number(mm) > 59) return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+  return `${hh.padStart(2, "0")}:${mm}`;
+}
+
 export function createTimePicker(boxEl, panelEl, listEl, onChange) {
   // Le panneau est position:fixed et positionné via getBoundingClientRect()
   // (coordonnées relatives au viewport). Si un ancêtre a une transform CSS
@@ -14,8 +40,10 @@ export function createTimePicker(boxEl, panelEl, listEl, onChange) {
   // un positionnement fiable peu importe où le composant est utilisé.
   document.body.appendChild(panelEl);
 
+  // Pas de 5 min : 12:25, 10:05, 08:45… sont des horaires courants et doivent
+  // être directement dans la liste. Le pas de 10 les rendait inatteignables.
   const TIME_OPTIONS = [];
-  for (let m = 0; m < 24 * 60; m += 10) {
+  for (let m = 0; m < 24 * 60; m += 5) {
     TIME_OPTIONS.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
   }
   TIME_OPTIONS.forEach((t) => {
@@ -38,8 +66,7 @@ export function createTimePicker(boxEl, panelEl, listEl, onChange) {
   function filterOptions(query) {
     const q = query.replace(/[^0-9]/g, "");
     listEl.querySelectorAll(".appt-time-opt").forEach((opt) => {
-      const matches = !q || opt.dataset.value.replace(":", "").startsWith(q);
-      opt.classList.toggle("is-hidden", !matches);
+      opt.classList.toggle("is-hidden", !timeOptionMatches(opt.dataset.value, q));
     });
   }
 
@@ -80,9 +107,8 @@ export function createTimePicker(boxEl, panelEl, listEl, onChange) {
   });
 
   searchInput.addEventListener("input", () => {
-    let digits = searchInput.value.replace(/[^0-9]/g, "").slice(0, 4);
-    if (digits.length > 2) digits = `${digits.slice(0, 2)}:${digits.slice(2)}`;
-    searchInput.value = digits;
+    const digits = searchInput.value.replace(/[^0-9]/g, "").slice(0, 4);
+    searchInput.value = formatTimeQuery(digits);
     filterOptions(digits);
   });
   searchInput.addEventListener("keydown", (e) => {

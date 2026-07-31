@@ -1247,7 +1247,9 @@ exports.availability = async (req, res) => {
     pageName: "Availability",
     title: res.locals.t.titles.avail,
     timeSlot: [10, 15, 20, 25, 30, 45, 60, 90, 120, 180],
-    hours: generateHours(10),
+    // Pas de 5 min : 12:25, 10:05, 08:45… sont des horaires d'ouverture
+    // courants. Au pas de 10 ils étaient tout simplement impossibles à choisir.
+    hours: generateHours(5),
     currentSlotTime,
     bufferBefore: slotConfig.bufferBefore,
     bufferAfter: slotConfig.bufferAfter,

@@ -416,11 +416,44 @@ setInterval(updateTimeline, 60000);
   if (!overlay || !submitBtn) return;
 
   const dateEl      = document.getElementById("blockApptDate");
-  const rangeEl     = document.getElementById("blockApptRange");
+  const durationEl  = document.getElementById("blockApptDuration");
   const employeeSel = document.getElementById("blockApptEmployee");
   const noteInput   = document.getElementById("blockApptNote");
+  const startBox    = document.getElementById("blockApptStartBox");
+  const endBox      = document.getElementById("blockApptEndBox");
 
-  let current = null; // { date, time, endTime }
+  let current = null; // { date }
+
+  const toMin = (t) => {
+    const [h, m] = String(t).split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  function refreshDuration() {
+    if (!durationEl) return;
+    const start = startPicker && startPicker.get();
+    const end = endPicker && endPicker.get();
+    if (!start || !end) { durationEl.textContent = "—"; return; }
+    const mins = toMin(end) - toMin(start);
+    if (!(mins > 0)) { durationEl.textContent = "—"; return; }
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    durationEl.textContent = h ? (m ? `${h} h ${m} min` : `${h} h`) : `${m} min`;
+  }
+
+  // Si le gabarit n'a pas (encore) les champs heure — page servie depuis une
+  // version antérieure, cache navigateur — on ne construit aucun sélecteur et
+  // on retombe sur les horaires du glisser. Sans ce garde-fou, createTimePicker
+  // recevrait null et lèverait une exception qui tuerait TOUT le module, donc
+  // le calendrier entier.
+  const startPicker = startBox
+    ? createTimePicker(startBox, document.getElementById("blockApptStartPanel"),
+        document.getElementById("blockApptStartList"), refreshDuration)
+    : null;
+  const endPicker = endBox
+    ? createTimePicker(endBox, document.getElementById("blockApptEndPanel"),
+        document.getElementById("blockApptEndList"), refreshDuration)
+    : null;
 
   function showError(msg) {
     errorEl.textContent = msg;
@@ -441,7 +474,9 @@ setInterval(updateTimeline, 60000);
       const [y, m, d] = info.date.split("-");
       dateEl.textContent = `${d}/${m}/${y}`;
     }
-    if (rangeEl) rangeEl.textContent = `${info.time} – ${info.endTime}`;
+    if (startPicker) startPicker.set(info.time);
+    if (endPicker) endPicker.set(info.endTime);
+    refreshDuration();
     overlay.classList.add("show");
     noteInput.focus();
   }
@@ -459,6 +494,19 @@ setInterval(updateTimeline, 60000);
   submitBtn.addEventListener("click", async () => {
     if (!current) return;
     errorEl.style.display = "none";
+
+    // Repli sur les horaires du glisser si les sélecteurs sont absents.
+    const startTime = (startPicker && startPicker.get()) || current.time;
+    const endTime = (endPicker && endPicker.get()) || current.endTime;
+    if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) {
+      showError("Choisissez une heure de début et une heure de fin.");
+      return;
+    }
+    if (toMin(endTime) <= toMin(startTime)) {
+      showError("L'heure de fin doit être après l'heure de début.");
+      return;
+    }
+
     submitBtn.disabled = true;
     try {
       const res = await fetch("/appointment/block", {
@@ -466,8 +514,8 @@ setInterval(updateTimeline, 60000);
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: current.date,
-          startTime: current.time,
-          endTime: current.endTime,
+          startTime,
+          endTime,
           employeeId: employeeSel ? employeeSel.value : "",
           note: noteInput.value.trim(),
         }),

@@ -394,8 +394,27 @@ block content
                         label= t.appt.block_label_date
                         span.appt-duration-display#blockApptDate —
                     .field-container.flex.col
-                        label= t.appt.block_label_schedule
-                        span.appt-duration-display#blockApptRange —
+                        label= t.appt.label_duration
+                        span.appt-duration-display#blockApptDuration —
+                //- Début et fin librement modifiables : le glisser sur la grille
+                //- ne sert qu'à pré-remplir. Il se cale sur des paliers de 30 min
+                //- (maille du calendrier), or une absence dure souvent 10 ou 15
+                //- minutes et ne commence pas forcément à une demi-heure pile.
+                .edit-fields-row.two-col
+                    .field-container.flex.col
+                        label= t.appt.label_start_time
+                        .appt-time-field
+                            .appt-time-box#blockApptStartBox(tabindex="0" role="button") --:--
+                            .appt-time-panel#blockApptStartPanel
+                                input.appt-time-search(type="text" placeholder="Heure… (ex: 9 ou 0930)" autocomplete="off")
+                                .appt-time-list#blockApptStartList
+                    .field-container.flex.col
+                        label= t.appt.label_end_time
+                        .appt-time-field
+                            .appt-time-box#blockApptEndBox(tabindex="0" role="button") --:--
+                            .appt-time-panel#blockApptEndPanel
+                                input.appt-time-search(type="text" placeholder="Heure… (ex: 9 ou 0930)" autocomplete="off")
+                                .appt-time-list#blockApptEndList
                 if employees && employees.length > 0
                     .edit-fields-row
                         .field-container.flex.col

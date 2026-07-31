@@ -1,3 +1,5 @@
+import { timeOptionMatches, formatTimeQuery } from "../../utils/time-picker.js";
+
 const availability = document.querySelector(".body-weekly-hour");
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -1411,37 +1413,11 @@ function injectPanelSearch(panel) {
 
   panel.insertBefore(inp, panel.firstChild);
 
-  inp.addEventListener('input', function(e) {
-    var raw    = this.value;
-    var digits = raw.replace(/[^0-9]/g, '');
-
-    // Auto-insérer ":" après le 2ème chiffre → "12:2" au lieu de "122"
-    if (digits.length >= 3 && raw.indexOf(':') === -1) {
-      var formatted = digits.slice(0, 2) + ':' + digits.slice(2, 4);
-      this.value = formatted;
-    } else if (digits.length === 2 && raw.slice(-1) !== ':') {
-      // Optionnel : ne pas forcer les 2 chiffres seuls
-    }
-
-    var hours = panel.querySelectorAll('.hour');
-
-    if (!digits) {
-      hours.forEach(function(h) { h.style.display = ''; });
-      return;
-    }
-
-    // Construire pattern de recherche
-    var pattern;
-    if (digits.length <= 2) {
-      pattern = digits; // "18" → cherche toutes heures commençant par "18"
-    } else {
-      var h = digits.slice(0, 2);
-      var m = digits.slice(2, 4).padEnd(2, '0');
-      pattern = h + ':' + m;
-    }
-
-    hours.forEach(function(h) {
-      h.style.display = h.textContent.startsWith(pattern) ? '' : 'none';
+  inp.addEventListener('input', function() {
+    var digits = this.value.replace(/[^0-9]/g, '').slice(0, 4);
+    this.value = formatTimeQuery(digits);
+    panel.querySelectorAll('.hour').forEach(function(h) {
+      h.style.display = timeOptionMatches(h.textContent.trim(), digits) ? '' : 'none';
     });
   });
 
