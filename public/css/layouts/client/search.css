@@ -420,7 +420,15 @@
 .srp-card__dist svg { width: 14px; height: 14px; flex: none; } /* filet de sécurité */
 
 .srp-card__rating { display: flex; align-items: center; gap: 5px; font-size: 13px; }
-.srp-card__star { font-size: 16px; color: var(--warning); font-variation-settings: 'FILL' 1; }
+/* Étoile PLEINE. `.sx .material-symbols-outlined` plus haut redéclare tous les
+   axes dont `FILL 0`, avec une spécificité (0,2,0) supérieure à une simple
+   classe : l'étoile restait creuse. On repasse au-dessus et on redéclare la
+   liste complète, sinon les autres axes seraient perdus. */
+.sx .material-symbols-outlined.srp-card__star {
+  font-size: 16px;
+  color: var(--warning);
+  font-variation-settings: 'opsz' 20, 'wght' 500, 'FILL' 1, 'GRAD' 0;
+}
 .srp-card__rating-val { font-weight: 800; color: var(--ink); }
 .srp-card__rating-n { color: var(--text-muted); font-size: var(--ds-fs-sm); }
 .srp-card__rating--empty { font-size: var(--ds-fs-sm); font-weight: 600; color: var(--text-muted); }

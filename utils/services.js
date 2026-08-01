@@ -325,3 +325,42 @@ function getServices(lang) {
 }
 
 module.exports = getServices;
+
+// ── Métiers validés par le superadmin ───────────────────────────────────────
+// La liste ci-dessus est figée dans le code. Les métiers approuvés depuis la
+// page de modération vivent en base : on les tient dans un cache mémoire pour
+// que `getServices()` reste SYNCHRONE — il est appelé depuis des dizaines de
+// vues et de contrôleurs, le rendre asynchrone casserait tout.
+//
+// Le cache est rempli au démarrage puis rafraîchi après chaque décision.
+let APPROVED = [];
+
+async function refreshApprovedJobTitles() {
+  try {
+    const JobTitle = require("../db/models/jobTitle.model");
+    const rows = await JobTitle.find({ status: "approved" }).select("name").lean();
+    APPROVED = rows.map((r) => r.name).filter(Boolean);
+  } catch (e) {
+    // Base indisponible : on garde le cache précédent plutôt que de vider la
+    // liste — un métier validé ne doit pas redevenir « non reconnu ».
+  }
+  return APPROVED;
+}
+
+function getApprovedJobTitles() {
+  return APPROVED;
+}
+
+// getServices renvoie desormais la liste figee + les metiers valides.
+const _baseGetServices = getServices;
+function getServicesWithApproved(lang) {
+  const base = _baseGetServices(lang);
+  if (!APPROVED.length) return base;
+  // Pas de doublon si le metier existait deja dans la liste figee.
+  const vus = new Set(base.map((s) => s.toLowerCase()));
+  return base.concat(APPROVED.filter((n) => !vus.has(String(n).toLowerCase())));
+}
+
+module.exports = getServicesWithApproved;
+module.exports.refreshApprovedJobTitles = refreshApprovedJobTitles;
+module.exports.getApprovedJobTitles = getApprovedJobTitles;

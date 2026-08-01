@@ -8,6 +8,17 @@ mongoose
   .then(async () => {
     console.log("DB CONNECTED 2:", mongoose.connection.name);
 
+    // Métiers validés par le superadmin : `getServices()` est synchrone (appelé
+    // depuis des dizaines de vues), il lit un cache mémoire. Sans ce chargement
+    // au démarrage, un métier validé redeviendrait « non reconnu » à chaque
+    // redémarrage du serveur.
+    try {
+      const n = await require("../utils/services").refreshApprovedJobTitles();
+      if (n.length) console.log(`[metiers] ${n.length} metier(s) valide(s) charge(s)`);
+    } catch (e) {
+      console.error("[metiers] chargement impossible:", e.message);
+    }
+
     // Drop the old unique index { date, startTime } that was replaced by
     // { company, date, startTime, employee } to allow multiple employees
     // to have bookings at the same time slot.

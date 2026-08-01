@@ -2002,3 +2002,102 @@ exports.decideReviewReport = async (req, res) => {
     return res.status(500).json({ error: "Erreur serveur." });
   }
 };
+
+// ── Modération des métiers ──────────────────────────────────────────────────
+// La liste officielle est figée dans utils/services.js. Tout métier saisi hors
+// de cette liste s'affiche en orange côté pro (« pas encore reconnu ») et la
+// demande d'ajout ne partait qu'en email : rien n'était modérable.
+//
+// Cette page réunit les deux sources :
+//   1. les DEMANDES explicites des pros (mises en avant, ce sont des gens qui
+//      attendent une réponse) ;
+//   2. tous les métiers effectivement UTILISÉS par des établissements et
+//      absents de la liste officielle — même ceux dont personne n'a demandé
+//      l'ajout. Ce sont eux qui apparaissent en orange sur le site.
+exports.jobTitlesPage = async (req, res) => {
+  const JobTitle = require("../db/models/jobTitle.model");
+  const getServices = require("../utils/services");
+
+  // Liste officielle (figée + déjà approuvés), en clés normalisées.
+  const officiels = new Set(getServices("fr").map((s) => JobTitle.toKey(s)));
+
+  // Métiers réellement portés par des établissements, avec leur nombre d'usages.
+  const usages = await Company.aggregate([
+    { $match: { isDeleted: { $ne: true }, businessType: { $nin: [null, ""] } } },
+    { $group: { _id: "$businessType", n: { $sum: 1 } } },
+    { $sort: { n: -1 } },
+  ]);
+
+  const decisions = await JobTitle.find({}).lean();
+  const parCle = new Map(decisions.map((d) => [d.key, d]));
+
+  // Un métier « orange » = utilisé mais hors liste officielle.
+  const oranges = [];
+  for (const u of usages) {
+    const key = JobTitle.toKey(u._id);
+    if (officiels.has(key)) continue; // déjà reconnu → rien à trancher
+    const d = parCle.get(key);
+    oranges.push({
+      name: u._id,
+      key,
+      count: u.n,
+      status: d ? d.status : "pending",
+      source: d ? d.source : "usage",
+      requestedByEmail: d ? d.requestedByEmail : "",
+      decidedAt: d ? d.decidedAt : null,
+    });
+  }
+
+  // Les demandes explicites encore en attente passent devant : quelqu'un
+  // attend une réponse. Les métiers seulement constatés suivent, par usage.
+  const demandes = decisions
+    .filter((d) => d.status === "pending" && d.source === "request")
+    .map((d) => {
+      const u = usages.find((x) => JobTitle.toKey(x._id) === d.key);
+      return { ...d, count: u ? u.n : 0 };
+    })
+    .sort((a, b) => b.createdAt - a.createdAt);
+
+  res.render("superadmin/job-titles", {
+    saPage: "jobTitles",
+    demandes,
+    oranges,
+    nbApprouves: decisions.filter((d) => d.status === "approved").length,
+    nbBloques: decisions.filter((d) => d.status === "blocked").length,
+  });
+};
+
+// Trancher : approuver (rejoint la liste officielle), bloquer, ou remettre en
+// attente. `upsert` car un métier seulement CONSTATÉ n'a pas encore de ligne.
+exports.decideJobTitle = async (req, res) => {
+  try {
+    const { name, status } = req.body;
+    if (!name || !["approved", "blocked", "pending"].includes(status)) {
+      return res.status(400).json({ error: "Requête invalide." });
+    }
+    const JobTitle = require("../db/models/jobTitle.model");
+    const key = JobTitle.toKey(name);
+
+    await JobTitle.updateOne(
+      { key },
+      {
+        $set: {
+          status,
+          decidedAt: new Date(),
+          decidedBy: (req.session && req.session.superadmin) || "superadmin",
+        },
+        $setOnInsert: { name: String(name).trim(), key, source: "usage" },
+      },
+      { upsert: true }
+    );
+
+    // Le cache mémoire alimente getServices() : sans ce rafraîchissement, un
+    // métier approuvé resterait orange jusqu'au prochain redémarrage.
+    await require("../utils/services").refreshApprovedJobTitles();
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("decideJobTitle error:", err.message);
+    return res.status(500).json({ error: "Erreur serveur." });
+  }
+};

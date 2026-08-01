@@ -1019,3 +1019,43 @@ body.sa {
   .sa-burger { display: inline-flex; }
   .sa-bar__name { width: 96px; }
 }
+
+/* ── Modération des métiers ────────────────────────────────────────────────── */
+.jt-section { margin: 26px 0 4px; font-size: 15px; font-weight: 800; color: var(--ink, #111827); }
+.jt-hint { margin: 0 0 14px; font-size: 13px; color: var(--text-muted, #6b7280); max-width: 760px; line-height: 1.5; }
+.jt-empty {
+  margin: 0; padding: 20px; border: 1px dashed var(--border-light, #e5e7eb);
+  border-radius: 12px; text-align: center; font-size: 13px; color: var(--text-muted, #6b7280);
+}
+
+.jt-list { display: flex; flex-direction: column; gap: 8px; }
+
+.jt-row {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 14px;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 12px;
+  background: #fff;
+}
+/* Une demande explicite = quelqu'un attend une réponse : on la distingue. */
+.jt-row--req { border-color: #fbbf24; background: #fffbeb; }
+.jt-row.is-blocked { opacity: .6; }
+
+.jt-row__main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 240px; }
+.jt-row__name {
+  font-size: 14.5px; font-weight: 700; color: var(--ink, #111827);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.jt-row__meta { font-size: 12px; color: var(--text-muted, #6b7280); }
+.jt-row__state { flex: 0 0 auto; }
+.jt-row__actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; margin-left: auto; }
+
+.jt-tag { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+.jt-tag--ok   { background: #dcfce7; color: #15803d; }
+.jt-tag--ko   { background: #fee2e2; color: #b91c1c; }
+.jt-tag--wait { background: #fef3c7; color: #b45309; }
+
+@media (max-width: 620px) {
+  .jt-row__actions { margin-left: 0; width: 100%; }
+  .jt-row__actions .sm-btn { flex: 1 1 auto; justify-content: center; }
+}

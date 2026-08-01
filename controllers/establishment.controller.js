@@ -1047,6 +1047,34 @@ exports.requestMetierIndex = async (req, res) => {
         </div>`;
       sendEmail(adminEmail, `[BranShee] Demande d'indexation métier : ${metier}`, html).catch(() => {});
     }
+    // La demande est ENREGISTRÉE, pas seulement envoyée par email : sans ça
+    // rien n'était modérable côté superadmin — l'email partait et le métier
+    // restait orange pour toujours.
+    try {
+      const JobTitle = require("../db/models/jobTitle.model");
+      const key = JobTitle.toKey(metier);
+      await JobTitle.updateOne(
+        { key },
+        {
+          // Ne réécrit que si l'entrée n'existe pas : une décision déjà prise
+          // (approuvé / bloqué) ne doit pas repasser en attente parce qu'un
+          // autre pro redemande le même métier.
+          $setOnInsert: {
+            name: metier,
+            key,
+            status: "pending",
+            source: "request",
+            requestedBy: req.user._id,
+            requestedByEmail: req.user.email || "",
+          },
+        },
+        { upsert: true }
+      );
+    } catch (e) {
+      // L'enregistrement échoue ? L'email est déjà parti, on ne bloque pas le pro.
+      console.error("requestMetierIndex persist error:", e.message);
+    }
+
     console.log(`[metier-request] "${metier}" demandé par ${req.user.email}`);
     return res.json({ success: true });
   } catch (err) {

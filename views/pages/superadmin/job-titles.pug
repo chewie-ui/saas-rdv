@@ -1,0 +1,110 @@
+extends ../../layouts/sa
+
+block content
+    .sa-head
+        button.sa-ico.sa-burger(type="button" data-sa-burger aria-label="Menu")
+            span.material-symbols-outlined menu
+        div
+            h1.sa-head__title Métiers
+            .sa-head__sub Demandes des pros et métiers non reconnus utilisés sur le site
+
+    .sa-body
+        .sa-kpis
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined pending
+                    span Demandes en attente
+                .sa-kpi__value= demandes.length
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined warning
+                    span Métiers orange
+                .sa-kpi__value= oranges.filter(function(o){ return o.status === 'pending'; }).length
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined check_circle
+                    span Validés
+                .sa-kpi__value= nbApprouves
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined block
+                    span Bloqués
+                .sa-kpi__value= nbBloques
+
+        //- ── Demandes explicites ────────────────────────────────────────────
+        //- En tête : ce sont des pros qui attendent une réponse.
+        if demandes.length
+            h2.jt-section Demandes d'ajout
+            p.jt-hint Un professionnel a explicitement demandé l'ajout de ce métier.
+            .jt-list
+                each d in demandes
+                    .jt-row.jt-row--req(data-name=d.name)
+                        .jt-row__main
+                            span.jt-row__name= d.name
+                            span.jt-row__meta
+                                = d.requestedByEmail || 'demandeur inconnu'
+                                if d.count
+                                    |  · #{d.count} établissement#{d.count > 1 ? 's' : ''}
+                        .jt-row__actions
+                            button.sm-btn.sm-btn--primary.jt-act(type="button" data-status="approved") Valider
+                            button.sm-btn.sm-btn--ghost.jt-act(type="button" data-status="blocked") Bloquer
+
+        //- ── Métiers orange ─────────────────────────────────────────────────
+        h2.jt-section Métiers non reconnus, utilisés par des établissements
+        p.jt-hint Ils s'affichent en orange côté pro et sont moins mis en avant. Valider = rejoint la liste officielle. Bloquer = ne sera jamais indexé. Ne rien faire = reste orange.
+        if !oranges.length
+            p.jt-empty Aucun métier hors liste : tous les établissements utilisent un métier reconnu.
+        else
+            .jt-list
+                each o in oranges
+                    .jt-row(data-name=o.name class=('is-' + o.status))
+                        .jt-row__main
+                            span.jt-row__name= o.name
+                            span.jt-row__meta
+                                = o.count + ' établissement' + (o.count > 1 ? 's' : '')
+                                if o.source === 'request'
+                                    |  · demandé par #{o.requestedByEmail || 'un pro'}
+                        .jt-row__state
+                            if o.status === 'approved'
+                                span.jt-tag.jt-tag--ok Validé
+                            else if o.status === 'blocked'
+                                span.jt-tag.jt-tag--ko Bloqué
+                            else
+                                span.jt-tag.jt-tag--wait Non tranché
+                        .jt-row__actions
+                            button.sm-btn.sm-btn--primary.jt-act(type="button" data-status="approved" disabled=(o.status === 'approved')) Valider
+                            button.sm-btn.sm-btn--ghost.jt-act(type="button" data-status="blocked" disabled=(o.status === 'blocked')) Bloquer
+                            if o.status !== 'pending'
+                                button.sm-btn.sm-btn--ghost.jt-act(type="button" data-status="pending") Annuler
+
+    script.
+        (function () {
+            // Une seule délégation pour les trois actions : le libellé du bouton
+            // porte la décision, la ligne porte le métier.
+            document.addEventListener('click', function (e) {
+                var btn = e.target.closest('.jt-act');
+                if (!btn) return;
+                var row = btn.closest('[data-name]');
+                if (!row) return;
+
+                var nom = row.dataset.name;
+                var statut = btn.dataset.status;
+                if (statut === 'blocked' && !confirm('Bloquer « ' + nom + ' » ?\n\nIl restera affiché en orange et ne sera jamais indexé.')) return;
+
+                btn.disabled = true;
+                fetch('/superadmin/metiers/decision', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: nom, status: statut })
+                })
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (d) {
+                        if (!d || !d.success) throw new Error('refus serveur');
+                        location.reload();
+                    })
+                    .catch(function () {
+                        btn.disabled = false;
+                        alert("L'action a échoué. Réessayez.");
+                    });
+            });
+        })();

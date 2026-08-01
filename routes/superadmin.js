@@ -48,6 +48,10 @@ router.get("/superadmin/logs", isSuperAdmin, ctrl.logsPage);
 router.get("/superadmin/referrals", isSuperAdmin, ctrl.referralsPage);
 
 // Boost (mise en avant homepage)
+// Modération des métiers : demandes des pros + métiers « orange » constatés.
+router.get("/superadmin/metiers", isSuperAdmin, ctrl.jobTitlesPage);
+router.patch("/superadmin/metiers/decision", isSuperAdmin, ctrl.decideJobTitle);
+
 router.get("/superadmin/boost", isSuperAdmin, ctrl.boostPage);
 router.patch("/superadmin/boost/:companyId", isSuperAdmin, ctrl.setBoost);
 
