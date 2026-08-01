@@ -602,8 +602,12 @@ block scripts
         window.__services       = !{servicesJson  || '[]'};
         window.__employees      = !{employeesJson || '[]'};
         window.__companyInfo    = !{JSON.stringify(_companyInfo)};
-        window.__categoriesMeta = !{JSON.stringify(cs.categories || [])};
-        window.__bookingCategoryStyle = !{JSON.stringify(cs.bookingCategoryStyle || 'pills')};
+        //- Catégories de l'ÉTABLISSEMENT affiché, pas du compte propriétaire :
+        //- un patron avec deux établissements affichait les mêmes catégories
+        //- sur les deux pages publiques. Repli sur le compte pour les
+        //- établissements créés avant la bascule (cf. migration).
+        window.__categoriesMeta = !{JSON.stringify((company && company.categories && company.categories.length ? company.categories : cs.categories) || [])};
+        window.__bookingCategoryStyle = !{JSON.stringify((company && company.bookingCategoryStyle) || cs.bookingCategoryStyle || 'pills')};
         window.__prepayment     = !{JSON.stringify(prepaymentConfig || { enabled: false, required: false })};
         window.__stripeKey      = '!{stripePublishableKey || ""}';
         window.__bookingQuestion = !{JSON.stringify((company && company.bookingQuestion) || { enabled: false, question: '', newLabel: '', existingLabel: '' })};

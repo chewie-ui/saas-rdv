@@ -84,9 +84,11 @@ exports.servicesPage = async (req, res) => {
   }
 
   const maxServices = getLimit("services", res.locals.billingUser);
-  const cs = (req.user.calendarSettings) || {};
-  const categories  = cs.categories || [];
-  const bookingCategoryStyle = cs.bookingCategoryStyle || "pills";
+  // Catégories portées par l'ÉTABLISSEMENT et non par le compte : deux
+  // établissements d'un même patron ne partagent rien.
+  const _co = res.locals.currentCompany || {};
+  const categories  = _co.categories || [];
+  const bookingCategoryStyle = _co.bookingCategoryStyle || "pills";
   res.render("admin/services-old", {
     pageName: "ServicesOld",
     title: "Services",
@@ -141,10 +143,10 @@ exports.servicesV2 = async (req, res) => {
 
   const maxServices = getLimit("services", res.locals.billingUser);
 
-  // Catégories (avec emoji) créées par l'utilisateur — pour le sélecteur de la
-  // modale, comme sur l'ancienne page. Persistées dans calendarSettings.
-  const cs = (req.user && req.user.calendarSettings) || {};
-  const categories = cs.categories || [];
+  // Catégories (avec emoji) du sélecteur de la modale. Portées par
+  // l'ÉTABLISSEMENT : un patron avec deux établissements ne doit pas voir les
+  // catégories de l'un apparaître dans l'autre.
+  const categories = (res.locals.currentCompany && res.locals.currentCompany.categories) || [];
   // Couleurs déjà prises par chaque service — pour la palette (« déjà utilisée »).
   const serviceColors = services.map((s) => ({ id: String(s._id), color: s.color || "" }));
 

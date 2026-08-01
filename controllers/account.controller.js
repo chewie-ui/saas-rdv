@@ -1325,9 +1325,11 @@ exports.updateCategories = async (req, res) => {
     const clean = categories
       .filter(c => c && typeof c.name === "string" && c.name.trim())
       .map(c => ({ name: c.name.trim(), icon: (c.icon || "").slice(0, 10) }));
-    await User.findByIdAndUpdate(req.user._id, {
-      $set: { "calendarSettings.categories": clean },
-    });
+    // Écrit sur l'ÉTABLISSEMENT COURANT, plus sur le compte : sinon la liste
+    // était commune à tous les établissements du même patron.
+    const co = res.locals.currentCompany;
+    if (!co) return res.json({ success: false });
+    await Company.updateOne({ _id: co._id }, { $set: { categories: clean } });
     return res.json({ success: true, categories: clean });
   } catch (err) {
     return res.json({ success: false });
@@ -1341,27 +1343,25 @@ exports.renameCategory = async (req, res) => {
       return res.json({ success: false, error: "Nom invalide" });
     }
     const Service = require("../db/models/company/service.model");
-    const user = await User.findById(req.user._id).select("calendarSettings company");
-    if (!user) return res.json({ success: false });
+    // L'établissement COURANT — et non `user.company`, qui ne désigne que le
+    // premier : renommer depuis le second établissement modifiait les services
+    // du premier.
+    const co = res.locals.currentCompany;
+    if (!co) return res.json({ success: false });
 
-    const cats = user.calendarSettings.categories || [];
+    const cats = (co.categories || []).map(c => ({ name: c.name, icon: c.icon || "" }));
     const idx  = cats.findIndex(c => c.name === oldName);
     if (idx === -1) return res.json({ success: false, error: "Catégorie introuvable" });
 
     cats[idx].name = newName.trim();
     if (icon !== undefined) cats[idx].icon = (icon || "").slice(0, 10);
 
-    await User.findByIdAndUpdate(req.user._id, {
-      $set: { "calendarSettings.categories": cats },
-    });
+    await Company.updateOne({ _id: co._id }, { $set: { categories: cats } });
 
-    // Update all services using the old name
-    if (user.company) {
-      await Service.updateMany(
-        { company: user.company, category: oldName },
-        { $set: { category: newName.trim() } }
-      );
-    }
+    await Service.updateMany(
+      { company: co._id, category: oldName },
+      { $set: { category: newName.trim() } }
+    );
 
     return res.json({ success: true, categories: cats });
   } catch (err) {
@@ -1374,21 +1374,20 @@ exports.deleteCategory = async (req, res) => {
     const name = decodeURIComponent(req.params.name || "");
     if (!name) return res.json({ success: false });
     const Service = require("../db/models/company/service.model");
-    const user = await User.findById(req.user._id).select("calendarSettings company");
-    if (!user) return res.json({ success: false });
+    // Idem : l'établissement courant, pas le premier du compte.
+    const co = res.locals.currentCompany;
+    if (!co) return res.json({ success: false });
 
-    const cats = (user.calendarSettings.categories || []).filter(c => c.name !== name);
-    await User.findByIdAndUpdate(req.user._id, {
-      $set: { "calendarSettings.categories": cats },
-    });
+    const cats = (co.categories || [])
+      .filter(c => c.name !== name)
+      .map(c => ({ name: c.name, icon: c.icon || "" }));
+    await Company.updateOne({ _id: co._id }, { $set: { categories: cats } });
 
-    // Clear the category from all services that used it
-    if (user.company) {
-      await Service.updateMany(
-        { company: user.company, category: name },
-        { $set: { category: "" } }
-      );
-    }
+    // Retire la catégorie des services qui l'utilisaient
+    await Service.updateMany(
+      { company: co._id, category: name },
+      { $set: { category: "" } }
+    );
 
     return res.json({ success: true, categories: cats });
   } catch (err) {

@@ -30,6 +30,22 @@ const companySchema = schema(
       default: "",
     },
 
+    // ── Catégories de services ──────────────────────────────────────────────
+    // Portées par l'ÉTABLISSEMENT et non par le compte. Elles vivaient sur
+    // User.calendarSettings : un patron possédant deux établissements voyait
+    // donc les catégories de l'un apparaître dans l'autre, et créer un nouvel
+    // établissement le livrait déjà rempli des catégories du précédent.
+    // Deux établissements d'un même propriétaire ne partagent rien.
+    categories: {
+      type: [{ name: String, icon: { type: String, default: "" }, _id: false }],
+      default: [],
+    },
+    // Présentation des catégories sur la page publique : 'pills' | 'accordion' | 'grid'
+    bookingCategoryStyle: {
+      type: String,
+      default: "pills",
+    },
+
     // Mis en pause par le pro lui-même (≠ isDisabled, qui est une action du
     // superadmin) — masque la page publique et /search, mais n'affecte ni la
     // connexion, ni l'abonnement Stripe, ni aucune donnée. Réversible.

@@ -232,13 +232,13 @@ block content
 
         //- ── État vide (IDENTIQUE à la page Clients) ─────────────────
         if !services || services.length === 0
+            //- Pas de bouton ici : celui d'avant était un lien vers /services,
+            //- c'est-à-dire la page elle-même — il ne faisait que la recharger.
+            //- Le bouton « Nouveau » de la barre du haut fait déjà le travail.
             .ch-empty(data-tab="services")
                 span.ch-empty__icon.material-symbols-outlined design_services
-                p.ch-empty__title Aucun service
-                p.ch-empty__sub Ajoutez votre premier service pour commencer.
-                a.sm-btn.sm-btn--primary(href="/services")
-                    span.material-symbols-outlined(style="font-size:18px") add
-                    span Ajouter un service
+                p.ch-empty__title Aucun service ou cours collectif pour le moment
+                p.ch-empty__sub Utilisez le bouton « Nouveau » en haut à droite pour en créer un.
         else
             //- ── Tableau des services ────────────────────────────────
             .sv2-table-wrap(data-tab="services")
