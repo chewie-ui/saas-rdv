@@ -117,7 +117,25 @@ img { display: block; max-width: 100%; }
 .bk-sign-btn svg { flex-shrink: 0; }
 
 /* Deux boutons alignés (Espace client + Établissement) */
-.bk-top__right { display: flex; align-items: center; gap: 8px; }
+.bk-top__right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* Téléphone : marque + deux boutons libellés dépassent la largeur de l'écran,
+   et le second se faisait couper net par le bord. On ne garde que les icônes —
+   `title` (et le survol sur desktop) portent le sens. Le bouton « Se connecter »
+   n'a pas d'icône : son libellé est un texte nu, non ciblé par cette règle,
+   donc il reste toujours lisible. */
+@media (max-width: 560px) {
+  .bk-top { padding: 0 14px; }
+  .bk-sign-btn__t { display: none; }
+  .bk-sign-btn { padding: 0 11px; gap: 0; }
+  .bk-brand__name {
+    /* Une raison sociale longue ne doit pas repousser les boutons hors écran. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .bk-brand { min-width: 0; }
+}
 
 /* Bouton principal — reprend la couleur d'accent de l'établissement */
 .bk-sign-btn--primary {

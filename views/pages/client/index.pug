@@ -219,20 +219,24 @@ block content
             //- Connecté AVEC établissement : accès à son espace client ET à son
             //- établissement (comptes unifiés). Sinon : juste l'espace client,
             //- ou « Se connecter » pour un visiteur anonyme.
+            //- Libellés dans un <span> et non en texte nu : sur téléphone, marque
+            //- + deux boutons libellés dépassent largement la largeur de l'écran
+            //- et le second bouton était coupé net par le bord. Le CSS masque ces
+            //- spans sous 560px — il ne reste que l'icône, `title` donne le sens.
             if visitorIsAdmin
-                a.bk-sign-btn(href="/espace-client")
+                a.bk-sign-btn(href="/espace-client" title="Espace client")
                     svg(width="14" height="14" viewBox="0 -960 960 960" fill="currentColor")
                         path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 129-46.5T480-440q68 0 135 15.5T744-378q29 15 46.5 43.5T808-272v112H160Z")
-                    | Espace client
-                a.bk-sign-btn.bk-sign-btn--primary(href="/appointment")
+                    span.bk-sign-btn__t Espace client
+                a.bk-sign-btn.bk-sign-btn--primary(href="/appointment" title="Établissement")
                     svg(width="14" height="14" viewBox="0 -960 960 960" fill="currentColor")
                         path(d="M160-120v-660l320-180 320 180v660H560v-200H400v200H160Zm240-360h80v-80h-80v80Zm-160 0h80v-80h-80v80Zm320 0h80v-80h-80v80Z")
-                    | Établissement
+                    span.bk-sign-btn__t Établissement
             else if clientUser
-                a.bk-sign-btn(href="/espace-client")
+                a.bk-sign-btn(href="/espace-client" title="Espace client")
                     svg(width="14" height="14" viewBox="0 -960 960 960" fill="currentColor")
                         path(d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 129-46.5T480-440q68 0 135 15.5T744-378q29 15 46.5 43.5T808-272v112H160Z")
-                    | Espace client
+                    span.bk-sign-btn__t Espace client
             else
                 a.bk-sign-btn(href="/login") Se connecter
 

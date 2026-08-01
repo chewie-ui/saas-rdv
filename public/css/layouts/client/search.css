@@ -163,8 +163,23 @@
 /* `businessType` est du texte libre saisi par les pros : sans plafond ni
    ellipsis, un libellé à rallonge était coupé en silence par l'overflow-x
    de `.sx` sur petit écran. */
-.sx-quick { height: 40px; border-radius: 999px; text-decoration: none; max-width: min(100%, 62vw); overflow: hidden; }
-.sx-quick > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sx-quick {
+  height: 40px;
+  border-radius: 999px;
+  text-decoration: none;
+  /* Sur téléphone, un intitulé à rallonge doit rester lisible : on plafonne à
+     la largeur disponible et on tronque. Le libellé complet reste dans title. */
+  max-width: 100%;
+  overflow: hidden;
+}
+.sx-quick > *,
+.sx-quick__t {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ── Dropdown autocomplétion ── */
 .sx-dd {

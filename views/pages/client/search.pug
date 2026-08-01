@@ -64,7 +64,13 @@ block content
                     .sx-hero__quick
                         span.sx-hero__quick-lbl Populaire
                         each cat in _topCats.slice(0, 6)
-                            a.sm-btn.sm-btn--ghost.sx-quick(href=`/search?name=${encodeURIComponent(cat.name)}`)= cat.name
+                            //- Libellé dans un <span> et non en texte nu : la règle
+                            //- d'ellipsis vise `.sx-quick > *`, qui ne matchait donc
+                            //- RIEN. Le bouton étant un flex centré, un intitulé long
+                            //- débordait des deux côtés et se faisait rogner sans
+                            //- points de suspension — illisible sur téléphone.
+                            a.sm-btn.sm-btn--ghost.sx-quick(href=`/search?name=${encodeURIComponent(cat.name)}` title=cat.name)
+                                span.sx-quick__t= cat.name
 
         //- ═══ CORPS : filtres + résultats ════════════════════════════════════
         //- Pas de .container ici : .sx-body est un shell fluide (voir CSS), ce
