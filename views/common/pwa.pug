@@ -1,0 +1,63 @@
+//- ── PWA : manifeste + service worker + carte d'installation ────────────────
+//- Inclus dans les 4 gabarits publics (vitrine, réservation, espace client,
+//- admin). Le service worker n'existe que pour rendre le site installable ;
+//- il ne met rien en cache (cf. public/sw.js).
+//-
+//- Icônes en SVG inline et NON en Material Symbols : les gabarits `index` et
+//- `booking` ne chargent pas cette police, les icônes s'y affichaient en texte
+//- brut (« bolt », « close »…). Le composant doit rendre pareil partout.
+
+mixin pwaHead()
+    link(rel="manifest" href="/manifest.webmanifest")
+    meta(name="theme-color" content="#1e7a4e")
+    //- iOS ignore le manifeste : il lui faut ses propres balises pour s'ouvrir
+    //- en plein écran et afficher la bonne icône sur l'écran d'accueil.
+    meta(name="apple-mobile-web-app-capable" content="yes")
+    meta(name="apple-mobile-web-app-status-bar-style" content="default")
+    meta(name="apple-mobile-web-app-title" content="BranShee")
+    link(rel="stylesheet" href="/css/components/pwa-install.css")
+
+mixin pwaIcon(path, cls)
+    svg(class=cls viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true" focusable="false")
+        path(d=path)
+
+//- À inclure juste avant la fin du <body>.
+mixin pwaInstall()
+    .pwa-card#pwaCard(hidden aria-live="polite")
+        button.pwa-card__x#pwaClose(type="button" aria-label="Fermer")
+            +pwaIcon("M256-200l-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z", "pwa-i pwa-i--x")
+        .pwa-card__top
+            img.pwa-card__icon(src="/images/icon-192.png" alt="" width="52" height="52")
+            .pwa-card__txt
+                p.pwa-card__title Installez BranShee
+                p.pwa-card__sub Vos rendez-vous en un tap, depuis votre écran d'accueil.
+        ul.pwa-card__facts
+            li
+                +pwaIcon("M422-232l207-248H469l29-227-185 267h139l-30 208Zm-62 152l40-280H160l360-520h80l-40 320h240L440-80h-80Z", "pwa-i")
+                span Installation en 2 secondes
+            li
+                +pwaIcon("M120-160v-160h720v160H120Zm80-40h60v-80h-60v80Zm-80-360v-160h720v160H120Zm80-40h60v-80h-60v80Z", "pwa-i")
+                span Presque aucun espace de stockage
+            li
+                +pwaIcon("M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q54 0 104-17.5t92-50.5L228-676q-33 42-50.5 92T160-480q0 134 93 227t227 93Zm252-124q33-42 50.5-92T800-480q0-134-93-227t-227-93q-54 0-104 17.5T284-732l448 448Z", "pwa-i")
+                span Sans passer par l'App Store
+        .pwa-card__actions
+            button.sm-btn.sm-btn--primary.pwa-card__cta#pwaInstall(type="button")
+                +pwaIcon("M280-40q-33 0-56.5-23.5T200-120v-720q0-33 23.5-56.5T280-920h200v80H280v40h200v80H280v520h400v-160h80v240q0 33-23.5 56.5T680-40H280Zm0-120v40h400v-40H280Zm400-280L520-600h120v-160h80v160h120L680-440Z", "pwa-i pwa-i--cta")
+                span Installer l'application
+            button.pwa-card__later#pwaLater(type="button") Plus tard
+
+        //- Volet iOS : Safari n'expose aucune API d'installation, la seule voie
+        //- est le menu Partager. On montre donc la marche à suivre.
+        .pwa-ios#pwaIos(hidden)
+            p.pwa-ios__t Deux étapes, c'est tout :
+            ol.pwa-ios__steps
+                li
+                    span.pwa-ios__n 1
+                    span Appuyez sur
+                    +pwaIcon("M240-40q-33 0-56.5-23.5T160-120v-440q0-33 23.5-56.5T240-640h120v80H240v440h480v-440H600v-80h120q33 0 56.5 23.5T800-560v440q0 33-23.5 56.5T720-40H240Zm200-280v-447l-64 64-56-57 160-160 160 160-56 57-64-64v447h-80Z", "pwa-i pwa-i--share")
+                    span en bas de l'écran
+                li
+                    span.pwa-ios__n 2
+                    span Choisissez « Sur l'écran d'accueil »
+    script(src="/js/components/pwa-install.js" defer)

@@ -1,0 +1,223 @@
+/* ── Carte « Installer l'application » (PWA) ────────────────────────────────
+   Feuille volontairement autonome : aucune dépendance à un CSS de page, le
+   composant est inclus sur des gabarits très différents (vitrine, réservation,
+   espace client, admin). */
+
+.pwa-card {
+  position: fixed;
+  z-index: 9999;
+  left: 12px;
+  right: 12px;
+  /* safe-area : sur iPhone, la barre d'accueil recouvrirait le bas de la carte. */
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  max-width: 420px;
+  margin-inline: auto;
+  box-sizing: border-box;
+  padding: 16px 16px 14px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  box-shadow: 0 18px 48px rgba(16, 24, 40, 0.22);
+  font-family: var(--font-primary, system-ui, -apple-system, "Segoe UI", sans-serif);
+  color: #111827;
+  /* État fermé : la classe .is-open est posée par le JS une frame plus tard,
+     sinon la transition d'entrée ne joue pas. */
+  opacity: 0;
+  transform: translateY(14px) scale(0.98);
+  transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.pwa-card.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.pwa-card[hidden] { display: none; }
+
+/* Sur grand écran, la carte se range en bas à droite plutôt que centrée : elle
+   masquerait sinon le contenu au milieu de la page. */
+@media (min-width: 720px) {
+  .pwa-card {
+    left: auto;
+    right: 20px;
+    bottom: 20px;
+    margin-inline: 0;
+  }
+}
+
+.pwa-card__x {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.pwa-card__x:hover { background: #f3f4f6; color: #4b5563; }
+.pwa-i { width: 18px; height: 18px; flex: 0 0 auto; }
+.pwa-i--x { width: 19px; height: 19px; }
+.pwa-i--cta { width: 18px; height: 18px; }
+
+.pwa-card__top {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  /* Marge à droite : sans elle, un titre long passe sous la croix. */
+  padding-right: 26px;
+}
+
+.pwa-card__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 13px;
+  flex: 0 0 auto;
+  box-shadow: 0 3px 10px rgba(16, 24, 40, 0.16);
+}
+
+.pwa-card__txt { min-width: 0; }
+
+.pwa-card__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.pwa-card__sub {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #6b7280;
+}
+
+/* Les trois arguments qui lèvent les freins : c'est rapide, ça ne prend pas de
+   place, et il n'y a pas d'App Store à traverser. */
+.pwa-card__facts {
+  list-style: none;
+  margin: 13px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.pwa-card__facts li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+.pwa-card__facts .pwa-i { color: var(--accent, #1e7a4e); }
+
+.pwa-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+/* Bouton entièrement autonome. Les gabarits `index` et `booking` ne chargent
+   PAS classes.css : sans ces règles, `.sm-btn--primary` ne s'appliquait pas et
+   le bouton retombait sur le style natif du navigateur — gris, bordure noire.
+   `--accent` n'y est pas non plus défini, d'où les valeurs de repli. */
+.pwa-card__cta {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 46px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent, #1e7a4e);
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(30, 122, 78, 0.28);
+  transition: filter 0.14s, transform 0.1s;
+}
+.pwa-card__cta:hover { filter: brightness(0.94); }
+.pwa-card__cta:active { transform: scale(0.985); }
+/* Indispensable : le `display: inline-flex` ci-dessus l'emporte sur le
+   `display: none` que le navigateur applique à [hidden]. Sans cette règle, le
+   bouton restait affiché sur iOS alors que le JS le masque — un bouton
+   « Installer » qui ne peut rien faire, puisque Safari n'a pas d'API. */
+.pwa-card__cta[hidden] { display: none; }
+
+.pwa-card__later {
+  flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font: 600 13px inherit;
+  padding: 10px 8px;
+  cursor: pointer;
+  border-radius: 9px;
+}
+.pwa-card__later:hover { background: #f3f4f6; color: #374151; }
+
+/* ── Volet iOS : marche à suivre, faute d'API d'installation ──────────────── */
+.pwa-ios {
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid #eef0f3;
+}
+.pwa-ios[hidden] { display: none; }
+
+.pwa-ios__t {
+  margin: 0 0 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.pwa-ios__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pwa-ios__steps li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13px;
+  color: #374151;
+}
+.pwa-ios__n {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-soft, #e7f2ec);
+  color: var(--accent, #1e7a4e);
+  font-size: 11px;
+  font-weight: 800;
+}
+/* Bleu système iOS : l'icône Partager est reconnue au premier coup d'œil. */
+.pwa-i--share { width: 19px; height: 19px; color: #0a84ff; }
+
+/* En mode iOS, le bouton d'installation est masqué par le JS : l'action utile
+   est « Plus tard », qui doit alors occuper toute la largeur. */
+.pwa-card.is-ios .pwa-card__actions { margin-top: 6px; }
+.pwa-card.is-ios .pwa-card__later { flex: 1 1 auto; text-align: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pwa-card { transition: none; }
+}

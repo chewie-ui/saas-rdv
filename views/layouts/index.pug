@@ -1,4 +1,5 @@
-﻿
+﻿include ../common/pwa
+
 - var _title       = title || 'BranShee — Prise de rendez-vous en ligne'
 - var _desc        = metaDescription || 'BranShee est la plateforme de prise de rendez-vous en ligne pour les professionnels : coaches, coiffeurs, thérapeutes, et plus encore. Agenda en ligne gratuit et simple.'
 - var _ogImage     = ogImage || 'https://www.branshee.com/images/og-cover.jpg'
@@ -65,6 +66,7 @@ html(lang=_lang)
         link(rel="icon" href="/favicon.ico?v=2" sizes="32x32")
         link(rel="apple-touch-icon" href="/images/icon.png?v=2")
         link(rel="stylesheet", href="/css/import.css")
+        +pwaHead()
         link(rel="stylesheet", href="/css/layouts/index.css")
         script(src="https://kit.fontawesome.com/be29c06db4.js" crossorigin="anonymous")
         //- Anti-flash : applique le thème AVANT le rendu
@@ -139,3 +141,4 @@ html(lang=_lang)
         script.
             const COMPANY_ID = !{company ? `"${company._id}"` : "null"};
             window.__t = !{JSON.stringify(t.js)};
+        +pwaInstall()
