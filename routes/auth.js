@@ -1,4 +1,5 @@
 const router = require("express").Router();
+const attachOrphanBookings = require("../utils/attachOrphanBookings");
 const {
   createUser,
   logout,
@@ -171,6 +172,7 @@ router.post("/login", authLimiter, (req, res, next) => {
         const email = (req.body.email || "").toLowerCase().trim();
         const client = await Client.findOne({ email });
         if (client && (await bcrypt.compare(req.body.password || "", client.password))) {
+          await attachOrphanBookings(client);
           req.session.clientId = client._id.toString();
           if (isAjax) return res.json({ success: true, redirect: "/espace-client" });
           return res.redirect("/espace-client");
@@ -376,6 +378,7 @@ router.get("/auth/google/callback", async (req, res) => {
         if (!existingClient.googleId) {
           await Client.updateOne({ _id: existingClient._id }, { $set: { googleId } });
         }
+        await attachOrphanBookings(existingClient);
         req.session.clientId = existingClient._id.toString();
         return res.redirect("/espace-client");
       }

@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const attachOrphanBookings = require("../utils/attachOrphanBookings");
 const Client = require("../db/models/client.model");
 const User = require("../db/models/user.model");
 const Booking = require("../db/models/book.model");
@@ -59,11 +60,11 @@ exports.postRegister = async (req, res) => {
     phone: phone || "",
   });
 
-  // Lier les bookings existants avec cet email au compte client
-  await Booking.updateMany(
-    { email: client.email, clientRef: null },
-    { clientRef: client._id }
-  );
+  // Rattache les reservations prises en invite avec cet email. L'ancienne
+  // version comparait l'email tel quel : une reservation faite avec
+  // « Jean.Dupont@Gmail.com » ne se rattachait jamais a un compte cree en
+  // « jean.dupont@gmail.com ».
+  await attachOrphanBookings(client);
 
   req.session.clientId = client._id.toString();
   if (isAjax) return res.json({ success: true, redirect: "/espace-client" });
@@ -106,6 +107,9 @@ exports.postLogin = async (req, res) => {
     const match = await bcrypt.compare(password, client.password);
     if (!match) return fail("Email ou mot de passe incorrect.");
 
+    // rattrapage a la connexion : une personne peut avoir reserve en invite
+    // APRES avoir cree son compte, ou s'etre inscrite via Google.
+    await attachOrphanBookings(client);
     req.session.clientId = client._id.toString();
 
     // Apply preferred language if set

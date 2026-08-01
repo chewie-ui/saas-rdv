@@ -1,4 +1,5 @@
 const router = require("express").Router();
+const attachOrphanBookings = require("../utils/attachOrphanBookings");
 const ctrl = require("../controllers/client.controller");
 const isClientAuth = require("../middlewares/isClientAuth");
 const isClientOrUserAuth = require("../middlewares/isClientOrUserAuth");
@@ -108,6 +109,7 @@ router.get("/auth/google/client/callback", async (req, res) => {
       });
     }
 
+    await attachOrphanBookings(client);
     req.session.clientId = client._id.toString();
     return res.redirect(returnTo);
   } catch (err) {
