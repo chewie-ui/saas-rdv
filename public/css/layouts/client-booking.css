@@ -4034,3 +4034,16 @@ body.bk-embed #bkCart .bk-cart {
   .bk-report__actions { flex-direction: column-reverse; padding: 14px 18px; }
   .bk-report__cancel, .bk-report__send { width: 100%; }
 }
+
+/* Bouton « Installer » de la barre de réservation : carré, icône seule, pour ne
+   pas concurrencer « Se connecter » ni déborder sur téléphone. */
+.bk-install-btn {
+  width: 34px;
+  padding: 0;
+  justify-content: center;
+  color: var(--bk-accent, #16a34a);
+}
+/* `.bk-sign-btn` est en `display: inline-flex`, ce qui l'emporte sur le
+   `display: none` de [hidden] — sans quoi le bouton resterait visible sur les
+   navigateurs qui ne savent pas installer. */
+.bk-install-btn[hidden] { display: none; }

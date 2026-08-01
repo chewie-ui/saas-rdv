@@ -221,3 +221,49 @@
 @media (prefers-reduced-motion: reduce) {
   .pwa-card { transition: none; }
 }
+
+/* ── Déclencheurs « Installer » disséminés dans l'interface ─────────────────
+   Ces éléments empruntent les classes de leur hôte (.sb-link,
+   .sb-user-panel__item…), qui sont en `display: flex`. Or `display` l'emporte
+   sur le `display: none` que le navigateur applique à [hidden] : sans cette
+   règle, un bouton « Installer » resterait visible sur les navigateurs qui ne
+   savent pas installer — et ne ferait rien au clic.
+   `!important` assumé : il doit battre n'importe quelle règle d'hôte. */
+[data-pwa-install][hidden] { display: none !important; }
+
+/* Ces déclencheurs sont des <button> posés au milieu de listes de <a> : on
+   annule l'apparence native pour qu'ils se fondent dans leurs voisins. */
+button[data-pwa-install] {
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Bouton d'installation de l'en-tête bureau (vitrine). Icône seule : la barre
+   est déjà chargée, l'intitulé passe par title/aria-label. */
+button.header__install {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 10px;
+  background: var(--color-white, #fff);
+  color: var(--accent, #1e7a4e);
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s;
+}
+button.header__install:hover {
+  background: var(--accent-soft, #e7f2ec);
+  border-color: color-mix(in srgb, var(--accent, #1e7a4e) 35%, transparent);
+}
+button.header__install svg { width: 19px; height: 19px; }
+/* Le menu mobile a déjà son propre bloc d'installation, bien plus explicite. */
+@media (max-width: 900px) {
+  button.header__install { display: none; }
+}

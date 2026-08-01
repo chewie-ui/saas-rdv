@@ -56,6 +56,13 @@
                             a.sm-btn.sm-btn--primary(href="/register")
                                 span= t.header.register
 
+            //- Installer (bureau) : masqué par le JS tant que le navigateur ne
+            //- sait pas installer. Icône seule pour ne pas alourdir la barre,
+            //- l'intitulé est dans l'infobulle.
+            button.header__install#headerInstall(type="button" hidden data-pwa-install aria-label=t.pwa.install_title title=t.pwa.install_title)
+                svg(viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true")
+                    path(d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z")
+
             //- Séparateur desktop
             .header__sep
 
@@ -177,7 +184,7 @@
         //- si l'installation est réellement possible (Android avec l'événement
         //- du navigateur, ou iOS où l'on montre la marche à suivre). Un bouton
         //- qui ne mène à rien serait pire que pas de bouton.
-        button.header__panel-install#panelInstall(type="button" hidden)
+        button.header__panel-install#panelInstall(type="button" hidden data-pwa-install)
             span.header__panel-install__ico
                 svg(viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true")
                     path(d="M280-40q-33 0-56.5-23.5T200-120v-720q0-33 23.5-56.5T280-920h200v80H280v40h200v80H280v520h400v-160h80v240q0 33-23.5 56.5T680-40H280Zm0-120v40h400v-40H280Zm400-280L520-600h120v-160h80v160h120L680-440Z")

@@ -249,6 +249,13 @@ aside.sidebar#sidebar
                             svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
                                 path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm0-80h640v-480H160v480Zm40-40h400L400-680H200v400Zm320-320h240v-80H520v80ZM160-240v-480 480Z")
                             span= t.sidebar.a_1
+                    //- Installer l'app — dans le menu du profil, donc accessible
+                    //- depuis TOUTES les pages admin. Masqué par le JS quand le
+                    //- navigateur ne sait pas installer ou que c'est déjà fait.
+                    button.sb-user-panel__item(type="button" hidden data-pwa-install)
+                        svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
+                            path(d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z")
+                        span= t.pwa.install_title
                     .sb-user-panel__sep
                     a.sb-user-panel__item.sb-user-panel__item--danger(href="/logout")
                         svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")

@@ -178,28 +178,37 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-// ── Bouton « Installer » du menu mobile ─────────────────────────────────────
-// Masqué tant que l'installation n'est pas réellement possible : sur un
-// navigateur qui ne sait pas installer, un bouton inerte est pire que rien.
-// Il réutilise `window.__pwa`, donc exactement le même parcours que la carte.
+// ── Points d'entrée « Installer » disséminés dans l'interface ───────────────
+// N'importe quel élément portant `data-pwa-install` devient un déclencheur :
+// menu mobile de la vitrine, en-tête bureau, barre latérale admin, espace
+// client… Un seul comportement, aucune logique dupliquée.
+//
+// Tous restent MASQUÉS tant que l'installation n'est pas réellement possible :
+// sur un navigateur qui ne sait pas installer (Firefox mobile, Safari bureau),
+// ou quand l'app est déjà installée, un bouton inerte est pire que pas de
+// bouton du tout.
 (function () {
-  var btn = document.getElementById("panelInstall");
-  if (!btn) return;
-
   function sync() {
-    var api = window.__pwa;
-    btn.hidden = !(api && api.canInstall());
+    var ok = !!(window.__pwa && window.__pwa.canInstall());
+    var els = document.querySelectorAll("[data-pwa-install]");
+    for (var i = 0; i < els.length; i++) els[i].hidden = !ok;
   }
 
-  btn.addEventListener("click", function () {
-    if (!window.__pwa) return;
-    // Referme le panneau : sur iOS la carte s'ouvre par-dessous, et sur Android
-    // la boîte système s'afficherait derrière un menu resté ouvert.
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest && e.target.closest("[data-pwa-install]");
+    if (!el || !window.__pwa) return;
+    e.preventDefault();
+
+    // Referme le menu mobile s'il est ouvert : sur iOS la carte s'ouvrirait
+    // dessous, et sur Android la boîte système derrière un panneau resté
+    // affiché.
     var cb = document.getElementById("headerNav");
     if (cb) cb.checked = false;
+
     window.__pwa.promptInstall();
   });
 
   document.addEventListener("pwa:state", sync);
+  document.addEventListener("DOMContentLoaded", sync);
   sync();
 })();
