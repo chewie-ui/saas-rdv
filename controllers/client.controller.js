@@ -158,7 +158,27 @@ exports.getDashboard = async (req, res) => {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
 
-  const allBookings = await Booking.find({ clientRef: client._id })
+  // On cherche par référence ET par email, et c'est indispensable :
+  //
+  //  • `clientRef` pointe vers la collection **Client**. Or l'espace client est
+  //    en double accès (cf. isClientOrUserAuth) et donne la PRIORITÉ à
+  //    `req.user` : quelqu'un connecté avec son compte **pro** arrive ici avec
+  //    un id de `User`, qui ne peut correspondre à aucun `clientRef`. Il ne
+  //    voyait donc jamais aucun rendez-vous, même les siens.
+  //  • une réservation prise en invité n'a pas de `clientRef` du tout, juste
+  //    un email.
+  //
+  // L'email vient du compte authentifié et il est unique : personne ne peut
+  // voir les rendez-vous d'un autre par ce biais.
+  const emailRx = client.email
+    ? new RegExp(`^${String(client.email).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i")
+    : null;
+
+  const critere = emailRx
+    ? { $or: [{ clientRef: client._id }, { email: emailRx }] }
+    : { clientRef: client._id };
+
+  const allBookings = await Booking.find(critere)
     .sort({ date: -1 })
     .lean();
 
