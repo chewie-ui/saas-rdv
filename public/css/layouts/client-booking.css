@@ -2213,15 +2213,33 @@ body.bk-embed #bkCart .bk-cart {
   /* Étape active : prend l'espace restant et affiche le label */
   .bk-step.is-active {
     flex: 1 1 auto;
+    /* min-width:0 + label tronquable : sans ça la pastille pouvait devenir plus
+       étroite que son contenu, et `justify-content: center` faisait déborder ce
+       contenu DES DEUX CÔTÉS — le numéro sortait à gauche, le libellé à droite,
+       tous deux rognés. Visible dès 320px avec 7 étapes. */
+    min-width: 0;
     gap: 7px;
     padding: 0 10px;
     justify-content: center;
+    overflow: hidden;
   }
   .bk-step.is-active .bk-step__lbl {
     display: inline;
+    min-width: 0;
     white-space: nowrap;
-    overflow: visible;
-    text-overflow: clip;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Très petits écrans (320px) : 6 ronds de 34px ne laissent pas de quoi
+     afficher le libellé de l'étape en cours. On resserre les ronds inactifs
+     pour lui rendre la place, plutôt que de tronquer son nom. */
+  @media (max-width: 400px) {
+    .bk-stepper { gap: 3px; }
+    .bk-step,
+    .bk-step.is-done { flex: 0 0 28px; min-width: 28px; }
+    .bk-step__num { width: 18px; height: 18px; font-size: 10px; }
+    .bk-step.is-active { padding: 0 8px; }
   }
 
   /* Étapes terminées : même taille fixe que inactives */
