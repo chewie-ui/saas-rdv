@@ -3,6 +3,7 @@ const Stripe = require("stripe");
 const getServices = require("../utils/services");
 const { getLimit, atLeast, billingUserFor } = require("../utils/planLimits");
 const { getCoursesForDate, courseRange, courseRangesFor } = require("../utils/recurringCourses");
+const { identityFor } = require("../utils/establishmentIdentity");
 const { getBookableTeam } = require("../utils/bookableTeam");
 
 const stripe = new Stripe(env.stripeSecretKey);
@@ -1812,6 +1813,9 @@ exports.informationsPage = async (req, res) => {
     title: res.locals.t.titles.infos,
     maskEmail,
     currentCompany: res.locals.currentCompany,
+    // Identité RÉSOLUE de l'établissement courant : ces champs vivaient sur
+    // le compte, donc partagés entre tous les établissements d'un patron.
+    estab: identityFor(res.locals.currentCompany, req.user),
     canUseSocial,
     canUseCustomUrl,
     cs,

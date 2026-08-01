@@ -30,6 +30,29 @@ const companySchema = schema(
       default: "",
     },
 
+    // ── Identité publique de l'établissement ────────────────────────────────
+    // Ces champs vivaient UNIQUEMENT sur le compte propriétaire. Un patron
+    // possédant deux établissements voyait donc l'adresse, les réseaux et la
+    // description du premier s'afficher sur la page publique du second, qu'il
+    // venait pourtant de créer vide.
+    //
+    // Vide = « non renseigné pour cet établissement ». La résolution (et le
+    // repli historique pour l'établissement d'origine) est centralisée dans
+    // utils/establishmentIdentity.js — ne pas lire ces champs en direct.
+    // `location` est un OBJET (adresse, ville, code postal, coordonnées,
+    // carte, type de prestation…), même forme que `User.location`. Mixed pour
+    // rester aligné dessus sans dupliquer la définition ni risquer une
+    // divergence de champs entre les deux modèles.
+    location:      { type: mongoose.Schema.Types.Mixed, default: null },
+    emailPro:      { type: String, default: "" },
+    phonePro:      { type: String, default: "" },
+    instagramLink: { type: String, default: "" },
+    facebookLink:  { type: String, default: "" },
+    whatsappLink:  { type: String, default: "" },
+    website:       { type: String, default: "" },
+    description:   { type: String, default: "" },
+    aboutHtml:     { type: String, default: "" },
+
     // ── Catégories de services ──────────────────────────────────────────────
     // Portées par l'ÉTABLISSEMENT et non par le compte. Elles vivaient sur
     // User.calendarSettings : un patron possédant deux établissements voyait

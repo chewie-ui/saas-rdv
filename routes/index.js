@@ -1,4 +1,5 @@
 const router = require("express").Router();
+const { identityFor } = require("../utils/establishmentIdentity");
 const _routeEnv = require(`../environment/${process.env.NODE_ENV || "development"}`);
 
 const { getCompanyIfExist } = require("../controllers/auth.controller");
@@ -805,6 +806,10 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
     canonical: `https://www.branshee.com/${company.slug || company._id}`,
     company,
     coach,
+    // Identité publique RÉSOLUE (adresse, contacts, réseaux, description).
+    // Ne jamais relire coach.location & co dans la vue : ces champs vivent
+    // désormais sur l'établissement (cf. utils/establishmentIdentity.js).
+    estab: identityFor(company, coach),
     services,
     activeEmployees,
     servicesJson,

@@ -188,7 +188,19 @@ exports.updateAccountSocial = async (req, res) => {
       }
     }
 
-    await User.findByIdAndUpdate(req.user._id, { [fieldName]: val });
+    // Écrit sur l'ÉTABLISSEMENT COURANT. Ces champs vivaient sur le compte :
+    // un patron avec deux établissements voyait donc les coordonnées et les
+    // réseaux du premier s'afficher sur la page publique du second.
+    const co = res.locals.currentCompany;
+    if (!co) return res.status(400).json({ error: "Aucun établissement sélectionné." });
+    await Company.updateOne({ _id: co._id }, { $set: { [fieldName]: val } });
+
+    // Le compte reste la source de repli de l'établissement D'ORIGINE tant
+    // qu'il n'a pas ses propres valeurs (cf. utils/establishmentIdentity.js) :
+    // on l'aligne pour que les deux ne divergent pas sur cet établissement-là.
+    if (String(req.user.company || "") === String(co._id)) {
+      await User.findByIdAndUpdate(req.user._id, { [fieldName]: val });
+    }
     return res.json({ success: true });
   } catch (err) {
     return res.json(err);
@@ -869,22 +881,34 @@ exports.updateLocation = async (req, res) => {
   try {
     const { street, zip, city, country, iframeUrl, iframeEmbedCode, lat, lon, serviceType, gmapUrl, onlineCountry, onlineLangs } = req.body;
 
-    await User.findByIdAndUpdate(req.user._id, {
-      location: {
-        address: street,
-        city,
-        zip,
-        country,
-        iframeUrl,
-        iframeEmbedCode: iframeEmbedCode || "",
-        lat,
-        lon,
-        gmapUrl:       gmapUrl       || "",
-        serviceType:   serviceType   || "sur_place",
-        onlineCountry: onlineCountry || "",
-        onlineLangs:   Array.isArray(onlineLangs) ? onlineLangs : [],
-      },
-    });
+    const loc = {
+      address: street,
+      city,
+      zip,
+      country,
+      iframeUrl,
+      iframeEmbedCode: iframeEmbedCode || "",
+      lat,
+      lon,
+      gmapUrl:       gmapUrl       || "",
+      serviceType:   serviceType   || "sur_place",
+      onlineCountry: onlineCountry || "",
+      onlineLangs:   Array.isArray(onlineLangs) ? onlineLangs : [],
+    };
+
+    // L'adresse appartient à l'ÉTABLISSEMENT. Elle vivait sur le compte : un
+    // patron avec deux établissements affichait donc la même adresse sur les
+    // deux pages publiques, y compris sur celle qu'il venait de créer vide.
+    const co = res.locals.currentCompany;
+    if (!co) return res.status(400).json({ success: false, message: "Aucun établissement sélectionné." });
+    await Company.updateOne({ _id: co._id }, { $set: { location: loc } });
+
+    // Le compte reste la source de repli de l'établissement D'ORIGINE tant
+    // qu'il n'a pas la sienne (cf. utils/establishmentIdentity.js) : on aligne
+    // les deux pour cet établissement-là, afin qu'ils ne divergent pas.
+    if (String(req.user.company || "") === String(co._id)) {
+      await User.findByIdAndUpdate(req.user._id, { location: loc });
+    }
 
     return res.json({ success: true });
   } catch (err) {

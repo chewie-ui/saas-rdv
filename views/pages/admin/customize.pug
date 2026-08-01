@@ -130,7 +130,7 @@ block content
                             span A−
                         button.about-editor__btn#aboutSizeUpBtn(type="button" title="Agrandir la taille du texte sélectionné")
                             span A+
-                    .about-editor__area#aboutEditor(contenteditable="true" data-placeholder="Parlez de votre activité, de votre parcours, de ce qui rend votre établissement unique…")!= user.aboutHtml || ''
+                    .about-editor__area#aboutEditor(contenteditable="true" data-placeholder="Parlez de votre activité, de votre parcours, de ce qui rend votre établissement unique…")!= estab.aboutHtml || ''
                     .about-editor__footer
                         span.about-editor__hint 💡 Sélectionnez du texte, puis cliquez sur un bouton pour le mettre en forme.
                         span.field-hint#aboutCount 0/4000
@@ -158,41 +158,41 @@ block content
                         span.sec-vis__name Horaires
             .location-layout
                 .location-map#mapContainer
-                    if user.location && user.location.iframeUrl
-                        iframe(src=user.location.iframeUrl style="border:0;width:100%;height:300px;display:block;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade")
+                    if estab.location && estab.location.iframeUrl
+                        iframe(src=estab.location.iframeUrl style="border:0;width:100%;height:300px;display:block;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade")
                     else
                         iframe(src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2624.9916256937595!2d2.292292615509614!3d48.85837360866272!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47e66e2964e34e2d%3A0x8ddca9ee380ef7e0!2sTour%20Eiffel!5e0!3m2!1sfr!2sfr!4v1680000000000!5m2!1sfr!2sfr" style="border:0;width:100%;height:300px;display:block;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade")
                 .location-form
-                    input(type="hidden" id="latInput" value=(user.location && user.location.lat) || "")
-                    input(type="hidden" id="lonInput" value=(user.location && user.location.lon) || "")
+                    input(type="hidden" id="latInput" value=(estab.location && estab.location.lat) || "")
+                    input(type="hidden" id="lonInput" value=(estab.location && estab.location.lon) || "")
 
                     //- ── Type de service ────────────────────────────────────
                     .field
                         .radio-group
                             .radio-item
-                                input#onlineService(type="radio" name="serviceType" checked=(!(user.location && (user.location.serviceType === 'en_ligne' || user.location.serviceType === 'iframe'))))
+                                input#onlineService(type="radio" name="serviceType" checked=(!(estab.location && (estab.location.serviceType === 'en_ligne' || estab.location.serviceType === 'iframe'))))
                                 label(for="onlineService")
                                     span.custom-radio
                                     = t.info.on_site
                             .radio-item
-                                input#homeService(type="radio" name="serviceType" checked=(user.location && user.location.serviceType === 'en_ligne'))
+                                input#homeService(type="radio" name="serviceType" checked=(estab.location && estab.location.serviceType === 'en_ligne'))
                                 label(for="homeService")
                                     span.custom-radio
                                     = t.info.online_svc
                             .radio-item
-                                input#iframeService(type="radio" name="serviceType" checked=(user.location && user.location.serviceType === 'iframe'))
+                                input#iframeService(type="radio" name="serviceType" checked=(estab.location && estab.location.serviceType === 'iframe'))
                                 label(for="iframeService")
                                     span.custom-radio
                                     | Ajouter iframe
 
                     //- ── Champs adresse (mode sur-place) ─────────────────────
-                    #locOnSiteFields(style=(user.location && (user.location.serviceType === 'en_ligne' || user.location.serviceType === 'iframe')) ? 'display:none' : '')
+                    #locOnSiteFields(style=(estab.location && (estab.location.serviceType === 'en_ligne' || estab.location.serviceType === 'iframe')) ? 'display:none' : '')
                         .loc-simple-block
                             label.loc-simple-label Adresse complète
                             input.input.loc-simple-input#locAddressInput(
                                 type="text"
                                 placeholder="Ex : Rue des Vallées 7, 1315 Incourt, Belgique"
-                                value=(user.location && user.location.address && user.location.city ? (user.location.address + ', ' + (user.location.zip || '') + ' ' + user.location.city).trim() : '') || ""
+                                value=(estab.location && estab.location.address && estab.location.city ? (estab.location.address + ', ' + (estab.location.zip || '') + ' ' + estab.location.city).trim() : '') || ""
                                 autocomplete="off"
                             )
                             p.loc-simple-hint Entrez l'adresse complète. Elle sera utilisée pour afficher votre position sur la carte.
@@ -203,12 +203,12 @@ block content
                             input.input.loc-simple-input#locGmapInput(
                                 type="text"
                                 placeholder="Collez votre lien Google Maps (long ou court maps.app.goo.gl/...)"
-                                value=(user.location && user.location.gmapUrl) || ""
+                                value=(estab.location && estab.location.gmapUrl) || ""
                                 autocomplete="off"
                             )
 
                     //- ── Champs service en ligne (pays + langue) ──────────────
-                    #locOnlineFields(style=(user.location && user.location.serviceType === 'en_ligne') ? '' : 'display:none')
+                    #locOnlineFields(style=(estab.location && estab.location.serviceType === 'en_ligne') ? '' : 'display:none')
                         -
                             // Les emojis drapeaux ne s'affichent pas sous Windows (la police
                             // système n'a pas les indicateurs régionaux) : on passe par des
@@ -230,7 +230,7 @@ block content
                                 { code: 'TN', name: 'Tunisie',     flag: 'tn.svg' },
                                 { code: 'SN', name: 'Sénégal',     flag: 'sn.svg' }
                             ]
-                            var _curCountry = (user.location && user.location.onlineCountry) || ''
+                            var _curCountry = (estab.location && estab.location.onlineCountry) || ''
                             // Un pays hors liste a été saisi à la main : on rouvre le champ libre.
                             var _isOther = !!_curCountry && !_countries.some(function (c) { return c.code === _curCountry })
                         .loc-simple-block
@@ -250,7 +250,7 @@ block content
                         .loc-simple-block
                             label.loc-simple-label Langue(s) de travail
                             select.input.loc-simple-input#locLangInput(multiple style="height:auto;min-height:44px;padding:8px 12px;")
-                                - var _langs = (user.location && user.location.onlineLangs) || []
+                                - var _langs = (estab.location && estab.location.onlineLangs) || []
                                 -
                                     var _langList = [
                                         { code: 'fr', name: 'Français',    flag: 'fr.png' },
@@ -267,14 +267,14 @@ block content
                             p.loc-simple-hint Cliquez pour cocher plusieurs langues.
 
                     //- ── Champ iframe (mode iframe) ─────────────────────────
-                    #locIframeFields(style=(user.location && user.location.serviceType === 'iframe') ? '' : 'display:none')
+                    #locIframeFields(style=(estab.location && estab.location.serviceType === 'iframe') ? '' : 'display:none')
                         .loc-simple-block
                             label.loc-simple-label Code iframe Google Maps
                             textarea.input.loc-simple-input#locIframeInput(
                                 rows="3"
                                 placeholder="Collez ici le code <iframe ...> copié depuis Google Maps → Partager → Intégrer une carte"
                                 style="resize:vertical;font-size:12px;font-family:monospace;"
-                            )= (user.location && user.location.iframeEmbedCode) || ''
+                            )= (estab.location && estab.location.iframeEmbedCode) || ''
                             p.loc-simple-hint
                                 | Sur Google Maps : clic droit sur un lieu →&nbsp;
                                 strong Partager
@@ -283,15 +283,15 @@ block content
                                 | &nbsp;→ copiez le code complet.
 
                     //- Champs cachés compatibilité
-                    input(type="hidden" id="latInput" value=(user.location && user.location.lat) || "")
-                    input(type="hidden" id="lonInput" value=(user.location && user.location.lon) || "")
-                    input(type="hidden" id="streetInput" value=(user.location && user.location.address) || "")
-                    input(type="hidden" id="zipInput" value=(user.location && user.location.zip) || "")
-                    input(type="hidden" id="cityInput" value=(user.location && user.location.city) || "")
-                    input(type="hidden" id="countryInput" value=(user.location && user.location.country) || "")
+                    input(type="hidden" id="latInput" value=(estab.location && estab.location.lat) || "")
+                    input(type="hidden" id="lonInput" value=(estab.location && estab.location.lon) || "")
+                    input(type="hidden" id="streetInput" value=(estab.location && estab.location.address) || "")
+                    input(type="hidden" id="zipInput" value=(estab.location && estab.location.zip) || "")
+                    input(type="hidden" id="cityInput" value=(estab.location && estab.location.city) || "")
+                    input(type="hidden" id="countryInput" value=(estab.location && estab.location.country) || "")
                     input(type="hidden" id="cityInputOnline")
                     input(type="hidden" id="countryInputOnline")
-                    input(type="hidden" id="gmapUrlInput" value=(user.location && user.location.gmapUrl) || "")
+                    input(type="hidden" id="gmapUrlInput" value=(estab.location && estab.location.gmapUrl) || "")
                     div#addressInput(style="display:none")
                     div#results(style="display:none")
                     div#fullAddressBlock(style="display:none")
@@ -474,12 +474,12 @@ block content
                 -
                     var csS = (user.calendarSettings) ? user.calendarSettings : {}
                     var socials = [
-                        { name: 'emailPro',      toggle: 'showEmailPro',  logo: 'email-logo.webp',     alt: 'Email',      label: t.profile.social.email_pro,  val: user.emailPro      || '', ph: 'contact@monactivite.com',                   type: 'email' },
-                        { name: 'phonePro',      toggle: 'showPhonePro',  logo: 'phone-logo.webp',     alt: 'Téléphone',  label: t.profile.social.phone_pro,  val: user.phonePro      || '', ph: '+32 476 12 34 56',                          type: 'phone' },
-                        { name: 'instagramLink', toggle: 'showInstagram', logo: 'instagram-logo.webp', alt: 'Instagram',  label: t.profile.social.instagram,  val: user.instagramLink || '', ph: 'https://instagram.com/moncompte',           type: 'url'   },
-                        { name: 'whatsappLink',  toggle: 'showWhatsapp',  logo: 'whatsapp-logo.webp',  alt: 'WhatsApp',   label: t.profile.social.whatsapp,   val: user.whatsappLink  || '', ph: '+32 476 12 34 56 ou https://wa.link/...',    type: 'whatsapp' },
-                        { name: 'facebookLink',  toggle: 'showFacebook',  logo: 'facebook-logo.webp',  alt: 'Facebook',   label: t.profile.social.facebook,   val: user.facebookLink  || '', ph: 'https://facebook.com/mapage',               type: 'url'   },
-                        { name: 'website',       toggle: 'showWebsite',   logo: 'website-logo.webp',   alt: 'Site Web',   label: t.profile.social.website,    val: user.website       || '', ph: 'https://monsite.com',                       type: 'url'   }
+                        { name: 'emailPro',      toggle: 'showEmailPro',  logo: 'email-logo.webp',     alt: 'Email',      label: t.profile.social.email_pro,  val: estab.emailPro      || '', ph: 'contact@monactivite.com',                   type: 'email' },
+                        { name: 'phonePro',      toggle: 'showPhonePro',  logo: 'phone-logo.webp',     alt: 'Téléphone',  label: t.profile.social.phone_pro,  val: estab.phonePro      || '', ph: '+32 476 12 34 56',                          type: 'phone' },
+                        { name: 'instagramLink', toggle: 'showInstagram', logo: 'instagram-logo.webp', alt: 'Instagram',  label: t.profile.social.instagram,  val: estab.instagramLink || '', ph: 'https://instagram.com/moncompte',           type: 'url'   },
+                        { name: 'whatsappLink',  toggle: 'showWhatsapp',  logo: 'whatsapp-logo.webp',  alt: 'WhatsApp',   label: t.profile.social.whatsapp,   val: estab.whatsappLink  || '', ph: '+32 476 12 34 56 ou https://wa.link/...',    type: 'whatsapp' },
+                        { name: 'facebookLink',  toggle: 'showFacebook',  logo: 'facebook-logo.webp',  alt: 'Facebook',   label: t.profile.social.facebook,   val: estab.facebookLink  || '', ph: 'https://facebook.com/mapage',               type: 'url'   },
+                        { name: 'website',       toggle: 'showWebsite',   logo: 'website-logo.webp',   alt: 'Site Web',   label: t.profile.social.website,    val: estab.website       || '', ph: 'https://monsite.com',                       type: 'url'   }
                     ]
                 each s in socials
                     -
