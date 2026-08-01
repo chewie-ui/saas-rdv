@@ -443,3 +443,152 @@ body:has(.header__cb:checked) {
    ============================================================ */
 @media (min-width: 1280px) {
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Panneau mobile — refonte
+   Avant : deux boutons en haut, un grand vide, la langue tout en bas. Aucun
+   repère de marque, aucun bouton de fermeture, aucun lien utile.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Le padding-top de 80px servait à passer sous la barre ; l'en-tête du panneau
+   occupe désormais cette place, on le récupère. */
+.header__panel {
+  padding-top: 0;
+  gap: 0;
+}
+
+.header__panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0 18px;
+  border-bottom: 1px solid var(--border-light, #e5e7eb);
+  margin-bottom: 18px;
+}
+
+.header__panel-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  color: var(--text-primary, #111827);
+  min-width: 0;
+}
+/* Taille imposée en CSS : les attributs width/height du <img> sont écrasés par
+   une règle plus spécifique ailleurs, et le logo s'affichait en géant. */
+.header__panel-brand img {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.header__panel-close {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--surface-subtle, #f3f4f6);
+  color: var(--text-secondary, #4b5563);
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+}
+.header__panel-close:hover { background: #e5e7eb; color: #111827; }
+.header__panel-close svg { width: 18px; height: 18px; }
+
+/* ── Liens utiles ─────────────────────────────────────────────────────────── */
+.header__panel-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light, #e5e7eb);
+}
+
+.header__panel-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 10px;
+  border-radius: 11px;
+  color: var(--text-primary, #111827);
+  font-size: 14.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.14s;
+}
+.header__panel-link:hover { background: var(--surface-subtle, #f3f4f6); }
+.header__panel-link svg {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+  color: var(--text-muted, #6b7280);
+}
+
+/* ── Bouton d'installation ────────────────────────────────────────────────── */
+/* Teinté accent pour ressortir sans voler la vedette au bouton d'inscription,
+   qui reste l'action principale du panneau. */
+.header__panel-install {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent, #1e7a4e) 24%, transparent);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--accent, #1e7a4e) 8%, transparent);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s, transform 0.1s;
+}
+.header__panel-install:hover {
+  background: color-mix(in srgb, var(--accent, #1e7a4e) 14%, transparent);
+}
+.header__panel-install:active { transform: scale(0.99); }
+/* Sans cette règle, le `display: flex` ci-dessus l'emporterait sur le
+   `display: none` que le navigateur applique à [hidden] — le bouton resterait
+   visible même quand l'installation est impossible. */
+.header__panel-install[hidden] { display: none; }
+
+.header__panel-install__ico {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--accent, #1e7a4e);
+  color: #fff;
+}
+.header__panel-install__ico svg { width: 20px; height: 20px; }
+
+.header__panel-install__txt {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.header__panel-install__t {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+}
+.header__panel-install__s {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent, #1e7a4e);
+}
+
+/* Pousse la langue tout en bas quel que soit le contenu au-dessus : c'est ce
+   qui manquait pour que le panneau ne soit pas un bloc flottant au milieu. */
+.header__panel-bottom { margin-top: auto; padding-top: 22px; }

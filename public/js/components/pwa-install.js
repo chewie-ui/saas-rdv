@@ -8,18 +8,10 @@
 //    menu Partager → « Sur l'écran d'accueil ». On affiche donc la marche à
 //    suivre au lieu d'un bouton qui ne pourrait rien faire.
 //
-// Rien ne s'affiche si l'app est déjà installée, ni si l'utilisateur a refusé
-// récemment : une invite d'installation qui revient à chaque page est le
-// meilleur moyen de faire fuir les gens.
+// L'ensemble est exposé sur `window.__pwa` pour que d'autres éléments d'interface
+// (le bouton du menu mobile) déclenchent exactement le même parcours, sans
+// dupliquer cette logique.
 (function () {
-  var card = document.getElementById("pwaCard");
-  if (!card) return;
-
-  var btnInstall = document.getElementById("pwaInstall");
-  var btnLater = document.getElementById("pwaLater");
-  var btnClose = document.getElementById("pwaClose");
-  var iosPane = document.getElementById("pwaIos");
-
   var SNOOZE_KEY = "bs_pwa_snooze";
   var SNOOZE_DAYS = 30;
   var DELAY_MS = 2500; // laisse la page se poser avant de solliciter
@@ -37,7 +29,7 @@
 
   function isIOS() {
     var ua = window.navigator.userAgent;
-    // `MSStream` : vieux Windows Phone se faisaient passer pour iPhone.
+    // `MSStream` : de vieux Windows Phone se faisaient passer pour iPhone.
     var ios = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
     // iPadOS 13+ s'annonce comme un Mac : on le repère au tactile.
     var iPadOS = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
@@ -46,11 +38,10 @@
 
   function isSnoozed() {
     try {
-      var until = Number(localStorage.getItem(SNOOZE_KEY) || 0);
-      return until > Date.now();
+      return Number(localStorage.getItem(SNOOZE_KEY) || 0) > Date.now();
     } catch (e) {
-      // Navigation privée / stockage bloqué : on ne bloque pas l'affichage
-      // pour autant, mais on ne plante pas non plus.
+      // Navigation privée / stockage bloqué : on n'empêche pas l'affichage,
+      // mais on ne plante pas non plus.
       return false;
     }
   }
@@ -61,9 +52,31 @@
     } catch (e) {}
   }
 
-  function show() {
+  // Installable d'une manière ou d'une autre ? Sert au menu mobile pour ne pas
+  // afficher un bouton qui ne mènerait à rien.
+  function canInstall() {
+    return !isInstalled() && (!!deferred || isIOS());
+  }
+
+  // ── Carte flottante ───────────────────────────────────────────────────────
+  var card = document.getElementById("pwaCard");
+  var btnInstall = document.getElementById("pwaInstall");
+  var btnLater = document.getElementById("pwaLater");
+  var btnClose = document.getElementById("pwaClose");
+  var iosPane = document.getElementById("pwaIos");
+
+  function applyIosMode() {
+    if (!card) return;
+    card.classList.add("is-ios");
+    if (iosPane) iosPane.hidden = false;
+    if (btnInstall) btnInstall.hidden = true;
+  }
+
+  function showCard() {
+    if (!card) return;
+    if (isIOS()) applyIosMode();
     card.hidden = false;
-    // Le retrait de `hidden` et l'ajout de la classe doivent être sur deux
+    // Le retrait de `hidden` et l'ajout de la classe doivent tomber sur deux
     // frames différentes, sinon la transition d'entrée ne joue pas.
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
@@ -72,7 +85,8 @@
     });
   }
 
-  function hide(remember) {
+  function hideCard(remember) {
+    if (!card) return;
     if (remember) snooze();
     card.classList.remove("is-open");
     setTimeout(function () {
@@ -80,54 +94,75 @@
     }, 260);
   }
 
-  if (isInstalled() || isSnoozed()) return;
+  // Déclenche la vraie boîte de dialogue du système (Android) ou, à défaut,
+  // ouvre la carte avec la marche à suivre (iOS).
+  function promptInstall() {
+    if (!deferred) {
+      showCard();
+      return;
+    }
+    deferred.prompt();
+    deferred.userChoice
+      .then(function (choice) {
+        hideCard(choice && choice.outcome !== "accepted");
+      })
+      .catch(function () {
+        hideCard(false);
+      })
+      .then(function () {
+        // Un `beforeinstallprompt` ne se rejoue pas : la référence est morte.
+        deferred = null;
+        notify();
+      });
+  }
+
+  // Prévient l'interface (menu mobile) que l'état d'installabilité a changé.
+  function notify() {
+    document.dispatchEvent(
+      new CustomEvent("pwa:state", { detail: { canInstall: canInstall(), isIOS: isIOS() } })
+    );
+  }
+
+  window.__pwa = {
+    canInstall: canInstall,
+    isIOS: isIOS,
+    isInstalled: isInstalled,
+    promptInstall: promptInstall,
+    showCard: showCard,
+  };
 
   // ── Android / Chrome ──────────────────────────────────────────────────────
   window.addEventListener("beforeinstallprompt", function (e) {
-    // Empêche la mini-barre native de Chrome : on veut notre propre carte,
-    // au moment qu'on choisit.
+    // Empêche la mini-barre native de Chrome : on veut notre propre carte, au
+    // moment qu'on choisit.
     e.preventDefault();
     deferred = e;
-    setTimeout(show, DELAY_MS);
+    notify();
+    if (card && !isSnoozed() && !isInstalled()) setTimeout(showCard, DELAY_MS);
   });
 
-  if (btnInstall) {
-    btnInstall.addEventListener("click", function () {
-      if (!deferred) return;
-      deferred.prompt();
-      deferred.userChoice
-        .then(function (choice) {
-          // Refus : on met en sourdine, sinon on harcèle.
-          hide(choice && choice.outcome !== "accepted");
-        })
-        .catch(function () {
-          hide(false);
-        })
-        .then(function () {
-          // Un `beforeinstallprompt` ne se rejoue pas : la référence est morte.
-          deferred = null;
-        });
-    });
-  }
-
-  // Installée depuis notre carte (ou depuis le menu du navigateur) : on range.
   window.addEventListener("appinstalled", function () {
-    hide(false);
+    deferred = null;
+    hideCard(false);
     snooze();
+    notify();
   });
+
+  if (btnInstall) btnInstall.addEventListener("click", promptInstall);
+  if (btnLater) btnLater.addEventListener("click", function () { hideCard(true); });
+  if (btnClose) btnClose.addEventListener("click", function () { hideCard(true); });
 
   // ── iOS / Safari ──────────────────────────────────────────────────────────
-  // Pas d'événement à attendre : si on est sur iOS hors app, on affiche la
-  // carte en mode « marche à suivre ».
-  if (isIOS()) {
-    card.classList.add("is-ios");
-    if (iosPane) iosPane.hidden = false;
-    if (btnInstall) btnInstall.hidden = true;
-    setTimeout(show, DELAY_MS);
+  // Pas d'événement à attendre : si on est sur iOS hors app, on programme
+  // l'affichage de la carte en mode « marche à suivre ».
+  if (card && isIOS() && !isInstalled() && !isSnoozed()) {
+    setTimeout(showCard, DELAY_MS);
   }
 
-  if (btnLater) btnLater.addEventListener("click", function () { hide(true); });
-  if (btnClose) btnClose.addEventListener("click", function () { hide(true); });
+  // État initial, pour le bouton du menu mobile (iOS notamment, où rien ne
+  // viendra le déclencher autrement).
+  notify();
+  document.addEventListener("DOMContentLoaded", notify);
 })();
 
 // ── Enregistrement du service worker ────────────────────────────────────────
@@ -142,3 +177,29 @@ if ("serviceWorker" in navigator) {
     });
   });
 }
+
+// ── Bouton « Installer » du menu mobile ─────────────────────────────────────
+// Masqué tant que l'installation n'est pas réellement possible : sur un
+// navigateur qui ne sait pas installer, un bouton inerte est pire que rien.
+// Il réutilise `window.__pwa`, donc exactement le même parcours que la carte.
+(function () {
+  var btn = document.getElementById("panelInstall");
+  if (!btn) return;
+
+  function sync() {
+    var api = window.__pwa;
+    btn.hidden = !(api && api.canInstall());
+  }
+
+  btn.addEventListener("click", function () {
+    if (!window.__pwa) return;
+    // Referme le panneau : sur iOS la carte s'ouvre par-dessous, et sur Android
+    // la boîte système s'afficherait derrière un menu resté ouvert.
+    var cb = document.getElementById("headerNav");
+    if (cb) cb.checked = false;
+    window.__pwa.promptInstall();
+  });
+
+  document.addEventListener("pwa:state", sync);
+  sync();
+})();
