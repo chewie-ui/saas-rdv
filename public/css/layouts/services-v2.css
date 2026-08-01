@@ -690,3 +690,72 @@ select.sv2-input { cursor: pointer; }
   .sv2-row.just-dropped td,
   .sv2-grouprow.just-dropped > td { animation: none; }
 }
+
+/* ── Onglet Catégories ─────────────────────────────────────────────────────
+   Renommer et supprimer n'existaient nulle part dans l'interface : une
+   catégorie créée l'était définitivement. */
+.cat-panel { padding: 4px 0 24px; }
+
+.cat-panel__head { margin-bottom: 16px; }
+.cat-panel__title { font-size: 16px; font-weight: 700; color: var(--ink, #141c25); }
+.cat-panel__sub { margin: 3px 0 0; font-size: 13px; color: var(--text-muted, #6b7280); }
+
+.cat-add {
+  display: grid;
+  /* minmax(0,…) : sans lui le champ texte impose sa largeur intrinsèque et
+     fait déborder la grille sur petit écran. */
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  max-width: 560px;
+}
+.cat-add__icon { text-align: center; }
+@media (max-width: 480px) {
+  .cat-add { grid-template-columns: 64px minmax(0, 1fr); }
+  .cat-add .sm-btn { grid-column: 1 / -1; justify-content: center; }
+}
+
+.cat-panel__err {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b91c1c;
+}
+.cat-panel__err[hidden] { display: none; }
+
+.cat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  max-width: 560px;
+}
+
+.cat-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 12px;
+  background: #fff;
+}
+.cat-row__icon { font-size: 20px; flex: 0 0 auto; line-height: 1; }
+.cat-row__main { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
+.cat-row__name {
+  font-size: 14px; font-weight: 700; color: var(--ink, #141c25);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cat-row__count { font-size: 12px; color: var(--text-muted, #6b7280); }
+.cat-row__actions { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+
+.cat-empty {
+  margin: 0;
+  padding: 18px;
+  border: 1px dashed var(--border-light, #e5e7eb);
+  border-radius: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted, #6b7280);
+}

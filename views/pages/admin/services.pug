@@ -79,7 +79,41 @@ block content
         //- affichage. Ça évite de ré-indenter tout le tableau des services.
         .ds-tabs(role="tablist")
             button.ds-tab.is-active(type="button" data-svtab="services") Services
+            button.ds-tab(type="button" data-svtab="categories") Catégories
             button.ds-tab(type="button" data-svtab="questionnaire") Questionnaire
+
+        //- ── Gestion des catégories ──────────────────────────────────
+        //- Renommer et supprimer n'étaient possibles nulle part : on pouvait
+        //- créer une catégorie et plus jamais y toucher.
+        .cat-panel(data-tab="categories")
+            .cat-panel__head
+                div
+                    .cat-panel__title Catégories de services
+                    p.cat-panel__sub Regroupez vos services (ex : Corps, Tête). Elles sont propres à cet établissement.
+            //- Ajout
+            .cat-add
+                input.input.cat-add__icon#catNewIcon(type="text" maxlength="10" placeholder="🙂" aria-label="Emoji")
+                input.input.cat-add__name#catNewName(type="text" maxlength="40" placeholder="Nom de la catégorie")
+                button.sm-btn.sm-btn--primary#catNewBtn(type="button")
+                    span.material-symbols-outlined(style="font-size:18px") add
+                    span Ajouter
+            p.cat-panel__err#catErr(hidden)
+
+            .cat-list#catList
+                each c in (categories || [])
+                    - var _used = (services || []).filter(function(s){ return s.category === c.name; }).length
+                    .cat-row(data-name=c.name data-icon=(c.icon || ''))
+                        span.cat-row__icon= c.icon || '🏷️'
+                        .cat-row__main
+                            span.cat-row__name= c.name
+                            span.cat-row__count= _used === 0 ? 'Aucun service' : (_used === 1 ? '1 service' : _used + ' services')
+                        .cat-row__actions
+                            button.ds-ico.cat-rename(type="button" title="Renommer")
+                                span.material-symbols-outlined edit
+                            button.ds-ico.ds-ico--danger.cat-del(type="button" title="Supprimer")
+                                span.material-symbols-outlined delete
+                if !categories || categories.length === 0
+                    p.cat-empty#catEmpty Aucune catégorie pour le moment.
 
         //- ── Questionnaire de réservation (multi-questions) ──────────
         .sq-block(class=(_q.enabled ? '' : 'is-off') data-tab="questionnaire")
@@ -326,8 +360,11 @@ block content
                                             span.sv2-all Tous les employés
                                     td.sv2-td--dur(data-col="dur" style=(_hid('dur') ? 'display:none' : null))= _dur
                                     td.sv2-td--price(data-col="price" style=(_hid('price') ? 'display:none' : null))
+                                        //- Prix à 0 = prestation offerte : on écrit
+                                        //- « Gratuit » plutôt qu'un « 0€ » qui se
+                                        //- lit comme un prix oublié.
                                         if svc.price !== null && svc.price !== undefined
-                                            = svc.price + '€'
+                                            = Number(svc.price) === 0 ? 'Gratuit' : svc.price + '€'
                                         else
                                             = '—'
                                     td(data-col="status" style=(_hid('status') ? 'display:none' : null))
@@ -1490,7 +1527,101 @@ block content
                 // (l'enregistrement du questionnaire recharge parfois la page).
                 var saved = null;
                 try { saved = sessionStorage.getItem('sv2Tab'); } catch (e) {}
-                showTab(saved === 'questionnaire' ? 'questionnaire' : 'services');
+                showTab(saved === 'questionnaire' || saved === 'categories' ? saved : 'services');
+            })();
+
+            // ── Gestion des catégories ────────────────────────────────
+            // Créer / renommer / supprimer. Les trois routes existaient déjà,
+            // mais rien dans l'interface ne permettait de renommer ni de
+            // supprimer : une catégorie créée l'était pour toujours.
+            (function () {
+                var list = document.getElementById('catList');
+                if (!list) return;
+                var errEl = document.getElementById('catErr');
+
+                function showErr(msg) {
+                    if (!errEl) return;
+                    errEl.textContent = msg;
+                    errEl.hidden = false;
+                }
+                function clearErr() { if (errEl) errEl.hidden = true; }
+
+                // Liste courante lue depuis le DOM : c'est elle qui fait foi,
+                // l'ordre des lignes est celui envoyé au serveur.
+                function currentCats() {
+                    return Array.prototype.slice.call(list.querySelectorAll('.cat-row')).map(function (r) {
+                        return { name: r.dataset.name, icon: r.dataset.icon || '' };
+                    });
+                }
+
+                function post(url, method, body) {
+                    return fetch(url, {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: body ? JSON.stringify(body) : undefined
+                    }).then(function (r) { return r.ok ? r.json() : null; })
+                      .then(function (d) {
+                        // Ces routes répondent 200 même en cas de refus : on lit `success`.
+                        if (!d || !d.success) throw new Error('refus serveur');
+                        return d;
+                    });
+                }
+
+                // ── Ajouter ──
+                var addBtn = document.getElementById('catNewBtn');
+                if (addBtn) addBtn.addEventListener('click', function () {
+                    var nameEl = document.getElementById('catNewName');
+                    var iconEl = document.getElementById('catNewIcon');
+                    var nom = (nameEl.value || '').trim();
+                    if (!nom) { showErr('Donnez un nom à la catégorie.'); nameEl.focus(); return; }
+                    if (currentCats().some(function (c) { return c.name.toLowerCase() === nom.toLowerCase(); })) {
+                        showErr('Cette catégorie existe déjà.'); return;
+                    }
+                    clearErr();
+                    var cats = currentCats();
+                    cats.push({ name: nom, icon: (iconEl.value || '').trim() });
+                    addBtn.disabled = true;
+                    post('/account/categories', 'PATCH', { categories: cats })
+                        .then(function () { location.reload(); })
+                        .catch(function () {
+                            addBtn.disabled = false;
+                            showErr("La catégorie n'a pas pu être créée. Réessayez.");
+                        });
+                });
+
+                // ── Renommer / supprimer ──
+                list.addEventListener('click', function (e) {
+                    var row = e.target.closest('.cat-row');
+                    if (!row) return;
+                    var nom = row.dataset.name;
+
+                    if (e.target.closest('.cat-rename')) {
+                        var neuf = prompt('Nouveau nom de la catégorie :', nom);
+                        if (neuf === null) return;
+                        neuf = neuf.trim();
+                        if (!neuf || neuf === nom) return;
+                        clearErr();
+                        post('/account/categories/rename', 'PATCH', { oldName: nom, newName: neuf, icon: row.dataset.icon || '' })
+                            .then(function () { location.reload(); })
+                            .catch(function () { showErr("Le renommage a échoué. Réessayez."); });
+                        return;
+                    }
+
+                    if (e.target.closest('.cat-del')) {
+                        // Les services concernés ne sont PAS supprimés : ils
+                        // perdent seulement leur catégorie. On le dit, sinon la
+                        // confirmation laisse craindre le pire.
+                        if (!confirm('Supprimer la catégorie « ' + nom + ' » ?\n\nLes services qu\'elle contient ne sont pas supprimés : ils passent simplement « sans catégorie ».')) return;
+                        clearErr();
+                        fetch('/account/categories/' + encodeURIComponent(nom), { method: 'DELETE' })
+                            .then(function (r) { return r.ok ? r.json() : null; })
+                            .then(function (d) {
+                                if (!d || !d.success) throw new Error('refus serveur');
+                                location.reload();
+                            })
+                            .catch(function () { showErr('La suppression a échoué. Réessayez.'); });
+                    }
+                });
             })();
 
             // ── Constructeur de questionnaire ─────────────────────────

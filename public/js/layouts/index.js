@@ -289,7 +289,10 @@ function renderCart() {
 
   const sid = stepId();
   const recap = [];
-  if (STATE.service)  recap.push({ k: "Service", v: `${STATE.service.name}${STATE.service.price !== null && STATE.service.price !== undefined ? " · " + STATE.service.price + "€" : ""}` });
+  // « Gratuit » plutôt que « 0€ » : un prix à zéro est une prestation offerte,
+  // pas un champ resté vide.
+  const priceLabelFR = (p) => (Number(p) === 0 ? "Gratuit" : p + "€");
+  if (STATE.service)  recap.push({ k: "Service", v: `${STATE.service.name}${STATE.service.price !== null && STATE.service.price !== undefined ? " · " + priceLabelFR(STATE.service.price) : ""}` });
   if (STATE.employee) recap.push({ k: "Avec",    v: STATE.employee.name });
   if (STATE.date)     recap.push({ k: "Quand",   v: fmtDate(STATE.date) + (STATE.time ? " · " + STATE.time : "") });
 
@@ -495,8 +498,13 @@ function bookableDuration(s) {
    ═══════════════════════════════════════════════════════════════════════════ */
 function renderSvcCard(s) {
   const sel   = STATE.service && STATE.service.id === s._id ? "is-selected" : "";
+  // Prix à 0 = prestation offerte. « Gratuit » est un argument de réservation ;
+  // « 0€ » se lit comme un prix que le pro aurait oublié de renseigner.
   const price = (s.price !== null && s.price !== undefined)
-    ? `<div class="bk-svc__price">${s.price}<small>€</small></div>` : "";
+    ? (Number(s.price) === 0
+        ? `<div class="bk-svc__price bk-svc__price--free">Gratuit</div>`
+        : `<div class="bk-svc__price">${s.price}<small>€</small></div>`)
+    : "";
   const infoBtn = s.description
     ? `<button class="bk-svc__info-btn" type="button" data-svc-name="${escHtml(s.name)}" data-svc-desc="${escHtml(s.description).replace(/\n/g, '&#10;')}" aria-label="Description du service" tabindex="-1">
         <svg width="15" height="15" viewBox="0 -960 960 960" fill="currentColor"><path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>
@@ -2595,7 +2603,7 @@ function renderConfirmPane() {
         ${locationText ? `<div class="bk-conf__row"><span class="k">Lieu</span><span class="v">${escHtml(locationText)}</span></div>` : ""}
         ${answersHtml}
         ${STATE.service && STATE.service.price !== null && STATE.service.price !== undefined
-          ? `<hr class="bk-conf__divider" /><div class="bk-conf__row"><span class="k">Total</span><span class="v bk-conf__price">${STATE.service.price}€</span></div>`
+          ? `<hr class="bk-conf__divider" /><div class="bk-conf__row"><span class="k">Total</span><span class="v bk-conf__price">${Number(STATE.service.price) === 0 ? "Gratuit" : STATE.service.price + "€"}</span></div>`
           : ""}
       </div>
 

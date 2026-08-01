@@ -4047,3 +4047,12 @@ body.bk-embed #bkCart .bk-cart {
    `display: none` de [hidden] — sans quoi le bouton resterait visible sur les
    navigateurs qui ne savent pas installer. */
 .bk-install-btn[hidden] { display: none; }
+
+/* Prestation offerte : « Gratuit » en vert plutôt qu'un « 0€ » qui se lit
+   comme un prix oublié. Pas de <small>€</small> à aligner, d'où la taille. */
+.bk-svc__price--free {
+  color: var(--bk-accent, #16a34a);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
