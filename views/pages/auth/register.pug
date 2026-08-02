@@ -466,7 +466,11 @@ block scripts
                 next0b.disabled = !proModeInput.value;
             }
 
-            function selectIntent(value) {
+            // `avancer` = false : on pré-sélectionne SANS ouvrir la sous-étape
+            // créer/rejoindre. Arriver depuis « Commencer gratuitement » doit
+            // montrer les 3 choix (image du haut), pas propulser d'emblée dans
+            // une sous-question dont on n'a pas vu le contexte.
+            function selectIntent(value, avancer) {
                 var match = null;
                 intentCards.forEach(function(c) {
                     c.classList.remove('is-selected');
@@ -486,11 +490,11 @@ block scripts
                 var descEl  = document.getElementById('regDesc');
                 if (titleEl) titleEl.textContent = copy.title;
                 if (descEl)  descEl.textContent  = copy.desc;
-                if (value === 'pro') {
+                if (value === 'pro' && avancer) {
                     // Ouvre directement la sous-étape créer/rejoindre, au lieu
                     // d'empiler les 2 choix sous les 3 cartes principales.
                     showIntentProMode();
-                } else {
+                } else if (value !== 'pro') {
                     proModeInput.value = '';
                     proModeCards.forEach(function(c) { c.classList.remove('is-selected'); });
                 }
@@ -507,7 +511,7 @@ block scripts
             }
 
             intentCards.forEach(function(card) {
-                card.addEventListener('click', function() { selectIntent(card.dataset.intent); });
+                card.addEventListener('click', function() { selectIntent(card.dataset.intent, true); });
             });
             proModeCards.forEach(function(card) {
                 card.addEventListener('click', function() { selectProMode(card.dataset.promode); });
@@ -517,7 +521,7 @@ block scripts
             // Pré-sélection si on arrive avec ?intent=... (ex: lien "Espace
             // client" du menu) — l'utilisateur garde la main pour changer.
             var urlIntent = new URLSearchParams(window.location.search).get('intent');
-            if (urlIntent && ['pro','client','undecided'].includes(urlIntent)) selectIntent(urlIntent);
+            if (urlIntent && ['pro','client','undecided'].includes(urlIntent)) selectIntent(urlIntent, false);
 
             next0.addEventListener('click', function() {
                 clearErrors();
