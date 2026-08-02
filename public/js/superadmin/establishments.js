@@ -18,18 +18,42 @@
   function dateFr(d) { return d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—"; }
 
   // ── Plan et durée d'octroi ────────────────────────────────────────────────
+  function dateHeureFr(d) {
+    return d
+      ? new Date(d).toLocaleString("fr-FR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })
+      : "—";
+  }
+  // Un octroi peut durer quelques heures : « 12 min », « 3 h », « 49 j ».
+  function tempsRestant(ms) {
+    if (!(ms > 0)) return "expiré";
+    var minutes = Math.ceil(ms / 60000);
+    if (minutes < 60) return minutes + " min";
+    var heures = Math.ceil(ms / 3600000);
+    if (heures < 48) return heures + " h";
+    return Math.ceil(ms / 86400000) + " j";
+  }
+
   function badgeReste(expiry, plan) {
     if (plan === "free") return '<span class="sa-muted">—</span>';
     if (!expiry) return '<span class="sa-tag">Illimité</span>';
-    var jours = Math.max(0, Math.ceil((new Date(expiry) - new Date()) / 86400000));
-    return '<span class="sa-tag ' + (jours <= 3 ? "sa-tag--red" : "sa-tag--amber") + '">' + jours + " j</span>";
+    var ms = new Date(expiry) - new Date();
+    var jours = Math.max(0, Math.ceil(ms / 86400000));
+    return (
+      '<span class="sa-tag ' + (jours <= 3 ? "sa-tag--red" : "sa-tag--amber") +
+      '" title="Jusqu\'au ' + texte(dateHeureFr(expiry)) + '">' + tempsRestant(ms) + "</span>"
+    );
   }
 
-  function enregistrerPlan(id, plan, duree, jours) {
+  function enregistrerPlan(id, plan, duree, jours, unite, dateIso) {
     var corps = { plan: plan };
     if (duree && duree !== "keep") {
       corps.duration = duree;
-      if (duree === "custom") corps.customDays = jours;
+      if (duree === "custom") {
+        corps.customValue = jours;
+        corps.customUnit = unite || "d";
+        corps.customDays = jours; // compat ancien format (unité = jours)
+      }
+      if (duree === "date") corps.expiryAt = dateIso;
     }
     return fetch("/superadmin/establishments/" + id + "/plan", {
       method: "PATCH",
@@ -64,11 +88,65 @@
   var durChoix = document.getElementById("durChoix");
   var durPerso = document.getElementById("durPersoBloc");
   var durJours = document.getElementById("durJours");
+  var durUnite = document.getElementById("durUnite");
+  var durDateBloc = document.getElementById("durDateBloc");
+  var durDate = document.getElementById("durDate");
+  var durApercu = document.getElementById("durApercu");
   var ligneDuree = null;
 
-  durChoix.addEventListener("change", function () {
-    durPerso.style.display = durChoix.value === "custom" ? "" : "none";
-  });
+  // Valeur d'un <input type="datetime-local"> → Date (heure locale).
+  function dateDuChamp() {
+    var v = durDate.value;
+    if (!v) return null;
+    var d = new Date(v);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  // Date → "YYYY-MM-DDTHH:mm" pour préremplir le champ (sans décalage UTC).
+  function pourChamp(d) {
+    var p = function (n) { return String(n).padStart(2, "0"); };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "T" + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+  // Rejoue le calcul du serveur pour annoncer l'échéance avant l'envoi.
+  function echeancePrevue() {
+    var choix = durChoix.value;
+    if (choix === "infinite") return null;
+    if (choix === "date") return dateDuChamp();
+    var valeur;
+    var unite;
+    if (choix === "custom") {
+      valeur = Number(durJours.value);
+      unite = durUnite.value;
+    } else {
+      var m = /^(\d+)(h|d|mo)$/.exec(choix);
+      if (!m) return null;
+      valeur = Number(m[1]);
+      unite = m[2];
+    }
+    if (!(valeur > 0)) return null;
+    var d = new Date();
+    if (unite === "h") d.setHours(d.getHours() + valeur);
+    else if (unite === "mo") d.setMonth(d.getMonth() + valeur);
+    else d.setDate(d.getDate() + valeur);
+    return d;
+  }
+  function majApercu() {
+    var choix = durChoix.value;
+    durPerso.style.display = choix === "custom" ? "" : "none";
+    durDateBloc.style.display = choix === "date" ? "" : "none";
+    if (choix === "infinite") {
+      durApercu.innerHTML = "Le plan reste actif tant que vous ne le retirez pas.";
+      return;
+    }
+    var d = echeancePrevue();
+    if (!d) { durApercu.innerHTML = '<span style="color:var(--sa-red,#f87171)">Renseignez une échéance valide.</span>'; return; }
+    if (d <= new Date()) { durApercu.innerHTML = '<span style="color:var(--sa-red,#f87171)">Cette date est déjà passée.</span>'; return; }
+    durApercu.innerHTML = "Retour au plan Free le <b style=\"color:var(--sa-txt)\">" + texte(dateHeureFr(d)) + "</b>.";
+  }
+
+  durChoix.addEventListener("change", majApercu);
+  durJours.addEventListener("input", majApercu);
+  durUnite.addEventListener("change", majApercu);
+  durDate.addEventListener("input", majApercu);
   document.querySelectorAll("[data-close-duree]").forEach(function (el) {
     el.addEventListener("click", function () { modalDuree.classList.remove("is-open"); });
   });
@@ -79,8 +157,19 @@
     }
     ligneDuree = tr;
     document.getElementById("durNom").textContent = tr.dataset.name || "—";
-    durChoix.value = "infinite";
-    durPerso.style.display = "none";
+    // Octroi déjà daté → on ouvre sur cette date, modifiable. Sinon illimité,
+    // avec une date par défaut à +30 jours dans le champ.
+    var actuel = tr.dataset.expiry ? new Date(tr.dataset.expiry) : null;
+    if (actuel && !isNaN(actuel.getTime())) {
+      durChoix.value = "date";
+      durDate.value = pourChamp(actuel);
+    } else {
+      durChoix.value = "infinite";
+      var defaut = new Date();
+      defaut.setDate(defaut.getDate() + 30);
+      durDate.value = pourChamp(defaut);
+    }
+    majApercu();
     modalDuree.classList.add("is-open");
   }
 
@@ -88,11 +177,20 @@
     if (!ligneDuree) return;
     var bouton = this;
     var plan = ligneDuree.querySelector(".js-plan").value;
+    // On bloque avant l'aller-retour réseau si l'échéance n'a pas de sens.
+    if (durChoix.value !== "infinite") {
+      var prevue = echeancePrevue();
+      if (!prevue || prevue <= new Date()) {
+        return window.saToast("Choisissez une échéance dans le futur.", "err");
+      }
+    }
+    var dateIso = durChoix.value === "date" && dateDuChamp() ? dateDuChamp().toISOString() : "";
     bouton.disabled = true;
-    enregistrerPlan(ligneDuree.dataset.companyId, plan, durChoix.value, Number(durJours.value))
+    enregistrerPlan(ligneDuree.dataset.companyId, plan, durChoix.value, Number(durJours.value), durUnite.value, dateIso)
       .then(function (d) {
         bouton.disabled = false;
         if (!d.success) throw new Error(d.error || "échec");
+        ligneDuree.dataset.expiry = d.expiry || "";
         ligneDuree.querySelector(".js-reste").innerHTML = badgeReste(d.expiry, plan);
         modalDuree.classList.remove("is-open");
         window.saToast("Durée d'octroi mise à jour.");
@@ -288,7 +386,7 @@
       html += prop("call", "Téléphone", o.phone ? texte(o.phone) : '<span class="sa-muted">—</span>');
       html += prop("workspace_premium", "Plan", '<span class="sa-tag ' + (couleurs[o.planLabel] || "") + '">' + texte(o.planLabel) + "</span>" +
         (o.manualPremium ? ' <span class="sa-muted" style="font-size:12px">octroi manuel</span>' : ""));
-      html += prop("timer", "Fin d'octroi", o.manualPremiumExpiry ? dateFr(o.manualPremiumExpiry) : '<span class="sa-muted">illimité</span>');
+      html += prop("timer", "Fin d'octroi", o.manualPremiumExpiry ? dateHeureFr(o.manualPremiumExpiry) : '<span class="sa-muted">illimité</span>');
     } else {
       html += '<div class="sa-muted">Aucun propriétaire rattaché.</div>';
     }

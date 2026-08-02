@@ -156,13 +156,16 @@ block content
                                 label.intent-card(data-intent="pro")
                                     input(type="radio" name="accountIntentRadio" value="pro")
                                     .intent-card__body
-                                        span.intent-card__label Gérer mon établissement
-                                        span.intent-card__sub Coiffeur, coach, thérapeute... vous recevez des clients
+                                        //- Mots simples : « Gérer mon établissement » ne
+                                        //- dit pas ce qu'on vient chercher. On nomme le
+                                        //- résultat (un agenda où les clients réservent).
+                                        span.intent-card__label Créer un agenda en ligne
+                                        span.intent-card__sub Je suis un professionnel, je veux que mes clients prennent rendez-vous en ligne
                                 label.intent-card(data-intent="client")
                                     input(type="radio" name="accountIntentRadio" value="client")
                                     .intent-card__body
-                                        span.intent-card__label Prendre des rendez-vous
-                                        span.intent-card__sub Vous réservez chez des professionnels
+                                        span.intent-card__label Prendre rendez-vous chez un professionnel
+                                        span.intent-card__sub Je suis un client, je veux réserver en ligne
                                 label.intent-card(data-intent="undecided")
                                     input(type="radio" name="accountIntentRadio" value="undecided")
                                     .intent-card__body
@@ -176,19 +179,19 @@ block content
                         #intentProMode(style="display:none")
                             .reg-step-title.reg-substep-title
                                 button.reg-back(type="button" id="backProMode") ←
-                                span Comment souhaitez-vous gérer votre établissement ?
+                                span Vous créez votre agenda, ou vous rejoignez une équipe ?
 
                             #proModeGrid.intent-grid
                                 label.intent-card(data-promode="create")
                                     input(type="radio" name="proModeRadio" value="create")
                                     .intent-card__body
-                                        span.intent-card__label Créer mon établissement
-                                        span.intent-card__sub Vous êtes le seul ou le premier compte de l'équipe
+                                        span.intent-card__label Créer mon agenda
+                                        span.intent-card__sub Je travaille seul, ou je suis le premier de mon équipe à m'inscrire
                                 label.intent-card(data-promode="join")
                                     input(type="radio" name="proModeRadio" value="join")
                                     .intent-card__body
-                                        span.intent-card__label Rejoindre un établissement
-                                        span.intent-card__sub Une équipe existe déjà sur BranShee (plan Business)
+                                        span.intent-card__label Rejoindre une équipe existante
+                                        span.intent-card__sub Je suis un pro et mon équipe est déjà sur BranShee
 
                             .reg-nav
                                 button.sm-btn.sm-btn--primary.sm-btn--full.reg-next(type="button" id="next0b" disabled) Continuer →

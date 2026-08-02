@@ -55,6 +55,17 @@ const PRIX_MENSUEL = { basic: 0, essentiel: 9, pro: 19, business: 49 };
 
 const ETABS_PAR_PAGE = 25;
 
+// Temps restant d'un octroi, lisible d'un coup d'œil : « 12 min », « 3 h »,
+// « 49 j ». Un octroi peut désormais durer moins d'une journée.
+function formatTempsRestant(ms) {
+  if (!Number.isFinite(ms) || ms <= 0) return "expiré";
+  const minutes = Math.ceil(ms / 60000);
+  if (minutes < 60) return minutes + " min";
+  const heures = Math.ceil(ms / 3600000);
+  if (heures < 48) return heures + " h";
+  return Math.ceil(ms / 86400000) + " j";
+}
+
 exports.establishmentsPage = async (req, res) => {
   const filtres = {
     search: req.query.search || "",
@@ -117,13 +128,18 @@ exports.establishmentsPage = async (req, res) => {
     c.displayName = (c.name || c.owner?.businessName || "").trim();
     c.displayPhoto = c.photo || c.owner?.businessPicture || "";
     Object.assign(c, planDuCompte(c.owner || {}));
-    // Jours restants d'un octroi manuel avec durée. null = infini / pas d'octroi.
+    // Temps restant d'un octroi manuel avec durée. null = infini / pas d'octroi.
+    // Un octroi peut durer quelques heures : on affiche alors « 3 h » et non « 1 j ».
     const o = c.owner;
     if (o && (o.manualPremium || o.isPremium) && o.manualPremiumExpiry) {
       const ms = new Date(o.manualPremiumExpiry).getTime() - maintenant;
       c.trialDaysLeft = ms > 0 ? Math.ceil(ms / 86400000) : 0;
+      c.trialLeftLabel = formatTempsRestant(ms);
+      c.trialExpiryAt = new Date(o.manualPremiumExpiry).toISOString();
     } else {
       c.trialDaysLeft = null;
+      c.trialLeftLabel = null;
+      c.trialExpiryAt = null;
     }
   });
 
@@ -595,19 +611,53 @@ exports.setPlan = async (req, res) => {
 
 // Calcule la date d'expiration d'un octroi manuel depuis une durée choisie.
 // Renvoie : null = infini · Date = expiration · undefined = valeur invalide.
-function computeTrialExpiry(duration, customDays) {
-  const daysMap = { "1d": 1, "7d": 7, "14d": 14, "30d": 30, "90d": 90 };
+//
+// `duration` accepte :
+//   "infinite"            → aucune expiration
+//   "<n>h" / "<n>d" / "<n>mo" → 1 heure, 3 jours, 2 mois… (presets de la modale)
+//   "custom"              → customValue + customUnit (h|d|mo). `customDays`
+//                           reste accepté pour l'ancien format (unité = jours).
+//   "date"                → expiryAt, une date/heure précise choisie à la main
+const MAX_GRANT_MS = 3650 * 86400000; // 10 ans, garde-fou
+
+function addUnit(base, value, unit) {
+  const d = new Date(base);
+  if (unit === "h") d.setHours(d.getHours() + value);
+  else if (unit === "mo") d.setMonth(d.getMonth() + value);
+  else d.setDate(d.getDate() + value);
+  return d;
+}
+
+function computeTrialExpiry(duration, customDays, extra) {
+  const opts = extra || {};
   if (!duration || duration === "infinite") return null;
-  let days;
-  if (duration === "custom") {
-    days = Number(customDays);
-    if (!Number.isFinite(days) || days <= 0 || days > 3650) return undefined;
-  } else {
-    days = daysMap[duration];
-    if (!days) return undefined;
+  const now = Date.now();
+
+  // Date d'expiration choisie explicitement.
+  if (duration === "date") {
+    const d = new Date(opts.expiryAt);
+    if (Number.isNaN(d.getTime())) return undefined;
+    if (d.getTime() <= now) return undefined; // une date passée n'a pas de sens
+    if (d.getTime() > now + MAX_GRANT_MS) return undefined;
+    return d;
   }
-  const d = new Date();
-  d.setDate(d.getDate() + Math.round(days));
+
+  let value;
+  let unit;
+  if (duration === "custom") {
+    value = Number(opts.customValue != null ? opts.customValue : customDays);
+    unit = ["h", "d", "mo"].includes(opts.customUnit) ? opts.customUnit : "d";
+  } else {
+    const m = /^(\d{1,4})(h|d|mo)$/.exec(String(duration));
+    if (!m) return undefined;
+    value = Number(m[1]);
+    unit = m[2];
+  }
+  if (!Number.isFinite(value) || value <= 0) return undefined;
+  value = Math.round(value);
+
+  const d = addUnit(now, value, unit);
+  if (d.getTime() <= now || d.getTime() > now + MAX_GRANT_MS) return undefined;
   return d;
 }
 
@@ -624,7 +674,8 @@ exports.setPlanForCompany = async (req, res) => {
     const validPlans = ["free", "essentiel", "pro", "business"];
     if (!validPlans.includes(plan)) return res.status(400).json({ error: "Plan invalide." });
 
-    const { duration, customDays } = req.body; // "infinite" | "7d" | "30d"… | "custom" | undefined
+    // "infinite" | "1h" | "7d" | "3mo"… | "custom" | "date" | undefined
+    const { duration, customDays, customValue, customUnit, expiryAt } = req.body;
     const isFree = plan === "free";
     const update = {
       manualPremium: !isFree,
@@ -637,8 +688,10 @@ exports.setPlanForCompany = async (req, res) => {
       update.manualPremiumExpiry = null;
     } else if (duration !== undefined) {
       // Une durée a été choisie → on (re)calcule l'expiration.
-      const expiry = computeTrialExpiry(duration, customDays);
-      if (expiry === undefined) return res.status(400).json({ error: "Durée invalide (1 à 3650 jours)." });
+      const expiry = computeTrialExpiry(duration, customDays, { customValue, customUnit, expiryAt });
+      if (expiry === undefined) {
+        return res.status(400).json({ error: "Durée invalide : choisissez une échéance future, au plus 10 ans." });
+      }
       update.manualPremiumExpiry = expiry; // null = infini, ou Date
     }
     // Si plan payant SANS durée fournie → on ne touche pas à l'expiry (on
@@ -679,23 +732,13 @@ exports.updateCompanyInfo = async (req, res) => {
 exports.setTrialDuration = async (req, res) => {
   try {
     const { userId }   = req.params;
-    const { duration, customDays } = req.body; // "1d" | "7d" | "30d" | "90d" | "custom" | "infinite"
-
-    const daysMap = { "1d": 1, "7d": 7, "30d": 30, "90d": 90 };
-    let expiry = null;
-
-    if (duration === "custom") {
-      const days = Number(customDays);
-      if (!Number.isFinite(days) || days <= 0 || days > 3650) {
-        return res.status(400).json({ error: "Nombre de jours invalide (1 à 3650)." });
-      }
-      expiry = new Date();
-      expiry.setDate(expiry.getDate() + days);
-    } else if (duration !== "infinite") {
-      const days = daysMap[duration];
-      if (!days) return res.status(400).json({ error: "Durée invalide." });
-      expiry = new Date();
-      expiry.setDate(expiry.getDate() + days);
+    // Même grammaire de durées que l'octroi par établissement (heures, jours,
+    // mois, date précise) — un seul calcul pour les deux écrans.
+    const { duration, customDays, customValue, customUnit, expiryAt } = req.body;
+    if (!duration) return res.status(400).json({ error: "Durée manquante." });
+    const expiry = computeTrialExpiry(duration, customDays, { customValue, customUnit, expiryAt });
+    if (expiry === undefined) {
+      return res.status(400).json({ error: "Durée invalide : choisissez une échéance future, au plus 10 ans." });
     }
 
     await User.findByIdAndUpdate(userId, { manualPremiumExpiry: expiry });
