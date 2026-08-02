@@ -4,6 +4,7 @@ const Client = require("../db/models/client.model");
 const User = require("../db/models/user.model");
 const Booking = require("../db/models/book.model");
 const { isSafePlainText } = require("../utils/validateName");
+const { identityFor } = require("../utils/establishmentIdentity");
 
 // ─── REGISTER ────────────────────────────────────────────────────────────────
 
@@ -185,11 +186,15 @@ exports.getDashboard = async (req, res) => {
   // Charger toutes les companies liées + leur owner (pour businessName, photo, adresse)
   const companyIds = [...new Set(allBookings.map(b => b.company?.toString()).filter(Boolean))];
   const companies  = await Company.find({ _id: { $in: companyIds } })
-    .populate("owner", "fullName businessName businessType businessPicture profilePicture description location phone phonePro emailPro website")
+    // `company` du propriétaire : désigne son établissement D'ORIGINE, le seul
+    // à hériter des coordonnées du compte (cf. utils/establishmentIdentity.js).
+    .populate("owner", "company fullName businessName businessType businessPicture profilePicture description location phone phonePro emailPro website")
     // name/photo/businessType de l'ÉTABLISSEMENT : sans eux, un client ayant
     // réservé dans 2 établissements d'un même patron voyait deux fois le même
     // nom et la même photo (le `.select` les excluait par omission).
-    .select("_id owner slug name photo businessType cancellationPolicy")
+    // Idem pour l'identité (location/phonePro/emailPro/website) : omise du
+    // select, elle rend identityFor aveugle et l'adresse disparaît en silence.
+    .select("_id owner slug name photo businessType cancellationPolicy location phonePro emailPro website")
     .lean();
 
   const companyMap = {};
@@ -198,6 +203,11 @@ exports.getDashboard = async (req, res) => {
   const enriched = allBookings.map(b => {
     const comp  = companyMap[b.company?.toString()];
     const owner = comp?.owner || null;
+    // Coordonnées de l'ÉTABLISSEMENT réservé : lues sur le compte, un client
+    // ayant réservé dans le second établissement d'un patron y voyait l'adresse
+    // et le téléphone du premier.
+    const identity = identityFor(comp, owner);
+    const loc = identity.location;
     return {
       ...b,
       companySlug:        comp ? (comp.slug || comp._id.toString()) : null,
@@ -207,14 +217,14 @@ exports.getDashboard = async (req, res) => {
       companyPhoto:       comp?.photo || owner?.businessPicture || owner?.profilePicture || "/images/no-user.webp",
       // `location` peut être un objet {address,city,…} (format courant) ou
       // un String hérité (vieilles données) — on gère les deux cas.
-      companyCity:        (typeof owner?.location === "object" ? owner.location?.city  : "") || "",
-      companyAddr:        (typeof owner?.location === "object" ? owner.location?.address : (typeof owner?.location === "string" ? owner.location : "")) || "",
-      companyZip:         (typeof owner?.location === "object" ? owner.location?.zip   : "") || "",
-      companyLat:         (typeof owner?.location === "object" ? owner.location?.lat   : "") || "",
-      companyLon:         (typeof owner?.location === "object" ? owner.location?.lon   : "") || "",
-      companyPhone:       owner ? (owner.phonePro || owner.phone || "") : "",
-      companyEmail:       owner?.emailPro || "",
-      companyWebsite:     owner?.website || "",
+      companyCity:        (loc && typeof loc === "object" ? loc.city  : "") || "",
+      companyAddr:        (loc && typeof loc === "object" ? loc.address : (typeof loc === "string" ? loc : "")) || "",
+      companyZip:         (loc && typeof loc === "object" ? loc.zip   : "") || "",
+      companyLat:         (loc && typeof loc === "object" ? loc.lat   : "") || "",
+      companyLon:         (loc && typeof loc === "object" ? loc.lon   : "") || "",
+      companyPhone:       identity.phonePro || "",
+      companyEmail:       identity.emailPro || "",
+      companyWebsite:     identity.website || "",
       cancellationRule:   comp?.cancellationPolicy?.rule || "free",
     };
   });

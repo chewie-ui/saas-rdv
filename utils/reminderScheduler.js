@@ -7,6 +7,7 @@ const Company = require("../db/models/company/company.model");
 const User = require("../db/models/user.model");
 const Service = require("../db/models/company/service.model");
 const { atLeast, billingUserFor } = require("./planLimits");
+const { identityFor } = require("./establishmentIdentity");
 const { sendEmail } = require("./mailer");
 const { sendReminderSmsIfAllowed } = require("./sms");
 const { sendWhatsappIfAllowed, isWhatsappConfigured, WA_TPL_REMINDER } = require("./whatsapp");
@@ -62,12 +63,18 @@ async function sendDueReminders() {
   // document Company sous la main (plan/planStatus/name), pas seulement l'owner.
   const companyById = {};
   try {
+    // `location` / `phonePro` de la Company : le lieu du RDV appartient à
+    // l'ÉTABLISSEMENT (cf. utils/establishmentIdentity.js). Sans eux dans le
+    // select, identityFor ne verrait qu'un objet vide et le rappel partirait
+    // sans adresse — silencieusement.
     const companies = await Company.find({ _id: { $in: companyIds } })
-      .select("_id owner name plan planStatus")
+      .select("_id owner name plan planStatus location phonePro")
       .lean();
     const ownerIds = [...new Set(companies.map((c) => String(c.owner)).filter(Boolean))];
+    // `company` : c'est lui qui désigne l'établissement d'origine, donc celui
+    // qui a droit au repli sur les valeurs du compte.
     const owners = await User.find({ _id: { $in: ownerIds } })
-      .select("_id isPremium manualPremium subscription calendarSettings location businessName phonePro addons smsUsage")
+      .select("_id company isPremium manualPremium subscription calendarSettings location phone businessName phonePro addons smsUsage")
       .lean();
     const ownerById = Object.fromEntries(owners.map((o) => [String(o._id), o]));
     companies.forEach((c) => {
@@ -130,11 +137,15 @@ async function sendDueReminders() {
     const businessName = (companyDoc?.name || owner?.businessName || "")
       .replace(/\s+/g, " ")
       .trim();
-    const businessPhone = (owner?.phonePro || "").trim();
+    // Téléphone et adresse appartiennent à l'ÉTABLISSEMENT : lus sur le compte,
+    // le rappel d'un RDV pris dans le second établissement envoyait le client à
+    // l'adresse du premier.
+    const identity = identityFor(companyDoc, owner);
+    const businessPhone = (identity.phonePro || "").trim();
 
     // ── Lieu du rendez-vous ──────────────────────────────────────────────
     let locationText = "";
-    const loc = owner?.location;
+    const loc = identity.location;
     if (loc?.serviceType === "en_ligne") {
       locationText = "En ligne";
     } else if (loc?.address || loc?.city) {

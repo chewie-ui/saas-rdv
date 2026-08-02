@@ -1009,8 +1009,13 @@ exports.createAdminBooking = async (req, res) => {
 
     const companyOwner = company.owner ? await User.findById(company.owner).lean() : null;
 
+    // Adresse et téléphone appartiennent à l'ÉTABLISSEMENT : lus sur le compte,
+    // un RDV créé depuis le second établissement envoyait le client à l'adresse
+    // du premier.
+    const identity = identityFor(company, companyOwner);
+
     let locationText = "";
-    const loc = companyOwner?.location;
+    const loc = identity.location;
     if (loc?.serviceType === "en_ligne") {
       locationText = "En ligne";
     } else if (loc?.address || loc?.city) {
@@ -1040,7 +1045,7 @@ exports.createAdminBooking = async (req, res) => {
         locationText,
         // Nom de l'ÉTABLISSEMENT (repli compte pour les fiches historiques).
         businessName:  (company?.name || companyOwner?.businessName || "").trim(),
-        businessPhone: (companyOwner?.phonePro || "").trim(),
+        businessPhone: (identity.phonePro || "").trim(),
         cancelUrl,
         bookingId: newBooking._id,
         cancelToken: newBooking.cancelToken,
@@ -1626,8 +1631,10 @@ exports.sendManualReminder = async (req, res) => {
       return res.status(403).json({ error: "Accès refusé." });
     }
 
+    // `company` : désigne l'établissement d'origine, seul à bénéficier du repli
+    // du compte pour l'adresse et le téléphone (establishmentIdentity).
     const owner = await User.findById(companyDoc.owner)
-      .select("calendarSettings location isPremium manualPremium subscription businessName phonePro")
+      .select("company calendarSettings location phone isPremium manualPremium subscription businessName phonePro")
       .lean();
 
     // Gate sur le forfait de L'ÉTABLISSEMENT, comme partout ailleurs.
@@ -1650,7 +1657,11 @@ exports.sendManualReminder = async (req, res) => {
       ? owner.calendarSettings.reminderPaymentMethods : [];
     const paymentNote = (owner?.calendarSettings?.reminderPaymentNote || "").trim();
 
-    const loc = owner?.location;
+    // Adresse et téléphone de l'ÉTABLISSEMENT du rendez-vous, pas du compte :
+    // un rappel manuel envoyait sinon le client à l'adresse du premier
+    // établissement du patron.
+    const identity = identityFor(companyDoc, owner);
+    const loc = identity.location;
     let locationText = "";
     if (loc?.serviceType === "en_ligne") {
       locationText = "En ligne";
@@ -1660,7 +1671,7 @@ exports.sendManualReminder = async (req, res) => {
 
     // Nom de l'ÉTABLISSEMENT (repli compte pour les fiches historiques).
     const businessName = (companyDoc?.name || owner?.businessName || "").trim();
-    const businessPhone = (owner?.phonePro || "").trim();
+    const businessPhone = (identity.phonePro || "").trim();
 
     const formattedDate = new Date(booking.date).toLocaleDateString("fr-FR", {
       weekday: "long", day: "2-digit", month: "long", year: "numeric",

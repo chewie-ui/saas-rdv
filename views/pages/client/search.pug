@@ -132,9 +132,12 @@ block content
                             var photo = coach.photo || coach.owner.businessPicture || coach.owner.profilePicture || '/images/no-user.webp'
                             var name  = coach.name || coach.owner.businessName || coach.owner.fullName || 'Professionnel'
                             var btype = coach.businessType || coach.owner.businessType || ''
-                            var city  = coach.owner.location && coach.owner.location.city ? coach.owner.location.city : ''
-                            var lat   = coach.owner.location && coach.owner.location.lat  ? coach.owner.location.lat  : ''
-                            var lon   = coach.owner.location && coach.owner.location.lon  ? coach.owner.location.lon  : ''
+                            //- Adresse de l'ÉTABLISSEMENT (estabLocation, calculé côté base) :
+                            //- lue sur le compte, elle affichait la ville du premier
+                            //- établissement sur la carte du second.
+                            var city  = coach.estabLocation && coach.estabLocation.city ? coach.estabLocation.city : ''
+                            var lat   = coach.estabLocation && coach.estabLocation.lat  ? coach.estabLocation.lat  : ''
+                            var lon   = coach.estabLocation && coach.estabLocation.lon  ? coach.estabLocation.lon  : ''
                             var slug  = coach.slug || String(coach._id)
                         a.srp-card(
                             href=`/${slug}`
@@ -174,8 +177,8 @@ block content
                                         span.srp-card__rating-n (#{coach.reviewCount})
                                 else
                                     .srp-card__rating.srp-card__rating--empty Nouveau sur BranShee
-                                if coach.owner.description
-                                    p.srp-card__desc= coach.owner.description.length > 120 ? coach.owner.description.slice(0, 120) + '…' : coach.owner.description
+                                if coach.estabDescription
+                                    p.srp-card__desc= coach.estabDescription.length > 120 ? coach.estabDescription.slice(0, 120) + '…' : coach.estabDescription
                             .srp-card__cta
                                 span.srp-card__book Réserver
                                 span.material-symbols-outlined.srp-card__chev(aria-hidden="true") chevron_right

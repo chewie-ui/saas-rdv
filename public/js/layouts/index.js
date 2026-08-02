@@ -2520,6 +2520,7 @@ async function submitBooking() {
         const KNOWN = {
           lead_time_not_met:  { title: "Créneau trop proche",    step: "time",    msg: "Ce créneau est trop proche pour être réservé. Merci de choisir un horaire plus tard." },
           invalid_session:    { title: "Séance indisponible",    step: "time",    msg: "Cette séance n'est plus disponible. Merci d'en choisir une autre." },
+          slot_unavailable:   { title: "Créneau indisponible",   step: "time",    msg: "Ce créneau n'est plus disponible. Merci d'en choisir un autre." },
           service_not_found:  { title: "Service indisponible",   step: "service", msg: "Ce service n'est plus disponible. Merci d'en choisir un autre." },
           payment_unverified: { title: "Paiement non confirmé",  step: null,      msg: "Le paiement n'a pas pu être vérifié. Réessayez ou contactez l'établissement." },
           client_blocked:     { title: "Réservation impossible", step: null,      msg: "Ce professionnel n'accepte plus de réservation de votre part. Merci de le contacter directement." },

@@ -20,6 +20,7 @@ const User = require("../../db/models/user.model");
 const Company = require("../../db/models/company/company.model");
 const CompanyMembership = require("../../db/models/company/companyMembership.model");
 const { getCompanyPlan, canCreateEstablishment } = require("../../utils/planLimits");
+const { identityFor } = require("../../utils/establishmentIdentity");
 const { logActivity } = require("../../utils/activityLog");
 
 const OBJECT_ID = /^[a-f0-9]{24}$/i;
@@ -65,6 +66,13 @@ function companyType(company, owner) {
   return (company && company.businessType) || (owner && owner.businessType) || "";
 }
 
+// Ville de l'ÉTABLISSEMENT (repli sur le compte réservé à celui d'origine).
+// `owner.city` reste un dernier recours : champ hérité de vieux comptes.
+function cityOf(company, owner) {
+  const loc = identityFor(company, owner).location;
+  return (loc && typeof loc === "object" && loc.city) || (owner && owner.city) || "";
+}
+
 // Forme commune envoyée à l'app pour un établissement, quel que soit le lien
 // (possédé, rejoint, invitation, demande).
 function serializeEstablishment(company, owner, extra = {}) {
@@ -79,7 +87,9 @@ function serializeEstablishment(company, owner, extra = {}) {
   };
 }
 
-const OWNER_FIELDS = "businessName fullName businessType businessPicture city location subscription isPremium manualPremium";
+// `company` : l'établissement D'ORIGINE du compte, seul à hériter de son
+// adresse tant que la migration d'identité n'a pas tourné (establishmentIdentity).
+const OWNER_FIELDS = "company businessName fullName businessType businessPicture city location subscription isPremium manualPremium";
 
 // ── GET /api/v1/establishments ────────────────────────────────────────────
 exports.list = async (req, res) => {
@@ -306,8 +316,10 @@ exports.search = async (req, res) => {
 
     const results = joinable.map((c) =>
       serializeEstablishment(c, c.owner, {
+        // Ville de l'ÉTABLISSEMENT : prise sur le compte, elle affichait la
+        // ville du premier établissement du patron sur tous les autres.
+        city: cityOf(c, c.owner),
         // Le patron compte comme membre de son propre établissement.
-        city: (c.owner.location && c.owner.location.city) || c.owner.city || "",
         collaboratorsCount: counts[String(c._id)] || 0,
       }),
     );

@@ -239,3 +239,7 @@ exports.acquisitionPage = async (req, res) => {
 };
 
 exports.natureDuChemin = natureDuChemin; // exporté pour les tests
+// Exporté pour le tableau de bord, qui a besoin de la MÊME définition de
+// « page produit » : deux listes séparées finiraient par diverger et les deux
+// pages annonceraient des nombres de visiteurs différents.
+exports.CHEMINS_ACQUISITION = CHEMINS_ACQUISITION;

@@ -264,12 +264,15 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
 
     if (location) {
       const rx = { $regex: escapeRegex(location.trim()).replace(/[\s\-\']/g, ".*"), $options: "i" };
+      // `estabLocation` = adresse EFFECTIVE de l'établissement (cf. $addFields
+      // plus bas). Chercher sur `owner.location` remontait le second
+      // établissement d'un patron sur la ville du premier.
       const locationFilters = [
-        { "owner.location.city": rx },
-        { "owner.location.address": rx },
+        { "estabLocation.city": rx },
+        { "estabLocation.address": rx },
       ];
       const zipValue = parseInt(location);
-      if (!isNaN(zipValue)) locationFilters.push({ "owner.location.zip": zipValue });
+      if (!isNaN(zipValue)) locationFilters.push({ "estabLocation.zip": zipValue });
       conditions.push({ $or: locationFilters });
     }
 
@@ -301,9 +304,13 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
     const PAGE_SIZE = 24;
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
 
+    // `description` et `location` du compte n'y figurent PAS volontairement :
+    // ils appartiennent à l'établissement (estabDescription / estabLocation
+    // ci-dessous). Les laisser ici suffisait à ce qu'une vue les relise et
+    // réaffiche l'adresse du premier établissement sur la carte du second.
     const OWNER_FIELDS = {
       _id: 1, fullName: 1, businessName: 1, businessType: 1, businessPicture: 1,
-      profilePicture: 1, description: 1, location: 1, verified: 1,
+      profilePicture: 1, verified: 1,
       subscription: 1, isPremium: 1, manualPremium: 1,
     };
     const PAID = ["essentiel", "pro", "business"];
@@ -311,12 +318,44 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
     // y compris "basic" (choix explicite ≠ absence de valeur).
     const KNOWN_PLANS = ["basic", "essentiel", "pro", "business"];
 
+    // ── Identité EFFECTIVE de l'établissement ────────────────────────────────
+    // Transposition en agrégation de utils/establishmentIdentity.js : adresse et
+    // description appartiennent à l'ÉTABLISSEMENT, et seul celui D'ORIGINE
+    // (`User.company`) retombe sur le compte tant que la migration n'a pas
+    // tourné. Les deux implémentations doivent rester alignées : si hasLocation()
+    // ou isPrimary() bouge là-bas, corriger ici aussi.
+    const filled = (path) => ({ $not: [{ $in: [{ $ifNull: [path, ""] }, ["", null]] }] });
+    // Réplique de hasLocation() : un `location` à {} (ou une chaîne héritée,
+    // dont les sous-champs sont introuvables) ne compte pas comme renseigné.
+    const hasLocationExpr = {
+      $or: ["address", "city", "zip", "gmapUrl", "iframeUrl", "lat"].map((f) => filled(`$location.${f}`)),
+    };
+
     const pipeline = [
       { $match: { isPaused: { $ne: true }, isDeleted: { $ne: true } } },
       { $lookup: { from: User.collection.name, localField: "owner", foreignField: "_id", as: "owner" } },
       { $unwind: "$owner" },
-      // Les critères de recherche portent sur le compte propriétaire : on les
-      // applique après la jointure (plus de requête User séparée non bornée).
+      { $addFields: {
+          _isPrimary: { $eq: [{ $toString: { $ifNull: ["$owner.company", ""] } }, { $toString: "$_id" }] },
+      } },
+      { $addFields: {
+          estabLocation: { $cond: [
+            hasLocationExpr,
+            "$location",
+            { $cond: ["$_isPrimary", { $ifNull: ["$owner.location", null] }, null] },
+          ] },
+          estabDescription: { $let: {
+            vars: { cd: { $ifNull: ["$description", ""] } },
+            in: { $cond: [
+              { $ne: ["$$cd", ""] },
+              "$$cd",
+              { $cond: ["$_isPrimary", { $ifNull: ["$owner.description", ""] }, ""] },
+            ] },
+          } },
+      } },
+      // Les critères de recherche portent sur l'établissement et sur son compte
+      // propriétaire : on les applique après la jointure (plus de requête User
+      // séparée non bornée) et après le calcul de l'identité effective.
       { $match: searchMatch },
       // Note moyenne + nombre d'avis, calculés en base.
       { $lookup: {
@@ -370,7 +409,7 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
       { $sort: { boostRank: 1, boostPosition: 1, planRank: -1, avgRating: -1, reviewCount: -1, _id: 1 } },
       // `name` / `businessType` / `photo` de l'ÉTABLISSEMENT : c'est ce qui doit
       // s'afficher sur la carte (le compte propriétaire ne sert que de repli).
-      { $project: { _id: 1, slug: 1, name: 1, businessType: 1, photo: 1, boostPosition: 1, avgRating: 1, reviewCount: 1, plan: 1, featured: 1, owner: OWNER_FIELDS } },
+      { $project: { _id: 1, slug: 1, name: 1, businessType: 1, photo: 1, boostPosition: 1, avgRating: 1, reviewCount: 1, plan: 1, featured: 1, estabLocation: 1, estabDescription: 1, owner: OWNER_FIELDS } },
       // $facet : la page ET le total en une seule requête.
       { $facet: {
           rows:  [{ $skip: (page - 1) * PAGE_SIZE }, { $limit: PAGE_SIZE }],
@@ -726,7 +765,40 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
   let clientUser    = null;
   let clientSession = null;
   let hasReviewed   = false;
-  if (req.session && req.session.clientId) {
+  // Priorité à req.user, comme partout ailleurs (middlewares/injectClientUser,
+  // isClientOrUserAuth, POST /reviews, booking.controller). Les deux sessions
+  // peuvent coexister — req.login ne purge pas req.session.clientId — et cette
+  // page était la SEULE à tester clientId d'abord : elle affichait l'identité
+  // Client alors que POST /reviews et Booking.clientRef enregistraient celle du
+  // User, d'où un formulaire d'avis vierge répondant « vous avez déjà laissé un
+  // avis ».
+  if (req.user) {
+    if (String(req.user._id) !== String(company.owner)) {
+      // Un User connecté qui n'est PAS le propriétaire de cet établissement
+      // peut y laisser un avis (avant, seul un ancien compte Client était
+      // reconnu, d'où le « connectez-vous » trompeur qui renvoyait vers
+      // l'admin puisque le User était déjà connecté).
+      try {
+        const parts = (req.user.fullName || "").trim().split(" ");
+        clientUser = {
+          firstName: parts[0] || "",
+          lastName: parts.slice(1).join(" ") || "",
+          email: req.user.email || "",
+          phone: req.user.phone || "",
+        };
+        clientSession = {
+          _id:            String(req.user._id),
+          fullName:       req.user.fullName || "",
+          profilePicture: req.user.profilePicture || "/images/no-user.webp",
+        };
+        const Review = require("../db/models/review.model");
+        const existingReview = await Review.findOne({ company: company._id, client: req.user._id }).lean();
+        hasReviewed = !!existingReview;
+      } catch (_) {}
+    }
+  } else if (req.session && req.session.clientId) {
+    // Repli sur l'ancien compte Client séparé, tant que tous les comptes n'ont
+    // pas été fusionnés (cf. scripts/migrate-merge-client-into-user.js).
     try {
       const Client = require("../db/models/client.model");
       const client = await Client.findById(req.session.clientId).lean();
@@ -749,28 +821,6 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
         hasReviewed = !!existingReview;
       }
     } catch (_) {}
-  } else if (req.user && String(req.user._id) !== String(company.owner)) {
-    // Compte unifié (User) connecté qui n'est PAS le propriétaire de cet
-    // établissement → il peut aussi laisser un avis (avant, seul un ancien
-    // compte Client était reconnu, d'où le « connectez-vous » trompeur qui
-    // renvoyait vers l'admin puisque le User était déjà connecté).
-    try {
-      const parts = (req.user.fullName || "").trim().split(" ");
-      clientUser = {
-        firstName: parts[0] || "",
-        lastName: parts.slice(1).join(" ") || "",
-        email: req.user.email || "",
-        phone: req.user.phone || "",
-      };
-      clientSession = {
-        _id:            String(req.user._id),
-        fullName:       req.user.fullName || "",
-        profilePicture: req.user.profilePicture || "/images/no-user.webp",
-      };
-      const Review = require("../db/models/review.model");
-      const existingReview = await Review.findOne({ company: company._id, client: req.user._id }).lean();
-      hasReviewed = !!existingReview;
-    } catch (_) {}
   }
 
   // ── Avis ──────────────────────────────────────────────────────────────────
@@ -791,7 +841,13 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
   // repli pour les fiches créées avant le multi-établissements).
   const bizLabel = company.name || coach.businessName || coach.fullName;
   const profileTitle = `${bizLabel} — Réserver en ligne | BranShee`;
-  const profileDesc = coach.description ? `${coach.description.slice(0, 150)}…` : `Réservez en ligne avec ${bizLabel}. Prise de rendez-vous rapide et gratuite sur BranShee.`;
+  // Identité publique RÉSOLUE (adresse, contacts, réseaux, description).
+  // Ne jamais relire coach.location & co : ces champs vivent désormais sur
+  // l'établissement (cf. utils/establishmentIdentity.js). La méta description
+  // en fait partie — lue sur le compte, elle décrivait le premier
+  // établissement sur la page du second.
+  const estab = identityFor(company, coach);
+  const profileDesc = estab.description ? `${estab.description.slice(0, 150)}…` : `Réservez en ligne avec ${bizLabel}. Prise de rendez-vous rapide et gratuite sur BranShee.`;
 
   const cs = coach.calendarSettings || {};
 
@@ -836,10 +892,7 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
     canonical: `https://www.branshee.com/${company.slug || company._id}`,
     company,
     coach,
-    // Identité publique RÉSOLUE (adresse, contacts, réseaux, description).
-    // Ne jamais relire coach.location & co dans la vue : ces champs vivent
-    // désormais sur l'établissement (cf. utils/establishmentIdentity.js).
-    estab: identityFor(company, coach),
+    estab,
     services,
     activeEmployees,
     servicesJson,

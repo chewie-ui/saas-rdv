@@ -15,6 +15,7 @@ const Client    = require("../db/models/client.model");
 const LoginEvent = require("../db/models/loginEvent.model");
 const { FEATURES, ADMIN_FEATURES, invalidateFeatureFlagCache } = require("../middlewares/featureFlag");
 const { extractNavLinks } = require("../utils/navLinks");
+const { identityFor } = require("../utils/establishmentIdentity");
 
 exports.loginPage = (req, res) => {
   if (req.session.isSuperAdmin) return res.redirect("/superadmin");
@@ -280,14 +281,22 @@ exports.establishmentDetails = async (req, res) => {
       .lean();
     if (!c) return res.status(404).json({ error: "Établissement introuvable." });
 
-    const [reservations, aVenir, services, employes, clients, avis] = await Promise.all([
+    // Les clients d'un établissement se déduisent des réservations (emails
+    // distincts), comme dans clientDossier.controller. L'ancien
+    // `Client.countDocuments({ company })` renvoyait TOUJOURS 0 : le schéma
+    // Client n'a pas de champ `company`, et Mongoose laisse passer un filtre
+    // inconnu tel quel à MongoDB.
+    const [reservations, aVenir, services, employes, emailsClients, avis] = await Promise.all([
       Booking.countDocuments({ company: c._id }),
       Booking.countDocuments({ company: c._id, date: { $gte: new Date() } }),
       Service.countDocuments({ company: c._id }),
       Employee.countDocuments({ company: c._id }),
-      Client.countDocuments({ company: c._id }),
+      Booking.distinct("email", { company: c._id, email: { $nin: [null, ""] } }),
       Review.countDocuments({ company: c._id }),
     ]);
+    // `distinct` est sensible à la casse : on re-déduplique en minuscules,
+    // sinon « Jean@x.be » et « jean@x.be » comptent pour deux personnes.
+    const clients = new Set(emailsClients.map((e) => String(e).toLowerCase().trim())).size;
 
     res.json({
       success: true,
@@ -399,10 +408,15 @@ exports.usersPage = async (req, res) => {
   const ilYa7j = new Date(Date.now() - 7 * 24 * 3600 * 1000);
   const ilYa30j = new Date(Date.now() - 30 * 24 * 3600 * 1000);
 
+  // Le KPI « clients » couvre les DEUX modèles : la collection Client est
+  // figée depuis l'unification (plus aucune inscription n'y atterrit), toute
+  // nouvelle personne arrive dans User avec accountIntent 'client'. Ne compter
+  // que Client sous-évaluait donc structurellement le chiffre.
   const [
     liste, totalComptes, disabledCount, adminsToday, inscrits7j,
     connectes7j, jamaisConnectes, totalViews, uniqueVisitors,
-    totalClients, clientsToday, topSources, totalEtablissements,
+    clientsLegacy, clientsLegacyToday, clientsUnifies, clientsUnifiesToday,
+    topSources, totalEtablissements,
   ] = await Promise.all([
     chargerComptes(filtres),
     User.countDocuments({}),
@@ -415,6 +429,8 @@ exports.usersPage = async (req, res) => {
     PageView.distinct("visitorId"),
     Client.countDocuments({}),
     Client.countDocuments({ createdAt: { $gte: debutJour } }),
+    User.countDocuments({ accountIntent: "client" }),
+    User.countDocuments({ accountIntent: "client", createdAt: { $gte: debutJour } }),
     PageView.aggregate([
       { $group: { _id: { $ifNull: ["$source", "direct"] }, count: { $sum: 1 } } },
       { $sort: { count: -1 } },
@@ -475,8 +491,8 @@ exports.usersPage = async (req, res) => {
     trafic: {
       totalViews,
       uniqueViews: uniqueVisitors.length,
-      totalClients,
-      clientsToday,
+      totalClients: clientsLegacy + clientsUnifies,
+      clientsToday: clientsLegacyToday + clientsUnifiesToday,
       topSources,
       inscritsParSource,
       inscritsSansSource,
@@ -497,8 +513,11 @@ exports.userDetails = async (req, res) => {
 
     const companies = await Company.find({ owner: u._id }).select("name slug isPaused createdAt").lean();
     const ids = companies.map((c) => c._id);
-    const [clients, reservations, connexions, dernieresActions] = await Promise.all([
-      ids.length ? Client.countDocuments({ company: { $in: ids } }) : 0,
+    // Même correctif qu'establishmentDetails : les clients se déduisent des
+    // emails distincts sur les réservations, pas d'un `company` inexistant
+    // sur le schéma Client (le compte affichait donc toujours 0 client).
+    const [emailsClients, reservations, connexions, dernieresActions] = await Promise.all([
+      ids.length ? Booking.distinct("email", { company: { $in: ids }, email: { $nin: [null, ""] } }) : [],
       ids.length ? Booking.countDocuments({ company: { $in: ids } }) : 0,
       LoginEvent.countDocuments({ user: u._id }),
       ids.length
@@ -510,6 +529,7 @@ exports.userDetails = async (req, res) => {
             .lean()
         : [],
     ]);
+    const clients = new Set(emailsClients.map((e) => String(e).toLowerCase().trim())).size;
 
     res.json({
       success: true,
@@ -1099,10 +1119,16 @@ exports.boostPage = async (req, res) => {
   // name/photo/businessType de l'ÉTABLISSEMENT : sans eux, deux
   // établissements d'un même patron étaient indiscernables dans la liste.
   const companies = await Company.find({})
-    .select("_id slug boostPosition owner name photo businessType")
-    .populate("owner", "fullName businessName businessType location profilePicture businessPicture")
+    .select("_id slug boostPosition owner name photo businessType location")
+    .populate("owner", "company fullName businessName businessType location profilePicture businessPicture")
     .sort({ boostPosition: -1, name: 1 })
     .lean();
+  // Ville de l'ÉTABLISSEMENT : lue sur le compte, elle affichait la ville du
+  // premier établissement du patron sur toutes ses autres lignes.
+  companies.forEach((c) => {
+    const loc = identityFor(c, c.owner).location;
+    c.ville = (loc && typeof loc === "object" && loc.city) || "";
+  });
   res.render("superadmin/boost", { saPage: "boost", companies });
 };
 

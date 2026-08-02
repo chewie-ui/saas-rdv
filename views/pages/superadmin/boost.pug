@@ -61,7 +61,8 @@ block content
                         //- Établissement d'abord, compte propriétaire en repli.
                         - var nom = c.name || (c.owner && (c.owner.businessName || c.owner.fullName)) || 'Sans nom'
                         - var metier = c.businessType || (c.owner && c.owner.businessType) || ''
-                        - var ville = (c.owner && c.owner.location && c.owner.location.city) || ''
+                        //- Ville résolue côté contrôleur (identité de l'établissement).
+                        - var ville = c.ville || ''
                         - var photo = c.photo || (c.owner && (c.owner.businessPicture || c.owner.profilePicture)) || null
                         - var slug = c.slug || String(c._id)
                         - var pos = c.boostPosition || 0

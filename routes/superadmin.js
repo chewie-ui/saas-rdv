@@ -132,6 +132,13 @@ router.post("/superadmin/support-editor/sections/:sectionId/faqs", isSuperAdmin,
 router.patch("/superadmin/support-editor/sections/:sectionId/faqs/:faqId", isSuperAdmin, ctrl.updateFaq);
 router.delete("/superadmin/support-editor/sections/:sectionId/faqs/:faqId", isSuperAdmin, ctrl.deleteFaq);
 
+// Tableau de bord — évolution sur 30 jours, comparée aux 30 jours précédents.
+router.get(
+  "/superadmin/tableau-de-bord",
+  isSuperAdmin,
+  require("../controllers/saDashboard.controller").dashboardPage
+);
+
 // Acquisition — exploitation des vues déjà collectées (PageView).
 router.get(
   "/superadmin/acquisition",

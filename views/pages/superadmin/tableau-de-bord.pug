@@ -1,0 +1,74 @@
+extends ../../layouts/sa
+
+block styles
+    link(rel="stylesheet" href="/css/layouts/sa-tableau-de-bord.css")
+
+block content
+    -
+        function nb(n) { return Number(n || 0).toLocaleString('fr-FR'); }
+        var CHIFFRES = [
+            { cle: 'etablissements', libelle: 'Établissements', icone: 'storefront', aide: 'avec un nom renseigné' },
+            { cle: 'actifs', libelle: 'Actifs', icone: 'check_circle', aide: 'hors mise en pause' },
+            { cle: 'payants', libelle: 'Clients payants', icone: 'credit_card', aide: 'abonnement Stripe actif' },
+            { cle: 'octrois', libelle: 'Octrois manuels', icone: 'card_giftcard', aide: 'offerts, non payants' }
+        ];
+
+    .sa-head
+        button.sa-ico.sa-burger(type="button" data-sa-burger aria-label="Menu")
+            span.material-symbols-outlined menu
+        div
+            h1.sa-head__title Tableau de bord
+            .sa-head__sub Ce qui monte, ce qui descend, sur 30 jours
+
+    .sa-body
+
+        //- ── Chiffres clés du parc ────────────────────────────────────────
+        .sa-kpis
+            each c in CHIFFRES
+                .sa-kpi
+                    .sa-kpi__label
+                        span.material-symbols-outlined= c.icone
+                        span= c.libelle
+                    .sa-kpi__value= nb(parc[c.cle])
+                    .sa-kpi__delta= c.aide
+
+        //- Les pages Utilisateurs et Établissements comptent un octroi manuel
+        //- comme un plan payant : elles annoncent donc un chiffre plus élevé.
+        //- Le dire ici évite de relire l'écart comme un bug.
+        .sa-alerte
+            span.material-symbols-outlined info
+            div
+                | « Clients payants » ne compte que les abonnements <b>Stripe actifs</b>.
+                |  Les octrois manuels sont comptés à part : c'est pour les avoir additionnés
+                |  qu'on a cru à des clients payants qui n'existaient pas. Les pages
+                |  Utilisateurs et Établissements, elles, les additionnent encore.
+
+        //- ── Évolution ────────────────────────────────────────────────────
+        each g in graphiques
+            .sa-card(class='tdb-card is-' + g.cle)
+                .sa-card__t
+                    span.material-symbols-outlined= g.icone
+                    span= g.titre
+                .tdb-top
+                    .tdb-total= nb(g.total)
+                    if g.delta
+                        span.sa-kpi__delta(class=g.delta.positif ? 'sa-kpi__delta--up' : 'sa-kpi__delta--down')= g.delta.libelle
+                    .tdb-vs
+                        | vs les 30 jours d'avant (#{nb(g.totalPrecedent)})
+                .tdb-plot
+                    .tdb-max= nb(g.max)
+                    svg.tdb-svg(viewBox='0 0 600 150' preserveAspectRatio="none" aria-hidden="true")
+                        polygon.tdb-aire(points=g.fillPts)
+                        polyline.tdb-ligne(points=g.pts)
+                .tdb-axe
+                    span= g.debut
+                    span= g.milieu
+                    span= g.fin
+                .tdb-aide= g.aide
+
+        .sa-alerte.tdb-note
+            span.material-symbols-outlined visibility_off
+            div
+                | Le comptage des visiteurs passe par un script de page : tout ce qui
+                |  n'exécute pas de JavaScript n'est jamais compté. Le chiffre est donc
+                |  un plancher, jamais un total. Le jour en cours, lui, est encore incomplet.

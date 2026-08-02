@@ -915,14 +915,20 @@ exports.updateLocation = async (req, res) => {
     // L'adresse appartient à l'ÉTABLISSEMENT. Elle vivait sur le compte : un
     // patron avec deux établissements affichait donc la même adresse sur les
     // deux pages publiques, y compris sur celle qu'il venait de créer vide.
-    const co = res.locals.currentCompany;
-    if (!co) return res.status(400).json({ success: false, message: "Aucun établissement sélectionné." });
-    await Company.updateOne({ _id: co._id }, { $set: { location: loc } });
+    // On résout l'établissement actif ICI : cette route est appelée en fetch et
+    // n'a pas injectCompany (qui redirige vers "/" au lieu de répondre en JSON),
+    // donc `res.locals.currentCompany` y est TOUJOURS vide.
+    const companyId = await resolveActiveOwnedCompanyId(req);
+    if (companyId) {
+      await Company.updateOne({ _id: companyId }, { $set: { location: loc } });
+    }
 
     // Le compte reste la source de repli de l'établissement D'ORIGINE tant
     // qu'il n'a pas la sienne (cf. utils/establishmentIdentity.js) : on aligne
     // les deux pour cet établissement-là, afin qu'ils ne divergent pas.
-    if (String(req.user.company || "") === String(co._id)) {
+    // Sans établissement possédé (collaborateur), on écrit sur le compte plutôt
+    // que de perdre la saisie en silence.
+    if (!companyId || String(req.user.company || "") === String(companyId)) {
       await User.findByIdAndUpdate(req.user._id, { location: loc });
     }
 
@@ -935,9 +941,23 @@ exports.updateLocation = async (req, res) => {
 
 exports.editDescription = async (req, res) => {
   try {
-    const { _id } = req.user;
     const { description } = req.body;
-    await User.findByIdAndUpdate(_id, { description });
+
+    // La description appartient à l'ÉTABLISSEMENT (même motif que
+    // updateLocation) : écrite sur le compte, elle réapparaissait sur la page
+    // publique du second établissement du même patron. Même contrainte que
+    // updateLocation : pas d'injectCompany sur cette route, donc l'établissement
+    // actif se résout ici (`res.locals.currentCompany` y serait toujours vide).
+    const companyId = await resolveActiveOwnedCompanyId(req);
+    if (companyId) {
+      await Company.updateOne({ _id: companyId }, { $set: { description: description || "" } });
+    }
+
+    // Repli de l'établissement D'ORIGINE (cf. utils/establishmentIdentity.js) :
+    // on aligne le compte pour que les deux ne divergent pas sur celui-là.
+    if (!companyId || String(req.user.company || "") === String(companyId)) {
+      await User.findByIdAndUpdate(req.user._id, { description: description || "" });
+    }
     return res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -995,27 +1015,37 @@ exports.editBusinessInfo = async (req, res) => {
     // la valeur existante à chaque sauvegarde du nom/type d'activité.
     const update = {};
     if (businessName !== undefined) update.businessName = businessName || "";
-    if (description !== undefined) update.description = description || "";
     if (businessType !== undefined) update.businessType = businessType || "";
     // Chemin déjà uploadé (cf. page de création d'établissement) — pas un
     // fichier multipart ici, juste le path renvoyé par l'upload précédent.
     if (businessPicture) update.businessPicture = businessPicture;
-    await User.findByIdAndUpdate(req.user._id, update);
 
     // Le "nom de l'établissement" édité dans Personnaliser est le nom de
     // l'ÉTABLISSEMENT ACTIF (company.name) — c'est lui qui s'affiche dans le
     // sélecteur en haut à gauche et sur la page publique. On l'écrit donc aussi
     // sur la Company active (dual-write ; user.businessName reste le fallback).
+    let companyId = null;
     try {
-      const companyId = await resolveActiveOwnedCompanyId(req);
+      companyId = await resolveActiveOwnedCompanyId(req);
       if (companyId) {
         const cUpd = {};
         if (businessName !== undefined) cUpd.name = businessName || "";
         if (businessType !== undefined) cUpd.businessType = businessType || "";
         if (businessPicture) cUpd.photo = businessPicture;
+        // La description est un champ d'IDENTITÉ : elle appartient à
+        // l'établissement, jamais au compte (sinon elle se recopie sur la fiche
+        // publique du second établissement).
+        if (description !== undefined) cUpd.description = description || "";
         if (Object.keys(cUpd).length) await Company.findByIdAndUpdate(companyId, cUpd);
       }
     } catch (e) { console.error("[editBusinessInfo] sync company:", e.message); }
+
+    // Le compte n'est le repli que de l'établissement D'ORIGINE : n'y aligner
+    // la description que dans ce cas, sinon on repollue la fiche du premier.
+    if (description !== undefined && companyId && String(req.user.company || "") === String(companyId)) {
+      update.description = description || "";
+    }
+    if (Object.keys(update).length) await User.findByIdAndUpdate(req.user._id, update);
 
     return res.json({ success: true });
   } catch (err) {
@@ -1031,7 +1061,20 @@ exports.updateAbout = async (req, res) => {
   try {
     const raw = typeof req.body.aboutHtml === "string" ? req.body.aboutHtml : "";
     const clean = sanitizeRichText(raw).slice(0, 4000);
-    await User.findByIdAndUpdate(req.user._id, { aboutHtml: clean });
+
+    // Porté par l'ÉTABLISSEMENT, comme la description : écrit sur le compte, ce
+    // texte n'était plus relu (le helper d'identité bloque le repli hors
+    // établissement d'origine), donc la modification restait sans effet.
+    // Résolution locale de l'établissement actif : cette route n'a pas
+    // injectCompany (cf. editDescription).
+    const companyId = await resolveActiveOwnedCompanyId(req);
+    if (companyId) {
+      await Company.updateOne({ _id: companyId }, { $set: { aboutHtml: clean } });
+    }
+
+    if (!companyId || String(req.user.company || "") === String(companyId)) {
+      await User.findByIdAndUpdate(req.user._id, { aboutHtml: clean });
+    }
     return res.json({ success: true, aboutHtml: clean });
   } catch (err) {
     console.error(err);

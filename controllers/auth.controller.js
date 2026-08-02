@@ -243,8 +243,14 @@ exports.forgotPasswordVerifyCode = async (req, res) => {
     // l'email est inscrit (avant, le front affichait "Aucun compte trouvé",
     // ce qui permettait de sonder quels emails existent). On ne génère et
     // n'envoie un code que si le compte existe réellement.
-    const user = await User.findOne({ email }).select("_id").lean();
-    if (user) {
+    // Les anciens comptes Client séparés n'ont pas encore été fusionnés
+    // (cf. scripts/migrate-merge-client-into-user.js) : sans ce repli, un
+    // Client sans User homonyme recevait la réponse anti-énumération mais
+    // AUCUN code — donc aucun moyen de récupérer son compte.
+    const compte =
+      (await User.findOne({ email }).select("_id").lean()) ||
+      (await Client.findOne({ email }).select("_id").lean());
+    if (compte) {
       // Code cryptographiquement sûr (avant : Math.random, prévisible), lié à
       // l'email, avec expiration et limite de tentatives — voir checkCodePwd.
       const code = crypto.randomInt(100000, 1000000);
@@ -325,15 +331,28 @@ exports.newPwd = async (req, res) => {
     // `$inc: tokenEpoch` révoque les jetons de l'app mobile déjà émis pour ce
     // compte : une réinitialisation doit couper l'accès des appareils encore
     // connectés (leur refresh vit sinon 60 jours).
-    const user = await User.findOneAndUpdate(
+    let compte = await User.findOneAndUpdate(
       { email },
       { $set: { password: hashedPassword }, $inc: { tokenEpoch: 1 } },
     );
 
+    // Repli sur l'ancien compte Client séparé, pour rester cohérent avec
+    // forgotPasswordVerifyCode qui accepte aussi ces comptes. On priorise le
+    // User quand les deux existent : c'est lui que passport tente en premier
+    // dans POST /login, le repli Client n'y est atteint qu'après son échec.
+    // Pas de `$inc: tokenEpoch` ici — ce champ n'existe pas sur le schéma
+    // Client, et Mongoose ignorerait la mise à jour EN SILENCE.
+    if (!compte) {
+      compte = await Client.findOneAndUpdate(
+        { email },
+        { $set: { password: hashedPassword } },
+      );
+    }
+
     // Usage unique : on purge la session quel que soit le résultat.
     delete req.session.forgotPwd;
 
-    if (!user) {
+    if (!compte) {
       return res.json({ success: false, message: "Utilisateur introuvable." });
     }
     return res.json({ success: true });

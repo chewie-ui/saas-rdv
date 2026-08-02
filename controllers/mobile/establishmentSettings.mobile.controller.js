@@ -18,17 +18,18 @@
 //   - controllers/account.controller.js : updateAccountInfo /
 //     updateAccountSocial pour la validation des coordonnées
 //
-// ⚠ Ce qui vit où : la Company porte le nom, le métier et la photo. La
-// description et les coordonnées (email pro, téléphone pro, site, adresse)
-// n'existent PAS sur la Company — elles vivent sur le compte PROPRIÉTAIRE
-// (db/models/user.model.js) et sont donc communes à tous ses établissements,
-// exactement comme sur le site. On les expose telles quelles, avec
-// `contact.scope = "account"`, et seul le propriétaire peut les modifier : un
-// collaborateur "gérant" d'un établissement n'a pas à réécrire le compte de
-// quelqu'un d'autre.
+// ⚠ Ce qui vit où : la Company porte le nom, le métier, la photo, ET l'identité
+// publique (description, email pro, téléphone pro, site, adresse). Ces derniers
+// vivaient sur le compte PROPRIÉTAIRE et étaient donc communs à tous ses
+// établissements : le second affichait l'adresse du premier. Ils sont
+// désormais propres à chaque établissement (`contact.scope = "establishment"`),
+// la résolution passant par utils/establishmentIdentity.js — qui garde un repli
+// sur le compte pour l'établissement D'ORIGINE tant que la migration n'a pas
+// tourné.
 const multer = require("multer");
 const Company = require("../../db/models/company/company.model");
 const User = require("../../db/models/user.model");
+const { identityFor } = require("../../utils/establishmentIdentity");
 const { getPermissionsForCompanyAndUser } = require("../../utils/permissions");
 const { getCompanyPlan } = require("../../utils/planLimits");
 const { logActivity } = require("../../utils/activityLog");
@@ -93,14 +94,17 @@ exports.requireManage = async function requireManage(req, res, next) {
   }
 };
 
-// Charge le compte propriétaire (porteur de la description et des coordonnées).
+// Charge le compte propriétaire : il reste la source de REPLI de l'identité
+// pour l'établissement d'origine (cf. utils/establishmentIdentity.js), donc
+// identityFor() a besoin de lui.
 async function loadOwner(company, currentUser) {
   if (String(company.owner) === String(currentUser._id)) return currentUser;
   return User.findById(company.owner).lean();
 }
 
 function serializeSettings(company, owner, { isOwner }) {
-  const loc = (owner && owner.location) || {};
+  const identity = identityFor(company, owner);
+  const loc = (identity.location && typeof identity.location === "object") ? identity.location : {};
   return {
     establishment: {
       id: String(company._id),
@@ -116,14 +120,15 @@ function serializeSettings(company, owner, { isOwner }) {
       createdAt: company.createdAt || null,
     },
     contact: {
-      // "account" : ces champs appartiennent au COMPTE du propriétaire et sont
-      // partagés par tous ses établissements. L'app le dit à l'utilisateur.
-      scope: "account",
-      editable: isOwner,
-      description: (owner && owner.description) || "",
-      emailPro: (owner && owner.emailPro) || "",
-      phonePro: (owner && owner.phonePro) || "",
-      website: (owner && owner.website) || "",
+      // "establishment" : ces champs sont propres à CET établissement, rien
+      // n'est partagé avec les autres du même propriétaire. L'app le dit à
+      // l'utilisateur.
+      scope: "establishment",
+      editable: true,
+      description: identity.description || "",
+      emailPro: identity.emailPro || "",
+      phonePro: identity.phonePro || "",
+      website: identity.website || "",
       address: loc.address || "",
       city: loc.city || "",
       zip: loc.zip === undefined || loc.zip === null ? "" : String(loc.zip),
@@ -153,7 +158,6 @@ exports.update = async (req, res) => {
     const body = req.body || {};
 
     const companyUpdate = {};
-    const ownerUpdate = {};
 
     // ── Champs de l'établissement ──────────────────────────────────────────
     if (body.name !== undefined) {
@@ -197,17 +201,10 @@ exports.update = async (req, res) => {
 
     if (body.isPaused !== undefined) companyUpdate.isPaused = !!body.isPaused;
 
-    // ── Coordonnées : compte propriétaire uniquement ───────────────────────
-    const contactKeys = ["description", "emailPro", "phonePro", "website", "address", "city", "zip", "country"];
-    const touchesContact = contactKeys.some((k) => body[k] !== undefined);
-    if (touchesContact && !req.targetIsOwner) {
-      return res.status(403).json({
-        error: "owner_only",
-        message:
-          "La description et les coordonnées appartiennent au compte du propriétaire : lui seul peut les modifier.",
-      });
-    }
-
+    // ── Identité publique : portée par l'ÉTABLISSEMENT ─────────────────────
+    // Ces champs partaient sur le compte propriétaire : chaque enregistrement
+    // depuis l'app re-déposait donc l'adresse d'un établissement sur tous les
+    // autres. Ils vont désormais sur la Company, comme sur le site.
     if (body.description !== undefined) {
       const description = String(body.description).trim();
       if (description.length > MAX.description) {
@@ -222,7 +219,7 @@ exports.update = async (req, res) => {
           message: "La description ne peut pas contenir les caractères < ou >.",
         });
       }
-      ownerUpdate.description = description;
+      companyUpdate.description = description;
     }
 
     if (body.emailPro !== undefined) {
@@ -236,7 +233,7 @@ exports.update = async (req, res) => {
       if (emailPro.length > MAX.emailPro) {
         return res.status(400).json({ error: "email_too_long", message: "Cette adresse email est trop longue." });
       }
-      ownerUpdate.emailPro = emailPro;
+      companyUpdate.emailPro = emailPro;
     }
 
     if (body.phonePro !== undefined) {
@@ -247,7 +244,7 @@ exports.update = async (req, res) => {
           message: "Numéro invalide. Ex : +32 476 12 34 56",
         });
       }
-      ownerUpdate.phonePro = phonePro;
+      companyUpdate.phonePro = phonePro;
     }
 
     if (body.website !== undefined) {
@@ -261,12 +258,20 @@ exports.update = async (req, res) => {
       if (website.length > MAX.website) {
         return res.status(400).json({ error: "website_too_long", message: "Ce lien est trop long." });
       }
-      ownerUpdate.website = website;
+      companyUpdate.website = website;
     }
 
-    // `location` est un sous-document : on écrit clé par clé pour ne jamais
-    // effacer ce que l'app n'envoie pas (carte, coordonnées GPS, mode « en
-    // ligne »… réglés depuis le site).
+    // Le compte est encore le porteur de l'identité de l'établissement
+    // D'ORIGINE tant que la migration n'a pas tourné : on part de la valeur
+    // EFFECTIVE (identityFor) pour ne pas perdre au premier enregistrement ce
+    // que l'app n'envoie pas — carte, coordonnées GPS, mode « en ligne »…
+    // `Company.location` étant Mixed (null par défaut), un `$set` sur
+    // "location.address" échouerait : on réécrit l'objet entier.
+    const ownerDoc = await loadOwner(company, req.mobileUser);
+    const currentLoc = identityFor(company, ownerDoc).location;
+    const nextLoc = (currentLoc && typeof currentLoc === "object") ? { ...currentLoc } : {};
+    let locTouched = false;
+
     const locFields = { address: "address", city: "city", country: "country" };
     for (const [key, field] of Object.entries(locFields)) {
       if (body[key] === undefined) continue;
@@ -283,35 +288,48 @@ exports.update = async (req, res) => {
           message: "Ce champ ne peut pas contenir les caractères < ou >.",
         });
       }
-      ownerUpdate[`location.${field}`] = value;
+      nextLoc[field] = value;
+      locTouched = true;
     }
 
     if (body.zip !== undefined) {
       const zip = String(body.zip).trim();
       if (zip === "") {
-        ownerUpdate["location.zip"] = null;
+        nextLoc.zip = null;
       } else if (!/^\d{1,10}$/.test(zip)) {
-        // Le modèle stocke `location.zip` en Number : une valeur non numérique
-        // ferait échouer l'écriture côté Mongoose.
+        // Le modèle User stocke `location.zip` en Number : une valeur non
+        // numérique ferait échouer l'écriture côté Mongoose lors de
+        // l'alignement du compte.
         return res.status(400).json({
           error: "invalid_zip",
           message: "Code postal invalide : chiffres uniquement.",
         });
       } else {
-        ownerUpdate["location.zip"] = Number(zip);
+        nextLoc.zip = Number(zip);
       }
+      locTouched = true;
     }
 
-    if (!Object.keys(companyUpdate).length && !Object.keys(ownerUpdate).length) {
+    if (locTouched) companyUpdate.location = nextLoc;
+
+    if (!Object.keys(companyUpdate).length) {
       return res.status(400).json({ error: "nothing_to_update", message: "Aucune modification envoyée." });
     }
 
-    // Toujours filtré sur l'établissement / le compte concerné.
-    if (Object.keys(companyUpdate).length) {
-      await Company.updateOne({ _id: company._id }, { $set: companyUpdate });
-    }
-    if (Object.keys(ownerUpdate).length) {
-      await User.updateOne({ _id: company.owner }, { $set: ownerUpdate });
+    await Company.updateOne({ _id: company._id }, { $set: companyUpdate });
+
+    // Le compte reste le repli de l'établissement D'ORIGINE : on l'aligne pour
+    // que les deux ne divergent pas — uniquement si c'est le propriétaire
+    // lui-même qui édite (un collaborateur gérant n'a pas à réécrire le compte
+    // de quelqu'un d'autre ; la valeur de l'établissement prime de toute façon).
+    if (req.targetIsOwner && String(req.mobileUser.company || "") === String(company._id)) {
+      const ownerUpdate = {};
+      for (const key of ["description", "emailPro", "phonePro", "website", "location"]) {
+        if (companyUpdate[key] !== undefined) ownerUpdate[key] = companyUpdate[key];
+      }
+      if (Object.keys(ownerUpdate).length) {
+        await User.updateOne({ _id: company.owner }, { $set: ownerUpdate });
+      }
     }
 
     const fresh = await Company.findById(company._id).lean();

@@ -1,11 +1,17 @@
 //- Barre latérale du panel superadmin.
 //- Attend : saPage — clé de la page active.
-//- Clés : users | estab | reports | logs | promo | boost | referrals | links
-//-        messages | chat | support | features
+//- Clés : dashboard | users | estab | reports | logs | promo | boost
+//-        referrals | links | messages | chat | support | features
 aside.sa-side#saSide
     a.sa-brand(href="/superadmin")
         span.sa-brand__mark SA
         span.sa-brand__name Superadmin
+
+    .sa-side__group
+        .sa-side__label Pilotage
+        a.sa-link(href="/superadmin/tableau-de-bord" class=saPage === 'dashboard' ? 'is-active' : '')
+            span.material-symbols-outlined monitoring
+            span Tableau de bord
 
     .sa-side__group
         .sa-side__label Personnes
@@ -25,8 +31,11 @@ aside.sa-side#saSide
         a.sa-link(href="/superadmin/metiers" class=saPage === 'jobTitles' ? 'is-active' : '')
             span.material-symbols-outlined work
             span Métiers
+        //- « history » et non « monitoring » : cette dernière est désormais
+        //- celle du tableau de bord, et deux entrées au même pictogramme
+        //- deviennent indiscernables du coin de l'œil.
         a.sa-link(href="/superadmin/logs" class=saPage === 'logs' ? 'is-active' : '')
-            span.material-symbols-outlined monitoring
+            span.material-symbols-outlined history
             span Logs
 
     .sa-side__group

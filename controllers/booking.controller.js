@@ -8,10 +8,12 @@ const { getAppointments } = require("../queries/booking.queries");
 const pug  = require("pug");
 const path = require("path");
 const { getLimit, atLeast, billingUserFor } = require("../utils/planLimits");
+const { identityFor } = require("../utils/establishmentIdentity");
 const { sendEmail } = require("../utils/mailer");
 const { isFeatureEnabled } = require("../middlewares/featureFlag");
 const { getCoursesForDate, courseRangesFor } = require("../utils/recurringCourses");
 const { getBookableTeam } = require("../utils/bookableTeam");
+const { isSlotOpenInSchedule } = require("../utils/mobileSlots");
 const { log } = require("console");
 
 const Stripe = require("stripe");
@@ -348,7 +350,10 @@ exports.createBooking = async (req, res) => {
               if (response.limitBlockedNotifiedMonth === monthKey) return;
               await Company.findByIdAndUpdate(company, { limitBlockedNotifiedMonth: monthKey });
               const owner = await User.findById(response.owner).lean();
-              const adminEmail = owner?.emailPro || owner?.email;
+              // Email pro de l'ÉTABLISSEMENT concerné (repli sur l'email du
+              // compte) : pris sur le compte, l'alerte partait sur la boîte du
+              // premier établissement.
+              const adminEmail = identityFor(response, owner).emailPro || owner?.email;
               if (adminEmail) {
                 const html = pug.renderFile(
                   path.join(__dirname, "../views/templates/emails/blocked-booking-attempt.pug"),
@@ -439,6 +444,41 @@ exports.createBooking = async (req, res) => {
       }
       employeeId   = null;
       employeeName = "";
+    }
+
+    // ── Le créneau est-il TOUJOURS ouvert ? ─────────────────────────────────
+    // Entre l'affichage des créneaux et la confirmation (le client remplit le
+    // formulaire, paie…), le pro a pu poser une absence ou changer son
+    // horaire. Rien ne le relisait ici : la réservation passait quand même,
+    // sur une journée pourtant marquée en congé. On rejoue donc la MÊME
+    // grille que /get-schedule (utils/mobileSlots#buildGrid) plutôt que d'en
+    // réécrire une version qui divergerait au premier changement.
+    //
+    // Volontairement hors des cours collectifs : /get-schedule renvoie le
+    // créneau d'un cours récurrent sans jamais consulter l'horaire ni les
+    // congés — appliquer la grille rendrait irréservable tout cours tombant
+    // un jour fermé (le cours du dimanche, cas très courant).
+    //
+    // On passe l'employé D'ORIGINE, pas celui auto-assigné plus bas : c'est
+    // celui que le client a vu. Forcer un employé précis ici appliquerait SON
+    // absence individuelle alors qu'un collègue est peut-être libre.
+    if (!isGroup) {
+      const stillOpen = await isSlotOpenInSchedule({
+        companyId:  company,
+        dateStr:    date,
+        startTime,
+        duration:   actualDuration,
+        employeeId: req.body.employeeId || null,
+      });
+      if (!stillOpen.ok) {
+        return res.json({
+          success: false,
+          error: "slot_unavailable",
+          message: stillOpen.reason === "day_off"
+            ? "Ce professionnel n'est plus disponible à cette date (absence ajoutée entre-temps). Merci de choisir un autre créneau."
+            : "Ce créneau n'est plus proposé à la réservation. Merci d'en choisir un autre.",
+        });
+      }
     }
 
     // ── Anti double-booking — revalidé côté serveur dans tous les cas ───────
@@ -650,6 +690,11 @@ exports.createBooking = async (req, res) => {
     // ── Fetch owner for location + Google Calendar ──────────────────────────
     const companyOwner = await User.findById(response.owner).lean();
 
+    // Adresse, téléphone et email pro appartiennent à l'ÉTABLISSEMENT : lus sur
+    // le compte, la confirmation d'un RDV pris dans le second établissement
+    // envoyait le client à l'adresse du premier (et l'alerte au mauvais email).
+    const identity = identityFor(response, companyOwner);
+
     // ── Alerte admin : limite mensuelle de RDV atteinte (plan Starter) ─────
     // On envoie l'email une seule fois par mois, dès que la réservation qui
     // vient d'être créée fait passer le compteur au-delà de la limite du plan.
@@ -669,7 +714,7 @@ exports.createBooking = async (req, res) => {
               status: { $ne: "canceled" },
             });
             if (monthlyCountAfter >= monthlyLimitForAlert) {
-              const adminEmail = companyOwner.emailPro || companyOwner.email;
+              const adminEmail = identity.emailPro || companyOwner.email;
               if (adminEmail) {
                 const limitHtml = pug.renderFile(
                   path.join(__dirname, "../views/templates/emails/monthly-limit-reached.pug"),
@@ -696,7 +741,7 @@ exports.createBooking = async (req, res) => {
     // (ex: studio loué pour un atelier) qui remplace l'adresse par défaut.
     let locationText = serviceDoc?.location || "";
     if (!locationText) {
-      const loc = companyOwner?.location;
+      const loc = identity.location;
       if (loc?.serviceType === "en_ligne") {
         locationText = "En ligne";
       } else if (loc?.address || loc?.city) {
@@ -734,7 +779,7 @@ exports.createBooking = async (req, res) => {
         locationText,
         // Nom de l'ÉTABLISSEMENT (repli compte pour les fiches historiques).
         businessName:  (response?.name || companyOwner?.businessName || "").trim(),
-        businessPhone: (companyOwner?.phonePro || "").trim(),
+        businessPhone: (identity.phonePro || "").trim(),
         cancelUrl,
         bookingId:   newBooking._id,
         cancelToken: newBooking.cancelToken,
@@ -799,7 +844,9 @@ exports.createBooking = async (req, res) => {
     // ── Email de notification à l'admin (si activé) ────────────────────────
     try {
       if (companyOwner && companyOwner.notifications?.newBooking !== false) {
-        const adminEmail = companyOwner.emailPro || companyOwner.email;
+        // L'email pro appartient à l'ÉTABLISSEMENT : sans ça, la notification
+        // d'un RDV du second établissement partait sur la boîte du premier.
+        const adminEmail = identity.emailPro || companyOwner.email;
         if (adminEmail) {
           const adminHtml = pug.renderFile(
             path.join(__dirname, "../views/templates/emails/admin-new-booking.pug"),
@@ -917,7 +964,7 @@ exports.getGroupSessions = async (req, res) => {
       return res.status(404).json({ success: false, error: "service_not_found" });
     }
 
-    const company = await Company.findById(service.company).select("minBookingLeadTime owner").lean();
+    const company = await Company.findById(service.company).select("minBookingLeadTime owner location").lean();
     const leadConfig = company?.minBookingLeadTime;
     // Actif dès que minutes > 0 (« Aucun » = 0 min). On se base sur les minutes,
     // pas sur le flag enabled qui pouvait rester à false sur d'anciennes données
@@ -962,11 +1009,13 @@ exports.getGroupSessions = async (req, res) => {
       return { date: o.date, startTime: o.startTime, endTime: o.endTime, capacity, remaining, full: capacity !== null && remaining === 0 };
     });
 
-    // Lieu : surcharge du cours, sinon adresse par défaut du compte.
+    // Lieu : surcharge du cours, sinon adresse de l'ÉTABLISSEMENT (le compte
+    // n'est le repli que pour l'établissement d'origine — sans ça, le cours
+    // collectif du second établissement affichait l'adresse du premier).
     let locationText = service.location || "";
     if (!locationText && company?.owner) {
-      const owner = await User.findById(company.owner).select("location").lean();
-      const loc = owner?.location;
+      const owner = await User.findById(company.owner).select("company location").lean();
+      const loc = identityFor(company, owner).location;
       if (loc?.serviceType === "en_ligne") locationText = "En ligne";
       else if (loc?.address || loc?.city) locationText = [loc.address, loc.city].filter(Boolean).join(", ");
     }

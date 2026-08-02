@@ -10,7 +10,10 @@ block jsonld
     - var _bizAddr    = (coach && estab.location && estab.location.address) || ''
     - var _bizZip     = (coach && estab.location && estab.location.zip) ? String(estab.location.zip) : ''
     - var _bizCountry = (coach && estab.location && estab.location.country) || 'BE'
-    - var _bizPhone   = (coach && (estab.phonePro || coach.phone)) || ''
+    //- Pas de repli sur coach.phone : le helper d'identité l'applique déjà, et
+    //- uniquement pour l'établissement d'origine. Ici, il exposait le téléphone
+    //- perso du patron sur la fiche de son second établissement.
+    - var _bizPhone   = estab.phonePro || ''
     - var _bizUrl     = 'https://www.branshee.com/' + (company ? (company.slug || String(company._id)) : '')
     - var _hasRating  = (typeof reviewCount !== 'undefined' && reviewCount > 0)
     - var _svcPrices  = services && services.length ? services.filter(function(s){return s.price>0}).map(function(s){return s.price}) : []

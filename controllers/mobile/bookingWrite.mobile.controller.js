@@ -19,6 +19,7 @@ const { checkBookingConflict } = require("../../utils/bookingConflict");
 const { getBookableTeam } = require("../../utils/bookableTeam");
 const { getAvailableSlots, hhmmToMinutes, minutesToHhmm } = require("../../utils/mobileSlots");
 const { sendEmail } = require("../../utils/mailer");
+const { identityFor } = require("../../utils/establishmentIdentity");
 const {
   addEventToCalendar,
   deleteEventFromCalendar,
@@ -212,8 +213,13 @@ exports.create = async (req, res) => {
 async function sendBookingSideEffects({ company, newBooking, date, startTime, endTime, actualDuration, name, surname, email, phone, message, serviceName, employeeName }) {
   const companyOwner = company.owner ? await User.findById(company.owner).lean() : null;
 
+  // Adresse et téléphone appartiennent à l'ÉTABLISSEMENT : lus sur le compte,
+  // un RDV créé depuis l'app pour le second établissement envoyait le client à
+  // l'adresse du premier.
+  const identity = identityFor(company, companyOwner);
+
   let locationText = "";
-  const loc = companyOwner?.location;
+  const loc = identity.location;
   if (loc?.serviceType === "en_ligne") locationText = "En ligne";
   else if (loc?.address || loc?.city) locationText = [loc.address, loc.city].filter(Boolean).join(", ");
 
@@ -232,7 +238,7 @@ async function sendBookingSideEffects({ company, newBooking, date, startTime, en
         message, serviceName, employeeName, formAnswers: [], locationText,
         // Nom de l'ÉTABLISSEMENT (repli compte pour les fiches historiques).
         businessName: (company?.name || companyOwner?.businessName || "").trim(),
-        businessPhone: (companyOwner?.phonePro || "").trim(),
+        businessPhone: (identity.phonePro || "").trim(),
         cancelUrl, bookingId: newBooking._id, cancelToken: newBooking.cancelToken,
       },
     );
