@@ -459,6 +459,12 @@ block content
             //- Compare CTAs
             .sub-compare__actions
                 if !isPro
+                    //- L'Essentiel manquait sous le tableau : on comparait les
+                    //- quatre colonnes puis on ne pouvait choisir que Pro ou
+                    //- Business. Masqué si c'est déjà le plan en cours.
+                    if currentPlan !== 'essentiel'
+                        button.sub-btn.sub-btn--upgrade.sub-btn--essentiel#getEssPlan2
+                            | #{t.subscription.btn_get_ess || "Choisir l'Essentiel →"}
                     button.sub-btn.sub-btn--upgrade#getProPlan2
                         | #{t.subscription.btn_get_pro || 'Passer au Pro →'}
                     button.sub-btn.sub-btn--upgrade.sub-btn--business#getBusinessPlan2
@@ -507,6 +513,13 @@ block scripts
             var b1 = document.getElementById('getBusinessPlan');
             if (p2 && p1) p2.addEventListener('click', function() { p1.click(); });
             if (ps && p1) ps.addEventListener('click', function() { p1.click(); });
+
+            // Essentiel : le bouton du tableau rejoue celui de la carte. Les
+            // deux plans sont dans le groupe « Individuel », deja affiche —
+            // pas besoin de basculer comme pour Business.
+            var e2 = document.getElementById('getEssPlan2');
+            var e1 = document.getElementById('getEssPlan');
+            if (e2 && e1) e2.addEventListener('click', function() { e1.click(); });
 
             // « Passer au Business » sous le tableau comparatif : la carte
             // Business vit dans le groupe « Équipe », or la page s'ouvre

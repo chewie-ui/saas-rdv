@@ -141,6 +141,19 @@ aside.sidebar#sidebar
                                 path(d="M240-400h480v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z")
                             span SMS
 
+                //- ── Abonnement ───────────────────────────────────────
+                //- Le lien n'existait QUE dans le menu du profil, replié
+                //- derrière l'avatar : les pros ne trouvaient pas la page des
+                //- forfaits. Même condition de permission qu'avant.
+                if permissions && permissions.billing && permissions.billing.manage
+                    .sb-section
+                        span.sb-section__title Facturation
+                        .sb-section__links
+                            a.sb-link(href="/subscription" class=pageName === 'Subscription' ? 'active' : '')
+                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
+                                    path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm0-80h640v-400H160v400Zm0-480h640v-80H160v80Zm0 0v-80 80Z")
+                                span= t.sidebar.a_1 || 'Abonnement'
+
                 //- ── 4. Équipe ────────────────────────────────────────
                 - const canSeeCollaborators = !!(currentCompany && permissions && permissions.collaborators.view)
                 - const canSeeLogs = !!(permissions && permissions.logs.view)

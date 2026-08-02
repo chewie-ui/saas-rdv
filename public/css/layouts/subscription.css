@@ -1456,3 +1456,18 @@
 @media (prefers-reduced-motion: reduce) {
   .sub-plan--flash { animation: none; outline: 2px solid var(--accent, #1e7a4e); }
 }
+
+/* Bouton « Choisir l'Essentiel » sous le tableau comparatif. Teinte plus
+   sobre que le Pro (vert plein) : l'Essentiel est l'entrée de gamme payante,
+   il ne doit pas voler la vedette au plan mis en avant. */
+.sub-btn--essentiel {
+  background: #fff;
+  color: var(--accent, #1e7a4e);
+  border: 1.5px solid color-mix(in srgb, var(--accent, #1e7a4e) 40%, transparent);
+  box-shadow: none;
+}
+.sub-btn--essentiel:hover {
+  background: var(--accent-soft, #e7f2ec);
+  border-color: var(--accent, #1e7a4e);
+  transform: translateY(-1px);
+}
