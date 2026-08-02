@@ -1,0 +1,155 @@
+extends ../../layouts/sa
+
+block content
+    -
+        function jourFr(d) {
+            return d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+        }
+        function requete(extra) {
+            var q = [];
+            if (filtres.search) q.push('search=' + encodeURIComponent(filtres.search));
+            if (filtres.statut !== 'tous') q.push('statut=' + filtres.statut);
+            if (extra) q.push(extra);
+            return q.length ? '?' + q.join('&') : '';
+        }
+        var filtreActif = filtres.search || filtres.statut !== 'tous';
+
+    .sa-head
+        button.sa-ico.sa-burger(type="button" data-sa-burger aria-label="Menu")
+            span.material-symbols-outlined menu
+        div
+            h1.sa-head__title Blog
+            .sa-head__sub Chaque article publié est une porte d'entrée de plus depuis Google
+        .sa-head__end
+            a.sa-btn(href="/blog" target="_blank" rel="noopener")
+                span.material-symbols-outlined open_in_new
+                span Voir le blog
+            a.sa-btn.sa-btn--primary(href="/superadmin/blog/nouveau")
+                span.material-symbols-outlined add
+                span Nouvel article
+
+    .sa-body
+        .sa-kpis
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined article
+                    span Articles
+                .sa-kpi__value= kpis.total.toLocaleString('fr-FR')
+                .sa-kpi__delta= kpis.brouillons + ' brouillon' + (kpis.brouillons > 1 ? 's' : '')
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined public
+                    span En ligne
+                .sa-kpi__value= kpis.publies.toLocaleString('fr-FR')
+                .sa-kpi__delta(class=kpis.publies ? 'sa-kpi__delta--up' : '')= kpis.publies ? 'Indexables par Google' : 'Rien à indexer'
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined visibility
+                    span Lectures
+                .sa-kpi__value= kpis.vues.toLocaleString('fr-FR')
+                .sa-kpi__delta Depuis la publication
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined trending_up
+                    span Rythme conseillé
+                .sa-kpi__value 1 / semaine
+                .sa-kpi__delta Le SEO paie à partir de ~10 articles
+
+        form.sa-toolbar#formFiltres(method="get" action="/superadmin/blog")
+            label.sa-search
+                span.material-symbols-outlined search
+                input.sa-input(type="text" name="search" placeholder="Titre, lien ou rubrique…" value=filtres.search)
+            select.sa-select(name="statut" data-auto)
+                option(value="tous" selected=filtres.statut === 'tous') Tous les statuts
+                option(value="published" selected=filtres.statut === 'published') En ligne
+                option(value="draft" selected=filtres.statut === 'draft') Brouillons
+            .sa-toolbar__end
+                button.sa-btn(type="submit")
+                    span.material-symbols-outlined filter_alt
+                    span Filtrer
+                if filtreActif
+                    a.sa-btn(href="/superadmin/blog")
+                        span.material-symbols-outlined close
+                        span Réinitialiser
+
+        if !articles.length
+            .sa-tablewrap
+                .sa-empty
+                    .sa-empty__ic
+                        span.material-symbols-outlined article
+                    .sa-empty__t= filtreActif ? 'Aucun résultat' : 'Aucun article pour l\'instant'
+                    .sa-empty__d= filtreActif ? 'Aucun article ne correspond à ces filtres.' : 'Écrivez un premier article : « Comment réduire les rendez-vous manqués », « Choisir un agenda en ligne quand on est kiné »…'
+                    if !filtreActif
+                        a.sa-btn.sa-btn--primary(href="/superadmin/blog/nouveau" style="margin-top:14px")
+                            span.material-symbols-outlined add
+                            span Écrire le premier article
+        else
+            .sa-tablewrap
+                table.sa-table
+                    thead
+                        tr
+                            th Article
+                            th Rubrique
+                            th Statut
+                            th Lectures
+                            th Lecture
+                            th Publié le
+                            th(style="width:44px")
+                    tbody
+                        each a in articles
+                            tr(data-id=String(a._id) data-title=a.title data-slug=a.slug data-status=a.status)
+                                td
+                                    .sa-person
+                                        if a.coverImage
+                                            img.sa-av(src=a.coverImage alt="" style="object-fit:cover")
+                                        else
+                                            span.sa-av(style="background:var(--sa-panel-2)")
+                                                span.material-symbols-outlined(style="font-size:18px") article
+                                        div(style="min-width:0")
+                                            .sa-person__name= a.title
+                                            .sa-person__mail /blog/#{a.slug}
+                                td.sa-muted= a.category || '—'
+                                td
+                                    if a.status === 'published'
+                                        span.sa-tag.sa-tag--green En ligne
+                                    else
+                                        span.sa-tag.sa-tag--amber Brouillon
+                                td(style="font-weight:600")= (a.views || 0).toLocaleString('fr-FR')
+                                td.sa-muted= (a.readingMinutes || 1) + ' min'
+                                td.sa-td--date= a.status === 'published' ? jourFr(a.publishedAt) : '—'
+                                td
+                                    .sa-menu
+                                        button.sa-ico(type="button" data-sa-menu aria-label="Actions")
+                                            span.material-symbols-outlined more_vert
+                                        .sa-menu__list
+                                            a.sa-menu__item(href='/superadmin/blog/' + a._id)
+                                                span.material-symbols-outlined edit
+                                                span Modifier
+                                            a.sa-menu__item(href='/blog/' + a.slug target="_blank" rel="noopener")
+                                                span.material-symbols-outlined open_in_new
+                                                span= a.status === 'published' ? 'Voir en ligne' : 'Aperçu (non publié)'
+                                            button.sa-menu__item(type="button" data-act="statut")
+                                                span.material-symbols-outlined= a.status === 'published' ? 'visibility_off' : 'publish'
+                                                span= a.status === 'published' ? 'Dépublier' : 'Publier'
+                                            button.sa-menu__item(type="button" data-act="dupliquer")
+                                                span.material-symbols-outlined content_copy
+                                                span Dupliquer
+                                            .sa-menu__sep
+                                            button.sa-menu__item.sa-menu__item--danger(type="button" data-act="supprimer")
+                                                span.material-symbols-outlined delete
+                                                span Supprimer
+
+            .sa-pager
+                span= resultats + ' article' + (resultats > 1 ? 's' : '') + ' · page ' + page + ' / ' + pages
+                .sa-pager__end
+                    a.sa-pager__btn(href='/superadmin/blog' + requete('page=' + (page - 1)) class=page <= 1 ? 'is-off' : '')
+                        span.material-symbols-outlined chevron_left
+                    - var debut = Math.max(1, Math.min(page - 2, pages - 4))
+                    - var fin = Math.min(pages, debut + 4)
+                    each n in Array.from({ length: fin - debut + 1 }, function (_, i) { return debut + i })
+                        a.sa-pager__btn(href='/superadmin/blog' + requete('page=' + n) class=n === page ? 'is-current' : '')= n
+                    a.sa-pager__btn(href='/superadmin/blog' + requete('page=' + (page + 1)) class=page >= pages ? 'is-off' : '')
+                        span.material-symbols-outlined chevron_right
+
+block scripts
+    script(src="/js/superadmin/blog.js")

@@ -1,0 +1,213 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Éditeur d'article (superadmin → Blog)
+   Reprend les variables de superadmin-v2.css : rien de nouveau côté palette.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.bl-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 14px;
+  align-items: start;
+}
+/* minmax(0, …) sur la colonne de gauche : sans ça, un mot très long ou une
+   image large ferait déborder toute la grille. */
+.bl-main { min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.bl-side { display: flex; flex-direction: column; gap: 14px; }
+
+@media (max-width: 1100px) {
+  .bl-editor { grid-template-columns: minmax(0, 1fr); }
+  /* En une seule colonne, la latérale passe SOUS le texte : sur un écran
+     étroit on veut écrire d'abord, régler la couverture et le SEO ensuite. */
+  .bl-side { order: 1; }
+  /* Sinon la couverture, en 16/9 sur toute la largeur, devient un pavé géant. */
+  .bl-cover { max-width: 420px; }
+}
+
+/* ── Titre et chapeau ─────────────────────────────────────────────────────── */
+.bl-title {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--sa-txt);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  padding: 4px 0 10px;
+  outline: none;
+}
+.bl-title::placeholder { color: var(--sa-txt-3); font-weight: 700; }
+
+.bl-excerpt {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--sa-line);
+  background: transparent;
+  color: var(--sa-txt-2);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 0 0 14px;
+  resize: vertical;
+  outline: none;
+}
+.bl-excerpt::placeholder { color: var(--sa-txt-3); }
+
+/* ── Barre d'outils ───────────────────────────────────────────────────────── */
+.bl-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--sa-panel);
+}
+.bl-toolbar__sep { width: 1px; height: 20px; background: var(--sa-line); margin: 0 6px; }
+.bl-toolbar__end { margin-left: auto; display: flex; gap: 2px; }
+
+.bl-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sa-txt-2);
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.bl-tool:hover { background: var(--sa-panel-2); color: var(--sa-txt); }
+.bl-tool.is-active { background: var(--sa-blue); color: #fff; }
+.bl-tool .material-symbols-outlined { font-size: 19px; }
+
+/* ── Zone d'écriture ──────────────────────────────────────────────────────── */
+.bl-content {
+  min-height: 440px;
+  padding: 8px 0 20px;
+  color: var(--sa-txt);
+  font-size: 15.5px;
+  line-height: 1.75;
+  outline: none;
+}
+.bl-content:empty::before,
+.bl-content[data-vide="1"]::before {
+  content: attr(data-placeholder);
+  color: var(--sa-txt-3);
+  pointer-events: none;
+}
+.bl-content > * { max-width: 100%; }
+.bl-content h2 { font-size: 21px; font-weight: 750; margin: 26px 0 8px; letter-spacing: -0.01em; }
+.bl-content h3 { font-size: 17px; font-weight: 700; margin: 20px 0 6px; }
+.bl-content p { margin: 0 0 14px; }
+.bl-content ul, .bl-content ol { margin: 0 0 14px; padding-left: 22px; }
+.bl-content li { margin-bottom: 5px; }
+.bl-content a { color: var(--sa-blue); text-decoration: underline; }
+.bl-content blockquote {
+  margin: 18px 0;
+  padding: 4px 0 4px 16px;
+  border-left: 3px solid var(--sa-blue);
+  color: var(--sa-txt-2);
+  font-style: italic;
+}
+.bl-content img { max-width: 100%; height: auto; border-radius: 12px; margin: 14px 0; display: block; }
+.bl-content hr { border: 0; border-top: 1px solid var(--sa-line); margin: 24px 0; }
+
+.bl-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--sa-line);
+  font-size: 12px;
+  color: var(--sa-txt-3);
+}
+.bl-saved { margin-left: auto; }
+.bl-saved.is-ok { color: var(--sa-green, #4ade80); }
+.bl-saved.is-err { color: var(--sa-red, #f87171); }
+
+/* ── Couverture ───────────────────────────────────────────────────────────── */
+.bl-cover {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border: 1px dashed var(--sa-line);
+  border-radius: 12px;
+  background: var(--sa-panel-2);
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bl-cover img { width: 100%; height: 100%; object-fit: cover; display: none; }
+.bl-cover.has-image img { display: block; }
+.bl-cover.has-image { border-style: solid; }
+.bl-cover.has-image .bl-cover__empty { display: none; }
+.bl-cover__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--sa-txt-3);
+  font-size: 12px;
+}
+.bl-cover__empty .material-symbols-outlined { font-size: 26px; }
+.bl-cover__actions { display: flex; gap: 8px; margin-top: 10px; }
+/* Les .sa-btn sont en inline-flex : `hidden` seul ne suffirait pas à masquer. */
+.bl-cover__actions .sa-btn[hidden] { display: none; }
+
+/* ── Référencement ────────────────────────────────────────────────────────── */
+.bl-slug { display: flex; align-items: center; gap: 0; }
+.bl-slug__base {
+  font-size: 12px;
+  color: var(--sa-txt-3);
+  white-space: nowrap;
+  padding-right: 4px;
+}
+.bl-slug .sa-input { flex: 1 1 auto; min-width: 0; }
+
+.bl-count { float: right; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.bl-count.is-long { color: var(--sa-amber, #fbbf24); }
+
+.bl-warn {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(251, 191, 36, .1);
+  color: var(--sa-amber, #fbbf24);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+.bl-warn .material-symbols-outlined { font-size: 16px; flex: 0 0 auto; }
+
+/* Aperçu du résultat Google — volontairement proche du vrai rendu. */
+.bl-serp {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--sa-line);
+  border-radius: 10px;
+  background: var(--sa-panel-2);
+}
+.bl-serp__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--sa-txt-3);
+  margin-bottom: 8px;
+}
+.bl-serp__url { font-size: 11.5px; color: var(--sa-txt-3); margin-bottom: 2px; word-break: break-all; }
+.bl-serp__title {
+  font-size: 15px;
+  color: #8ab4f8;
+  line-height: 1.3;
+  margin-bottom: 3px;
+  overflow-wrap: anywhere;
+}
+.bl-serp__desc { font-size: 12px; color: var(--sa-txt-2); line-height: 1.5; overflow-wrap: anywhere; }

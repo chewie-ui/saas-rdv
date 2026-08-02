@@ -130,6 +130,23 @@ router.get("/sitemap.xml", async (req, res) => {
       });
   } catch (_) {}
 
+  // Articles de blog publiés — c'est par eux que le site se positionne sur
+  // des requêtes que la page d'accueil ne peut pas viser.
+  let articleUrls = "";
+  try {
+    const articles = await require("../controllers/blog.controller").articlesPourSitemap();
+    articles.forEach((a) => {
+      const lastmod = new Date(a.updatedAt || a.publishedAt || Date.now()).toISOString().split("T")[0];
+      articleUrls += `
+  <url>
+    <loc>${BASE}/blog/${a.slug}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>`;
+    });
+  } catch (_) {}
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -146,6 +163,12 @@ router.get("/sitemap.xml", async (req, res) => {
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${BASE}/blog</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>${BASE}/s-inscrire</loc>
@@ -168,7 +191,7 @@ router.get("/sitemap.xml", async (req, res) => {
     <loc>${BASE}/conditions-utilisation</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
-  </url>${companyUrls}
+  </url>${articleUrls}${companyUrls}
 </urlset>`;
 
   res.setHeader("Content-Type", "application/xml");
@@ -527,6 +550,13 @@ const BADGE_OPTIONS = [
   'Top rated 2024',
   'Carte acceptée',
 ];
+
+// ── Blog public ───────────────────────────────────────────────────────────────
+// Impérativement AVANT la route attrape-tout "/:company", sinon /blog serait
+// cherché comme un slug d'établissement et renverrait un 404.
+const blogCtrl = require("../controllers/blog.controller");
+router.get("/blog", blogCtrl.blogIndex);
+router.get("/blog/:slug", blogCtrl.blogArticle);
 
 // ── Site builder public pages ─────────────────────────────────────────────────
 const siteCtrl = require("../controllers/site.controller");

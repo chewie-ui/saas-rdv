@@ -1,0 +1,90 @@
+extends ../../layouts/index
+
+block links
+    link(rel="stylesheet" href="/css/layouts/blog.css")
+
+block jsonld
+    //- Schema Article : donne à Google la date, l'auteur et l'image, et rend
+    //- l'article éligible aux affichages enrichis.
+    -
+        var _base = 'https://www.branshee.com';
+        var _schema = {
+            '@context': 'https://schema.org',
+            '@type': 'BlogPosting',
+            headline: article.title,
+            description: (article.seo && article.seo.metaDescription) || article.excerpt || '',
+            image: article.coverImage ? _base + article.coverImage : _base + '/images/og-cover.jpg',
+            datePublished: article.publishedAt ? new Date(article.publishedAt).toISOString() : undefined,
+            dateModified: new Date(article.updatedAt || article.publishedAt || Date.now()).toISOString(),
+            author: { '@type': 'Organization', name: article.authorName || 'BranShee' },
+            publisher: {
+                '@type': 'Organization',
+                name: 'BranShee',
+                logo: { '@type': 'ImageObject', url: _base + '/images/icon.png' }
+            },
+            mainEntityOfPage: { '@type': 'WebPage', '@id': _base + '/blog/' + article.slug }
+        };
+    script(type="application/ld+json")!= JSON.stringify(_schema)
+
+block content
+    -
+        function jourFr(d) {
+            return d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+        }
+
+    main.blog
+        article.post
+            .post__head.container
+                nav.post__crumb(aria-label="Fil d'Ariane")
+                    a(href="/blog") Blog
+                    if article.category
+                        span.post__crumb-sep ›
+                        a(href='/blog?categorie=' + encodeURIComponent(article.category))= article.category
+                h1.post__title= article.title
+                if article.excerpt
+                    p.post__lead= article.excerpt
+                .post__meta
+                    span= article.authorName || 'BranShee'
+                    span.post__dot ·
+                    time(datetime=article.publishedAt ? new Date(article.publishedAt).toISOString() : '')= jourFr(article.publishedAt)
+                    span.post__dot ·
+                    span #{article.readingMinutes || 1} min de lecture
+
+            if article.coverImage
+                .post__cover.container
+                    img(src=article.coverImage alt="")
+
+            //- Contenu déjà nettoyé côté serveur (utils/sanitizeArticleHtml.js) :
+            //- liste blanche de balises, aucun script ni style ne peut passer.
+            .post__body.container!= article.contentHtml
+
+            .post__cta.container
+                .post__cta-box
+                    h2.post__cta-t Et si vos clients réservaient tout seuls ?
+                    p.post__cta-d
+                        | BranShee vous donne un agenda en ligne et une page de réservation.
+                        | Gratuit pour commencer, sans carte bancaire.
+                    a.sm-btn.sm-btn--primary(href="/register?intent=pro") Créer mon agenda gratuitement
+
+        if relies.length
+            section.post__more.container
+                h2.post__more-t À lire aussi
+                .blog-grid
+                    each r in relies
+                        a.blog-card(href='/blog/' + r.slug)
+                            .blog-card__media
+                                if r.coverImage
+                                    img(src=r.coverImage alt="" loading="lazy")
+                                else
+                                    span.blog-card__ph
+                                        i.fa-regular.fa-newspaper
+                            .blog-card__body
+                                if r.category
+                                    span.blog-card__cat= r.category
+                                h3.blog-card__title= r.title
+                                .blog-card__meta
+                                    span= jourFr(r.publishedAt)
+                                    span.blog-card__dot ·
+                                    span #{r.readingMinutes || 1} min
+
+    include ../../common/footer

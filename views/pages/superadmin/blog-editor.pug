@@ -1,0 +1,184 @@
+extends ../../layouts/sa
+
+block styles
+    link(rel="stylesheet" href="/css/layouts/sa-blog.css")
+
+block content
+    - var a = article || {}
+    - var seo = a.seo || {}
+
+    .sa-head
+        button.sa-ico.sa-burger(type="button" data-sa-burger aria-label="Menu")
+            span.material-symbols-outlined menu
+        div
+            h1.sa-head__title= article ? 'Modifier l\'article' : 'Nouvel article'
+            .sa-head__sub#edState= article ? (a.status === 'published' ? 'En ligne' : 'Brouillon') : 'Nouveau brouillon'
+        .sa-head__end
+            a.sa-btn(href="/superadmin/blog")
+                span.material-symbols-outlined arrow_back
+                span Retour
+            button.sa-btn(type="button" id="btnSave")
+                span.material-symbols-outlined save
+                span Enregistrer
+            button.sa-btn.sa-btn--primary(type="button" id="btnPublish")
+                span.material-symbols-outlined= a.status === 'published' ? 'visibility_off' : 'publish'
+                span#btnPublishLabel= a.status === 'published' ? 'Dépublier' : 'Publier'
+
+    .sa-body
+        .bl-editor(
+            data-id=article ? String(a._id) : ''
+            data-status=a.status || 'draft'
+            data-slug=a.slug || ''
+        )
+            //- ── Colonne principale : le texte ─────────────────────────────
+            .bl-main
+                .sa-card
+                    input.bl-title#edTitle(
+                        type="text"
+                        value=a.title || ''
+                        placeholder="Titre de l'article"
+                        maxlength="200"
+                    )
+                    textarea.bl-excerpt#edExcerpt(
+                        placeholder="Chapeau : une ou deux phrases qui donnent envie de lire. Sert aussi de description dans Google."
+                        maxlength="400"
+                        rows="2"
+                    )= a.excerpt || ''
+
+                    //- Barre d'outils du corps de l'article
+                    .bl-toolbar(role="toolbar" aria-label="Mise en forme")
+                        button.bl-tool(type="button" data-cmd="formatBlock" data-val="h2" title="Titre de section")
+                            span.material-symbols-outlined format_h1
+                        button.bl-tool(type="button" data-cmd="formatBlock" data-val="h3" title="Sous-titre")
+                            span.material-symbols-outlined format_h2
+                        button.bl-tool(type="button" data-cmd="formatBlock" data-val="p" title="Paragraphe")
+                            span.material-symbols-outlined format_paragraph
+                        .bl-toolbar__sep
+                        button.bl-tool(type="button" data-cmd="bold" title="Gras (Ctrl+B)")
+                            span.material-symbols-outlined format_bold
+                        button.bl-tool(type="button" data-cmd="italic" title="Italique (Ctrl+I)")
+                            span.material-symbols-outlined format_italic
+                        .bl-toolbar__sep
+                        button.bl-tool(type="button" data-cmd="insertUnorderedList" title="Liste à puces")
+                            span.material-symbols-outlined format_list_bulleted
+                        button.bl-tool(type="button" data-cmd="insertOrderedList" title="Liste numérotée")
+                            span.material-symbols-outlined format_list_numbered
+                        button.bl-tool(type="button" data-cmd="formatBlock" data-val="blockquote" title="Citation")
+                            span.material-symbols-outlined format_quote
+                        .bl-toolbar__sep
+                        button.bl-tool(type="button" data-act="link" title="Lien")
+                            span.material-symbols-outlined link
+                        button.bl-tool(type="button" data-act="image" title="Insérer une image")
+                            span.material-symbols-outlined image
+                        button.bl-tool(type="button" data-cmd="insertHorizontalRule" title="Séparateur")
+                            span.material-symbols-outlined horizontal_rule
+                        .bl-toolbar__end
+                            button.bl-tool(type="button" data-act="clean" title="Nettoyer la mise en forme du texte sélectionné")
+                                span.material-symbols-outlined format_clear
+
+                    .bl-content#edContent(
+                        contenteditable="true"
+                        role="textbox"
+                        aria-multiline="true"
+                        data-placeholder="Écrivez ici. Un article utile répond à UNE question précise que se pose un indépendant."
+                    )!= a.contentHtml || ''
+
+                    .bl-foot
+                        span#edStats —
+                        span.bl-saved#edSaved
+
+            //- ── Colonne latérale : publication, image, SEO ────────────────
+            .bl-side
+                .sa-card
+                    .sa-card__t
+                        span.material-symbols-outlined image
+                        span Image de couverture
+                    .bl-cover#edCoverBox(class=a.coverImage ? 'has-image' : '')
+                        img#edCoverImg(src=a.coverImage || '' alt="")
+                        .bl-cover__empty
+                            span.material-symbols-outlined add_photo_alternate
+                            span Ajouter une image
+                    input#edCoverFile(type="file" accept="image/*" hidden)
+                    .bl-cover__actions
+                        button.sa-btn(type="button" id="edCoverPick")
+                            span.material-symbols-outlined upload
+                            span Choisir
+                        button.sa-btn.sa-btn--danger(type="button" id="edCoverClear" hidden)
+                            span.material-symbols-outlined delete
+                            span Retirer
+                    .sa-head__sub(style="margin-top:8px") Utilisée dans la liste du blog et lors du partage sur les réseaux.
+
+                .sa-card
+                    .sa-card__t
+                        span.material-symbols-outlined sell
+                        span Rubrique
+                    input.sa-input#edCategory(
+                        type="text"
+                        list="edCategories"
+                        value=a.category || ''
+                        placeholder="Ex. Conseils, No-show, Métiers"
+                        maxlength="60"
+                    )
+                    datalist#edCategories
+                        each c in categories
+                            option(value=c)
+                    .sa-field(style="margin-top:12px")
+                        span.sa-field__label Auteur affiché
+                        input.sa-input#edAuthor(type="text" value=a.authorName || "L'équipe BranShee" maxlength="80")
+
+                .sa-card
+                    .sa-card__t
+                        span.material-symbols-outlined travel_explore
+                        span Référencement
+                    .sa-field
+                        span.sa-field__label Adresse de la page
+                        .bl-slug
+                            span.bl-slug__base branshee.com/blog/
+                            input.sa-input#edSlug(type="text" value=a.slug || '' placeholder="genere-depuis-le-titre")
+                        //- Changer le slug d'un article en ligne casse les liens déjà partagés.
+                        if a.status === 'published'
+                            .bl-warn
+                                span.material-symbols-outlined warning
+                                span Cet article est en ligne : modifier son adresse cassera les liens déjà partagés.
+                    .sa-field
+                        span.sa-field__label
+                            | Titre dans Google
+                            span.bl-count#edMetaTitleCount
+                        input.sa-input#edMetaTitle(type="text" value=seo.metaTitle || '' maxlength="120" placeholder="Laissez vide pour reprendre le titre de l'article")
+                    .sa-field
+                        span.sa-field__label
+                            | Description dans Google
+                            span.bl-count#edMetaDescCount
+                        textarea.sa-input#edMetaDesc(rows="3" maxlength="320" placeholder="Laissez vide pour reprendre le chapeau")= seo.metaDescription || ''
+
+                    .bl-serp
+                        .bl-serp__label Aperçu dans Google
+                        .bl-serp__url branshee.com › blog › <span id="serpSlug">…</span>
+                        .bl-serp__title#serpTitle —
+                        .bl-serp__desc#serpDesc —
+
+    //- Modale d'insertion de lien
+    .sa-modal#modalLien
+        .sa-modal__overlay(data-close-lien)
+        .sa-modal__box
+            .sa-modal__head
+                span.material-symbols-outlined link
+                span.sa-modal__title Insérer un lien
+                button.sa-ico(type="button" data-close-lien style="margin-left:auto" aria-label="Fermer")
+                    span.material-symbols-outlined close
+            .sa-modal__body
+                .sa-field
+                    span.sa-field__label Texte affiché
+                    input.sa-input#lienTexte(type="text" placeholder="Texte du lien")
+                .sa-field
+                    span.sa-field__label Adresse
+                    input.sa-input#lienUrl(type="text" placeholder="https://… ou /register")
+                .sa-head__sub(style="margin-top:8px") Astuce : un lien vers /register en fin d'article transforme un lecteur en inscrit.
+            .sa-modal__foot
+                button.sa-btn(type="button" data-close-lien) Annuler
+                button.sa-btn.sa-btn--primary#lienOk(type="button") Insérer
+
+    input#edBodyFile(type="file" accept="image/*" hidden)
+
+block scripts
+    script(src="/js/superadmin/blog-editor.js")

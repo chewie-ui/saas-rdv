@@ -1,0 +1,77 @@
+extends ../../layouts/index
+
+block links
+    link(rel="stylesheet" href="/css/layouts/blog.css")
+
+block content
+    -
+        function jourFr(d) {
+            return d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+        }
+        function lien(cat, p) {
+            var q = [];
+            if (cat) q.push('categorie=' + encodeURIComponent(cat));
+            if (p && p > 1) q.push('page=' + p);
+            return '/blog' + (q.length ? '?' + q.join('&') : '');
+        }
+
+    main.blog
+        header.blog-hero.container
+            span.blog-hero__eyebrow Le blog BranShee
+            h1.blog-hero__title Remplir son agenda, sans y passer ses soirées
+            p.blog-hero__sub
+                | Des conseils concrets pour les indépendants : réduire les rendez-vous manqués,
+                | se faire trouver en ligne et gagner du temps sur l'administratif.
+
+        if categories.length
+            nav.blog-cats.container(aria-label="Rubriques")
+                a.blog-cat(href=lien('') class=!categorieActive ? 'is-active' : '') Tout
+                each c in categories
+                    a.blog-cat(href=lien(c) class=categorieActive === c ? 'is-active' : '')= c
+
+        .container
+            if !articles.length
+                .blog-empty
+                    h2.blog-empty__t Bientôt du nouveau ici
+                    p.blog-empty__d Les premiers articles arrivent. En attendant, vous pouvez créer votre agenda en ligne gratuitement.
+                    a.sm-btn.sm-btn--primary(href="/register?intent=pro") Commencer gratuitement
+            else
+                .blog-grid
+                    each a, i in articles
+                        //- Le premier article de la première page est mis en avant :
+                        //- c'est le plus récent, celui qu'on veut faire lire.
+                        - var vedette = i === 0 && page === 1 && !categorieActive
+                        a.blog-card(href='/blog/' + a.slug class=vedette ? 'blog-card--lead' : '')
+                            .blog-card__media
+                                if a.coverImage
+                                    img(src=a.coverImage alt="" loading=vedette ? 'eager' : 'lazy')
+                                else
+                                    span.blog-card__ph
+                                        i.fa-regular.fa-newspaper
+                            .blog-card__body
+                                if a.category
+                                    span.blog-card__cat= a.category
+                                h2.blog-card__title= a.title
+                                if a.excerpt
+                                    p.blog-card__excerpt= a.excerpt
+                                .blog-card__meta
+                                    span= jourFr(a.publishedAt)
+                                    span.blog-card__dot ·
+                                    span #{a.readingMinutes || 1} min de lecture
+
+                if pages > 1
+                    nav.blog-pager(aria-label="Pagination")
+                        if page > 1
+                            a.blog-pager__btn(href=lien(categorieActive, page - 1)) Précédent
+                        span.blog-pager__info Page #{page} sur #{pages}
+                        if page < pages
+                            a.blog-pager__btn(href=lien(categorieActive, page + 1)) Suivant
+
+        section.blog-cta
+            .container
+                .blog-cta__box
+                    h2.blog-cta__t Votre agenda en ligne, gratuitement
+                    p.blog-cta__d Vos clients réservent seuls, 24h/24. Vous arrêtez de jongler avec les SMS.
+                    a.sm-btn.sm-btn--primary.blog-cta__btn(href="/register?intent=pro") Commencer gratuitement
+
+    include ../../common/footer

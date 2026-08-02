@@ -132,6 +132,25 @@ router.post("/superadmin/support-editor/sections/:sectionId/faqs", isSuperAdmin,
 router.patch("/superadmin/support-editor/sections/:sectionId/faqs/:faqId", isSuperAdmin, ctrl.updateFaq);
 router.delete("/superadmin/support-editor/sections/:sectionId/faqs/:faqId", isSuperAdmin, ctrl.deleteFaq);
 
+// Blog — articles publics rédigés depuis le superadmin (acquisition SEO).
+// À ne pas confondre avec /superadmin/support-editor, qui est le centre d'aide.
+const blog = require("../controllers/blog.controller");
+router.get("/superadmin/blog", isSuperAdmin, blog.adminListPage);
+router.get("/superadmin/blog/nouveau", isSuperAdmin, blog.adminEditorPage);
+router.post("/superadmin/blog", isSuperAdmin, blog.create);
+router.post(
+  "/superadmin/blog/image",
+  isSuperAdmin,
+  upload.single("image"),
+  processSingleImage("blog"),
+  blog.uploadImage
+);
+// Après les routes littérales, sinon "nouveau" et "image" seraient pris pour des ids.
+router.get("/superadmin/blog/:id", isSuperAdmin, blog.adminEditorPage);
+router.patch("/superadmin/blog/:id", isSuperAdmin, blog.update);
+router.post("/superadmin/blog/:id/dupliquer", isSuperAdmin, blog.duplicate);
+router.delete("/superadmin/blog/:id", isSuperAdmin, blog.remove);
+
 // Public redemption (no auth required — handler checks itself)
 router.get("/access/:code", ctrl.redeemAccessLink);
 
