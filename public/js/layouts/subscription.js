@@ -318,11 +318,19 @@ function getPlanPrice(plan) {
 
 // Retourne vrai si un code essai gratuit est actif et s'applique à ce plan.
 function isTrialActive(plan) {
-  if (!appliedPromoCode || appliedPromoCode.discountType !== "trial") return false;
   const billing = isYearly ? "yearly" : "monthly";
-  const ap = appliedPromoCode.applicablePlan;
-  return ap === "all" || ap === `${plan}_${billing}` ||
-         ap === `${plan}_monthly` || ap === `${plan}_yearly`;
+  if (appliedPromoCode && appliedPromoCode.discountType === "trial") {
+    const ap = appliedPromoCode.applicablePlan;
+    if (ap === "all" || ap === `${plan}_${billing}` ||
+        ap === `${plan}_monthly` || ap === `${plan}_yearly`) return true;
+  }
+  // Le mois offert est appliqué par le SERVEUR sur tout nouvel abonnement,
+  // qu'un code promo soit saisi ou non (cf. trial_period_days dans
+  // createCheckout). Sans ce cas, la boîte de confirmation annonçait
+  // « payer 19 € » juste après un bouton « Essayer Pro gratuitement » —
+  // exactement l'inverse de ce qui est facturé, donc une promesse trahie au
+  // moment le plus sensible du parcours.
+  return true;
 }
 
 function confirmPurchase(plan) {
@@ -339,7 +347,9 @@ function confirmPurchase(plan) {
     let   priceLabel   = fmtPrice(price);
     // Détecter dès l'ouverture si un code essai gratuit est actif.
     const trialActive  = isTrialActive(plan);
-    const trialDays    = trialActive ? (appliedPromoCode.trialDays || 30) : 0;
+    // `appliedPromoCode` est nul quand l'essai vient du serveur et non d'un
+    // code saisi : sans cette garde, la boîte de confirmation plantait.
+    const trialDays    = trialActive ? ((appliedPromoCode && appliedPromoCode.trialDays) || 30) : 0;
     // Prix de base (sans promo) pour l'affichage "puis X €/mois" en mode trial.
     const billing      = isYearly ? "yearly" : "monthly";
     const basePrice    = PRICES[plan] ? PRICES[plan][billing] : null;

@@ -116,6 +116,12 @@ function formatCompanyForList(company, owner) {
 
 // ── Page : liste de mes établissements ────────────────────────────────────────
 exports.listMyEstablishments = async (req, res) => {
+  // La route accepte aussi une session CLIENT (isClientOrUserAuth), mais un
+  // client n'a pas de compte pro : `req.user` est absent et tout ce qui suit
+  // plantait sur `owner._id`. Posséder un établissement suppose un compte pro,
+  // on l'envoie donc l'ouvrir plutôt que de renvoyer une erreur serveur.
+  if (!req.user) return res.redirect("/register?intent=pro");
+
   const owner = req.user;
   const owned = await Company.find({ owner: owner._id, isDeleted: { $ne: true } })
     .sort({ createdAt: 1 })
