@@ -132,6 +132,13 @@ router.post("/superadmin/support-editor/sections/:sectionId/faqs", isSuperAdmin,
 router.patch("/superadmin/support-editor/sections/:sectionId/faqs/:faqId", isSuperAdmin, ctrl.updateFaq);
 router.delete("/superadmin/support-editor/sections/:sectionId/faqs/:faqId", isSuperAdmin, ctrl.deleteFaq);
 
+// Acquisition — exploitation des vues déjà collectées (PageView).
+router.get(
+  "/superadmin/acquisition",
+  isSuperAdmin,
+  require("../controllers/acquisition.controller").acquisitionPage
+);
+
 // Blog — articles publics rédigés depuis le superadmin (acquisition SEO).
 // À ne pas confondre avec /superadmin/support-editor, qui est le centre d'aide.
 const blog = require("../controllers/blog.controller");

@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const attachOrphanBookings = require("../utils/attachOrphanBookings");
+const { readFirstTouch } = require("../utils/attribution");
 const {
   createUser,
   logout,
@@ -396,6 +397,11 @@ router.get("/auth/google/callback", async (req, res) => {
         googleId,
         accountIntent,
         company: companyId,
+        // Attribution « premier contact », comme à l'inscription classique
+        // (controllers/auth.controller.js). Elle manquait ici : tout compte
+        // créé via Google — le chemin le plus emprunté — arrivait sans
+        // provenance, et la page Acquisition ne pouvait rien en dire.
+        acquisition: readFirstTouch(req) || undefined,
       });
 
       if (wantsCompany) {

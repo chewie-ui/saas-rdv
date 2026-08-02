@@ -1,0 +1,197 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Page superadmin « Acquisition ».
+   Reprend les variables de superadmin-v2.css : aucune couleur nouvelle hors
+   des trois teintes qui distinguent les natures de trafic.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.sa-body > .sa-card,
+.sa-body > .sa-grid2 { margin-bottom: 14px; }
+
+/* ── Sélecteur de période ─────────────────────────────────────────────────── */
+.acq-periodes {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--sa-line);
+  border-radius: 10px;
+  background: var(--sa-panel);
+}
+.acq-periode {
+  padding: 6px 13px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sa-txt-2);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .12s, color .12s;
+}
+.acq-periode:hover { background: var(--sa-panel-2); color: var(--sa-txt); }
+.acq-periode.is-active { background: var(--sa-blue); color: #fff; }
+
+/* ── Entonnoir ────────────────────────────────────────────────────────────── */
+.acq-funnel { display: flex; flex-direction: column; gap: 16px; }
+.acq-step { display: flex; flex-direction: column; gap: 6px; }
+.acq-step__head { display: flex; align-items: baseline; gap: 12px; }
+.acq-step__name { font-size: 13.5px; font-weight: 600; color: var(--sa-txt); }
+.acq-step__val {
+  margin-left: auto;
+  font-size: 19px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--sa-txt);
+}
+.acq-step__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--sa-panel-2);
+  overflow: hidden;
+}
+.acq-step__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--sa-blue);
+  transition: width .4s cubic-bezier(.4, 0, .2, 1);
+}
+/* Une marche sous 20 % est le point de perte : elle doit sauter aux yeux. */
+.acq-step__fill.is-weak { background: var(--sa-amber, #fbbf24); }
+.acq-step__foot { display: flex; align-items: baseline; gap: 12px; font-size: 11.5px; }
+.acq-step__hint { color: var(--sa-txt-3); }
+.acq-step__rate { margin-left: auto; color: var(--sa-txt-2); font-weight: 600; white-space: nowrap; }
+.acq-step__rate.is-weak { color: var(--sa-amber, #fbbf24); }
+
+@media (prefers-reduced-motion: reduce) {
+  .acq-step__fill { transition: none; }
+}
+
+/* ── Répartition du trafic ────────────────────────────────────────────────── */
+.acq-split { display: flex; flex-direction: column; gap: 14px; }
+.acq-split__bar {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--sa-panel-2);
+}
+.acq-split__seg { height: 100%; }
+.acq-split__seg.is-produit { background: var(--sa-blue); }
+.acq-split__seg.is-resa    { background: var(--sa-green, #4ade80); }
+.acq-split__seg.is-interne { background: var(--sa-txt-3); }
+
+.acq-legend { display: flex; flex-direction: column; gap: 11px; }
+.acq-leg { display: flex; align-items: flex-start; gap: 10px; }
+.acq-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  margin-top: 5px;
+  flex: 0 0 auto;
+}
+.acq-dot.is-produit { background: var(--sa-blue); }
+.acq-dot.is-resa    { background: var(--sa-green, #4ade80); }
+.acq-dot.is-interne { background: var(--sa-txt-3); }
+.acq-leg__n { font-size: 14px; font-weight: 700; color: var(--sa-txt); font-variant-numeric: tabular-nums; }
+.acq-leg__l { font-size: 12px; color: var(--sa-txt-3); line-height: 1.45; }
+
+/* ── Fiabilité ────────────────────────────────────────────────────────────── */
+.acq-quality { display: flex; flex-direction: column; gap: 14px; }
+.acq-quality__row { display: flex; align-items: baseline; gap: 10px; }
+.acq-quality__v {
+  font-size: 21px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--sa-txt);
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+  min-width: 52px;
+}
+.acq-quality__l { font-size: 12.5px; color: var(--sa-txt-2); line-height: 1.45; }
+
+/* ── Encadrés ─────────────────────────────────────────────────────────────── */
+.acq-note,
+.acq-warn {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 14px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+.acq-note { background: var(--sa-panel-2); color: var(--sa-txt-3); }
+.acq-warn { background: rgba(251, 191, 36, .1); color: var(--sa-amber, #fbbf24); }
+.acq-note .material-symbols-outlined,
+.acq-warn .material-symbols-outlined { font-size: 15px; flex: 0 0 auto; margin-top: 1px; }
+
+/* ── Canaux ───────────────────────────────────────────────────────────────── */
+.acq-canaux {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.acq-canal {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 11px;
+  border: 1px solid var(--sa-line);
+  border-left: 3px solid var(--sa-txt-3);
+  border-radius: 8px;
+  background: var(--sa-panel-2);
+}
+.acq-canal.is-recherche { border-left-color: var(--sa-blue); }
+.acq-canal.is-social    { border-left-color: var(--sa-green, #4ade80); }
+.acq-canal.is-publicite { border-left-color: var(--sa-amber, #fbbf24); }
+.acq-canal.is-spam      { border-left-color: var(--sa-red, #f87171); }
+.acq-canal__l { font-size: 11px; color: var(--sa-txt-3); }
+.acq-canal__v {
+  font-size: 17px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: var(--sa-txt);
+  font-variant-numeric: tabular-nums;
+}
+
+.acq-tag {
+  display: inline-block;
+  margin-left: 7px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  background: var(--sa-panel-2);
+  color: var(--sa-txt-3);
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+.acq-tag.is-publicite { background: rgba(251, 191, 36, .12); color: var(--sa-amber, #fbbf24); }
+.acq-tag.is-social    { background: rgba(74, 222, 128, .12); color: var(--sa-green, #4ade80); }
+
+/* ── Tableaux ─────────────────────────────────────────────────────────────── */
+.acq-table { font-size: 12.5px; }
+.acq-table th { font-size: 10.5px; }
+.acq-table td { padding-top: 9px; padding-bottom: 9px; }
+.acq-src { overflow-wrap: anywhere; }
+.acq-path {
+  color: var(--sa-txt);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.acq-path:hover { color: var(--sa-blue); text-decoration: underline; }
+
+.acq-vide {
+  padding: 18px 0;
+  font-size: 12.5px;
+  color: var(--sa-txt-3);
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .acq-periodes { width: 100%; overflow-x: auto; }
+  .acq-step__val { font-size: 17px; }
+}

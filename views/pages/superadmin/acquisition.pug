@@ -1,0 +1,206 @@
+extends ../../layouts/sa
+
+block styles
+    link(rel="stylesheet" href="/css/layouts/sa-acquisition.css")
+
+block content
+    -
+        function pct(n, total) { return total ? Math.round((n / total) * 100) : 0; }
+        function lienPeriode(p) { return '/superadmin/acquisition?periode=' + p; }
+        var PERIODES = [['7', '7 jours'], ['30', '30 jours'], ['90', '90 jours'], ['tout', 'Tout']];
+
+    .sa-head
+        button.sa-ico.sa-burger(type="button" data-sa-burger aria-label="Menu")
+            span.material-symbols-outlined menu
+        div
+            h1.sa-head__title Acquisition
+            .sa-head__sub D'où viennent les visiteurs, et où ils s'arrêtent
+        .sa-head__end
+            .acq-periodes(role="group" aria-label="Période")
+                each p in PERIODES
+                    a.acq-periode(href=lienPeriode(p[0]) class=periode === p[0] ? 'is-active' : '')= p[1]
+
+    .sa-body
+
+        //- ── Entonnoir ────────────────────────────────────────────────────
+        //- Placé en premier : c'est la seule vue qui dit OÙ ça coince, et
+        //- donc la seule qui oriente une décision.
+        .sa-card
+            .sa-card__t
+                span.material-symbols-outlined filter_alt
+                span Parcours · #{libellePeriode}
+            .acq-funnel
+                each e, i in etapes
+                    .acq-step
+                        .acq-step__head
+                            span.acq-step__name= e.nom
+                            span.acq-step__val= e.valeur.toLocaleString('fr-FR')
+                        .acq-step__bar
+                            .acq-step__fill(style='width:' + e.largeur + '%' class=e.taux !== null && e.taux < 20 ? 'is-weak' : '')
+                        .acq-step__foot
+                            span.acq-step__hint= e.aide
+                            if e.taux !== null
+                                span.acq-step__rate(class=e.taux < 20 ? 'is-weak' : '')= e.taux + ' % de l\'étape précédente'
+            .acq-note
+                span.material-symbols-outlined info
+                span
+                    | Mesuré en visiteurs uniques. Une marche très basse indique où se perdent les gens —
+                    | c'est là qu'un changement rapporte le plus.
+
+        //- ── Nature du trafic ─────────────────────────────────────────────
+        .sa-grid2
+            .sa-card
+                .sa-card__t
+                    span.material-symbols-outlined pie_chart
+                    span Nature du trafic
+                .acq-split
+                    - var t = natures.total.vues || 1
+                    .acq-split__bar
+                        .acq-split__seg.is-produit(style='width:' + pct(natures.acquisition.vues, t) + '%' title='Pages produit')
+                        .acq-split__seg.is-resa(style='width:' + pct(natures.reservation.vues, t) + '%' title='Pages de réservation')
+                        .acq-split__seg.is-interne(style='width:' + pct(natures.interne.vues, t) + '%' title='Espaces connectés')
+                    .acq-legend
+                        .acq-leg
+                            span.acq-dot.is-produit
+                            div
+                                .acq-leg__n #{natures.acquisition.visiteurs.toLocaleString('fr-FR')} visiteurs
+                                .acq-leg__l Pages produit — de vrais prospects
+                        .acq-leg
+                            span.acq-dot.is-resa
+                            div
+                                .acq-leg__n #{natures.reservation.visiteurs.toLocaleString('fr-FR')} visiteurs
+                                .acq-leg__l Pages de réservation des pros — leurs clients, pas les vôtres
+                        .acq-leg
+                            span.acq-dot.is-interne
+                            div
+                                .acq-leg__n #{natures.interne.visiteurs.toLocaleString('fr-FR')} visiteurs
+                                .acq-leg__l Espaces connectés — usage, pas acquisition
+
+            .sa-card
+                .sa-card__t
+                    span.material-symbols-outlined groups
+                    span Fiabilité du chiffre
+                .acq-quality
+                    .acq-quality__row
+                        span.acq-quality__v= concentration.partTop10 + ' %'
+                        span.acq-quality__l des vues viennent des 10 visiteurs les plus actifs
+                    .acq-quality__row
+                        span.acq-quality__v= concentration.grosVisiteurs.toLocaleString('fr-FR')
+                        span.acq-quality__l visiteurs à 20 vues ou plus — vous, vos pros, vos tests
+                    .acq-quality__row
+                        span.acq-quality__v= visiteursHorsBruit.toLocaleString('fr-FR')
+                        span.acq-quality__l visiteurs hors régies publicitaires et spam — le chiffre le plus proche du réel
+                if concentration.partTop10 >= 30
+                    .acq-warn
+                        span.material-symbols-outlined warning
+                        span Une part importante du trafic vient de quelques personnes. Le total brut surestime l'audience réelle.
+
+        //- ── Sources ──────────────────────────────────────────────────────
+        .sa-grid2
+            .sa-card
+                .sa-card__t
+                    span.material-symbols-outlined trending_up
+                    span Sources · pages produit uniquement
+                if !sources.length
+                    .acq-vide Aucune visite sur la période.
+                else
+                    //- Par canal d'abord : c'est ce qui répond à la question.
+                    //- Le détail source par source vient ensuite.
+                    .acq-canaux
+                        each c in canaux
+                            .acq-canal(class='is-' + c.cle)
+                                span.acq-canal__l= c.libelle
+                                span.acq-canal__v= c.visiteurs.toLocaleString('fr-FR')
+                    table.sa-table.acq-table
+                        thead
+                            tr
+                                th Source
+                                th(style="width:90px") Visiteurs
+                                th(style="width:70px") Vues
+                        tbody
+                            each s in sources
+                                tr
+                                    td.acq-src
+                                        = s.nom
+                                        span.acq-tag(class='is-' + s.canal.cle)= s.canal.libelle
+                                    td(style="font-weight:600")= s.visiteurs.toLocaleString('fr-FR')
+                                    td.sa-muted= s.vues.toLocaleString('fr-FR')
+                    if sourcesSpam.length
+                        .acq-note
+                            span.material-symbols-outlined block
+                            span
+                                | #{sourcesSpam.length} source#{sourcesSpam.length > 1 ? 's' : ''} écartée#{sourcesSpam.length > 1 ? 's' : ''} : du spam de referrer,
+                                | des robots qui se font passer pour un site tiers pour apparaître ici.
+                                | Ils ne correspondent à personne (#{sourcesSpam.slice(0, 3).map(function (s) { return s.nom }).join(', ')}#{sourcesSpam.length > 3 ? '…' : ''}).
+
+            .sa-card
+                .sa-card__t
+                    span.material-symbols-outlined person_add
+                    span Provenance des comptes créés
+                if !provenances.length && !sansProvenance
+                    .acq-vide Aucun compte créé sur la période.
+                else
+                    table.sa-table.acq-table
+                        thead
+                            tr
+                                th Source
+                                th(style="width:70px") Comptes
+                        tbody
+                            each p in provenances
+                                tr
+                                    td.acq-src= p.nom
+                                    td(style="font-weight:600")= p.n
+                            if sansProvenance
+                                tr
+                                    td.sa-muted Non suivi (avant le suivi, ou via l'app mobile)
+                                    td.sa-muted= sansProvenance
+                    .acq-note
+                        span.material-symbols-outlined info
+                        span C'est la seule mesure qui relie une source à un compte réel : elle est figée à l'inscription.
+
+        //- ── Pages ────────────────────────────────────────────────────────
+        .sa-grid2
+            .sa-card
+                .sa-card__t
+                    span.material-symbols-outlined description
+                    span Pages produit les plus vues
+                if !pagesProduit.length
+                    .acq-vide Aucune vue sur la période.
+                else
+                    table.sa-table.acq-table
+                        thead
+                            tr
+                                th Page
+                                th(style="width:90px") Visiteurs
+                                th(style="width:70px") Vues
+                        tbody
+                            each p in pagesProduit
+                                tr
+                                    td
+                                        a.acq-path(href=p.chemin target="_blank" rel="noopener")= p.chemin
+                                    td(style="font-weight:600")= p.visiteurs.toLocaleString('fr-FR')
+                                    td.sa-muted= p.vues.toLocaleString('fr-FR')
+
+            .sa-card
+                .sa-card__t
+                    span.material-symbols-outlined storefront
+                    span Pages de réservation les plus vues
+                if !pagesReservation.length
+                    .acq-vide Aucune vue sur la période.
+                else
+                    table.sa-table.acq-table
+                        thead
+                            tr
+                                th Établissement
+                                th(style="width:90px") Visiteurs
+                                th(style="width:70px") Vues
+                        tbody
+                            each p in pagesReservation
+                                tr
+                                    td
+                                        a.acq-path(href=p.chemin target="_blank" rel="noopener")= p.chemin
+                                    td(style="font-weight:600")= p.visiteurs.toLocaleString('fr-FR')
+                                    td.sa-muted= p.vues.toLocaleString('fr-FR')
+                    .acq-note
+                        span.material-symbols-outlined info
+                        span Ces visiteurs viennent voir un pro précis. Ils ne cherchaient pas BranShee.
