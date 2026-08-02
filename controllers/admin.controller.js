@@ -1813,9 +1813,6 @@ exports.informationsPage = async (req, res) => {
     title: res.locals.t.titles.infos,
     maskEmail,
     currentCompany: res.locals.currentCompany,
-    // Identité RÉSOLUE de l'établissement courant : ces champs vivaient sur
-    // le compte, donc partagés entre tous les établissements d'un patron.
-    estab: identityFor(res.locals.currentCompany, req.user),
     canUseSocial,
     canUseCustomUrl,
     cs,
@@ -3105,6 +3102,10 @@ exports.customizeCalendarPage = async (req, res) => {
   return res.render("admin/customize", {
     pageName: "Customize",
     title: res.locals.t.customize.title,
+    // Identité RÉSOLUE de l'établissement courant. La vue lit `estab.location`,
+    // `estab.instagramLink`… : sans cette ligne elle plantait sur un `estab`
+    // indéfini, et la page entière renvoyait une erreur JSON.
+    estab: identityFor(res.locals.currentCompany, req.user),
     calendarSettings: cs,
     gallery:      cs.gallery   || [],
     equipment:    cs.equipment || [],
