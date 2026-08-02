@@ -98,7 +98,9 @@ exports.establishmentsPage = async (req, res) => {
     // Deuxième passe sans filtre : les chiffres clés doivent rester stables
     // quand on filtre la liste.
     Company.find({ isDeleted: { $ne: true } })
-      .populate("owner", "isPremium manualPremium subscription businessName")
+      // `manualPremiumExpiry` est indispensable au chiffre « octrois à
+      // échéance » calculé plus bas — sans lui il vaudrait toujours zéro.
+      .populate("owner", "isPremium manualPremium manualPremiumExpiry subscription businessName")
       .select("name isPaused createdAt owner")
       .lean(),
     Booking.countDocuments({}),
@@ -165,6 +167,27 @@ exports.establishmentsPage = async (req, res) => {
     payants: tous.filter((c) => planDuCompte(c.owner || {}).planKey !== "basic").length,
   };
   kpis.actifs = kpis.total - kpis.enPause;
+
+  // Octrois qui arrivent à échéance : chacun est un moment de conversion à ne
+  // pas rater — et, si on le rate, un pro qui bascule en gratuit sans prévenir.
+  // Calculé sur `tous` comme les autres chiffres clés, pour ne pas dépendre
+  // des filtres affichés.
+  const echeances = tous
+    .map((c) => {
+      const o = c.owner;
+      if (!o || !(o.manualPremium || o.isPremium) || !o.manualPremiumExpiry) return null;
+      const ms = new Date(o.manualPremiumExpiry).getTime() - maintenant;
+      if (!(ms > 0)) return null;
+      return {
+        nom: (c.name || o.businessName || "").trim(),
+        jours: Math.ceil(ms / 86400000),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.jours - b.jours);
+  kpis.octroisQuiExpirent = echeances.length;
+  kpis.octroiProchain = echeances[0] || null;
+  kpis.octroisUrgents = echeances.filter((e) => e.jours <= 7).length;
 
   const pages = Math.max(1, Math.ceil(liste.length / ETABS_PAR_PAGE));
   const page = Math.min(Math.max(1, parseInt(req.query.page, 10) || 1), pages);

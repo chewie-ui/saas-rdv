@@ -470,6 +470,109 @@ async function sendCreateEstablishmentNudges() {
 }
 
 /**
+ * Relances avant l'expiration d'un octroi manuel (accès payant offert par le
+ * superadmin) : une à J-7, une à J-1.
+ *
+ * Sans elles, un pro qui travaille tous les jours sur BranShee bascule en
+ * formule gratuite du jour au lendemain — plafonné à 20 réservations par mois,
+ * sans rappels — et le découvre en constatant que ça ne marche plus. C'est la
+ * pire manière de demander à quelqu'un de payer.
+ *
+ * Anti-doublon : `grantReminder.sentFor` mémorise l'échéance déjà
+ * couverte. Si le superadmin prolonge l'octroi, la date change et les relances
+ * repartent automatiquement pour la nouvelle échéance.
+ */
+async function sendGrantExpiryReminders() {
+  const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
+  const J = 24 * 60 * 60 * 1000;
+  const maintenant = Date.now();
+
+  let comptes;
+  try {
+    comptes = await User.find({
+      manualPremium: true,
+      manualPremiumExpiry: { $ne: null, $gt: new Date(maintenant), $lte: new Date(maintenant + 8 * J) },
+      isDisabled: { $ne: true },
+      email: { $exists: true, $ne: "" },
+    })
+      .select("_id fullName email manualPremiumExpiry grantReminder")
+      .lean();
+  } catch (err) {
+    console.error("[grantExpiry] Erreur lecture DB ❌", err);
+    return;
+  }
+  if (!comptes.length) return;
+
+  const templatePath = path.join(__dirname, "../views/templates/emails/grant-expiry-reminder.pug");
+
+  for (const user of comptes) {
+    try {
+      const expiry = new Date(user.manualPremiumExpiry);
+      const joursRestants = Math.ceil((expiry.getTime() - maintenant) / J);
+
+      // Étape visée : 1 = relance J-7 · 2 = relance J-1. Entre les deux, rien.
+      const etapeVoulue = joursRestants <= 1 ? 2 : joursRestants <= 7 ? 1 : 0;
+      if (etapeVoulue === 0) continue;
+
+      const suivi = user.grantReminder || {};
+      // Une échéance différente de celle déjà couverte = octroi prolongé ou
+      // remplacé : on repart de zéro pour cette nouvelle date.
+      const memeEcheance =
+        suivi.sentFor && new Date(suivi.sentFor).getTime() === expiry.getTime();
+      const etapeFaite = memeEcheance ? suivi.stage || 0 : 0;
+      if (etapeFaite >= etapeVoulue) continue;
+
+      // Établissement concerné + volume réel du mois écoulé : c'est ce qui rend
+      // l'email utile plutôt que générique (« vous avez eu 22 RDV le mois
+      // dernier, le gratuit s'arrête à 20 »).
+      const estab = await Company.findOne({ owner: user._id, isDeleted: { $ne: true } })
+        .sort({ createdAt: 1 })
+        .select("name")
+        .lean();
+      let rdv30j = null;
+      if (estab) {
+        rdv30j = await Booking.countDocuments({
+          company: estab._id,
+          createdAt: { $gte: new Date(maintenant - 30 * J) },
+        });
+      }
+
+      const html = pug.renderFile(templatePath, {
+        firstName: (user.fullName || "").trim().split(" ")[0] || "",
+        estabName: estab ? estab.name : "",
+        daysLeft: joursRestants,
+        expiryLabel: expiry.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }),
+        monthlyBookings: rdv30j,
+        ctaUrl: `${env.appBaseUrl}/subscription`,
+      });
+
+      const objet =
+        etapeVoulue === 2
+          ? "Votre accès complet BranShee se termine demain"
+          : `Votre accès complet BranShee se termine dans ${joursRestants} jours`;
+
+      const ok = await sendEmail(user.email, objet, html);
+      if (ok) {
+        await User.updateOne(
+          { _id: user._id },
+          {
+            $set: {
+              "grantReminder.sentFor": expiry,
+              "grantReminder.stage": etapeVoulue,
+            },
+          },
+        );
+        console.log(
+          `[grantExpiry] Relance J-${etapeVoulue === 2 ? 1 : 7} → ${user.email} (échéance ${expiry.toISOString().slice(0, 10)})`,
+        );
+      }
+    } catch (err) {
+      console.error(`[grantExpiry] Erreur envoi ${user && user.email} ❌`, err);
+    }
+  }
+}
+
+/**
  * Démarre le cron : on tourne toutes les 15 minutes. Le flag
  * `reminderSent` empêche tout doublon si le serveur redémarre.
  */
@@ -503,6 +606,14 @@ function start() {
     );
   });
 
+  // Chaque jour à 09h00 : relances avant expiration d'un octroi (J-7 et J-1).
+  // Tôt dans la journée, pour laisser au pro le temps de réagir le jour même.
+  cron.schedule("0 9 * * *", () => {
+    sendGrantExpiryReminders().catch((err) =>
+      console.error("[grantExpiry] Erreur tâche ❌", err),
+    );
+  });
+
   // Un premier run au démarrage pour rattraper un éventuel retard
   sendDueReminders().catch((err) =>
     console.error("[reminderScheduler] Erreur run initial ❌", err),
@@ -511,4 +622,11 @@ function start() {
   console.log("[reminderScheduler] Démarré (rappels toutes les 15 min, purge gratuits à 03h00)");
 }
 
-module.exports = { start, sendDueReminders, purgeFreePlanHistory, sendOnboardingNudges, sendCreateEstablishmentNudges };
+module.exports = {
+  start,
+  sendDueReminders,
+  purgeFreePlanHistory,
+  sendOnboardingNudges,
+  sendCreateEstablishmentNudges,
+  sendGrantExpiryReminders,
+};

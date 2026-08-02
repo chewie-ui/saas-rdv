@@ -1,0 +1,105 @@
+//- Relance avant l'expiration d'un accès offert (octroi manuel du superadmin).
+//- Deux tonalités selon `daysLeft` : prévenance à J-7, urgence à J-1.
+//-
+//- Le contenu est délibérément factuel : on annonce ce qui change vraiment
+//- (plafond de 20 RDV/mois, fin des rappels automatiques), sans dramatiser.
+//- Un pro qui se sent manipulé ne paie pas, il part.
+-
+  var _year = new Date().getFullYear()
+  var _name = (firstName && firstName.length) ? firstName : 'à vous'
+  var _url = ctaUrl || 'https://www.branshee.com/subscription'
+  var _estab = estabName || 'votre établissement'
+  var _jours = typeof daysLeft === 'number' ? daysLeft : 7
+  var _urgent = _jours <= 1
+  var _dateFin = expiryLabel || ''
+  var _rdv = typeof monthlyBookings === 'number' ? monthlyBookings : null
+  //- Le gratuit plafonne à 20 réservations par mois (utils/planLimits.js).
+  var _depasse = _rdv !== null && _rdv > 20
+
+div(style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;")
+  style.
+    @media (max-width: 600px) {
+      .email-card-header { padding: 28px 20px !important; }
+      .email-card-body { padding: 24px 20px 28px !important; }
+    }
+  table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0;padding:0;background-color:#f0f4f8;")
+    tr
+      td(align="center" style="padding:40px 16px;")
+        table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;margin:0 auto;")
+
+          //- ── Logo ─────────────────────────────────────────────────────────
+          tr
+            td(align="center" style="padding:0 0 24px;")
+              a(href="https://www.branshee.com" style="display:inline-block;text-decoration:none;")
+                table(cellpadding="0" cellspacing="0" role="presentation" style="display:inline-table;")
+                  tr
+                    td(valign="middle" style="padding-right:8px;")
+                      span(style="display:block;width:32px;height:32px;background:#1a7a4a;border-radius:9px;font-size:16px;font-weight:800;color:#ffffff;text-align:center;line-height:32px;") B
+                    td(valign="middle")
+                      span(style="font-size:15px;font-weight:700;color:#1e2923;letter-spacing:-0.2px;") BranShee
+
+          //- ── Carte principale ─────────────────────────────────────────────
+          tr
+            td(style="background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);border:1px solid #e2e8f0;")
+
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td.email-card-header(style=(_urgent ? "background:linear-gradient(135deg,#c2410c 0%,#ea580c 100%);" : "background:linear-gradient(135deg,#1a7a4a 0%,#15803d 100%);") + "padding:36px 40px;text-align:center;")
+                    if _urgent
+                      p(style="margin:0 0 6px;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;") Votre accès complet se termine demain
+                    else
+                      p(style="margin:0 0 6px;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;") Votre accès complet se termine dans #{_jours} jours
+                    p(style="margin:0;font-size:14px;color:rgba(255,255,255,0.88);")= _dateFin ? 'Jusqu\'au ' + _dateFin : 'Voici ce qui change ensuite.'
+
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td.email-card-body(style="padding:32px 40px;")
+
+                    p(style="margin:0 0 18px;font-size:15px;color:#374151;line-height:1.6;")
+                      | Bonjour&nbsp;
+                      strong(style="color:#1e2923;")= _name
+                      | , vous utilisez BranShee pour&nbsp;
+                      strong(style="color:#1e2923;")= _estab
+                      |  avec un accès complet que nous vous avions ouvert. Il arrive à échéance.
+
+                    p(style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.6;")
+                      | Vous ne perdez&nbsp;
+                      strong(style="color:#1e2923;") aucune donnée
+                      | &nbsp;: vos rendez-vous, vos clients et votre page de réservation restent en place. Seule la formule change, et elle devient plus limitée.
+
+                    //- Ce qui change concrètement, sans exagération.
+                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:24px;")
+                      tr
+                        td(style="padding:14px 18px;border-bottom:1px solid #f1f5f9;")
+                          p(style="margin:0;font-size:14px;color:#1e2923;line-height:1.5;")
+                            | Vos réservations en ligne seront plafonnées à&nbsp;
+                            strong 20 par mois
+                            if _depasse
+                              |  — vous en avez eu&nbsp;
+                              strong= _rdv
+                              |  le mois dernier.
+                            else
+                              | .
+                      tr
+                        td(style="padding:14px 18px;border-bottom:1px solid #f1f5f9;")
+                          p(style="margin:0;font-size:14px;color:#1e2923;line-height:1.5;") Les rappels automatiques envoyés à vos clients avant leur rendez-vous s'arrêteront.
+                      tr
+                        td(style="padding:14px 18px;")
+                          p(style="margin:0;font-size:14px;color:#1e2923;line-height:1.5;") La synchronisation avec Google Agenda sera désactivée.
+
+                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                      tr
+                        td(align="center")
+                          a(href=_url style="display:inline-block;background:" + (_urgent ? "#c2410c" : "#1a7a4a") + ";color:#ffffff;padding:15px 40px;border-radius:11px;text-decoration:none;font-size:15px;font-weight:700;") Continuer sans coupure →
+                          p(style="margin:16px 0 0;font-size:12.5px;color:#9ca3af;line-height:1.5;") Sans commission sur vos rendez-vous, et résiliable quand vous voulez.
+
+                    p(style="margin:24px 0 0;font-size:14px;color:#374151;line-height:1.6;border-top:1px solid #f1f5f9;padding-top:20px;")
+                      | Si BranShee ne vous convient pas, dites-le-moi en répondant à cet email&nbsp;: savoir ce qui manque m'est bien plus utile qu'un départ silencieux.
+
+          //- ── Footer ───────────────────────────────────────────────────────
+          tr
+            td(style="padding:24px 0 0;text-align:center;")
+              p(style="margin:0 0 6px;font-size:12px;color:#94a3b8;") Une question ? Répondez simplement à cet email.
+              p(style="margin:0;font-size:12px;color:#94a3b8;")
+                a(href="https://www.branshee.com" style="color:#94a3b8;text-decoration:underline;") branshee.com
+              p(style="margin:8px 0 0;font-size:11px;color:#cbd5e1;") © #{_year} BranShee. Tous droits réservés.

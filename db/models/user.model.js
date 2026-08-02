@@ -369,6 +369,18 @@ const userSchema = schema(
       createEstabNudged: { type: Boolean, default: false },
     },
 
+    // Relances avant l'expiration d'un octroi manuel (accès payant offert par
+    // le superadmin). Sans elles, un pro bascule en gratuit du jour au
+    // lendemain sans prévenir — le pire moment pour lui demander de payer.
+    //
+    // On mémorise la DATE d'expiration pour laquelle on a relancé, et non un
+    // simple booléen : si le superadmin prolonge l'octroi, la date change, et
+    // les relances repartent d'elles-mêmes pour la nouvelle échéance.
+    grantReminder: {
+      sentFor: { type: Date, default: null }, // échéance couverte par les envois ci-dessous
+      stage: { type: Number, default: 0 },    // 0 = rien · 1 = J-7 envoyé · 2 = J-1 envoyé
+    },
+
     // D'où vient ce compte : attribution « premier contact » recopiée du
     // cookie bs_attr au moment de l'inscription (cf. utils/attribution.js).
     // Figée à la création et jamais recalculée — c'est ce qui permet de dire

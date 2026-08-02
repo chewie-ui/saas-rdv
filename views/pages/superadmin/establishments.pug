@@ -76,6 +76,19 @@ block content
                     span Aucune réservation
                 .sa-kpi__value= kpis.sansRdv.toLocaleString('fr-FR')
                 .sa-kpi__delta Établissements à relancer
+            //- Chaque octroi qui expire est un moment de conversion. Les pros
+            //- sont relancés automatiquement à J-7 et J-1 (reminderScheduler),
+            //- mais l'échéance doit rester visible ici.
+            .sa-kpi
+                .sa-kpi__label
+                    span.material-symbols-outlined hourglass_bottom
+                    span Octrois à échéance
+                .sa-kpi__value= kpis.octroisQuiExpirent.toLocaleString('fr-FR')
+                if kpis.octroiProchain
+                    .sa-kpi__delta(class=kpis.octroisUrgents ? 'sa-kpi__delta--down' : '')
+                        = 'Prochain : ' + kpis.octroiProchain.nom + ' dans ' + kpis.octroiProchain.jours + ' j'
+                else
+                    .sa-kpi__delta Aucun octroi daté
 
         form.sa-toolbar(method="GET" action="/superadmin/establishments" id="formFiltres")
             label.sa-search
