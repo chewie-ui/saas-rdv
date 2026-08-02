@@ -1442,3 +1442,17 @@
   .sub-segment__btn { padding: 9px 18px; font-size: 0.82rem; }
   .sub-plans > .sub-plan { flex-basis: 100%; max-width: 420px; }
 }
+
+/* Halo bref sur la carte amenée à l'écran par « Passer au Business ». Sans
+   repère visuel, on ne comprend pas ce qui vient de changer après le
+   défilement — la carte était simplement dans un autre onglet. */
+.sub-plan--flash {
+  animation: subPlanFlash 1.6s ease-out;
+}
+@keyframes subPlanFlash {
+  0%   { box-shadow: 0 0 0 0 rgba(30, 122, 78, 0.55); }
+  100% { box-shadow: 0 0 0 16px rgba(30, 122, 78, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sub-plan--flash { animation: none; outline: 2px solid var(--accent, #1e7a4e); }
+}

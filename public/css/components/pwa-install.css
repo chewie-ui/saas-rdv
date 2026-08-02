@@ -267,3 +267,24 @@ button.header__install svg { width: 19px; height: 19px; }
 @media (max-width: 900px) {
   button.header__install { display: none; }
 }
+
+/* Déconnexion dans la barre de la vitrine. Icône seule : la barre est déjà
+   chargée, et l'intitulé passe par title/aria-label. */
+button.header__install,
+a.header__logout {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 10px;
+  background: var(--color-white, #fff);
+  color: var(--text-secondary, #4b5563);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.14s, border-color 0.14s, color 0.14s;
+}
+a.header__logout:hover { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+a.header__logout svg { width: 18px; height: 18px; }

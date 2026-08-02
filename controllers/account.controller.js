@@ -228,29 +228,45 @@ exports.createCheckout = async (req, res) => {
     const PromoCode = require("../db/models/promoCode.model");
     const { promoCode, plan, billing, paymentMethodId } = req.body || {};
 
-    // Choisir le bon price ID selon le plan et la période
-    let priceId;
-    if (plan === "essentiel") {
-      // Essentiel : annuel (7 €/mois) s'il est demandé ET réellement configuré
-      // dans Stripe ; sinon on retombe sur le mensuel. Ce repli évite de
-      // facturer autre chose que ce qui est affiché tant que le prix annuel
-      // n'existe pas (la carte n'affiche l'annuel que dans ce cas, cf. la vue).
-      if (billing === "yearly" && env.stripePriceEssentielYearly) {
-        priceId = env.stripePriceEssentielYearly;
-      } else {
-        priceId = env.stripePriceEssentielMonthly;
-      }
-    } else if (plan === "business") {
-      if (billing === "yearly")     priceId = env.stripePriceBusinessYearly;
-      else if (billing === "sixmonths") priceId = env.stripePriceBusinessSixMonths;
-      else                          priceId = env.stripePriceBusinessMonthly;
-    } else {
-      if (billing === "yearly")     priceId = env.stripePricePremiumYearly;
-      else if (billing === "sixmonths") priceId = env.stripePricePremiumSixMonths;
-      else                          priceId = env.stripePricePremiumMonthly;
-    }
+    // Choisir le bon price ID selon le plan et la période.
+    //
+    // Chaque plan retombe sur son MENSUEL si la période demandée n'est pas
+    // configurée dans Stripe. Avant, seul l'Essentiel avait ce repli : choisir
+    // « 6 mois » sur Pro ou Business — deux prix jamais créés — menait droit à
+    // « Prix non configuré », c'est-à-dire un cul-de-sac au moment de payer.
+    // Mieux vaut facturer la période mensuelle, qui existe, que de bloquer.
+    const PRIX = {
+      essentiel: {
+        yearly:    env.stripePriceEssentielYearly,
+        sixmonths: env.stripePriceEssentielSixMonths,
+        monthly:   env.stripePriceEssentielMonthly,
+      },
+      business: {
+        yearly:    env.stripePriceBusinessYearly,
+        sixmonths: env.stripePriceBusinessSixMonths,
+        monthly:   env.stripePriceBusinessMonthly,
+      },
+      pro: {
+        yearly:    env.stripePricePremiumYearly,
+        sixmonths: env.stripePricePremiumSixMonths,
+        monthly:   env.stripePricePremiumMonthly,
+      },
+    };
+
+    const clePlan = plan === "essentiel" ? "essentiel" : plan === "business" ? "business" : "pro";
+    const periode = billing === "yearly" || billing === "sixmonths" ? billing : "monthly";
+    const priceId = PRIX[clePlan][periode] || PRIX[clePlan].monthly;
+
     if (!priceId) {
-      return res.status(400).json({ error: "Prix non configuré pour ce plan. Contactez le support." });
+      // Message et log explicites : « Prix non configuré » sans dire lequel
+      // rendait le probleme indiagnosticable, autant pour le pro que pour nous.
+      console.error(
+        `[stripe] price ID manquant — plan="${clePlan}" periode="${periode}". ` +
+          `Verifier STRIPE_PRICE_${clePlan.toUpperCase()}_MONTHLY_SERVER dans l'environnement.`
+      );
+      return res.status(400).json({
+        error: `L'abonnement ${clePlan} n'est pas encore disponible au paiement. Contactez le support.`,
+      });
     }
 
     const planName = plan === "essentiel" ? "essentiel" : plan === "business" ? "business" : "pro";

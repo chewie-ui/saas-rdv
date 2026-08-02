@@ -506,8 +506,30 @@ block scripts
             var p1 = document.getElementById('getProPlan');
             var b1 = document.getElementById('getBusinessPlan');
             if (p2 && p1) p2.addEventListener('click', function() { p1.click(); });
-            if (b2 && b1) b2.addEventListener('click', function() { b1.click(); });
             if (ps && p1) ps.addEventListener('click', function() { p1.click(); });
+
+            // « Passer au Business » sous le tableau comparatif : la carte
+            // Business vit dans le groupe « Équipe », or la page s'ouvre
+            // toujours sur « Individuel ». Le bouton lançait donc le paiement
+            // d'un plan dont on n'avait JAMAIS vu la fiche ni le prix.
+            // On bascule sur le bon groupe et on amène la carte à l'écran :
+            // c'est elle qui porte le detail et son propre bouton.
+            if (b2) b2.addEventListener('click', function () {
+                var seg2 = document.getElementById('audienceToggle');
+                var plans2 = document.getElementById('subPlans');
+                if (plans2) plans2.setAttribute('data-active', 'equipe');
+                if (seg2) seg2.querySelectorAll('.sub-segment__btn').forEach(function (b) {
+                    b.classList.toggle('is-active', b.dataset.aud === 'equipe');
+                });
+                var carte = document.querySelector('.sub-plan--studio');
+                if (carte) {
+                    carte.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Halo bref : sans ça, on ne comprend pas ce qui vient de
+                    // bouger apres le defilement.
+                    carte.classList.add('sub-plan--flash');
+                    setTimeout(function () { carte.classList.remove('sub-plan--flash'); }, 1600);
+                }
+            });
 
             // ── Sélecteur Individuel / Équipe : filtre les cartes de plan ──
             var seg = document.getElementById('audienceToggle');

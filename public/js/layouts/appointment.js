@@ -326,6 +326,24 @@ setInterval(updateTimeline, 60000);
   // Exposé pour le clic-glisser sur le calendrier (autre IIFE plus bas).
   window.__openNewApptModal = open;
 
+  // « Nouveau rendez-vous » depuis le Dashboard, la fiche client ou la liste
+  // des clients : ces boutons pointaient vers /appointment/new, une route qui
+  // n'a jamais existé — d'où le « Cannot GET /appointment/new ». Le formulaire
+  // est cette modale : on arrive donc sur le calendrier avec ?new=1 et on
+  // l'ouvre directement.
+  try {
+    if (new URLSearchParams(window.location.search).get("new") === "1") {
+      open();
+      // Nettoie l'URL : un rafraîchissement ou un retour arrière ne doit pas
+      // rouvrir la modale en boucle.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("new");
+      window.history.replaceState({}, "", url);
+    }
+  } catch (e) {
+    // URL exotique : on ignore, le bouton de la page reste utilisable.
+  }
+
   function close() {
     overlay.classList.remove("show");
     document.querySelectorAll(".appt-time-panel.open").forEach((p) => p.classList.remove("open"));

@@ -25,6 +25,13 @@
                     else
                         a.sm-btn.sm-btn--primary(href="/etablissement/mes-etablissements")
                             span= t.header.start_establishment
+                    //- Déconnexion : elle n'était accessible QUE depuis l'espace
+                    //- client ou la barre latérale admin. Sur un ordinateur
+                    //- partagé, quelqu'un connecté n'avait aucun moyen visible
+                    //- de fermer sa session depuis la vitrine.
+                    a.header__logout(href="/logout" title=t.header.logout aria-label=t.header.logout)
+                        svg(viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true")
+                            path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z")
                 else
                     if becomeCoach
                         a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/login")
@@ -130,6 +137,9 @@
                 else
                     a.sm-btn.sm-btn--primary(href="/etablissement/mes-etablissements")
                         span= t.header.start_establishment
+                //- Idem en mobile : sans ça, aucune sortie de session visible.
+                a.sm-btn.sm-btn--ghost.header__btn--ghost(href="/logout")
+                    span= t.header.logout
             else
                 //- L'inscription est TOUJOURS le bouton primaire pour un
                 //- visiteur anonyme (le trafic Ads est surtout mobile) — et
