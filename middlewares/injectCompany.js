@@ -110,6 +110,17 @@ module.exports = async (req, res, next) => {
     // Les autres pages admin supposent toutes une Company existante.
     if (!currentCompany) {
       if (req.path === "/settings" || req.path === "/register") return next();
+      // Une requête d'interface (fetch) attend du JSON : lui renvoyer une
+      // redirection 302 vers une page HTML fait échouer son `r.json()` sur une
+      // erreur d'analyse incompréhensible, au lieu d'un message exploitable.
+      const attendJson =
+        req.get("X-Requested-With") === "fetch" ||
+        req.xhr ||
+        (req.get("Accept") || "").includes("application/json") ||
+        (req.get("Content-Type") || "").includes("application/json");
+      if (attendJson) {
+        return res.status(403).json({ error: "Aucun établissement sélectionné." });
+      }
       return res.redirect("/");
     }
 

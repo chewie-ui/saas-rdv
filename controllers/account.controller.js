@@ -1601,9 +1601,15 @@ exports.updateSlug = async (req, res) => {
       });
     }
 
-    // Trouver la company de l'utilisateur
-    const company = await Company.findOne({ owner: req.user._id });
-    if (!company) return res.status(404).json({ error: "Company introuvable." });
+    // L'établissement ACTIF, pas le premier venu. `findOne({ owner })`
+    // renvoyait n'importe lequel des établissements du compte : modifier
+    // l'URL depuis « Beta Tester » écrivait le slug sur « SkyDev », et les
+    // deux pages publiques échangeaient leur adresse.
+    const company = res.locals.currentCompany;
+    if (!company) return res.status(400).json({ error: "Aucun établissement sélectionné." });
+    if (String(company.owner) !== String(req.user._id)) {
+      return res.status(403).json({ error: "Seul le propriétaire peut changer l'adresse publique." });
+    }
 
     // Vérifier l'unicité
     const existing = await Company.findOne({ slug });
@@ -1748,10 +1754,14 @@ exports.checkSlug = async (req, res) => {
       return res.json({ available: false, error: "Format invalide." });
     }
 
-    const myCompany = await Company.findOne({ owner: req.user._id }).lean();
+    // On compare à l'établissement ACTIF : « garder mon slug actuel » ne doit
+    // valoir que pour celui qu'on est en train de modifier. Sur le premier
+    // établissement venu, l'adresse d'un autre établissement du même compte
+    // passait pour libre — et sa page publique changeait d'adresse.
+    const active = await resolveActiveOwnedCompanyId(req);
     const existing = await Company.findOne({ slug }).lean();
 
-    if (!existing || (myCompany && String(existing._id) === String(myCompany._id))) {
+    if (!existing || (active && String(existing._id) === String(active))) {
       return res.json({ available: true });
     }
     return res.json({ available: false });

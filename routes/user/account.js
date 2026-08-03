@@ -29,7 +29,10 @@ router.get("/my-messages", isAuth, accountController.getMyMessages);
 router.post("/my-messages/:id/dismiss", isAuth, accountController.dismissMyMessage);
 
 router.patch("/update-info", accountController.updateAccountInfo);
-router.patch("/update-social", accountController.updateAccountSocial);
+// `injectCompany` est INDISPENSABLE ici : le handler écrit sur l'établissement
+// courant et refusait tout enregistrement avec « Aucun établissement
+// sélectionné » tant que ce middleware ne le posait pas.
+router.patch("/update-social", isAuth, injectCompany, accountController.updateAccountSocial);
 router.patch("/toggle-social", accountController.toggleSocialVisibility);
 
 router.post("/create-checkout", accountController.createCheckout);
@@ -94,16 +97,21 @@ router.delete("/gallery/:index", accountController.deleteGalleryPhoto);
 router.patch("/gallery-layout", accountController.updateGalleryLayout);
 router.patch("/amenities", accountController.updateAmenities);
 router.patch("/equipment", accountController.updateEquipment);
-router.patch("/categories", accountController.updateCategories);
-router.patch("/categories/rename", accountController.renameCategory);
-router.delete("/categories/:name", accountController.deleteCategory);
+// Les catégories appartiennent à l'établissement : sans `injectCompany`, les
+// trois routes échouaient systématiquement — l'onglet Catégories entier était
+// inutilisable.
+router.patch("/categories", isAuth, injectCompany, accountController.updateCategories);
+router.patch("/categories/rename", isAuth, injectCompany, accountController.renameCategory);
+router.delete("/categories/:name", isAuth, injectCompany, accountController.deleteCategory);
 router.patch("/booking-category-style", accountController.updateBookingCategoryStyle);
 router.patch("/faq", accountController.updateFaq);
 router.patch("/badges", accountController.updateBadges);
 router.patch("/toggle-section", accountController.toggleSection);
 router.patch("/reminder-settings", accountController.updateReminderSettings);
 
-router.patch("/slug", isAuth, accountController.updateSlug);
+// `injectCompany` : le slug appartient à l'établissement ACTIF. Sans lui, le
+// handler prenait le premier établissement du compte et renommait le mauvais.
+router.patch("/slug", isAuth, injectCompany, accountController.updateSlug);
 router.get("/check-slug", isAuth, accountController.checkSlug);
 
 // ── Payment methods ──────────────────────────────────────────────────────────
