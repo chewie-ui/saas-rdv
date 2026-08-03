@@ -2101,7 +2101,11 @@ body.bk-embed #bkCart .bk-cart {
   display: flex;
   flex-direction: column;
   line-height: 1.2;
-  min-width: 0;
+  /* `flex: 0 0 auto` et non `min-width: 0` : un item ne doit JAMAIS retrecir
+     sous son contenu. C'est ce retrecissement qui reduisait « Drainage
+     lymphatique » a « Drain… » des que la barre etait un peu a l'etroit.
+     Quand ca ne rentre plus, c'est la barre qui passe a la ligne. */
+  flex: 0 0 auto;
 }
 
 .bk-cart__k {
@@ -2116,14 +2120,13 @@ body.bk-embed #bkCart .bk-cart {
   font-size: 13px;
   color: white;
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  /* Plafond généreux : à 140 px, « Drainage lymphatique » devenait « Drai… »
-     et « Jeudi 14 août · 10:00 » devenait « Jeu… » dès que la barre était un
-     peu à l'étroit — typiquement dans une iframe posée sur le site d'un pro.
-     Un récapitulatif illisible ne récapitule rien. */
-  max-width: 240px;
+  /* AUCUNE troncature. « Drainage lymphatique » devenait « Drai… » et la date
+     « Jeu… » : un récapitulatif illisible ne récapitule rien, et c'est le
+     dernier écran avant de confirmer. Si le texte est long, il passe à la
+     ligne et la barre grandit — c'est le bon compromis ici. */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-width: 100%;
 }
 
 .bk-cart__sep {
