@@ -36,9 +36,13 @@ router.patch("/update-social", isAuth, injectCompany, accountController.updateAc
 router.patch("/toggle-social", accountController.toggleSocialVisibility);
 
 router.post("/create-checkout", accountController.createCheckout);
-router.post("/purchase-addon/custom-url", isAuth, accountController.purchaseAddonCustomUrl);
-router.post("/collaborator-seats", isAuth, accountController.updateCollaboratorSeats);
-router.post("/sms-topup", isAuth, accountController.topUpSmsBalance);
+// `injectCompany` : ces trois achats sont réservés aux forfaits Pro/Business,
+// et le forfait appartient à l'ÉTABLISSEMENT. Sans lui, ils vérifiaient le
+// plan du COMPTE — un patron abonné Pro pour un seul établissement pouvait
+// acheter des options depuis n'importe lequel des autres.
+router.post("/purchase-addon/custom-url", isAuth, injectCompany, accountController.purchaseAddonCustomUrl);
+router.post("/collaborator-seats", isAuth, injectCompany, accountController.updateCollaboratorSeats);
+router.post("/sms-topup", isAuth, injectCompany, accountController.topUpSmsBalance);
 router.post("/sms-autorecharge", isAuth, accountController.updateSmsAutoRecharge);
 router.patch("/sms-settings", isAuth, accountController.updateSmsSettings);
 

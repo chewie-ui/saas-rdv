@@ -553,8 +553,11 @@ exports.updatePassword = async (req, res) => {
 exports.purchaseAddonCustomUrl = async (req, res) => {
   try {
     // Vérifier que l'utilisateur est au moins Pro
-    const { getPlan } = require("../utils/planLimits");
-    const plan = getPlan(req.user);
+    // Le forfait est celui de l'ÉTABLISSEMENT actif, pas du compte : un
+    // patron abonné Pro pour un seul établissement ne doit pas pouvoir
+    // acheter des options depuis un autre, resté gratuit.
+    const { getCompanyPlan } = require("../utils/planLimits");
+    const plan = getCompanyPlan(res.locals.currentCompany, req.user);
     if (plan !== "pro" && plan !== "business") {
       return res.status(400).json({ error: "Vous devez être au moins sur le plan Pro pour acheter cet add-on." });
     }
@@ -614,8 +617,11 @@ exports.purchaseAddonCustomUrl = async (req, res) => {
 // interférence avec le webhook checkout.session.completed du plan principal.
 exports.updateCollaboratorSeats = async (req, res) => {
   try {
-    const { getPlan } = require("../utils/planLimits");
-    const plan = getPlan(req.user);
+    // Le forfait est celui de l'ÉTABLISSEMENT actif, pas du compte : un
+    // patron abonné Pro pour un seul établissement ne doit pas pouvoir
+    // acheter des options depuis un autre, resté gratuit.
+    const { getCompanyPlan } = require("../utils/planLimits");
+    const plan = getCompanyPlan(res.locals.currentCompany, req.user);
     if (plan !== "pro" && plan !== "business") {
       return res.status(400).json({ error: "Vous devez être sur le plan Pro ou Business pour acheter des sièges supplémentaires." });
     }
@@ -687,8 +693,11 @@ const SMS_TOPUP_AMOUNTS = { small: 1000, medium: 2000, large: 5000 }; // 10€, 
 
 exports.topUpSmsBalance = async (req, res) => {
   try {
-    const { getPlan } = require("../utils/planLimits");
-    const plan = getPlan(req.user);
+    // Le forfait est celui de l'ÉTABLISSEMENT actif, pas du compte : un
+    // patron abonné Pro pour un seul établissement ne doit pas pouvoir
+    // acheter des options depuis un autre, resté gratuit.
+    const { getCompanyPlan } = require("../utils/planLimits");
+    const plan = getCompanyPlan(res.locals.currentCompany, req.user);
     if (plan !== "pro" && plan !== "business") {
       return res.status(400).json({ error: "Vous devez être sur le plan Pro ou Business pour recharger des SMS." });
     }

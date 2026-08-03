@@ -81,10 +81,15 @@ const companySchema = schema(
     // Vide = hérite du forfait du compte owner (compat avant la facturation
     // par établissement). Une fois branché sur Stripe, chaque établissement a
     // son propre plan. `getCompanyPlan()` (utils/planLimits) résout l'effectif.
+    // « » (vide) = fiche d'avant la facturation par établissement : elle hérite
+    // encore du compte, le temps que migrate-plan-to-company.js passe.
+    // Un établissement CRÉÉ aujourd'hui démarre explicitement en « basic » : sans
+    // ça, le second établissement d'un patron abonné Pro héritait de son Pro et
+    // devenait payant sans avoir été payé.
     plan: {
       type: String,
       enum: ["", "basic", "essentiel", "pro", "business"],
-      default: "",
+      default: "basic",
     },
     planStatus: {
       type: String,
