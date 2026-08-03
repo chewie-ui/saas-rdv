@@ -33,14 +33,19 @@
     return Math.ceil(ms / 86400000) + " j";
   }
 
+  // Le badge régénéré doit rester un BOUTON, sinon la durée cesse d'être
+  // réglable d'un clic dès qu'on l'a modifiée une première fois.
   function badgeReste(expiry, plan) {
     if (plan === "free") return '<span class="sa-muted">—</span>';
-    if (!expiry) return '<span class="sa-tag">Illimité</span>';
+    if (!expiry) {
+      return '<button type="button" class="sa-tag sa-tag--btn" data-act="duree" title="Modifier la durée d\'octroi">Illimité</button>';
+    }
     var ms = new Date(expiry) - new Date();
     var jours = Math.max(0, Math.ceil(ms / 86400000));
     return (
-      '<span class="sa-tag ' + (jours <= 3 ? "sa-tag--red" : "sa-tag--amber") +
-      '" title="Jusqu\'au ' + texte(dateHeureFr(expiry)) + '">' + tempsRestant(ms) + "</span>"
+      '<button type="button" class="sa-tag sa-tag--btn ' + (jours <= 3 ? "sa-tag--red" : "sa-tag--amber") +
+      '" data-act="duree" title="Jusqu\'au ' + texte(dateHeureFr(expiry)) + ' — cliquez pour modifier">' +
+      tempsRestant(ms) + "</button>"
     );
   }
 
@@ -65,6 +70,7 @@
   document.querySelectorAll(".js-plan").forEach(function (sel) {
     sel.addEventListener("change", function () {
       var tr = sel.closest("tr");
+      var etaitGratuit = sel.dataset.plan === "basic" || sel.dataset.plan === "free";
       sel.disabled = true;
       enregistrerPlan(tr.dataset.companyId, sel.value, "keep")
         .then(function (d) {
@@ -72,8 +78,13 @@
           if (!d.success) throw new Error(d.error || "échec");
           sel.dataset.plan = sel.value;
           tr.dataset.plan = sel.value === "free" ? "basic" : sel.value;
+          tr.dataset.expiry = d.expiry || "";
           tr.querySelector(".js-reste").innerHTML = badgeReste(d.expiry, sel.value);
           window.saToast("Plan mis à jour.");
+          // Passage du gratuit à un plan payant : « Business » seul ne dit pas
+          // POUR COMBIEN DE TEMPS. On enchaîne donc sur le choix de la durée,
+          // au lieu d'accorder un accès illimité par défaut sans le demander.
+          if (etaitGratuit && sel.value !== "free") ouvrirDuree(tr);
         })
         .catch(function (e) {
           sel.disabled = false;

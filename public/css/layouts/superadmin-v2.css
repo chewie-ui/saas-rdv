@@ -331,6 +331,17 @@ body.sa {
 .sa-tag--violet { border-color: rgba(167, 139, 250, .3); background: var(--sa-violet-soft); color: #c4b5fd; }
 .sa-tag__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
+/* Badge cliquable : garde exactement l'apparence d'un badge, mais se comporte
+   comme un bouton. Utilisé pour la durée d'octroi, qu'on règle en cliquant sur
+   la valeur affichée plutôt qu'en cherchant dans le menu « ⋮ ». */
+.sa-tag--btn {
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color .12s, filter .12s;
+}
+.sa-tag--btn:hover { border-color: currentColor; filter: brightness(1.18); }
+.sa-tag--btn:focus-visible { outline: 2px solid var(--sa-blue); outline-offset: 2px; }
+
 /* ── Bouton icône + menu ⋮ ────────────────────────────────────────────────── */
 .sa-ico {
   display: inline-flex;

@@ -175,14 +175,22 @@ block content
                                         option(value="essentiel" selected=c.planKey === 'essentiel') Essentiel
                                         option(value="pro" selected=c.planKey === 'pro') Pro
                                         option(value="business" selected=c.planKey === 'business') Business
+                                //- Le badge est un BOUTON : la durée d'octroi se règle
+                                //- d'un clic dessus. Elle n'était accessible que par le
+                                //- menu « ⋮ », donc invisible depuis cet écran — c'est
+                                //- pourtant le geste évident quand on lit « 49 j ».
                                 td.js-reste
                                     if c.planKey === 'basic'
                                         span.sa-muted —
                                     else if c.trialDaysLeft === null
-                                        span.sa-tag Illimité
+                                        button.sa-tag.sa-tag--btn(type="button" data-act="duree" title="Modifier la durée d'octroi") Illimité
                                     else
-                                        //- title = date d'échéance exacte au survol
-                                        span.sa-tag(class=c.trialDaysLeft <= 3 ? 'sa-tag--red' : 'sa-tag--amber' title="Jusqu'au " + dateHeureFr(c.trialExpiryAt))= c.trialLeftLabel
+                                        button.sa-tag.sa-tag--btn(
+                                            type="button"
+                                            data-act="duree"
+                                            class=c.trialDaysLeft <= 3 ? 'sa-tag--red' : 'sa-tag--amber'
+                                            title="Jusqu'au " + dateHeureFr(c.trialExpiryAt) + " — cliquez pour modifier"
+                                        )= c.trialLeftLabel
                                 td(style="font-weight:600")= c.bookingCount.toLocaleString('fr-FR')
                                 td.sa-muted= c.clientCount.toLocaleString('fr-FR')
                                 td.sa-td--date= jourFr(c.createdAt)
