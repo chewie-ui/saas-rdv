@@ -95,6 +95,15 @@ const companySchema = schema(
       type: String,
       default: "",
     },
+    // Échéance d'un accès OFFERT par le superadmin, propre à CET
+    // établissement. Elle vivait sur le compte (`User.manualPremiumExpiry`) :
+    // un patron possédant deux établissements voyait donc la durée accordée à
+    // l'un s'appliquer à l'autre. null = pas d'échéance (accès illimité tant
+    // que `plan` reste payant).
+    grantExpiry: {
+      type: Date,
+      default: null,
+    },
 
     // Suppression douce (cf. "supprimer un établissement") : on ne détruit
     // jamais les données (services, employés, historique de RDV) — on masque

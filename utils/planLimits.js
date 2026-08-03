@@ -152,7 +152,14 @@ function getSmsQuota(user) {
  */
 function getCompanyPlan(company, owner) {
   if (company && company.plan && PLANS[company.plan] != null) {
-    if (!company.planStatus || company.planStatus === "active") return company.plan;
+    if (!company.planStatus || company.planStatus === "active") {
+      // Accès offert avec une échéance : passée, l'établissement retombe en
+      // gratuit. Vérifié ici plutôt que par une tâche de fond, pour que la
+      // bascule soit immédiate et vraie partout — un octroi expiré ne doit
+      // jamais continuer à ouvrir des fonctionnalités payantes.
+      if (company.grantExpiry && new Date(company.grantExpiry) <= new Date()) return "basic";
+      return company.plan;
+    }
   }
   return getPlan(owner);
 }

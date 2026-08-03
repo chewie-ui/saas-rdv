@@ -12,6 +12,8 @@ const Form      = require("../db/models/form.model");
 const Review    = require("../db/models/review.model");
 const ReviewReport = require("../db/models/review-report.model");
 const Client    = require("../db/models/client.model");
+// Le forfait affiché est celui de l'ÉTABLISSEMENT, pas celui du compte.
+const { getCompanyPlan } = require("../utils/planLimits");
 const LoginEvent = require("../db/models/loginEvent.model");
 const { FEATURES, ADMIN_FEATURES, invalidateFeatureFlagCache } = require("../middlewares/featureFlag");
 const { extractNavLinks } = require("../utils/navLinks");
@@ -94,7 +96,10 @@ exports.establishmentsPage = async (req, res) => {
   const [brutes, toutes, totalBookings, bookings30j, parEtab, parEtab30j, clientsParEtab] = await Promise.all([
     Company.find(query)
       .populate("owner", "fullName email isPremium manualPremium manualPremiumExpiry subscription businessName businessPicture isDisabled")
-      .select("name slug businessType createdAt isPaused isDeleted photo description")
+      // `plan`, `planStatus` et `grantExpiry` : le forfait appartient à
+      // l'ÉTABLISSEMENT. Sans eux dans le select, la liste retomberait
+      // silencieusement sur le forfait du compte pour tout le monde.
+      .select("name slug businessType createdAt isPaused isDeleted photo description plan planStatus grantExpiry")
       .lean(),
     // Deuxième passe sans filtre : les chiffres clés doivent rester stables
     // quand on filtre la liste.
@@ -102,7 +107,7 @@ exports.establishmentsPage = async (req, res) => {
       // `manualPremiumExpiry` est indispensable au chiffre « octrois à
       // échéance » calculé plus bas — sans lui il vaudrait toujours zéro.
       .populate("owner", "isPremium manualPremium manualPremiumExpiry subscription businessName")
-      .select("name isPaused createdAt owner")
+      .select("name isPaused createdAt owner plan planStatus grantExpiry")
       .lean(),
     Booking.countDocuments({}),
     Booking.countDocuments({ createdAt: { $gte: il30j } }),
@@ -130,15 +135,21 @@ exports.establishmentsPage = async (req, res) => {
     c.clientCount = clients.get(String(c._id)) || 0;
     c.displayName = (c.name || c.owner?.businessName || "").trim();
     c.displayPhoto = c.photo || c.owner?.businessPicture || "";
-    Object.assign(c, planDuCompte(c.owner || {}));
-    // Temps restant d'un octroi manuel avec durée. null = infini / pas d'octroi.
-    // Un octroi peut durer quelques heures : on affiche alors « 3 h » et non « 1 j ».
-    const o = c.owner;
-    if (o && (o.manualPremium || o.isPremium) && o.manualPremiumExpiry) {
-      const ms = new Date(o.manualPremiumExpiry).getTime() - maintenant;
+    // Forfait de L'ÉTABLISSEMENT (repli sur le compte tant que company.plan
+    // n'est pas renseigné). Lu sur le propriétaire, deux établissements d'un
+    // même patron affichaient forcément le même plan et la même échéance.
+    const planEffectif = getCompanyPlan(c, c.owner || {});
+    c.planKey = planEffectif;
+    c.planLabel = PLAN_LABEL[planEffectif] || "Free";
+    // Temps restant de l'accès offert. null = illimité / pas d'octroi.
+    // Un octroi peut durer quelques heures : on affiche « 3 h », pas « 1 j ».
+    const echeance = c.grantExpiry
+      || (!c.plan && c.owner && (c.owner.manualPremium || c.owner.isPremium) ? c.owner.manualPremiumExpiry : null);
+    if (planEffectif !== "basic" && echeance) {
+      const ms = new Date(echeance).getTime() - maintenant;
       c.trialDaysLeft = ms > 0 ? Math.ceil(ms / 86400000) : 0;
       c.trialLeftLabel = formatTempsRestant(ms);
-      c.trialExpiryAt = new Date(o.manualPremiumExpiry).toISOString();
+      c.trialExpiryAt = new Date(echeance).toISOString();
     } else {
       c.trialDaysLeft = null;
       c.trialLeftLabel = null;
@@ -175,9 +186,14 @@ exports.establishmentsPage = async (req, res) => {
   // des filtres affichés.
   const echeances = tous
     .map((c) => {
-      const o = c.owner;
-      if (!o || !(o.manualPremium || o.isPremium) || !o.manualPremiumExpiry) return null;
-      const ms = new Date(o.manualPremiumExpiry).getTime() - maintenant;
+      const o = c.owner || {};
+      // Échéance de CET établissement ; repli sur celle du compte tant qu'il
+      // n'a pas de forfait propre (établissements d'avant la séparation).
+      const echeance = c.grantExpiry
+        || (!c.plan && (o.manualPremium || o.isPremium) ? o.manualPremiumExpiry : null);
+      if (!echeance) return null;
+      if (getCompanyPlan(c, o) === "basic") return null;
+      const ms = new Date(echeance).getTime() - maintenant;
       if (!(ms > 0)) return null;
       return {
         nom: (c.name || o.businessName || "").trim(),
@@ -710,41 +726,49 @@ function computeTrialExpiry(duration, customDays, extra) {
 // mais le plan s'applique à toute l'activité du compte).
 exports.setPlanForCompany = async (req, res) => {
   try {
-    const company = await Company.findById(req.params.companyId).select("owner").lean();
+    const company = await Company.findById(req.params.companyId).select("owner grantExpiry").lean();
     if (!company) return res.status(404).json({ error: "Établissement introuvable." });
 
-    const { plan } = req.body; // "free" | "pro" | "business"
+    const { plan } = req.body; // "free" | "essentiel" | "pro" | "business"
     const validPlans = ["free", "essentiel", "pro", "business"];
     if (!validPlans.includes(plan)) return res.status(400).json({ error: "Plan invalide." });
 
     // "infinite" | "1h" | "7d" | "3mo"… | "custom" | "date" | undefined
     const { duration, customDays, customValue, customUnit, expiryAt } = req.body;
     const isFree = plan === "free";
+
+    // Le forfait s'écrit sur L'ÉTABLISSEMENT, jamais sur le compte.
+    // Il était posé sur le propriétaire : accorder « Business 3 jours » à un
+    // établissement l'accordait à TOUS ceux du même patron. C'est précisément
+    // ce que la facturation par établissement doit empêcher.
     const update = {
-      manualPremium: !isFree,
-      isPremium: !isFree,
-      "subscription.plan": isFree ? "basic" : plan,
-      "subscription.status": isFree ? "inactive" : "active",
+      plan: isFree ? "basic" : plan,
+      planStatus: "active",
     };
     if (isFree) {
-      // Free → pas d'octroi manuel, on efface la durée.
-      update.manualPremiumExpiry = null;
+      // Retour au gratuit : plus d'échéance à surveiller.
+      update.grantExpiry = null;
     } else if (duration !== undefined) {
-      // Une durée a été choisie → on (re)calcule l'expiration.
       const expiry = computeTrialExpiry(duration, customDays, { customValue, customUnit, expiryAt });
       if (expiry === undefined) {
         return res.status(400).json({ error: "Durée invalide : choisissez une échéance future, au plus 10 ans." });
       }
-      update.manualPremiumExpiry = expiry; // null = infini, ou Date
+      update.grantExpiry = expiry; // null = illimité, ou Date
     }
-    // Si plan payant SANS durée fournie → on ne touche pas à l'expiry (on
-    // préserve une durée déjà en place au lieu de l'effacer).
-    const userId = String(company.owner);
-    await User.findByIdAndUpdate(userId, update);
+    // Plan payant SANS durée fournie → on préserve l'échéance déjà en place
+    // plutôt que de la remettre à « illimité » sans qu'on l'ait demandé.
+
+    await Company.findByIdAndUpdate(company._id, update);
+
+    // Les quotas (services, employés…) se comptent par établissement : le 3e
+    // argument est INDISPENSABLE. Sans lui, enforcePlanLimits retombe sur
+    // l'établissement PRINCIPAL du compte — passer le second en gratuit
+    // désactiverait alors les services du premier.
     const { enforcePlanLimits } = require("./account.controller");
-    enforcePlanLimits(userId, isFree ? "basic" : plan).catch(() => {});
-    const fresh = await User.findById(userId).select("manualPremiumExpiry").lean();
-    res.json({ success: true, plan, expiry: fresh ? fresh.manualPremiumExpiry : null });
+    enforcePlanLimits(String(company.owner), isFree ? "basic" : plan, company._id).catch(() => {});
+
+    const fresh = await Company.findById(company._id).select("grantExpiry").lean();
+    res.json({ success: true, plan, expiry: fresh ? fresh.grantExpiry : null });
   } catch (err) {
     console.error("setPlanForCompany error:", err);
     res.status(500).json({ error: "Erreur serveur." });
