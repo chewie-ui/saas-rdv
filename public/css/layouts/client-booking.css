@@ -2071,6 +2071,9 @@ body.bk-embed #bkCart .bk-cart {
   padding: 8px 8px 8px 20px;
   display: flex;
   align-items: center;
+  /* Le récapitulatif passe sur sa propre ligne quand la barre manque de
+     place, au lieu de se réduire à des points de suspension. */
+  flex-wrap: wrap;
   gap: 12px;
   font: 600 13px var(--bk-font);
   box-shadow: 0 12px 32px rgba(0,0,0,0.22);
@@ -2116,7 +2119,11 @@ body.bk-embed #bkCart .bk-cart {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 140px;
+  /* Plafond généreux : à 140 px, « Drainage lymphatique » devenait « Drai… »
+     et « Jeudi 14 août · 10:00 » devenait « Jeu… » dès que la barre était un
+     peu à l'étroit — typiquement dans une iframe posée sur le site d'un pro.
+     Un récapitulatif illisible ne récapitule rien. */
+  max-width: 240px;
 }
 
 .bk-cart__sep {
@@ -2248,8 +2255,19 @@ body.bk-embed #bkCart .bk-cart {
     min-width: 34px;
   }
 
-  .bk-cart__recap { display: none; }
-  .bk-cart__sep   { display: none; }
+  /* Le récapitulatif était purement et simplement masqué : le client ne
+     pouvait plus vérifier ni la prestation ni la date avant de confirmer.
+     Il occupe désormais sa propre ligne, en entier. */
+  .bk-cart__recap {
+    flex: 1 1 100%;
+    order: -1;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    padding: 2px 6px 6px;
+  }
+  .bk-cart__v { max-width: none; white-space: normal; }
+  .bk-cart__sep { display: none; }
   .bk-cart { padding: 8px; gap: 8px; width: 100%; border-radius: 14px; }
   .bk-cart__next { flex: 1; justify-content: center; padding: 0 12px; }
   .bk-cart__back { flex-shrink: 0; }
@@ -4056,3 +4074,37 @@ body.bk-embed #bkCart .bk-cart {
   font-weight: 700;
   white-space: nowrap;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Réservation encadrée dans le site d'un professionnel (iframe)
+   Deux choses y sont impossibles et ne dependent pas de nous : Google refuse
+   sa page de connexion dans une iframe, et le cookie de session de BranShee
+   y est un cookie tiers, bloque par les navigateurs. On l'explique au lieu
+   de proposer un parcours qui echouerait.
+   ══════════════════════════════════════════════════════════════════════════ */
+.bk-embed-note {
+  margin: 10px 0 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .035);
+  color: var(--bk-muted, #6b7280);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.bk-embed-note strong { color: var(--bk-ink, #111); font-weight: 650; }
+
+.bk-embed-ok {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  padding: 11px 13px;
+  border: 1px solid rgba(30, 122, 78, .22);
+  border-radius: 12px;
+  background: rgba(30, 122, 78, .07);
+  color: #1e7a4e;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.bk-embed-ok svg { flex: none; margin-top: 1px; }
+.bk-embed-ok strong { font-weight: 700; }

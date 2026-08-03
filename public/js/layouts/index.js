@@ -10,6 +10,20 @@ const EMPLOYEES  = window.__employees || [];
 let CLIENT       = window.__clientUser || null; // { firstName, lastName, email, phone } — mutable pour login inline
 const PREPAYMENT = window.__prepayment || { enabled: false, required: false };
 const STRIPE_KEY = window.__stripeKey  || "";
+
+/* La page est-elle affichée dans une iframe, sur le site d'un professionnel ?
+   Deux choses y sont IMPOSSIBLES, et aucune n'est de notre fait :
+     - Google refuse d'afficher sa page de connexion dans une iframe (403) ;
+     - le cookie de session de BranShee y est un cookie tiers, que les
+       navigateurs bloquent : on se connecte, puis la session est illisible.
+   Proposer « Se connecter » dans ce contexte, c'est promettre ce qui ne peut
+   pas marcher. On y remplace donc la connexion par un renvoi vers le site.
+   Le `catch` compte comme « oui » : une exception à la lecture de window.top
+   signifie justement qu'on est encadré par une autre origine. */
+const EMBEDDED = (() => {
+  try { return window.self !== window.top; } catch (e) { return true; }
+})();
+const SITE_URL = "https://www.branshee.com";
 const BOOKING_QUESTION = window.__bookingQuestion || { enabled: false, question: "", newLabel: "", existingLabel: "" };
 const BK_TEXTS = window.__bkTexts || { calendarHelp: "", slotHeading: "", timezone: "" };
 
@@ -246,6 +260,9 @@ function renderStepper() {
    On mémorise le code, puis on nettoie l'URL pour qu'un rafraîchissement
    n'affiche pas éternellement le message. */
 let AUTH_ERROR = "";
+// Compte créé depuis une iframe : on affiche où retrouver ses rendez-vous,
+// puisque la session n'y sera pas lisible.
+let EMBED_ACCOUNT_CREATED = false;
 (function () {
   try {
     const p = new URLSearchParams(window.location.search);
@@ -1553,6 +1570,13 @@ async function renderDetailsPane() {
       <h2 class="bk-form-title">Presque terminé</h2>
       <p class="bk-form-sub">Quelques informations avant de confirmer votre réservation.</p>
 
+      ${isLoggedIn && EMBED_ACCOUNT_CREATED ? `
+        <div class="bk-embed-ok">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span>Votre compte est créé. Vos rendez-vous seront consultables sur
+          <strong>branshee.com</strong> avec cet email — terminez votre réservation ici.</span>
+        </div>` : ""}
+
       ${isLoggedIn ? `
         <div class="bk-client-info">
           <div class="bk-client-info__av">${((CLIENT.firstName||"")[0]||"").toUpperCase()}</div>
@@ -1587,7 +1611,7 @@ async function renderDetailsPane() {
           </div>
           <!-- Connexion -->
           <div class="bk-login-form" id="bkLoginForm" style="display:none">
-            <a class="bk-google-btn" href="/auth/google/client?returnTo=${encodeURIComponent(window.location.href)}">
+            <a class="bk-google-btn" ${EMBEDDED ? `target="_blank" rel="noopener" href="${SITE_URL}/auth/google/client"` : `href="/auth/google/client?returnTo=${encodeURIComponent(window.location.href)}"`}>
               <svg width="17" height="17" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
                 <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.6h12.4c-.5 2.7-2.1 5-4.5 6.5v5.4h7.3c4.3-3.9 6.9-9.7 6.9-16z"/>
                 <path fill="#34A853" d="M24 47c6.5 0 12-2.1 16-5.8l-7.3-5.4c-2.1 1.4-4.8 2.2-8.7 2.2-6.7 0-12.4-4.5-14.4-10.6H2v5.6C6 41.8 14.4 47 24 47z"/>
@@ -1612,7 +1636,7 @@ async function renderDetailsPane() {
 
           <!-- Inscription rapide -->
           <div class="bk-login-form" id="bkRegisterForm" style="display:none">
-            <a class="bk-google-btn" href="/auth/google/client?returnTo=${encodeURIComponent(window.location.href)}">
+            <a class="bk-google-btn" ${EMBEDDED ? `target="_blank" rel="noopener" href="${SITE_URL}/auth/google/client"` : `href="/auth/google/client?returnTo=${encodeURIComponent(window.location.href)}"`}>
               <svg width="17" height="17" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
                 <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.6h12.4c-.5 2.7-2.1 5-4.5 6.5v5.4h7.3c4.3-3.9 6.9-9.7 6.9-16z"/>
                 <path fill="#34A853" d="M24 47c6.5 0 12-2.1 16-5.8l-7.3-5.4c-2.1 1.4-4.8 2.2-8.7 2.2-6.7 0-12.4-4.5-14.4-10.6H2v5.6C6 41.8 14.4 47 24 47z"/>
@@ -1647,15 +1671,26 @@ async function renderDetailsPane() {
 
           <!-- Boutons choix -->
           <div class="bk-login-toggle" id="bkLoginChoices">
+            ${EMBEDDED ? `
+            <button class="bk-login-toggle-btn" id="bkOpenSiteLogin" type="button">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Se connecter sur branshee.com
+            </button>` : `
             <button class="bk-login-toggle-btn" id="bkShowLogin" type="button">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               Se connecter
-            </button>
+            </button>`}
             <button class="bk-login-toggle-btn bk-login-toggle-btn--outline" id="bkShowRegister" type="button">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
               Créer un compte
             </button>
           </div>
+          ${EMBEDDED ? `
+          <p class="bk-embed-note">
+            Vous réservez depuis le site de votre professionnel. Pour consulter vos
+            rendez-vous, rendez-vous sur <strong>branshee.com</strong> — la connexion
+            ne fonctionne pas depuis cette fenêtre.
+          </p>` : ""}
         </div>
 
         <!-- Coordonnées : VISIBLES d'emblée. Réserver ne demande aucun compte ;
@@ -1739,6 +1774,21 @@ function bindDetailsPane() {
       document.getElementById("bkLoginEmail")?.focus();
     });
   }
+
+  // Iframe : la connexion ne peut pas aboutir ici (cookie tiers bloqué). On
+  // prévient avant d'ouvrir un onglet, plutôt que d'en faire surgir un sans
+  // explication — et on rappelle qu'aucun compte n'est nécessaire pour
+  // réserver, ce qui reste le chemin le plus court.
+  document.getElementById("bkOpenSiteLogin")?.addEventListener("click", async () => {
+    const ok = await window.confirmModal(
+      "Se connecter sur branshee.com",
+      "La connexion ne fonctionne pas depuis le site de votre professionnel. " +
+        "Nous allons ouvrir branshee.com dans un nouvel onglet.\n\n" +
+        "Vous n'avez pas besoin de compte pour réserver : remplissez simplement vos coordonnées ci-dessous.",
+      { confirmLabel: "Ouvrir branshee.com" }
+    );
+    if (ok) window.open(SITE_URL + "/login", "_blank", "noopener");
+  });
 
   document.getElementById("bkShowRegister")?.addEventListener("click", () => {
     loginChoices.style.display  = "none";
@@ -1861,6 +1911,11 @@ function bindDetailsPane() {
           STATE.form.lastName  = last;
           STATE.form.email     = email;
           renderDetailsPane();
+          // Dans une iframe, le compte est bien créé mais la session n'y est
+          // pas lisible : on dit où retrouver ses rendez-vous, plutôt que de
+          // laisser croire qu'on est connecté ici. Les réservations prises
+          // avec cet email y seront rattachées automatiquement.
+          if (EMBEDDED) EMBED_ACCOUNT_CREATED = true;
         } else {
           regError.textContent = data.error || "Une erreur est survenue.";
           regError.style.display = "block";
