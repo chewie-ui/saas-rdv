@@ -3,6 +3,7 @@ const CompanyMembership = require("../db/models/company/companyMembership.model"
 const Booking = require("../db/models/book.model");
 const User = require("../db/models/user.model");
 const { getLimit } = require("../utils/planLimits");
+const { computeUpgradeNudge } = require("../utils/upgradeNudge");
 const { getAdminFeaturesFlags } = require("./featureFlag");
 const { clientWord } = require("../utils/terminology");
 const { resolvePermissions, resolveCanManageOwnTimeOff } = require("../utils/permissions");
@@ -227,6 +228,14 @@ module.exports = async (req, res, next) => {
         res.locals.monthlyLimitReached = monthlyCount >= monthlyLimit;
       }
     }
+
+    // 6. Encart d'incitation au plan payant, affiché dans le gabarit admin aux
+    // seuls comptes gratuits. Calculé ici parce que le comptage mensuel est
+    // déjà fait juste au-dessus : aucune requête supplémentaire.
+    res.locals.upgradeNudge = computeUpgradeNudge(res.locals.billingUser, {
+      rdvCeMois:  res.locals.monthlyBookingsCount,
+      plafondRdv: res.locals.monthlyBookingsLimit,
+    });
 
     next();
   } catch (err) {

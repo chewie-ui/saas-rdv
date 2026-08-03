@@ -783,3 +783,80 @@ svg {
     height: min(480px, calc(100vh - 140px));
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Encart « passer au plan payant » (gabarit admin, comptes gratuits)
+   Le ton varie selon ce qui limite le pro : bloquant, urgent, ou informatif.
+   ══════════════════════════════════════════════════════════════════════════ */
+.upnudge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  border-radius: 14px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-soft);
+}
+/* `hidden` est pose par defaut sur le serveur et retire par le JS : sans cette
+   regle, le display:flex ci-dessus l'emporterait et l'encart resterait visible
+   meme apres avoir ete masque. */
+.upnudge[hidden] { display: none; }
+
+.upnudge__ic { flex: none; font-size: 26px; color: var(--accent); }
+.upnudge__body { flex: 1; min-width: 0; }
+.upnudge__title { display: block; font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.upnudge__text { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+
+.upnudge__cta {
+  flex: none;
+  display: inline-block;
+  padding: 9px 16px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.upnudge__cta:hover { background: var(--accent-hover); color: #fff; }
+
+.upnudge__close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.upnudge__close:hover { background: rgba(0, 0, 0, .06); color: var(--text-primary); }
+.upnudge__close .material-symbols-outlined { font-size: 18px; }
+
+/* Le quota approche : on hausse le ton sans crier. */
+.upnudge--urgent { border-color: #fed7aa; background: #fff7ed; }
+.upnudge--urgent .upnudge__ic { color: #c2410c; }
+.upnudge--urgent .upnudge__title { color: #9a3412; }
+.upnudge--urgent .upnudge__text { color: #b45309; }
+.upnudge--urgent .upnudge__cta { background: #c2410c; }
+.upnudge--urgent .upnudge__cta:hover { background: #9a3412; }
+
+/* Le quota est atteint : les clients ne peuvent plus reserver, c'est grave. */
+.upnudge--bloquant { border-color: #fecaca; background: #fef2f2; }
+.upnudge--bloquant .upnudge__ic { color: #b91c1c; }
+.upnudge--bloquant .upnudge__title { color: #991b1b; }
+.upnudge--bloquant .upnudge__text { color: #b91c1c; }
+.upnudge--bloquant .upnudge__cta { background: #b91c1c; }
+.upnudge--bloquant .upnudge__cta:hover { background: #991b1b; }
+
+@media (max-width: 640px) {
+  .upnudge { flex-wrap: wrap; gap: 10px; }
+  .upnudge__body { flex: 1 1 100%; order: 2; }
+  .upnudge__cta { flex: 1 1 auto; order: 3; text-align: center; }
+  .upnudge__close { order: 1; margin-left: auto; }
+}

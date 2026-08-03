@@ -214,6 +214,27 @@ html(lang="fr")
                                 span.trial-warn__sub
                                     | Ajoutez un moyen de paiement pour ne pas perdre l'accès à vos fonctionnalités#{trialExpiryDate ? " — expire le " + new Date(trialExpiryDate).toLocaleDateString('fr-FR') : ''}.
                             a.trial-warn__cta(href="/subscription") Voir les plans
+
+                    //- Incitation à passer au plan payant. Calculée dans
+                    //- injectCompany, jamais renseignée pour un compte payant.
+                    //- Le message dépend de ce qui limite RÉELLEMENT le pro :
+                    //- un argument générique se fait ignorer dès la 2e fois.
+                    //- Masquée d'entrée si elle a été écartée récemment, pour
+                    //- éviter un clignotement au chargement.
+                    if upgradeNudge
+                        .upnudge(class='upnudge--' + upgradeNudge.ton data-nudge=upgradeNudge.cle hidden)
+                            span.material-symbols-outlined.upnudge__ic= upgradeNudge.icone
+                            .upnudge__body
+                                strong.upnudge__title= upgradeNudge.titre
+                                span.upnudge__text= upgradeNudge.texte
+                            a.upnudge__cta(href="/subscription")= upgradeNudge.action
+                            //- Le motif bloquant n'est pas masquable : le pro
+                            //- doit savoir que ses clients ne peuvent plus réserver.
+                            if upgradeNudge.ton !== 'bloquant'
+                                button.upnudge__close(type="button" aria-label="Masquer pendant 7 jours")
+                                    span.material-symbols-outlined close
+                        script(src="/js/components/admin/upgrade-nudge.js" defer)
+
                     block content
         +dialog()
 
