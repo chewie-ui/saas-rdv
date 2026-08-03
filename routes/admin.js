@@ -135,6 +135,10 @@ router.get("/subscription", isAuth, injectCompany, requireFeatureActive("subscri
     paymentMethods,
     defaultOffers,
     essentielYearlyAvailable: !!env.stripePriceEssentielYearly,
+    // Le mois offert n'est dû qu'une fois par compte : la boîte de
+    // confirmation doit annoncer le vrai montant à quelqu'un qui l'a déjà
+    // consommé, sinon on lui promet une gratuité que le serveur refusera.
+    essaiGratuitDisponible: require("../utils/freeTrial").peutAvoirEssaiGratuit(req.user),
   });
 });
 

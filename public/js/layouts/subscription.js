@@ -324,13 +324,16 @@ function isTrialActive(plan) {
     if (ap === "all" || ap === `${plan}_${billing}` ||
         ap === `${plan}_monthly` || ap === `${plan}_yearly`) return true;
   }
-  // Le mois offert est appliqué par le SERVEUR sur tout nouvel abonnement,
-  // qu'un code promo soit saisi ou non (cf. trial_period_days dans
-  // createCheckout). Sans ce cas, la boîte de confirmation annonçait
-  // « payer 19 € » juste après un bouton « Essayer Pro gratuitement » —
-  // exactement l'inverse de ce qui est facturé, donc une promesse trahie au
-  // moment le plus sensible du parcours.
-  return true;
+  // Le mois offert est appliqué par le SERVEUR sur un nouvel abonnement
+  // (cf. trial_period_days dans createCheckout), mais UNE SEULE FOIS par
+  // compte : `__trialAvailable` reflète cette éligibilité, calculée côté
+  // serveur (utils/freeTrial.js).
+  //
+  // Les deux sens comptent autant : annoncer « payer 19 € » juste après un
+  // bouton « Essayer gratuitement » trahit une promesse, et annoncer
+  // « 30 jours offerts » à quelqu'un qui sera débité tout de suite est pire
+  // encore.
+  return window.__trialAvailable !== false;
 }
 
 function confirmPurchase(plan) {

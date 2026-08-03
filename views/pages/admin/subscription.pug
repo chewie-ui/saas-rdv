@@ -501,6 +501,13 @@ block scripts
         // d'achat pour proposer "payer instant avec carte X ou changer de
         // carte" plutôt que de débiter directement au clic.
         window.__paymentMethods = !{JSON.stringify(paymentMethods || [])};
+        // Le mois offert n'est dû qu'une fois par compte : sans ce drapeau, la
+        // boîte de confirmation annonçait « 30 jours offerts » à quelqu'un que
+        // le serveur allait facturer immédiatement.
+        // `=== true` et non `!== false` : si la variable venait à manquer, on
+        // annoncerait le prix plein plutôt qu'une gratuité que le serveur
+        // refuserait. Décevoir en bien vaut mieux que trahir une promesse.
+        window.__trialAvailable = !{JSON.stringify(essaiGratuitDisponible === true)};
     script(src="/js/templates/dialog.js")
     script(src="/js/layouts/subscription.js")
     script.

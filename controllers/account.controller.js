@@ -14,6 +14,7 @@ const speakeasy = require("speakeasy");
 const QRCode = require("qrcode");
 const { sanitizeRichText } = require("../utils/sanitizeRichText");
 const { isSafePlainText } = require("../utils/validateName");
+const { peutAvoirEssaiGratuit, TRIAL_DAYS } = require("../utils/freeTrial");
 
 // ── Limites par plan ─────────────────────────────────────────────────────────
 const PLAN_LIMITS = {
@@ -478,12 +479,15 @@ exports.createCheckout = async (req, res) => {
       }
     }
 
-    // Garantir le "1 mois offert" promis sur la page d'abonnement :
-    // si aucun code promo n'a déjà défini un trial, on l'applique par défaut.
-    if (!sessionParams.subscription_data.trial_period_days) {
+    // Le « 1 mois offert » promis sur la page d'abonnement — mais UNE SEULE
+    // FOIS par compte (cf. utils/freeTrial.js). Il était appliqué à chaque
+    // souscription : résilier puis reprendre relançait 30 jours gratuits,
+    // indéfiniment, et un pro déjà en octroi manuel en recevait 30 de plus.
+    // Un code promo « essai » explicite, lui, reste prioritaire.
+    if (!sessionParams.subscription_data.trial_period_days && peutAvoirEssaiGratuit(req.user)) {
       sessionParams.subscription_data = {
         ...sessionParams.subscription_data,
-        trial_period_days: 30,
+        trial_period_days: TRIAL_DAYS,
       };
       sessionParams.payment_method_collection = "always";
     }
