@@ -16,15 +16,56 @@
   var SNOOZE_DAYS = 30;
   var DELAY_MS = 2500; // laisse la page se poser avant de solliciter
 
+  var INSTALLED_KEY = "bs_pwa_installed";
   var deferred = null;
+  // Résultat de la vérification asynchrone auprès du navigateur. `null` = pas
+  // encore répondu, on ne sait pas.
+  var installeSelonNavigateur = null;
 
-  // Déjà installée ? `standalone` couvre Android ; `navigator.standalone` est
-  // la propriété propriétaire d'iOS, seule fiable là-bas.
+  // Souvenir local : sert d'indice immédiat au premier rendu, avant que la
+  // vérification asynchrone n'ait répondu. Corrigé par elle si l'app a été
+  // désinstallée entre-temps — sans quoi le bouton disparaîtrait pour toujours.
+  function souvenirInstalle() {
+    try { return localStorage.getItem(INSTALLED_KEY) === "1"; } catch (e) { return false; }
+  }
+  function memoriserInstalle(oui) {
+    try {
+      if (oui) localStorage.setItem(INSTALLED_KEY, "1");
+      else localStorage.removeItem(INSTALLED_KEY);
+    } catch (e) {}
+  }
+
+  // Déjà installée ?
+  //
+  // `display-mode: standalone` et `navigator.standalone` ne répondent OUI que
+  // si l'on s'exécute DANS l'app installée. Dans un onglet normal ils disent
+  // toujours non, même quand l'app est bel et bien installée — c'est ce qui
+  // faisait reproposer l'installation à quelqu'un qui l'avait déjà.
+  //
+  // `getInstalledRelatedApps()` est la seule API qui répond depuis un onglet.
+  // Chromium uniquement, en HTTPS, et elle exige `related_applications` dans
+  // le manifeste (cf. public/manifest.webmanifest).
   function isInstalled() {
-    return (
-      window.matchMedia("(display-mode: standalone)").matches ||
-      window.navigator.standalone === true
-    );
+    if (window.matchMedia("(display-mode: standalone)").matches) return true;
+    if (window.navigator.standalone === true) return true;
+    if (installeSelonNavigateur !== null) return installeSelonNavigateur;
+    return souvenirInstalle();
+  }
+
+  function verifierInstallation() {
+    if (!navigator.getInstalledRelatedApps) return; // Firefox, Safari : pas d'API
+    navigator
+      .getInstalledRelatedApps()
+      .then(function (apps) {
+        installeSelonNavigateur = (apps || []).some(function (a) { return a.platform === "webapp"; });
+        memoriserInstalle(installeSelonNavigateur);
+        if (installeSelonNavigateur) hideCard(false);
+        notify();
+      })
+      .catch(function () {
+        // Contexte non sécurisé ou API refusée : on s'en tient aux indices
+        // synchrones, quitte à reproposer l'installation.
+      });
   }
 
   function isIOS() {
@@ -137,12 +178,19 @@
     // moment qu'on choisit.
     e.preventDefault();
     deferred = e;
+    // Chrome n'émet cet événement que si l'app N'EST PAS installée : c'est donc
+    // le signal le plus fiable pour effacer un souvenir devenu faux (app
+    // désinstallée depuis).
+    installeSelonNavigateur = false;
+    memoriserInstalle(false);
     notify();
     if (card && !isSnoozed() && !isInstalled()) setTimeout(showCard, DELAY_MS);
   });
 
   window.addEventListener("appinstalled", function () {
     deferred = null;
+    installeSelonNavigateur = true;
+    memoriserInstalle(true);
     hideCard(false);
     snooze();
     notify();
@@ -163,6 +211,11 @@
   // viendra le déclencher autrement).
   notify();
   document.addEventListener("DOMContentLoaded", notify);
+
+  // Interrogation du navigateur : « cette app est-elle déjà installée sur cet
+  // appareil ? ». Asynchrone, d'où le `notify()` différé qui remettra les
+  // boutons à jour quand la réponse arrive.
+  verifierInstallation();
 })();
 
 // ── Enregistrement du service worker ────────────────────────────────────────
