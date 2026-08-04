@@ -2475,6 +2475,10 @@ exports.clientsHubDetail = async (req, res) => {
       employees,
       generalNotes: (dossier && dossier.generalInfo) || "",
       hasEmailForNotes: !!booking.email,
+      // Client créé à la main : il n'a aucun rendez-vous à supprimer, c'est sa
+      // fiche qu'il faut viser. Sans ça, « Supprimer le client » envoyait une
+      // liste vide et le serveur refusait.
+      manualClientId: ctx.booking ? "" : String(ctx.dossier._id),
       dossierEntries,
       defaultDuration: (res.locals.currentCompany && res.locals.currentCompany.slotTime) || 30,
       hasServices: services.length > 0,

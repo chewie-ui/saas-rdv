@@ -668,16 +668,28 @@ block scripts
             var CLIENT_IDS = !{safeJson((clientBookings || []).map(function (b) { return String(b._id); }))};
 
             // ── Supprimer le client (tous ses RDV) ────────────────────
+            // Client créé à la main : aucun rendez-vous à supprimer, c'est sa
+            // fiche qu'on vise (le serveur refusait une liste d'ids vide).
+            var MANUAL_CLIENT_ID = '#{manualClientId || ""}';
+
             var del = document.getElementById('cdDelete');
             if (del) del.addEventListener('click', async function () {
                 menu.hidden = true;
-                var ok = await window.confirmModal('Supprimer ce client ?', 'Cela supprimera définitivement ses ' + CLIENT_IDS.length + ' rendez-vous. Cette action est irréversible.');
+                var ok = await window.confirmModal(
+                    'Supprimer ce client ?',
+                    CLIENT_IDS.length
+                        ? 'Cela supprimera définitivement ses ' + CLIENT_IDS.length + ' rendez-vous. Cette action est irréversible.'
+                        : 'Cette fiche client sera définitivement supprimée. Cette action est irréversible.'
+                );
                 if (!ok) return;
                 try {
                     var res = await fetch('/clients-hub/bookings', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ids: CLIENT_IDS })
+                        body: JSON.stringify({
+                            ids: CLIENT_IDS,
+                            dossierIds: MANUAL_CLIENT_ID ? [MANUAL_CLIENT_ID] : []
+                        })
                     });
                     if (!res.ok) throw new Error('fail');
                     location.href = '/clients-hub';
