@@ -211,21 +211,15 @@ block content
                     .sub-plan__name-wrap
                         h2.sub-plan__name= t.subscription.plan_2
                         p.sub-plan__desc= t.subscription.plan_2_desc || 'Pour les indépendants'
+                    //- Prix plein tarif. Quand une offre est en cours, le JS le
+                    //- barre et affiche le prix remisé à côté (même rendu que
+                    //- pour un code saisi à la main) — un seul chemin d'affichage.
                     .sub-plan__pricing
-                        if _proOffer
-                            .sub-plan__offer-badge= _offerLabel(_proOffer)
-                            small.sub-plan__then puis&nbsp;
-                                span.sub-plan__price(
-                                    data-monthly=t.subscription.price_2_val || '19'
-                                    data-yearly=t.subscription.price_2_yearly_val || '15'
-                                )= t.subscription.price_2
-                                | /mois
-                        else
-                            span.sub-plan__price(
-                                data-monthly=t.subscription.price_2_val || '19'
-                                data-yearly=t.subscription.price_2_yearly_val || '15'
-                            )= t.subscription.price_2
-                            span.sub-plan__per= t.subscription.price_2_sub
+                        span.sub-plan__price(
+                            data-monthly=t.subscription.price_2_val || '19'
+                            data-yearly=t.subscription.price_2_yearly_val || '15'
+                        )= t.subscription.price_2
+                        span.sub-plan__per= t.subscription.price_2_sub
                 .sub-plan__divider
                 .sub-plan__features
                     each feature in t.subscription.plan_2_features
@@ -254,14 +248,12 @@ block content
                     else if currentPlan !== 'business'
                         button.sub-btn.sub-btn--upgrade#getProPlan
                             | #{t.subscription.btn_get_pro || 'Passer au Pro →'}
+                        //- L'offre est déjà appliquée au prix affiché : plus de
+                        //- code à copier-coller pour en profiter.
                         if !isPro && _proOffer
-                            button.sub-btn.sub-btn--free-month.js-offer-btn(
-                                type="button"
-                                data-plan="pro"
-                                data-code=_proOffer.code
-                            )
-                                span.material-symbols-outlined(style=`font-size:15px`) card_giftcard
-                                | &nbsp;#{_offerLabel(_proOffer)} (code #{_proOffer.code})
+                            p.sub-plan__offer-note
+                                span.material-symbols-outlined(style="font-size:15px") card_giftcard
+                                | &nbsp;#{_offerLabel(_proOffer)} — déjà appliqué, rien à saisir
 
             //- ─── Business ──────────────────────────────────────────
             .sub-plan.sub-plan--studio(data-group="equipe" class=(currentPlan === 'business' && isPro) ? 'sub-plan--current' : '')
@@ -271,20 +263,11 @@ block content
                         h2.sub-plan__name= t.subscription.plan_3
                         p.sub-plan__desc= t.subscription.plan_3_desc || 'Pour les équipes'
                     .sub-plan__pricing
-                        if _bizOffer
-                            .sub-plan__offer-badge= _offerLabel(_bizOffer)
-                            small.sub-plan__then puis&nbsp;
-                                span.sub-plan__price(
-                                    data-monthly=t.subscription.price_3_val || '49'
-                                    data-yearly=t.subscription.price_3_yearly_val || '39'
-                                )= t.subscription.price_3
-                                | /mois
-                        else
-                            span.sub-plan__price(
-                                data-monthly=t.subscription.price_3_val || '49'
-                                data-yearly=t.subscription.price_3_yearly_val || '39'
-                            )= t.subscription.price_3
-                            span.sub-plan__per= t.subscription.price_3_sub
+                        span.sub-plan__price(
+                            data-monthly=t.subscription.price_3_val || '49'
+                            data-yearly=t.subscription.price_3_yearly_val || '39'
+                        )= t.subscription.price_3
+                        span.sub-plan__per= t.subscription.price_3_sub
                 .sub-plan__divider
                 .sub-plan__features
                     .sub-plan__feature.sub-plan__feature--includes
@@ -318,13 +301,9 @@ block content
                         button.sub-btn.sub-btn--upgrade.sub-btn--business#getBusinessPlan
                             | #{t.subscription.btn_get_business || 'Passer au Business →'}
                         if !isPro && _bizOffer
-                            button.sub-btn.sub-btn--free-month.js-offer-btn(
-                                type="button"
-                                data-plan="business"
-                                data-code=_bizOffer.code
-                            )
-                                span.material-symbols-outlined(style=`font-size:15px`) card_giftcard
-                                | &nbsp;#{_offerLabel(_bizOffer)} (code #{_bizOffer.code})
+                            p.sub-plan__offer-note
+                                span.material-symbols-outlined(style="font-size:15px") card_giftcard
+                                | &nbsp;#{_offerLabel(_bizOffer)} — déjà appliqué, rien à saisir
 
             //- ─── Sur mesure (grandes entreprises) ──────────────────
             .sub-plan.sub-plan--custom(data-group="equipe")
@@ -494,9 +473,21 @@ block content
     +dialog()
 
 block scripts
+    -
+        // `<` échappé : un code promo est saisi en superadmin, il n'a rien à
+        // faire d'un « </script> » mais on ne l'injecte pas brut pour autant.
+        var offresAutoJson = JSON.stringify((defaultOffers || []).map(function (o) {
+            return { code: o.code, discountType: o.discountType, discountValue: o.discountValue,
+                     trialDays: o.trialDays, applicablePlan: o.applicablePlan || 'all' };
+        })).replace(/</g, '\\u003c');
     - var subTJson = JSON.stringify({ checking: t.subscription.promo_checking, invalid: t.subscription.promo_invalid, cancel_title: t.subscription.dialog_cancel_title, cancel_desc: t.subscription.dialog_cancel_desc, resume_title: t.subscription.dialog_resume_title, resume_desc: t.subscription.dialog_resume_desc, confirm: t.subscription.dialog_confirm, close: t.subscription.dialog_close, success_cancel: t.subscription.dialog_success_cancel, success_resume: t.subscription.dialog_success_resume })
     script.
         window.__subT = !{subTJson};
+        // Offres mises en avant par le superadmin. Elles s'appliquent toutes
+        // seules : le JS barre le prix plein, affiche le prix remisé et envoie
+        // le code au paiement. La route a déjà écarté celles que ce compte ne
+        // peut pas obtenir (expirées, épuisées, déjà utilisées par lui).
+        window.__offresAuto = !{offresAutoJson};
         // Cartes déjà enregistrées — utilisées par la boîte de confirmation
         // d'achat pour proposer "payer instant avec carte X ou changer de
         // carte" plutôt que de débiter directement au clic.

@@ -423,8 +423,20 @@ exports.createCheckout = async (req, res) => {
       const userId = req.user._id;
       const alreadyUsed = promo?.usedByUsers?.some((uid) => String(uid) === String(userId));
 
+      // Plan visé par le code. /api/validate-promo le vérifiait déjà, mais pas
+      // ici : un code réservé au Pro mensuel s'appliquait quand même à un achat
+      // Business annuel. Même règle des deux côtés — sinon le prix annoncé et
+      // le prix facturé peuvent diverger.
+      const cibleOk =
+        !promo?.applicablePlan ||
+        promo.applicablePlan === "all" ||
+        promo.applicablePlan === `${planName}_${billing}` ||
+        // anciens noms conservés en base
+        (planName === "pro" && promo.applicablePlan === `premium_${billing}`);
+
       if (
         promo &&
+        cibleOk &&
         !alreadyUsed &&
         !(promo.expiresAt && new Date() > promo.expiresAt) &&
         (promo.maxUses === null || promo.usedCount < promo.maxUses)

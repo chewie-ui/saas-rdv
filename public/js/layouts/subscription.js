@@ -14,9 +14,11 @@ function updatePrices() {
     const yearly  = el.dataset.yearly;
     const val     = isYearly ? yearly : monthly;
     if (!val) return;
-    // Keep the currency symbol if present
-    const prefix = el.textContent.replace(/[\d.]+/, "").trim() || "€";
-    el.textContent = `${prefix}${val}`;
+    // Le symbole reste où il était : « 19€ » devenait « €19 » dès la première
+    // bascule mensuel/annuel, parce qu'on le recollait toujours devant.
+    const texte  = el.textContent.trim();
+    const symbole = texte.replace(/[\d.,\s]/g, "") || "€";
+    el.textContent = /^\s*[^\d]/.test(texte) ? `${symbole}${val}` : `${val}${symbole}`;
   });
 }
 
@@ -55,11 +57,39 @@ function calcDiscounted(basePrice, type, value) {
   return basePrice;
 }
 
-function applyPromoToUI(promoData) {
-  // Plans ciblés par le code
-  const ap = promoData ? promoData.applicablePlan : null; // ex: "pro_monthly", "all"
-  const billing = isYearly ? "yearly" : "monthly";
+// Offres mises en avant par le superadmin (cf. subscription.pug). Elles
+// s'appliquent sans que le pro ait à saisir quoi que ce soit : le prix plein
+// est barré, le prix remisé affiché, et le code part au paiement. Avant, on
+// annonçait « -20% » avec un code à copier-coller — remise affichée, plein
+// tarif facturé à qui ne le collait pas.
+const OFFRES_AUTO = Array.isArray(window.__offresAuto) ? window.__offresAuto : [];
 
+// Même règle que le serveur (validate-promo et create-checkout) : un code visé
+// « pro_monthly » ne doit pas décorer l'annuel, sinon on affiche une remise que
+// le paiement refusera.
+function promoCouvrePlan(promo, plan) {
+  if (!promo) return false;
+  const ap = promo.applicablePlan || "all";
+  const billing = isYearly ? "yearly" : "monthly";
+  return ap === "all" ||
+    ap === `${plan}_${billing}` ||
+    (plan === "pro" && ap === `premium_${billing}`);
+}
+
+// Renoncement explicite à l'offre (lien « Passer directement au plan payant »).
+// Sans ce drapeau, l'offre automatique reviendrait aussitôt et on rejouerait
+// l'essai gratuit que le pro vient justement de refuser.
+let offresAutoRefusees = false;
+
+// Un code saisi à la main l'emporte sur l'offre automatique : c'est un choix
+// explicite du pro (et il peut être meilleur).
+function promoPourPlan(plan) {
+  if (promoCouvrePlan(appliedPromoCode, plan)) return appliedPromoCode;
+  if (offresAutoRefusees) return null;
+  return OFFRES_AUTO.find((o) => promoCouvrePlan(o, plan)) || null;
+}
+
+function applyPromoToUI() {
   ["pro", "business"].forEach((plan) => {
     const planClass  = plan === "pro" ? ".sub-plan--premium" : ".sub-plan--studio";
     const priceEl    = document.querySelector(`${planClass} .sub-plan__price`);
@@ -68,18 +98,14 @@ function applyPromoToUI(promoData) {
     const base = isYearly ? PRICES[plan].yearly : PRICES[plan].monthly;
     if (!base) return;
 
-    // Déterminer si ce code s'applique à ce plan
-    const applies = promoData &&
-      (ap === "all" ||
-       ap === `${plan}_${billing}` ||
-       ap === `${plan}_monthly` || ap === `${plan}_yearly`);
+    const promoData = promoPourPlan(plan);
 
     // Supprimer l'ancien affichage promo s'il existe
     const oldWrap = priceEl.parentNode.querySelector(".sub-promo-wrap");
     if (oldWrap) oldWrap.remove();
     priceEl.style.display = "";
 
-    if (applies) {
+    if (promoData) {
       const wrap = document.createElement("div");
       wrap.className = "sub-promo-wrap";
       wrap.style.cssText = "display:flex;flex-direction:column;gap:4px;";
@@ -110,7 +136,7 @@ function applyPromoToUI(promoData) {
 
         const newPrice = document.createElement("span");
         newPrice.style.cssText = "font-size:1em;font-weight:800;color:#16a34a;letter-spacing:-1.5px;";
-        newPrice.textContent = "€" + discounted.toFixed(2).replace(/\.00$/, "");
+        newPrice.textContent = discounted.toFixed(2).replace(/\.00$/, "").replace(".", ",") + "€";
 
         priceRow.appendChild(strike);
         priceRow.appendChild(newPrice);
@@ -128,11 +154,13 @@ function applyPromoToUI(promoData) {
   });
 }
 
-// Reset prix quand on change mensuel/annuel
+// Reset prix quand on change mensuel/annuel. On redécore systématiquement :
+// une offre peut ne valoir que pour le mensuel ou que pour l'annuel, et le
+// prix barré doit suivre la bascule.
 const _origUpdatePrices = updatePrices;
 function updatePricesWithPromo() {
   _origUpdatePrices();
-  if (appliedPromoCode) applyPromoToUI(appliedPromoCode);
+  applyPromoToUI();
 }
 
 if (billMonthly && billYearly) {
@@ -177,7 +205,8 @@ async function validatePromo() {
 
   promoCodeStatus.textContent = subT.checking || "Vérification...";
   promoCodeStatus.className   = "sub-promo__status";
-  applyPromoToUI(null); // reset
+  appliedPromoCode = null;   // le temps de la vérification
+  applyPromoToUI();
 
   const res  = await fetch("/api/validate-promo", {
     method:  "POST",
@@ -262,7 +291,11 @@ function openDialog(title, desc, confirmLabel, closeLabel) {
 async function startCheckout(plan) {
   currentPlan = plan || "pro";
   const body = { plan: currentPlan, billing: isYearly ? "yearly" : "monthly" };
-  if (appliedPromoCode) body.promoCode = appliedPromoCode.code;
+  // Le code envoyé est celui réellement affiché sur CE plan — saisi à la main
+  // ou offre automatique. Le serveur revalide de toute façon (expiration,
+  // quota, déjà utilisé) : au pire l'offre est ignorée, jamais forcée.
+  const promoPlan = promoPourPlan(currentPlan);
+  if (promoPlan) body.promoCode = promoPlan.code;
   if (selectedPaymentMethodId) body.paymentMethodId = selectedPaymentMethodId;
 
   const response = await fetch("/account/create-checkout", {
@@ -286,7 +319,9 @@ let selectedPaymentMethodId = null;
 
 function fmtPrice(n) {
   if (n == null || isNaN(n)) return null;
-  return n.toFixed(2).replace(/\.00$/, "") + " €";
+  // Virgule décimale : une remise tombe rarement sur un compte rond et
+  // « 15.20 € » n'est pas un prix français.
+  return n.toFixed(2).replace(/\.00$/, "").replace(".", ",") + " €";
 }
 
 function cardLabel(pm) {
@@ -298,32 +333,26 @@ function getPlanPrice(plan) {
   const base = PRICES[plan] ? PRICES[plan][billing] : null;
   if (base == null) return null;
 
-  if (appliedPromoCode) {
-    const ap = appliedPromoCode.applicablePlan;
-    const applies = ap === "all" ||
-      ap === `${plan}_${billing}` ||
-      ap === `${plan}_monthly` || ap === `${plan}_yearly`;
-    if (applies) {
-      // Code de type "essai gratuit" : le 1er paiement est 0 € (Stripe
-      // décale la première facturation à la fin du trial). On retourne 0
-      // pour que la confirmation affiche "0 €" et non le plein tarif
-      // ("jai activé BIENVENUE qui donne 1 mois gratuit mais il met 49 €").
-      if (appliedPromoCode.discountType === "trial") return 0;
-      const discounted = calcDiscounted(base, appliedPromoCode.discountType, appliedPromoCode.discountValue);
-      if (discounted !== null) return discounted;
-    }
+  // Même promo que celle affichée sur la carte du plan (code saisi OU offre
+  // mise en avant) : sans ça la carte annonçait 15,20 € et la confirmation
+  // 19 € — deux prix pour le même achat.
+  const promo = promoPourPlan(plan);
+  if (promo) {
+    // Code de type "essai gratuit" : le 1er paiement est 0 € (Stripe
+    // décale la première facturation à la fin du trial). On retourne 0
+    // pour que la confirmation affiche "0 €" et non le plein tarif
+    // ("jai activé BIENVENUE qui donne 1 mois gratuit mais il met 49 €").
+    if (promo.discountType === "trial") return 0;
+    const discounted = calcDiscounted(base, promo.discountType, promo.discountValue);
+    if (discounted !== null) return discounted;
   }
   return base;
 }
 
 // Retourne vrai si un code essai gratuit est actif et s'applique à ce plan.
 function isTrialActive(plan) {
-  const billing = isYearly ? "yearly" : "monthly";
-  if (appliedPromoCode && appliedPromoCode.discountType === "trial") {
-    const ap = appliedPromoCode.applicablePlan;
-    if (ap === "all" || ap === `${plan}_${billing}` ||
-        ap === `${plan}_monthly` || ap === `${plan}_yearly`) return true;
-  }
+  const promo = promoPourPlan(plan);
+  if (promo && promo.discountType === "trial") return true;
   // Le mois offert est appliqué par le SERVEUR sur un nouvel abonnement
   // (cf. trial_period_days dans createCheckout), mais UNE SEULE FOIS par
   // compte : `__trialAvailable` reflète cette éligibilité, calculée côté
@@ -350,12 +379,17 @@ function confirmPurchase(plan) {
     let   priceLabel   = fmtPrice(price);
     // Détecter dès l'ouverture si un code essai gratuit est actif.
     const trialActive  = isTrialActive(plan);
-    // `appliedPromoCode` est nul quand l'essai vient du serveur et non d'un
-    // code saisi : sans cette garde, la boîte de confirmation plantait.
-    const trialDays    = trialActive ? ((appliedPromoCode && appliedPromoCode.trialDays) || 30) : 0;
-    // Prix de base (sans promo) pour l'affichage "puis X €/mois" en mode trial.
+    // La promo peut être nulle quand l'essai vient du serveur et non d'un code :
+    // sans cette garde, la boîte de confirmation plantait.
+    const promoPlan    = promoPourPlan(plan);
+    const trialDays    = trialActive ? ((promoPlan && promoPlan.trialDays) || 30) : 0;
+    // Prix affiché après l'essai : celui de la carte du plan, remise comprise —
+    // annoncer « puis 19 €/mois » sous un prix barré à 15,20 € est incohérent.
     const billing      = isYearly ? "yearly" : "monthly";
-    const basePrice    = PRICES[plan] ? PRICES[plan][billing] : null;
+    const plein        = PRICES[plan] ? PRICES[plan][billing] : null;
+    const basePrice    = (promoPlan && promoPlan.discountType !== "trial" && plein != null)
+      ? calcDiscounted(plein, promoPlan.discountType, promoPlan.discountValue)
+      : plein;
 
     const tmp       = templateDialog.content.cloneNode(true);
     const parentTmp = tmp.querySelector("#dialogWrp");
@@ -578,11 +612,16 @@ function confirmPurchase(plan) {
         // Relancer un checkout sans promo trial
         const savedPromo = appliedPromoCode;
         appliedPromoCode = null;
+        offresAutoRefusees = true;   // l'offre mise en avant ne doit pas revenir
         if (promoCodeInput) promoCodeInput.value = "";
-        applyPromoToUI(null);
+        applyPromoToUI();
         const confirmed2 = await confirmPurchase(plan);
         if (confirmed2) startCheckout(plan);
-        else appliedPromoCode = savedPromo; // remettre si l'user annule
+        else {
+          appliedPromoCode = savedPromo;   // remettre si l'user annule
+          offresAutoRefusees = false;
+          applyPromoToUI();
+        }
       });
       skipWrap.appendChild(skipLink);
       descEl.parentNode.insertBefore(skipWrap, confirmBtn.parentNode
@@ -627,42 +666,11 @@ if (getProPlanStrip) {
   };
 }
 
-// ── Boutons d'offre dynamiques (.js-offer-btn) ──────────────────────────────
-// data-plan  : "pro" | "business"
-// data-code  : code promo à copier dans le presse-papiers
-document.querySelectorAll(".js-offer-btn").forEach(function (btn) {
-  btn.addEventListener("click", async function () {
-    const code = (btn.dataset.code || "").toUpperCase();
-    if (!code) return;
-
-    // Copier dans le presse-papiers
-    try { await navigator.clipboard.writeText(code); } catch (_) {
-      // Fallback pour les navigateurs sans clipboard API
-      const ta = document.createElement("textarea");
-      ta.value = code;
-      ta.style.cssText = "position:fixed;opacity:0;pointer-events:none;";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      ta.remove();
-    }
-
-    // Feedback visuel sur le bouton
-    const orig = btn.innerHTML;
-    btn.innerHTML = "✓ Code copié !";
-    btn.style.cssText += "color:#16a34a;border-color:#bbf7d0;background:#f0fdf4;";
-    setTimeout(function () {
-      btn.innerHTML = orig;
-      btn.style.cssText = btn.style.cssText
-        .replace("color:#16a34a;", "")
-        .replace("border-color:#bbf7d0;", "")
-        .replace("background:#f0fdf4;", "");
-    }, 2000);
-
-    // Mettre aussi le code dans le champ promo (sans déclencher validatePromo ni le scroll)
-    if (promoCodeInput) promoCodeInput.value = code;
-  });
-});
+// ── Offre mise en avant : appliquée dès l'ouverture de la page ──────────────
+// Remplace l'ancien bouton « copier le code » : le pro devait coller un code
+// pour obtenir la remise qu'on lui affichait déjà. Le prix barré vaut
+// maintenant engagement — c'est ce montant-là qui part au paiement.
+applyPromoToUI();
 
 // ── Auto-checkout après inscription (avec promo auto-appliqué si présent) ─────
 (function() {

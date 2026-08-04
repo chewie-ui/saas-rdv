@@ -121,9 +121,16 @@ router.get("/subscription", isAuth, injectCompany, requireFeatureActive("subscri
   // débiter directement quand on clique sur "Acheter Business/Pro".
   const paymentMethods = await adminController.getUserPaymentMethods(req.user);
 
-  // Offres actives (isDefaultOffer=true) → affichées dynamiquement sur la page
+  // Offres mises en avant (isDefaultOffer=true) : elles s'appliquent
+  // automatiquement, prix barré à l'appui. On ne garde donc que celles que CE
+  // compte peut réellement obtenir — annoncer une remise que le serveur
+  // refuserait ensuite au paiement, c'est un prix affiché mensonger.
   const PromoCode = require("../db/models/promoCode.model");
-  const defaultOffers = await PromoCode.find({ isDefaultOffer: true, active: true }).lean();
+  const maintenant = new Date();
+  const defaultOffers = (await PromoCode.find({ isDefaultOffer: true, active: true }).lean())
+    .filter((o) => !o.expiresAt || new Date(o.expiresAt) > maintenant)
+    .filter((o) => o.maxUses === null || o.maxUses === undefined || o.usedCount < o.maxUses)
+    .filter((o) => !(o.usedByUsers || []).some((uid) => String(uid) === String(req.user._id)));
 
   // L'annuel Essentiel n'est proposé que si son prix existe vraiment dans
   // Stripe — sinon on afficherait une remise qu'on ne pourrait pas facturer.
