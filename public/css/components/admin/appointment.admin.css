@@ -1830,6 +1830,11 @@ body:has(.cal-month) .cal-month {
   border-top: 1px solid #f0f0f0;
 }
 
+/* « Supprimer » à l'opposé de « Enregistrer » : on ne clique pas l'un pour
+   l'autre. Masqué en création, d'où la règle qui bat le display: flex. */
+#blockApptDelete { margin-right: auto; }
+#blockApptDelete[hidden] { display: none !important; }
+
 @media (max-width: 600px) {
   .new-appt-modal .edit-fields-row.two-col {
     flex-direction: column;
@@ -2071,6 +2076,23 @@ body.appt-group-open { overflow: hidden; }
   transition: background 0.12s;
 }
 .appt-group__row:hover { background: var(--accent-soft, #f0fdf4); }
+
+/* Ligne d'absence : un <button> (elle rouvre la modale d'absence au lieu de
+   naviguer vers une fiche client qui n'existe pas), à aligner sur les lignes
+   <a> voisines. La plage horaire complète « 15:30 – 18:30 » ne tient pas dans
+   les 46 px prévus pour une heure seule. */
+.appt-group__row--block {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.appt-group__row--block .appt-group__time { width: auto; white-space: nowrap; }
+.appt-group__row--block .appt-group__emp { color: var(--text-muted, #6b7280); }
+.appt-group__row--block .material-symbols-outlined { font-size: 18px; }
 .appt-group__row.is-canceled { opacity: 0.55; }
 .appt-group__row.is-canceled .appt-group__name { text-decoration: line-through; }
 

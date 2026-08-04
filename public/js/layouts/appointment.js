@@ -487,6 +487,7 @@ setInterval(updateTimeline, 60000);
   const closeBtn  = document.getElementById("blockApptClose");
   const cancelBtn = document.getElementById("blockApptCancel");
   const submitBtn = document.getElementById("blockApptSubmit");
+  const deleteBtn = document.getElementById("blockApptDelete");
   const errorEl   = document.getElementById("blockApptError");
   if (!overlay || !submitBtn) return;
 
@@ -558,6 +559,7 @@ setInterval(updateTimeline, 60000);
     }
     if (startPicker) startPicker.set(info.time);
     if (endPicker) endPicker.set(info.endTime);
+    if (deleteBtn) deleteBtn.hidden = true; // création : rien à supprimer
     refreshDuration();
     overlay.classList.add("show");
     noteInput.focus();
@@ -577,8 +579,42 @@ setInterval(updateTimeline, 60000);
     if (submitLabel) submitLabel.textContent = "Enregistrer";
     if (noteInput) noteInput.value = info.note || "";
     if (employeeSel && info.employeeId) employeeSel.value = info.employeeId;
+    if (deleteBtn) deleteBtn.hidden = false;
     refreshDuration();
   };
+
+  // Suppression : même route que celle d'un rendez-vous, l'absence étant une
+  // réservation marquée `isBlock`. Confirmation obligatoire — le geste est
+  // définitif et le bouton est juste à côté de « Enregistrer ».
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", async () => {
+      if (!current || !current.editId) return;
+      const ok =
+        typeof window.confirmModal === "function"
+          ? await window
+              .confirmModal("Supprimer cette absence ?", "Le créneau redeviendra réservable.", {
+                confirmLabel: "Supprimer",
+                danger: true,
+              })
+              .then(() => true)
+              .catch(() => false)
+          : window.confirm("Supprimer cette absence ? Le créneau redeviendra réservable.");
+      if (!ok) return;
+      deleteBtn.disabled = true;
+      try {
+        const res = await fetch(`/appointment/${current.editId}/delete`, { method: "DELETE" });
+        const data = await res.json();
+        if (data.success) window.location.reload();
+        else {
+          showError(data.message || "Suppression impossible.");
+          deleteBtn.disabled = false;
+        }
+      } catch (e) {
+        showError("Erreur réseau.");
+        deleteBtn.disabled = false;
+      }
+    });
+  }
 
   closeBtn.addEventListener("click", close);
   cancelBtn.addEventListener("click", close);

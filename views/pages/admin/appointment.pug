@@ -198,25 +198,59 @@ block content
                                 data-slot-minutes=(box.endMin - box.startMin)
                                 data-group-date=day.isoDate
                             )
+                                //- Les absences n'ont pas de praticien : ni photo dans
+                                //- les avatars, ni comptage en « RDV ». Un créneau de
+                                //- 3 absences + 1 rendez-vous s'annonçait « 4 RDV ».
+                                - var itemsRdv = box.items.filter(function (a) { return !a.isBlock })
+                                - var nbAbs = box.items.length - itemsRdv.length
                                 .appt-pill__avatars
-                                    each appt, i in box.items
+                                    each appt, i in itemsRdv
                                         if i < 3
                                             img.appt-pill__photo(src=appt.employeePhoto alt="" title=appt.employeeName)
-                                    .appt-pill__extra +#{box.items.length - 3}
-                                span.appt-pill__label= box.items.length + ' RDV'
+                                    if itemsRdv.length > 3
+                                        .appt-pill__extra +#{itemsRdv.length - 3}
+                                span.appt-pill__label
+                                    if itemsRdv.length && nbAbs
+                                        = itemsRdv.length + ' RDV · ' + nbAbs + (nbAbs > 1 ? ' absences' : ' absence')
+                                    else if nbAbs
+                                        = nbAbs + (nbAbs > 1 ? ' absences' : ' absence')
+                                    else
+                                        = itemsRdv.length + ' RDV'
                                 //- Données du groupe (cachées) — clonées dans la modale au clic
                                 .appt-group-data(hidden)
                                     each appt in box.items
-                                        a.appt-group__row(href=`/clients-hub/${appt._id}?edit=1` class=(appt.status === 'canceled' ? 'is-canceled' : ''))
-                                            span.appt-group__time= appt.startHour
-                                            span.appt-group__main
-                                                span.appt-group__name= appt.name + ' ' + (appt.surname || '')
-                                                if appt.serviceName
-                                                    span.appt-group__svc= appt.serviceName
-                                            if appt.employeeName
-                                                span.appt-group__emp(title=appt.employeeName)
-                                                    img(src=appt.employeePhoto alt="")
-                                                    span= appt.employeeName.split(' ')[0]
+                                        //- Une absence n'est pas un rendez-vous : elle n'a pas de
+                                        //- client, donc pas de fiche client à ouvrir. Le clic doit
+                                        //- rouvrir la modale d'absence (modifier / supprimer) — sinon
+                                        //- on atterrissait sur une fiche « Absent » incompréhensible.
+                                        if appt.isBlock
+                                            button.appt-group__row.appt-group__row--block(
+                                                type="button"
+                                                data-block-id=String(appt._id)
+                                                data-block-date=appt.isoDate
+                                                data-block-start=appt.startHour
+                                                data-block-end=appt.endHour
+                                                data-block-note=(appt.message || '')
+                                                data-block-employee=(appt.employee ? String(appt.employee) : '')
+                                            )
+                                                span.appt-group__time= appt.startHour + ' – ' + appt.endHour
+                                                span.appt-group__main
+                                                    span.appt-group__name Absence
+                                                    if appt.message
+                                                        span.appt-group__svc= appt.message
+                                                span.appt-group__emp
+                                                    span.material-symbols-outlined edit
+                                        else
+                                            a.appt-group__row(href=`/clients-hub/${appt._id}?edit=1` class=(appt.status === 'canceled' ? 'is-canceled' : ''))
+                                                span.appt-group__time= appt.startHour
+                                                span.appt-group__main
+                                                    span.appt-group__name= appt.name + ' ' + (appt.surname || '')
+                                                    if appt.serviceName
+                                                        span.appt-group__svc= appt.serviceName
+                                                if appt.employeeName
+                                                    span.appt-group__emp(title=appt.employeeName)
+                                                        img(src=appt.employeePhoto alt="")
+                                                        span= appt.employeeName.split(' ')[0]
                         else
                             - var appointment = box.appointment
                             - var leftPct = (box.col / box.colCount) * 100
@@ -464,6 +498,10 @@ block content
                         input.input(type="text" id="blockApptNote" placeholder="Ex: dentiste, pause…" maxlength="200")
                 p.new-appt-modal__error#blockApptError(style="display:none")
             .new-appt-modal__actions
+                //- Visible uniquement en modification : supprimer une absence
+                //- devait passer par le popover du calendrier, introuvable dès
+                //- que l'absence était noyée dans un groupe « N RDV ».
+                button.sm-btn.sm-btn--ghost.sm-btn--danger#blockApptDelete(type="button" hidden)= t.appt.btn_delete || 'Supprimer'
                 button.sm-btn.sm-btn--ghost#blockApptCancel(type="button")= t.appt.btn_cancel
                 button.sm-btn.sm-btn--primary#blockApptSubmit(type="button")
                     //- Identifié : le JS bascule ce libellé en « Enregistrer »
@@ -495,11 +533,34 @@ block content
                 var data = pill.querySelector('.appt-group-data');
                 if (!data) return;
                 body.innerHTML = data.innerHTML;
-                var n = body.querySelectorAll('.appt-group__row').length;
-                title.textContent = n + ' rendez-vous';
+                var abs = body.querySelectorAll('.appt-group__row--block').length;
+                var rdv = body.querySelectorAll('.appt-group__row').length - abs;
+                var parts = [];
+                if (rdv) parts.push(rdv + (rdv > 1 ? ' rendez-vous' : ' rendez-vous'));
+                if (abs) parts.push(abs + (abs > 1 ? ' absences' : ' absence'));
+                title.textContent = parts.join(' · ');
                 modal.hidden = false;
                 document.body.classList.add('appt-group-open');
             }
+
+            // Clic sur une absence : on ferme la liste et on rouvre la modale
+            // d'absence, seul endroit d'où on peut la modifier ou la supprimer.
+            body.addEventListener('click', function (e) {
+                var ligne = e.target.closest('.appt-group__row--block');
+                if (!ligne) return;
+                e.preventDefault();
+                closeGroup();
+                if (typeof window.__openBlockApptEdit === 'function') {
+                    window.__openBlockApptEdit({
+                        id: ligne.dataset.blockId,
+                        date: ligne.dataset.blockDate,
+                        time: ligne.dataset.blockStart,
+                        endTime: ligne.dataset.blockEnd,
+                        note: ligne.dataset.blockNote || '',
+                        employeeId: ligne.dataset.blockEmployee || '',
+                    });
+                }
+            });
             function closeGroup() {
                 modal.hidden = true;
                 document.body.classList.remove('appt-group-open');
