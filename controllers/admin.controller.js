@@ -1119,6 +1119,40 @@ exports.createAdminBooking = async (req, res) => {
 // clic-glisser sur une case vide, choix "Absence" plutôt que "Rendez-vous".
 // Occupe le créneau comme un RDV (mêmes règles de chevauchement) mais sans
 // client : pas d'email, n'apparaît jamais dans les dossiers clients. ───────
+/**
+ * Combien de VRAIS rendez-vous une absence va-t-elle recouvrir ?
+ *
+ * Strictement informatif : cette fonction LIT, elle ne modifie ni ne supprime
+ * jamais rien. Poser une absence sur une journée déjà réservée est légitime —
+ * « je ferme aux nouvelles demandes, mais j'honore ce qui est pris » — et les
+ * rendez-vous existants doivent survivre intacts.
+ *
+ * Les blocs sont exclus du compte : deux absences qui se chevauchent n'ont
+ * aucun intérêt à être signalées.
+ */
+async function compterRdvRecouverts({
+  Booking, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, excludeBookingId,
+}) {
+  const critere = {
+    company: currentCompany._id || currentCompany,
+    date: new Date(date),
+    status: { $ne: "canceled" },
+    isBlock: { $ne: true },
+  };
+  if (excludeBookingId) critere._id = { $ne: excludeBookingId };
+  // Absence visant un praticien précis : seuls SES rendez-vous sont concernés.
+  // Absence pour tout l'établissement : tous le sont.
+  if (employeeId) critere.$or = [{ employee: employeeId }, { employee: null }];
+
+  const rdv = await Booking.find(critere).select("startTime slotTime name").lean();
+  return rdv.filter((b) => {
+    const [h, m] = String(b.startTime || "00:00").split(":").map(Number);
+    const debut = h * 60 + m;
+    const fin = debut + (b.slotTime || 0);
+    return startTimeInMinutes < fin && endTimeInMinutes > debut;
+  }).length;
+}
+
 exports.createAdminBlock = async (req, res) => {
   try {
     const currentCompany = res.locals.currentCompany;
@@ -1152,12 +1186,16 @@ exports.createAdminBlock = async (req, res) => {
       else employeeId = null;
     }
 
-    const conflictMessage = await checkBookingConflict({
-      Booking, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, actualDuration,
+    // Une absence PEUT recouvrir des rendez-vous déjà pris — c'est même son
+    // usage principal : « je ferme la journée, mais j'honore ce qui est
+    // réservé ». On ne refuse donc jamais la création, contrairement à un vrai
+    // rendez-vous. Les réservations existantes ne sont NI annulées NI touchées :
+    // le bloc est un document séparé, posé par-dessus.
+    // Il empêche en revanche toute NOUVELLE réservation sur ce créneau, puisque
+    // checkBookingConflict le voit comme un créneau occupé.
+    const recouverts = await compterRdvRecouverts({
+      Booking, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId,
     });
-    if (conflictMessage) {
-      return res.json({ success: false, error: "conflict", message: conflictMessage });
-    }
 
     const block = await Booking.create({
       date: new Date(date),
@@ -1174,9 +1212,78 @@ exports.createAdminBlock = async (req, res) => {
       payment: { method: "none", status: "none", amount: 0, currency: "eur" },
     });
 
-    res.json({ success: true, bookingId: block._id });
+    res.json({ success: true, bookingId: block._id, coveredBookings: recouverts });
   } catch (err) {
     console.error("createAdminBlock error:", err);
+    res.status(500).json({ success: false, error: "server_error", message: "Une erreur est survenue." });
+  }
+};
+
+// ── Modifier une absence déjà posée ─────────────────────────────────────────
+// Il fallait supprimer puis recréer pour corriger un horaire ou un motif.
+// Mêmes règles que la création (chevauchements, employé de l'équipe), à une
+// exception près : l'absence ne doit pas se considérer elle-même comme un
+// conflit, d'où `excludeBookingId`.
+exports.updateAdminBlock = async (req, res) => {
+  try {
+    const currentCompany = res.locals.currentCompany;
+    if (!currentCompany) return res.status(401).json({ success: false, error: "unauthorized" });
+
+    const Booking = require("../db/models/book.model");
+    // Filtré sur l'établissement courant ET sur isBlock : cette route ne doit
+    // jamais permettre de modifier un vrai rendez-vous, ni celui d'un autre
+    // établissement.
+    const block = await Booking.findOne({
+      _id: req.params.id,
+      company: currentCompany._id || currentCompany,
+      isBlock: true,
+    });
+    if (!block) {
+      return res.status(404).json({ success: false, error: "not_found", message: "Absence introuvable." });
+    }
+
+    const { date, startTime, endTime, note } = req.body;
+    let { employeeId } = req.body;
+    if (!date || !startTime || !endTime) {
+      return res.json({ success: false, error: "missing_fields", message: "Date et horaires requis." });
+    }
+
+    const [sh, sm] = startTime.split(":").map(Number);
+    const [eh, em] = endTime.split(":").map(Number);
+    const startTimeInMinutes = sh * 60 + sm;
+    const endTimeInMinutes = eh * 60 + em;
+    if (!(endTimeInMinutes > startTimeInMinutes)) {
+      return res.json({ success: false, error: "invalid_range", message: "L'heure de fin doit être après l'heure de début." });
+    }
+    const actualDuration = endTimeInMinutes - startTimeInMinutes;
+
+    let employeeName = "";
+    if (employeeId) {
+      const team = await getBookableTeam(currentCompany);
+      const emp = team.find((m) => m.id === String(employeeId));
+      if (emp) employeeName = `${emp.firstName} ${emp.lastName}`.trim();
+      else employeeId = null;
+    }
+
+    // Comme à la création : une absence peut recouvrir des rendez-vous pris,
+    // sans jamais les annuler. On se contente de les compter pour l'informer.
+    const recouverts = await compterRdvRecouverts({
+      Booking, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId,
+      excludeBookingId: block._id,
+    });
+
+    block.date = new Date(date);
+    block.startTime = startTime;
+    block.endTime = endTime;
+    block.slotTime = actualDuration;
+    block.message = (note || "").trim().slice(0, 200);
+    block.employee = employeeId || null;
+    block.employeeName = employeeName;
+    await block.save();
+
+    res.json({ success: true, bookingId: block._id, coveredBookings: recouverts });
+  } catch (err) {
+    console.error("updateAdminBlock error:", err);
     res.status(500).json({ success: false, error: "server_error", message: "Une erreur est survenue." });
   }
 };

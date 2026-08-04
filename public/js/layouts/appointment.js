@@ -483,7 +483,14 @@ setInterval(updateTimeline, 60000);
   }
 
   function open(info) {
-    current = info;
+    // `editId` absent = création. Remis à zéro à chaque ouverture, sinon une
+    // création lancée après une modification irait écraser l'absence
+    // précédente au lieu d'en créer une nouvelle.
+    current = { ...info, editId: null };
+    const t = document.getElementById("blockApptTitle");
+    const sl = document.getElementById("blockApptSubmitLabel");
+    if (t) t.textContent = "Marquer une absence";
+    if (sl) sl.textContent = "Marquer absent";
     errorEl.style.display = "none";
     errorEl.textContent = "";
     noteInput.value = "";
@@ -501,6 +508,20 @@ setInterval(updateTimeline, 60000);
 
   // Exposé pour le clic-glisser sur le calendrier (autre IIFE plus bas).
   window.__openBlockApptModal = open;
+
+  // Ouverture en MODIFICATION depuis le popover d'une absence existante.
+  // Même modale, même validation : seule la destination de l'envoi change.
+  const titleEl = document.getElementById("blockApptTitle");
+  const submitLabel = document.getElementById("blockApptSubmitLabel");
+  window.__openBlockApptEdit = function (info) {
+    open({ date: info.date, time: info.time, endTime: info.endTime });
+    current.editId = info.id;
+    if (titleEl) titleEl.textContent = "Modifier l'absence";
+    if (submitLabel) submitLabel.textContent = "Enregistrer";
+    if (noteInput) noteInput.value = info.note || "";
+    if (employeeSel && info.employeeId) employeeSel.value = info.employeeId;
+    refreshDuration();
+  };
 
   closeBtn.addEventListener("click", close);
   cancelBtn.addEventListener("click", close);
@@ -527,22 +548,39 @@ setInterval(updateTimeline, 60000);
 
     submitBtn.disabled = true;
     try {
-      const res = await fetch("/appointment/block", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date: current.date,
-          startTime,
-          endTime,
-          employeeId: employeeSel ? employeeSel.value : "",
-          note: noteInput.value.trim(),
-        }),
-      });
+      const modification = !!current.editId;
+      const res = await fetch(
+        modification ? `/appointment/block/${current.editId}` : "/appointment/block",
+        {
+          method: modification ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            date: current.date,
+            startTime,
+            endTime,
+            employeeId: employeeSel ? employeeSel.value : "",
+            note: noteInput.value.trim(),
+          }),
+        }
+      );
       const data = await res.json();
       if (data.success) {
+        // Des rendez-vous déjà pris sont recouverts : on le dit AVANT de
+        // recharger, pour que le pro sache qu'ils sont maintenus et qu'il doit
+        // les honorer — sinon il croirait les avoir annulés.
+        if (data.coveredBookings > 0) {
+          const n = data.coveredBookings;
+          await window.confirmModal(
+            n === 1 ? "1 rendez-vous est maintenu" : `${n} rendez-vous sont maintenus`,
+            "Cette absence empêche toute NOUVELLE réservation sur ce créneau, mais " +
+              (n === 1 ? "le rendez-vous déjà pris n'a pas été annulé" : "les rendez-vous déjà pris n'ont pas été annulés") +
+              " : ils restent dans votre agenda et vous devez les honorer.",
+            { confirmLabel: "J'ai compris", danger: false }
+          ).catch(() => {});
+        }
         window.location.reload();
       } else {
-        showError(data.message || "Erreur lors de la création de l'absence.");
+        showError(data.message || "Erreur lors de l'enregistrement de l'absence.");
         submitBtn.disabled = false;
       }
     } catch (e) {

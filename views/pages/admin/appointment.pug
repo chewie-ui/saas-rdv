@@ -231,6 +231,8 @@ block content
                                     span.appt-pill__name= t.appt.external_event
                                     span.appt-pill__time= appointment.startHour + '–' + appointment.endHour
                             else if appointment.isBlock
+                                //- `data-employee-id` : l'identifiant, pas seulement le nom —
+                                //- la modale de modification doit re-sélectionner le bon praticien.
                                 div.appt-pill.appt-pill--block(
                                     role="button" tabindex="0"
                                     class={ 'appt-pill--short': (box.endMin - box.startMin) < 30 }
@@ -242,6 +244,7 @@ block content
                                     data-start=appointment.startHour
                                     data-end=appointment.endHour
                                     data-employee=(appointment.employeeName || '')
+                                    data-employee-id=(appointment.employee ? String(appointment.employee) : '')
                                     data-service=(appointment.message || '')
                                     data-status=(appointment.status || '')
                                     data-date=appointment.isoDate
@@ -280,6 +283,12 @@ block content
     //- ── Appointment popup (Google Calendar style) ──
     #apptPopup.appt-popup
         .appt-popup__toolbar
+            //- Modifier une absence : le popover n'offrait que « Supprimer »,
+            //- il fallait donc supprimer puis recréer pour corriger un horaire.
+            //- Affiché uniquement pour une absence (un vrai RDV se modifie
+            //- depuis sa fiche, via « Voir le détail »).
+            button.appt-popup__tool-btn#apptPopupEditBlock(type="button" title="Modifier l'absence" hidden)
+                span.material-symbols-outlined edit
             if canCancelDeleteAppt
                 button.appt-popup__tool-btn.appt-popup__tool-btn--danger#apptPopupDelete(type="button" title="Supprimer")
                     span.material-symbols-outlined delete
@@ -404,7 +413,8 @@ block content
     .new-appt-overlay#blockApptOverlay
         .new-appt-modal.new-appt-modal--sm#blockApptModal
             .new-appt-modal__head
-                h3= t.appt.block_modal_title
+                //- Le titre et le libelle du bouton changent en mode modification
+                h3#blockApptTitle= t.appt.block_modal_title
                 button.new-appt-modal__close#blockApptClose(type="button" aria-label="Fermer")
                     span.material-symbols-outlined close
             .new-appt-modal__body

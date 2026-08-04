@@ -183,6 +183,30 @@ export const initAppointmentPopup = function () {
     if (detailBtn) detailBtn.href = `/clients-hub/${currentId}`;
     if (detailBtn) detailBtn.style.display = d.isBlock === "1" ? "none" : "";
 
+    // « Modifier » n'apparaît que pour une absence : un vrai rendez-vous se
+    // modifie depuis sa fiche (« Voir le détail »), qui a bien plus de champs.
+    // Sans ce bouton, corriger un horaire imposait de supprimer puis recréer.
+    const editBlockBtn = document.getElementById("apptPopupEditBlock");
+    if (editBlockBtn) {
+      const estAbsence = d.isBlock === "1";
+      editBlockBtn.hidden = !estAbsence;
+      editBlockBtn.onclick = estAbsence
+        ? () => {
+            hidePopup();
+            if (typeof window.__openBlockApptEdit === "function") {
+              window.__openBlockApptEdit({
+                id: currentId,
+                date: d.date,
+                time: d.start,
+                endTime: d.end,
+                note: d.service || "",
+                employeeId: d.employeeId || "",
+              });
+            }
+          }
+        : null;
+    }
+
     // Dossier client → fiche clients-hub, onglet « Dossier » (et non plus
     // l'ancienne page /clients/:email). Caché si pas d'email (événement
     // "autre" sans client, ou dossier impossible à tenir sans email).

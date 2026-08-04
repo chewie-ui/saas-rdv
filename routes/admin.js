@@ -77,6 +77,7 @@ router.get("/panel", isAuth, injectCompany, requireFeatureActive("admin_panel"),
 router.get("/appointment", isAuth, injectCompany, requireFeatureActive("admin_panel"), appointment);
 router.post("/appointment/create", isAuth, injectCompany, requireFeatureActive("admin_panel"), adminController.createAdminBooking);
 router.post("/appointment/block", isAuth, injectCompany, requireFeatureActive("admin_panel"), adminController.createAdminBlock);
+router.patch("/appointment/block/:id", isAuth, injectCompany, requireFeatureActive("admin_panel"), adminController.updateAdminBlock);
 router.get("/availability", isAuth, injectCompany, availability);
 // Ancienne page conservée (au cas où) sur /availability-old.
 router.get("/availability-old", isAuth, injectCompany, availabilityOld);
