@@ -438,3 +438,102 @@
 
 /* Surnom du client, en gris à côté du nom (liste). */
 .ch-alt-name { color: var(--text-muted, #9ca3af); font-weight: 400; }
+
+/* ── Modale « Ajouter un client » ──────────────────────────────────────────
+   Un client peut exister sans avoir jamais réservé : la liste ne se déduit
+   plus uniquement des rendez-vous. */
+.ch-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.45);
+}
+.ch-overlay[hidden] { display: none; }
+
+.ch-modal {
+  width: 100%;
+  max-width: 460px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.22);
+  overflow: hidden;
+}
+.ch-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px 14px;
+}
+.ch-modal__title { margin: 0; font-size: 18px; font-weight: 700; }
+.ch-modal__close {
+  display: inline-flex;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--text-muted, #9ca3af);
+  cursor: pointer;
+  border-radius: 8px;
+}
+.ch-modal__close:hover { background: var(--surface-2, #f1f3f5); }
+.ch-modal__body { padding: 0 22px 4px; }
+.ch-modal__hint {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary, #637083);
+}
+.ch-modal__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.ch-field--full { grid-column: 1 / -1; }
+.ch-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #637083);
+}
+.ch-input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 42px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-primary, #141c25);
+  background: #fff;
+  border: 1.5px solid var(--border-light, #e5e7eb);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.ch-input:focus {
+  border-color: var(--accent, #16a34a);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, .1);
+}
+.ch-modal__error {
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #b91c1c;
+  background: #fef2f2;
+  border-radius: 10px;
+}
+.ch-modal__error[hidden] { display: none; }
+.ch-modal__errlink { color: #b91c1c; font-weight: 600; text-decoration: underline; }
+.ch-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 18px 22px 20px;
+}
+
+/* État vide : deux actions côte à côte. */
+.ch-empty__acts { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+
+@media (max-width: 520px) {
+  .ch-modal__grid { grid-template-columns: 1fr; }
+}

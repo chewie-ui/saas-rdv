@@ -30,6 +30,17 @@ const clientDossierSchema = new schema(
     clientRef: { type: schema.Types.ObjectId, ref: "Client", default: null },
     email: { type: String, required: true, lowercase: true, trim: true },
     fullName: { type: String, default: "", trim: true },
+    // Prénom et nom séparés : renseignés pour un client créé à la main depuis
+    // la page Clients, qui n'a aucun rendez-vous d'où les déduire. Pour les
+    // autres, l'identité reste celle saisie par le client à la réservation.
+    firstName: { type: String, default: "", trim: true },
+    lastName: { type: String, default: "", trim: true },
+    // Distingue une fiche créée exprès par le pro d'un dossier né tout seul
+    // d'une note ou d'un blocage. Seules les premières apparaissent dans la
+    // liste des clients quand elles n'ont aucun rendez-vous : sinon supprimer
+    // un client ferait réapparaître son dossier résiduel, et les blocages
+    // (qui créent un dossier) deviendraient des clients fantômes.
+    createdManually: { type: Boolean, default: false },
     phone: { type: String, default: "", trim: true },
     // Contacts alternatifs ajoutés par l'admin (le client peut avoir 2 emails,
     // 2 numéros, ou être connu sous un autre nom/surnom). Le nom principal reste

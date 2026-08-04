@@ -49,6 +49,12 @@ block content
                             label.ch-dd__check
                                 input(type="checkbox" value="noshow" checked)
                                 span Absence
+                    //- Un client peut exister sans avoir jamais réservé (rencontré
+                    //- au téléphone, en boutique…) : la liste était jusqu'ici
+                    //- entièrement déduite des rendez-vous.
+                    button.sm-btn.sm-btn--ghost#chNewClient(type="button")
+                        span.material-symbols-outlined(style="font-size:18px") person_add
+                        span Ajouter un client
                     a.sm-btn.sm-btn--primary(href="/appointment?new=1")
                         span.material-symbols-outlined(style="font-size:18px") add
                         span Nouveau RDV
@@ -66,10 +72,14 @@ block content
             .ch-empty
                 span.ch-empty__icon.material-symbols-outlined group
                 p.ch-empty__title Aucun client
-                p.ch-empty__sub Les clients ayant pris un rendez-vous apparaîtront ici.
-                a.sm-btn.sm-btn--primary(href="/appointment?new=1")
-                    span.material-symbols-outlined(style="font-size:18px") add
-                    span Nouveau RDV
+                p.ch-empty__sub Les clients ayant pris un rendez-vous apparaissent ici. Vous pouvez aussi en ajouter un vous-même.
+                .ch-empty__acts
+                    button.sm-btn.sm-btn--ghost.js-new-client(type="button")
+                        span.material-symbols-outlined(style="font-size:18px") person_add
+                        span Ajouter un client
+                    a.sm-btn.sm-btn--primary(href="/appointment?new=1")
+                        span.material-symbols-outlined(style="font-size:18px") add
+                        span Nouveau RDV
         else
             //- ── Tableau (un client par ligne) ───────────────────
             .ch-table-wrap
@@ -96,6 +106,7 @@ block content
                             - var statusLabel = c.lastState === 'noshow' ? 'Absence' : c.lastState === 'canceled' ? 'Annulé' : 'Confirmé'
                             tr.ch-row(
                                 data-ids=c.ids.join(',')
+                                data-dossier=(c.count === 0 ? c.lastBookingId : '')
                                 data-nav=c.lastBookingId
                                 data-name=cName
                                 data-count=c.count
@@ -150,6 +161,33 @@ block content
         button.ch-menu__item.ch-menu__item--danger#chMenuDelete(type="button" data-act="delete")
             span.material-symbols-outlined(style="font-size:18px") delete
             span Supprimer le client
+
+    //- ── Modale : ajouter un client ─────────────────────────────
+    .ch-overlay#chNewOverlay(hidden)
+        .ch-modal
+            .ch-modal__head
+                h3.ch-modal__title Ajouter un client
+                button.ch-modal__close#chNewClose(type="button" aria-label="Fermer")
+                    span.material-symbols-outlined close
+            .ch-modal__body
+                p.ch-modal__hint L'e-mail identifie le client : c'est lui qui rattachera ses futurs rendez-vous à cette fiche.
+                .ch-modal__grid
+                    .ch-field
+                        label(for="chNewFirst") Prénom
+                        input.ch-input#chNewFirst(type="text" maxlength="80" autocomplete="off")
+                    .ch-field
+                        label(for="chNewLast") Nom
+                        input.ch-input#chNewLast(type="text" maxlength="80" autocomplete="off")
+                    .ch-field.ch-field--full
+                        label(for="chNewEmail") E-mail *
+                        input.ch-input#chNewEmail(type="email" maxlength="160" autocomplete="off" placeholder="prenom@exemple.be")
+                    .ch-field.ch-field--full
+                        label(for="chNewPhone") Téléphone
+                        input.ch-input#chNewPhone(type="tel" maxlength="40" autocomplete="off")
+                p.ch-modal__error#chNewError(hidden)
+            .ch-modal__actions
+                button.sm-btn.sm-btn--ghost#chNewCancel(type="button") Annuler
+                button.sm-btn.sm-btn--primary#chNewSubmit(type="button") Ajouter
 
 block scripts
     script(src="/js/utils/confirm-modal.js")
@@ -317,14 +355,25 @@ block scripts
             });
 
             // ── Suppression ───────────────────────────────────────────
-            async function deleteIds(ids) {
+            // Un client créé à la main n'a aucun rendez-vous : c'est sa fiche
+            // (data-dossier) qu'il faut supprimer, pas des réservations.
+            async function deleteIds(ids, dossierIds) {
                 var res = await fetch('/clients-hub/bookings', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ids: ids })
+                    body: JSON.stringify({ ids: ids, dossierIds: dossierIds || [] })
                 });
                 if (!res.ok) throw new Error('delete failed');
                 return res.json();
+            }
+            function dossierIdsOf(rowEls) {
+                return rowEls.map(function (r) { return r.dataset.dossier; }).filter(Boolean);
+            }
+            // « ses 3 rendez-vous » n'a pas de sens pour une fiche sans RDV.
+            function texteSuppression(nbRdv) {
+                return nbRdv
+                    ? 'Cela supprimera définitivement ' + nbRdv + (nbRdv > 1 ? ' rendez-vous.' : ' rendez-vous.') + ' Cette action est irréversible.'
+                    : 'Cette fiche client sera définitivement supprimée. Cette action est irréversible.';
             }
             function updateCount() {
                 var badge = document.querySelector('.ch-count');
@@ -340,12 +389,13 @@ block scripts
                 var selRows = checkedRows();
                 if (!selRows.length) return;
                 var ids = checkedBookingIds();
+                var dos = dossierIdsOf(selRows);
                 var ok = await window.confirmModal(
                     'Supprimer ' + selRows.length + (selRows.length > 1 ? ' clients ?' : ' client ?'),
-                    'Cela supprimera définitivement ' + ids.length + ' rendez-vous. Cette action est irréversible.'
+                    texteSuppression(ids.length)
                 );
                 if (!ok) return;
-                try { await deleteIds(ids); removeRowEls(selRows); }
+                try { await deleteIds(ids, dos); removeRowEls(selRows); }
                 catch (e) { window.confirmModal && window.confirmModal('Erreur', 'La suppression a échoué. Réessayez.', { alertOnly: true }); }
             });
 
@@ -355,6 +405,10 @@ block scripts
             function closeMenu() { if (menu) { menu.hidden = true; menuRow = null; } }
             function openMenu(btn) {
                 menuRow = btn.closest('.ch-row');
+                // « Modifier le dernier RDV » n'a rien à modifier pour un client
+                // créé à la main, qui n'a encore aucun rendez-vous.
+                var mEditItem = document.getElementById('chMenuEdit');
+                if (mEditItem) mEditItem.hidden = !(menuRow.dataset.ids || '').length;
                 menu.hidden = false;
                 var rect = btn.getBoundingClientRect();
                 var mw = menu.offsetWidth || 168;
@@ -384,9 +438,9 @@ block scripts
                 closeMenu();
                 if (!row) return;
                 var ids = (row.dataset.ids || '').split(',').filter(Boolean);
-                var ok = await window.confirmModal('Supprimer ce client ?', 'Cela supprimera ses ' + ids.length + ' rendez-vous. Cette action est irréversible.');
+                var ok = await window.confirmModal('Supprimer ce client ?', texteSuppression(ids.length));
                 if (!ok) return;
-                try { await deleteIds(ids); removeRowEls([row]); }
+                try { await deleteIds(ids, dossierIdsOf([row])); removeRowEls([row]); }
                 catch (e) { window.confirmModal && window.confirmModal('Erreur', 'La suppression a échoué. Réessayez.', { alertOnly: true }); }
             });
 
@@ -448,4 +502,71 @@ block scripts
                     if (ps !== pageSize) { pageSize = ps; render(); }
                 }, 150);
             });
+
+            // ── Ajouter un client (sans rendez-vous) ──────────────────────
+            var novOverlay = document.getElementById('chNewOverlay');
+            if (novOverlay) {
+                var novErr = document.getElementById('chNewError');
+                var novSubmit = document.getElementById('chNewSubmit');
+                var champs = ['chNewFirst', 'chNewLast', 'chNewEmail', 'chNewPhone'];
+                function novOpen() {
+                    champs.forEach(function (id) { document.getElementById(id).value = ''; });
+                    novErr.hidden = true;
+                    novSubmit.disabled = false;
+                    novOverlay.hidden = false;
+                    document.getElementById('chNewFirst').focus();
+                }
+                function novClose() { novOverlay.hidden = true; }
+                function novErreur(msg) { novErr.textContent = msg; novErr.hidden = false; }
+
+                var declencheurs = [document.getElementById('chNewClient')]
+                    .concat(Array.prototype.slice.call(document.querySelectorAll('.js-new-client')));
+                declencheurs.forEach(function (b) { if (b) b.addEventListener('click', novOpen); });
+                document.getElementById('chNewClose').addEventListener('click', novClose);
+                document.getElementById('chNewCancel').addEventListener('click', novClose);
+                novOverlay.addEventListener('click', function (e) { if (e.target === novOverlay) novClose(); });
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape' && !novOverlay.hidden) novClose();
+                });
+                // Entrée dans n'importe quel champ = valider, comme un formulaire.
+                champs.forEach(function (id) {
+                    document.getElementById(id).addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter') { e.preventDefault(); novEnvoyer(); }
+                    });
+                });
+
+                async function novEnvoyer() {
+                    novErr.hidden = true;
+                    novSubmit.disabled = true;
+                    try {
+                        var res = await fetch('/clients-hub/new', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                firstName: document.getElementById('chNewFirst').value,
+                                lastName: document.getElementById('chNewLast').value,
+                                email: document.getElementById('chNewEmail').value,
+                                phone: document.getElementById('chNewPhone').value,
+                            }),
+                        });
+                        var data = await res.json();
+                        if (data.success) { window.location.href = data.redirect; return; }
+                        // Client déjà connu : le message s'accompagne d'un lien
+                        // vers sa fiche, plus utile qu'un simple refus.
+                        novErreur(data.message || 'Création impossible.');
+                        if (data.redirect) {
+                            var a = document.createElement('a');
+                            a.href = data.redirect;
+                            a.textContent = ' Ouvrir la fiche';
+                            a.className = 'ch-modal__errlink';
+                            novErr.appendChild(a);
+                        }
+                        novSubmit.disabled = false;
+                    } catch (e) {
+                        novErreur('Erreur réseau.');
+                        novSubmit.disabled = false;
+                    }
+                }
+                novSubmit.addEventListener('click', novEnvoyer);
+            }
         })();

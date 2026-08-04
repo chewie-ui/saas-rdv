@@ -2113,19 +2113,50 @@ exports.clientsHubInit = async (req, res) => {
         employeeName: emp,
       };
     });
-    // Surnoms (altName) des dossiers, pour les afficher à côté du nom.
-    const emails = clients.map((c) => (c.email || "").trim().toLowerCase()).filter(Boolean);
-    if (emails.length) {
-      const ClientDossier = require("../db/models/clientDossier.model");
-      const dossiers = await ClientDossier.find({ company: res.locals.currentCompany._id, email: { $in: emails } })
-        .select("email altName").lean();
-      const altMap = {};
-      dossiers.forEach((d) => { if (d.altName) altMap[d.email] = d.altName; });
-      clients.forEach((c) => { c.altName = altMap[(c.email || "").trim().toLowerCase()] || ""; });
+    // Les dossiers portent deux choses utiles ici : le surnom (altName) affiché
+    // à côté du nom, et les clients créés à la main — qui n'ont AUCUN rendez-vous
+    // et n'existent donc dans aucun Booking.
+    const ClientDossier = require("../db/models/clientDossier.model");
+    const dossiers = await ClientDossier.find({ company: res.locals.currentCompany._id })
+      .select("email altName fullName firstName lastName phone createdAt createdManually").lean();
+
+    const altMap = {};
+    dossiers.forEach((d) => { if (d.altName) altMap[d.email] = d.altName; });
+    clients.forEach((c) => { c.altName = altMap[(c.email || "").trim().toLowerCase()] || ""; });
+
+    const dejaListes = new Set(clients.map((c) => (c.email || "").trim().toLowerCase()).filter(Boolean));
+    for (const d of dossiers) {
+      const mail = (d.email || "").trim().toLowerCase();
+      // `createdManually` : voir le modèle — un dossier né d'une note ou d'un
+      // blocage n'est pas un client à afficher.
+      if (!mail || !d.createdManually || dejaListes.has(mail)) continue;
+      const morceaux = (d.fullName || "").trim().split(/\s+/);
+      clients.push({
+        name: d.firstName || morceaux[0] || "",
+        surname: d.lastName || morceaux.slice(1).join(" "),
+        email: d.email,
+        phone: d.phone || "",
+        ids: [],                 // aucun rendez-vous à sélectionner ni supprimer
+        count: 0,
+        lastDate: null,
+        lastTime: "",
+        lastState: "confirmed",
+        lastBookingId: String(d._id),   // la fiche s'ouvre par l'id du dossier
+        employeeName: "",
+        altName: d.altName || "",
+        createdAt: d.createdAt,
+      });
     }
 
-    // Tri : dernier RDV le plus récent d'abord.
-    clients.sort((a, b) => new Date(b.lastDate) - new Date(a.lastDate));
+    // Tri : dernier RDV le plus récent d'abord. Les clients sans aucun
+    // rendez-vous n'ont pas de date — ils passent en tête (le plus récemment
+    // ajouté d'abord) plutôt qu'en fin de liste, où on ne les retrouverait pas.
+    clients.sort((a, b) => {
+      if (!a.lastDate && !b.lastDate) return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      if (!a.lastDate) return -1;
+      if (!b.lastDate) return 1;
+      return new Date(b.lastDate) - new Date(a.lastDate);
+    });
 
     return res.render("admin/clients-hub", {
       pageName: "ClientsHub",
@@ -2143,15 +2174,37 @@ exports.clientsHubInit = async (req, res) => {
 // l'établissement courant (anti-IDOR) — on ne supprime que ses propres RDV.
 exports.clientsHubBulkDelete = async (req, res) => {
   try {
-    let { ids } = req.body;
+    let { ids, dossierIds } = req.body;
     if (!Array.isArray(ids)) ids = ids ? [ids] : [];
     ids = ids.filter(Boolean);
-    if (!ids.length) return res.status(400).json({ success: false, error: "no_ids" });
+    if (!Array.isArray(dossierIds)) dossierIds = dossierIds ? [dossierIds] : [];
+    dossierIds = dossierIds.filter(Boolean);
+    if (!ids.length && !dossierIds.length) return res.status(400).json({ success: false, error: "no_ids" });
 
-    const result = await Booking.deleteMany({
-      _id: { $in: ids },
-      company: res.locals.currentCompany?._id,
-    });
+    const companyId = res.locals.currentCompany?._id;
+    const ClientDossier = require("../db/models/clientDossier.model");
+
+    // Emails concernés AVANT suppression : un client créé à la main qui a
+    // depuis réservé doit voir sa fiche partir avec ses rendez-vous, sinon il
+    // réapparaîtrait aussitôt dans la liste (sans aucun rendez-vous).
+    let emails = [];
+    if (ids.length) {
+      const concernes = await Booking.find({ _id: { $in: ids }, company: companyId }).select("email").lean();
+      emails = [...new Set(concernes.map((b) => (b.email || "").trim().toLowerCase()).filter(Boolean))];
+    }
+
+    const result = ids.length
+      ? await Booking.deleteMany({ _id: { $in: ids }, company: companyId })
+      : { deletedCount: 0 };
+
+    // Seuls les dossiers créés à la main sont supprimables ici : ceux nés d'une
+    // note ou d'un blocage doivent survivre (on ne débloque pas quelqu'un en
+    // supprimant ses rendez-vous, et on ne perd pas un suivi).
+    const critereDossier = { company: companyId, createdManually: true, $or: [] };
+    if (dossierIds.length) critereDossier.$or.push({ _id: { $in: dossierIds } });
+    if (emails.length) critereDossier.$or.push({ email: { $in: emails } });
+    if (critereDossier.$or.length) await ClientDossier.deleteMany(critereDossier);
+
     return res.json({ success: true, deleted: result.deletedCount });
   } catch (err) {
     console.error("clientsHubBulkDelete error:", err.message);
@@ -2163,27 +2216,115 @@ exports.clientsHubBulkDelete = async (req, res) => {
 // onglet Aperçu uniquement. On part d'un RDV (id), on charge le client et
 // TOUS ses RDV (regroupés par email/téléphone) pour l'aperçu. Scopé à
 // l'établissement courant (anti-IDOR). On ne touche pas à /history/edit.
+// Créer un client sans passer par un rendez-vous. Jusqu'ici la liste des
+// clients était entièrement déduite des réservations : impossible d'inscrire
+// quelqu'un rencontré hors ligne (téléphone, passage en boutique) avant qu'il
+// ait réservé. La fiche vit dans ClientDossier, déjà identifié par
+// (établissement, e-mail) — c'est aussi lui qui porte notes et dossier de suivi.
+exports.clientsHubCreate = async (req, res) => {
+  try {
+    const companyId = res.locals.currentCompany._id;
+    const prenom = String(req.body.firstName || "").trim().slice(0, 80);
+    const nom = String(req.body.lastName || "").trim().slice(0, 80);
+    const email = String(req.body.email || "").trim().toLowerCase().slice(0, 160);
+    const phone = String(req.body.phone || "").trim().slice(0, 40);
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.json({ success: false, message: "Indiquez une adresse e-mail valide." });
+    }
+    if (!prenom && !nom) {
+      return res.json({ success: false, message: "Indiquez au moins un nom ou un prénom." });
+    }
+
+    // Déjà client ? On n'en crée pas un deuxième : on renvoie vers sa fiche.
+    const rdv = await Booking.findOne({ company: companyId, email, isBlock: { $ne: true } })
+      .sort({ date: -1 }).select("_id").lean();
+    if (rdv) {
+      return res.json({ success: false, message: "Ce client existe déjà — voici sa fiche.", redirect: `/clients-hub/${rdv._id}` });
+    }
+    const ClientDossier = require("../db/models/clientDossier.model");
+    const existant = await ClientDossier.findOne({ company: companyId, email }).select("_id").lean();
+    if (existant) {
+      return res.json({ success: false, message: "Ce client existe déjà — voici sa fiche.", redirect: `/clients-hub/${existant._id}` });
+    }
+
+    const dossier = await ClientDossier.create({
+      company: companyId, email, phone,
+      firstName: prenom, lastName: nom,
+      fullName: (prenom + " " + nom).trim(),
+      createdManually: true,
+    });
+    return res.json({ success: true, redirect: `/clients-hub/${dossier._id}` });
+  } catch (err) {
+    // Course entre deux créations simultanées : l'index unique tranche.
+    if (err && err.code === 11000) {
+      return res.json({ success: false, message: "Ce client existe déjà." });
+    }
+    console.error("clientsHubCreate error:", err.message);
+    return res.status(500).json({ success: false, message: "Une erreur est survenue." });
+  }
+};
+
+// Une fiche client s'ouvre par l'identifiant d'un de ses rendez-vous — sauf
+// pour un client créé à la main, qui n'en a aucun : son identité vit alors
+// dans ClientDossier, et c'est l'id du dossier qui sert de clé. Les deux
+// chemins doivent marcher partout (fiche, blocage, notes, dossier de suivi).
+async function resoudreClient(companyId, id) {
+  const booking = await Booking.findOne({ _id: id, company: companyId }).lean();
+  if (booking) {
+    return {
+      booking,
+      email: (booking.email || "").trim().toLowerCase(),
+      fullName: ((booking.name || "") + " " + (booking.surname || "")).trim(),
+      phone: booking.phone || "",
+    };
+  }
+  const ClientDossier = require("../db/models/clientDossier.model");
+  const dossier = await ClientDossier.findOne({ _id: id, company: companyId }).lean();
+  if (!dossier) return null;
+  return {
+    booking: null,
+    dossier,
+    email: (dossier.email || "").trim().toLowerCase(),
+    fullName: dossier.fullName || "",
+    phone: dossier.phone || "",
+  };
+}
+
 exports.clientsHubDetail = async (req, res) => {
   try {
     const { id } = req.params;
     if (!/^[a-f0-9]{24}$/i.test(id)) return res.redirect("/clients-hub");
     const companyId = res.locals.currentCompany._id;
 
-    const booking = await Booking.findOne({ _id: id, company: companyId }).populate("user").lean();
-    if (!booking) return res.redirect("/clients-hub");
+    const ctx = await resoudreClient(companyId, id);
+    if (!ctx) return res.redirect("/clients-hub");
+
+    // Client créé à la main : pas de rendez-vous d'où tirer l'identité, on la
+    // reconstitue depuis son dossier pour que la fiche s'affiche pareil.
+    const morceaux = (ctx.fullName || "").trim().split(/\s+/);
+    const booking = ctx.booking || {
+      _id: ctx.dossier._id,
+      name: ctx.dossier.firstName || morceaux[0] || "",
+      surname: ctx.dossier.lastName || morceaux.slice(1).join(" "),
+      email: ctx.dossier.email || "",
+      phone: ctx.dossier.phone || "",
+      payment: {},
+      status: "confirmed",
+    };
 
     // Autres RDV du même client (même email OU même téléphone).
     const or = [];
     if (booking.email) or.push({ email: booking.email });
     if (booking.phone) or.push({ phone: booking.phone });
-    let clientBookings = [booking];
+    let clientBookings = ctx.booking ? [booking] : [];
     if (or.length) {
-      clientBookings = await Booking.find({
+      const trouves = await Booking.find({
         company: companyId,
         isBlock: { $ne: true },
         $or: or,
       }).sort({ date: -1, startTime: -1 }).lean();
-      if (!clientBookings.length) clientBookings = [booking];
+      if (trouves.length) clientBookings = trouves;
     }
 
     // Services + équipe pour les sélecteurs d'édition inline (comme history-edit).
@@ -2235,19 +2376,19 @@ exports.clientsHubBlock = async (req, res) => {
     if (!/^[a-f0-9]{24}$/i.test(id)) return res.status(400).json({ success: false });
     const companyId = res.locals.currentCompany._id;
 
-    const booking = await Booking.findOne({ _id: id, company: companyId }).lean();
-    if (!booking) return res.status(404).json({ success: false });
+    const ctx = await resoudreClient(companyId, id);
+    if (!ctx) return res.status(404).json({ success: false });
 
-    const email = (booking.email || "").trim().toLowerCase();
+    const email = ctx.email;
     if (!email) return res.status(400).json({ success: false, error: "no_email" });
 
     const ClientDossier = require("../db/models/clientDossier.model");
-    const fullName = ((booking.name || "") + " " + (booking.surname || "")).trim();
+    const fullName = ctx.fullName;
     await ClientDossier.findOneAndUpdate(
       { company: companyId, email },
       {
         $set: { blocked: true, blockedAt: new Date(), blockedReason: (req.body.reason || "").trim().slice(0, 200) },
-        $setOnInsert: { company: companyId, email, fullName, phone: booking.phone || "" },
+        $setOnInsert: { company: companyId, email, fullName, phone: ctx.phone },
       },
       { new: true, upsert: true }
     );
@@ -2266,18 +2407,18 @@ exports.clientsHubSaveNotes = async (req, res) => {
     if (!/^[a-f0-9]{24}$/i.test(id)) return res.status(400).json({ success: false });
     const companyId = res.locals.currentCompany._id;
 
-    const booking = await Booking.findOne({ _id: id, company: companyId }).lean();
-    if (!booking) return res.status(404).json({ success: false });
+    const ctx = await resoudreClient(companyId, id);
+    if (!ctx) return res.status(404).json({ success: false });
 
-    const email = (booking.email || "").trim().toLowerCase();
+    const email = ctx.email;
     if (!email) return res.status(400).json({ success: false, error: "no_email" });
 
     const ClientDossier = require("../db/models/clientDossier.model");
     const notes = String(req.body.notes || "").slice(0, 5000);
-    const fullName = ((booking.name || "") + " " + (booking.surname || "")).trim();
+    const fullName = ctx.fullName;
     await ClientDossier.findOneAndUpdate(
       { company: companyId, email },
-      { $set: { generalInfo: notes }, $setOnInsert: { company: companyId, email, fullName, phone: booking.phone || "" } },
+      { $set: { generalInfo: notes }, $setOnInsert: { company: companyId, email, fullName, phone: ctx.phone } },
       { new: true, upsert: true }
     );
     return res.json({ success: true });
@@ -2290,20 +2431,21 @@ exports.clientsHubSaveNotes = async (req, res) => {
 // ── Dossier client : entrées de suivi (notes datées + PDF) ──────────────────
 const _dossierRoot = () => require("path").join(__dirname, "..", "private_uploads");
 async function _getOrCreateDossier(bookingId, companyId) {
-  const booking = await Booking.findOne({ _id: bookingId, company: companyId }).lean();
-  if (!booking) return { error: "not_found" };
-  const email = (booking.email || "").trim().toLowerCase();
-  if (!email) return { error: "no_email" };
+  // `bookingId` est l'id d'un rendez-vous, ou celui du dossier lui-même pour un
+  // client créé à la main (voir resoudreClient).
+  const ctx = await resoudreClient(companyId, bookingId);
+  if (!ctx) return { error: "not_found" };
+  if (!ctx.email) return { error: "no_email" };
   const ClientDossier = require("../db/models/clientDossier.model");
-  let dossier = await ClientDossier.findOne({ company: companyId, email });
+  let dossier = await ClientDossier.findOne({ company: companyId, email: ctx.email });
   if (!dossier) {
     dossier = await ClientDossier.create({
-      company: companyId, email,
-      fullName: ((booking.name || "") + " " + (booking.surname || "")).trim(),
-      phone: booking.phone || "",
+      company: companyId, email: ctx.email,
+      fullName: ctx.fullName,
+      phone: ctx.phone,
     });
   }
-  return { booking, dossier };
+  return { booking: ctx.booking, dossier };
 }
 function _saveDossierPdf(file, companyId) {
   const fs = require("fs"), path = require("path"), crypto = require("crypto");
