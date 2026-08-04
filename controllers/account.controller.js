@@ -1524,6 +1524,7 @@ exports.updateReminderSettings = async (req, res) => {
     const allowed = [6, 12, 24, 48, 72];
     const delayHours = parseInt(req.body.reminderDelayHours, 10);
     const message    = (req.body.reminderMessage || "").trim().slice(0, 300);
+    const confirmationMessage = (req.body.confirmationMessage || "").trim().slice(0, 300);
     if (!allowed.includes(delayHours)) return res.status(400).json({ success: false, error: "Délai invalide." });
 
     const allowedPaymentMethods = ["carte", "especes", "qr_code", "virement"];
@@ -1531,19 +1532,22 @@ exports.updateReminderSettings = async (req, res) => {
       .filter((m) => allowedPaymentMethods.includes(m));
     const paymentNote = (req.body.reminderPaymentNote || "").trim().slice(0, 200);
 
-    const smsRemindersEnabled    = !!req.body.smsRemindersEnabled;
-    const smsConfirmationEnabled = !!req.body.smsConfirmationEnabled;
-    const smsAllowOverage        = !!req.body.smsAllowOverage;
-
     const update = {
       "calendarSettings.reminderDelayHours":       delayHours,
       "calendarSettings.reminderMessage":          message,
+      "calendarSettings.confirmationMessage":      confirmationMessage,
       "calendarSettings.reminderPaymentMethods":   paymentMethods,
       "calendarSettings.reminderPaymentNote":      paymentNote,
-      "calendarSettings.smsRemindersEnabled":      smsRemindersEnabled,
-      "calendarSettings.smsConfirmationEnabled":   smsConfirmationEnabled,
-      "calendarSettings.smsAllowOverage":          smsAllowOverage,
     };
+
+    // Les bascules SMS se règlent sur la page /sms (updateSmsSettings) et ne
+    // sont PAS envoyées par Personnaliser > Rappels. Les écrire d'office les
+    // remettait à false : un simple enregistrement de message coupait
+    // silencieusement les rappels SMS d'un client payant. On ne persiste donc
+    // que les clés réellement fournies.
+    for (const cle of ["smsRemindersEnabled", "smsConfirmationEnabled", "smsAllowOverage"]) {
+      if (req.body[cle] !== undefined) update[`calendarSettings.${cle}`] = !!req.body[cle];
+    }
 
     await User.findByIdAndUpdate(req.user._id, { $set: update });
     return res.json({ success: true });

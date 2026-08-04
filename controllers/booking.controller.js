@@ -783,6 +783,8 @@ exports.createBooking = async (req, res) => {
         cancelUrl,
         bookingId:   newBooking._id,
         cancelToken: newBooking.cancelToken,
+        // Message libre du pro (Personnaliser > Rappels), affiché tel quel.
+        ownerMessage: (companyOwner?.calendarSettings?.confirmationMessage || "").trim(),
       },
     );
 

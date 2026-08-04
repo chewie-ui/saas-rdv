@@ -261,6 +261,10 @@ const userSchema = schema(
       // ── Rappels email ────────────────────────────────────────────────────
       reminderDelayHours: { type: Number, default: 24 }, // 6 | 12 | 24 | 48 | 72
       reminderMessage:    { type: String, default: '' }, // message perso affiché dans le rappel
+      // Même principe pour l'email de CONFIRMATION, envoyé juste après la
+      // réservation : c'est souvent là qu'on veut donner les consignes d'accès
+      // ou de préparation, bien avant le rappel.
+      confirmationMessage: { type: String, default: '' },
       reminderPaymentMethods: { type: [String], default: [] }, // 'carte' | 'especes' | 'qr_code' | 'virement'
       reminderPaymentNote:    { type: String, default: '' }, // précisions libres sur le paiement (ex: lien QR code)
       // ── Rappels SMS (Pro & Business, quota mensuel puis email en repli) ────

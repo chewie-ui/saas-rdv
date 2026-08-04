@@ -156,6 +156,17 @@ div(style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system
                             p(style="margin:0 0 4px;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;") Votre message
                             p(style="margin:0;font-size:14px;color:#475569;line-height:1.5;font-style:italic;") "#{message}"
 
+                    //- ── Message personnalisé du professionnel ───────────────
+                    //- Consignes d'accès, préparation… : c'est souvent dans la
+                    //- confirmation qu'on veut les donner, pas seulement dans
+                    //- le rappel. Réglé dans Personnaliser > Rappels.
+                    if ownerMessage && ownerMessage.length > 0
+                      table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:24px;")
+                        tr
+                          td(style="padding:14px 18px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;")
+                            p(style="margin:0 0 4px;font-size:12px;font-weight:600;color:#16a34a;text-transform:uppercase;letter-spacing:0.05em;") Message de votre prestataire
+                            p(style="margin:0;font-size:14px;color:#1e2923;line-height:1.5;")= ownerMessage
+
                     //- ── CTA annulation ──────────────────────────────────────
                     table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:32px;")
                       tr

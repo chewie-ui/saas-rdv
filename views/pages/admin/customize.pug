@@ -565,6 +565,25 @@ block content
                                 span#czReminderMsgCount= (cs.reminderMessage || '').length
                                 | /300
 
+                    //- ── Message dans l'email de CONFIRMATION ───────────────────
+                    //- Distinct du rappel : la confirmation part tout de suite
+                    //- après la réservation, c'est là qu'on donne les consignes
+                    //- d'accès ou de préparation.
+                    .cz-reminder-section
+                        .cz-reminder-label
+                            span.material-symbols-outlined(style="font-size:15px") mark_email_read
+                            span Message dans l'email de confirmation
+                        p.cz-reminder-hint Envoyé dès la réservation. Affiché dans un encadré "Message de votre prestataire". Laissez vide pour ne rien afficher.
+                        .cz-reminder-msg-wrap
+                            textarea.cz-reminder-msg#czConfirmationMsg(
+                                placeholder="Ex : Le cabinet se trouve au 2e étage, sonnez à « Dupont ». Merci d'arriver 5 minutes en avance."
+                                maxlength="300"
+                                rows="4"
+                            )= cs.confirmationMessage || ''
+                            .cz-reminder-msg-count
+                                span#czConfirmationMsgCount= (cs.confirmationMessage || '').length
+                                | /300
+
                     //- ── Modes de paiement ─────────────────────────────────────
                     .cz-reminder-section
                         .cz-reminder-label
@@ -1760,6 +1779,8 @@ block scripts
             var payBtns      = document.querySelectorAll('.cz-paymethod-btn');
             var msgArea      = document.getElementById('czReminderMsg');
             var msgCount     = document.getElementById('czReminderMsgCount');
+            var confArea     = document.getElementById('czConfirmationMsg');
+            var confCount    = document.getElementById('czConfirmationMsgCount');
             var payNoteArea  = document.getElementById('czPaymentNote');
             var payNoteCount = document.getElementById('czPaymentNoteCount');
             var saveBtn      = document.getElementById('czSaveReminder');
@@ -1801,6 +1822,13 @@ block scripts
                 });
             }
 
+            // Compteur message de confirmation
+            if (confArea) {
+                confArea.addEventListener('input', function() {
+                    if (confCount) confCount.textContent = confArea.value.length;
+                });
+            }
+
             // Boutons modes de paiement
             payBtns.forEach(function(btn) {
                 btn.addEventListener('click', function() {
@@ -1835,6 +1863,7 @@ block scripts
                             body: JSON.stringify({
                                 reminderDelayHours: selectedDelay,
                                 reminderMessage: msgArea ? msgArea.value.trim() : '',
+                                confirmationMessage: confArea ? confArea.value.trim() : '',
                                 reminderPaymentMethods: selectedPaymentMethods,
                                 reminderPaymentNote: payNoteArea ? payNoteArea.value.trim() : ''
                             })
