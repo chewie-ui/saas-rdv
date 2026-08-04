@@ -342,6 +342,37 @@ function renderCart() {
 
   const showBack = stepIdx > 0;
 
+  // Le récapitulatif tient-il sur une seule ligne ? On le constate après coup
+  // au lieu de le deviner avec une largeur seuil : dès qu'il s'empile, les
+  // traits verticaux n'ont plus rien à séparer et resteraient orphelins en
+  // bout de ligne. Rejoué au redimensionnement (cf. plus bas).
+  function majEmpilementRecap() {
+    const barre = cart.querySelector(".bk-cart");
+    const recapEl = cart.querySelector(".bk-cart__recap");
+    if (!barre || !recapEl) return;
+    const items = [...recapEl.children].filter((e) => !e.classList.contains("bk-cart__sep"));
+    const empile = items.length > 1 && items.some((el) => el.offsetTop > items[0].offsetTop);
+    barre.classList.toggle("is-stacked", empile);
+  }
+  if (!renderCart._resizeBranche) {
+    renderCart._resizeBranche = true;
+    let minuteur;
+    window.addEventListener("resize", () => {
+      clearTimeout(minuteur);
+      minuteur = setTimeout(() => {
+        const barre = document.querySelector("#bkCart .bk-cart");
+        const recapEl = document.querySelector("#bkCart .bk-cart__recap");
+        if (!barre || !recapEl) return;
+        // On repart d'un état non empilé, sinon les séparateurs restent cachés
+        // et l'on mesure une disposition qui n'existe plus.
+        barre.classList.remove("is-stacked");
+        const items = [...recapEl.children].filter((e) => !e.classList.contains("bk-cart__sep"));
+        const empile = items.length > 1 && items.some((el) => el.offsetTop > items[0].offsetTop);
+        barre.classList.toggle("is-stacked", empile);
+      }, 120);
+    });
+  }
+
   cart.innerHTML = `<div class="bk-cart">
     ${showBack ? `<button class="bk-cart__back" id="cartBack">← Retour</button>` : ""}
     <div class="bk-cart__recap">
@@ -362,6 +393,8 @@ function renderCart() {
     </button>
     ${(isDetails && !canNext) ? `<p class="bk-cart__hint">${escHtml(detailsHint())}</p>` : ""}
   </div>`;
+
+  majEmpilementRecap();
 
   const next = document.getElementById("cartNext");
   const back = document.getElementById("cartBack");

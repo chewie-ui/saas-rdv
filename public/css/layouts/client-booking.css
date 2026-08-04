@@ -2089,8 +2089,17 @@ body.bk-embed #bkCart .bk-cart {
   display: flex;
   gap: 12px;
   align-items: center;
-  flex: 1;
+  /* Largeur naturelle du contenu, plafonnée à la barre : tant que le
+     récapitulatif tient à côté du bouton, il reste sur la même ligne ; sinon
+     la barre (flex-wrap) lui donne sa propre ligne pleine largeur. Avec
+     `flex: 1` il était au contraire écrasé à 120 px et devenait une colonne de
+     mots ; avec des items insécables il débordait SOUS le bouton « Confirmer »
+     (qui passe au-dessus, z-index) et on lisait « Mer 19 Août · 15:0 ». */
+  flex: 0 1 max-content;
+  max-width: 100%;
   min-width: 0;
+  flex-wrap: wrap;
+  row-gap: 6px;
   /* Purement informatif (résumé de la sélection) : ne doit jamais
      intercepter un clic destiné au bouton "Continuer" juste à côté,
      même si le texte déborde légèrement de sa zone au survol/zoom. */
@@ -2101,12 +2110,18 @@ body.bk-embed #bkCart .bk-cart {
   display: flex;
   flex-direction: column;
   line-height: 1.2;
-  /* `flex: 0 0 auto` et non `min-width: 0` : un item ne doit JAMAIS retrecir
-     sous son contenu. C'est ce retrecissement qui reduisait « Drainage
-     lymphatique » a « Drain… » des que la barre etait un peu a l'etroit.
-     Quand ca ne rentre plus, c'est la barre qui passe a la ligne. */
-  flex: 0 0 auto;
+  /* L'item peut rétrécir, mais son texte n'est JAMAIS coupé : il passe à la
+     ligne (cf. .bk-cart__v). C'est l'ancien `text-overflow: ellipsis` qui
+     réduisait « Drainage lymphatique » à « Drain… », pas le rétrécissement. */
+  flex: 0 1 auto;
+  min-width: 0;
 }
+
+/* Récapitulatif empilé sur plusieurs lignes : le trait vertical qui séparait
+   deux entrées côte à côte n'a plus rien à séparer et reste orphelin en bout
+   de ligne. La classe est posée par renderCart() après mesure — pas de
+   largeur seuil devinée, on regarde ce qui s'est réellement passé. */
+.bk-cart.is-stacked .bk-cart__recap > .bk-cart__sep { display: none; }
 
 .bk-cart__k {
   font-size: 10px;
