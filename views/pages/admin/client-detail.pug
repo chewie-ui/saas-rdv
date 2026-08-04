@@ -497,6 +497,19 @@ block content
                             p.cd-card__hint
                                 span.material-symbols-outlined(style="font-size:15px") lock
                                 | Ces informations sont définies par le client — non modifiables ici.
+                            //- Rattacher le rendez-vous à un autre client. Sans ça,
+                            //- un RDV pris au nom de la mauvaise personne (ou saisi
+                            //- avec un e-mail fautif) ne pouvait que se supprimer
+                            //- puis se recréer, en perdant son historique.
+                            .cd-field.cd-field--spaced
+                                label(for="efClientSearch") Rattacher à un autre client
+                                .cd-client-pick
+                                    input.cd-input#efClientSearch(type="text" placeholder="Rechercher… (nom, e-mail, téléphone)" autocomplete="off")
+                                    .cd-client-results#efClientResults(hidden)
+                                .cd-client-changed#efClientChanged(hidden)
+                                    span.material-symbols-outlined.cd-client-changed__ico swap_horiz
+                                    span.cd-client-changed__txt#efClientChangedTxt
+                                    button.cd-client-changed__undo#efClientUndo(type="button") Annuler
                             .cd-form-grid.cd-form-grid--2
                                 .cd-field
                                     label Prénom
@@ -807,7 +820,14 @@ block scripts
                 var d = RDV_DATA[id];
                 if (!d) return;
                 editingId = id;
-                editingOrig = { serviceId: d.serviceId, employeeId: d.employeeId };
+                editingOrig = {
+                    serviceId: d.serviceId, employeeId: d.employeeId,
+                    // Client d'origine : sert à détecter un rattachement et à
+                    // pouvoir l'annuler avant d'enregistrer.
+                    name: d.name || '', surname: d.surname || '',
+                    email: d.email || '', phone: d.phone || '',
+                };
+                reinitClientPick();
                 // Durée du créneau (préservée quand on change l'heure de début).
                 var _sm = (d.startTime || '0:0').split(':').map(Number);
                 var _em = (d.endTime || '0:0').split(':').map(Number);
@@ -831,6 +851,86 @@ block scripts
                 hideAllRdv();
                 if (editForm) editForm.hidden = false;
                 window.scrollTo({ top: 0 });
+            }
+
+            // ── Rattacher le rendez-vous à un autre client ────────────────
+            // Même recherche que la modale « Nouveau rendez-vous ».
+            var efClientSearch = document.getElementById('efClientSearch');
+            var efClientResults = document.getElementById('efClientResults');
+            var efClientChanged = document.getElementById('efClientChanged');
+            var efClientChangedTxt = document.getElementById('efClientChangedTxt');
+            var efClientUndo = document.getElementById('efClientUndo');
+            var clientRattache = null;   // non nul = client changé, pas encore enregistré
+
+            function appliquerClient(c) {
+                document.getElementById('efName').value = c.name || '';
+                document.getElementById('efSurname').value = c.surname || '';
+                document.getElementById('efEmail').value = c.email || '';
+                document.getElementById('efPhone').value = c.phone || '';
+            }
+            function reinitClientPick() {
+                clientRattache = null;
+                if (efClientSearch) efClientSearch.value = '';
+                if (efClientResults) { efClientResults.hidden = true; efClientResults.innerHTML = ''; }
+                if (efClientChanged) efClientChanged.hidden = true;
+                if (efClientSearch) efClientSearch.parentElement.hidden = false;
+            }
+            function rattacherClient(c) {
+                clientRattache = c;
+                appliquerClient(c);
+                var nom = ((c.name || '') + ' ' + (c.surname || '')).trim() || c.email || 'Client';
+                if (efClientChangedTxt) efClientChangedTxt.textContent = 'Sera rattaché à ' + nom + (c.email ? ' · ' + c.email : '');
+                if (efClientChanged) efClientChanged.hidden = false;
+                if (efClientSearch) efClientSearch.parentElement.hidden = true;
+                if (efClientResults) { efClientResults.hidden = true; efClientResults.innerHTML = ''; }
+            }
+            if (efClientUndo) efClientUndo.addEventListener('click', function () {
+                appliquerClient(editingOrig);
+                reinitClientPick();
+            });
+            if (efClientSearch) {
+                var cliTimer = null, cliTour = 0;
+                efClientSearch.addEventListener('input', function () {
+                    clearTimeout(cliTimer);
+                    var motif = efClientSearch.value.trim();
+                    if (motif.length < 2) { efClientResults.hidden = true; efClientResults.innerHTML = ''; return; }
+                    cliTimer = setTimeout(async function () {
+                        var monTour = ++cliTour;
+                        try {
+                            var res = await fetch('/clients-hub/search?q=' + encodeURIComponent(motif));
+                            var data = await res.json();
+                            if (monTour !== cliTour) return;   // réponse dépassée
+                            efClientResults.innerHTML = '';
+                            if (!data.clients || !data.clients.length) {
+                                var vide = document.createElement('div');
+                                vide.className = 'cd-client-result cd-client-result--empty';
+                                vide.textContent = 'Aucun client trouvé.';
+                                efClientResults.appendChild(vide);
+                            } else {
+                                data.clients.forEach(function (c) {
+                                    var el = document.createElement('button');
+                                    el.type = 'button';
+                                    el.className = 'cd-client-result';
+                                    var n = document.createElement('span');
+                                    n.className = 'cd-client-result__name';
+                                    n.textContent = ((c.name || '') + ' ' + (c.surname || '')).trim() || '(sans nom)';
+                                    var s = document.createElement('span');
+                                    s.className = 'cd-client-result__sub';
+                                    s.textContent = [c.email, c.phone].filter(Boolean).join(' · ');
+                                    el.appendChild(n); el.appendChild(s);
+                                    el.addEventListener('click', function () { rattacherClient(c); });
+                                    efClientResults.appendChild(el);
+                                });
+                            }
+                            efClientResults.hidden = false;
+                        } catch (e) { /* recherche indisponible : le client reste inchangé */ }
+                    }, 250);
+                });
+                document.addEventListener('click', function (e) {
+                    if (efClientResults && !efClientResults.hidden && !e.target.closest('.cd-client-pick')) {
+                        efClientResults.hidden = true;
+                    }
+                });
             }
 
             // ── Heures ↔ durée : tout reste cohérent, dans les 2 sens ─────
@@ -1032,6 +1132,14 @@ block scripts
                 }
                 if (g('efEmployee').value !== editingOrig.employeeId) {
                     payload.employeeId = g('efEmployee').value;
+                }
+                // Rendez-vous rattaché à un autre client : c'est son identité
+                // qui part, celle du client d'origine restant intouchée.
+                if (clientRattache) {
+                    payload.name = clientRattache.name || '';
+                    payload.surname = clientRattache.surname || '';
+                    payload.email = clientRattache.email || '';
+                    payload.phone = clientRattache.phone || '';
                 }
 
                 // Vérification de conflit (inutile si le RDV est annulé).

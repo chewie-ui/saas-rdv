@@ -818,3 +818,74 @@ textarea.cd-input { height: auto; padding: 10px 12px; resize: vertical; line-hei
 
 /* Surnom du client, en gris à côté du nom. */
 .cd-alt-name { color: var(--text-muted, #9ca3af); font-weight: 400; }
+
+/* ── Rattacher le rendez-vous à un autre client ────────────────────────────
+   Même recherche que la modale « Nouveau rendez-vous ». Sans elle, un RDV pris
+   au nom de la mauvaise personne devait être supprimé puis recréé. */
+.cd-client-pick { position: relative; }
+.cd-client-pick[hidden] { display: none; }
+
+.cd-client-results {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1.5px solid var(--border-light, #e5e7eb);
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+}
+.cd-client-results[hidden] { display: none; }
+
+.cd-client-result {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.cd-client-result:hover { background: var(--accent-soft, #f0fdf4); }
+.cd-client-result--empty { color: var(--text-muted, #9ca3af); cursor: default; font-size: 13px; }
+.cd-client-result--empty:hover { background: none; }
+.cd-client-result__name { font-size: 14px; font-weight: 600; color: var(--text-primary, #141c25); }
+.cd-client-result__sub { font-size: 12.5px; color: var(--text-secondary, #637083); }
+
+/* Rattachement en attente d'enregistrement — annulable. */
+.cd-client-changed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fffbeb;
+  border: 1.5px solid #f59e0b;
+  border-radius: 10px;
+}
+.cd-client-changed[hidden] { display: none; }
+.cd-client-changed__ico { font-size: 19px; color: #b45309; }
+.cd-client-changed__txt {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #92400e;
+  overflow-wrap: anywhere;
+}
+.cd-client-changed__undo {
+  flex: 0 0 auto;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b45309;
+  text-decoration: underline;
+  cursor: pointer;
+}
