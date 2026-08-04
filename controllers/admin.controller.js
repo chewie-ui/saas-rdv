@@ -2190,7 +2190,7 @@ exports.clientsHubDetail = async (req, res) => {
     const Service = require("../db/models/company/service.model");
     const ClientDossier = require("../db/models/clientDossier.model");
     const [services, employees, dossier] = await Promise.all([
-      Service.find({ company: companyId, active: true }).select("_id name duration price").lean(),
+      Service.find({ company: companyId, active: true }).select("_id name duration durationMax price").lean(),
       getBookableTeam(companyId),
       booking.email
         ? ClientDossier.findOne({ company: companyId, email: booking.email.trim().toLowerCase() }).lean()

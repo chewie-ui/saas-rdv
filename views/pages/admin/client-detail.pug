@@ -465,12 +465,17 @@ block content
                                 .cd-field
                                     label Durée du rendez-vous (min)
                                     input.cd-input#efDuree(type="number" min="5" step="5")
+                                    //- Service à durée variable (« 30-45 min ») : la durée
+                                    //- devient un choix entre les deux bornes, comme dans la
+                                    //- modale de création. Sans ça, changer de service ramenait
+                                    //- toujours à la borne basse.
+                                    select.cd-input#efDureePick(hidden)
                                 .cd-field
                                     label Service
                                     select.cd-input#efService
                                         option(value="") Aucun service
                                         each svc in services
-                                            option(value=String(svc._id) data-duration=(svc.duration || '') data-price=(svc.price || ''))= svc.name
+                                            option(value=String(svc._id) data-duration=(svc.duration || '') data-duration-max=(svc.durationMax || '') data-price=(svc.price || ''))= svc.name
                                 .cd-field
                                     label Praticien
                                     select.cd-input#efEmployee
@@ -817,6 +822,10 @@ block scripts
                 ensureOption(g('efService'), d.serviceId, d.serviceName);
                 ensureOption(g('efEmployee'), d.employeeId, d.employeeName);
                 g('efService').value = d.serviceId; g('efEmployee').value = d.employeeId;
+                // Après le service : la durée enregistrée est conservée si elle
+                // tient dans la fourchette du service (30-45 min), au lieu d'être
+                // ramenée à la borne basse à chaque ouverture.
+                _majChoixDuree(editDuration);
                 g('efName').value = d.name; g('efSurname').value = d.surname; g('efEmail').value = d.email;
                 g('efPhone').value = d.phone; g('efMessage').value = d.message; g('efNotes').value = d.adminNotes;
                 hideAllRdv();
@@ -833,9 +842,52 @@ block scripts
             var efEnd = document.getElementById('efEnd');
             var efService = document.getElementById('efService');
             var efDuree = document.getElementById('efDuree');
+            var efDureePick = document.getElementById('efDureePick');
             function _toMin(t) { if (!t) return null; var p = t.split(':').map(Number); return p[0] * 60 + p[1]; }
             function _toTime(m) { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
-            function _setDuree(d) { editDuration = d; if (efDuree) efDuree.value = d; }
+            function _setDuree(d) {
+                editDuration = d;
+                if (efDuree) efDuree.value = d;
+                if (efDureePick && !efDureePick.hidden) efDureePick.value = String(d);
+            }
+
+            // ── Service à durée variable (« 30-45 min ») ──────────────────
+            // Bornes du service sélectionné, ou null si sa durée est fixe.
+            function _bornesService() {
+                if (!efService) return null;
+                var opt = efService.options[efService.selectedIndex];
+                if (!opt) return null;
+                var min = parseInt(opt.dataset.duration, 10) || 0;
+                var max = parseInt(opt.dataset.durationMax, 10) || 0;
+                return max > min ? { min: min, max: max } : null;
+            }
+            // Bascule entre le champ libre (durée fixe) et la liste des durées
+            // autorisées (durée variable). `garder` = durée à conserver si elle
+            // tient dans les bornes, pour ne pas écraser un choix déjà fait.
+            function _majChoixDuree(garder) {
+                var b = _bornesService();
+                if (!efDureePick || !efDuree) return;
+                if (!b) {
+                    efDureePick.hidden = true;
+                    efDuree.hidden = false;
+                    return;
+                }
+                if (efDureePick.dataset.min !== String(b.min) || efDureePick.dataset.max !== String(b.max)) {
+                    efDureePick.dataset.min = String(b.min);
+                    efDureePick.dataset.max = String(b.max);
+                    efDureePick.innerHTML = '';
+                    for (var d = b.min; d <= b.max; d += 5) {
+                        efDureePick.appendChild(new Option(d + ' min', String(d)));
+                    }
+                    // La borne haute n'est pas forcément un multiple de 5 depuis le min.
+                    if ((b.max - b.min) % 5 !== 0) efDureePick.appendChild(new Option(b.max + ' min', String(b.max)));
+                }
+                efDureePick.hidden = false;
+                efDuree.hidden = true;
+                var choix = (garder >= b.min && garder <= b.max) ? garder : b.min;
+                efDureePick.value = String(choix);
+                _setDuree(choix);
+            }
             function _syncEndFromStart() { var s = _toMin(efStart.value); if (s != null) efEnd.value = _toTime(s + editDuration); }
             function _syncStartFromEnd() { var e = _toMin(efEnd.value); if (e != null) efStart.value = _toTime(e - editDuration); }
             if (efStart) efStart.addEventListener('change', _syncEndFromStart);
@@ -844,7 +896,19 @@ block scripts
                 var d = parseInt(efDuree.value, 10);
                 if (d > 0) { editDuration = d; _syncEndFromStart(); }
             });
+            if (efDureePick) efDureePick.addEventListener('change', function () {
+                var d = parseInt(efDureePick.value, 10);
+                if (d > 0) { _setDuree(d); _syncEndFromStart(); }
+            });
             if (efService) efService.addEventListener('change', function () {
+                var b = _bornesService();
+                if (b) {
+                    // On garde la durée courante si elle tient dans la fourchette.
+                    _majChoixDuree(editDuration);
+                    _syncEndFromStart();
+                    return;
+                }
+                _majChoixDuree(0);
                 var opt = efService.options[efService.selectedIndex];
                 var dur = opt ? parseInt(opt.dataset.duration, 10) : 0;
                 if (dur > 0) { _setDuree(dur); _syncEndFromStart(); }
