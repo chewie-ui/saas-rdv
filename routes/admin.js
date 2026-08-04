@@ -174,6 +174,8 @@ router.get("/history/search", isAuth, injectCompany, requirePermission("appointm
 // ── Clients (page unifiée — pour l'instant : liste de tous les RDV) ──────────
 router.get("/clients-hub", isAuth, injectCompany, requirePermission("appointments.view"), adminController.clientsHubInit);
 router.delete("/clients-hub/bookings", isAuth, injectCompany, requirePermission("appointments.cancelDelete"), adminController.clientsHubBulkDelete);
+router.get("/clients-hub/search", isAuth, injectCompany, requirePermission("appointments.view"), adminController.clientsHubSearch);
+router.get("/clients-hub/lookup", isAuth, injectCompany, requirePermission("appointments.view"), adminController.clientsHubLookup);
 router.post("/clients-hub/new", isAuth, injectCompany, requirePermission("clients.manage"), adminController.clientsHubCreate);
 router.get("/clients-hub/:id", isAuth, injectCompany, requirePermission("appointments.view"), adminController.clientsHubDetail);
 router.post("/clients-hub/:id/block", isAuth, injectCompany, requirePermission("clients.manage"), adminController.clientsHubBlock);

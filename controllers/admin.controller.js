@@ -2216,6 +2216,129 @@ exports.clientsHubBulkDelete = async (req, res) => {
 // onglet Aperçu uniquement. On part d'un RDV (id), on charge le client et
 // TOUS ses RDV (regroupés par email/téléphone) pour l'aperçu. Scopé à
 // l'établissement courant (anti-IDOR). On ne touche pas à /history/edit.
+// ── Recherche de clients (modale « Nouveau rendez-vous ») ───────────────────
+// Sans elle, chaque rendez-vous obligeait à retaper nom, e-mail et téléphone —
+// une faute de frappe sur l'e-mail créait un client en double.
+function echapperRegex(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Clients de l'établissement, dédupliqués comme dans la liste : e-mail d'abord,
+// à défaut téléphone, à défaut nom complet.
+async function chercherClients(companyId, motif, limite) {
+  const rx = new RegExp(echapperRegex(motif), "i");
+  const ClientDossier = require("../db/models/clientDossier.model");
+  const [bookings, dossiers] = await Promise.all([
+    Booking.find({
+      company: companyId,
+      isBlock: { $ne: true },
+      $or: [{ name: rx }, { surname: rx }, { email: rx }, { phone: rx }],
+    }).sort({ date: -1, startTime: -1 }).select("name surname email phone date").limit(300).lean(),
+    ClientDossier.find({
+      company: companyId,
+      createdManually: true,
+      $or: [{ firstName: rx }, { lastName: rx }, { fullName: rx }, { email: rx }, { phone: rx }],
+    }).select("firstName lastName fullName email phone").limit(50).lean(),
+  ]);
+
+  const map = new Map();
+  const cle = (c) =>
+    (c.email && c.email.trim().toLowerCase()) ||
+    (c.phone && c.phone.trim()) ||
+    ((c.name || "") + " " + (c.surname || "")).trim().toLowerCase();
+
+  for (const b of bookings) {
+    const k = cle(b);
+    if (!k) continue;
+    const vu = map.get(k);
+    if (vu) { vu.count++; continue; }
+    map.set(k, {
+      name: b.name || "", surname: b.surname || "",
+      email: b.email || "", phone: b.phone || "",
+      lastDate: b.date, count: 1,
+    });
+  }
+  for (const d of dossiers) {
+    const morceaux = (d.fullName || "").trim().split(/\s+/);
+    const c = {
+      name: d.firstName || morceaux[0] || "",
+      surname: d.lastName || morceaux.slice(1).join(" "),
+      email: d.email || "", phone: d.phone || "",
+      lastDate: null, count: 0,
+    };
+    const k = cle(c);
+    if (k && !map.has(k)) map.set(k, c);
+  }
+
+  const liste = Array.from(map.values());
+  // Les clients les plus récents d'abord ; ceux sans rendez-vous en tête.
+  liste.sort((a, b) => {
+    if (!a.lastDate && !b.lastDate) return 0;
+    if (!a.lastDate) return -1;
+    if (!b.lastDate) return 1;
+    return new Date(b.lastDate) - new Date(a.lastDate);
+  });
+  return liste.slice(0, limite || 8);
+}
+
+exports.clientsHubSearch = async (req, res) => {
+  try {
+    const motif = String(req.query.q || "").trim().slice(0, 80);
+    if (motif.length < 2) return res.json({ success: true, clients: [] });
+    const clients = await chercherClients(res.locals.currentCompany._id, motif, 8);
+    return res.json({ success: true, clients });
+  } catch (err) {
+    console.error("clientsHubSearch error:", err.message);
+    return res.status(500).json({ success: false, clients: [] });
+  }
+};
+
+// Avant de créer un client à la volée : est-ce qu'on ne l'a pas déjà ?
+//   • même e-mail  → c'est le même client, ses rendez-vous se regrouperont
+//                    tout seuls : rien à signaler.
+//   • même téléphone ou même nom, e-mail différent → doublon probable, à
+//                    signaler pour que le pro tranche.
+exports.clientsHubLookup = async (req, res) => {
+  try {
+    const companyId = res.locals.currentCompany._id;
+    const email = String(req.query.email || "").trim().toLowerCase().slice(0, 160);
+    const phone = String(req.query.phone || "").trim().slice(0, 40);
+    const nom = String(req.query.name || "").trim().slice(0, 120);
+
+    if (email) {
+      const memeMail = await chercherClients(companyId, email, 20);
+      if (memeMail.some((c) => (c.email || "").trim().toLowerCase() === email)) {
+        return res.json({ success: true, doublon: null });
+      }
+    }
+
+    // Le nom complet n'est dans aucun champ pris isolément (prénom et nom sont
+    // stockés séparément) : on cherche sur le mot le plus long, puis on compare
+    // le nom reconstitué.
+    const motNom = nom.split(/\s+/).sort((a, b) => b.length - a.length)[0] || "";
+    const pistes = [
+      { motif: phone, raison: "phone", correspond: (c) => (c.phone || "").trim() === phone },
+      {
+        motif: motNom,
+        raison: "name",
+        correspond: (c) => ((c.name || "") + " " + (c.surname || "")).trim().toLowerCase() === nom.toLowerCase(),
+      },
+    ];
+    for (const piste of pistes) {
+      if (!piste.motif || piste.motif.length < 3) continue;
+      const trouves = await chercherClients(companyId, piste.motif, 20);
+      const exact = trouves.find(piste.correspond);
+      if (exact && (exact.email || "").trim().toLowerCase() !== email) {
+        return res.json({ success: true, doublon: exact, raison: piste.raison });
+      }
+    }
+    return res.json({ success: true, doublon: null });
+  } catch (err) {
+    console.error("clientsHubLookup error:", err.message);
+    return res.json({ success: true, doublon: null }); // ne jamais bloquer la création
+  }
+};
+
 // Créer un client sans passer par un rendez-vous. Jusqu'ici la liste des
 // clients était entièrement déduite des réservations : impossible d'inscrire
 // quelqu'un rencontré hors ligne (téléphone, passage en boutique) avant qu'il

@@ -224,6 +224,12 @@ setInterval(updateTimeline, 60000);
   const durationPick = document.getElementById("newApptDurationPick");
   const endTimeEl    = document.getElementById("newApptEndTime");
   const serviceDurationHint = document.getElementById("newApptServiceDuration");
+  const clientSearch  = document.getElementById("newApptClientSearch");
+  const clientResults = document.getElementById("newApptClientResults");
+  const clientChosen  = document.getElementById("newApptClientChosen");
+  const clientChosenTxt = document.getElementById("newApptClientChosenTxt");
+  const clientClear   = document.getElementById("newApptClientClear");
+  const clientHint    = document.getElementById("newApptClientHint");
   const defaultSlotTime = window.__defaultSlotTime || 60;
   // Durée "glissée" sur le calendrier (clic-glisser) — prioritaire sur la
   // durée par défaut tant qu'aucun service n'est choisi (un service choisi
@@ -350,6 +356,95 @@ setInterval(updateTimeline, 60000);
     endTimeEl.textContent = "--:--";
     durationEl.textContent = "—";
     manualDurationOverride = null;
+    deselectionnerClient();
+  }
+
+  // ── Choix d'un client déjà connu ──────────────────────────────────────────
+  // `clientChoisi` non nul = identité reprise d'une fiche existante : inutile
+  // alors de prévenir d'un doublon, c'est justement ce qu'on évite.
+  let clientChoisi = null;
+
+  function deselectionnerClient() {
+    clientChoisi = null;
+    if (clientSearch) { clientSearch.value = ""; clientSearch.parentElement.hidden = false; }
+    if (clientResults) { clientResults.hidden = true; clientResults.innerHTML = ""; }
+    if (clientChosen) clientChosen.hidden = true;
+    if (clientHint) clientHint.hidden = false;
+  }
+
+  function selectionnerClient(c) {
+    clientChoisi = c;
+    nameInput.value = c.name || "";
+    surnameInput.value = c.surname || "";
+    emailInput.value = c.email || "";
+    phoneInput.value = c.phone || "";
+    if (clientChosenTxt) {
+      const nom = ((c.name || "") + " " + (c.surname || "")).trim() || c.email || "Client";
+      clientChosenTxt.textContent = c.email ? `${nom} · ${c.email}` : nom;
+    }
+    if (clientChosen) clientChosen.hidden = false;
+    if (clientSearch) clientSearch.parentElement.hidden = true;
+    if (clientResults) { clientResults.hidden = true; clientResults.innerHTML = ""; }
+    if (clientHint) clientHint.hidden = true;
+  }
+
+  if (clientClear) clientClear.addEventListener("click", () => {
+    deselectionnerClient();
+    nameInput.value = ""; surnameInput.value = ""; emailInput.value = ""; phoneInput.value = "";
+    clientSearch.focus();
+  });
+
+  if (clientSearch) {
+    let minuteur = null;
+    let requeteEnCours = 0;
+    clientSearch.addEventListener("input", () => {
+      clearTimeout(minuteur);
+      const motif = clientSearch.value.trim();
+      if (motif.length < 2) {
+        clientResults.hidden = true;
+        clientResults.innerHTML = "";
+        return;
+      }
+      minuteur = setTimeout(async () => {
+        const monTour = ++requeteEnCours;
+        try {
+          const res = await fetch(`/clients-hub/search?q=${encodeURIComponent(motif)}`);
+          const data = await res.json();
+          // Une réponse plus ancienne ne doit pas écraser une plus récente.
+          if (monTour !== requeteEnCours) return;
+          clientResults.innerHTML = "";
+          if (!data.clients || !data.clients.length) {
+            const vide = document.createElement("div");
+            vide.className = "appt-client-result appt-client-result--empty";
+            vide.textContent = "Aucun client trouvé — remplissez les champs ci-dessous.";
+            clientResults.appendChild(vide);
+          } else {
+            data.clients.forEach((c) => {
+              const el = document.createElement("button");
+              el.type = "button";
+              el.className = "appt-client-result";
+              const nom = document.createElement("span");
+              nom.className = "appt-client-result__name";
+              nom.textContent = ((c.name || "") + " " + (c.surname || "")).trim() || "(sans nom)";
+              const sous = document.createElement("span");
+              sous.className = "appt-client-result__sub";
+              sous.textContent = [c.email, c.phone].filter(Boolean).join(" · ");
+              el.appendChild(nom);
+              el.appendChild(sous);
+              el.addEventListener("click", () => selectionnerClient(c));
+              clientResults.appendChild(el);
+            });
+          }
+          clientResults.hidden = false;
+        } catch (e) { /* recherche indisponible : la saisie manuelle reste possible */ }
+      }, 250);
+    });
+    // Clic hors de la liste = on la referme.
+    document.addEventListener("click", (e) => {
+      if (clientResults && !clientResults.hidden && !e.target.closest(".appt-client-pick")) {
+        clientResults.hidden = true;
+      }
+    });
   }
 
   function open(prefill) {
@@ -426,12 +521,49 @@ setInterval(updateTimeline, 60000);
 
     const date  = dateInput.value;
     const time  = startPicker.get();
-    const name  = nameInput.value.trim();
-    const email = emailInput.value.trim();
+    // Réassignables : reprendre la fiche d'un client existant met les champs à
+    // jour, et c'est cette identité-là qu'il faut envoyer.
+    let name  = nameInput.value.trim();
+    let email = emailInput.value.trim();
 
     if (!date || !time || !name || !email) {
       showError("Veuillez remplir les champs obligatoires (date, heure de début, prénom, email).");
       return;
+    }
+
+    // Identité tapée à la main alors qu'un client du même nom (ou du même
+    // téléphone) existe déjà sous un autre e-mail : on le signale, sinon le
+    // pro se retrouve avec deux fiches et un historique coupé en deux. Un
+    // client choisi dans la liste ne déclenche évidemment rien.
+    if (!clientChoisi) {
+      try {
+        const q = new URLSearchParams({
+          email,
+          phone: phoneInput.value.trim(),
+          name: (name + " " + surnameInput.value.trim()).trim(),
+        });
+        const res = await fetch(`/clients-hub/lookup?${q.toString()}`);
+        const data = await res.json();
+        if (data && data.doublon && typeof window.confirmModal === "function") {
+          const d = data.doublon;
+          const nomExistant = ((d.name || "") + " " + (d.surname || "")).trim() || d.email;
+          const details = [d.email, d.phone].filter(Boolean).join(" · ");
+          const utiliserExistant = await window
+            .confirmModal(
+              "Ce client existe déjà",
+              `Vous avez déjà ${nomExistant}${details ? " (" + details + ")" : ""} dans vos clients. ` +
+                "Utiliser sa fiche regroupe ses rendez-vous ; créer un nouveau client en fera une seconde fiche séparée.",
+              { confirmLabel: "Utiliser sa fiche", cancelLabel: "Créer un nouveau client", danger: false }
+            )
+            .then(() => true)
+            .catch(() => false);
+          if (utiliserExistant) {
+            selectionnerClient(d);
+            name = nameInput.value.trim();
+            email = emailInput.value.trim();
+          }
+        }
+      } catch (e) { /* vérification indisponible : on n'empêche pas la création */ }
     }
 
     const payload = {

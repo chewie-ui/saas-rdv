@@ -414,6 +414,21 @@ block content
                     select#newApptEmployee(style="display:none")
                         option(value=String(employees[0]._id) selected)
 
+                //- Choisir un client déjà connu plutôt que de retaper son
+                //- identité : une faute de frappe sur l'e-mail créait jusqu'ici
+                //- un deuxième client, avec un historique coupé en deux.
+                .edit-fields-row
+                    .field-container.flex.col
+                        label= t.appt.label_client || 'Client'
+                        .appt-client-pick
+                            input.input#newApptClientSearch(type="text" placeholder="Rechercher un client existant… (nom, e-mail, téléphone)" autocomplete="off")
+                            .appt-client-results#newApptClientResults(hidden)
+                        .appt-client-chosen#newApptClientChosen(hidden)
+                            span.material-symbols-outlined.appt-client-chosen__ico person
+                            span.appt-client-chosen__txt#newApptClientChosenTxt
+                            button.appt-client-chosen__clear#newApptClientClear(type="button") Changer
+                        p.appt-client-hint#newApptClientHint Ou remplissez les champs ci-dessous pour un nouveau client.
+
                 .edit-fields-row.two-col
                     .field-container.flex.col
                         label= t.appt.label_firstname
