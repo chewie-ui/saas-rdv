@@ -351,6 +351,11 @@ block content
                     .field-container.flex.col
                         label= t.appt.label_duration
                         span.appt-duration-display#newApptDuration —
+                        //- Service à durée variable (« 30-45 min ») : la durée
+                        //- devient un choix, entre les deux bornes. Sans ça, le
+                        //- rendez-vous était figé sur la borne basse sans qu'on
+                        //- puisse dire qu'il durera plus longtemps.
+                        select.input#newApptDurationPick(hidden)
 
                 if services && services.length > 0
                     .edit-fields-row
@@ -360,7 +365,7 @@ block content
                             select.input#newApptService
                                 option(value="")= t.appt.no_service
                                 each svc in services
-                                    option(value=String(svc._id) data-duration=svc.duration)= svc.name.length > 40 ? svc.name.slice(0, 40) + '…' : svc.name
+                                    option(value=String(svc._id) data-duration=svc.duration data-duration-max=(svc.durationMax || ''))= svc.name.length > 40 ? svc.name.slice(0, 40) + '…' : svc.name
 
                 if employees && employees.length > 1
                     .edit-fields-row
@@ -461,7 +466,9 @@ block content
             .new-appt-modal__actions
                 button.sm-btn.sm-btn--ghost#blockApptCancel(type="button")= t.appt.btn_cancel
                 button.sm-btn.sm-btn--primary#blockApptSubmit(type="button")
-                    span= t.appt.block_btn_submit
+                    //- Identifié : le JS bascule ce libellé en « Enregistrer »
+                    //- quand la modale s'ouvre en modification.
+                    span#blockApptSubmitLabel= t.appt.block_btn_submit
 
     script.
         window.__defaultSlotTime = !{slotTime || 60};

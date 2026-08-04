@@ -1957,6 +1957,12 @@ body:has(.cal-month) .cal-month {
 .appt-time-opt:hover { background: var(--accent-soft, #f0fdf4); }
 .appt-time-opt.is-hidden { display: none; }
 
+/* `display: flex` ci-dessous l'emporte sur l'attribut [hidden] : sans cette
+   règle, masquer l'affichage figé pour laisser place au sélecteur de durée
+   (service « 30-45 min ») ne fonctionne pas. Idem pour le select. */
+.appt-duration-display[hidden],
+#newApptDurationPick[hidden] { display: none !important; }
+
 .appt-duration-display {
   display: flex;
   align-items: center;

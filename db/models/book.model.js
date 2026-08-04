@@ -193,11 +193,18 @@ const bookingSchema = new schema(
 // treat as the company itself (only one unassigned slot per time).
 // Group bookings (isGroup: true) are excluded — many clients can share the same
 // (company, date, startTime, employee) slot, up to the service's capacity.
+// Les absences (isBlock: true) le sont aussi : une absence se pose PAR-DESSUS
+// les rendez-vous déjà réservés sans les annuler — c'est son usage même. Tant
+// qu'elles étaient dans l'index, poser une absence commençant à la minute
+// exacte d'un rendez-vous non assigné était rejeté (E11000) et le pro voyait
+// « Une erreur est survenue ». Le chevauchement reste géré par
+// checkBookingConflict, qui empêche toute NOUVELLE réservation sur le créneau.
+// Changer cet index demande de supprimer l'ancien : scripts/migrate-block-index.js.
 bookingSchema.index(
   { company: 1, date: 1, startTime: 1, employee: 1 },
   {
     unique: true,
-    partialFilterExpression: { status: "confirmed", isGroup: false },
+    partialFilterExpression: { status: "confirmed", isGroup: false, isBlock: false },
   },
 );
 

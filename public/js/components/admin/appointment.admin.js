@@ -192,10 +192,15 @@ export const initAppointmentPopup = function () {
       editBlockBtn.hidden = !estAbsence;
       editBlockBtn.onclick = estAbsence
         ? () => {
+            // L'identifiant est relu AVANT de fermer le popover : hidePopup()
+            // remet `currentId` à null, et la modale partait alors créer une
+            // nouvelle absence sur le même créneau au lieu de modifier
+            // l'existante — refusée par l'index unique, d'où le 500.
+            const idAbsence = currentId;
             hidePopup();
             if (typeof window.__openBlockApptEdit === "function") {
               window.__openBlockApptEdit({
-                id: currentId,
+                id: idAbsence,
                 date: d.date,
                 time: d.start,
                 endTime: d.end,

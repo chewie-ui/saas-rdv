@@ -390,7 +390,7 @@ exports.appointment = async (req, res) => {
     Company.findById(currentCompany).select("slotTime schedule").lean(),
     getBookableTeam(currentCompany),
     DaysOff.findOne({ company: currentCompany }).lean(),
-    Service.find({ company: currentCompany, active: true }).select("_id name duration price employees color").lean(),
+    Service.find({ company: currentCompany, active: true }).select("_id name duration durationMax price employees color").lean(),
     // Filet de secours pour les anciens RDV créés avant qu'on fige la couleur
     // sur la réservation elle-même (serviceColor) — inclut les services
     // désactivés (mais pas supprimés) pour ne pas leur faire perdre leur
@@ -885,12 +885,22 @@ exports.createAdminBooking = async (req, res) => {
     let actualDuration = (Number(duration) > 0 ? Number(duration) : null) || company.slotTime || 60;
     let serviceDoc = null;
     if (serviceId) {
-      const service = await Service.find({ _id: serviceId, company: currentCompany }).select("name duration color type capacity recurring sessions").lean();
+      const service = await Service.find({ _id: serviceId, company: currentCompany }).select("name duration durationMax color type capacity recurring sessions").lean();
       serviceDoc = service[0] || null;
       if (serviceDoc) {
         serviceName = serviceDoc.name || "";
         serviceColor = serviceDoc.color || "";
-        actualDuration = serviceDoc.duration || actualDuration;
+        // Service à durée variable (« 30-45 min ») : la durée envoyée fait foi
+        // tant qu'elle reste entre les deux bornes. Sinon on retombe sur la
+        // borne basse, comme avant.
+        const min = Number(serviceDoc.duration) || 0;
+        const max = Number(serviceDoc.durationMax) || 0;
+        const demandee = Number(duration) > 0 ? Number(duration) : null;
+        if (max > min && demandee && demandee >= min && demandee <= max) {
+          actualDuration = demandee;
+        } else {
+          actualDuration = min || actualDuration;
+        }
       }
     }
 
@@ -1214,6 +1224,10 @@ exports.createAdminBlock = async (req, res) => {
 
     res.json({ success: true, bookingId: block._id, coveredBookings: recouverts });
   } catch (err) {
+    if (err && err.code === 11000) {
+      return res.json({ success: false, error: "duplicate",
+        message: "Une absence existe déjà à cette heure exacte pour ce praticien." });
+    }
     console.error("createAdminBlock error:", err);
     res.status(500).json({ success: false, error: "server_error", message: "Une erreur est survenue." });
   }
@@ -1283,6 +1297,10 @@ exports.updateAdminBlock = async (req, res) => {
 
     res.json({ success: true, bookingId: block._id, coveredBookings: recouverts });
   } catch (err) {
+    if (err && err.code === 11000) {
+      return res.json({ success: false, error: "duplicate",
+        message: "Une absence existe déjà à cette heure exacte pour ce praticien." });
+    }
     console.error("updateAdminBlock error:", err);
     res.status(500).json({ success: false, error: "server_error", message: "Une erreur est survenue." });
   }

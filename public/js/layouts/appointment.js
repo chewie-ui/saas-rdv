@@ -221,6 +221,7 @@ setInterval(updateTimeline, 60000);
   const phoneInput   = document.getElementById("newApptPhone");
   const messageInput = document.getElementById("newApptMessage");
   const durationEl   = document.getElementById("newApptDuration");
+  const durationPick = document.getElementById("newApptDurationPick");
   const endTimeEl    = document.getElementById("newApptEndTime");
   const serviceDurationHint = document.getElementById("newApptServiceDuration");
   const defaultSlotTime = window.__defaultSlotTime || 60;
@@ -248,13 +249,62 @@ setInterval(updateTimeline, 60000);
   // toujours de l'heure de début + la durée du service sélectionné, ou — si
   // aucun service n'est choisi — de la durée par défaut des rendez-vous
   // définie dans les paramètres de l'entreprise (`defaultSlotTime`).
+  // Service à durée variable (« 30-45 min ») : on propose de choisir la durée
+  // réelle entre les deux bornes, par pas de 5 minutes. Le rendez-vous était
+  // sinon figé sur la borne basse, sans aucun moyen de dire qu'il durerait
+  // plus longtemps — et le créneau suivant se retrouvait réservable trop tôt.
+  function remplirChoixDuree(min, max) {
+    if (!durationPick) return;
+    const actuel = Number(durationPick.value) || null;
+    durationPick.innerHTML = "";
+    for (let d = min; d <= max; d += 5) {
+      const o = document.createElement("option");
+      o.value = String(d);
+      o.textContent = durationLabel(d);
+      durationPick.appendChild(o);
+    }
+    // La borne haute n'est pas forcément sur un multiple de 5 depuis le min.
+    if ((max - min) % 5 !== 0) {
+      const o = document.createElement("option");
+      o.value = String(max);
+      o.textContent = durationLabel(max);
+      durationPick.appendChild(o);
+    }
+    durationPick.value = actuel && actuel >= min && actuel <= max ? String(actuel) : String(min);
+  }
+
   function recomputeEndAndDuration() {
     const opt = serviceSel && serviceSel.options[serviceSel.selectedIndex];
     const serviceDuration = opt && opt.dataset.duration ? Number(opt.dataset.duration) : null;
-    const duration = serviceDuration || manualDurationOverride || defaultSlotTime;
+    const serviceMax = opt && opt.dataset.durationMax ? Number(opt.dataset.durationMax) : null;
+    const fourchette = !!(serviceDuration && serviceMax && serviceMax > serviceDuration);
+
+    if (durationPick) {
+      if (fourchette) {
+        // Ne reconstruire la liste que si les bornes ont changé : sinon on
+        // écraserait le choix de l'utilisateur à chaque changement d'heure.
+        if (durationPick.dataset.min !== String(serviceDuration) || durationPick.dataset.max !== String(serviceMax)) {
+          durationPick.dataset.min = String(serviceDuration);
+          durationPick.dataset.max = String(serviceMax);
+          remplirChoixDuree(serviceDuration, serviceMax);
+        }
+        durationPick.hidden = false;
+        durationEl.hidden = true;
+      } else {
+        durationPick.hidden = true;
+        durationPick.dataset.min = "";
+        durationPick.dataset.max = "";
+        durationEl.hidden = false;
+      }
+    }
+
+    const dureeChoisie = fourchette && durationPick ? Number(durationPick.value) : null;
+    const duration = dureeChoisie || serviceDuration || manualDurationOverride || defaultSlotTime;
 
     if (serviceDurationHint) {
-      serviceDurationHint.textContent = serviceDuration ? ` · ${serviceDuration} min` : "";
+      serviceDurationHint.textContent = serviceDuration
+        ? (fourchette ? ` · ${serviceDuration}-${serviceMax} min` : ` · ${serviceDuration} min`)
+        : "";
     }
 
     const start = minutesOf(startPicker.get());
@@ -275,6 +325,7 @@ setInterval(updateTimeline, 60000);
   );
 
   if (serviceSel) serviceSel.addEventListener("change", recomputeEndAndDuration);
+  if (durationPick) durationPick.addEventListener("change", recomputeEndAndDuration);
 
   function showError(msg) {
     errorEl.textContent = msg;
@@ -393,10 +444,16 @@ setInterval(updateTimeline, 60000);
       message: messageInput.value.trim(),
       serviceId: serviceSel ? serviceSel.value : "",
       employeeId: employeeSel ? employeeSel.value : "",
-      // Durée glissée sur le calendrier (clic-glisser) — le serveur lui
-      // donne priorité sur la durée par défaut, mais le service choisi (s'il
-      // y en a un) reste prioritaire sur les deux, comme affiché ici même.
-      duration: manualDurationOverride || undefined,
+      // Durée envoyée au serveur, par ordre de priorité :
+      //   1. celle choisie dans la liste, pour un service à durée variable ;
+      //   2. celle glissée sur le calendrier (clic-glisser) ;
+      //   3. sinon rien : le serveur applique la durée du service ou le défaut.
+      // Sans le premier cas, choisir « 45 min » sur un service « 30-45 »
+      // n'avait aucun effet : le rendez-vous durait 30 minutes.
+      duration:
+        (durationPick && !durationPick.hidden && Number(durationPick.value)) ||
+        manualDurationOverride ||
+        undefined,
     };
 
     submitBtn.disabled = true;
