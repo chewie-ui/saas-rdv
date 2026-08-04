@@ -47,6 +47,22 @@ mongoose
       console.error("[DB] Failed to backfill isGroup:", e.message);
     }
 
+    // Même raison pour `isBlock` : le filtre partiel exige l'égalité stricte,
+    // donc un document antérieur au champ sortirait de l'index et perdrait sa
+    // protection contre le double-booking.
+    try {
+      const Booking = require("./models/book.model");
+      const res = await Booking.collection.updateMany(
+        { isBlock: { $exists: false } },
+        { $set: { isBlock: false } }
+      );
+      if (res.modifiedCount > 0) {
+        console.log(`[DB] Backfilled isBlock=false on ${res.modifiedCount} bookings`);
+      }
+    } catch (e) {
+      console.error("[DB] Failed to backfill isBlock:", e.message);
+    }
+
     // Drop the old index (may have wrong partialFilterExpression) and let
     // syncIndexes recreate it with the correct definition.
     try {

@@ -627,13 +627,22 @@ setInterval(updateTimeline, 60000);
         // les honorer — sinon il croirait les avoir annulés.
         if (data.coveredBookings > 0) {
           const n = data.coveredBookings;
-          await window.confirmModal(
-            n === 1 ? "1 rendez-vous est maintenu" : `${n} rendez-vous sont maintenus`,
+          const titre = n === 1 ? "1 rendez-vous est maintenu" : `${n} rendez-vous sont maintenus`;
+          const texte =
             "Cette absence empêche toute NOUVELLE réservation sur ce créneau, mais " +
-              (n === 1 ? "le rendez-vous déjà pris n'a pas été annulé" : "les rendez-vous déjà pris n'ont pas été annulés") +
-              " : ils restent dans votre agenda et vous devez les honorer.",
-            { confirmLabel: "J'ai compris", danger: false }
-          ).catch(() => {});
+            (n === 1 ? "le rendez-vous déjà pris n'a pas été annulé" : "les rendez-vous déjà pris n'ont pas été annulés") +
+            " : ils restent dans votre agenda et vous devez les honorer.";
+          // L'absence est DÉJÀ enregistrée à ce stade : cet avertissement ne
+          // doit jamais pouvoir la faire passer pour un échec. Sans ce garde-fou,
+          // `confirmModal` absent de la page levait une erreur happée par le
+          // `catch` plus bas → « Erreur réseau » sur une absence pourtant créée.
+          try {
+            if (typeof window.confirmModal === "function") {
+              await window.confirmModal(titre, texte, { confirmLabel: "J'ai compris", danger: false });
+            } else {
+              window.alert(`${titre}\n\n${texte}`);
+            }
+          } catch (_) { /* avertissement refusé ou indisponible : on continue */ }
         }
         window.location.reload();
       } else {

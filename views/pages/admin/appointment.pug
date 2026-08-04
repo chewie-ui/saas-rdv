@@ -470,6 +470,13 @@ block content
                     //- quand la modale s'ouvre en modification.
                     span#blockApptSubmitLabel= t.appt.block_btn_submit
 
+    //- Requis par l'avertissement « N rendez-vous sont maintenus » après la
+    //- pose d'une absence par-dessus des rendez-vous déjà réservés. Sans ce
+    //- script, `window.confirmModal` n'existe pas : l'appel lève une erreur
+    //- juste APRÈS l'enregistrement réussi, et le pro voyait « Erreur réseau »
+    //- alors que son absence venait bien d'être créée.
+    script(src="/js/utils/confirm-modal.js")
+
     script.
         window.__defaultSlotTime = !{slotTime || 60};
         window.__canManageAppointments = !{canManageAppt};

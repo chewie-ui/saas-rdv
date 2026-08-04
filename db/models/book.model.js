@@ -199,7 +199,8 @@ const bookingSchema = new schema(
 // exacte d'un rendez-vous non assigné était rejeté (E11000) et le pro voyait
 // « Une erreur est survenue ». Le chevauchement reste géré par
 // checkBookingConflict, qui empêche toute NOUVELLE réservation sur le créneau.
-// Changer cet index demande de supprimer l'ancien : scripts/migrate-block-index.js.
+// Rien à migrer : db/index.js supprime et resynchronise cet index au démarrage,
+// et complète `isBlock` sur les documents antérieurs au champ.
 bookingSchema.index(
   { company: 1, date: 1, startTime: 1, employee: 1 },
   {
