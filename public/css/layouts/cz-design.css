@@ -1118,3 +1118,84 @@
     font-size: 12px;
   }
 }
+
+/* ── Guide d'intégration par plateforme ────────────────────────────────────
+   Les étapes changent d'un constructeur de site à l'autre, et tous
+   n'acceptent pas le JavaScript : un code à script collé sur un Wix gratuit
+   est supprimé sans un mot, et le pro se retrouve avec une zone vide. */
+.cz-plat { padding: 0 0 18px; }
+
+.cz-plat__label {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #637083);
+}
+
+.cz-plat__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.cz-plat__pill {
+  padding: 7px 14px;
+  border: 1.5px solid var(--border-light, #e5e7eb);
+  border-radius: 100px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #637083);
+  cursor: pointer;
+  transition: border-color .12s, color .12s, background .12s;
+}
+.cz-plat__pill:hover { border-color: var(--accent, #16a34a); color: var(--accent, #16a34a); }
+.cz-plat__pill.is-active {
+  background: var(--accent, #16a34a);
+  border-color: var(--accent, #16a34a);
+  color: #fff;
+}
+
+.cz-plat__list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-primary, #141c25);
+}
+.cz-plat__list li::marker { color: var(--accent, #16a34a); font-weight: 700; }
+
+.cz-plat__warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #92400e;
+}
+.cz-plat__warn[hidden] { display: none; }
+.cz-plat__warn .material-symbols-outlined { flex-shrink: 0; color: #b45309; }
+
+/* Le champ hauteur disparaît quand l'iframe s'ajuste toute seule. */
+.cz-embed-ctrl[hidden] { display: none !important; }
+
+.cz-plat__noscript {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--text-secondary, #637083);
+  cursor: pointer;
+}
+.cz-plat__noscript input { cursor: pointer; }

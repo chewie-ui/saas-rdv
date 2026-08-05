@@ -1072,12 +1072,162 @@
     return FULL_URL + '?sections=' + secs.join(',');
   }
 
+  /* ── Plateformes d'accueil ───────────────────────────────────────
+     Les étapes diffèrent d'un constructeur à l'autre, et surtout tous
+     n'acceptent pas le JavaScript : Wix (formules sans code) et
+     WordPress.com gratuit suppriment le <script> sans rien dire, et le
+     pro se retrouve avec une zone blanche. Pour ceux-là on fournit une
+     iframe seule, à hauteur fixe. */
+  var PLATEFORMES = {
+    wordpress: {
+      nom: 'WordPress',
+      script: true,
+      etapes: [
+        'Ouvrez la page où vous voulez le calendrier, puis cliquez sur « Modifier ».',
+        'Ajoutez un bloc « HTML personnalisé » (bouton + puis cherchez « HTML »).',
+        'Collez le code ci-dessous dans le bloc.',
+        'Mettez à jour la page — c\'est en ligne.',
+      ],
+      note: 'Sur WordPress.com en formule gratuite, le JavaScript est retiré : choisissez alors « hauteur fixe » ci-dessous.',
+    },
+    wix: {
+      nom: 'Wix',
+      script: false,
+      etapes: [
+        'Dans l\'éditeur, cliquez sur « + Ajouter » puis « Intégrer le code ».',
+        'Choisissez « Intégrer un site » (Embed a site).',
+        'Collez l\'adresse de votre page de réservation, ou le code ci-dessous via « Code HTML ».',
+        'Redimensionnez le cadre à la hauteur voulue, puis publiez.',
+      ],
+      note: 'Wix bloque le JavaScript dans les intégrations : le code fourni est une iframe seule. Réglez la hauteur ci-dessous, ou étirez le cadre dans l\'éditeur.',
+    },
+    squarespace: {
+      nom: 'Squarespace',
+      script: true,
+      etapes: [
+        'Ouvrez la page, cliquez sur « Modifier » puis sur un « + » pour ajouter un bloc.',
+        'Choisissez le bloc « Code ».',
+        'Collez le code ci-dessous et laissez le type sur « HTML ».',
+        'Enregistrez, puis publiez.',
+      ],
+      note: 'Le bloc « Code » demande une formule Business ou supérieure. En formule Personal, utilisez plutôt un simple lien vers votre page de réservation.',
+    },
+    shopify: {
+      nom: 'Shopify',
+      script: true,
+      etapes: [
+        'Administration Shopify → Boutique en ligne → Pages.',
+        'Ouvrez la page voulue, puis passez l\'éditeur en mode HTML (bouton « <> »).',
+        'Collez le code ci-dessous.',
+        'Enregistrez.',
+      ],
+      note: '',
+    },
+    webflow: {
+      nom: 'Webflow',
+      script: true,
+      etapes: [
+        'Dans le Designer, glissez un élément « Embed » à l\'endroit voulu.',
+        'Collez le code ci-dessous dans la fenêtre qui s\'ouvre.',
+        'Enregistrez, puis publiez le site.',
+      ],
+      note: '',
+    },
+    autre: {
+      nom: 'Autre site',
+      script: true,
+      etapes: [
+        'Ouvrez le fichier ou l\'éditeur HTML de la page voulue.',
+        'Collez le code ci-dessous à l\'endroit où le calendrier doit apparaître.',
+        'Enregistrez et publiez.',
+      ],
+      note: 'Si votre outil refuse le JavaScript, basculez sur « hauteur fixe » ci-dessous : l\'iframe seule fonctionne partout.',
+    },
+  };
+
+  var platPills   = document.getElementById('czPlatPills');
+  var platSteps   = document.getElementById('czPlatSteps');
+  var platWarn    = document.getElementById('czPlatWarn');
+  var platWarnTxt = document.getElementById('czPlatWarnText');
+  var heightCtrl  = document.getElementById('czHeightCtrl');
+  var noScriptCb  = document.getElementById('czNoScript');
+  var platCourante = 'wordpress';
+
+  function platActuelle() { return PLATEFORMES[platCourante] || PLATEFORMES.autre; }
+  // Hauteur automatique si la plateforme accepte le JavaScript ET que le pro
+  // n'a pas dit le contraire (formules bridées : WordPress.com gratuit,
+  // Squarespace Personal…).
+  function hauteurAuto() {
+    if (noScriptCb && noScriptCb.checked) return false;
+    return !!platActuelle().script;
+  }
+
+  function rendrePlateforme() {
+    var p = platActuelle();
+    if (platSteps) {
+      platSteps.innerHTML = '';
+      var ol = document.createElement('ol');
+      ol.className = 'cz-plat__list';
+      p.etapes.forEach(function (t) {
+        var li = document.createElement('li');
+        li.textContent = t;
+        ol.appendChild(li);
+      });
+      platSteps.appendChild(ol);
+    }
+    if (platWarn && platWarnTxt) {
+      platWarn.hidden = !p.note;
+      platWarnTxt.textContent = p.note || '';
+    }
+    // Le champ hauteur n'a de sens que si l'iframe ne s'ajuste pas seule.
+    if (heightCtrl) heightCtrl.hidden = hauteurAuto();
+  }
+
+  if (platPills) {
+    platPills.querySelectorAll('.cz-plat__pill').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        platPills.querySelectorAll('.cz-plat__pill').forEach(function (b) { b.classList.remove('is-active'); });
+        btn.classList.add('is-active');
+        platCourante = btn.dataset.plat;
+        // La case suit la plateforme choisie : cochée d'office pour celles
+        // qu'on sait bloquantes, décochée sinon. Le pro garde la main après.
+        if (noScriptCb) noScriptCb.checked = !platActuelle().script;
+        rendrePlateforme();
+        updatePreview();
+      });
+    });
+  }
+
+  if (noScriptCb) {
+    noScriptCb.addEventListener('change', function () {
+      rendrePlateforme();
+      updatePreview();
+    });
+  }
+
   /* ── Construire le code iframe ───────────────────────────────── */
   function buildIframeCode() {
     var url = buildEmbedUrl();
     if (!url) return '<!-- Configurez votre URL d\'abord -->';
     var w   = (widthInput  ? widthInput.value.trim()  : '100%') || '100%';
     var wPx = /^\d+$/.test(w) ? w + 'px' : w;
+
+    // Plateforme sans JavaScript : iframe seule, à la hauteur choisie. C'est
+    // le seul code qui survit à un Wix ou un WordPress.com gratuit.
+    if (!hauteurAuto()) {
+      var h = (heightInput && parseInt(heightInput.value, 10)) || 800;
+      return '<iframe\n' +
+        '  src="' + url + '"\n' +
+        '  width="' + wPx + '"\n' +
+        '  height="' + h + '"\n' +
+        '  frameborder="0"\n' +
+        '  style="border-radius:12px;border:none;display:block;"\n' +
+        '  title="Réservation en ligne"\n' +
+        '  loading="lazy"\n' +
+        '  allow="payment"\n' +
+        '></iframe>';
+    }
+
     // L'iframe se redimensionne automatiquement via postMessage — hauteur initiale
     // généreuse pour éviter le flash, puis ajustée par le script ci-dessous.
     return '<iframe\n' +
@@ -1168,6 +1318,9 @@
     }
     setTimeout(autosizeCodeArea, 0);
   });
+
+  // Étapes et code de la plateforme sélectionnée au chargement.
+  rendrePlateforme();
 
   // Écouter les changements de taille
   if (widthInput)  widthInput.addEventListener('input', updatePreview);

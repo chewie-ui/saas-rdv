@@ -1102,14 +1102,38 @@ block content
                                         span.material-symbols-outlined(style="font-size:14px") schedule
                                     span.cz-embed-section-opt__label Horaires
 
-                        //- Contrôles de taille
+                        //- ── Où l'intégrer ? ────────────────────────────────
+                        //- Les étapes changent d'un constructeur de site à
+                        //- l'autre, et surtout tous n'acceptent pas le
+                        //- JavaScript : sans ce choix, le pro collait un code
+                        //- à script sur un Wix gratuit qui le supprime
+                        //- silencieusement, et se retrouvait avec une zone vide.
+                        .cz-plat
+                            p.cz-plat__label Où voulez-vous l'intégrer ?
+                            .cz-plat__pills#czPlatPills
+                                each p in [{k:'wordpress',l:'WordPress'},{k:'wix',l:'Wix'},{k:'squarespace',l:'Squarespace'},{k:'shopify',l:'Shopify'},{k:'webflow',l:'Webflow'},{k:'autre',l:'Autre site'}]
+                                    button.cz-plat__pill(type="button" data-plat=p.k class=(p.k === 'wordpress' ? 'is-active' : ''))= p.l
+                            .cz-plat__steps#czPlatSteps
+                            .cz-plat__warn#czPlatWarn(hidden)
+                                span.material-symbols-outlined(style="font-size:16px") info
+                                span#czPlatWarnText
+                            //- Échappatoire : certaines formules (WordPress.com
+                            //- gratuit, Squarespace Personal…) retirent le
+                            //- JavaScript sans prévenir. Cochée d'office pour
+                            //- les plateformes qu'on sait bloquantes.
+                            label.cz-plat__noscript
+                                input#czNoScript(type="checkbox")
+                                span Mon site n'accepte pas le JavaScript (hauteur fixe)
+
+                        //- Contrôles de taille. La hauteur ne sert qu'en mode
+                        //- fixe : en automatique, l'iframe s'ajuste toute seule.
                         .cz-embed-controls
                             .cz-embed-ctrl
                                 label(for="czIframeWidth") Largeur
                                 input#czIframeWidth(type="text" value="100%" placeholder="100% ou 800px")
-                            .cz-embed-ctrl
+                            .cz-embed-ctrl#czHeightCtrl(hidden)
                                 label(for="czIframeHeight") Hauteur (px)
-                                input#czIframeHeight(type="number" value="800" min="400" max="2000" step="10")
+                                input#czIframeHeight(type="number" value="800" min="400" max="3000" step="10")
 
                         //- Code généré
                         .cz-copy-field(style="margin-top:0")
