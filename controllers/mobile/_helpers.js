@@ -109,6 +109,12 @@ async function cancelBookingSideEffects({ booking, user, role, description }) {
   // Jamais d'email pour un bloc d'indisponibilité : il n'a pas de client.
   if (booking.email && !booking.isBlock) {
     try {
+      // Message libre du pro (Personnaliser > Rappels), porté par le
+      // propriétaire de l'établissement — pas par qui annule.
+      const societe = await Company.findById(booking.company).select("owner").lean();
+      const proprietaire = societe
+        ? await User.findById(societe.owner).select("calendarSettings.cancellationMessage").lean()
+        : null;
       const html = pug.renderFile(
         path.join(__dirname, "../../views/templates/emails/booking-cancelled.pug"),
         {
@@ -117,6 +123,7 @@ async function cancelBookingSideEffects({ booking, user, role, description }) {
           date: booking.date,
           startHour: booking.startTime || "",
           endHour: booking.endTime || "",
+          ownerMessage: (proprietaire?.calendarSettings?.cancellationMessage || "").trim(),
         },
       );
       sendEmail(booking.email, "Votre rendez-vous a été annulé", html).catch(() => {});

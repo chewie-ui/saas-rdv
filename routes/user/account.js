@@ -112,6 +112,9 @@ router.patch("/faq", accountController.updateFaq);
 router.patch("/badges", accountController.updateBadges);
 router.patch("/toggle-section", accountController.toggleSection);
 router.patch("/reminder-settings", accountController.updateReminderSettings);
+// Réglage isolé (page Disponibilités) : un PATCH dédié plutôt que de passer par
+// /reminder-settings, qui réécrit tous les messages personnalisés au passage.
+router.patch("/phone-required", isAuth, accountController.updatePhoneRequired);
 
 // `injectCompany` : le slug appartient à l'établissement ACTIF. Sans lui, le
 // handler prenait le premier établissement du compte et renommait le mauvais.

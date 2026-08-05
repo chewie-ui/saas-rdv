@@ -584,6 +584,22 @@ block content
                                 span#czConfirmationMsgCount= (cs.confirmationMessage || '').length
                                 | /300
 
+                    //- ── Message dans l'email d'ANNULATION ──────────────────────
+                    .cz-reminder-section
+                        .cz-reminder-label
+                            span.material-symbols-outlined(style="font-size:15px") event_busy
+                            span Message dans l'email d'annulation
+                        p.cz-reminder-hint Envoyé quand un rendez-vous est annulé, par vous ou par le client. Affiché dans un encadré "Message de votre prestataire". Laissez vide pour ne rien afficher.
+                        .cz-reminder-msg-wrap
+                            textarea.cz-reminder-msg#czCancellationMsg(
+                                placeholder="Ex : N'hésitez pas à reprendre rendez-vous quand vous voulez, en ligne ou par téléphone."
+                                maxlength="300"
+                                rows="4"
+                            )= cs.cancellationMessage || ''
+                            .cz-reminder-msg-count
+                                span#czCancellationMsgCount= (cs.cancellationMessage || '').length
+                                | /300
+
                     //- ── Modes de paiement ─────────────────────────────────────
                     .cz-reminder-section
                         .cz-reminder-label
@@ -1781,6 +1797,8 @@ block scripts
             var msgCount     = document.getElementById('czReminderMsgCount');
             var confArea     = document.getElementById('czConfirmationMsg');
             var confCount    = document.getElementById('czConfirmationMsgCount');
+            var annulArea    = document.getElementById('czCancellationMsg');
+            var annulCount   = document.getElementById('czCancellationMsgCount');
             var payNoteArea  = document.getElementById('czPaymentNote');
             var payNoteCount = document.getElementById('czPaymentNoteCount');
             var saveBtn      = document.getElementById('czSaveReminder');
@@ -1829,6 +1847,13 @@ block scripts
                 });
             }
 
+            // Compteur message d'annulation
+            if (annulArea) {
+                annulArea.addEventListener('input', function() {
+                    if (annulCount) annulCount.textContent = annulArea.value.length;
+                });
+            }
+
             // Boutons modes de paiement
             payBtns.forEach(function(btn) {
                 btn.addEventListener('click', function() {
@@ -1864,6 +1889,7 @@ block scripts
                                 reminderDelayHours: selectedDelay,
                                 reminderMessage: msgArea ? msgArea.value.trim() : '',
                                 confirmationMessage: confArea ? confArea.value.trim() : '',
+                                cancellationMessage: annulArea ? annulArea.value.trim() : '',
                                 reminderPaymentMethods: selectedPaymentMethods,
                                 reminderPaymentNote: payNoteArea ? payNoteArea.value.trim() : ''
                             })

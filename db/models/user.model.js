@@ -265,6 +265,13 @@ const userSchema = schema(
       // réservation : c'est souvent là qu'on veut donner les consignes d'accès
       // ou de préparation, bien avant le rappel.
       confirmationMessage: { type: String, default: '' },
+      // Et dans l'email d'ANNULATION : conditions de report, délai de
+      // prévenance, invitation à reprendre rendez-vous…
+      cancellationMessage: { type: String, default: '' },
+      // Téléphone obligatoire à la réservation. Vrai par défaut : sans numéro,
+      // impossible de joindre le client en cas d'imprévu — et aucun rappel SMS
+      // ou WhatsApp ne peut partir. Désactivable pour qui ne veut pas l'exiger.
+      phoneRequired: { type: Boolean, default: true },
       reminderPaymentMethods: { type: [String], default: [] }, // 'carte' | 'especes' | 'qr_code' | 'virement'
       reminderPaymentNote:    { type: String, default: '' }, // précisions libres sur le paiement (ex: lien QR code)
       // ── Rappels SMS (Pro & Business, quota mensuel puis email en repli) ────

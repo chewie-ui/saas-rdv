@@ -279,6 +279,21 @@ block content
                                 option(value="days" selected=(ltUnit === 'days'))= t.avail.lt_unit_days
                             span.lt-custom__label= t.avail.lt_before_label
 
+                //- Téléphone obligatoire à la réservation. Voisin du délai
+                //- minimum : ce sont les deux règles qui conditionnent une
+                //- réservation, elles se règlent au même endroit.
+                //- `!== false` : actif tant qu'il n'a pas été désactivé.
+                .avail-card
+                    .avail-card__hd
+                        .sg-card__title-row
+                            span.material-symbols-outlined.sg-card__icon call
+                            span.avail-card__title Téléphone obligatoire
+                        label.sa-toggle
+                            input#phoneRequired(type="checkbox" checked=(!calendarSettings || calendarSettings.phoneRequired !== false))
+                            .sa-toggle__track
+                    p.avail-card__sub
+                        | Le client doit indiquer un numéro pour réserver en ligne. Sans lui, impossible de le joindre en cas d'imprévu — et aucun rappel SMS ou WhatsApp ne peut partir.
+
             //- ── Onglet Créneaux ──────────────────────────────────────
             #av2-creneaux.av2-section
 

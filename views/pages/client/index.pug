@@ -623,6 +623,10 @@ block scripts
         //- Questionnaire unifié (nouveau multi-questions, ou ancien converti) — pilote le filtrage des services côté client.
         window.__questionnaire  = !{questionnaireJson || '{"enabled":false,"questions":[]}'};
         window.__bkTexts        = !{jsonForScript(bkTexts)};
+        //- Téléphone obligatoire (Personnaliser > Réservation). `!== false` :
+        //- sur une fiche antérieure au réglage, le champ est absent — et le
+        //- défaut voulu est « obligatoire ».
+        window.__phoneRequired  = !{JSON.stringify((cs && cs.phoneRequired) !== false)};
     if clientUser
         script.
             window.__clientUser = !{JSON.stringify(clientUser)};

@@ -1456,6 +1456,8 @@ exports.availability = async (req, res) => {
     availFeatures,
     smartGrouping: Object.assign({ enabled: false, windowHours: 3, weekdays: [] }, companyDoc?.smartGrouping || {}),
     minBookingLeadTime: companyDoc?.minBookingLeadTime || { enabled: false, minutes: 60 },
+    // Réglages portés par le compte (téléphone obligatoire, messages d'emails…).
+    calendarSettings: req.user?.calendarSettings || {},
   });
 };
 
@@ -1699,8 +1701,12 @@ exports.cancelBooking = async (req, res) => {
   // d'envoyer un email au client) le RDV d'un autre établissement.
   const booking = await Booking.findOneAndUpdate({ _id: id, company: res.locals.currentCompany?._id }, { status: "canceled" }, { new: false }).lean();
 
+  // Déclaré ici et non dans le `if` : l'envoi de l'email plus bas en a besoin
+  // aussi, pour retrouver le propriétaire (porteur des réglages).
+  let companyDoc = null;
+
   if (booking) {
-    const companyDoc = await Company.findById(booking.company);
+    companyDoc = await Company.findById(booking.company);
 
     // Sync Google Calendar
     if (booking.googleEventId) {
@@ -1726,12 +1732,17 @@ exports.cancelBooking = async (req, res) => {
   // Send cancellation email to the client
   if (booking?.email) {
     try {
+      // Message libre du pro (Personnaliser > Rappels). Le propriétaire de
+      // l'établissement porte les réglages, pas l'acteur qui annule : un
+      // collaborateur qui annule doit envoyer le même message.
+      const proprietaire = await User.findById(companyDoc?.owner).select("calendarSettings.cancellationMessage").lean();
       const cancelHtml = pug.renderFile(path.join(__dirname, "../views/templates/emails/booking-cancelled.pug"), {
         name:      booking.name     || "",
         surname:   booking.surname  || "",
         date:      booking.date,
         startHour: booking.startTime || "",
         endHour:   booking.endTime   || "",
+        ownerMessage: (proprietaire?.calendarSettings?.cancellationMessage || "").trim(),
       });
       await sendEmail(booking.email, "Votre rendez-vous a été annulé", cancelHtml);
     } catch (mailErr) {

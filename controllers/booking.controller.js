@@ -305,6 +305,23 @@ exports.createBooking = async (req, res) => {
     const response = await Company.findById(company);
     const companySlotTime = response.slotTime;
 
+    // ── Téléphone obligatoire ────────────────────────────────────────────
+    // Revalidé ici et pas seulement dans le formulaire : le bouton grisé côté
+    // client n'empêche pas un appel direct à cette route. Le réglage vit sur
+    // le propriétaire de l'établissement (Personnaliser > Réservation), et il
+    // vaut « obligatoire » tant qu'il n'a pas été explicitement désactivé.
+    if (response.owner) {
+      const reglages = await User.findById(response.owner).select("calendarSettings.phoneRequired").lean();
+      const exige = reglages?.calendarSettings?.phoneRequired !== false;
+      if (exige && !String(phone || "").trim()) {
+        return res.json({
+          success: false,
+          error: "phone_required",
+          message: "Merci d'indiquer un numéro de téléphone pour réserver.",
+        });
+      }
+    }
+
     // ── Délai minimum de réservation — revalidé côté serveur : la liste de
     // créneaux affichée au client respecte déjà ce délai, mais on ne fait
     // jamais confiance uniquement au frontend pour une règle métier. ───────
@@ -1779,6 +1796,8 @@ exports.cancelBooking = async (req, res) => {
           endHour: canceledBooking.endTime,
           serviceName: canceledBooking.serviceName || "",
           chargeResult,
+          // Message libre du pro (Personnaliser > Rappels).
+          ownerMessage: (coach?.calendarSettings?.cancellationMessage || "").trim(),
         },
       );
       await sendEmail(canceledBooking.email, "Votre rendez-vous a été annulé — BranShee", clientHtml);

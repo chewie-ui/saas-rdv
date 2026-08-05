@@ -88,6 +88,16 @@ div(style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system
                           td(style="padding:16px 20px;")
                             p(style="margin:0;font-size:13.5px;color:#166534;line-height:1.5;") Aucun frais n'a été retenu — vous serez intégralement remboursé(e) si un paiement avait été effectué.
 
+                    //- Message personnalisé du professionnel (Personnaliser >
+                    //- Rappels) : conditions de report, invitation à reprendre
+                    //- rendez-vous…
+                    if ownerMessage && ownerMessage.length > 0
+                      table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:24px;")
+                        tr
+                          td(style="padding:14px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;")
+                            p(style="margin:0 0 4px;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;") Message de votre prestataire
+                            p(style="margin:0;font-size:14px;color:#475569;line-height:1.5;")= ownerMessage
+
                     p(style="margin:0 0 32px;font-size:13.5px;color:#9ca3af;line-height:1.6;") Vous pouvez réserver un nouveau créneau à tout moment depuis la page de réservation de l'établissement.
 
           //- ── Footer ───────────────────────────────────────────────────────

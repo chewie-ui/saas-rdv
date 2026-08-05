@@ -1531,12 +1531,29 @@ exports.updateGalleryLayout = async (req, res) => {
   }
 };
 
+// Téléphone obligatoire à la réservation (page Disponibilités). Réglage isolé :
+// il ne doit pas emporter avec lui les messages personnalisés des emails, que
+// cette page n'envoie pas.
+exports.updatePhoneRequired = async (req, res) => {
+  try {
+    const exige = !!req.body.phoneRequired;
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: { "calendarSettings.phoneRequired": exige },
+    });
+    return res.json({ success: true, phoneRequired: exige });
+  } catch (err) {
+    console.error("updatePhoneRequired error:", err.message);
+    return res.status(500).json({ success: false });
+  }
+};
+
 exports.updateReminderSettings = async (req, res) => {
   try {
     const allowed = [6, 12, 24, 48, 72];
     const delayHours = parseInt(req.body.reminderDelayHours, 10);
     const message    = (req.body.reminderMessage || "").trim().slice(0, 300);
     const confirmationMessage = (req.body.confirmationMessage || "").trim().slice(0, 300);
+    const cancellationMessage = (req.body.cancellationMessage || "").trim().slice(0, 300);
     if (!allowed.includes(delayHours)) return res.status(400).json({ success: false, error: "Délai invalide." });
 
     const allowedPaymentMethods = ["carte", "especes", "qr_code", "virement"];
@@ -1548,6 +1565,7 @@ exports.updateReminderSettings = async (req, res) => {
       "calendarSettings.reminderDelayHours":       delayHours,
       "calendarSettings.reminderMessage":          message,
       "calendarSettings.confirmationMessage":      confirmationMessage,
+      "calendarSettings.cancellationMessage":      cancellationMessage,
       "calendarSettings.reminderPaymentMethods":   paymentMethods,
       "calendarSettings.reminderPaymentNote":      paymentNote,
     };

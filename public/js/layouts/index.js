@@ -10,6 +10,10 @@ const EMPLOYEES  = window.__employees || [];
 let CLIENT       = window.__clientUser || null; // { firstName, lastName, email, phone } — mutable pour login inline
 const PREPAYMENT = window.__prepayment || { enabled: false, required: false };
 const STRIPE_KEY = window.__stripeKey  || "";
+// Téléphone obligatoire (réglage de l'établissement). `!== false` : si la page
+// est servie sans l'information, on exige le numéro — c'est le défaut voulu, et
+// le serveur refusera de toute façon une réservation sans téléphone.
+const PHONE_REQUIRED = window.__phoneRequired !== false;
 
 /* La page est-elle affichée dans une iframe, sur le site d'un professionnel ?
    Deux choses y sont IMPOSSIBLES, et aucune n'est de notre fait :
@@ -296,8 +300,16 @@ function detailsHint() {
   if (!f.firstName) miss.push("prénom");
   if (!f.lastName)  miss.push("nom");
   if (!f.email)     miss.push("e-mail");
+  if (PHONE_REQUIRED && !telephoneSaisi()) miss.push("téléphone");
   if (!miss.length) return "";
   return "Il ne manque que votre " + miss.join(", ") + " pour confirmer.";
+}
+
+/* Numéro effectivement disponible : celui tapé dans le formulaire, ou celui
+   déjà enregistré sur le compte du client connecté. */
+function telephoneSaisi() {
+  const f = STATE.form || {};
+  return !!((f.phone || (CLIENT && CLIENT.phone) || "").trim());
 }
 
 /* ── Cart render ────────────────────────────────────────────────────────── */
@@ -315,9 +327,12 @@ function renderCart() {
 
   // "Continuer" is enabled when: logged in, OR guest form is visible and filled
   const guestFormVisible = !!document.getElementById("bkGuestForm")?.offsetParent;
+  // Le téléphone compte comme un champ obligatoire quand l'établissement
+  // l'exige — y compris pour un client connecté dont le compte n'en a pas.
+  const telOk = !PHONE_REQUIRED || telephoneSaisi();
   const detailsOk = CLIENT
-    ? !!(CLIENT.firstName && CLIENT.email)
-    : (guestFormVisible && !!(STATE.form.firstName && STATE.form.lastName && STATE.form.email));
+    ? !!(CLIENT.firstName && CLIENT.email && telOk)
+    : (guestFormVisible && !!(STATE.form.firstName && STATE.form.lastName && STATE.form.email && telOk));
 
   // Payment step: active as soon as any method is chosen.
   const paymentOk =
@@ -1622,7 +1637,7 @@ async function renderDetailsPane() {
              ont pas (et l'inscription n'en demande pas), le pro se retrouvait
              alors sans aucun numéro pour joindre le client. -->
         <div class="bk-field">
-          <label class="bk-label">Téléphone${CLIENT.phone ? "" : " <span class='bk-label-hint'>— pour vous joindre en cas d'imprévu</span>"}</label>
+          <label class="bk-label">Téléphone${PHONE_REQUIRED ? " *" : ""}${CLIENT.phone ? "" : " <span class='bk-label-hint'>— pour vous joindre en cas d'imprévu</span>"}</label>
           <input class="bk-input" id="bkPhone" type="tel" maxlength="30" placeholder="+32 …" value="${escHtml(f.phone || CLIENT.phone || "")}" />
         </div>` : `
 
@@ -1748,7 +1763,7 @@ async function renderDetailsPane() {
             <input class="bk-input" id="bkEmail" type="email" maxlength="100" placeholder="jean@email.com" value="${escHtml(f.email)}" />
           </div>
           <div class="bk-field">
-            <label class="bk-label">Téléphone</label>
+            <label class="bk-label">Téléphone${PHONE_REQUIRED ? " *" : ""}</label>
             <input class="bk-input" id="bkPhone" type="tel" maxlength="30" placeholder="+32 …" value="${escHtml(f.phone)}" />
           </div>
         </div>`}

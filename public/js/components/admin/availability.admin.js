@@ -1533,3 +1533,26 @@ var _panelObserver = new MutationObserver(function(mutations) {
 document.querySelectorAll('.panel-availability').forEach(function(panel) {
   _panelObserver.observe(panel, { attributes: true });
 });
+
+/* ── Téléphone obligatoire à la réservation ────────────────────────────────
+   Réglage isolé : son propre PATCH, pour ne pas réécrire au passage les
+   messages personnalisés des emails (qui vivent au même endroit en base). */
+const phoneRequiredCb = document.getElementById("phoneRequired");
+if (phoneRequiredCb) {
+  phoneRequiredCb.addEventListener("change", async () => {
+    const exige = phoneRequiredCb.checked;
+    try {
+      const res = await fetch("/account/phone-required", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneRequired: exige }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error("echec");
+    } catch (e) {
+      // On remet la bascule dans son état réel plutôt que de laisser croire
+      // à un enregistrement qui n'a pas eu lieu.
+      phoneRequiredCb.checked = !exige;
+    }
+  });
+}
