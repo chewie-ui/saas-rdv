@@ -90,6 +90,13 @@ html(lang=_lang)
                     "query-input": "required name=search_term_string"
                   }
                 }
+            //- "sameAs" est volontairement vide : les deux profils qui y figuraient
+            //- étaient faux (linkedin.com/company/branshee répond 404, et
+            //- instagram.com/branshee est le compte personnel d'un tiers, pas la
+            //- marque). Une URL morte ou étrangère dans "sameAs" décrédibilise
+            //- l'entité auprès de Google — exactement le problème qu'on essaie de
+            //- corriger, puisqu'il corrige déjà « branshee » en « banshee ».
+            //- N'y remettre que des profils officiels réellement vérifiés.
             script(type="application/ld+json").
                 {
                   "@context": "https://schema.org",
@@ -115,11 +122,7 @@ html(lang=_lang)
                   "foundingDate": "2024",
                   "areaServed": ["FR", "BE", "LU", "CH"],
                   "knowsAbout": ["prise de rendez-vous en ligne", "agenda professionnel", "gestion de clients", "réservation en ligne"],
-                  "sameAs": [
-                    "https://www.linkedin.com/company/branshee",
-                    "https://www.instagram.com/branshee",
-                    "https://www.branshee.com"
-                  ]
+                  "sameAs": []
                 }
 
         block links

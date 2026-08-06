@@ -1038,6 +1038,15 @@ exports.editBusinessInfo = async (req, res) => {
     // "Description" a été retiré de ce formulaire (Personnaliser) mais reste
     // utilisé ailleurs (page publique, méta SEO) — un envoi blind écraserait
     // la valeur existante à chaque sauvegarde du nom/type d'activité.
+    //
+    // La garde `description !== undefined` ne suffisait pas : le script du
+    // bouton Enregistrer (public/js/layouts/customize.js) lit un
+    // `#descriptionCoach` qui n'existe plus dans aucune vue, donc il envoie
+    // TOUJOURS `description: ""` — une chaîne vide passe `!== undefined` et
+    // écrasait la description de l'établissement à chaque enregistrement du
+    // nom ou du type d'activité. Ici une description vide = champ absent ;
+    // c'est PATCH /account/description/edit qui sert à la vider.
+    const hasDescription = typeof description === "string" && description.trim() !== "";
     const update = {};
     if (businessName !== undefined) update.businessName = businessName || "";
     if (businessType !== undefined) update.businessType = businessType || "";
@@ -1060,15 +1069,20 @@ exports.editBusinessInfo = async (req, res) => {
         // La description est un champ d'IDENTITÉ : elle appartient à
         // l'établissement, jamais au compte (sinon elle se recopie sur la fiche
         // publique du second établissement).
-        if (description !== undefined) cUpd.description = description || "";
+        if (hasDescription) cUpd.description = description;
         if (Object.keys(cUpd).length) await Company.findByIdAndUpdate(companyId, cUpd);
       }
     } catch (e) { console.error("[editBusinessInfo] sync company:", e.message); }
 
     // Le compte n'est le repli que de l'établissement D'ORIGINE : n'y aligner
     // la description que dans ce cas, sinon on repollue la fiche du premier.
-    if (description !== undefined && companyId && String(req.user.company || "") === String(companyId)) {
-      update.description = description || "";
+    // Cas `!companyId` : un collaborateur ne POSSÈDE aucun établissement
+    // (resolveActiveOwnedCompanyId filtre sur `owner`), sa description n'était
+    // donc écrite ni sur la Company ni sur le compte — perdue en silence,
+    // pendant que la réponse restait `success:true` et l'UI « ✓ Enregistré ».
+    // Son compte est le seul porteur possible, comme dans editDescription.
+    if (hasDescription && (!companyId || String(req.user.company || "") === String(companyId))) {
+      update.description = description;
     }
     if (Object.keys(update).length) await User.findByIdAndUpdate(req.user._id, update);
 

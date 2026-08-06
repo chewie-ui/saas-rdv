@@ -409,6 +409,22 @@ function trierComptes(liste, tri) {
 
 const COMPTES_PAR_PAGE = 25;
 
+// Nombre de personnes DISTINCTES à partir de plusieurs listes d'e-mails.
+// L'e-mail est la seule clé commune aux modèles Client et User (les _id
+// appartiennent à deux collections différentes et ne sont jamais comparables).
+// Normalisation obligatoire : le schéma Client force `lowercase`, pas celui de
+// User — sans ça « Jean@X » et « jean@x » compteraient pour deux personnes.
+function compterPersonnesDistinctes(...listesDEmails) {
+  const set = new Set();
+  for (const liste of listesDEmails) {
+    for (const email of liste) {
+      const cle = String(email || "").trim().toLowerCase();
+      if (cle) set.add(cle);
+    }
+  }
+  return set.size;
+}
+
 exports.usersPage = async (req, res) => {
   const filtres = {
     search: req.query.search || "",
@@ -424,14 +440,23 @@ exports.usersPage = async (req, res) => {
   const ilYa7j = new Date(Date.now() - 7 * 24 * 3600 * 1000);
   const ilYa30j = new Date(Date.now() - 30 * 24 * 3600 * 1000);
 
-  // Le KPI « clients » couvre les DEUX modèles : la collection Client est
-  // figée depuis l'unification (plus aucune inscription n'y atterrit), toute
-  // nouvelle personne arrive dans User avec accountIntent 'client'. Ne compter
-  // que Client sous-évaluait donc structurellement le chiffre.
+  // Le KPI « clients » couvre les DEUX modèles : l'ancienne collection Client
+  // et les User avec accountIntent 'client'. On récupère des E-MAILS et non des
+  // comptages, parce qu'une même personne peut être présente des deux côtés :
+  //  - POST /client/register et le OAuth Google client créent encore des
+  //    documents Client aujourd'hui, y compris pour une adresse déjà connue
+  //    côté User (l'unicité est vérifiée dans chaque contrôleur, jamais par un
+  //    index couvrant les deux collections) ;
+  //  - scripts/migrate-merge-client-into-user.js crée le User puis supprime le
+  //    Client, mais il SAUTE les dossiers dont la fusion violerait l'index
+  //    unique (company, client) de Review, et il n'a pas de transaction : le
+  //    Client d'origine survit alors à côté de son User.
+  // Additionner les deux comptages comptait donc ces personnes deux fois ; on
+  // dédoublonne sur l'e-mail (seule clé commune aux deux modèles).
   const [
     liste, totalComptes, disabledCount, adminsToday, inscrits7j,
     connectes7j, jamaisConnectes, totalViews, uniqueVisitors,
-    clientsLegacy, clientsLegacyToday, clientsUnifies, clientsUnifiesToday,
+    emailsLegacy, emailsLegacyToday, emailsUnifies, emailsUnifiesToday,
     topSources, totalEtablissements,
   ] = await Promise.all([
     chargerComptes(filtres),
@@ -443,10 +468,10 @@ exports.usersPage = async (req, res) => {
     User.countDocuments({ $or: [{ lastLoginAt: null }, { lastLoginAt: { $exists: false } }] }),
     PageView.countDocuments({}),
     PageView.distinct("visitorId"),
-    Client.countDocuments({}),
-    Client.countDocuments({ createdAt: { $gte: debutJour } }),
-    User.countDocuments({ accountIntent: "client" }),
-    User.countDocuments({ accountIntent: "client", createdAt: { $gte: debutJour } }),
+    Client.distinct("email"),
+    Client.distinct("email", { createdAt: { $gte: debutJour } }),
+    User.distinct("email", { accountIntent: "client" }),
+    User.distinct("email", { accountIntent: "client", createdAt: { $gte: debutJour } }),
     PageView.aggregate([
       { $group: { _id: { $ifNull: ["$source", "direct"] }, count: { $sum: 1 } } },
       { $sort: { count: -1 } },
@@ -507,8 +532,8 @@ exports.usersPage = async (req, res) => {
     trafic: {
       totalViews,
       uniqueViews: uniqueVisitors.length,
-      totalClients: clientsLegacy + clientsUnifies,
-      clientsToday: clientsLegacyToday + clientsUnifiesToday,
+      totalClients: compterPersonnesDistinctes(emailsLegacy, emailsUnifies),
+      clientsToday: compterPersonnesDistinctes(emailsLegacyToday, emailsUnifiesToday),
       topSources,
       inscritsParSource,
       inscritsSansSource,
