@@ -1,0 +1,27 @@
+extends ../../layouts/index
+
+block links
+    link(rel="stylesheet", href="/css/layouts/seo-landing.css")
+
+block content
+    main.slp
+        nav.slp-crumb(aria-label="Fil d'Ariane")
+            a(href="/") Accueil
+            span.slp-crumb__sep ›
+            span.slp-crumb__here Logiciel de rendez-vous
+
+        section.slp-hero
+            h1.slp-hero__title
+                | Logiciel de prise de rendez-vous
+                br
+                span.slp-hero__accent par métier et par ville
+            p.slp-hero__lead Trouvez la page qui correspond à votre activité et à votre région. Chacune détaille ce que BranShee change concrètement dans votre quotidien.
+            .slp-hero__cta
+                a.slp-btn.slp-btn--primary(href="/register") Créer mon agenda gratuitement
+
+        each m in metiers
+            section.slp-sec.slp-links
+                h2.slp-links__title= m.pluriel.charAt(0).toUpperCase() + m.pluriel.slice(1)
+                .slp-links__row
+                    each v in villes
+                        a.slp-tag(href=`/logiciel-rendez-vous/${m.slug}-${v.slug}`) #{m.nom} à #{v.nom}

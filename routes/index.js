@@ -171,6 +171,18 @@ router.get("/sitemap.xml", async (req, res) => {
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>${BASE}/logiciel-rendez-vous</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>${require("../utils/seoLanding").toutesLesPages().map((p) => `
+  <url>
+    <loc>${BASE}/logiciel-rendez-vous/${p.slug}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>`).join("")}
+  <url>
     <loc>${BASE}/s-inscrire</loc>
     <lastmod>${today}</lastmod>
     <changefreq>monthly</changefreq>
@@ -601,6 +613,127 @@ router.get("/blog/:slug", blogCtrl.blogArticle);
 const siteCtrl = require("../controllers/site.controller");
 router.get("/s/:slug", siteCtrl.publicSite);
 router.post("/s/:slug/contact", siteCtrl.contactForm);
+
+/* ── Pages « logiciel de rendez-vous pour X à Y » ────────────────────────
+   Personne ne cherche « branshee » : on se positionne sur ce que les pros
+   tapent réellement. Une page par couple (métier, ville), avec du texte
+   propre au métier et les établissements RÉELS de la ville — sans quoi ce
+   ne seraient que des pages satellites, que Google déclasse. */
+const seoLanding = require("../utils/seoLanding");
+
+router.get("/logiciel-rendez-vous", (req, res) => {
+  res.render("client/seo-hub", {
+    title: "Logiciel de prise de rendez-vous par métier et par ville | BranShee",
+    metaDescription:
+      "Agenda et prise de rendez-vous en ligne pour kinés, ostéopathes, coiffeurs, esthéticiennes, psychologues… à Bruxelles, Liège, Namur, Charleroi et ailleurs.",
+    canonical: "https://www.branshee.com/logiciel-rendez-vous",
+    metiers: seoLanding.METIERS,
+    villes: seoLanding.VILLES,
+  });
+});
+
+router.get("/logiciel-rendez-vous/:slug", async (req, res, next) => {
+  const cible = seoLanding.resoudre(req.params.slug);
+  // Slug inconnu : on laisse passer au 404 global plutôt que d'inventer une
+  // page — une URL indexable ne doit jamais répondre à n'importe quoi.
+  if (!cible) return next();
+
+  const { metier, ville } = cible;
+
+  // Établissements réels de la ville. Le métier n'est pas exigé : à ce stade
+  // il y en a peu, et une liste vide vaut moins qu'une liste de voisins.
+  let etablissements = [];
+  try {
+    const rx = (s) => ({ $regex: s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" });
+    const docs = await Companies.find({
+      isPaused: { $ne: true },
+      isDeleted: { $ne: true },
+      $or: [{ "location.city": rx(ville.nom) }, { "location.address": rx(ville.nom) }],
+    })
+      .select("name slug businessType location")
+      .limit(9)
+      .lean();
+
+    // Les établissements du métier visé d'abord : c'est la preuve la plus
+    // parlante sur une page « kiné à Liège ».
+    const cle = (c) => `${c.businessType || ""}`.toLowerCase();
+    const correspond = (c) => metier.motsCles.some((m) => cle(c).includes(m.toLowerCase()));
+    docs.sort((a, b) => (correspond(b) ? 1 : 0) - (correspond(a) ? 1 : 0));
+
+    etablissements = docs.map((c) => {
+      const nom = (c.name || "").trim() || "Établissement";
+      return {
+        nom,
+        slug: c.slug || String(c._id),
+        metier: c.businessType || "",
+        ville: (c.location && c.location.city) || "",
+        initiales: nom.slice(0, 2).toUpperCase(),
+        couleur: nom.charCodeAt(0) % 8,
+      };
+    });
+  } catch (e) {
+    console.error("[seo-landing] établissements:", e.message);
+  }
+
+  const titre = `Logiciel de prise de rendez-vous pour ${metier.pluriel} à ${ville.nom} | BranShee`;
+  const desc = `Agenda en ligne pour ${metier.pluriel} à ${ville.nom} : vos ${metier.clients} réservent 24h/24, rappels automatiques, moins de rendez-vous manqués. Gratuit pour commencer.`;
+  const url = `https://www.branshee.com/logiciel-rendez-vous/${cible.slug}`;
+
+  // FAQ : deux questions propres au métier + une commune. Le JSON-LD doit
+  // décrire EXACTEMENT ce que la page affiche, sinon Google le rejette.
+  const faq = metier.faq.concat([
+    {
+      q: `Combien coûte BranShee pour ${metier.pluriel === metier.nom ? "un " + metier.nom : "un " + metier.nom} à ${ville.nom} ?`,
+      r: "L'offre de départ est gratuite et sans carte bancaire. Les formules payantes ajoutent les rendez-vous illimités, les rappels automatiques et les collaborateurs.",
+    },
+  ]);
+
+  const ld = [
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Accueil", item: "https://www.branshee.com/" },
+        { "@type": "ListItem", position: 2, name: "Logiciel de rendez-vous", item: "https://www.branshee.com/logiciel-rendez-vous" },
+        { "@type": "ListItem", position: 3, name: `${metier.nom} à ${ville.nom}`, item: url },
+      ],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faq.map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.r },
+      })),
+    },
+  ];
+
+  // Échappement de `<` : le JSON part dans un <script>, un caractère non
+  // échappé pourrait clore la balise.
+  const ldJson = JSON.stringify(ld).replace(/</g, "\\u003c");
+
+  res.render("client/seo-landing", {
+    title: titre,
+    metaDescription: desc,
+    canonical: url,
+    ogType: "article",
+    metier,
+    ville,
+    // « un » / « une » selon le métier — « pour une esthéticienne » et
+    // « pour un kiné » ne s'écrivent pas pareil.
+    article: /^(esthéticienne|masseuse)$/i.test(metier.nom) ? "une" : "un",
+    etablissements,
+    titreListe: etablissements.length === 1
+      ? `Un professionnel déjà sur BranShee à ${ville.nom}`
+      : `Ils utilisent déjà BranShee à ${ville.nom}`,
+    faq,
+    ldJson,
+    autresVilles: seoLanding.VILLES.filter((v) => v.slug !== ville.slug),
+    autresMetiers: seoLanding.METIERS.filter((m) => m.slug !== metier.slug),
+  });
+});
+
 
 router.get("/:company", requireFeatureActive("booking_page"), async (req, res) => {
   const company = await getCompanyIfExist(req.params.company);

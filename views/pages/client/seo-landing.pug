@@ -1,0 +1,113 @@
+extends ../../layouts/index
+
+block jsonld
+    script(type="application/ld+json")!= ldJson
+
+block links
+    link(rel="stylesheet", href="/css/layouts/seo-landing.css")
+
+block content
+    main.slp
+        //- ── Fil d'Ariane ────────────────────────────────────────────────
+        nav.slp-crumb(aria-label="Fil d'Ariane")
+            a(href="/") Accueil
+            span.slp-crumb__sep ›
+            a(href="/logiciel-rendez-vous") Logiciel de rendez-vous
+            span.slp-crumb__sep ›
+            span.slp-crumb__here #{metier.nom} à #{ville.nom}
+
+        //- ── Hero ────────────────────────────────────────────────────────
+        section.slp-hero
+            p.slp-hero__eyebrow #{ville.region}
+            h1.slp-hero__title
+                | Logiciel de prise de rendez-vous
+                br
+                span.slp-hero__accent pour #{metier.pluriel} à #{ville.nom}
+            p.slp-hero__lead= metier.accroche
+            .slp-hero__cta
+                a.slp-btn.slp-btn--primary(href="/register") Créer mon agenda gratuitement
+                a.slp-btn.slp-btn--ghost(href=`/search?category=${encodeURIComponent(metier.nom)}&location=${encodeURIComponent(ville.nom)}`)
+                    | Voir les #{metier.pluriel} à #{ville.nom}
+            p.slp-hero__note Gratuit pour commencer · Sans carte bancaire · Votre page en ligne en 10 minutes
+
+        //- ── Arguments propres au métier ─────────────────────────────────
+        section.slp-sec
+            h2.slp-sec__title Ce que ça change pour #{article} #{metier.nom} à #{ville.nom}
+            .slp-args
+                each a in metier.arguments
+                    article.slp-arg
+                        h3.slp-arg__title= a.titre
+                        p.slp-arg__text= a.texte
+
+        //- ── Contexte local ──────────────────────────────────────────────
+        //- Sans cette section, deux pages du même métier dans deux villes
+        //- différaient à 2 % : des pages satellites, que Google déclasse.
+        section.slp-sec
+            h2.slp-sec__title #{metier.nom} à #{ville.nom} : ce qu'il faut savoir
+            p.slp-local= ville.contexte
+            p.slp-local= ville.mobilite
+            if ville.zones && ville.zones.length
+                p.slp-local__zones
+                    strong Communes et quartiers couverts :&nbsp;
+                    = ville.zones.join(', ') + '.'
+
+        //- ── Établissements réels de la ville ────────────────────────────
+        //- Le seul contenu que personne ne peut copier. Absent tant qu'aucun
+        //- établissement n'est inscrit : mieux vaut une section en moins
+        //- qu'une liste vide qui sent la page fabriquée.
+        if etablissements && etablissements.length
+            section.slp-sec
+                h2.slp-sec__title #{titreListe}
+                .slp-cards
+                    each e in etablissements
+                        a.slp-card(href=`/${e.slug}`)
+                            .slp-card__av(class=`av-${e.couleur}`)= e.initiales
+                            .slp-card__body
+                                span.slp-card__name= e.nom
+                                if e.metier
+                                    span.slp-card__meta= e.metier
+                                if e.ville
+                                    span.slp-card__city= e.ville
+                a.slp-more(href=`/search?location=${encodeURIComponent(ville.nom)}`) Voir tous les professionnels à #{ville.nom} →
+
+        //- ── Comment ça marche ───────────────────────────────────────────
+        section.slp-sec
+            h2.slp-sec__title Comment ça marche
+            ol.slp-steps
+                li
+                    strong Vous créez votre page
+                    | &nbsp;— vos prestations, vos horaires, vos congés. Une adresse à vous, du type branshee.com/votre-nom.
+                li
+                    strong Vos #{metier.clients} réservent en ligne
+                    | &nbsp;— depuis votre site, votre page Instagram ou Google. À toute heure, sans vous appeler.
+                li
+                    strong Vous recevez le rendez-vous
+                    | &nbsp;— par e-mail, dans votre agenda, et sur votre téléphone. Le rappel automatique part la veille.
+
+        //- ── Questions fréquentes ────────────────────────────────────────
+        section.slp-sec
+            h2.slp-sec__title Questions fréquentes
+            .slp-faq
+                each f in faq
+                    details.slp-faq__item
+                        summary.slp-faq__q= f.q
+                        p.slp-faq__a= f.r
+
+        //- ── Appel final ─────────────────────────────────────────────────
+        section.slp-final
+            h2.slp-final__title Prêt à ouvrir votre agenda à #{ville.nom} ?
+            p.slp-final__text Créez votre page en quelques minutes. Vous testez, et vous ne payez que si ça vous sert.
+            a.slp-btn.slp-btn--primary(href="/register") Commencer gratuitement
+
+        //- ── Maillage interne ────────────────────────────────────────────
+        //- Ces liens font exister les autres pages aux yeux de Google : sans
+        //- eux, 80 pages orphelines que seul le sitemap connaît.
+        section.slp-sec.slp-links
+            h2.slp-links__title #{metier.nom} — autres villes
+            .slp-links__row
+                each v in autresVilles
+                    a.slp-tag(href=`/logiciel-rendez-vous/${metier.slug}-${v.slug}`)= v.nom
+            h2.slp-links__title Autres métiers à #{ville.nom}
+            .slp-links__row
+                each m in autresMetiers
+                    a.slp-tag(href=`/logiciel-rendez-vous/${m.slug}-${ville.slug}`)= m.nom
