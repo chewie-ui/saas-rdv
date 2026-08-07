@@ -1072,52 +1072,76 @@
     return FULL_URL + '?sections=' + secs.join(',');
   }
 
-  /* ── Plateformes d'accueil ───────────────────────────────────────
-     Les étapes diffèrent d'un constructeur à l'autre, et surtout tous
-     n'acceptent pas le JavaScript : Wix (formules sans code) et
-     WordPress.com gratuit suppriment le <script> sans rien dire, et le
-     pro se retrouve avec une zone blanche. Pour ceux-là on fournit une
-     iframe seule, à hauteur fixe. */
+  // Étapes vérifiées sur les documentations officielles (août 2026), et non
+  // écrites de mémoire : les noms d'éléments et les formules requises changent
+  // souvent, et une consigne fausse fait perdre plus de temps qu'elle n'en
+  // fait gagner.
+  //
+  // `script: false` ne veut PAS dire « la plateforme interdit le JavaScript »,
+  // mais « l'ajustement automatique de la hauteur n'y sert à rien ». Sur Wix
+  // le JavaScript s'exécute bel et bien, mais dans un cadre sandboxé à hauteur
+  // fixe : notre message de redimensionnement n'atteint jamais la page.
+  // Résultat identique à un blocage, cause différente.
   var PLATEFORMES = {
     wordpress: {
       nom: 'WordPress',
       script: true,
       etapes: [
-        'Ouvrez la page où vous voulez le calendrier, puis cliquez sur « Modifier ».',
-        'Ajoutez un bloc « HTML personnalisé » (bouton + puis cherchez « HTML »).',
+        'Ouvrez la page voulue, puis cliquez sur « Modifier ».',
+        'Cliquez sur le « + » pour ajouter un bloc, et cherchez « HTML personnalisé ».',
         'Collez le code ci-dessous dans le bloc.',
-        'Mettez à jour la page — c\'est en ligne.',
+        'Cliquez sur « Mettre à jour » : c’est en ligne.',
       ],
-      note: 'Sur WordPress.com en formule gratuite, le JavaScript est retiré : choisissez alors « hauteur fixe » ci-dessous.',
+      note: 'Sur WordPress.com (l’hébergé, pas le WordPress installé chez vous), les formules d’entrée retirent le JavaScript : cochez alors « hauteur fixe » ci-dessous.',
     },
     wix: {
       nom: 'Wix',
       script: false,
       etapes: [
-        'Dans l\'éditeur, cliquez sur « + Ajouter » puis « Intégrer le code ».',
-        'Choisissez « Intégrer un site » (Embed a site).',
-        'Collez l\'adresse de votre page de réservation, ou le code ci-dessous via « Code HTML ».',
-        'Redimensionnez le cadre à la hauteur voulue, puis publiez.',
+        'Dans l’éditeur, cliquez sur « + Ajouter des éléments » puis « Intégrer le code ».',
+        'Choisissez « Code d’intégration HTML » (Embed HTML).',
+        'Cliquez sur « Entrer le code » et collez le code ci-dessous.',
+        'Faites glisser les bords du cadre pour lui donner la hauteur voulue, puis publiez.',
       ],
-      note: 'Wix bloque le JavaScript dans les intégrations : le code fourni est une iframe seule. Réglez la hauteur ci-dessous, ou étirez le cadre dans l\'éditeur.',
+      note: 'Wix place toute intégration dans un cadre à hauteur fixe : l’ajustement automatique n’y fonctionne pas, quelle que soit la formule. Réglez la hauteur ci-dessous, ou étirez le cadre dans l’éditeur.',
+    },
+    webador: {
+      nom: 'Webador',
+      script: true,
+      etapes: [
+        'Dans l’éditeur, faites glisser l’élément « Code intégré » depuis le menu de gauche sur votre page.',
+        'Cliquez sur l’élément, puis sur « Modifier le code intégré ».',
+        'Collez le code ci-dessous dans le champ, et enregistrez.',
+      ],
+      note: 'L’élément « Code intégré » demande une formule Lite, Pro ou Business : il n’existe pas sur la formule gratuite.',
     },
     squarespace: {
       nom: 'Squarespace',
       script: true,
       etapes: [
-        'Ouvrez la page, cliquez sur « Modifier » puis sur un « + » pour ajouter un bloc.',
+        'Ouvrez la page, cliquez sur « Modifier », puis sur un « + » pour ajouter un bloc.',
         'Choisissez le bloc « Code ».',
         'Collez le code ci-dessous et laissez le type sur « HTML ».',
         'Enregistrez, puis publiez.',
       ],
-      note: 'Le bloc « Code » demande une formule Business ou supérieure. En formule Personal, utilisez plutôt un simple lien vers votre page de réservation.',
+      note: 'Le bloc « Code » accepte du HTML sur toutes les formules, mais le JavaScript et les iframes demandent une formule payante (Core ou supérieure). Sur la formule d’entrée, mettez plutôt un simple lien vers votre page de réservation.',
+    },
+    jimdo: {
+      nom: 'Jimdo',
+      script: true,
+      etapes: [
+        'Passez le site en mode édition, survolez l’endroit voulu et cliquez sur « Ajouter un élément ».',
+        'Ouvrez « Autres éléments et modules », puis choisissez « Widget/HTML ».',
+        'Collez le code ci-dessous dans l’élément et enregistrez.',
+      ],
+      note: '',
     },
     shopify: {
       nom: 'Shopify',
       script: true,
       etapes: [
         'Administration Shopify → Boutique en ligne → Pages.',
-        'Ouvrez la page voulue, puis passez l\'éditeur en mode HTML (bouton « <> »).',
+        'Ouvrez la page voulue, puis passez l’éditeur en mode HTML (bouton « <> »).',
         'Collez le code ci-dessous.',
         'Enregistrez.',
       ],
@@ -1127,9 +1151,9 @@
       nom: 'Webflow',
       script: true,
       etapes: [
-        'Dans le Designer, glissez un élément « Embed » à l\'endroit voulu.',
-        'Collez le code ci-dessous dans la fenêtre qui s\'ouvre.',
-        'Enregistrez, puis publiez le site.',
+        'Dans le Designer, glissez un élément « Embed » à l’endroit voulu.',
+        'Collez le code ci-dessous dans la fenêtre qui s’ouvre, puis enregistrez.',
+        'Publiez le site pour que l’intégration soit visible en ligne.',
       ],
       note: '',
     },
@@ -1137,11 +1161,11 @@
       nom: 'Autre site',
       script: true,
       etapes: [
-        'Ouvrez le fichier ou l\'éditeur HTML de la page voulue.',
-        'Collez le code ci-dessous à l\'endroit où le calendrier doit apparaître.',
+        'Ouvrez le fichier ou l’éditeur HTML de la page voulue.',
+        'Collez le code ci-dessous à l’endroit où le calendrier doit apparaître.',
         'Enregistrez et publiez.',
       ],
-      note: 'Si votre outil refuse le JavaScript, basculez sur « hauteur fixe » ci-dessous : l\'iframe seule fonctionne partout.',
+      note: 'Si votre outil refuse le JavaScript, ou si le calendrier apparaît coupé, cochez « hauteur fixe » ci-dessous : l’iframe seule fonctionne partout.',
     },
   };
 
