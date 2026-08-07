@@ -1199,3 +1199,235 @@
   cursor: pointer;
 }
 .cz-plat__noscript input { cursor: pointer; }
+
+/* ══ Onglet Intégration — parcours en trois temps ═════════════════════════
+   L'onglet empilait onze réglages dans une seule carte, sans ordre de
+   lecture : le pro copiait le code avant d'avoir choisi ce qu'il intégrait.
+   Ici une décision par étape, numérotée, dans le même vocabulaire visuel que
+   le reste de l'admin — un style importé jurerait avec les trois autres
+   onglets. */
+
+.czi { display: flex; flex-direction: column; gap: 26px; }
+
+/* ── Raccourcis (lien, QR) : partager sans rien intégrer ── */
+.czi-quick {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+.czi-quick__card {
+  padding: 20px 22px;
+  background: #fff;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 16px;
+}
+.czi-quick__head { display: flex; align-items: center; gap: 9px; margin-bottom: 5px; }
+.czi-quick__ic { font-size: 19px; color: var(--accent, #16a34a); }
+.czi-quick__title { font-size: 15px; font-weight: 700; color: var(--text-primary, #141c25); }
+.czi-quick__desc {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary, #637083);
+}
+.czi-quick__link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent, #16a34a);
+  cursor: pointer;
+}
+.czi-quick__link:hover { text-decoration: underline; }
+
+.czi-qr { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.czi-qr__canvas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 108px;
+  height: 108px;
+  flex-shrink: 0;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 12px;
+}
+.czi-qr__canvas img, .czi-qr__canvas canvas { max-width: 100%; height: auto; display: block; }
+
+/* ── Les trois étapes ── */
+.czi-steps { display: flex; flex-direction: column; gap: 14px; }
+
+.czi-step {
+  background: #fff;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.czi-step__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px 22px 0;
+}
+/* Le numéro porte la progression : c'est lui qui dit « il y a un ordre ». */
+.czi-step__num {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent, #16a34a);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+}
+.czi-step__titles { min-width: 0; }
+.czi-step__title {
+  margin: 0 0 3px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--text-primary, #141c25);
+}
+.czi-step__sub {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary, #637083);
+}
+/* Aligné sous le titre, pas sous le numéro : le regard suit une seule colonne. */
+.czi-step__body { padding: 16px 22px 22px 64px; }
+
+@media (max-width: 620px) {
+  .czi-step__body { padding-left: 22px; }
+}
+
+/* Les étapes de la plateforme apparaissent en cascade au changement de choix :
+   le mouvement dit « ce bloc vient de changer », sans texte pour l'annoncer. */
+.cz-plat__list li {
+  animation: cziEtape 0.32s ease both;
+}
+.cz-plat__list li:nth-child(2) { animation-delay: 0.05s; }
+.cz-plat__list li:nth-child(3) { animation-delay: 0.10s; }
+.cz-plat__list li:nth-child(4) { animation-delay: 0.15s; }
+@keyframes cziEtape {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cz-plat__list li { animation: none; }
+}
+
+/* ── Réglages fins, repliés ── */
+.czi-more {
+  margin-top: 18px;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.czi-more__sum {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-secondary, #637083);
+  cursor: pointer;
+  list-style: none;
+  background: var(--surface, #f9fafb);
+}
+.czi-more__sum::-webkit-details-marker { display: none; }
+.czi-more__sum::after {
+  content: "expand_more";
+  font-family: "Material Symbols Outlined";
+  margin-left: auto;
+  font-size: 18px;
+  transition: transform 0.15s;
+}
+.czi-more[open] .czi-more__sum::after { transform: rotate(180deg); }
+.czi-more__body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  padding: 18px 16px;
+}
+.czi-more__save { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+/* ── Le code ── */
+.czi-code { position: relative; }
+.czi-code__area {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16px 18px;
+  /* Fond sombre : un bloc de code se distingue immédiatement d'un champ à
+     remplir. C'est la seule zone de la page qu'on ne modifie pas, on copie. */
+  background: #0f172a;
+  color: #e2e8f0;
+  border: 0;
+  border-radius: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.65;
+  resize: none;
+  overflow: hidden;
+}
+.czi-code__area:focus { outline: 2px solid var(--accent, #16a34a); outline-offset: 2px; }
+.czi-code__copy {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent, #16a34a);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+.czi-code__copy:hover { opacity: 0.9; }
+
+/* ── Aperçu ── */
+.czi-preview {
+  background: #fff;
+  border: 1px solid var(--border-light, #e5e7eb);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.czi-preview__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border-light, #e5e7eb);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-secondary, #637083);
+}
+.czi-preview__hint {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted, #9ca3af);
+}
+
+@media (min-width: 780px) {
+  .czi-quick { grid-template-columns: 1fr 1fr; }
+  .czi-more__body { grid-template-columns: 1fr 1fr; }
+  .czi-more__save { grid-column: 1 / -1; }
+}

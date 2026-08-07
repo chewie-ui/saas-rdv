@@ -1018,17 +1018,22 @@ block content
         .cz-panel#czPanelIntegration(style="display:none")
             - var bUrl2 = currentCompany ? ('/' + (currentCompany.slug || currentCompany._id)) : ''
 
-            .cz-integration
+            //- ── Onglet Intégration ─────────────────────────────────────────
+            //- Le contenu tenait dans une seule carte : onze réglages empilés,
+            //- sans ordre de lecture. Le pro ne savait pas par où commencer et
+            //- copiait un code avant d'avoir choisi ce qu'il intégrait.
+            //- Réorganisé en un parcours à trois temps — une décision par
+            //- étape — avec les deux raccourcis (lien, QR) sortis en haut :
+            //- ils n'ont rien à voir avec l'intégration sur un site.
+            .czi
 
-                //- ── Lien direct ────────────────────────────────────────────────
-                .cz-int-card
-                    .cz-int-card__head
-                        .cz-int-card__icon.cz-int-card__icon--link
-                            span.material-symbols-outlined(style="font-size:20px") link
-                        .cz-int-card__htext
-                            h3 Lien direct
-                            p Partagez votre page de réservation avec vos clients.
-                    .cz-int-card__body
+                //- ── Raccourcis : partager sans rien intégrer ────────────────
+                .czi-quick
+                    .czi-quick__card
+                        .czi-quick__head
+                            span.material-symbols-outlined.czi-quick__ic link
+                            span.czi-quick__title Votre lien de réservation
+                        p.czi-quick__desc À envoyer par message, à mettre en bio Instagram ou sur votre fiche Google.
                         .cz-copy-field
                             input.cz-copy-field__input#czIntLink(
                                 type="text"
@@ -1038,42 +1043,53 @@ block content
                             button.cz-copy-field__btn#czIntLinkCopy(type="button")
                                 span.material-symbols-outlined(style="font-size:14px") content_copy
                                 | &nbsp;Copier
-                        .cz-copy-field(style="margin-top:0")
-                            button.cz-copy-field__btn#czIntOpenPage(
-                                type="button"
-                                style="width:100%;border-left:none;justify-content:center;padding:10px 14px"
-                            )
-                                span.material-symbols-outlined(style="font-size:14px") open_in_new
-                                | &nbsp;Ouvrir la page
+                        button.czi-quick__link#czIntOpenPage(type="button")
+                            span.material-symbols-outlined(style="font-size:15px") open_in_new
+                            | &nbsp;Ouvrir ma page
 
-                //- ── Intégration iframe ─────────────────────────────────────────
-                .cz-int-card
-                    .cz-int-card__head
-                        .cz-int-card__icon.cz-int-card__icon--embed
-                            span.material-symbols-outlined(style="font-size:20px") code
-                        .cz-int-card__htext
-                            h3 Intégrer sur votre site
-                            p Copiez le code iframe et collez-le dans votre site web.
-                    .cz-int-card__body
+                    .czi-quick__card
+                        .czi-quick__head
+                            span.material-symbols-outlined.czi-quick__ic qr_code_2
+                            span.czi-quick__title QR code
+                        p.czi-quick__desc À afficher en vitrine, sur une carte de visite ou au comptoir.
+                        .czi-qr
+                            .czi-qr__canvas#czQrCanvas
+                                img#czQrImg(alt="QR code de votre page de réservation" style="display:none")
+                            button.sm-btn.sm-btn--ghost#czQrDownload(type="button")
+                                span.material-symbols-outlined(style="font-size:15px") download
+                                | &nbsp;Télécharger
 
-                        //- Personnalisation de l'embed (titre + police)
-                        .cz-embed-custom
-                            .cz-embed-ctrl
-                                label(for="czEmbedTitle") Titre affiché au-dessus du calendrier
-                                input#czEmbedTitle(type="text" maxlength="80" placeholder="Ex : Prendre rendez-vous" value=(cs.embedTitle || ''))
-                            .cz-embed-ctrl
-                                label(for="czEmbedFontUrl") URL de police personnalisée (Google Fonts ou @font-face)
-                                input#czEmbedFontUrl(type="text" placeholder="https://fonts.googleapis.com/css2?family=..." value=(cs.embedFontUrl || ''))
-                            .cz-embed-ctrl
-                                label(for="czEmbedFontFamily") Nom de la police (font-family)
-                                input#czEmbedFontFamily(type="text" placeholder="Ex : Poppins" value=(cs.embedFontFamily || ''))
-                            button.sm-btn.sm-btn--primary#czEmbedCustomSave(type="button")
-                                span Enregistrer
-                            span.cz-embed-custom__status#czEmbedCustomStatus
+                //- ── Le parcours ────────────────────────────────────────────
+                .czi-steps
 
-                        //- Sections à inclure
-                        .cz-embed-sections
-                            p.cz-embed-sections__label Sections à intégrer
+                    //- ÉTAPE 1 — la plateforme commande tout le reste : c'est
+                    //- elle qui décide du code généré, d'où sa place en tête.
+                    section.czi-step
+                        .czi-step__head
+                            span.czi-step__num 1
+                            .czi-step__titles
+                                h3.czi-step__title Où voulez-vous l'intégrer ?
+                                p.czi-step__sub Les étapes et le code s'adaptent à votre outil.
+                        .czi-step__body
+                            .cz-plat__pills#czPlatPills
+                                each p in [{k:'wordpress',l:'WordPress'},{k:'wix',l:'Wix'},{k:'webador',l:'Webador'},{k:'squarespace',l:'Squarespace'},{k:'jimdo',l:'Jimdo'},{k:'shopify',l:'Shopify'},{k:'webflow',l:'Webflow'},{k:'autre',l:'Autre site'}]
+                                    button.cz-plat__pill(type="button" data-plat=p.k class=(p.k === 'wordpress' ? 'is-active' : ''))= p.l
+                            .cz-plat__steps#czPlatSteps
+                            .cz-plat__warn#czPlatWarn(hidden)
+                                span.material-symbols-outlined(style="font-size:16px") info
+                                span#czPlatWarnText
+                            label.cz-plat__noscript
+                                input#czNoScript(type="checkbox")
+                                span Mon site n'accepte pas le JavaScript (hauteur fixe)
+
+                    //- ÉTAPE 2 — ce que le visiteur verra.
+                    section.czi-step
+                        .czi-step__head
+                            span.czi-step__num 2
+                            .czi-step__titles
+                                h3.czi-step__title Qu'affiche-t-on ?
+                                p.czi-step__sub Le calendrier est toujours là. Ajoutez le reste si vous voulez.
+                        .czi-step__body
                             .cz-embed-sections__grid
                                 label.cz-embed-section-opt
                                     input(type="checkbox" name="embedSection" value="booking" checked disabled)
@@ -1102,85 +1118,61 @@ block content
                                         span.material-symbols-outlined(style="font-size:14px") schedule
                                     span.cz-embed-section-opt__label Horaires
 
-                        //- ── Où l'intégrer ? ────────────────────────────────
-                        //- Les étapes changent d'un constructeur de site à
-                        //- l'autre, et surtout tous n'acceptent pas le
-                        //- JavaScript : sans ce choix, le pro collait un code
-                        //- à script sur un Wix gratuit qui le supprime
-                        //- silencieusement, et se retrouvait avec une zone vide.
-                        .cz-plat
-                            p.cz-plat__label Où voulez-vous l'intégrer ?
-                            .cz-plat__pills#czPlatPills
-                                each p in [{k:'wordpress',l:'WordPress'},{k:'wix',l:'Wix'},{k:'webador',l:'Webador'},{k:'squarespace',l:'Squarespace'},{k:'jimdo',l:'Jimdo'},{k:'shopify',l:'Shopify'},{k:'webflow',l:'Webflow'},{k:'autre',l:'Autre site'}]
-                                    button.cz-plat__pill(type="button" data-plat=p.k class=(p.k === 'wordpress' ? 'is-active' : ''))= p.l
-                            .cz-plat__steps#czPlatSteps
-                            .cz-plat__warn#czPlatWarn(hidden)
-                                span.material-symbols-outlined(style="font-size:16px") info
-                                span#czPlatWarnText
-                            //- Échappatoire : certaines formules (WordPress.com
-                            //- gratuit, Squarespace Personal…) retirent le
-                            //- JavaScript sans prévenir. Cochée d'office pour
-                            //- les plateformes qu'on sait bloquantes.
-                            label.cz-plat__noscript
-                                input#czNoScript(type="checkbox")
-                                span Mon site n'accepte pas le JavaScript (hauteur fixe)
+                            //- Réglages fins repliés : trois pros sur quatre n'y
+                            //- toucheront jamais, ils encombraient l'écran.
+                            details.czi-more
+                                summary.czi-more__sum
+                                    span.material-symbols-outlined(style="font-size:16px") tune
+                                    span Apparence et dimensions
+                                .czi-more__body
+                                    .cz-embed-ctrl
+                                        label(for="czEmbedTitle") Titre affiché au-dessus du calendrier
+                                        input#czEmbedTitle(type="text" maxlength="80" placeholder="Ex : Prendre rendez-vous" value=(cs.embedTitle || ''))
+                                    .cz-embed-ctrl
+                                        label(for="czEmbedFontUrl") URL d'une police personnalisée
+                                        input#czEmbedFontUrl(type="text" placeholder="https://fonts.googleapis.com/css2?family=..." value=(cs.embedFontUrl || ''))
+                                    .cz-embed-ctrl
+                                        label(for="czEmbedFontFamily") Nom de la police
+                                        input#czEmbedFontFamily(type="text" placeholder="Ex : Poppins" value=(cs.embedFontFamily || ''))
+                                    .cz-embed-ctrl
+                                        label(for="czIframeWidth") Largeur
+                                        input#czIframeWidth(type="text" value="100%" placeholder="100% ou 800px")
+                                    .cz-embed-ctrl#czHeightCtrl(hidden)
+                                        label(for="czIframeHeight") Hauteur (px)
+                                        input#czIframeHeight(type="number" value="800" min="400" max="3000" step="10")
+                                    .czi-more__save
+                                        button.sm-btn.sm-btn--primary#czEmbedCustomSave(type="button")
+                                            span Enregistrer l'apparence
+                                        span.cz-embed-custom__status#czEmbedCustomStatus
 
-                        //- Contrôles de taille. La hauteur ne sert qu'en mode
-                        //- fixe : en automatique, l'iframe s'ajuste toute seule.
-                        .cz-embed-controls
-                            .cz-embed-ctrl
-                                label(for="czIframeWidth") Largeur
-                                input#czIframeWidth(type="text" value="100%" placeholder="100% ou 800px")
-                            .cz-embed-ctrl#czHeightCtrl(hidden)
-                                label(for="czIframeHeight") Hauteur (px)
-                                input#czIframeHeight(type="number" value="800" min="400" max="3000" step="10")
+                    //- ÉTAPE 3 — l'action concrète.
+                    section.czi-step
+                        .czi-step__head
+                            span.czi-step__num 3
+                            .czi-step__titles
+                                h3.czi-step__title Copiez ce code
+                                p.czi-step__sub Puis collez-le dans votre site, en suivant les étapes ci-dessus.
+                        .czi-step__body
+                            .czi-code
+                                textarea.czi-code__area#czIframeCode(readonly rows="5" spellcheck="false")
+                                button.czi-code__copy#czIframeCodeCopy(type="button")
+                                    span.material-symbols-outlined(style="font-size:16px") content_copy
+                                    span Copier le code
 
-                        //- Code généré
-                        .cz-copy-field(style="margin-top:0")
-                            textarea.cz-copy-field__input.cz-copy-field__input--code#czIframeCode(
-                                readonly
-                                rows="5"
-                                style="font-size:11.5px;padding:10px 14px"
+                //- ── Aperçu ─────────────────────────────────────────────────
+                if bUrl2
+                    .czi-preview
+                        .czi-preview__bar
+                            span.material-symbols-outlined(style="font-size:16px") visibility
+                            span Aperçu — exactement ce que verront vos clients
+                            span.czi-preview__hint Mise à jour automatique
+                        .cz-embed-preview__frame-wrap#czEmbedFrameWrap
+                            iframe#czEmbedPreviewFrame(
+                                src=""
+                                frameborder="0"
+                                title="Aperçu de l'intégration"
+                                style="width:100%;border:none;display:block"
                             )
-                            button.cz-copy-field__btn#czIframeCodeCopy(
-                                type="button"
-                                style="align-self:stretch;flex-direction:column;justify-content:center;gap:4px;padding:0 16px"
-                            )
-                                span.material-symbols-outlined(style="font-size:14px") content_copy
-                                | Copier
-
-                        //- Aperçu embed — grand, mis à jour en temps réel
-                        if bUrl2
-                            .cz-embed-preview
-                                .cz-embed-preview__bar
-                                    | Aperçu live
-                                    span.cz-embed-preview__hint (mise à jour automatique)
-                                .cz-embed-preview__frame-wrap#czEmbedFrameWrap
-                                    iframe#czEmbedPreviewFrame(
-                                        src=""
-                                        frameborder="0"
-                                        title="Aperçu iframe"
-                                        style="width:100%;border:none;border-radius:0 0 8px 8px;display:block"
-                                    )
-
-                //- ── QR code ────────────────────────────────────────────────────
-                .cz-int-card
-                    .cz-int-card__head
-                        .cz-int-card__icon.cz-int-card__icon--qr
-                            span.material-symbols-outlined(style="font-size:20px") qr_code
-                        .cz-int-card__htext
-                            h3 QR Code
-                            p Permettez à vos clients de scanner pour réserver.
-                    .cz-int-card__body
-                        .cz-qr-wrap
-                            .cz-qr-canvas#czQrCanvas
-                                img#czQrImg(alt="QR Code" style="display:none")
-                            .cz-qr-actions
-                                p(style="font-size:13px;color:var(--text-secondary);margin:0 0 12px") Scannez ce QR code pour accéder directement à votre page de réservation. Idéal à afficher en vitrine ou sur vos supports.
-                                button.sm-btn.sm-btn--primary#czQrDownload(type="button")
-                                    span.material-symbols-outlined(style="font-size:14px") download
-                                    | &nbsp;Télécharger HD
-
 block scripts
     style.
         /* ── Header & onglets ── */
