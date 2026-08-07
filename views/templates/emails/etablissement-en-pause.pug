@@ -1,0 +1,71 @@
+-
+  var _year = new Date().getFullYear()
+  var _prenom = (prenom && prenom.length) ? prenom : ''
+  var _url = lien || 'https://www.branshee.com/dashboard'
+
+div(style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;")
+  style.
+    @media (max-width: 600px) {
+      .email-card-header { padding: 28px 20px !important; }
+      .email-card-body { padding: 24px 20px 28px !important; }
+    }
+  table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0;padding:0;background-color:#f0f4f8;")
+    tr
+      td(align="center" style="padding:40px 16px;")
+        table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;margin:0 auto;")
+
+          //- ── Logo ─────────────────────────────────────────────────────────
+          tr
+            td(align="center" style="padding:0 0 24px;")
+              a(href="https://www.branshee.com" style="display:inline-block;text-decoration:none;")
+                table(cellpadding="0" cellspacing="0" role="presentation" style="display:inline-table;")
+                  tr
+                    td(valign="middle" style="padding-right:8px;")
+                      span(style="display:block;width:32px;height:32px;background:#1a7a4a;border-radius:9px;font-size:16px;font-weight:800;color:#ffffff;text-align:center;line-height:32px;") B
+                    td(valign="middle")
+                      span(style="font-size:15px;font-weight:700;color:#1e2923;letter-spacing:-0.2px;") BranShee
+
+          //- ── Carte principale ─────────────────────────────────────────────
+          tr
+            td(style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(16,24,40,0.06);")
+
+              td.email-card-header(style="display:block;padding:32px 36px 8px;")
+                p(style="margin:0 0 6px;font-size:13px;font-weight:600;color:#b45309;text-transform:uppercase;letter-spacing:0.06em;") Votre page est en pause
+                h1(style="margin:0;font-size:24px;font-weight:800;color:#1e2923;line-height:1.25;letter-spacing:-0.5px;")
+                  | Bonjour #{_prenom},
+
+              td.email-card-body(style="display:block;padding:16px 36px 32px;")
+                p(style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#475569;")
+                  | Votre page BranShee n'a jamais été configurée : pas de nom d'établissement, pas d'adresse, pas de prestations. Nous l'avons donc mise en pause.
+
+                //- Dire ce que ça change concrètement, sinon le pro ne sait pas
+                //- s'il doit s'inquiéter.
+                table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:20px;")
+                  tr
+                    td(style="padding:14px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;")
+                      p(style="margin:0 0 6px;font-size:14px;color:#475569;line-height:1.55;")
+                        | • Votre page n'apparaît plus dans la recherche BranShee.
+                      p(style="margin:0 0 6px;font-size:14px;color:#475569;line-height:1.55;")
+                        | • Vos clients ne peuvent pas y prendre rendez-vous.
+                      p(style="margin:0;font-size:14px;color:#475569;line-height:1.55;")
+                        | • Votre compte, vos données et vos réglages sont intacts.
+
+                p(style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#475569;")
+                  | Vous pouvez la réactiver à tout moment, en un clic : un bouton
+                  |  « Réactiver » vous attend dès votre connexion.
+
+                table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                  tr
+                    td(align="center" style="padding:4px 0 8px;")
+                      a(href=_url style="display:inline-block;background:#1a7a4a;color:#ffffff;padding:14px 30px;border-radius:10px;text-decoration:none;font-size:15px;font-weight:700;") Réactiver ma page
+
+                p(style="margin:20px 0 0;font-size:13px;line-height:1.6;color:#9ca3af;")
+                  | Si vous ne souhaitez plus utiliser BranShee, vous n'avez rien à faire : votre page restera en pause.
+
+          //- ── Pied ─────────────────────────────────────────────────────────
+          tr
+            td(align="center" style="padding:24px 0 0;")
+              p(style="margin:0 0 6px;font-size:12px;color:#94a3b8;") À bientôt — L'équipe BranShee
+              p(style="margin:0;font-size:12px;color:#94a3b8;")
+                a(href="https://www.branshee.com" style="color:#94a3b8;text-decoration:underline;") branshee.com
+              p(style="margin:8px 0 0;font-size:11px;color:#cbd5e1;") © #{_year} BranShee. Tous droits réservés.

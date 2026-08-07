@@ -235,6 +235,20 @@ html(lang="fr")
                                     span.material-symbols-outlined close
                         script(src="/js/components/admin/upgrade-nudge.js" defer)
 
+                    //- ── Établissement en pause ──────────────────────────────
+                    //- Une fiche en pause n'apparaît plus dans la recherche et
+                    //- n'accepte plus de réservation. Sans ce bandeau, le pro ne
+                    //- l'apprenait nulle part : il croyait simplement n'avoir
+                    //- aucun client. Non masquable, et réactivable d'ici même.
+                    if currentCompany && currentCompany.isPaused
+                        .pausebn
+                            span.pausebn__ic.material-symbols-outlined pause_circle
+                            .pausebn__body
+                                strong.pausebn__title Votre établissement est en pause
+                                span.pausebn__text Il n'apparaît pas dans la recherche et vos clients ne peuvent pas réserver. Réactivez-le quand vous êtes prêt.
+                            button.sm-btn.sm-btn--primary#pausebnResume(type="button") Réactiver
+                        script(src="/js/components/admin/pause-banner.js" defer)
+
                     block content
         +dialog()
 

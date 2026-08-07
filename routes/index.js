@@ -306,6 +306,20 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
     // des vieux documents excluait l'établissement à tort.
     conditions.push({ "owner.isDisabled": { $ne: true } });
 
+    // ── Fiches jamais configurées ────────────────────────────────────────
+    // Un établissement encore nommé « Établissement » n'a jamais été touché
+    // par son propriétaire : pas de nom, souvent ni ville ni photo ni service.
+    // L'afficher pollue la recherche et envoie le visiteur sur une page vide —
+    // 24 fiches sur 31 étaient dans ce cas, soit l'essentiel des résultats.
+    // Le NOM est le seul critère discriminant : un horaire par défaut est créé
+    // automatiquement à l'inscription, il ne prouve donc aucune configuration.
+    // Rien n'est supprimé ni mis en pause ici : la fiche reste accessible par
+    // son lien direct, elle n'apparaît simplement plus dans la recherche.
+    const NOM_PAR_DEFAUT = /^\s*(établissement|etablissement)\s*$/i;
+    conditions.push({
+      name: { $exists: true, $nin: ["", null], $not: NOM_PAR_DEFAUT },
+    });
+
     const searchMatch = { $and: conditions };
 
     // ── Pagination côté BASE ────────────────────────────────────────────────
