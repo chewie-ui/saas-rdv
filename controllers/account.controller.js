@@ -874,8 +874,17 @@ function emailCodeValid(session, provided) {
   return Number(provided) === Number(ev.code);
 }
 
+// Un code validé marque la session. Sans cette trace, le code à 6 chiffres ne
+// débloquait QUE le champ dans le navigateur : /account/edit/email changeait
+// l'adresse sans jamais vérifier qu'un code avait été saisi, et un appel
+// direct à la route suffisait à contourner tout le flux.
+function marquerCodeValide(session) {
+  if (session.emailVerification) session.emailVerification.verifieLe = Date.now();
+}
+
 exports.checkDigitalCode = async (req, res) => {
   const ok = emailCodeValid(req.session, req.body.code);
+  if (ok) marquerCodeValide(req.session);
   return res.json({ success: ok });
 };
 
@@ -885,6 +894,7 @@ exports.verificationCode = (req, res) => {
     // invalide (comparaison string vs number toujours fausse) → la
     // vérification était totalement contournable.
     const ok = emailCodeValid(req.session, req.body.val);
+    if (ok) marquerCodeValide(req.session);
     return res.json({ success: ok, message: ok ? undefined : "Code invalide" });
   } catch (err) {
     console.error("verificationCode error:", err.message);
@@ -900,6 +910,20 @@ exports.editEmail = async (req, res) => {
       return res.status(400).json({ success: false, message: "Adresse email invalide." });
     }
 
+    // Le code reçu par e-mail doit avoir été validé DANS CETTE SESSION, et
+    // récemment. Sans ce contrôle, il ne servait qu'à déverrouiller le champ
+    // dans le navigateur : un appel direct à cette route changeait l'adresse
+    // sans aucun code — et l'adresse, c'est la reprise du compte.
+    const ev = req.session.emailVerification;
+    const DELAI_MS = 15 * 60 * 1000;
+    if (!ev || !ev.verifieLe || Date.now() - ev.verifieLe > DELAI_MS) {
+      return res.status(403).json({
+        success: false,
+        error: "code_non_verifie",
+        message: "Confirmez d'abord le code reçu par e-mail avant de changer d'adresse.",
+      });
+    }
+
     const isEmail = await User.findOne({ email }).select("_id").lean();
     if (isEmail) {
       return res.json({
@@ -909,6 +933,10 @@ exports.editEmail = async (req, res) => {
     }
 
     await User.findByIdAndUpdate(req.user._id, { email });
+    // Code consommé : un seul changement d'adresse par code reçu. Sans ça, la
+    // validation restait valable 15 minutes pour autant de changements qu'on
+    // voulait.
+    delete req.session.emailVerification;
     // Ne renvoie PLUS l'objet user complet (il contenait le mot de passe haché,
     // le secret 2FA, les ids Stripe…). On confirme seulement le nouvel email.
     return res.json({ success: true, email });

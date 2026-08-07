@@ -107,6 +107,11 @@
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open(method || "PATCH", url);
+      // XMLHttpRequest ne pose PAS cet en-tête tout seul, et un envoi
+      // multipart n'a pas de Content-Type exploitable : sans lui, une session
+      // expirée renvoyait le HTML de /login, que le JSON.parse ci-dessous
+      // avalait en silence — l'envoi semblait simplement « échouer ».
+      xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
       xhr.timeout = 90000;
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
