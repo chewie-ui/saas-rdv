@@ -391,6 +391,20 @@ block content
                         //- puisse dire qu'il durera plus longtemps.
                         select.input#newApptDurationPick(hidden)
 
+                //- ── Plusieurs dates d'un coup ───────────────────────────────
+                //- Facultatif : sans clic sur « Ajouter cette date », la modale
+                //- se comporte exactement comme avant et crée UN rendez-vous.
+                //- Chaque date ajoutée devient un rendez-vous indépendant : en
+                //- annuler ou en déplacer un ne touche pas les autres.
+                .edit-fields-row
+                    .field-container.flex.col
+                        .multidate
+                            button.multidate__add#newApptAddDate(type="button")
+                                span.material-symbols-outlined(style="font-size:16px") library_add
+                                span Ajouter cette date
+                            span.multidate__hint#newApptDatesHint Pour créer plusieurs rendez-vous d'un coup.
+                        .multidate__list#newApptDatesList(hidden)
+
                 if services && services.length > 0
                     .edit-fields-row
                         .field-container.flex.col

@@ -2492,3 +2492,76 @@ body.appt-group-open { overflow: hidden; }
 
 .appt-client-hint { margin: 6px 0 0; font-size: 12.5px; color: var(--text-secondary, #637083); }
 .appt-client-hint[hidden] { display: none; }
+
+/* ── Plusieurs rendez-vous d'un coup (modale Nouveau rendez-vous) ───────────
+   Volontairement discret : c'est une option, pas une étape. Tant qu'aucune
+   date n'est empilée, seule la ligne « Ajouter cette date » est visible. */
+.multidate {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.multidate__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border: 1.5px dashed var(--border-light, #dfe3e8);
+  border-radius: 9px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #141c25);
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.multidate__add:hover {
+  border-color: var(--accent, #16a34a);
+  color: var(--accent, #16a34a);
+}
+.multidate__add .material-symbols-outlined { color: inherit; }
+.multidate__hint {
+  flex: 1 1 140px;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--text-secondary, #637083);
+}
+
+.multidate__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.multidate__list[hidden] { display: none; }
+.multidate__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 6px 5px 10px;
+  border: 1.5px solid var(--accent, #16a34a);
+  border-radius: 999px;
+  background: var(--accent-soft, #f0fdf4);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary, #141c25);
+  white-space: nowrap;
+}
+.multidate__chip-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-secondary, #637083);
+  cursor: pointer;
+}
+.multidate__chip-x:hover { background: rgba(0, 0, 0, .07); color: var(--text-primary, #141c25); }
+.multidate__chip-x .material-symbols-outlined { color: inherit; }

@@ -327,7 +327,7 @@ setInterval(updateTimeline, 60000);
     document.getElementById("newApptStartBox"),
     document.getElementById("newApptStartPanel"),
     document.getElementById("newApptStartList"),
-    () => { recomputeEndAndDuration(); }
+    () => { recomputeEndAndDuration(); rendreCreneaux(); }
   );
 
   if (serviceSel) serviceSel.addEventListener("change", recomputeEndAndDuration);
@@ -337,6 +337,104 @@ setInterval(updateTimeline, 60000);
     errorEl.textContent = msg;
     errorEl.style.display = "block";
   }
+
+  // ── Plusieurs rendez-vous d'un coup ───────────────────────────────────────
+  // Caler quatre séances de suivi demandait quatre fois la même saisie : même
+  // client, même prestation, seule la date changeait. On peut désormais
+  // empiler des dates libres (ce n'est pas une récurrence : elles n'ont aucun
+  // rapport entre elles). Chaque date devient un rendez-vous INDÉPENDANT —
+  // annuler ou déplacer l'un ne touche pas les autres.
+  // Sans clic sur « Ajouter cette date », rien ne change : un seul rendez-vous
+  // est créé, exactement comme avant.
+  const addDateBtn = document.getElementById("newApptAddDate");
+  const datesList  = document.getElementById("newApptDatesList");
+  const datesHint  = document.getElementById("newApptDatesHint");
+  const submitLabel = submitBtn.querySelector("span");
+  const submitLabelDefaut = submitLabel ? submitLabel.textContent : "";
+  let creneauxEnAttente = [];
+  // Un rendez-vous créé mais suivi d'un échec sur une autre date : la page
+  // affiche encore l'ancien calendrier. On la rafraîchit à la fermeture.
+  let calendrierPerime = false;
+
+  function libelleDate(iso) {
+    try {
+      const d = new Date(iso + "T00:00:00");
+      return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+    } catch (e) {
+      return iso;
+    }
+  }
+
+  // Le créneau encore dans les champs compte comme un rendez-vous à créer :
+  // ajouter trois dates puis en saisir une quatrième sans cliquer « Ajouter »
+  // en crée bien quatre, et ne rien saisir après avoir ajouté n'en crée que
+  // trois. Aucun clic obligatoire, donc, dans un sens comme dans l'autre.
+  function creneauxAcreer() {
+    const liste = creneauxEnAttente.slice();
+    const date = dateInput.value;
+    const time = startPicker.get();
+    if (date && time && !liste.some((c) => c.date === date && c.time === time)) {
+      liste.push({ date, time });
+    }
+    return liste;
+  }
+
+  function rendreCreneaux() {
+    if (!datesList) return;
+    datesList.innerHTML = "";
+    datesList.hidden = creneauxEnAttente.length === 0;
+    creneauxEnAttente.forEach((c, i) => {
+      const chip = document.createElement("span");
+      chip.className = "multidate__chip";
+      const txt = document.createElement("span");
+      txt.textContent = `${libelleDate(c.date)} · ${c.time}`;
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "multidate__chip-x";
+      del.setAttribute("aria-label", "Retirer cette date");
+      del.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px">close</span>';
+      del.addEventListener("click", () => {
+        creneauxEnAttente.splice(i, 1);
+        rendreCreneaux();
+      });
+      chip.appendChild(txt);
+      chip.appendChild(del);
+      datesList.appendChild(chip);
+    });
+
+    const total = creneauxAcreer().length;
+    if (datesHint) {
+      datesHint.textContent = total > 1
+        ? `${total} rendez-vous indépendants seront créés.`
+        : "Pour créer plusieurs rendez-vous d'un coup.";
+    }
+    if (submitLabel) {
+      submitLabel.textContent = total > 1 ? `Créer ${total} rendez-vous` : submitLabelDefaut;
+    }
+  }
+
+  if (addDateBtn) {
+    addDateBtn.addEventListener("click", () => {
+      const date = dateInput.value;
+      const time = startPicker.get();
+      if (!date || !time) {
+        showError("Choisissez une date et une heure de début avant de l'ajouter à la liste.");
+        return;
+      }
+      if (!creneauxEnAttente.some((c) => c.date === date && c.time === time)) {
+        creneauxEnAttente.push({ date, time });
+      }
+      errorEl.style.display = "none";
+      // L'heure repart à zéro : la ligne du haut sert alors à saisir la date
+      // SUIVANTE, et le créneau qu'on vient d'ajouter n'est pas compté deux
+      // fois par creneauxAcreer().
+      startPicker.set("");
+      recomputeEndAndDuration();
+      rendreCreneaux();
+    });
+  }
+
+  if (dateInput) dateInput.addEventListener("change", rendreCreneaux);
 
   function resetForm() {
     dateInput.value = "";
@@ -356,6 +454,8 @@ setInterval(updateTimeline, 60000);
     endTimeEl.textContent = "--:--";
     durationEl.textContent = "—";
     manualDurationOverride = null;
+    creneauxEnAttente = [];
+    rendreCreneaux();
     deselectionnerClient();
   }
 
@@ -493,6 +593,9 @@ setInterval(updateTimeline, 60000);
   function close() {
     overlay.classList.remove("show");
     document.querySelectorAll(".appt-time-panel.open").forEach((p) => p.classList.remove("open"));
+    // Création partielle (une date sur trois refusée) : le calendrier derrière
+    // la modale n'affiche pas les rendez-vous déjà créés.
+    if (calendrierPerime) window.location.reload();
   }
 
   openBtn.addEventListener("click", () => open());
@@ -519,14 +622,13 @@ setInterval(updateTimeline, 60000);
   submitBtn.addEventListener("click", async () => {
     errorEl.style.display = "none";
 
-    const date  = dateInput.value;
-    const time  = startPicker.get();
+    const creneaux = creneauxAcreer();
     // Réassignables : reprendre la fiche d'un client existant met les champs à
     // jour, et c'est cette identité-là qu'il faut envoyer.
     let name  = nameInput.value.trim();
     let email = emailInput.value.trim();
 
-    if (!date || !time || !name || !email) {
+    if (!creneaux.length || !name || !email) {
       showError("Veuillez remplir les champs obligatoires (date, heure de début, prénom, email).");
       return;
     }
@@ -567,8 +669,6 @@ setInterval(updateTimeline, 60000);
     }
 
     const payload = {
-      date,
-      startTime: time,
       name,
       surname: surnameInput.value.trim(),
       email,
@@ -588,24 +688,59 @@ setInterval(updateTimeline, 60000);
         undefined,
     };
 
+    // Un appel par créneau, en série : chaque rendez-vous passe ainsi par les
+    // mêmes contrôles que d'habitude (chevauchement, horaires, quota du
+    // forfait, e-mail de confirmation, synchro Google Agenda) et reste
+    // indépendant des autres. En série et non en parallèle, sinon deux dates
+    // proches peuvent se chevaucher sans qu'aucune ne voie l'autre.
     submitBtn.disabled = true;
-    try {
-      const res = await fetch("/appointment/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (data.success) {
-        window.location.reload();
-      } else {
-        showError(data.message || "Erreur lors de la création du rendez-vous.");
-        submitBtn.disabled = false;
+    const echecs = [];
+    let crees = 0;
+    for (const c of creneaux) {
+      try {
+        const res = await fetch("/appointment/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(Object.assign({ date: c.date, startTime: c.time }, payload)),
+        });
+        const data = await res.json();
+        if (data.success) { crees++; calendrierPerime = true; }
+        // `motif` = étiquette courte, accolée à la date quand il y en a
+        // plusieurs ; `seul` = le message exact affiché pour un rendez-vous
+        // unique, inchangé par rapport à avant le multi-dates.
+        else echecs.push({ c, motif: data.message || "refusé", seul: data.message || "Erreur lors de la création du rendez-vous." });
+      } catch (e) {
+        echecs.push({ c, motif: "erreur réseau", seul: "Erreur réseau." });
       }
-    } catch (e) {
-      showError("Erreur réseau.");
-      submitBtn.disabled = false;
     }
+
+    if (!echecs.length) {
+      window.location.reload();
+      return;
+    }
+
+    // Échec partiel : ne restent que les dates refusées, pour que « Créer » ne
+    // redouble pas celles déjà passées. La première revient dans les champs,
+    // sinon elle serait figée dans une puce et impossible à corriger.
+    const premier = echecs[0].c;
+    creneauxEnAttente = echecs.slice(1).map((e) => e.c);
+    dateInput.value = premier.date;
+    startPicker.set(premier.time);
+    recomputeEndAndDuration();
+    rendreCreneaux();
+    if (creneaux.length === 1) {
+      // Rendez-vous unique : dater l'échec de la seule date saisie n'apprend
+      // rien, on garde le message d'avant.
+      showError(echecs[0].seul);
+    } else {
+      const detail = echecs.map((e) => `${libelleDate(e.c.date)} ${e.c.time} (${e.motif})`).join(" · ");
+      showError(
+        crees
+          ? `${crees} rendez-vous créé${crees > 1 ? "s" : ""}. Impossible pour : ${detail}`
+          : `Impossible de créer : ${detail}`
+      );
+    }
+    submitBtn.disabled = false;
   });
 })();
 
