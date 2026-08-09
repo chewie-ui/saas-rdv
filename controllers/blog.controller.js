@@ -229,6 +229,34 @@ exports.blogIndex = async (req, res) => {
   }
 };
 
+/**
+ * Coupe l'article en deux pour glisser un appel à l'action au milieu.
+ *
+ * Le seul CTA se trouvait tout en bas : sur un article de dix minutes, la
+ * majorité des lecteurs ne l'atteint jamais. On en insère donc un second au
+ * niveau du `<h2>` le plus proche du milieu du texte — jamais en plein
+ * paragraphe, ce qui casserait la lecture.
+ *
+ * Article court (moins de trois sections) : on ne coupe rien, deux encarts
+ * sur trois écrans de texte relèveraient du harcèlement.
+ */
+function couperPourCta(html) {
+  const contenu = String(html || "");
+  const titres = [...contenu.matchAll(/<h2[\s>]/gi)].map((m) => m.index);
+  if (titres.length < 3 || contenu.length < 2500) return { avant: contenu, apres: "" };
+
+  const milieu = contenu.length / 2;
+  // Premier <h2> passé le milieu, sinon le dernier disponible.
+  const coupe = titres.find((i) => i >= milieu) ?? titres[titres.length - 1];
+  // Ne pas couper juste avant la conclusion : le CTA de bas de page suffit.
+  if (coupe === titres[titres.length - 1] && titres.length > 3) {
+    return { avant: contenu, apres: "" };
+  }
+  return { avant: contenu.slice(0, coupe), apres: contenu.slice(coupe) };
+}
+
+exports.couperPourCta = couperPourCta;
+
 exports.blogArticle = async (req, res, next) => {
   try {
     const article = await Article.findOne({ slug: req.params.slug, status: "published" }).lean();
@@ -268,9 +296,12 @@ exports.blogArticle = async (req, res, next) => {
     }
 
     const seo = article.seo || {};
+    const morceaux = couperPourCta(article.contentHtml);
     res.render("public/blog-article", {
       pageName: "Blog",
       article,
+      corpsAvant: morceaux.avant,
+      corpsApres: morceaux.apres,
       relies,
       title: (seo.metaTitle || article.title) + " — BranShee",
       metaDescription: seo.metaDescription || article.excerpt || "",

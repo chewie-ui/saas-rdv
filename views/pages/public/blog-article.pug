@@ -56,7 +56,18 @@ block content
 
             //- Contenu déjà nettoyé côté serveur (utils/sanitizeArticleHtml.js) :
             //- liste blanche de balises, aucun script ni style ne peut passer.
-            .post__body.container!= article.contentHtml
+            //- Coupé en deux par couperPourCta() sur un article long, pour
+            //- glisser un encart au milieu : le CTA de bas de page n'est lu
+            //- que par ceux qui vont jusqu'au bout, c'est-à-dire une minorité.
+            .post__body.container!= corpsAvant
+
+            if corpsApres
+                .post__inline-cta.container
+                    .post__inline-cta__box
+                        span.post__inline-cta__eyebrow Essai gratuit, sans carte
+                        p.post__inline-cta__t Vos clients pourraient réserver seuls, pendant que vous travaillez.
+                        a.sm-btn.sm-btn--primary(href="/register?intent=pro&src=blog-inline") Créer mon agenda gratuitement
+                .post__body.container!= corpsApres
 
             .post__cta.container
                 .post__cta-box

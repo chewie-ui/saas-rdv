@@ -345,6 +345,36 @@
 }
 .post__cta-d { font-size: 15px; line-height: 1.6; color: var(--text-secondary); margin: 0 0 18px; }
 
+/* Encart au milieu d'un article long. Plus sobre que celui de fin de page :
+   il coupe la lecture, il ne doit pas la voler. D'où le fond neutre, le trait
+   d'accent sur le côté et l'absence de gros titre. */
+/* Padding vertical seulement : le raccourci `padding` écraserait la gouttière
+   horizontale de .container et l'encart toucherait les bords sur mobile. */
+.post__inline-cta { max-width: 720px; padding-top: 6px; padding-bottom: 2px; }
+.post__inline-cta__box {
+  border: 1px solid var(--border-light);
+  border-left: 3px solid var(--accent);
+  border-radius: 14px;
+  padding: 20px 22px;
+  background: #fff;
+}
+.post__inline-cta__eyebrow {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.post__inline-cta__t {
+  font-size: 16.5px;
+  line-height: 1.5;
+  font-weight: 650;
+  color: var(--text-primary);
+  margin: 0 0 14px;
+}
+
 .post__more { padding: 56px 0 20px; border-top: 1px solid var(--border-light); margin-top: 50px; }
 .post__more-t {
   font-size: 20px;
