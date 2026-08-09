@@ -42,13 +42,23 @@ async function resolveSubscriptionState(user, options = {}) {
     const expiry = user.manualPremiumExpiry;
     const now    = new Date();
 
-    // Si la durée de test est dépassée → révoquer automatiquement
+    // Si la durée de test est dépassée → révoquer automatiquement.
+    //
+    // `manualPremiumExpiry` est volontairement CONSERVÉ. C'est la seule trace
+    // qu'un accès payant a existé sur ce compte, et utils/freeTrial.js s'en
+    // sert pour refuser un deuxième mois offert. L'effacer ici — ce que le
+    // code faisait — rendait le compte à nouveau éligible à l'essai gratuit
+    // le jour même où son octroi se terminait : au lieu de lui demander de
+    // payer, on lui offrait 30 jours de plus, indéfiniment.
+    //
+    // Aucune vue n'affiche cette date sans vérifier d'abord `manualPremium`
+    // ou `isPremium` (cf. superadmin.controller.js), donc la garder ne fait
+    // apparaître aucune échéance périmée côté pro.
     if (expiry && new Date(expiry) < now) {
       if (!readOnly) {
         await User.findByIdAndUpdate(user._id, {
           manualPremium: false,
           isPremium: false,
-          manualPremiumExpiry: null,
           "subscription.status": "inactive",
         });
       }

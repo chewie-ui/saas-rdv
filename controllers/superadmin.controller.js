@@ -650,11 +650,13 @@ exports.toggleManualPremium = async (req, res) => {
     const { userId } = req.params;
     const { manualPremium } = req.body;
     const val = !!manualPremium;
-    await User.findByIdAndUpdate(userId, {
-      manualPremium: val,
-      isPremium: val,
-      manualPremiumExpiry: null,   // reset l'expiry au toggle
-    });
+    const maj = { manualPremium: val, isPremium: val };
+    // On remet l'échéance à zéro en ACCORDANT (nouvel octroi, dont la date
+    // reste à fixer), jamais en retirant : la date passée est la trace qui
+    // empêche ce compte de réclamer un deuxième mois offert
+    // (cf. utils/freeTrial.js).
+    if (val) maj.manualPremiumExpiry = null;
+    await User.findByIdAndUpdate(userId, maj);
     res.json({ success: true, manualPremium: val });
   } catch (err) {
     console.error("toggleManualPremium error:", err);
@@ -676,10 +678,13 @@ exports.setPlan = async (req, res) => {
     const update = {
       manualPremium: !isFree,
       isPremium: !isFree,
-      manualPremiumExpiry: null,        // reset l'expiry à chaque changement de plan
       "subscription.plan": isFree ? "basic" : plan,
       "subscription.status": isFree ? "inactive" : "active",
     };
+    // Même règle qu'au toggle : on efface l'échéance en passant à un plan
+    // payant (nouvel octroi), pas en redescendant en gratuit — sinon on
+    // rendrait le compte éligible au mois offert qu'il a déjà consommé.
+    if (!isFree) update.manualPremiumExpiry = null;
 
     await User.findByIdAndUpdate(userId, update);
     // Appliquer les limites du nouveau plan (désactive/supprime le contenu excédentaire)
