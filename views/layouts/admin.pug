@@ -190,10 +190,28 @@ html(lang="fr")
                             });
                         })();
                 .main-wrapper
+                    //- Le bandeau de fin d'octroi (plus bas) couvre J-7 → J-0.
+                    //- L'ancien avertissement `showTrialWarning` couvre J-3 → J-0
+                    //- pour exactement la même population : entre les deux, le
+                    //- pro voyait DEUX encarts empilés qui disent la même chose.
+                    //- On calcule ici lequel s'affiche, une fois pour les deux.
+                    -
+                        var _finOctroiVisible = false;
+                        if (isBetaAccess && trialExpiryDate && membershipRole === 'owner') {
+                            var _ms = new Date(trialExpiryDate).getTime() - Date.now();
+                            var _j = Math.ceil(_ms / 86400000);
+                            _finOctroiVisible = _ms > 0 && _j <= 7;
+                        }
+
                     //- Avertissement fin d'essai/octroi — visible uniquement si
                     //- l'accès expire bientôt ET qu'aucun moyen de paiement par
                     //- défaut n'est enregistré (sinon rien à faire pour l'user).
-                    if showTrialWarning
+                    //-
+                    //- Effacé par le bandeau de fin d'octroi quand celui-ci
+                    //- s'affiche : son conseil (« ajoutez un moyen de paiement »)
+                    //- ne vaut d'ailleurs rien pour un octroi manuel — aucune
+                    //- carte ne le prolongera, il s'arrête, point.
+                    if showTrialWarning && !_finOctroiVisible
                         style.
                             .trial-warn { display:flex; align-items:center; gap:14px; background:#fff7ed; border:1px solid #fed7aa; border-radius:14px; padding:14px 18px; margin-bottom:18px; }
                             .trial-warn__ic { color:#c2410c; font-size:26px; flex:none; }
@@ -259,35 +277,32 @@ html(lang="fr")
                     //- Réservé au propriétaire : un collaborateur n'a ni le
                     //- droit ni les moyens de payer l'abonnement, l'alerter ne
                     //- ferait que l'inquiéter.
-                    if isBetaAccess && trialExpiryDate && membershipRole === 'owner'
+                    if _finOctroiVisible
                         -
-                            var _msRestants = new Date(trialExpiryDate).getTime() - Date.now();
-                            var _joursRestants = Math.ceil(_msRestants / 86400000);
+                            var _joursRestants = Math.ceil((new Date(trialExpiryDate).getTime() - Date.now()) / 86400000);
                             var _urgent = _joursRestants <= 1;
-                            var _visible = _msRestants > 0 && _joursRestants <= 7;
-                        if _visible
-                            .grantbn(class=_urgent ? 'grantbn--urgent' : '' data-echeance=new Date(trialExpiryDate).toISOString().slice(0, 10))
-                                span.grantbn__ic.material-symbols-outlined(aria-hidden="true")= _urgent ? 'error' : 'schedule'
-                                .grantbn__body
-                                    strong.grantbn__title
-                                        if _joursRestants <= 0
-                                            | Votre accès complet se termine aujourd'hui
-                                        else if _joursRestants === 1
-                                            | Votre accès complet se termine demain
-                                        else
-                                            | Votre accès complet se termine dans #{_joursRestants} jours
-                                    //- Dire ce qui change concrètement, pas
-                                    //- « passez à la version payante » : c'est la
-                                    //- perte de service qui parle, pas l'offre.
-                                    span.grantbn__text
-                                        | Le #{new Date(trialExpiryDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}, votre établissement repasse en formule gratuite : 20 réservations par mois maximum, et plus de rappels automatiques.
-                                a.sm-btn.sm-btn--primary.grantbn__cta(href="/subscription") Voir les formules
-                                //- Masquable seulement tant que ce n'est pas
-                                //- imminent : à J-1, le message doit rester.
-                                if !_urgent
-                                    button.grantbn__close#grantbnClose(type="button" aria-label="Masquer pour aujourd'hui")
-                                        span.material-symbols-outlined(aria-hidden="true") close
-                            script(src="/js/components/admin/grant-banner.js" defer)
+                        .grantbn(class=_urgent ? 'grantbn--urgent' : '' data-echeance=new Date(trialExpiryDate).toISOString().slice(0, 10))
+                            span.grantbn__ic.material-symbols-outlined(aria-hidden="true")= _urgent ? 'error' : 'schedule'
+                            .grantbn__body
+                                strong.grantbn__title
+                                    if _joursRestants <= 0
+                                        | Votre accès complet se termine aujourd'hui
+                                    else if _joursRestants === 1
+                                        | Votre accès complet se termine demain
+                                    else
+                                        | Votre accès complet se termine dans #{_joursRestants} jours
+                                //- Dire ce qui change concrètement, pas
+                                //- « passez à la version payante » : c'est la
+                                //- perte de service qui parle, pas l'offre.
+                                span.grantbn__text
+                                    | Le #{new Date(trialExpiryDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}, votre établissement repasse en formule gratuite : 20 réservations par mois maximum, et plus de rappels automatiques.
+                            a.sm-btn.sm-btn--primary.grantbn__cta(href="/subscription") Voir les formules
+                            //- Masquable seulement tant que ce n'est pas
+                            //- imminent : à J-1, le message doit rester.
+                            if !_urgent
+                                button.grantbn__close#grantbnClose(type="button" aria-label="Masquer pour aujourd'hui")
+                                    span.material-symbols-outlined(aria-hidden="true") close
+                        script(src="/js/components/admin/grant-banner.js" defer)
 
                     block content
         +dialog()
