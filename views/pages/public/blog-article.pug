@@ -1,5 +1,7 @@
 extends ../../layouts/index
 
+include ../../common/blog-cover
+
 block links
     link(rel="stylesheet" href="/css/layouts/blog.css")
 
@@ -87,8 +89,7 @@ block content
                                 if r.coverImage
                                     img(src=r.coverImage alt="" loading="lazy")
                                 else
-                                    span.blog-card__ph
-                                        i.fa-regular.fa-newspaper
+                                    +blogVignette(categories, r.category, r.slug)
                             .blog-card__body
                                 if r.category
                                     span.blog-card__cat= r.category

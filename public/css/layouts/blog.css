@@ -93,15 +93,26 @@
   transition: transform .35s ease;
 }
 .blog-card:hover .blog-card__media img { transform: scale(1.035); }
-.blog-card__ph {
+/* Vignette de repli — voir views/common/blog-cover.pug.
+   Tout est dessiné en SVG qui hérite de `currentColor` : une seule règle de
+   couleur par teinte suffit à changer l'ensemble du motif. */
+.blog-ph {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 30px;
-  color: var(--text-muted);
+  display: block;
+  background: #fff;
 }
+.blog-ph__art { width: 100%; height: 100%; display: block; }
+
+.blog-ph--t0 { color: #1e7a4e; }  /* vert BranShee */
+.blog-ph--t1 { color: #1d6fa5; }  /* bleu */
+.blog-ph--t2 { color: #9a5b1c; }  /* ambre */
+.blog-ph--t3 { color: #6b4a9c; }  /* violet */
+
+/* Léger zoom au survol, comme sur une vraie photo, pour que la carte
+   réagisse de la même façon qu'elle ait une image ou non. */
+.blog-card__media .blog-ph__art { transition: transform .35s ease; }
+.blog-card:hover .blog-ph__art { transform: scale(1.04); }
 .blog-card__body { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
 .blog-card__cat {
   font-size: 11.5px;

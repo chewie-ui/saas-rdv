@@ -1,0 +1,63 @@
+//- Vignette de repli d'un article sans image de couverture.
+//-
+//- L'ancien repli était `<i class="fa-regular fa-newspaper">` : le kit
+//- FontAwesome ne se charge pas sur ces pages, l'icône faisait donc 0 px et
+//- il ne restait qu'un rectangle gris vide — l'impression d'une page cassée.
+//- Ici tout est en SVG inline : aucune dépendance externe, ça s'affiche
+//- toujours.
+//-
+//- Le motif change selon la rubrique pour que les cartes ne soient pas sept
+//- fois la même image.
+//-
+//- La teinte vient du RANG de la rubrique dans la liste triée, pas d'un hachage
+//- de son nom : avec seulement quatre teintes, hacher donnait deux rubriques de
+//- la même couleur une fois sur deux. Le rang garantit des couleurs distinctes
+//- tant qu'il y a quatre rubriques ou moins, et reste stable d'une page à
+//- l'autre. Repli sur un hachage du slug pour un article sans rubrique.
+mixin blogVignette(rubriques, categorie, slug)
+    -
+        var _rang = -1;
+        if (rubriques && categorie) _rang = rubriques.indexOf(categorie);
+        if (_rang < 0) {
+            var _cle = String(categorie || slug || ''), _somme = 0;
+            for (var _c = 0; _c < _cle.length; _c++) _somme += _cle.charCodeAt(_c);
+            _rang = _somme;
+        }
+    +blogCover(_rang % 4, _rang % 4)
+
+mixin blogCover(teinte, motif)
+    span.blog-ph(class='blog-ph--t' + teinte)
+        svg.blog-ph__art(viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false")
+            //- Fond dégradé : deux nuances de la teinte, jamais du gris.
+            defs
+                linearGradient(id='bgph' + teinte + motif x1="0" y1="0" x2="1" y2="1")
+                    stop(offset="0%" stop-color="currentColor" stop-opacity="0.14")
+                    stop(offset="100%" stop-color="currentColor" stop-opacity="0.04")
+            rect(width="320" height="200" fill='url(#bgph' + teinte + motif + ')')
+
+            //- Motif géométrique, différent par rubrique.
+            g(fill="none" stroke="currentColor" stroke-opacity="0.30" stroke-width="1.5")
+                if motif === 0
+                    //- Grille d'agenda
+                    each x in [40, 90, 140, 190, 240, 280]
+                        line(x1=x y1="24" x2=x y2="176")
+                    each y in [50, 90, 130]
+                        line(x1="24" y1=y x2="296" y2=y)
+                else if motif === 1
+                    //- Cercles concentriques
+                    each r in [30, 54, 78, 102]
+                        circle(cx="240" cy="100" r=r)
+                    line(x1="24" y1="100" x2="120" y2="100")
+                else if motif === 2
+                    //- Courbe montante
+                    path(d="M20 160 C 80 160, 90 70, 150 70 S 230 30, 300 30")
+                    path(d="M20 180 C 90 180, 100 110, 165 110 S 240 70, 300 70" stroke-opacity="0.16")
+                else
+                    //- Diagonales
+                    each d, k in [0, 1, 2, 3, 4, 5, 6, 7]
+                        line(x1=(-40 + k * 50) y1="200" x2=(60 + k * 50) y2="0")
+
+            //- Pastille centrale avec une icône, pour ancrer l'œil.
+            circle(cx="160" cy="100" r="30" fill="currentColor" fill-opacity="0.13")
+            g(transform="translate(148 88)" fill="currentColor" fill-opacity="0.75")
+                path(d="M3 0h2v2h8V0h2v2h2a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h0V0zm-0 8v12h16V8H3zm3 3h3v3H6v-3z" transform="scale(1)")

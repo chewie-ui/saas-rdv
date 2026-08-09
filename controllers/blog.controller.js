@@ -297,9 +297,17 @@ exports.blogArticle = async (req, res, next) => {
 
     const seo = article.seo || {};
     const morceaux = couperPourCta(article.contentHtml);
+    // Même liste triée que sur /blog : la vignette de repli d'un article sans
+    // image se colore selon le rang de sa rubrique, il faut donc le même
+    // référentiel des deux côtés pour qu'une carte ne change pas de couleur
+    // entre la liste et la page « À lire aussi ».
+    const categories = (await Article.distinct("category", { status: "published" }))
+      .filter(Boolean)
+      .sort();
     res.render("public/blog-article", {
       pageName: "Blog",
       article,
+      categories,
       corpsAvant: morceaux.avant,
       corpsApres: morceaux.apres,
       relies,

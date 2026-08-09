@@ -1,5 +1,7 @@
 extends ../../layouts/index
 
+include ../../common/blog-cover
+
 block links
     link(rel="stylesheet" href="/css/layouts/blog.css")
 
@@ -46,8 +48,10 @@ block content
                                 if a.coverImage
                                     img(src=a.coverImage alt="" loading=vedette ? 'eager' : 'lazy')
                                 else
-                                    span.blog-card__ph
-                                        i.fa-regular.fa-newspaper
+                                    //- Vignette dérivée de la RUBRIQUE, pas de la position :
+                                    //- une carte garde la même image d'une page à l'autre et
+                                    //- après un filtrage.
+                                    +blogVignette(categories, a.category, a.slug)
                             .blog-card__body
                                 if a.category
                                     span.blog-card__cat= a.category
