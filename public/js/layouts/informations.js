@@ -943,7 +943,10 @@ if (copySlugBtn && slugShareUrl) {
       document.execCommand("copy");
       ta.remove();
     }
-    const span = copySlugBtn.querySelector("span");
+    // Pas le premier span : c'est l'icône. Écrire dedans remplaçait la ligature
+    // Material Symbols par le libellé, que la police affiche en toutes lettres
+    // (même piège que le bouton Enregistrer de l'onglet Design).
+    const span = copySlugBtn.querySelector("span:not(.material-symbols-outlined)");
     if (span) {
       const orig = span.textContent;
       span.textContent = "✓ Copié !";

@@ -885,7 +885,12 @@
 
   if (saveBtn) {
     saveBtn.addEventListener('click', async function () {
-      var span = saveBtn.querySelector('span');
+      // `span:not(.material-symbols-outlined)` et non `span` : le PREMIER span
+      // du bouton est l'icône. Écrire dedans remplaçait la ligature « save » par
+      // le mot « Enregistrer », que la police Material Symbols affiche en
+      // toutes lettres — d'où le « ENREGISTRER Enregistrer » à chaque clic, et
+      // l'icône définitivement perdue ensuite.
+      var span = saveBtn.querySelector('span:not(.material-symbols-outlined)');
       saveBtn.disabled = true;
       if (span) span.textContent = 'Enregistrement…';
       if (saveStatus) { saveStatus.textContent = ''; saveStatus.style.color = ''; }
@@ -939,7 +944,8 @@
           if (saveStatus) { saveStatus.textContent = 'Erreur'; saveStatus.style.color = '#ef4444'; }
         }
       } catch (_) {
-        if (saveBtn.querySelector('span')) saveBtn.querySelector('span').textContent = 'Enregistrer';
+        var lbl = saveBtn.querySelector('span:not(.material-symbols-outlined)');
+        if (lbl) lbl.textContent = 'Enregistrer';
         saveBtn.disabled = false;
         if (saveStatus) { saveStatus.textContent = 'Erreur réseau'; saveStatus.style.color = '#ef4444'; }
       }

@@ -984,7 +984,11 @@ block content
                     .cz-design__save
                         button.sm-btn.sm-btn--primary#czDesignSave(type="button")
                             span.material-symbols-outlined(style="font-size:14px") save
-                            span &nbsp;Enregistrer
+                            //- Pas de &nbsp; : .sm-btn a déjà `gap: 8px`, et le
+                            //- JS remplace ce libellé pendant l'enregistrement —
+                            //- l'espace insécable disparaissait alors, collant le
+                            //- texte à l'icône jusqu'au rechargement.
+                            span Enregistrer
                         .cz-design__save-actions
                             button.cz-undo-btn#czDesignUndo(type="button" title="Annuler (Ctrl+Z)" disabled)
                                 span.material-symbols-outlined(style="font-size:15px") undo
