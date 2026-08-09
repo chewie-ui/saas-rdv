@@ -111,3 +111,14 @@ block content
             .slp-links__row
                 each m in autresMetiers
                     a.slp-tag(href=`/logiciel-rendez-vous/${m.slug}-${ville.slug}`)= m.nom
+
+            //- Liens vers le blog : ces pages métier/ville sont proches les
+            //- unes des autres et n'apportent, entre elles, presque aucun
+            //- contenu neuf à explorer. Pointer vers des articles réellement
+            //- différents donne au robot une raison de continuer, et au
+            //- visiteur quelque chose à lire s'il n'est pas prêt à s'inscrire.
+            if articlesBlog && articlesBlog.length
+                h2.slp-links__title À lire sur le blog
+                .slp-links__row
+                    each a in articlesBlog
+                        a.slp-tag(href='/blog/' + a.slug)= a.title

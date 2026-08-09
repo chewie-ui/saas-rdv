@@ -4,6 +4,9 @@ include ../../common/blog-cover
 
 block links
     link(rel="stylesheet" href="/css/layouts/blog.css")
+    //- Déclare le flux : les lecteurs RSS et certains robots le découvrent
+    //- par cette balise, pas en devinant l'adresse.
+    link(rel="alternate" type="application/rss+xml" title="Blog BranShee" href="/blog/rss.xml")
 
 block content
     -

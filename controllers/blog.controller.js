@@ -1,5 +1,6 @@
 const Article = require("../db/models/article.model");
 const { sanitizeArticleHtml, extraitDepuisHtml } = require("../utils/sanitizeArticleHtml");
+const { signaler } = require("../utils/indexNow");
 
 const PAR_PAGE_ADMIN = 20;
 const PAR_PAGE_PUBLIC = 9;
@@ -109,11 +110,30 @@ async function appliquerChamps(article, corps, estNouveau) {
   return article;
 }
 
+/**
+ * Prévient les moteurs qu'un article vient de paraître ou de changer.
+ *
+ * Publier sans le signaler, c'est attendre que Google repasse de lui-même —
+ * ce qui, sur un site jeune, peut prendre des semaines. On envoie l'URL de
+ * l'article ET celle de la liste, parce que la liste a changé elle aussi.
+ *
+ * Bing et Yandex seulement : Google n'utilise pas IndexNow (voir
+ * utils/indexNow.js). Volontairement non attendu — la réponse d'un moteur
+ * tiers n'a pas à retarder l'enregistrement.
+ */
+function signalerAuxMoteurs(article) {
+  if (!article || article.status !== "published") return;
+  signaler(["/blog/" + article.slug, "/blog"]).then((r) => {
+    if (!r.envoye) console.warn("IndexNow non envoyé:", r.motif || r.statut);
+  });
+}
+
 exports.create = async (req, res) => {
   try {
     const article = new Article({ seo: {} });
     await appliquerChamps(article, req.body || {}, true);
     await article.save();
+    signalerAuxMoteurs(article);
     res.json({ success: true, id: String(article._id), slug: article.slug });
   } catch (err) {
     console.error("blog create error:", err);
@@ -128,6 +148,7 @@ exports.update = async (req, res) => {
     if (!article.seo) article.seo = {};
     await appliquerChamps(article, req.body || {}, false);
     await article.save();
+    signalerAuxMoteurs(article);
     res.json({
       success: true,
       id: String(article._id),

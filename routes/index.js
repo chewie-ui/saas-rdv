@@ -99,6 +99,66 @@ function sortEstablishments(a, b) {
   return b.avgRating - a.avgRating || b.reviewCount - a.reviewCount;
 }
 
+/* ── Flux RSS du blog ─────────────────────────────────────────────────
+   Deuxième porte d'entrée pour les robots, à côté du sitemap : certains
+   agrégateurs et lecteurs le suivent, et un humain peut s'y abonner. Coûte
+   trente lignes, se met à jour tout seul. */
+router.get("/blog/rss.xml", async (req, res) => {
+  const BASE = "https://www.branshee.com";
+  const echapper = (s) =>
+    String(s || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+  try {
+    const Article = require("../db/models/article.model");
+    const articles = await Article.find({ status: "published" })
+      .sort({ publishedAt: -1 })
+      .limit(50)
+      .select("title slug excerpt publishedAt updatedAt category")
+      .lean();
+
+    const items = articles
+      .map(
+        (a) => `
+  <item>
+    <title>${echapper(a.title)}</title>
+    <link>${BASE}/blog/${a.slug}</link>
+    <guid isPermaLink="true">${BASE}/blog/${a.slug}</guid>
+    <description>${echapper(a.excerpt)}</description>
+    ${a.category ? `<category>${echapper(a.category)}</category>` : ""}
+    <pubDate>${new Date(a.publishedAt || a.updatedAt || Date.now()).toUTCString()}</pubDate>
+  </item>`
+      )
+      .join("");
+
+    res.type("application/rss+xml").send(`<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>Blog BranShee</title>
+  <link>${BASE}/blog</link>
+  <atom:link href="${BASE}/blog/rss.xml" rel="self" type="application/rss+xml" />
+  <description>Conseils pratiques pour les indépendants : remplir son agenda, réduire les rendez-vous manqués, se faire connaître en ligne.</description>
+  <language>fr-BE</language>
+  <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>${items}
+</channel>
+</rss>`);
+  } catch (err) {
+    console.error("rss error:", err);
+    res.status(500).type("text/plain").send("Flux indisponible.");
+  }
+});
+
+/* ── Clé de vérification IndexNow ─────────────────────────────────────
+   Le protocole exige que la clé soit lisible à la racine du domaine : c'est
+   ce qui prouve au moteur qu'on est bien propriétaire du site. */
+router.get("/:cle.txt", (req, res, next) => {
+  const attendue = require("../utils/indexNow").cle();
+  if (!attendue || req.params.cle !== attendue) return next();
+  res.type("text/plain").send(attendue);
+});
+
 /* ── Sitemap ──────────────────────────────────────────────────────── */
 router.get("/sitemap.xml", async (req, res) => {
   const BASE  = "https://www.branshee.com";
@@ -689,6 +749,22 @@ router.get("/logiciel-rendez-vous/:slug", async (req, res, next) => {
     console.error("[seo-landing] établissements:", e.message);
   }
 
+  // Quatre articles à proposer en bas de page. Les 80 pages métier/ville se
+  // ressemblent beaucoup entre elles : pointer vers du contenu réellement
+  // différent donne au robot une raison d'explorer plus loin, et au visiteur
+  // qui n'est pas prêt à s'inscrire quelque chose à lire.
+  let articlesBlog = [];
+  try {
+    const Article = require("../db/models/article.model");
+    articlesBlog = await Article.find({ status: "published" })
+      .sort({ publishedAt: -1 })
+      .limit(4)
+      .select("title slug")
+      .lean();
+  } catch (e) {
+    console.error("[seo-landing] articles:", e.message);
+  }
+
   const titre = `Logiciel de prise de rendez-vous pour ${metier.pluriel} à ${ville.nom} | BranShee`;
   const desc = `Agenda en ligne pour ${metier.pluriel} à ${ville.nom} : vos ${metier.clients} réservent 24h/24, rappels automatiques, moins de rendez-vous manqués. Gratuit pour commencer.`;
   const url = `https://www.branshee.com/logiciel-rendez-vous/${cible.slug}`;
@@ -745,6 +821,7 @@ router.get("/logiciel-rendez-vous/:slug", async (req, res, next) => {
     ldJson,
     autresVilles: seoLanding.VILLES.filter((v) => v.slug !== ville.slug),
     autresMetiers: seoLanding.METIERS.filter((m) => m.slug !== metier.slug),
+    articlesBlog,
   });
 });
 
