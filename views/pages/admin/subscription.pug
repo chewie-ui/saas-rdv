@@ -111,6 +111,36 @@ block content
                 span.material-symbols-outlined groups
                 span Équipe
 
+        -
+            //- ── Helpers offres actives ──────────────────────────────
+            //- Déclarés AVANT les cartes : Pug exécute ces blocs dans l'ordre
+            //- du fichier, et les définir plus bas laissait `_essOffer`
+            //- indéfini au moment de rendre la carte Essentiel.
+            //-
+            //- Cherche une offre active qui s'applique à un plan donné.
+            function _offerFor(plan, offers) {
+                if (!offers || !offers.length) return null;
+                return offers.find(function(o) {
+                    var ap = o.applicablePlan || 'all';
+                    return ap === 'all' || ap === plan + '_monthly' || ap === plan + '_yearly'
+                        || ap === 'premium_monthly' && plan === 'pro'
+                        || ap === 'premium_yearly'  && plan === 'pro';
+                }) || null;
+            }
+            function _offerLabel(o) {
+                if (!o) return '';
+                if (o.discountType === 'trial') return '🎁 ' + (o.trialDays || 30) + ' jours gratuits';
+                if (o.discountType === 'percent') return '🎉 -' + o.discountValue + '%';
+                return '🎉 -' + o.discountValue + '€';
+            }
+            //- L'Essentiel n'a pas de code qui le vise nommément (l'énumération
+            //- de PromoCode n'en prévoit pas) : seule une offre « tous les
+            //- plans » le concerne. C'est justement celle que le serveur
+            //- accepte pour lui au paiement.
+            var _essOffer  = _offerFor('essentiel', defaultOffers);
+            var _proOffer  = _offerFor('pro', defaultOffers);
+            var _bizOffer  = _offerFor('business', defaultOffers);
+
         //- ── Plan cards ──────────────────────────────────────────────
         .sub-plans#subPlans(data-active="individuel")
 
@@ -182,27 +212,14 @@ block content
                                 strong #{daysLeft} #{t.subscription.days}
                     else
                         button.sub-btn.sub-btn--upgrade#getEssPlan= t.subscription.btn_get_ess || "Choisir l'Essentiel →"
-
-            -
-                //- ── Helpers offres actives ──────────────────────────
-                //- Cherche une offre active qui s'applique à un plan donné.
-                function _offerFor(plan, offers) {
-                    if (!offers || !offers.length) return null;
-                    return offers.find(function(o) {
-                        var ap = o.applicablePlan || 'all';
-                        return ap === 'all' || ap === plan + '_monthly' || ap === plan + '_yearly'
-                            || ap === 'premium_monthly' && plan === 'pro'
-                            || ap === 'premium_yearly'  && plan === 'pro';
-                    }) || null;
-                }
-                function _offerLabel(o) {
-                    if (!o) return '';
-                    if (o.discountType === 'trial') return '🎁 ' + (o.trialDays || 30) + ' jours gratuits';
-                    if (o.discountType === 'percent') return '🎉 -' + o.discountValue + '%';
-                    return '🎉 -' + o.discountValue + '€';
-                }
-                var _proOffer  = _offerFor('pro', defaultOffers);
-                var _bizOffer  = _offerFor('business', defaultOffers);
+                        //- L'offre s'applique aussi à l'Essentiel dès qu'elle
+                        //- vise « tous les plans » — le serveur l'accepte au
+                        //- paiement (cf. account.controller.js), il faut donc
+                        //- l'annoncer ici comme sur les autres cartes.
+                        if _essOffer
+                            p.sub-plan__offer-note
+                                span.material-symbols-outlined(style="font-size:15px") card_giftcard
+                                | &nbsp;#{_offerLabel(_essOffer)} — déjà appliqué, rien à saisir
 
             //- ─── Pro ───────────────────────────────────────────────
             .sub-plan.sub-plan--premium(data-group="individuel" class=(currentPlan === 'pro' && isPro) ? 'sub-plan--current' : '')

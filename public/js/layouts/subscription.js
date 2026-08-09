@@ -37,17 +37,33 @@ const promoCodeStatus = document.getElementById("promoCodeStatus");
 let appliedPromoCode  = null; // { code, discountType, discountValue, applicablePlan }
 let currentPlan       = "pro"; // plan courant sélectionné pour le checkout
 
-// Prix de base (mensuel / annuel) lus depuis les data attributes
-const PRICES = {
-  essentiel: { monthly: 9, yearly: 9 }, // mensuel uniquement, prix fixe
-  pro:       { monthly: null, yearly: null },
-  business:  { monthly: null, yearly: null },
-};
-document.querySelectorAll(".sub-plan__price[data-monthly]").forEach((el) => {
+// Les trois plans payables, avec la classe de leur carte. Une seule liste :
+// ajouter un plan ici suffit à ce qu'il lise ses prix ET affiche les promos.
+const PLANS_PAYANTS = [
+  { cle: "essentiel", carte: ".sub-plan--essentiel" },
+  { cle: "pro",       carte: ".sub-plan--premium" },
+  { cle: "business",  carte: ".sub-plan--studio" },
+];
+
+// Prix de base (mensuel / annuel) lus depuis les data attributes.
+//
+// L'Essentiel était écrit en dur à 9 € et exclu de la lecture du DOM : le jour
+// où son prix change en base de traductions, la remise aurait été calculée sur
+// un montant périmé. On le lit comme les autres, avec un repli sur le texte
+// affiché quand la carte n'a pas de `data-monthly` (cas de l'annuel Essentiel
+// non configuré dans Stripe, cf. essentielYearlyAvailable).
+const PRICES = { essentiel: { monthly: null, yearly: null }, pro: { monthly: null, yearly: null }, business: { monthly: null, yearly: null } };
+
+PLANS_PAYANTS.forEach(({ cle, carte }) => {
+  const el = document.querySelector(`${carte} .sub-plan__price`);
+  if (!el) return;
   const m = parseFloat(el.dataset.monthly);
   const y = parseFloat(el.dataset.yearly);
-  if (el.closest(".sub-plan--premium"))  { PRICES.pro.monthly = m; PRICES.pro.yearly = y; }
-  if (el.closest(".sub-plan--studio"))   { PRICES.business.monthly = m; PRICES.business.yearly = y; }
+  const affiche = parseFloat(String(el.textContent).replace(",", ".").replace(/[^\d.]/g, ""));
+  PRICES[cle].monthly = Number.isFinite(m) ? m : (Number.isFinite(affiche) ? affiche : null);
+  // Sans tarif annuel propre, la bascule « Annuel » laisse le prix mensuel
+  // affiché : la remise doit donc porter sur ce même montant.
+  PRICES[cle].yearly = Number.isFinite(y) ? y : PRICES[cle].monthly;
 });
 
 function calcDiscounted(basePrice, type, value) {
@@ -89,10 +105,19 @@ function promoPourPlan(plan) {
   return OFFRES_AUTO.find((o) => promoCouvrePlan(o, plan)) || null;
 }
 
+/** « 12.50 » → « 12,50€ » · « 9.00 » → « 9€ » */
+function formatPrix(n) {
+  return n.toFixed(2).replace(/\.00$/, "").replace(".", ",") + "€";
+}
+
 function applyPromoToUI() {
-  ["pro", "business"].forEach((plan) => {
-    const planClass  = plan === "pro" ? ".sub-plan--premium" : ".sub-plan--studio";
-    const priceEl    = document.querySelector(`${planClass} .sub-plan__price`);
+  // L'Essentiel était absent de cette boucle : une offre visant « tous les
+  // plans » — que le serveur accepte pourtant pour l'Essentiel au paiement —
+  // n'était annoncée que sur Pro et Business. Le pro qui prenait l'Essentiel
+  // recevait la remise sans qu'on la lui ait jamais promise ; celui qui la
+  // cherchait sur la page ne la voyait pas et partait.
+  PLANS_PAYANTS.forEach(({ cle: plan, carte }) => {
+    const priceEl = document.querySelector(`${carte} .sub-plan__price`);
     if (!priceEl) return;
 
     const base = isYearly ? PRICES[plan].yearly : PRICES[plan].monthly;
@@ -103,54 +128,65 @@ function applyPromoToUI() {
     // Supprimer l'ancien affichage promo s'il existe
     const oldWrap = priceEl.parentNode.querySelector(".sub-promo-wrap");
     if (oldWrap) oldWrap.remove();
-    priceEl.style.display = "";
+    priceEl.classList.remove("is-replaced");
 
-    if (promoData) {
-      const wrap = document.createElement("div");
-      wrap.className = "sub-promo-wrap";
-      wrap.style.cssText = "display:flex;flex-direction:column;gap:4px;";
+    if (!promoData) return;
 
-      if (promoData.discountType === "trial") {
-        // Trial : badge "X jours gratuits" + prix normal dessous
-        const badge = document.createElement("span");
-        badge.style.cssText = "display:inline-flex;align-items:center;gap:5px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:5px 12px;font-size:0.9rem;font-weight:700;color:#16a34a;width:fit-content;";
-        badge.textContent = `🎁 ${promoData.trialDays || 30} jours gratuits`;
+    const wrap = document.createElement("div");
+    wrap.className = "sub-promo-wrap";
 
-        const sub = document.createElement("span");
-        sub.style.cssText = "font-size:0.75rem;color:#6b7280;font-weight:500;";
-        sub.textContent = `puis ${priceEl.textContent.trim()}/mois`;
+    if (promoData.discountType === "trial") {
+      // Essai : badge « X jours gratuits », puis le plein tarif en dessous —
+      // rien n'est barré, le prix ne baisse pas, il est seulement différé.
+      const badge = document.createElement("span");
+      badge.className = "sub-promo-wrap__badge";
+      badge.textContent = `🎁 ${promoData.trialDays || 30} jours gratuits`;
 
-        wrap.appendChild(badge);
-        wrap.appendChild(sub);
-      } else {
-        // Percent / fixed : prix barré + nouveau prix
-        const discounted = calcDiscounted(base, promoData.discountType, promoData.discountValue);
-        if (discounted === null) return;
+      const sub = document.createElement("span");
+      sub.className = "sub-promo-wrap__note";
+      // On reprend le suffixe affiché par la carte plutôt que de le déduire du
+      // mode de facturation : en annuel, le prix montré reste un tarif MENSUEL
+      // (« 15€/mois, facturé à l'année »). Écrire « /an » à côté de 15 €
+      // annoncerait un abonnement quatre fois moins cher qu'il ne l'est.
+      const suffixe = (priceEl.parentNode.querySelector(".sub-plan__per") || {}).textContent || "";
+      sub.textContent = `puis ${priceEl.textContent.trim()} ${suffixe.trim()}`.trim();
 
-        const priceRow = document.createElement("div");
-        priceRow.style.cssText = "display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font-size:2.5rem;font-weight:800;letter-spacing:-1.5px;line-height:1;";
+      wrap.appendChild(badge);
+      wrap.appendChild(sub);
+    } else {
+      // Remise en % ou en € : prix plein barré, prix remisé à côté.
+      const discounted = calcDiscounted(base, promoData.discountType, promoData.discountValue);
+      if (discounted === null) return;
 
-        const strike = document.createElement("span");
-        strike.style.cssText = "text-decoration:line-through;color:#aaa;font-size:1em;font-weight:800;";
-        strike.textContent = priceEl.textContent.trim();
+      const priceRow = document.createElement("div");
+      priceRow.className = "sub-promo-wrap__row";
 
-        const newPrice = document.createElement("span");
-        newPrice.style.cssText = "font-size:1em;font-weight:800;color:#16a34a;letter-spacing:-1.5px;";
-        newPrice.textContent = discounted.toFixed(2).replace(/\.00$/, "").replace(".", ",") + "€";
+      const strike = document.createElement("span");
+      strike.className = "sub-promo-wrap__old";
+      strike.textContent = priceEl.textContent.trim();
 
-        priceRow.appendChild(strike);
-        priceRow.appendChild(newPrice);
-        wrap.appendChild(priceRow);
+      const newPrice = document.createElement("span");
+      newPrice.className = "sub-promo-wrap__new";
+      newPrice.textContent = formatPrix(discounted);
 
-        const sub = document.createElement("span");
-        sub.style.cssText = "font-size:0.75rem;color:#6b7280;font-weight:500;";
-        sub.textContent = "1ère facture uniquement, puis plein tarif";
-        wrap.appendChild(sub);
-      }
+      priceRow.appendChild(strike);
+      priceRow.appendChild(newPrice);
+      wrap.appendChild(priceRow);
 
-      priceEl.style.display = "none";
-      priceEl.parentNode.insertBefore(wrap, priceEl.nextSibling);
+      const sub = document.createElement("span");
+      sub.className = "sub-promo-wrap__note";
+      // Ces deux types de remise sont des coupons Stripe `duration: once` (cf.
+      // account.controller.js) : le dire, plutôt que laisser croire que le
+      // tarif remisé vaut pour toujours.
+      sub.textContent = "1ère facture uniquement, puis plein tarif";
+      wrap.appendChild(sub);
     }
+
+    // `class` plutôt que `style.display` : le style vit dans la feuille CSS,
+    // et un `display` en dur écrasait celui de la règle au retour à l'état
+    // normal.
+    priceEl.classList.add("is-replaced");
+    priceEl.parentNode.insertBefore(wrap, priceEl.nextSibling);
   });
 }
 

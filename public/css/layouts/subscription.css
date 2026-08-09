@@ -1486,3 +1486,65 @@
   text-align: center;
   line-height: 1.4;
 }
+
+/* ── Prix barré quand une offre s'applique ─────────────────────────────────
+   Ces règles vivaient en `style.cssText` dans subscription.js : impossible à
+   surcharger, invisible depuis la feuille, et dupliquées à trois endroits.
+   Le JS ne pose plus que des classes. */
+.sub-plan__price.is-replaced { display: none; }
+
+.sub-promo-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Reprend la typographie du prix qu'il remplace, pour que la carte ne bouge
+   pas quand une offre s'active. */
+.sub-promo-wrap__row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+.sub-promo-wrap__old {
+  font-size: 1em;
+  font-weight: 800;
+  color: var(--text-muted, #9aa3ad);
+  text-decoration: line-through;
+}
+.sub-promo-wrap__new {
+  font-size: 1em;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  color: var(--accent, #16a34a);
+}
+
+.sub-promo-wrap__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  padding: 5px 12px;
+  border: 1px solid var(--accent-border, #bbf7d0);
+  border-radius: 8px;
+  background: var(--accent-soft, #f0fdf4);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent, #16a34a);
+}
+
+.sub-promo-wrap__note {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-secondary, #6b7280);
+}
+
+@media (max-width: 480px) {
+  .sub-promo-wrap__row { font-size: 2rem; gap: 8px; }
+}
