@@ -4126,3 +4126,80 @@ body.bk-embed #bkCart .bk-cart {
 }
 .bk-embed-ok svg { flex: none; margin-top: 1px; }
 .bk-embed-ok strong { font-weight: 700; }
+
+/* ── Réserver plusieurs dates d'un coup ──────────────────────────────────────
+   Sous la liste des créneaux, à la fin du parcours de l'étape : on ne propose
+   d'ajouter une date qu'une fois un créneau choisi, sinon le bouton n'a rien
+   à ajouter et sème le doute sur ce qu'il faut faire en premier. */
+.bk-multi {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bk-border);
+}
+
+.bk-multi__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.bk-multi__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 6px 5px 10px;
+  border: 1px solid var(--bk-accent);
+  border-radius: 999px;
+  background: var(--bk-accent-soft);
+  font: 600 11.5px var(--bk-font);
+  color: var(--bk-accent);
+  white-space: nowrap;
+}
+
+.bk-multi__chip-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font: 600 11px var(--bk-font);
+  color: inherit;
+  cursor: pointer;
+  opacity: .65;
+}
+.bk-multi__chip-x:hover { opacity: 1; background: rgba(0, 0, 0, .08); }
+
+.bk-multi__add {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 10px;
+  border-radius: var(--bk-r-sm);
+  border: 1px dashed var(--bk-border);
+  background: transparent;
+  font: 600 12px var(--bk-font);
+  color: var(--bk-muted);
+  cursor: pointer;
+  transition: border-color .12s, color .12s, background .12s;
+}
+.bk-multi__add:hover:not(:disabled) {
+  border-color: var(--bk-accent);
+  color: var(--bk-accent);
+  background: var(--bk-accent-soft);
+}
+.bk-multi__add:disabled { opacity: .45; cursor: default; }
+
+.bk-multi__hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--bk-muted);
+  text-align: center;
+}

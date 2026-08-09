@@ -145,6 +145,11 @@ const STATE = {
   employee:   undefined, // undefined = not yet chosen; null = "no preference"
   date:       null,   // "yyyy-mm-dd"
   time:       null,   // "HH:MM"
+  // Réserver plusieurs dates en une fois : créneaux déjà mis de côté, en plus
+  // de celui en cours de sélection (date/time ci-dessus). Vide = réservation
+  // simple, le tunnel se comporte exactement comme avant.
+  extraSlots: [],     // [{ date, time }]
+  bookedSlots: [],    // rempli après l'envoi, pour l'écran de confirmation
   daypart:    "all",  // "all" | "morning" | "afternoon" | "evening"
   calMonth:   new Date(),
   form: {
@@ -212,6 +217,34 @@ function buildSteps() {
 
 function hasAnyServiceEmployees() {
   return SERVICES.some(s => s.employees && s.employees.length > 1);
+}
+
+/* ── Réserver plusieurs dates d'un coup ───────────────────────────────────
+   Un suivi (kiné, coach, esthétique) se cale rarement une séance à la fois :
+   le client repassait tout le tunnel pour chaque date. Il peut désormais
+   empiler plusieurs créneaux à l'étape « Créneau ». Ce sont des rendez-vous
+   INDÉPENDANTS — annuler l'un ne touche pas les autres.
+
+   L'option n'apparaît pas quand une carte entre en jeu : le montant à
+   prélever et l'empreinte de garantie sont calculés pour UN rendez-vous, et
+   se tromper de montant coûte de l'argent à quelqu'un. Idem pour les cours
+   collectifs, où l'on choisit une séance dans une liste et pas une date.
+   Plafond volontairement bas : bloquer dix créneaux d'un clic depuis une
+   page publique n'a pas d'usage légitime. */
+const MAX_CRENEAUX_CLIENT = 5;
+
+function multiDatesPossible() {
+  if (STATE.service && STATE.service.type === "group") return false;
+  return !needsPaymentStep();
+}
+
+/* Tous les créneaux retenus : ceux mis de côté + celui en cours de sélection. */
+function creneauxRetenus() {
+  const liste = STATE.extraSlots.slice();
+  if (STATE.date && STATE.time && !liste.some(c => c.date === STATE.date && c.time === STATE.time)) {
+    liste.push({ date: STATE.date, time: STATE.time });
+  }
+  return liste.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 }
 
 let STEPS    = buildSteps();
@@ -323,7 +356,19 @@ function renderCart() {
   const priceLabelFR = (p) => (Number(p) === 0 ? "Gratuit" : p + "€");
   if (STATE.service)  recap.push({ k: "Service", v: `${STATE.service.name}${STATE.service.price !== null && STATE.service.price !== undefined ? " · " + priceLabelFR(STATE.service.price) : ""}` });
   if (STATE.employee) recap.push({ k: "Avec",    v: STATE.employee.name });
-  if (STATE.date)     recap.push({ k: "Quand",   v: fmtDate(STATE.date) + (STATE.time ? " · " + STATE.time : "") });
+  // Plusieurs dates retenues : les lister toutes dans la barre tiendrait sur
+  // trois lignes sur mobile — on annonce la première et le nombre restant, le
+  // détail est juste au-dessus, dans le panneau des créneaux.
+  const retenus = creneauxRetenus();
+  if (retenus.length > 1) {
+    recap.push({ k: "Quand", v: `${retenus.length} rendez-vous · à partir du ${fmtDate(retenus[0].date)}` });
+  } else if (retenus.length === 1) {
+    // Un créneau mis de côté puis calendrier remis à zéro : c'est lui qu'il
+    // faut annoncer, pas STATE.date qui vient d'être vidé.
+    recap.push({ k: "Quand", v: `${fmtDate(retenus[0].date)} · ${retenus[0].time}` });
+  } else if (STATE.date) {
+    recap.push({ k: "Quand", v: fmtDate(STATE.date) });
+  }
 
   // "Continuer" is enabled when: logged in, OR guest form is visible and filled
   const guestFormVisible = !!document.getElementById("bkGuestForm")?.offsetParent;
@@ -344,14 +389,16 @@ function renderCart() {
   const canNext =
     (sid === "service"  && STATE.service) ||
     (sid === "employee" && STATE.employee !== undefined) ||
-    (sid === "time"     && STATE.date && STATE.time) ||
+    (sid === "time"     && retenus.length > 0) ||
     (sid === "details"  && detailsOk) ||
     (sid === "payment"  && paymentOk);
 
   const isPayment = sid === "payment";
   const isDetails = sid === "details";
   let nextLabel = "Continuer";
-  if (isDetails && !needsPaymentStep()) nextLabel = "Confirmer la réservation";
+  if (isDetails && !needsPaymentStep()) {
+    nextLabel = retenus.length > 1 ? `Confirmer mes ${retenus.length} rendez-vous` : "Confirmer la réservation";
+  }
   if (isDetails &&  needsPaymentStep()) nextLabel = "Continuer";
   if (isPayment) nextLabel = STATE.paymentMethod === "online" ? "Confirmer et payer" : "Confirmer la réservation →";
 
@@ -1151,12 +1198,46 @@ function syncSlotFade() {
 // la liste défilante sans qu'aucun scroll ni re-rendu n'ait lieu.
 window.addEventListener("resize", syncSlotFade, { passive: true });
 
+/* Bloc « je veux aussi une autre date », sous la liste des créneaux.
+   Rendu à la fois dans l'état « aucun jour choisi » et dans l'état normal :
+   après avoir mis un créneau de côté on repart d'un calendrier vierge, et les
+   dates déjà retenues doivent rester visibles à ce moment-là. */
+function buildMultiDateBlock() {
+  if (!multiDatesPossible()) return "";
+  const retenus = creneauxRetenus();
+  if (!STATE.extraSlots.length && !STATE.time) return "";
+
+  const chips = STATE.extraSlots.map((c, i) => `
+    <span class="bk-multi__chip">
+      <span>${escHtml(fmtDate(c.date))} · ${escHtml(c.time)}</span>
+      <button type="button" class="bk-multi__chip-x" data-drop="${i}" aria-label="Retirer cette date">✕</button>
+    </span>`).join("");
+
+  const plein = retenus.length >= MAX_CRENEAUX_CLIENT;
+  const peutAjouter = !!STATE.time && !plein;
+
+  return `<div class="bk-multi">
+    ${chips ? `<div class="bk-multi__list">${chips}</div>` : ""}
+    <button class="bk-multi__add" id="bkMultiAdd" type="button" ${peutAjouter ? "" : "disabled"}>
+      + Réserver aussi une autre date
+    </button>
+    <p class="bk-multi__hint">${
+      plein
+        ? `Maximum ${MAX_CRENEAUX_CLIENT} rendez-vous par réservation.`
+        : STATE.time
+          ? "Vos coordonnées ne seront demandées qu'une seule fois."
+          : "Choisissez un créneau ci-dessus pour l'ajouter."
+    }</p>
+  </div>`;
+}
+
 function buildSlotsPanel(slots) {
   if (!STATE.date) {
     return `<div class="bk-slots">
       <h3>Créneaux disponibles</h3>
       <p class="bk-slots__sub">Sélectionnez une date sur le calendrier.</p>
       <div class="bk-slots__empty">← Choisissez un jour</div>
+      ${buildMultiDateBlock()}
     </div>`;
   }
 
@@ -1222,6 +1303,7 @@ function buildSlotsPanel(slots) {
     <div class="bk-slot-list bk-slot-list--extra ${STATE.service && STATE.service.type === "group" ? "bk-slot-list--group" : ""}" id="bkSlotsExtra" style="display:none">
       ${extraSlots.map(renderSlotBtn).join("")}
     </div>` : ""}
+    ${buildMultiDateBlock()}
   </div>`;
 }
 
@@ -1452,9 +1534,12 @@ function bindSlots() {
       STATE.time = el.dataset.time;
       pane.querySelectorAll("[data-time]").forEach(s => s.classList.remove("is-selected"));
       el.classList.add("is-selected");
+      majBlocMultiDates();
       renderCart();
     };
   });
+
+  bindMultiDate();
 
   // Regroupement des rendez-vous : déplier les créneaux plus éloignés
   const moreBtn = document.getElementById("bkSlotsMore");
@@ -1467,6 +1552,46 @@ function bindSlots() {
       moreBtn.setAttribute("aria-expanded", String(!isOpen));
     };
   }
+}
+
+/* Le bloc multi-dates change à chaque clic sur un créneau (le bouton
+   « ajouter » s'active) : on ne réécrit que lui, pas toute la liste des
+   horaires — la relire ferait perdre le scroll et le dépliage « voir plus ». */
+function majBlocMultiDates() {
+  const slots = pane.querySelector(".bk-slots");
+  if (!slots) return;
+  const html    = buildMultiDateBlock();
+  const present = slots.querySelector(".bk-multi");
+  if (!html) { if (present) present.remove(); return; }
+  if (present) present.outerHTML = html;
+  else slots.insertAdjacentHTML("beforeend", html);
+  bindMultiDate();
+}
+
+function bindMultiDate() {
+  const add = document.getElementById("bkMultiAdd");
+  if (add) add.onclick = () => {
+    if (!STATE.date || !STATE.time) return;
+    if (creneauxRetenus().length > MAX_CRENEAUX_CLIENT) return;
+    if (!STATE.extraSlots.some(c => c.date === STATE.date && c.time === STATE.time)) {
+      STATE.extraSlots.push({ date: STATE.date, time: STATE.time });
+    }
+    // On repart d'un calendrier vierge pour choisir la date suivante ; le
+    // créneau qui vient d'être mis de côté n'est donc pas compté deux fois.
+    STATE.date = null;
+    STATE.time = null;
+    _currentSlots = [];
+    refreshTimePane();
+    renderCart();
+  };
+
+  pane.querySelectorAll(".bk-multi__chip-x").forEach(el => {
+    el.onclick = () => {
+      STATE.extraSlots.splice(Number(el.dataset.drop), 1);
+      majBlocMultiDates();
+      renderCart();
+    };
+  });
 }
 
 function bindDayparts() {
@@ -2563,94 +2688,153 @@ async function submitBooking() {
   const nextBtn = document.getElementById("cartNext");
   if (nextBtn) { nextBtn.disabled = true; nextBtn.textContent = "Envoi…"; }
 
+  // Un appel par créneau retenu, en série : chaque rendez-vous repasse par
+  // tous les contrôles du serveur (créneau encore libre, délai minimum, quota
+  // du pro, e-mail de confirmation) et reste indépendant des autres. La liste
+  // ne contient qu'un élément dans le cas courant — le code ci-dessous est
+  // alors strictement l'ancien.
+  const aReserver = creneauxRetenus();
+  const confirmes = [];
+
   try {
-    const res = await fetch("/create-booking", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date:         STATE.date,
-        startTime:    STATE.time,
-        company:      COMPANY_ID,
-        name:         firstName,
-        surname:      lastName,
-        email,
-        phone,
-        message,
-        formAnswers:     STATE.formAnswers,
-        serviceId:       STATE.service  ? STATE.service.id       : null,
-        serviceName:     STATE.service  ? STATE.service.name     : null,
-        serviceDuration: STATE.service  ? STATE.service.duration : null,
-        servicePrice:    STATE.service  ? STATE.service.price    : null,
-        serviceCategory: STATE.service  ? STATE.service.category : null,
-        employeeId:      STATE.employee ? STATE.employee.id      : null,
-        employeeName:    STATE.employee ? STATE.employee.name    : null,
-        // ── Payment ──────────────────────────────────────────────────────────
-        paymentMethod:          STATE.paymentMethod          || "none",
-        stripePaymentIntentId:  STATE.stripePaymentIntentId  || null,
-        stripeSetupIntentId:    STATE.stripeSetupIntentId    || null,
-      }),
-    });
+    for (const creneau of aReserver) {
+      const res = await fetch("/create-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date:         creneau.date,
+          startTime:    creneau.time,
+          company:      COMPANY_ID,
+          name:         firstName,
+          surname:      lastName,
+          email,
+          phone,
+          message,
+          formAnswers:     STATE.formAnswers,
+          serviceId:       STATE.service  ? STATE.service.id       : null,
+          serviceName:     STATE.service  ? STATE.service.name     : null,
+          serviceDuration: STATE.service  ? STATE.service.duration : null,
+          servicePrice:    STATE.service  ? STATE.service.price    : null,
+          serviceCategory: STATE.service  ? STATE.service.category : null,
+          employeeId:      STATE.employee ? STATE.employee.id      : null,
+          employeeName:    STATE.employee ? STATE.employee.name    : null,
+          // ── Payment ──────────────────────────────────────────────────────────
+          paymentMethod:          STATE.paymentMethod          || "none",
+          stripePaymentIntentId:  STATE.stripePaymentIntentId  || null,
+          stripeSetupIntentId:    STATE.stripeSetupIntentId    || null,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!data.success) {
-      if (nextBtn) { nextBtn.disabled = false; nextBtn.textContent = "Confirmer la réservation"; }
-      if (data.error === "no_employee_available") {
-        showBookingErrorModal(
-          "Créneau déjà réservé",
-          "Ce créneau vient d'être réservé par quelqu'un d'autre entre-temps. Merci de choisir un autre horaire."
-        );
-        goToStep("time");
-        _currentSlots = [];
-        STATE.date = null;
-        STATE.time = null;
-      } else if (data.error === "session_full") {
-        showBookingErrorModal(
-          "Session complète",
-          data.message || "Cette session est complète, merci de choisir un autre horaire."
-        );
-        goToStep("time");
-        _currentSlots = [];
-        STATE.date = null;
-        STATE.time = null;
-      } else if (data.error === "monthly_limit_reached") {
-        showLimitReachedModal();
-        goToStep("service");
-      } else {
-        // Tous les autres motifs renvoyés par le serveur sont explicites : on
-        // affiche SON message (jamais un « une erreur est survenue » muet) et
-        // on ramène le visiteur à l'étape qu'il doit corriger.
-        const KNOWN = {
-          lead_time_not_met:  { title: "Créneau trop proche",    step: "time",    msg: "Ce créneau est trop proche pour être réservé. Merci de choisir un horaire plus tard." },
-          invalid_session:    { title: "Séance indisponible",    step: "time",    msg: "Cette séance n'est plus disponible. Merci d'en choisir une autre." },
-          slot_unavailable:   { title: "Créneau indisponible",   step: "time",    msg: "Ce créneau n'est plus disponible. Merci d'en choisir un autre." },
-          service_not_found:  { title: "Service indisponible",   step: "service", msg: "Ce service n'est plus disponible. Merci d'en choisir un autre." },
-          payment_unverified: { title: "Paiement non confirmé",  step: null,      msg: "Le paiement n'a pas pu être vérifié. Réessayez ou contactez l'établissement." },
-          client_blocked:     { title: "Réservation impossible", step: null,      msg: "Ce professionnel n'accepte plus de réservation de votre part. Merci de le contacter directement." },
-        };
-        const info = KNOWN[data.error] || {};
-        showBookingErrorModal(
-          info.title || "Erreur",
-          data.message || info.msg || "Une erreur est survenue. Veuillez réessayer."
-        );
-        if (info.step === "time") {
+      if (!data.success) {
+        if (nextBtn) { nextBtn.disabled = false; nextBtn.textContent = "Confirmer la réservation"; }
+
+        // Réservation multiple entamée : des rendez-vous sont DÉJÀ pris. Les
+        // taire et renvoyer le client au calendrier lui ferait redemander des
+        // créneaux qu'il a déjà. On confirme ce qui est passé, en nommant ce
+        // qui a échoué.
+        if (confirmes.length) {
+          STATE.bookedSlots = confirmes;
+          STATE.date = confirmes[0].date;
+          STATE.time = confirmes[0].time;
+          STATE.extraSlots = [];
+          showBookingErrorModal(
+            `${confirmes.length} rendez-vous confirmé${confirmes.length > 1 ? "s" : ""}`,
+            `Le créneau du ${fmtDate(creneau.date)} à ${creneau.time} n'était plus disponible. ` +
+            `Vos autres rendez-vous sont bien enregistrés — reprenez une réservation pour cette date-là.`
+          );
+          goToStep("confirm");
+          return;
+        }
+
+        // Rien n'est encore pris et plusieurs dates étaient retenues : on ne
+        // garde QUE celle qui a échoué hors de la liste. Sans ça, revenir au
+        // calendrier effaçait la date en cours et laissait la date fautive.
+        if (aReserver.length > 1) {
+          STATE.extraSlots = aReserver.filter(c => !(c.date === creneau.date && c.time === creneau.time));
+          STATE.date = null;
+          STATE.time = null;
+        }
+
+        if (data.error === "no_employee_available") {
+          showBookingErrorModal(
+            "Créneau déjà réservé",
+            "Ce créneau vient d'être réservé par quelqu'un d'autre entre-temps. Merci de choisir un autre horaire."
+          );
+          goToStep("time");
           _currentSlots = [];
           STATE.date = null;
           STATE.time = null;
+        } else if (data.error === "session_full") {
+          showBookingErrorModal(
+            "Session complète",
+            data.message || "Cette session est complète, merci de choisir un autre horaire."
+          );
           goToStep("time");
-        } else if (info.step) {
-          goToStep(info.step);
+          _currentSlots = [];
+          STATE.date = null;
+          STATE.time = null;
+        } else if (data.error === "monthly_limit_reached") {
+          showLimitReachedModal();
+          goToStep("service");
+        } else {
+          // Tous les autres motifs renvoyés par le serveur sont explicites : on
+          // affiche SON message (jamais un « une erreur est survenue » muet) et
+          // on ramène le visiteur à l'étape qu'il doit corriger.
+          const KNOWN = {
+            lead_time_not_met:  { title: "Créneau trop proche",    step: "time",    msg: "Ce créneau est trop proche pour être réservé. Merci de choisir un horaire plus tard." },
+            invalid_session:    { title: "Séance indisponible",    step: "time",    msg: "Cette séance n'est plus disponible. Merci d'en choisir une autre." },
+            slot_unavailable:   { title: "Créneau indisponible",   step: "time",    msg: "Ce créneau n'est plus disponible. Merci d'en choisir un autre." },
+            service_not_found:  { title: "Service indisponible",   step: "service", msg: "Ce service n'est plus disponible. Merci d'en choisir un autre." },
+            payment_unverified: { title: "Paiement non confirmé",  step: null,      msg: "Le paiement n'a pas pu être vérifié. Réessayez ou contactez l'établissement." },
+            client_blocked:     { title: "Réservation impossible", step: null,      msg: "Ce professionnel n'accepte plus de réservation de votre part. Merci de le contacter directement." },
+          };
+          const info = KNOWN[data.error] || {};
+          showBookingErrorModal(
+            info.title || "Erreur",
+            data.message || info.msg || "Une erreur est survenue. Veuillez réessayer."
+          );
+          if (info.step === "time") {
+            _currentSlots = [];
+            STATE.date = null;
+            STATE.time = null;
+            goToStep("time");
+          } else if (info.step) {
+            goToStep(info.step);
+          }
         }
+        return;
       }
-      return;
+
+      confirmes.push(creneau);
+      if (nextBtn && aReserver.length > 1) nextBtn.textContent = `Envoi… (${confirmes.length}/${aReserver.length})`;
     }
 
     // Success → confirmation step
+    STATE.bookedSlots = confirmes;
+    STATE.date = confirmes[0].date;
+    STATE.time = confirmes[0].time;
+    STATE.extraSlots = [];
     goToStep("confirm");
 
   } catch (err) {
     console.error(err);
     if (nextBtn) { nextBtn.disabled = false; nextBtn.textContent = "Confirmer la réservation"; }
+    // Coupure réseau au milieu d'une série : certains rendez-vous sont pris.
+    // Le dire, plutôt que laisser croire que rien n'a abouti.
+    if (confirmes.length) {
+      STATE.bookedSlots = confirmes;
+      STATE.date = confirmes[0].date;
+      STATE.time = confirmes[0].time;
+      STATE.extraSlots = [];
+      showBookingErrorModal(
+        `${confirmes.length} rendez-vous confirmé${confirmes.length > 1 ? "s" : ""}`,
+        "La connexion a été perdue avant la fin. Vérifiez le récapitulatif ci-dessous et reprenez une réservation pour les dates manquantes."
+      );
+      goToStep("confirm");
+      return;
+    }
     showBookingErrorModal("Erreur réseau", "Une erreur réseau est survenue. Veuillez réessayer.");
   }
 }
@@ -2687,6 +2871,23 @@ function renderConfirmPane() {
   // Show account creation nudge only for guest users
   const showSignup = !CLIENT && email;
 
+  // Réservation multiple : chaque date obtient sa ligne. `bookedSlots` est
+  // rempli à l'envoi ; on retombe sur la date courante pour tout le reste
+  // (retour arrière, rechargement) afin de ne jamais afficher un tableau vide.
+  const reserves = (STATE.bookedSlots && STATE.bookedSlots.length)
+    ? STATE.bookedSlots
+    : (STATE.date ? [{ date: STATE.date, time: STATE.time }] : []);
+  const quandHtml = reserves.length > 1
+    ? reserves.map((c, i) => `<div class="bk-conf__row"><span class="k">${i === 0 ? "Quand" : ""}</span><span class="v">${fmtDate(c.date)} · ${c.time}</span></div>`).join("")
+    : `<div class="bk-conf__row"><span class="k">Quand</span><span class="v">${fmtDate(STATE.date)} · ${STATE.time}</span></div>`;
+
+  // Prix affiché : le service est le même pour toutes les dates, le total est
+  // donc le prix multiplié par le nombre de rendez-vous.
+  const prixUnitaire = STATE.service ? STATE.service.price : null;
+  const prixTotal = (prixUnitaire === null || prixUnitaire === undefined)
+    ? null
+    : Number(prixUnitaire) * Math.max(1, reserves.length);
+
   pane.innerHTML = `<div class="bk-pane">
     <div class="bk-conf">
 
@@ -2696,18 +2897,18 @@ function renderConfirmPane() {
           <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/>
         </svg>
       </div>
-      <h2>Votre réservation a bien été enregistrée !</h2>
-      <p class="bk-conf__lead">Un email de confirmation est en route vers <strong>${escHtml(email)}</strong>.</p>
+      <h2>${reserves.length > 1 ? `Vos ${reserves.length} rendez-vous sont enregistrés !` : "Votre réservation a bien été enregistrée !"}</h2>
+      <p class="bk-conf__lead">${reserves.length > 1 ? "Un email de confirmation par rendez-vous est en route vers" : "Un email de confirmation est en route vers"} <strong>${escHtml(email)}</strong>.</p>
 
       <!-- Recap -->
       <div class="bk-conf__recap">
         ${STATE.service ? `<div class="bk-conf__row"><span class="k">Service</span><span class="v">${escHtml(STATE.service.name)}${STATE.service.durationLabel ? ` · ${STATE.service.durationLabel}` : ""}</span></div>` : ""}
         ${STATE.employee ? `<div class="bk-conf__row"><span class="k">Avec</span><span class="v">${escHtml(STATE.employee.name)}</span></div>` : ""}
-        <div class="bk-conf__row"><span class="k">Quand</span><span class="v">${fmtDate(STATE.date)} · ${STATE.time}</span></div>
+        ${quandHtml}
         ${locationText ? `<div class="bk-conf__row"><span class="k">Lieu</span><span class="v">${escHtml(locationText)}</span></div>` : ""}
         ${answersHtml}
-        ${STATE.service && STATE.service.price !== null && STATE.service.price !== undefined
-          ? `<hr class="bk-conf__divider" /><div class="bk-conf__row"><span class="k">Total</span><span class="v bk-conf__price">${Number(STATE.service.price) === 0 ? "Gratuit" : STATE.service.price + "€"}</span></div>`
+        ${prixTotal !== null
+          ? `<hr class="bk-conf__divider" /><div class="bk-conf__row"><span class="k">Total</span><span class="v bk-conf__price">${prixTotal === 0 ? "Gratuit" : prixTotal + "€"}${reserves.length > 1 ? ` <span style="font-weight:400">(${reserves.length} × ${prixUnitaire}€)</span>` : ""}</span></div>`
           : ""}
       </div>
 
@@ -2754,7 +2955,7 @@ function renderConfirmPane() {
         <div class="bk-cal-add__dropdown" id="bkCalDropdown" style="display:none">
           <a class="bk-cal-add__opt" id="bkCalGoogle" href="#" target="_blank" rel="noopener">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.36 19.27 5 16.25 5 12c0-4.1 3.2-7.27 7.2-7.27 3.09 0 4.9 1.97 4.9 1.97L19 4.72S16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12c0 5.05 4.13 10 10.22 10 5.33 0 9.25-3.65 9.25-9.09 0-1.15-.15-1.81-.15-1.81Z" fill="#4285F4"/></svg>
-            Google Agenda
+            ${reserves.length > 1 ? "Google Agenda (1<sup>er</sup> RDV)" : "Google Agenda"}
           </a>
           <a class="bk-cal-add__opt" id="bkCalIcs" href="#" download="rendez-vous.ics">
             <svg width="16" height="16" viewBox="0 -960 960 960" fill="currentColor"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></svg>
@@ -2805,26 +3006,35 @@ function renderConfirmPane() {
       (location ? `&location=${encodeURIComponent(location)}` : "");
     if (gLink) gLink.href = gcUrl;
 
-    // ICS blob
+    // ICS blob — un VEVENT par rendez-vous réservé. Un fichier .ics accepte
+    // plusieurs événements : après une réservation multiple, Apple/Outlook
+    // récupèrent donc toutes les dates d'un seul import (le lien Google
+    // Agenda, lui, ne sait porter qu'un événement : il vise le premier).
     function buildIcs() {
-      const uid  = `branshee-${Date.now()}@branshee.com`;
       const now  = toIcsFmt(new Date()).replace(/\D/g,"").slice(0,15) + "Z";
+      const evts = reserves.map((c, i) => {
+        const deb = new Date(`${c.date}T${c.time}:00`);
+        const fin = new Date(deb.getTime() + dur * 60000);
+        return [
+          "BEGIN:VEVENT",
+          `UID:branshee-${Date.now()}-${i}@branshee.com`,
+          `DTSTAMP:${now}`,
+          `DTSTART:${toIcsFmt(deb)}`,
+          `DTEND:${toIcsFmt(fin)}`,
+          `SUMMARY:${title}`,
+          location ? `LOCATION:${location}` : "",
+          `DESCRIPTION:${details}`,
+          "END:VEVENT",
+        ].filter(Boolean).join("\r\n");
+      });
       return [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
         "PRODID:-//Branshee//FR",
         "METHOD:PUBLISH",
-        "BEGIN:VEVENT",
-        `UID:${uid}`,
-        `DTSTAMP:${now}`,
-        `DTSTART:${toIcsFmt(startDt)}`,
-        `DTEND:${toIcsFmt(endDt)}`,
-        `SUMMARY:${title}`,
-        location ? `LOCATION:${location}` : "",
-        `DESCRIPTION:${details}`,
-        "END:VEVENT",
+        ...evts,
         "END:VCALENDAR",
-      ].filter(Boolean).join("\r\n");
+      ].join("\r\n");
     }
 
     if (icsLink) {
