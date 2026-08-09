@@ -885,3 +885,56 @@ svg {
   .pausebn { flex-wrap: wrap; gap: 10px; }
   #pausebnResume { width: 100%; }
 }
+
+/* ── Bandeau « votre accès offert se termine » ─────────────────────────────
+   Les relances partent par e-mail, mais un e-mail non ouvert ne prévient
+   personne. Deux tons : informatif jusqu'à J-2, alarmant à J-1 et le jour
+   même — un bandeau ambre permanent finit par ne plus se voir, il faut que
+   l'urgence se distingue de la simple information. */
+.grantbn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 18px;
+  padding: 14px 18px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+}
+.grantbn__ic { flex-shrink: 0; font-size: 24px; color: #1d4ed8; }
+.grantbn__body { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.grantbn__title { font-size: 14.5px; font-weight: 700; color: #1e3a8a; }
+.grantbn__text { font-size: 13px; line-height: 1.5; color: #1d4ed8; }
+.grantbn__cta { flex-shrink: 0; }
+
+.grantbn__close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #1d4ed8;
+  cursor: pointer;
+  opacity: .6;
+}
+.grantbn__close:hover { opacity: 1; background: rgba(29, 78, 216, .1); }
+.grantbn__close .material-symbols-outlined { font-size: 18px; color: inherit; }
+
+/* Dernier jour : on change de registre. */
+.grantbn--urgent { background: #fef2f2; border-color: #fecaca; }
+.grantbn--urgent .grantbn__ic { color: #b91c1c; }
+.grantbn--urgent .grantbn__title { color: #7f1d1d; }
+.grantbn--urgent .grantbn__text { color: #b91c1c; }
+
+@media (max-width: 700px) {
+  .grantbn { flex-wrap: wrap; gap: 10px; }
+  .grantbn__cta { width: 100%; justify-content: center; }
+  /* La croix remonte à côté de l'icône, pour ne pas voler la place du bouton. */
+  .grantbn__close { position: absolute; right: 12px; top: 12px; }
+  .grantbn { position: relative; padding-right: 46px; }
+}

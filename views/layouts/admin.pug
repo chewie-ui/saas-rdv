@@ -249,6 +249,46 @@ html(lang="fr")
                             button.sm-btn.sm-btn--primary#pausebnResume(type="button") Réactiver
                         script(src="/js/components/admin/pause-banner.js" defer)
 
+                    //- ── Fin d'un accès offert ───────────────────────────────
+                    //- Les relances J-7 et J-1 partent déjà par e-mail
+                    //- (utils/reminderScheduler.js). Mais un e-mail non ouvert
+                    //- ne prévient personne : le pro découvrait la bascule en
+                    //- gratuit en constatant que son agenda ne suivait plus.
+                    //- Ce bandeau le dit là où il travaille.
+                    //-
+                    //- Réservé au propriétaire : un collaborateur n'a ni le
+                    //- droit ni les moyens de payer l'abonnement, l'alerter ne
+                    //- ferait que l'inquiéter.
+                    if isBetaAccess && trialExpiryDate && membershipRole === 'owner'
+                        -
+                            var _msRestants = new Date(trialExpiryDate).getTime() - Date.now();
+                            var _joursRestants = Math.ceil(_msRestants / 86400000);
+                            var _urgent = _joursRestants <= 1;
+                            var _visible = _msRestants > 0 && _joursRestants <= 7;
+                        if _visible
+                            .grantbn(class=_urgent ? 'grantbn--urgent' : '' data-echeance=new Date(trialExpiryDate).toISOString().slice(0, 10))
+                                span.grantbn__ic.material-symbols-outlined(aria-hidden="true")= _urgent ? 'error' : 'schedule'
+                                .grantbn__body
+                                    strong.grantbn__title
+                                        if _joursRestants <= 0
+                                            | Votre accès complet se termine aujourd'hui
+                                        else if _joursRestants === 1
+                                            | Votre accès complet se termine demain
+                                        else
+                                            | Votre accès complet se termine dans #{_joursRestants} jours
+                                    //- Dire ce qui change concrètement, pas
+                                    //- « passez à la version payante » : c'est la
+                                    //- perte de service qui parle, pas l'offre.
+                                    span.grantbn__text
+                                        | Le #{new Date(trialExpiryDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}, votre établissement repasse en formule gratuite : 20 réservations par mois maximum, et plus de rappels automatiques.
+                                a.sm-btn.sm-btn--primary.grantbn__cta(href="/subscription") Voir les formules
+                                //- Masquable seulement tant que ce n'est pas
+                                //- imminent : à J-1, le message doit rester.
+                                if !_urgent
+                                    button.grantbn__close#grantbnClose(type="button" aria-label="Masquer pour aujourd'hui")
+                                        span.material-symbols-outlined(aria-hidden="true") close
+                            script(src="/js/components/admin/grant-banner.js" defer)
+
                     block content
         +dialog()
 
