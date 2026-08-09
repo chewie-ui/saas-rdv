@@ -312,6 +312,13 @@
   display: block;
 }
 .post__body figure { margin: 26px 0; }
+/* Nos schémas sont des SVG sur fond blanc : sans filet, ils se confondent avec
+   la page et on ne voit plus où commence l'illustration. */
+.post__body figure img {
+  margin: 0;
+  border: 1px solid var(--border-light);
+  background: #fff;
+}
 .post__body figcaption {
   font-size: 13px;
   color: var(--text-muted);
