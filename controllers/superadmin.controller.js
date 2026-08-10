@@ -134,6 +134,11 @@ exports.establishmentsPage = async (req, res) => {
     c.bookings30d = rdv30.get(String(c._id)) || 0;
     c.clientCount = clients.get(String(c._id)) || 0;
     c.displayName = (c.name || c.owner?.businessName || "").trim();
+    // Même repli que pour le nom. Sans lui, la liste affichait « Métier non
+    // renseigné » à des pros qui l'avaient bien saisi : sur les comptes
+    // antérieurs au multi-établissement, le métier vit sur le COMPTE et n'a
+    // jamais été recopié sur la Company (migration d'identité non lancée).
+    c.displayType = (c.businessType || c.owner?.businessType || "").trim();
     c.displayPhoto = c.photo || c.owner?.businessPicture || "";
     // Forfait de L'ÉTABLISSEMENT (repli sur le compte tant que company.plan
     // n'est pas renseigné). Lu sur le propriétaire, deux établissements d'un

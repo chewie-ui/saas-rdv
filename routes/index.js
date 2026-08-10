@@ -6,6 +6,9 @@ const { getCompanyIfExist } = require("../controllers/auth.controller");
 const User = require("../db/models/user.model");
 const Companies = require("../db/models/company/company.model");
 const Review = require("../db/models/review.model");
+// Sert à savoir si un établissement a déjà reçu un rendez-vous : c'est l'une
+// des preuves qu'une fiche est réelle, dans le filtre de /search.
+const Booking = require("../db/models/book.model");
 const pug = require("pug");
 const path = require("path");
 const { sendEmail } = require("../utils/mailer");
@@ -369,15 +372,32 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
     // ── Fiches jamais configurées ────────────────────────────────────────
     // Un établissement encore nommé « Établissement » n'a jamais été touché
     // par son propriétaire : pas de nom, souvent ni ville ni photo ni service.
-    // L'afficher pollue la recherche et envoie le visiteur sur une page vide —
-    // 24 fiches sur 31 étaient dans ce cas, soit l'essentiel des résultats.
-    // Le NOM est le seul critère discriminant : un horaire par défaut est créé
-    // automatiquement à l'inscription, il ne prouve donc aucune configuration.
+    // L'afficher pollue la recherche et envoie le visiteur sur une page vide.
     // Rien n'est supprimé ni mis en pause ici : la fiche reste accessible par
     // son lien direct, elle n'apparaît simplement plus dans la recherche.
+    //
+    // TROIS preuves de configuration, et il suffit d'UNE :
+    //
+    // 1. Un nom sur l'établissement. C'était l'unique critère, et il a fait
+    //    disparaître de la recherche des professionnelles bien actives : sur
+    //    les comptes antérieurs au multi-établissement, l'identité vit sur le
+    //    COMPTE (`owner.businessName`) et n'a jamais été recopiée sur la
+    //    Company — la migration d'identité n'ayant pas tourné en production.
+    // 2. Un nom sur le compte propriétaire, donc, en repli.
+    // 3. Au moins un rendez-vous reçu. C'est la preuve la plus forte qui
+    //    soit : une fiche qui a servi à un vrai client est une vraie fiche,
+    //    même sans nom ni métier renseignés.
+    //
+    // Ne plus dépendre d'une seule colonne est délibéré : une migration non
+    // lancée ne doit plus pouvoir rendre des pros invisibles.
     const NOM_PAR_DEFAUT = /^\s*(établissement|etablissement)\s*$/i;
+    const nomValide = { $exists: true, $nin: ["", null], $not: NOM_PAR_DEFAUT };
     conditions.push({
-      name: { $exists: true, $nin: ["", null], $not: NOM_PAR_DEFAUT },
+      $or: [
+        { name: nomValide },
+        { "owner.businessName": nomValide },
+        { _aDesRdv: true },
+      ],
     });
 
     const searchMatch = { $and: conditions };
@@ -421,7 +441,22 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
       { $match: { isPaused: { $ne: true }, isDeleted: { $ne: true } } },
       { $lookup: { from: User.collection.name, localField: "owner", foreignField: "_id", as: "owner" } },
       { $unwind: "$owner" },
+      // Cet établissement a-t-il déjà reçu un rendez-vous ? On s'arrête au
+      // premier trouvé (`$limit: 1`) : on ne veut pas compter, seulement
+      // savoir si la fiche a déjà servi à quelqu'un. C'est l'une des trois
+      // preuves de configuration testées plus bas.
+      { $lookup: {
+          from: Booking.collection.name,
+          let: { cid: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$company", "$$cid"] } } },
+            { $limit: 1 },
+            { $project: { _id: 1 } },
+          ],
+          as: "_rdv",
+      } },
       { $addFields: {
+          _aDesRdv: { $gt: [{ $size: "$_rdv" }, 0] },
           _isPrimary: { $eq: [{ $toString: { $ifNull: ["$owner.company", ""] } }, { $toString: "$_id" }] },
       } },
       { $addFields: {
