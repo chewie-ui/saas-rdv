@@ -1042,7 +1042,7 @@ exports.requestMetierIndex = async (req, res) => {
 
     const { sendEmail } = require("../utils/mailer");
     const esc = (s) => String(s).replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
-    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminEmail = require("../utils/adressesContact").adminEmail();
     if (adminEmail) {
       const html = `
         <div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#111;">

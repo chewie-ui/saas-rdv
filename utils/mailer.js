@@ -40,10 +40,10 @@ const sendEmail = async (to, subject, html) => {
     const texte = versionTexte(html);
 
     await apiInstance.sendTransacEmail({
-      sender: {
-        email: "noreply@branshee.com",
-        name: "BranShee",
-      },
+      // Réglable par MAIL_FROM / MAIL_FROM_NAME, mais à ne pas changer à la
+      // légère : ce domaine est signé (SPF/DKIM) côté Brevo. Expédier depuis
+      // une adresse non signée envoie tout en indésirables.
+      sender: require("./adressesContact").expediteur(),
       to: [{ email: to }],
       subject,
       htmlContent: html,

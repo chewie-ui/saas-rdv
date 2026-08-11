@@ -580,7 +580,9 @@ router.post("/contact", async (req, res) => {
   }
 
   try {
-    const adminEmail = process.env.ADMIN_EMAIL;
+    // Repli garanti : `ADMIN_EMAIL` absente envoyait `to: undefined` à Brevo,
+    // le message partait dans le vide et le visiteur voyait « Envoyé ».
+    const adminEmail = require("../utils/adressesContact").adminEmail();
     const html = pug.renderFile(path.join(__dirname, "../views/templates/emails/contact.pug"), { name, surname, email, subject, message });
 
     await sendEmail(adminEmail, `[Contact BranShee] ${subject}`, html);

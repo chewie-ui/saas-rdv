@@ -384,6 +384,10 @@ app.use((req, res, next) => {
   res.locals.user = req.user;
   // Make request path available to all views (used for canonical URL)
   res.locals.reqPath = req.path === "/" ? "" : req.path;
+  // Adresse de contact affichée dans les vues (Support, Contact…). Ici plutôt
+  // que dans chaque contrôleur : elle était écrite en dur dans les gabarits,
+  // et une adresse Gmail personnelle s'y retrouvait exposée aux pros.
+  res.locals.supportEmail = require("./utils/adressesContact").supportEmail();
   next();
 });
 

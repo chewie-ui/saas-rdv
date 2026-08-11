@@ -4057,7 +4057,7 @@ exports.parrainageClaim = async (req, res) => {
       });
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
-        to: "quentin.rennies@gmail.com",
+        to: require("../utils/adressesContact").adminEmail(),
         subject: `[Parrainage] Récompense réclamée — ${user.fullName}`,
         text: `Utilisateur : ${user.fullName} (${user.email})\nID : ${user._id}\nFilleuls payants : ${totalPaying}\nMois accordés : ${claimable}\nAppliqué automatiquement sur Stripe : ${applied ? "OUI" : "NON — à régulariser manuellement (pas d'abonnement actif trouvé)"}\n`,
       });
