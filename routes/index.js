@@ -564,6 +564,41 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
   }
 });
 
+/* ── Point d'entrée de l'application installée ────────────────────────────
+   `start_url` du manifeste. Quelqu'un qui a installé l'app a déjà vu la page
+   de vente — la lui remontrer à chaque ouverture lui impose deux clics avant
+   d'arriver à son agenda. On l'envoie donc directement là où il va.
+
+   Redirection côté serveur : lui seul sait si la session est celle d'un pro,
+   d'un client, ou de personne. Une redirection en JavaScript ferait clignoter
+   la page d'accueil avant de partir ailleurs. */
+router.get("/app", async (req, res) => {
+  try {
+    // Ancien compte Client séparé (cf. migrate-merge-client-into-user).
+    if (req.session && req.session.clientId) return res.redirect("/espace-client");
+
+    if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+      const CompanyMembership = require("../db/models/company/companyMembership.model");
+      // « Pro » = possède un établissement, ou est collaborateur accepté d'un
+      // autre. Sans cette vérification, un compte client atterrissait sur
+      // /appointment, que injectCompany renvoie aussitôt vers l'accueil : la
+      // boucle exacte qu'on cherche à éviter.
+      const [proprietaire, membre] = await Promise.all([
+        Companies.exists({ owner: req.user._id, isDeleted: { $ne: true } }),
+        CompanyMembership.exists({ user: req.user._id, status: "accepted" }),
+      ]);
+      return res.redirect(proprietaire || membre ? "/appointment" : "/espace-client");
+    }
+
+    return res.redirect("/login");
+  } catch (err) {
+    console.error("[/app] redirection impossible:", err.message);
+    // En cas de pépin, la connexion reste un point de départ valable pour
+    // tout le monde — jamais un écran d'erreur au lancement de l'app.
+    return res.redirect("/login");
+  }
+});
+
 router.get("/contact", (req, res) => {
   res.render("client/contact", { title: "Contact — BranShee", alwaysSticky: true });
 });

@@ -16,6 +16,27 @@ mixin pwaHead()
     meta(name="apple-mobile-web-app-status-bar-style" content="default")
     meta(name="apple-mobile-web-app-title" content="BranShee")
     link(rel="stylesheet" href="/css/components/pwa-install.css")
+    //- Filet pour les installations DÉJÀ faites : leur `start_url` mémorisé
+    //- reste « / » jusqu'à ce que le navigateur relise le manifeste, parfois
+    //- plusieurs jours. Sans ça, elles continueraient d'ouvrir sur la page de
+    //- vente.
+    //-
+    //- Dans le <head> et non en bas de page : il doit partir avant le premier
+    //- rendu, sinon l'accueil clignote avant de disparaître.
+    script.
+        (function () {
+            try {
+                if (location.pathname !== '/') return;
+                var installee = (window.matchMedia && matchMedia('(display-mode: standalone)').matches)
+                    || window.navigator.standalone === true;
+                if (!installee) return;
+                // Uniquement au LANCEMENT. Un référent de notre domaine signifie
+                // que l'utilisateur a cliqué sur un lien vers l'accueil depuis
+                // l'app — le renvoyer ailleurs serait lui refuser sa navigation.
+                if (document.referrer && document.referrer.indexOf(location.origin) === 0) return;
+                location.replace('/app?src=pwa');
+            } catch (e) { /* le pire des cas reste l'accueil : on n'insiste pas */ }
+        })();
 
 mixin pwaIcon(path, cls)
     svg(class=cls viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true" focusable="false")

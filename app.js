@@ -376,6 +376,11 @@ app.use(require("./middlewares/mongoSanitize"));
 // (tout ce qui suit) reste inchangée.
 app.use("/api/v1", require("./routes/mobile"));
 
+// ── Export CRM (lecture seule) ────────────────────────────────────────────
+// Même raison que ci-dessus : sans état, authentifiée par un secret partagé,
+// elle n'a rien à faire dans la session web.
+app.use(require("./routes/crm"));
+
 app.use(require("./config/session"));
 
 app.use(passport.initialize());
