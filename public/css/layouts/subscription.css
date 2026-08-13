@@ -1569,7 +1569,10 @@
   letter-spacing: .05em;
   text-transform: uppercase;
   color: var(--text-muted, #8a919e);
-  background: var(--surface-2, #f7f8f9);
+  /* #FAFAFA plutôt que --surface-2 : ce dernier est un gris chaud nettement
+     plus soutenu, qui découpait le tableau en tranches au lieu de simplement
+     séparer les rubriques. */
+  background: #fafafa;
 }
 
 .sub-compare__yes { font-size: 19px; color: var(--accent, #1e7a4e); }
@@ -1590,15 +1593,25 @@
   text-align: center;
   color: var(--text-primary, #141c25);
 }
-.sub-faq__list { display: flex; flex-direction: column; gap: 8px; }
-
-.sub-faq__item {
+/* Un seul bloc continu, et non six cartes détachées.
+   Les écarts de 8 px laissaient voir le fond de page entre chaque question :
+   six bandes grises alternées, plus visibles que les questions elles-mêmes.
+   Ici les questions sont simplement séparées par un filet, comme les lignes
+   du tableau comparatif juste au-dessus. */
+.sub-faq__list {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--border-light, #e2e0db);
   border-radius: 14px;
-  background: #fff;
+  background: #fafafa;
   overflow: hidden;
 }
-.sub-faq__item[open] { border-color: var(--accent-border, #bcd9c9); }
+
+.sub-faq__item + .sub-faq__item { border-top: 1px solid var(--border-light, #e2e0db); }
+
+/* La question ouverte passe en blanc : c'est le seul repère qui distingue
+   celle qu'on lit des cinq autres, maintenant qu'il n'y a plus de cadres. */
+.sub-faq__item[open] { background: #fff; }
 
 .sub-faq__q {
   display: flex;
