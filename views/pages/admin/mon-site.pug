@@ -37,7 +37,9 @@ block content
                 span.material-symbols-outlined chevron_right
                 //- `currentCompany.businessName` n'existe pas sur le schéma
                 //- Company : c'était toujours `undefined`. Le nom vit dans `name`.
-                span= 'Site de ' + ((currentCompany && currentCompany.name) || companySlug)
+                //- Même repli que partout : sans lui, « Site de » affichait le
+                //- slug technique pour les fiches dont le nom vit sur le compte.
+                span= 'Site de ' + (currentCompanyName || companySlug)
             .ms-topbar__spacer
             .ms-seg
                 button.ms-device-btn.active(type="button" data-device="desktop" title="Bureau")

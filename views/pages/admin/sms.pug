@@ -9,7 +9,11 @@ block content
         var _pct = smsQuota > 0 ? Math.min(100, Math.round(smsUsedThisMonth / smsQuota * 100)) : 0;
         var _balSms = Math.floor(smsBalanceCents / smsPriceCents);
         var _remaining = Math.max(0, smsQuota - smsUsedThisMonth);
-        var _bizName = (currentCompany && currentCompany.name) || user.businessName || 'Votre établissement';
+        //- `currentCompanyName` porte déjà le repli sur le compte DU PATRON.
+        //- L'ancien `|| user.businessName` retombait sur le compte du VISITEUR :
+        //- un collaborateur voyait son propre nom d'entreprise dans l'aperçu du
+        //- SMS, à la place de celui de l'établissement.
+        var _bizName = currentCompanyName || 'Votre établissement';
         var _waConfigured = (typeof whatsappConfigured !== 'undefined') ? whatsappConfigured : false;
         var _waPrice = ((typeof whatsappPriceCents !== 'undefined' ? whatsappPriceCents : 5) / 100).toFixed(2);
 

@@ -129,7 +129,10 @@ block content
                 //- « Mes établissements ».
                 if currentCompany
                     .stg-danger-row
-                        button.sm-btn.sm-btn--danger#deleteEstabBtn(type="button" data-id=String(currentCompany._id) data-name=(currentCompany.name || 'cet établissement'))
+                        //- Le nom sert à faire confirmer une SUPPRESSION : afficher
+                        //- « cet établissement » au lieu de son nom rendait la
+                        //- confirmation beaucoup trop facile à valider distraitement.
+                        button.sm-btn.sm-btn--danger#deleteEstabBtn(type="button" data-id=String(currentCompany._id) data-name=(currentCompanyName || 'cet établissement'))
                             span Supprimer l'établissement
 
             if currentCompany

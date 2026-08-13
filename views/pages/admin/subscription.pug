@@ -45,7 +45,13 @@ block content
             if currentCompany
                 p.sub-hero__scope(style="margin-top:10px;font-size:13px;color:var(--text-muted,#6b7280)")
                     span.material-symbols-outlined(style="font-size:16px;vertical-align:-3px;margin-right:5px") storefront
-                    | Forfait pour l'établissement : #[strong= currentCompany.name || 'Mon établissement']
+                    //- `currentCompanyName` et non `currentCompany.name` : sur
+                    //- les fiches créées avant le multi-établissement, le nom
+                    //- vit sur le COMPTE du patron et la Company l'a vide. Le
+                    //- repli est déjà calculé dans injectCompany, avec la
+                    //- bonne règle (jamais le compte du visiteur s'il n'est
+                    //- que collaborateur).
+                    | Forfait pour l'établissement : #[strong= currentCompanyName || 'Mon établissement']
 
             //- Billing toggle
             .sub-toggle
