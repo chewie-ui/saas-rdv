@@ -51,8 +51,11 @@ const LIMITS = {
   // Max pre-booking form questions
   formQuestions: { basic: 1, essentiel: 1, pro: 5, business: 10 },
 
-  // Max services (free gets 5 so users can actually build their catalog)
-  services: { basic: 5, essentiel: 5, pro: 20, business: Infinity },
+  // Max services. Le gratuit en garde 5 : de quoi monter un vrai catalogue
+  // sans que l'offre payante perde son intérêt. Pro passe de 20 à illimité —
+  // compter ses prestations une par une est une contrainte que personne ne
+  // comprend, et 20 n'a jamais rien protégé.
+  services: { basic: 5, essentiel: 5, pro: Infinity, business: Infinity },
 
   // Max employees (0 = feature locked on free — team is a Pro differentiator)
   employees: { basic: 0, essentiel: 0, pro: 5, business: 10 },
@@ -66,11 +69,18 @@ const LIMITS = {
 
   // Max collaborateurs (CompanyMembership) inclus gratuitement par établissement.
   // Au-delà : sièges supplémentaires à +10€/mois chacun (voir getCollaboratorLimit).
-  collaborators: { basic: 0, essentiel: 0, pro: 1, business: 4 },
+  collaborators: { basic: 0, essentiel: 0, pro: 2, business: 10 },
 
-  // Monthly bookings cap (Infinity = unlimited). Essentiel = illimité : c'est
-  // SA raison d'être (le "gratuit sans plafond de RDV").
-  monthlyBookings: { basic: 20, essentiel: Infinity, pro: Infinity, business: Infinity },
+  // Plus AUCUN plafond de rendez-vous, y compris sur le gratuit.
+  //
+  // Le plafond de 20 était censé pousser à l'abonnement ; il faisait l'inverse.
+  // Un kiné l'atteignait en une semaine et découvrait ses clients bloqués en
+  // plein milieu du mois — le pire moment pour demander de payer, et le
+  // meilleur pour partir chez un concurrent. Ce qui distingue désormais le
+  // gratuit du payant, ce sont les rappels automatiques, la synchro d'agenda
+  // et la personnalisation : des options qu'on n'a pas achetées, jamais un
+  // blocage en pleine semaine.
+  monthlyBookings: { basic: Infinity, essentiel: Infinity, pro: Infinity, business: Infinity },
 
   // Availability features
   availability: {

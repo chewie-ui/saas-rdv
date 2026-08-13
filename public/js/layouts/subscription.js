@@ -39,10 +39,11 @@ let currentPlan       = "pro"; // plan courant sélectionné pour le checkout
 
 // Les trois plans payables, avec la classe de leur carte. Une seule liste :
 // ajouter un plan ici suffit à ce qu'il lise ses prix ET affiche les promos.
+// L'Essentiel n'est plus proposé (cf. utils/tarifs.js, `visible: false`) : sa
+// carte n'existe plus sur la page, il n'y a donc plus de prix à y décorer.
 const PLANS_PAYANTS = [
-  { cle: "essentiel", carte: ".sub-plan--essentiel" },
-  { cle: "pro",       carte: ".sub-plan--premium" },
-  { cle: "business",  carte: ".sub-plan--studio" },
+  { cle: "pro",      carte: ".sub-plan--premium" },
+  { cle: "business", carte: ".sub-plan--studio" },
 ];
 
 // Prix de base (mensuel / annuel) lus depuis les data attributes.
@@ -52,7 +53,7 @@ const PLANS_PAYANTS = [
 // un montant périmé. On le lit comme les autres, avec un repli sur le texte
 // affiché quand la carte n'a pas de `data-monthly` (cas de l'annuel Essentiel
 // non configuré dans Stripe, cf. essentielYearlyAvailable).
-const PRICES = { essentiel: { monthly: null, yearly: null }, pro: { monthly: null, yearly: null }, business: { monthly: null, yearly: null } };
+const PRICES = { pro: { monthly: null, yearly: null }, business: { monthly: null, yearly: null } };
 
 PLANS_PAYANTS.forEach(({ cle, carte }) => {
   const el = document.querySelector(`${carte} .sub-plan__price`);

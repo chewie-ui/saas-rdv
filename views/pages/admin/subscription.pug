@@ -74,416 +74,242 @@ block content
                 p.sub-trial-note
                     span= t.sub_extra.trial_note || "🎁 1 mois offert sur les plans payants — 0 € aujourd'hui, vous ne serez débité qu'au mois suivant, et vous pouvez annuler à tout moment en un clic."
 
-        //- ── Free tier usage bar ─────────────────────────────────────
-        if !isPro && monthlyBookingCount !== null
-            - var pct = Math.min(Math.round((monthlyBookingCount / 20) * 100), 100)
-            - var usageClass = pct >= 90 ? 'sub-usage--danger' : pct >= 60 ? 'sub-usage--warn' : ''
-            .sub-usage(class=usageClass)
-                .sub-usage__top
-                    span.sub-usage__label
-                        span.material-symbols-outlined calendar_month
-                        | &nbsp;#{t.subscription.usage_label || 'Réservations ce mois'}
-                    span.sub-usage__count
-                        strong= monthlyBookingCount
-                        | &nbsp;#{t.subscription.usage_of || 'sur'}&nbsp;
-                        strong 20
-                .sub-usage__bar
-                    .sub-usage__fill(style=`width:${pct}%`)
-                p.sub-usage__hint= t.subscription.usage_limit || '30 max — passez au Pro pour supprimer cette limite'
+        //- ── Les trois formules ──────────────────────────────────────
+        //-
+        //- Le plafond de 20 rendez-vous a disparu : il chassait les pros au
+        //- moment précis où l'outil commençait à leur servir. Ce qui sépare
+        //- désormais le gratuit du payant, ce sont les rappels automatiques,
+        //- la synchro d'agenda et la personnalisation — des options qu'on n'a
+        //- pas achetées, jamais un blocage en pleine semaine.
+        //-
+        //- Le sélecteur « Individuel / Équipe » a été retiré avec l'Essentiel :
+        //- trois cartes tiennent sur une ligne, et masquer l'offre la plus
+        //- chère derrière un onglet revenait à ne pas la vendre.
+        //-
+        //- Les prix viennent de utils/tarifs.js — même source que le calcul du
+        //- revenu récurrent, pour qu'un montant ne puisse pas diverger entre la
+        //- vitrine et la comptabilité.
+        .sub-plans#subPlans
 
-        //- ── Upgrade incentive strip (free users only) ───────────────
-        if !isPro
-            .sub-upgrade-strip
-                .sub-upgrade-strip__perks
-                    .sub-upgrade-strip__perk
-                        span.material-symbols-outlined email
-                        span Rappels email auto.
-                    .sub-upgrade-strip__perk
-                        span.material-symbols-outlined calendar_month
-                        span Google Calendar
-                    .sub-upgrade-strip__perk
-                        span.material-symbols-outlined groups
-                        span Jusqu'à 5 employés
-                    .sub-upgrade-strip__perk
-                        span.material-symbols-outlined description
-                        span Page personnalisable
-                    .sub-upgrade-strip__perk
-                        span.material-symbols-outlined all_inclusive
-                        span RDV illimités
-                //- Même règle : sans mois offert restant, le bouton ne peut pas
-                //- dire « gratuitement ». Il mène au même endroit, il le dit
-                //- juste honnêtement.
-                button.sub-upgrade-strip__cta#getProPlanStrip(type="button")
-                    if essaiGratuitDisponible
-                        | Essayer Pro gratuitement →
-                    else
-                        | Passer au Pro →
-
-        //- ── Sélecteur d'audience : Individuel / Équipe ──────────────
-        //- Individuel = Free / Essentiel / Pro · Équipe = Business / Sur mesure.
-        .sub-segment#audienceToggle
-            button.sub-segment__btn.is-active(type="button" data-aud="individuel")
-                span.material-symbols-outlined person
-                span Individuel
-            button.sub-segment__btn(type="button" data-aud="equipe")
-                span.material-symbols-outlined groups
-                span Équipe
-
-        -
-            //- ── Helpers offres actives ──────────────────────────────
-            //- Déclarés AVANT les cartes : Pug exécute ces blocs dans l'ordre
-            //- du fichier, et les définir plus bas laissait `_essOffer`
-            //- indéfini au moment de rendre la carte Essentiel.
-            //-
-            //- Cherche une offre active qui s'applique à un plan donné.
-            function _offerFor(plan, offers) {
-                if (!offers || !offers.length) return null;
-                return offers.find(function(o) {
-                    var ap = o.applicablePlan || 'all';
-                    return ap === 'all' || ap === plan + '_monthly' || ap === plan + '_yearly'
-                        || ap === 'premium_monthly' && plan === 'pro'
-                        || ap === 'premium_yearly'  && plan === 'pro';
-                }) || null;
-            }
-            function _offerLabel(o) {
-                if (!o) return '';
-                if (o.discountType === 'trial') return '🎁 ' + (o.trialDays || 30) + ' jours gratuits';
-                if (o.discountType === 'percent') return '🎉 -' + o.discountValue + '%';
-                return '🎉 -' + o.discountValue + '€';
-            }
-            //- L'Essentiel n'a pas de code qui le vise nommément (l'énumération
-            //- de PromoCode n'en prévoit pas) : seule une offre « tous les
-            //- plans » le concerne. C'est justement celle que le serveur
-            //- accepte pour lui au paiement.
-            var _essOffer  = _offerFor('essentiel', defaultOffers);
-            var _proOffer  = _offerFor('pro', defaultOffers);
-            var _bizOffer  = _offerFor('business', defaultOffers);
-
-        //- ── Plan cards ──────────────────────────────────────────────
-        .sub-plans#subPlans(data-active="individuel")
-
-            //- ─── Starter (Free) ────────────────────────────────────
-            .sub-plan.sub-plan--starter(data-group="individuel" class=(!isPro && currentPlan === 'basic') ? 'sub-plan--current' : '')
+            //- ─── Amateur (gratuit) ─────────────────────────────────
+            .sub-plan.sub-plan--starter(class=(!isPro && currentPlan === 'basic') ? 'sub-plan--current' : '')
                 .sub-plan__header
                     .sub-plan__name-wrap
-                        h2.sub-plan__name= t.subscription.plan_1
-                        p.sub-plan__desc= t.subscription.plan_1_desc || 'Pour découvrir BranShee'
+                        h2.sub-plan__name= _tarifs.basic.libelle
+                        p.sub-plan__desc Pour commencer et se faire connaître
                     .sub-plan__pricing
-                        span.sub-plan__price= t.subscription.price_1
-                        span.sub-plan__per &nbsp;#{t.subscription.price_1_sub || ''}
+                        span.sub-plan__price Gratuit
+                        span.sub-plan__per  pour toujours
                 .sub-plan__divider
                 .sub-plan__features
-                    each feature in t.subscription.plan_1_features
+                    each f in ['Rendez-vous illimités', 'Page de réservation en ligne', '5 prestations', 'Confirmations par e-mail', 'Historique de vos clients', 'Visible dans la recherche BranShee']
                         .sub-plan__feature
                             span.material-symbols-outlined.feat-check check
-                            span= feature
-                    //- What's NOT included (shown as locked items)
+                            span= f
                     .sub-plan__feature.sub-plan__feature--locked
                         span.material-symbols-outlined.feat-lock lock
-                        span Rappels email, Google Calendar, personnalisation…
+                        span Rappels automatiques, Google Agenda, personnalisation
                 .sub-plan__cta
-                    if currentPlan === 'basic'
+                    if !isPro && currentPlan === 'basic'
                         button.sub-btn.sub-btn--current(disabled)= t.subscription.btn_current
                     else
-                        button.sub-btn.sub-btn--outline#getFreePlan= t.subscription.btn_downgrade
+                        button.sub-btn.sub-btn--ghost#getFreePlan(type="button") Revenir à l'Amateur
 
-            //- ─── Essentiel ─────────────────────────────────────────
-            .sub-plan.sub-plan--essentiel(data-group="individuel" class=(currentPlan === 'essentiel') ? 'sub-plan--current' : '')
+            //- ─── Pro (mis en avant) ────────────────────────────────
+            .sub-plan.sub-plan--premium(class=(currentPlan === 'pro' && isPro) ? 'sub-plan--current' : '')
+                .sub-plan__popular= t.sub_extra.popular || 'Le plus choisi'
                 .sub-plan__header
                     .sub-plan__name-wrap
-                        h2.sub-plan__name= t.subscription.plan_ess || 'Essentiel'
-                        p.sub-plan__desc= t.subscription.plan_ess_desc || 'La prise de rendez-vous en ligne, sans limite'
-                    .sub-plan__pricing
-                        //- data-yearly n'est posé que si le prix annuel existe côté
-                        //- Stripe : sans lui, le bouton « Annuel » laisse le tarif
-                        //- mensuel affiché (et c'est bien 9 € qui sera facturé).
-                        if essentielYearlyAvailable
-                            span.sub-plan__price(data-monthly="9" data-yearly="7") 9€
-                        else
-                            span.sub-plan__price 9€
-                        span.sub-plan__per= t.subscription.price_2_sub || '/mois'
-                .sub-plan__divider
-                .sub-plan__features
-                    each feature in (t.subscription.plan_ess_features || ['Rendez-vous illimités', 'Historique complet conservé', 'Vos services & votre catalogue', 'Page de réservation en ligne'])
-                        .sub-plan__feature
-                            span.material-symbols-outlined.feat-check check
-                            span= feature
-                    .sub-plan__feature.sub-plan__feature--locked
-                        span.material-symbols-outlined.feat-lock lock
-                        span Collaborateurs, personnalisation, rappels, formulaires…
-                .sub-plan__cta
-                    if currentPlan === 'essentiel'
-                        button.sub-btn.sub-btn--current(disabled)= t.subscription.btn_current
-                        .sub-plan__links
-                            if !autoRenew
-                                span.sub-link#retakeSubscription= t.subscription.btn_retake
-                            if autoRenew
-                                span.sub-link.sub-link--danger#cancelSubscriptionPro= t.subscription.btn_cancel
-                        .sub-time-left(class=isExpired ? 'expired' : isExpiring ? 'expiring' : '')
-                            if isExpired
-                                | #{t.subscription.expired_label}
-                            else if hoursLeft
-                                | #{t.subscription.days_left} :&nbsp;
-                                strong #{hoursLeft} #{hoursLeft > 1 ? t.subscription.hours_suffix_many : t.subscription.hours_suffix_one}
-                            else if daysLeft !== null
-                                | #{t.subscription.days_left} :&nbsp;
-                                strong #{daysLeft} #{t.subscription.days}
-                    else
-                        button.sub-btn.sub-btn--upgrade#getEssPlan= t.subscription.btn_get_ess || "Choisir l'Essentiel →"
-                        //- L'offre s'applique aussi à l'Essentiel dès qu'elle
-                        //- vise « tous les plans » — le serveur l'accepte au
-                        //- paiement (cf. account.controller.js), il faut donc
-                        //- l'annoncer ici comme sur les autres cartes.
-                        if _essOffer
-                            p.sub-plan__offer-note
-                                span.material-symbols-outlined(style="font-size:15px") card_giftcard
-                                | &nbsp;#{_offerLabel(_essOffer)} — déjà appliqué, rien à saisir
-
-            //- ─── Pro ───────────────────────────────────────────────
-            .sub-plan.sub-plan--premium(data-group="individuel" class=(currentPlan === 'pro' && isPro) ? 'sub-plan--current' : '')
-                .sub-plan__popular= t.sub_extra.popular || 'Le plus populaire'
-                .sub-plan__header
-                    .sub-plan__name-wrap
-                        h2.sub-plan__name= t.subscription.plan_2
-                        p.sub-plan__desc= t.subscription.plan_2_desc || 'Pour les indépendants'
-                    //- Prix plein tarif. Quand une offre est en cours, le JS le
-                    //- barre et affiche le prix remisé à côté (même rendu que
-                    //- pour un code saisi à la main) — un seul chemin d'affichage.
+                        h2.sub-plan__name= _tarifs.pro.libelle
+                        p.sub-plan__desc Pour qui travaille tous les jours
                     .sub-plan__pricing
                         span.sub-plan__price(
-                            data-monthly=t.subscription.price_2_val || '19'
-                            data-yearly=t.subscription.price_2_yearly_val || '15'
-                        )= t.subscription.price_2
-                        span.sub-plan__per= t.subscription.price_2_sub
+                            data-monthly=String(_tarifs.pro.mensuel)
+                            data-yearly=String(_tarifs.pro.annuelParMois)
+                        ) #{_tarifs.pro.mensuel}€
+                        span.sub-plan__per  / mois
                 .sub-plan__divider
+                //- Argument chiffré plutôt que promotionnel : deux absences
+                //- évitées remboursent l'abonnement plusieurs fois.
+                p.sub-plan__pitch
+                    span.material-symbols-outlined(style="font-size:16px") trending_up
+                    | &nbsp;2 rendez-vous manqués en moins, et l'abonnement est remboursé 4 fois.
                 .sub-plan__features
-                    each feature in t.subscription.plan_2_features
+                    .sub-plan__feature.sub-plan__feature--head
+                        span Tout l'Amateur, plus :
+                    each f in ['Rappels automatiques par e-mail', '50 rappels SMS par mois', 'Synchronisation Google Agenda', 'Page 100% personnalisable', 'Prestations illimitées', '2 collaborateurs', 'Formulaire de réservation', 'Statistiques complètes', 'Support prioritaire']
                         .sub-plan__feature
                             span.material-symbols-outlined.feat-check check
-                            span= feature
+                            span= f
                 .sub-plan__cta
                     if currentPlan === 'pro' && isPro
                         button.sub-btn.sub-btn--current.sub-btn--premium-current(disabled)= t.subscription.btn_current
                         .sub-plan__links
                             if !autoRenew
                                 span.sub-link#retakeSubscription= t.subscription.btn_retake
-                            if autoRenew
+                            else
                                 span.sub-link.sub-link--danger#cancelSubscriptionPro= t.subscription.btn_cancel
                         .sub-time-left(class=isExpired ? 'expired' : isExpiring ? 'expiring' : '')
                             if isExpired
                                 | #{t.subscription.expired_label}
                             else if isBetaAccess && daysLeft === null
-                                | 🧪 Accès bêta
+                                | Accès offert
                             else if hoursLeft
                                 | #{t.subscription.days_left} :&nbsp;
                                 strong #{hoursLeft} #{hoursLeft > 1 ? t.subscription.hours_suffix_many : t.subscription.hours_suffix_one}
-                            else
+                            else if daysLeft !== null
                                 | #{t.subscription.days_left} :&nbsp;
                                 strong #{daysLeft} #{t.subscription.days}
                     else if currentPlan !== 'business'
-                        button.sub-btn.sub-btn--upgrade#getProPlan
-                            | #{t.subscription.btn_get_pro || 'Passer au Pro →'}
-                        //- L'offre est déjà appliquée au prix affiché : plus de
-                        //- code à copier-coller pour en profiter.
+                        button.sub-btn.sub-btn--upgrade#getProPlan(type="button")
+                            if essaiGratuitDisponible
+                                | Essayer le Pro gratuitement →
+                            else
+                                | Passer au Pro →
                         if !isPro && _proOffer
                             p.sub-plan__offer-note
                                 span.material-symbols-outlined(style="font-size:15px") card_giftcard
-                                | &nbsp;#{_offerLabel(_proOffer)} — déjà appliqué, rien à saisir
+                                | &nbsp;#{_offerLabel(_proOffer)} — déjà appliqué
 
-            //- ─── Business ──────────────────────────────────────────
-            .sub-plan.sub-plan--studio(data-group="equipe" class=(currentPlan === 'business' && isPro) ? 'sub-plan--current' : '')
-                .sub-plan__badge-business= t.subscription.plan_3_badge || 'Pour les équipes'
+            //- ─── Pro+ ──────────────────────────────────────────────
+            .sub-plan.sub-plan--studio(class=(currentPlan === 'business' && isPro) ? 'sub-plan--current' : '')
+                .sub-plan__badge-business Équipes & multi-sites
                 .sub-plan__header
                     .sub-plan__name-wrap
-                        h2.sub-plan__name= t.subscription.plan_3
-                        p.sub-plan__desc= t.subscription.plan_3_desc || 'Pour les équipes'
+                        h2.sub-plan__name= _tarifs.business.libelle
+                        p.sub-plan__desc Pour les cabinets et les salons
                     .sub-plan__pricing
                         span.sub-plan__price(
-                            data-monthly=t.subscription.price_3_val || '49'
-                            data-yearly=t.subscription.price_3_yearly_val || '39'
-                        )= t.subscription.price_3
-                        span.sub-plan__per= t.subscription.price_3_sub
+                            data-monthly=String(_tarifs.business.mensuel)
+                            data-yearly=String(_tarifs.business.annuelParMois)
+                        ) #{_tarifs.business.mensuel}€
+                        span.sub-plan__per  / mois
                 .sub-plan__divider
                 .sub-plan__features
-                    .sub-plan__feature.sub-plan__feature--includes
-                        span.material-symbols-outlined check_circle
-                        em= t.sub_extra.includes_pro || 'Inclut tout ce que Pro offre'
-                    each feature, fi in t.subscription.plan_3_features
-                        if fi > 0
-                            .sub-plan__feature
-                                span.material-symbols-outlined.feat-check.feat-check--business check
-                                span= feature
+                    .sub-plan__feature.sub-plan__feature--head
+                        span Tout le Pro, plus :
+                    each f in ['200 rappels SMS par mois', '10 collaborateurs', 'Plusieurs établissements', 'Cours collectifs et ateliers', 'Votre site vitrine BranShee', 'URL personnalisée incluse', 'Sans marque BranShee', 'Support dédié']
+                        .sub-plan__feature
+                            span.material-symbols-outlined.feat-check check
+                            span= f
                 .sub-plan__cta
                     if currentPlan === 'business' && isPro
-                        button.sub-btn.sub-btn--current.sub-btn--premium-current(disabled)= t.subscription.btn_current
+                        button.sub-btn.sub-btn--current(disabled)= t.subscription.btn_current
                         .sub-plan__links
                             if !autoRenew
                                 span.sub-link#retakeSubscription= t.subscription.btn_retake
-                            if autoRenew
-                                span.sub-link.sub-link--danger#cancelSubscriptionPro= t.subscription.btn_cancel
-                        .sub-time-left(class=isExpired ? 'expired' : isExpiring ? 'expiring' : '')
-                            if isExpired
-                                | #{t.subscription.expired_label}
-                            else if isBetaAccess && daysLeft === null
-                                | 🧪 Accès bêta
-                            else if hoursLeft
-                                | #{t.subscription.days_left} :&nbsp;
-                                strong #{hoursLeft} #{hoursLeft > 1 ? t.subscription.hours_suffix_many : t.subscription.hours_suffix_one}
                             else
-                                | #{t.subscription.days_left} :&nbsp;
-                                strong #{daysLeft} #{t.subscription.days}
+                                span.sub-link.sub-link--danger#cancelSubscriptionPro= t.subscription.btn_cancel
                     else
-                        button.sub-btn.sub-btn--upgrade.sub-btn--business#getBusinessPlan
-                            | #{t.subscription.btn_get_business || 'Passer au Business →'}
+                        button.sub-btn.sub-btn--upgrade.sub-btn--business#getBusinessPlan(type="button") Passer au Pro+ →
                         if !isPro && _bizOffer
                             p.sub-plan__offer-note
                                 span.material-symbols-outlined(style="font-size:15px") card_giftcard
-                                | &nbsp;#{_offerLabel(_bizOffer)} — déjà appliqué, rien à saisir
+                                | &nbsp;#{_offerLabel(_bizOffer)} — déjà appliqué
 
-            //- ─── Sur mesure (grandes entreprises) ──────────────────
-            .sub-plan.sub-plan--custom(data-group="equipe")
-                .sub-plan__badge-business Sur mesure
-                .sub-plan__header
-                    .sub-plan__name-wrap
-                        h2.sub-plan__name Sur mesure
-                        p.sub-plan__desc Pour les grandes entreprises & réseaux
-                    .sub-plan__pricing
-                        span.sub-plan__price--custom Sur devis
-                .sub-plan__divider
-                .sub-plan__features
-                    .sub-plan__feature.sub-plan__feature--includes
-                        span.material-symbols-outlined check_circle
-                        em Tout ce que Business offre, sans limite
-                    each feature in ['Nombre de services au choix', 'Employés & établissements illimités', "Volume d'appels API défini avec vous", 'Fonctionnalités activées à la carte', 'Account manager dédié', 'SLA & sécurité renforcée']
-                        .sub-plan__feature
-                            span.material-symbols-outlined.feat-check.feat-check--business check
-                            span= feature
-                .sub-plan__cta
-                    a.sub-btn.sub-btn--contact(href="/support")
-                        span.material-symbols-outlined(style="font-size:18px") mail
-                        | &nbsp;Contactez-nous
 
-        //- ── Comparison table ────────────────────────────────────────
-        mixin cmpYes
-          span.material-symbols-outlined.cmp-yes check
-        mixin cmpNo
-          span.material-symbols-outlined.cmp-no close
+        //- ── Tableau comparatif ──────────────────────────────────────
+        //- Trois colonnes depuis le retrait de l'Essentiel. Les lignes sont
+        //- déclarées en données plutôt qu'en balisage : une ligne oubliée dans
+        //- une colonne était jusqu'ici invisible à la relecture, et le tableau
+        //- promettait des limites que planLimits.js ne tenait pas.
+        //-
+        //- Valeurs : true = inclus · false = absent · une chaîne = la valeur.
+        -
+            var _lignes = [
+                { groupe: 'Agenda et réservations' },
+                { l: 'Rendez-vous par mois',        a: 'Illimités', p: 'Illimités', b: 'Illimités' },
+                { l: 'Prestations',                 a: '5',         p: 'Illimitées', b: 'Illimitées' },
+                { l: 'Page de réservation en ligne', a: true,       p: true,        b: true },
+                { l: 'Réservation 24h/24',          a: true,        p: true,        b: true },
+                { l: 'Historique de vos clients',   a: true,        p: true,        b: true },
+                { l: 'Congés et indisponibilités',  a: true,        p: true,        b: true },
+                { l: 'Cours collectifs et ateliers', a: false,      p: false,       b: true },
+
+                { groupe: 'Ne plus perdre de rendez-vous' },
+                { l: 'Confirmations par e-mail',    a: true,        p: true,        b: true },
+                { l: 'Rappels automatiques e-mail', a: false,       p: true,        b: true },
+                { l: 'Rappels SMS par mois',        a: false,       p: '50',        b: '200' },
+                { l: 'Annulation en un clic par le client', a: true, p: true,       b: true },
+                { l: 'Synchronisation Google Agenda', a: false,     p: true,        b: true },
+
+                { groupe: 'Votre image' },
+                { l: 'Visible dans la recherche BranShee', a: true, p: true,        b: true },
+                { l: 'Page personnalisable (logo, couleurs)', a: false, p: true,    b: true },
+                { l: 'Galerie photos',              a: false,       p: true,        b: true },
+                { l: 'Avis clients',                a: true,        p: true,        b: true },
+                { l: 'Votre site vitrine',          a: false,       p: false,       b: true },
+                { l: 'URL personnalisée',           a: false,       p: 'Option',    b: 'Incluse' },
+                { l: 'Sans marque BranShee',        a: false,       p: false,       b: true },
+
+                { groupe: 'Organisation' },
+                { l: 'Collaborateurs inclus',       a: false,       p: '2',         b: '10' },
+                { l: 'Plusieurs établissements',    a: false,       p: false,       b: true },
+                { l: 'Formulaire de réservation',   a: '1 question', p: '5 questions', b: '10 questions' },
+                { l: 'Statistiques',                a: 'Basiques',  p: 'Complètes', b: 'Complètes' },
+                { l: 'Support',                     a: 'Standard',  p: 'Prioritaire', b: 'Dédié' },
+            ];
+
+            //- Rend une cellule : coche, croix, ou texte.
+            function _cell(v) { return v; }
 
         .sub-compare
-            h2.sub-compare__title= t.subscription.compare_title || 'Comparer les fonctionnalités'
+            h2.sub-compare__title Comparer les formules
             .sub-compare__wrap
                 table.sub-compare__table
                     thead
                         tr
                             th.sub-compare__th--label
                             th.sub-compare__th
-                                span= t.subscription.plan_1
-                            th.sub-compare__th
-                                span= t.subscription.plan_ess || 'Essentiel'
+                                span.sub-compare__plan= _tarifs.basic.libelle
+                                span.sub-compare__price Gratuit
                             th.sub-compare__th.sub-compare__th--pro
-                                span.material-symbols-outlined(style=`font-size:12px`) star
-                                | &nbsp;#{t.subscription.plan_2}
+                                span.sub-compare__plan ★ #{_tarifs.pro.libelle}
+                                span.sub-compare__price #{_tarifs.pro.mensuel}€ / mois
                             th.sub-compare__th.sub-compare__th--biz
-                                | #{t.subscription.plan_3}
+                                span.sub-compare__plan= _tarifs.business.libelle
+                                span.sub-compare__price #{_tarifs.business.mensuel}€ / mois
                     tbody
-                        tr
-                            td= t.subscription.compare_bookings || 'RDV / mois'
-                            td 20
-                            td: span.cmp-inf ∞
-                            td: span.cmp-inf ∞
-                            td: span.cmp-inf ∞
-                        tr
-                            td= t.subscription.compare_services || 'Services'
-                            td 5
-                            td 5
-                            td 20
-                            td: span.cmp-inf ∞
-                        tr
-                            td Historique conservé
-                            td 7 j
-                            td: +cmpYes
-                            td: +cmpYes
-                            td: +cmpYes
-                        tr
-                            td= t.subscription.compare_reminders || 'Rappels email'
-                            td: +cmpNo
-                            td: +cmpNo
-                            td: +cmpYes
-                            td: +cmpYes
-                        tr
-                            td= t.subscription.compare_sms || 'Rappels SMS / mois'
-                            td: +cmpNo
-                            td: +cmpNo
-                            td 30
-                            td 100
-                        tr
-                            td= t.subscription.compare_gcal || 'Google Calendar'
-                            td: +cmpNo
-                            td: +cmpNo
-                            td: +cmpYes
-                            td: +cmpYes
-                        tr
-                            td= t.subscription.compare_custom || 'Page personnalisable'
-                            td: +cmpNo
-                            td: +cmpNo
-                            td: +cmpYes
-                            td: +cmpYes
-                        tr
-                            td= t.subscription.compare_forms || 'Questions formulaire'
-                            td 1
-                            td 1
-                            td 5
-                            td 10
-                        tr
-                            td Collaborateurs inclus
-                            td: +cmpNo
-                            td: +cmpNo
-                            td 1
-                            td 4
-                        tr
-                            td Établissements
-                            td 1
-                            td 1
-                            td 1
-                            td 5
-                        tr
-                            td Cours collectifs
-                            td: +cmpNo
-                            td: +cmpNo
-                            td: +cmpNo
-                            td: +cmpYes
-                        tr
-                            td= t.subscription.compare_url || 'URL personnalisée'
-                            td: +cmpNo
-                            td: +cmpNo
-                            td.cmp-addon= t.subscription.compare_addon || 'Add-on'
-                            td: +cmpYes
-                        tr
-                            td= t.subscription.compare_branding || 'Sans branding BranShee'
-                            td: +cmpNo
-                            td: +cmpNo
-                            td: +cmpNo
-                            td: +cmpYes
-                        tr
-                            td= t.subscription.compare_support || 'Support'
-                            td= t.subscription.compare_standard || 'Standard'
-                            td= t.subscription.compare_standard || 'Standard'
-                            td= t.subscription.compare_priority || 'Prioritaire'
-                            td= t.subscription.compare_dedicated || 'Dédié'
-            //- Il y avait ici une rangée de boutons « Choisir l'Essentiel »,
-            //- « Passer au Pro », « Passer au Business ». Retirée :
-            //-
-            //- 1. Aucun n'était branché. Les identifiants getEssPlan2 /
-            //-    getProPlan2 / getBusinessPlan2 n'apparaissaient dans aucun
-            //-    fichier JavaScript — cliquer dessus ne faisait rien.
-            //- 2. Ils étaient illisibles : la rangée s'alignait sur les
-            //-    colonnes du tableau, ce qui étirait les libellés et laissait
-            //-    un bouton vide sous la colonne des intitulés.
-            //-
-            //- Les vrais boutons d'achat restent sur les cartes de plans, juste
-            //- au-dessus du tableau.
+                        each ligne in _lignes
+                            if ligne.groupe
+                                tr.sub-compare__group
+                                    td(colspan="4")= ligne.groupe
+                            else
+                                tr
+                                    td= ligne.l
+                                    each v in [ligne.a, ligne.p, ligne.b]
+                                        td
+                                            if v === true
+                                                span.material-symbols-outlined.sub-compare__yes check
+                                            else if v === false
+                                                span.sub-compare__no —
+                                            else
+                                                span.sub-compare__val= v
 
-        //- ── Promo code ──────────────────────────────────────────────
+        //- ── Questions fréquentes ────────────────────────────────────
+        //- Les objections qui reviennent avant un abonnement. Y répondre ici
+        //- évite qu'elles se transforment en e-mail au support — ou en abandon
+        //- silencieux, ce qui est pire parce qu'on ne l'apprend jamais.
+        .sub-faq
+            h2.sub-faq__title Questions fréquentes
+            -
+                var _faq = [
+                        { q: 'Le plan Amateur est-il vraiment gratuit ?', r: "Oui, et sans limite de rendez-vous. Aucune carte bancaire n'est demandée, et il n'expire pas. Vous passez au Pro le jour où les rappels automatiques vous manquent, pas avant." },
+                        { q: 'Puis-je changer de formule ou arrêter quand je veux ?', r: "Oui, en un clic depuis cette page. Aucun engagement de durée. Si vous arrêtez, vous gardez l'accès jusqu'à la fin de la période déjà payée, puis vous repassez en Amateur — sans rien perdre." },
+                        { q: 'Que deviennent mes données si je redescends en Amateur ?', r: "Rien ne disparaît : vos rendez-vous, vos clients et votre page restent en place. Seules les fonctions payantes s'arrêtent, comme les rappels automatiques." },
+                        { q: 'Prenez-vous une commission sur mes rendez-vous ?', r: "Non. Aucune commission, quel que soit votre plan. Ce que vos clients vous paient vous revient entièrement." },
+                        { q: 'À quoi servent les rappels SMS ?', r: "Un SMS envoyé la veille est lu dans les minutes qui suivent, là où un e-mail se noie. C'est le moyen le plus efficace d'éviter les rendez-vous manqués. Le Pro en inclut 50 par mois, le Pro+ 200." },
+                        { q: 'Le paiement est-il sécurisé ?', r: "Il passe par Stripe, qui gère aussi les paiements de milliers de sites. Vos coordonnées bancaires ne transitent jamais par BranShee et ne sont jamais stockées chez nous." },
+                ];
+            .sub-faq__list
+                each q in _faq
+                    details.sub-faq__item
+                        summary.sub-faq__q
+                            span= q.q
+                            span.material-symbols-outlined.sub-faq__chevron expand_more
+                        p.sub-faq__a= q.r
+
+
         .sub-promo#promoCodeSection
             .sub-promo__inner
                 .sub-promo__left
@@ -549,22 +375,7 @@ block scripts
             // (getProPlan2 / getEssPlan2 / getBusinessPlan2) a été retiré avec
             // eux : illisibles, et redondants avec les cartes juste au-dessus.
 
-            // ── Sélecteur Individuel / Équipe : filtre les cartes de plan ──
-            var seg = document.getElementById('audienceToggle');
-            var plansEl = document.getElementById('subPlans');
-            if (seg && plansEl) {
-                function setAudience(aud) {
-                    plansEl.setAttribute('data-active', aud);
-                    seg.querySelectorAll('.sub-segment__btn').forEach(function (b) {
-                        b.classList.toggle('is-active', b.dataset.aud === aud);
-                    });
-                }
-                seg.addEventListener('click', function (e) {
-                    var btn = e.target.closest('.sub-segment__btn');
-                    if (btn) setAudience(btn.dataset.aud);
-                });
-                // On reste toujours sur « Individuel » à l'ouverture (c'est l'entrée
-                // de gamme, et la majorité des visiteurs) — on ne bascule plus
-                // automatiquement sur « Équipe » quand le plan actuel en fait partie.
-            }
+            // Le sélecteur « Individuel / Équipe » a disparu avec l'Essentiel :
+            // les trois formules tiennent sur une seule ligne, il n'y a plus
+            // rien à filtrer.
         });

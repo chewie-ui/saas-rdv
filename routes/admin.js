@@ -142,6 +142,10 @@ router.get("/subscription", isAuth, injectCompany, requireFeatureActive("subscri
     monthlyBookingCount,
     paymentMethods,
     defaultOffers,
+    // Prix et libellés commerciaux, source unique partagée avec le calcul du
+    // revenu récurrent : un montant ne peut plus diverger entre la page des
+    // plans et la comptabilité.
+    _tarifs: require("../utils/tarifs").FORFAITS,
     essentielYearlyAvailable: !!env.stripePriceEssentielYearly,
     // Le mois offert n'est dû qu'une fois par compte : la boîte de
     // confirmation doit annoncer le vrai montant à quelqu'un qui l'a déjà

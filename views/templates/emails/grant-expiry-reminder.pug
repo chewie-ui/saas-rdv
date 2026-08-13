@@ -69,17 +69,20 @@ div(style="margin:0;padding:0;background-color:#f0f4f8;font-family:-apple-system
 
                     //- Ce qui change concrètement, sans exagération.
                     table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:24px;")
+                      //- Le plafond de 20 réservations n'existe plus : la
+                      //- formule gratuite est désormais illimitée en
+                      //- rendez-vous (utils/planLimits.js). Annoncer un
+                      //- blocage qui n'arrivera pas serait mentir, et
+                      //- inquiéter pour rien quelqu'un qu'on veut convertir.
                       tr
                         td(style="padding:14px 18px;border-bottom:1px solid #f1f5f9;")
                           p(style="margin:0;font-size:14px;color:#1e2923;line-height:1.5;")
-                            | Vos réservations en ligne seront plafonnées à&nbsp;
-                            strong 20 par mois
+                            | Vos clients pourront toujours réserver, sans limite de nombre&nbsp;
+                            | — mais sans les rappels qui leur évitent d'oublier.
                             if _depasse
-                              |  — vous en avez eu&nbsp;
+                              |  Vous avez eu&nbsp;
                               strong= _rdv
-                              |  le mois dernier.
-                            else
-                              | .
+                              |  rendez-vous le mois dernier.
                       tr
                         td(style="padding:14px 18px;border-bottom:1px solid #f1f5f9;")
                           p(style="margin:0;font-size:14px;color:#1e2923;line-height:1.5;") Les rappels automatiques envoyés à vos clients avant leur rendez-vous s'arrêteront.
