@@ -688,18 +688,20 @@ if (getBusinessPlan) getBusinessPlan.onclick = () => handlePlanPurchaseClick("bu
 const getEssPlan = document.getElementById("getEssPlan");
 if (getEssPlan)      getEssPlan.onclick      = () => handlePlanPurchaseClick("essentiel");
 
-// ── Strip "Essayer Pro gratuitement" — auto-applies BETA promo then checkout ──
+// ── Bandeau d'incitation : achat direct du Pro ───────────────────────────────
+// Ce bouton écrivait « BETA » dans le champ code promo avant d'aller au
+// paiement. Or le code qui existe en base s'appelle « BETA100 » : le serveur
+// répondait donc « code invalide » juste avant le checkout, sur le bouton le
+// plus visible de la page.
+//
+// On n'applique plus aucun code en dur. Les offres automatiques ont déjà leur
+// mécanisme — les codes marqués « offre mise en avant » en superadmin, qui
+// s'appliquent seuls, barrent le prix et partent au paiement (cf. OFFRES_AUTO).
+// Ce mécanisme-là filtre correctement selon le compte ; un code écrit dans le
+// JavaScript, non.
 const getProPlanStrip = document.getElementById("getProPlanStrip");
 if (getProPlanStrip) {
-  getProPlanStrip.onclick = async () => {
-    if (promoCodeInput) {
-      promoCodeInput.value = "BETA";
-      const promoSection = document.getElementById("promoCodeSection");
-      promoSection?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      await validatePromo();
-    }
-    handlePlanPurchaseClick("pro");
-  };
+  getProPlanStrip.onclick = () => handlePlanPurchaseClick("pro");
 }
 
 // ── Offre mise en avant : appliquée dès l'ouverture de la page ──────────────

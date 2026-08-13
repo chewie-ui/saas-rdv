@@ -58,7 +58,13 @@ block content
             //- "1 mois gratuit inclus" (cf. badge sur /register et CTAs marketing)
             //- soit explicite avant le paiement, et que le client sache qu'il ne
             //- sera débité qu'au mois suivant et peut annuler quand il veut.
-            if !isPro
+            //-
+            //- `essaiGratuitDisponible` : le mois offert n'est dû qu'UNE fois par
+            //- compte (utils/freeTrial.js). L'annoncer à quelqu'un qui l'a déjà
+            //- consommé, c'est promettre « 0 € aujourd'hui » à quelqu'un que le
+            //- serveur va débiter immédiatement. Le drapeau existait déjà, il
+            //- n'était simplement pas lu ici.
+            if !isPro && essaiGratuitDisponible
                 p.sub-trial-note
                     span= t.sub_extra.trial_note || "🎁 1 mois offert sur les plans payants — 0 € aujourd'hui, vous ne serez débité qu'au mois suivant, et vous pouvez annuler à tout moment en un clic."
 
@@ -98,8 +104,14 @@ block content
                     .sub-upgrade-strip__perk
                         span.material-symbols-outlined all_inclusive
                         span RDV illimités
+                //- Même règle : sans mois offert restant, le bouton ne peut pas
+                //- dire « gratuitement ». Il mène au même endroit, il le dit
+                //- juste honnêtement.
                 button.sub-upgrade-strip__cta#getProPlanStrip(type="button")
-                    | Essayer Pro gratuitement →
+                    if essaiGratuitDisponible
+                        | Essayer Pro gratuitement →
+                    else
+                        | Passer au Pro →
 
         //- ── Sélecteur d'audience : Individuel / Équipe ──────────────
         //- Individuel = Free / Essentiel / Pro · Équipe = Business / Sur mesure.
