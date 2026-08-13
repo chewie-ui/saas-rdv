@@ -172,6 +172,21 @@ function applyPromoToUI() {
 
       priceRow.appendChild(strike);
       priceRow.appendChild(newPrice);
+
+      // Le suffixe (« / mois ») est recopié DANS la ligne du prix remisé. Le
+      // bloc promo s'insère entre le prix et son suffixe : laissé à sa place,
+      // « / mois » se retrouvait seul sur une ligne sous la note, détaché du
+      // montant qu'il qualifie. L'original est masqué par la feuille de style
+      // (.sub-plan__pricing:has(.sub-promo-wrap) .sub-plan__per), pas retiré :
+      // c'est lui que relit la branche « essai » pour composer sa note.
+      const suffixe = priceEl.parentNode.querySelector(".sub-plan__per");
+      if (suffixe) {
+        const per = document.createElement("span");
+        per.className = "sub-promo-wrap__per";
+        per.textContent = suffixe.textContent.trim();
+        priceRow.appendChild(per);
+      }
+
       wrap.appendChild(priceRow);
 
       const sub = document.createElement("span");

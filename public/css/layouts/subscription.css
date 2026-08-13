@@ -1,1758 +1,489 @@
-/* ============================================================
-   Subscription page — redesign
-   ============================================================ */
+/* ══════════════════════════════════════════════════════════════════════════
+   PAGE DES FORMULES — /subscription
+   ─────────────────────────────────────────────────────────────────────────
+   Réécrite de zéro. La version précédente avait accumulé trois langages
+   visuels superposés (dégradés, ombres colorées, un bleu hérité d'un ancien
+   plan « Business ») puis deux blocs de correctifs en `!important` pour les
+   annuler. Ici : une seule couleur d'accent — le vert —, des cartes blanches,
+   et la teinte réservée à la formule recommandée.
+
+   Tout passe par les jetons de public/css/import.css : la page suit donc
+   automatiquement le thème sombre de l'application.
+
+   ⚠ Certaines classes sont écrites par public/js/layouts/subscription.js et
+   n'apparaissent nulle part dans le Pug — .sub-promo-wrap et ses enfants,
+   .is-replaced, .sub-promo__status.valid/.invalid, .active sur la bascule.
+   Elles sont stylées ici, repérées par le commentaire « injecté par le JS ».
+   ═════════════════════════════════════════════════════════════════════════ */
 
 .subscription {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  padding-bottom: 40px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 4px 56px;
+  font-variant-numeric: tabular-nums;
+
+  /* `.main-wrapper` du layout admin est un conteneur flex en colonne : un
+     enfant y garde sa largeur MIN-CONTENT, et le tableau comparatif
+     (min-width: 640px) élargissait donc toute la page à 650px sur un écran de
+     375. Le couple min-width:0 + width:100% est nécessaire — `max-width` seul
+     ne contraint rien, et `max-width:100%` sur le tableau tourne en rond
+     puisque son parent a déjà été élargi par lui. */
+  min-width: 0;
+  width: 100%;
 }
 
-/* ── Alert banners ──────────────────────────────────────────── */
+/* ── Bandeaux d'état ─────────────────────────────────────────────────────
+   Rouge et ambre sont sémantiques (échéance dépassée / imminente) : ils ne
+   comptent pas comme couleur d'accent et ne concurrencent pas le vert. */
 .sub-alert {
   display: flex;
   align-items: center;
   gap: 14px;
+  margin-bottom: 26px;
   padding: 14px 18px;
-  border-radius: 14px;
-  border: 1.5px solid;
-  flex-wrap: wrap;
+  border: 1px solid transparent;
+  border-radius: var(--ds-r-lg, 14px);
 }
+.sub-alert__icon { flex: none; font-size: 22px; }
+.sub-alert__body { flex: 1 1 auto; min-width: 0; }
+.sub-alert__title { margin: 0; font-size: 14.5px; font-weight: 700; }
+.sub-alert__sub { margin: 2px 0 0; font-size: 13px; opacity: .85; }
 
 .sub-alert--expired {
-  background: var(--danger-pale);
-  border-color: var(--danger-border, #fca5a5);
-  color: var(--danger);
+  background: var(--danger-pale, #fef2f2);
+  border-color: var(--danger-border, #fecaca);
+  color: var(--danger, #dc2626);
 }
-
 .sub-alert--warning {
   background: #fffbeb;
   border-color: #fde68a;
   color: #92400e;
 }
 
-[data-theme="dark"] .sub-alert--warning {
-  background: rgba(251, 191, 36, 0.08);
-  border-color: rgba(251, 191, 36, 0.3);
-  color: #fbbf24;
+/* ⚠ Les COULEURS du bouton ne se règlent pas ici : btn-normalize.css possède
+   déjà `.sub-alert__cta` et lui impose `color: var(--danger) !important`
+   (fond rouge pâle, texte rouge, survol inversé). On ne lui dispute que la
+   géométrie. Une première version peignait le fond en `currentColor` en
+   croyant hériter du bandeau : le `!important` gardait le texte rouge, et le
+   bouton sortait rouge sur rouge — illisible. */
+.sub-alert__cta { flex: none; }
+
+/* Sur le bandeau ambre, en revanche, le rouge du normaliseur détonne : c'est
+   une échéance qui approche, pas une erreur. Le `!important` est ici obligé —
+   c'est le seul moyen de reprendre la main sur celui de btn-normalize. */
+.sub-alert--warning .sub-alert__cta {
+  background: #92400e;
+  border-color: #92400e;
+  color: #fffbeb !important;
+}
+.sub-alert--warning .sub-alert__cta:hover:not(:disabled) {
+  background: #78350f;
+  border-color: #78350f;
+  color: #fffbeb !important;
 }
 
-.sub-alert__icon {
-  flex-shrink: 0;
-}
-.sub-alert__icon svg {
-  fill: currentColor;
-  display: block;
-}
-.sub-alert__icon .material-symbols-outlined {
-  color: currentColor;
-  display: block;
-}
-
-.sub-alert__body {
-  flex: 1;
-  min-width: 180px;
-}
-.sub-alert__title {
-  font-size: 0.875rem;
-  font-weight: 700;
-  margin-bottom: 2px;
-}
-.sub-alert__sub {
-  font-size: 0.8rem;
-  opacity: 0.8;
-}
-
-.sub-alert__cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 10px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  font-family: var(--font-primary);
-  cursor: pointer;
-  border: none;
-  background: var(--danger);
-  color: #fff;
-  flex-shrink: 0;
-  transition: opacity 0.15s;
-}
-
-.sub-alert__cta:hover {
-  opacity: 0.88;
-}
-.sub-alert__cta--warn {
-  background: #d97706;
-}
-
-/* ── Hero ───────────────────────────────────────────────────── */
+/* ── Titre ───────────────────────────────────────────────────────────────
+   Colonne flex et non `text-align` : la pastille d'établissement et la
+   bascule sont deux inline-flex, elles se collaient sur une même ligne. */
 .sub-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  padding: 40px 0 34px;
   text-align: center;
-  padding: 8px 0 0;
+}
+.sub-hero__title {
+  margin: 0 0 10px;
+  font-size: clamp(26px, 3.4vw, 36px);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.1;
+  text-wrap: balance;
+  color: var(--text-primary);
+}
+.sub-hero__sub {
+  margin: 0;
+  max-width: 52ch;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
 }
 
-.sub-hero__badge {
+.sub-hero__scope {
   display: inline-flex;
   align-items: center;
-  padding: 5px 14px;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  border: 1px solid var(--accent-border);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  gap: 7px;
+  margin: 18px 0 0;
+  padding: 6px 14px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-pill, 999px);
+  font-size: 13px;
+  color: var(--text-secondary);
 }
+.sub-hero__scope .material-symbols-outlined { font-size: 17px; color: var(--text-muted); }
+.sub-hero__scope strong { color: var(--text-primary); font-weight: 650; }
 
-.sub-hero__title {
-  font-size: clamp(1.6rem, 3vw, 2.2rem);
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  color: var(--ink, #0c0d0e);
-  line-height: 1.15;
-  margin: 2px 0 0;
-}
-
-.sub-hero__sub {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  max-width: 380px;
-}
-
-/* ── Billing toggle ─────────────────────────────────────────── */
 .sub-toggle {
   display: inline-flex;
-  align-items: center;
-  background: var(--surface, #f5f4f1);
-  border: 1.5px solid var(--border-light);
-  border-radius: 999px;
+  gap: 3px;
+  margin-top: 20px;
   padding: 4px;
-  gap: 2px;
-  margin-top: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-pill, 999px);
 }
-
 .sub-toggle__btn {
+  padding: 8px 20px;
+  border: 0;
+  border-radius: var(--ds-r-pill, 999px);
+  background: none;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+/* `.active` est posée et retirée par subscription.js — injecté par le JS. */
+.sub-toggle__btn.active { background: var(--accent); color: #fff; }
+.sub-toggle__save { margin-left: 5px; font-size: 11.5px; font-weight: 700; opacity: .85; }
+
+.sub-hero__trial {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 7px 18px;
-  border-radius: 999px;
-  border: none;
-  background: none;
-  font-size: 0.82rem;
-  font-weight: 600;
-  font-family: var(--font-primary);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition:
-    background 0.18s,
-    color 0.18s;
-  white-space: nowrap;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 9px 16px;
+  max-width: 68ch;
+  border-radius: var(--ds-r-md, 10px);
+  background: var(--accent-soft);
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.45;
+  color: var(--accent);
+  text-align: left;
 }
+.sub-hero__trial .material-symbols-outlined { flex: none; font-size: 18px; }
 
-.sub-toggle__btn.active {
-  background: var(--accent);
-  color: #fff;
-  box-shadow: 0 2px 8px var(--accent-glow);
-}
-
-.sub-toggle__discount {
-  font-size: 11px;
-  font-weight: 700;
-  opacity: 0.85;
-}
-
-/* ── Rappel essai gratuit / annulation libre ───────────────────────────── */
-/* (Full styles at end of file) */
-
-/* ── Plans grid ─────────────────────────────────────────────── */
+/* ── Cartes ──────────────────────────────────────────────────────────────
+   Seule la formule recommandée est teintée, et sur toute sa hauteur. Une
+   carte teintée sur trois se remarque ; trois cartes teintées ne se
+   remarquent plus — et un en-tête coloré sur corps blanc coupe la carte en
+   deux. */
 .sub-plans {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  align-items: stretch;
+  margin-top: 36px;
 }
 
-/* ── Plan card base ─────────────────────────────────────────── */
 .sub-plan {
   position: relative;
   display: flex;
   flex-direction: column;
-  background: var(--surface-card);
-  border: 1.5px solid var(--border-light);
-  border-radius: 18px;
-  overflow: visible;
-  transition:
-    box-shadow 0.2s,
-    transform 0.2s;
+  padding: 28px 24px 24px;
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-lg, 14px);
 }
-
-.sub-plan:hover {
-  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.07);
-  transform: translateY(-2px);
-}
-
-/* ── "Most popular" badge ───────────────────────────────────── */
-.sub-plan__popular {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--accent-soft);
-  color: var(--accent);
-  border: 1.5px solid var(--accent-border);
-  padding: 4px 14px;
-  border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-  z-index: 2;
-  pointer-events: none;
-}
-
-/* ── Premium card accent ────────────────────────────────────── */
 .sub-plan--premium {
-  border: 2px solid var(--accent);
-}
-
-.sub-plan--premium .sub-plan__header {
   background: var(--accent-soft);
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
+  border-color: var(--accent);
 }
 
-.sub-plan--premium .feat-check {
-  fill: var(--accent);
+/* Formule en cours : filet plus marqué. « Sur quelle formule suis-je ? » est
+   la première question qu'on se pose ici, et une pastille dans un coin se
+   repère mal ; le contour, lui, se voit avant même d'avoir lu. */
+.sub-plan--current { border-color: var(--text-secondary); }
+.sub-plan--premium.sub-plan--current { border-color: var(--accent); }
+
+.sub-plan__pill {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 5px 11px;
+  border-radius: var(--ds-r-pill, 999px);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.sub-plan__pill--reco { background: var(--accent); color: #fff; }
+.sub-plan__pill--muted {
+  background: var(--surface-2);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
 }
 
-.sub-plan--premium .sub-plan__price {
-  color: var(--accent);
+.sub-plan__name {
+  margin: 0;
+  padding-right: 100px; /* la pastille flotte au-dessus du coin droit */
+  font-size: 19px;
+  font-weight: 750;
+  letter-spacing: -.02em;
+  color: var(--text-primary);
+}
+.sub-plan__for { margin: 3px 0 0; font-size: 13px; color: var(--text-muted); }
+
+/* Parent du prix : c'est ici que le JS insère .sub-promo-wrap. D'où le
+   `flex-wrap` — sans lui, le bloc promo se tasserait sur la ligne du prix. */
+.sub-plan__pricing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 22px;
+}
+.sub-plan__price {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -.035em;
+  line-height: 1;
+  color: var(--text-primary);
+}
+.sub-plan__per { font-size: 13.5px; font-weight: 550; color: var(--text-muted); }
+
+.sub-plan__payback {
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--ds-r-md, 10px);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  /* Vert foncé et non `--accent` : sur son propre fond teinté, l'accent ne
+     donnait que 3.9:1. C'est la phrase qui justifie la dépense — elle doit se
+     lire, pas se deviner. */
+  color: var(--accent-hover, #185f3d);
 }
 
-/* ── Plan header ────────────────────────────────────────────── */
-.sub-plan__header {
-  padding: 28px 24px 20px;
+.sub-plan__sep { height: 1px; margin: 22px 0 18px; background: var(--border-light); }
+.sub-plan--premium .sub-plan__sep { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+
+.sub-plan__eyebrow {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Pousse les boutons en bas : les trois cartes s'alignent quelle que soit la
+   longueur de leur liste. */
+.sub-plan__grow { flex: 1 1 auto; }
+
+.sub-plan__feats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
+}
+.sub-plan__feats li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.sub-plan__feats li.is-off { color: var(--text-muted); }
+.sub-plan__ok { flex: none; font-size: 17px; color: var(--accent); }
+.sub-plan__lock { flex: none; font-size: 16px; color: var(--text-muted); }
+
+/* ── Boutons des cartes ──────────────────────────────────────────────────
+   Noir partout, vert sur la seule formule recommandée : c'est ce contraste
+   qui désigne le choix, pas trois boutons de trois couleurs. */
+.sub-plan__cta { margin-top: 22px; }
+.sub-plan__btn {
+  display: block;
+  width: 100%;
+  padding: 13px 18px;
+  border: 1px solid transparent;
+  border-radius: var(--ds-r-md, 10px);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  text-align: center;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.sub-plan__btn--accent { background: var(--accent); color: #fff; }
+.sub-plan__btn--accent:hover { background: var(--accent-hover); }
+.sub-plan__btn--dark { background: #14181d; color: #fff; }
+.sub-plan__btn--dark:hover { background: #000; }
+.sub-plan__btn--ghost {
+  background: transparent;
+  border-color: var(--border-light);
+  color: var(--text-secondary);
+}
+.sub-plan__btn--ghost:hover { background: var(--surface-2); color: var(--text-primary); }
+.sub-plan__btn--quiet {
+  background: transparent;
+  border-color: var(--border-light);
+  color: var(--text-muted);
+  cursor: default;
 }
 
-.sub-plan__name-wrap {
+.sub-plan__links { display: flex; justify-content: center; margin-top: 12px; }
+.sub-plan__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.sub-plan__link:hover { color: var(--text-primary); }
+.sub-plan__link--danger { color: var(--danger, #dc2626); }
+.sub-plan__link--danger:hover { filter: brightness(.85); }
+
+.sub-plan__left {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.sub-plan__left strong { color: var(--text-primary); }
+.sub-plan__left.is-expiring, .sub-plan__left.is-expiring strong { color: #b45309; }
+.sub-plan__left.is-expired,  .sub-plan__left.is-expired  strong { color: var(--danger, #dc2626); }
+
+.sub-plan__offer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.sub-plan__offer .material-symbols-outlined { font-size: 15px; }
+
+/* ── Prix promotionnel — injecté par le JS ───────────────────────────────
+   subscription.js remplace le prix par ce bloc quand une offre s'applique.
+   `.is-replaced` masque le prix plein ; il reste dans le DOM parce que le JS
+   relit son texte pour composer la ligne « puis 19€ / mois ». */
+.sub-plan__price.is-replaced { display: none; }
+
+.sub-promo-wrap {
+  flex: 1 0 100%;
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
-
-.sub-plan__name {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--ink, #0c0d0e);
-  letter-spacing: -0.2px;
-}
-
-.sub-plan__desc {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  font-weight: 400;
-}
-
-/* ── Pricing ────────────────────────────────────────────────── */
-.sub-plan__pricing {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-}
-
-.sub-plan__price {
-  font-size: 2.5rem;
-  font-weight: 800;
-  letter-spacing: -1.5px;
-  line-height: 1;
-  color: var(--ink, #0c0d0e);
-}
-
-.sub-plan__per {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-/* ── Offre par défaut (badge prix + sous-titre) ─────────────── */
-.sub-plan__offer-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 8px;
-  padding: 5px 12px;
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #16a34a;
-  width: fit-content;
-  line-height: 1.3;
-}
-
-/* Quand une offre est active, .sub-plan__pricing passe en colonne */
-.sub-plan__pricing:has(.sub-plan__offer-badge) {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.sub-plan__then {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-/* ── Divider ─────────────────────────────────────────────────── */
-.sub-plan__divider {
-  height: 1px;
-  background: var(--border-light);
-  margin: 0 24px;
-}
-
-/* ── Features ───────────────────────────────────────────────── */
-.sub-plan__features {
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
-  padding: 20px 24px;
-  flex: 1;
-}
-
-.sub-plan__feature {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 0.875rem;
-  color: var(--ink);
-  line-height: 1.4;
-}
-
-.sub-plan__feature strong {
-  font-weight: 700;
-}
-
-.feat-check {
-  flex-shrink: 0;
-  fill: var(--accent);
-  margin-top: 1px;
-}
-
-/* ── CTA area ───────────────────────────────────────────────── */
-.sub-plan__cta {
-  padding: 4px 24px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* ── CTA buttons ────────────────────────────────────────────── */
-.sub-btn {
-  width: 100%;
-  padding: 13px 18px;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  font-family: var(--font-primary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    background 0.15s,
-    color 0.15s,
-    border-color 0.15s,
-    opacity 0.15s,
-    transform 0.12s;
-}
-
-/* Current plan — outlined gray */
-.sub-btn--current {
-  background: none;
-  border: 1.5px solid var(--border-light);
-  color: var(--text-secondary);
-}
-
-.sub-btn--current:disabled {
-  opacity: 1;
-  cursor: default;
-}
-
-/* Upgrade (Premium) — solid green */
-.sub-btn--upgrade {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  box-shadow: 0 3px 12px var(--accent-glow);
-}
-
-.sub-btn--upgrade:hover {
-  background: var(--accent-hover, #185f3d);
-  transform: translateY(-1px);
-}
-
-/* Downgrade / outline */
-.sub-btn--outline {
-  background: none;
-  border: 1.5px solid var(--border-light);
-  color: var(--ink);
-}
-
-.sub-btn--outline:hover {
-  border-color: var(--border-medium);
-  color: var(--ink);
-  background: var(--surface-2);
-}
-
-/* Premium "current plan" — green outlined */
-.sub-btn--premium-current {
-  background: none;
-  border: 1.5px solid var(--accent-border);
-  color: var(--accent);
-  cursor: default;
-  opacity: 1;
-}
-
-/* ── Sub-links (cancel/retake) ──────────────────────────────── */
-.sub-plan__links {
-  display: flex;
-  justify-content: center;
-}
-
-.sub-link {
-  font-size: 12px;
-  cursor: pointer;
-  color: var(--text-muted);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  transition: color 0.15s;
-}
-
-.sub-link:hover {
-  color: var(--ink);
-}
-.sub-link--danger {
-  color: var(--danger);
-}
-.sub-link--danger:hover {
-  color: #b91c1c;
-}
-
-/* ── Time remaining ─────────────────────────────────────────── */
-.sub-time-left {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  justify-content: center;
-  font-size: 11.5px;
-  color: var(--text-muted);
-}
-
-.sub-time-left strong {
-  font-weight: 700;
-  color: var(--ink);
-}
-.sub-time-left.expiring {
-  color: #b45309;
-}
-.sub-time-left.expiring strong {
-  color: #92400e;
-}
-.sub-time-left.expired {
-  color: var(--danger);
-  font-weight: 600;
-}
-
-/* ── Promo code ─────────────────────────────────────────────── */
-.sub-promo {
-  background: var(--surface-card);
-  border: 1.5px solid var(--border-light);
-  border-radius: 16px;
-  padding: 20px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.sub-promo__inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.sub-promo__left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-shrink: 0;
-}
-
-.sub-promo__icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: var(--accent-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.sub-promo__icon svg {
-  fill: var(--accent);
-}
-.sub-promo__icon .material-symbols-outlined {
-  color: var(--accent);
-}
-
-.sub-promo__text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.sub-promo__title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.sub-promo__desc {
-  font-size: 12.5px;
-  color: var(--text-muted);
-}
-
-.sub-promo__right {
-  flex: 1;
-  min-width: 240px;
-  max-width: 380px;
-}
-
-.sub-promo__field {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.sub-promo__input {
-  flex: 1;
-  height: 38px;
-  padding: 0 14px;
-  font-size: 13.5px;
-  font-weight: 600;
-  letter-spacing: .04em;
-  border: 1.5px solid var(--border-medium);
-  border-radius: var(--r-sm, 8px);
-  background: var(--surface);
-  color: var(--ink);
-  outline: none;
-  font-family: inherit;
-  transition: border-color .15s;
-}
-
-.sub-promo__input:focus {
-  border-color: var(--accent);
-  background: var(--surface-card);
-}
-
-.sub-promo__input::placeholder {
-  color: var(--text-muted);
-  font-weight: 400;
-  letter-spacing: 0;
-}
-
-.sub-promo__status {
-  font-size: 13px;
-  font-weight: 600;
-  padding-left: 56px; /* aligner avec le texte */
-}
-
-/* Pas de message → pas de gap inutile sous le champ */
-.sub-promo__status:empty {
-  display: none;
-}
-
-.sub-promo__status.valid   { color: var(--accent); }
-.sub-promo__status.invalid { color: var(--danger); }
-
-@media (max-width: 600px) {
-  .sub-promo__inner  { flex-direction: column; align-items: flex-start; }
-  .sub-promo__right  { width: 100%; max-width: 100%; }
-  .sub-promo__status { padding-left: 0; }
-}
-
-/* ── Business card accent ───────────────────────────────────── */
-.sub-plan--studio {
-  border: 2px solid #3b82f6;
-}
-
-.sub-plan--studio .sub-plan__header {
-  background: #eff6ff;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-}
-
-.sub-plan--studio .sub-plan__price { color: #2563eb; }
-
-.sub-plan__badge-business {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #eff6ff;
-  color: #2563eb;
-  border: 1.5px solid #bfdbfe;
-  padding: 4px 14px;
-  border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.sub-plan--studio .feat-check--business { fill: #2563eb; }
-
-.sub-btn--business {
-  background: #2563eb;
-  color: #fff;
-  border: none;
-  box-shadow: 0 3px 12px rgba(37, 99, 235, 0.28);
-}
-.sub-btn--business:hover {
-  background: #1d4ed8;
-  transform: translateY(-1px);
-}
-
-/* ── "1 mois gratuit" shortcut button ───────────────────────── */
-.sub-btn--free-month {
-  width: 100%;
-  margin-top: 8px;
-  padding: 9px 14px;
-  border-radius: 9px;
-  border: 1.5px dashed #22c55e;
-  background: #f0fdf4;
-  color: #15803d;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: background 0.15s, border-color 0.15s;
-}
-.sub-btn--free-month:hover {
-  background: #dcfce7;
-  border-color: #16a34a;
-}
-
-/* ── "Includes pro" feature line ────────────────────────────── */
-.sub-plan__feature--includes {
-  padding: 7px 10px;
-  background: #eff6ff;
-  border-radius: 8px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #1d4ed8;
-  gap: 6px;
-}
-.sub-plan__feature--includes svg { fill: #2563eb; flex-shrink: 0; }
-.sub-plan__feature--includes .material-symbols-outlined { color: #2563eb; flex-shrink: 0; }
-.sub-plan__feature--includes em { font-style: normal; }
-
-/* ── Current plan highlight ─────────────────────────────────── */
-.sub-plan--current {
-  ring: 2px solid var(--accent);
-}
-
-/* ── Locked feature row ─────────────────────────────────────── */
-.sub-plan__feature--locked {
-  opacity: 0.45;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-.feat-lock { fill: var(--text-muted); flex-shrink: 0; margin-top: 1px; }
-
-/* ── Free tier usage bar ────────────────────────────────────── */
-.sub-usage {
-  background: var(--surface-card);
-  border: 1.5px solid var(--border-light);
-  border-radius: 14px;
-  padding: 14px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sub-usage__top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.sub-usage__label {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-}
-.sub-usage__label svg { fill: var(--accent); }
-.sub-usage__label .material-symbols-outlined { color: var(--accent); }
-
-.sub-usage__count {
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-.sub-usage__count strong { color: var(--ink); }
-
-.sub-usage__bar {
-  height: 6px;
-  background: var(--surface-2, #eceae6);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.sub-usage__fill {
-  height: 100%;
-  background: var(--accent);
-  border-radius: 999px;
-  transition: width 0.5s ease;
-}
-
-.sub-usage__hint {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin: 0;
-}
-
-/* Usage states */
-.sub-usage--warn .sub-usage__fill { background: #d97706; }
-.sub-usage--warn .sub-usage__label svg { fill: #d97706; }
-.sub-usage--warn .sub-usage__label .material-symbols-outlined { color: #d97706; }
-.sub-usage--warn { border-color: #fde68a; background: #fffbeb; }
-
-.sub-usage--danger .sub-usage__fill { background: var(--danger); }
-.sub-usage--danger .sub-usage__label svg { fill: var(--danger); }
-.sub-usage--danger .sub-usage__label .material-symbols-outlined { color: var(--danger); }
-.sub-usage--danger { border-color: var(--danger-border); background: var(--danger-pale); }
-.sub-usage--danger .sub-usage__hint { color: var(--danger); font-weight: 600; }
-
-/* ── Comparison table ───────────────────────────────────────── */
-.sub-compare {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.sub-compare__title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: -0.2px;
-  margin: 0;
-}
-
-.sub-compare__wrap {
-  overflow-x: auto;
-  border-radius: 16px;
-  border: 1.5px solid var(--border-light);
-  background: var(--surface-card);
-}
-
-.sub-compare__table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13.5px;
-  min-width: 460px;
-}
-
-.sub-compare__table thead tr {
-  border-bottom: 1.5px solid var(--border-light);
-}
-
-.sub-compare__table th {
-  padding: 14px 16px;
-  text-align: center;
-  font-weight: 700;
-  font-size: 13px;
-  color: var(--ink);
-  letter-spacing: -0.1px;
-}
-
-.sub-compare__th--label {
-  text-align: left !important;
-  width: 40%;
-}
-
-.sub-compare__th--pro {
-  background: var(--accent-soft);
-  color: var(--accent) !important;
-}
-
-.sub-compare__th--biz {
-  background: #eff6ff;
-  color: #2563eb !important;
-}
-
-.sub-compare__table td {
-  padding: 12px 16px;
-  border-top: 1px solid var(--border-light);
-  text-align: center;
-  color: var(--ink);
-  font-size: 13px;
-}
-
-.sub-compare__table td:first-child {
-  text-align: left;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-/* Surlignage au survol retiré.
-   Il peignait la ligne en gris chaud soutenu, y compris par-dessus la colonne
-   teintée du Pro — une bande beige traversait le tableau au passage de la
-   souris. Un tableau qu'on lit n'a rien à signaler au survol : il n'est pas
-   cliquable, et le pointeur suffit à savoir où l'on est. */
-
-/* Column accents */
-.sub-compare__table td:nth-child(3) {
-  background: rgba(30, 122, 78, 0.03);
-}
-.sub-compare__table td:nth-child(4) {
-  background: rgba(37, 99, 235, 0.03);
-}
-
-.cmp-yes { fill: var(--accent); display: block; margin: 0 auto; }
-.cmp-no  { fill: #d1d5db; display: block; margin: 0 auto; }
-.cmp-inf {
-  display: block;
-  text-align: center;
-  font-size: 1.3rem;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--accent, #16a34a);
-}
-
-.cmp-addon {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #d97706;
-  white-space: nowrap;
-}
-
-/* ── Tablette : 2 colonnes ──────────────────────────────────── */
-@media (min-width: 640px) and (max-width: 1099px) {
-  .sub-plans {
-    grid-template-columns: repeat(2, 1fr);
-    align-items: start;
-  }
-}
-
-/* ── Desktop : 4 colonnes (Essentiel, Pro, Business + Starter) ── */
-@media (min-width: 1100px) {
-  .sub-plans {
-    grid-template-columns: repeat(4, 1fr);
-    align-items: start;
-  }
-
-  /* Premium card sits slightly taller */
-  .sub-plan--premium {
-    margin-top: -8px;
-  }
-}
-
-@media (max-width: 819px) {
-  .sub-plan--premium {
-    margin-top: 10px; /* extra space for "Most popular" badge */
-  }
-}
-
-/* ── Dark mode ──────────────────────────────────────────────── */
-[data-theme="dark"] .sub-plan {
-  background: var(--surface-card, #1a1a1a);
-}
-
-[data-theme="dark"] .sub-plan--premium .sub-plan__header {
-  background: rgba(30, 122, 78, 0.1);
-}
-
-[data-theme="dark"] .sub-plan--studio .sub-plan__header {
-  background: rgba(37, 99, 235, 0.08);
-}
-
-[data-theme="dark"] .sub-plan__feature--includes {
-  background: rgba(37, 99, 235, 0.08);
-  color: #93c5fd;
-}
-[data-theme="dark"] .sub-plan__feature--includes svg { fill: #60a5fa; }
-[data-theme="dark"] .sub-plan__feature--includes .material-symbols-outlined { color: #60a5fa; }
-
-[data-theme="dark"] .sub-hero__title {
-  color: #f0f0f0;
-}
-
-[data-theme="dark"] .sub-compare__wrap {
-  background: var(--surface-card);
-}
-
-[data-theme="dark"] .sub-compare__th--pro {
-  background: rgba(30, 122, 78, 0.15);
-}
-
-[data-theme="dark"] .sub-compare__th--biz {
-  background: rgba(37, 99, 235, 0.12);
-}
-
-[data-theme="dark"] .sub-compare__table td:nth-child(3) {
-  background: rgba(30, 122, 78, 0.05);
-}
-
-[data-theme="dark"] .sub-compare__table td:nth-child(4) {
-  background: rgba(37, 99, 235, 0.05);
-}
-
-[data-theme="dark"] .sub-usage {
-  background: var(--surface-card);
-}
-
-[data-theme="dark"] .sub-usage--warn {
-  background: rgba(217, 119, 6, 0.08);
-  border-color: rgba(217, 119, 6, 0.3);
-}
-
-[data-theme="dark"] .sub-usage--danger {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   BOÎTE DE CONFIRMATION D'ACHAT
-   "si déjà une carte, demande payer instant avec carte X ou changer
-   de carte, ajoute l'option code promo et une confirmation 'êtes-vous
-   sûr de vouloir payer X €' avant de débiter directement."
-   ═══════════════════════════════════════════════════════════════ */
-.sub-confirm__card {
-  margin-top: 14px;
-  padding: 12px 14px;
-  background: var(--surface-soft, #f9fafb);
-  border: 1px solid var(--border-light, #e5e7eb);
-  border-radius: 12px;
-}
-
-.sub-confirm__card-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.sub-confirm__card-label {
-  font-size: 13.5px;
-  color: var(--text-primary, #111);
-}
-
-.sub-confirm__card-switch {
-  background: none;
-  border: none;
-  color: var(--accent, #1e7a4e);
-  font-size: 12.5px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 6px;
-  transition: background .12s ease;
-}
-.sub-confirm__card-switch:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.sub-confirm__card-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--border-light, #e5e7eb);
-}
-
-.sub-confirm__card-item {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 13px;
-  color: var(--text-primary, #111);
-  padding: 7px 9px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background .12s ease;
-}
-.sub-confirm__card-item:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-.sub-confirm__card-item.active {
-  background: var(--accent-soft, #e8f5ee);
-  color: var(--accent, #1e7a4e);
-  font-weight: 600;
-}
-.sub-confirm__card-item input[type="radio"] {
-  accent-color: var(--accent, #1e7a4e);
-  cursor: pointer;
-}
-.sub-confirm__card-item small {
-  display: block;
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--text-muted, #9ca3af);
-}
-
-.sub-confirm__promo {
-  margin-top: 12px;
-}
-
-.sub-confirm__promo-toggle {
-  background: none;
-  border: none;
-  color: var(--accent, #1e7a4e);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 4px 0;
-}
-.sub-confirm__promo-toggle:hover {
-  text-decoration: underline;
-}
-
-.sub-confirm__promo-form {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.sub-confirm__promo-input {
-  flex: 1;
-  min-width: 0;
-  padding: 9px 12px;
-  font-size: 13px;
-  border: 1.5px solid var(--border-medium, #d1d5db);
-  border-radius: 8px;
-  text-transform: uppercase;
-  letter-spacing: .03em;
-  font-family: inherit;
-}
-.sub-confirm__promo-input:focus {
-  outline: none;
-  border-color: var(--accent, #1e7a4e);
-}
-
-.sub-confirm__promo-apply {
-  padding: 9px 16px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-  background: var(--accent, #1e7a4e);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background .15s ease;
-}
-.sub-confirm__promo-apply:hover {
-  background: var(--accent-hover, #166941);
-}
-
-.sub-confirm__promo-status {
-  display: block;
-  margin-top: 6px;
-  font-size: 12px;
-  font-weight: 600;
-}
-.sub-confirm__promo-status.valid   { color: #16a34a; }
-.sub-confirm__promo-status.invalid { color: #ef4444; }
-
-.sub-confirm__ask {
-  margin-top: 14px !important;
-  font-weight: 600 !important;
-  color: var(--text-primary, #111) !important;
-}
-.sub-confirm__price {
-  color: var(--accent, #1e7a4e);
-}
-
-/* ── Responsive ───────────────────────────────────────────────────────── */
-@media (max-width: 480px) {
-  .sub-confirm__card-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .sub-confirm__promo-form {
-    flex-direction: column;
-  }
-  .sub-confirm__promo-apply {
-    width: 100%;
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   UPGRADE INCENTIVE STRIP
-   ══════════════════════════════════════════════════════════════ */
-.sub-upgrade-strip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 22px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #0d5c36 0%, #1e7a4e 50%, #166941 100%);
-  flex-wrap: wrap;
-  position: relative;
-  overflow: hidden;
-}
-
-/* Subtle shimmer overlay */
-.sub-upgrade-strip::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.06) 50%, transparent 70%);
-  pointer-events: none;
-}
-
-.sub-upgrade-strip__perks {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-  flex: 1;
-}
-
-.sub-upgrade-strip__perk {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.92);
-  white-space: nowrap;
-}
-
-.sub-upgrade-strip__perk svg {
-  fill: #6ee7b7;
-  flex-shrink: 0;
-}
-.sub-upgrade-strip__perk .material-symbols-outlined {
-  color: #6ee7b7;
-  flex-shrink: 0;
-}
-
-.sub-upgrade-strip__cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 11px 22px;
-  background: #fff;
-  color: #0d5c36;
-  border: none;
-  border-radius: 12px;
-  font-size: 0.875rem;
-  font-weight: 800;
-  font-family: var(--font-primary);
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: transform 0.15s, box-shadow 0.15s;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-  text-decoration: none;
-}
-
-.sub-upgrade-strip__cta:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 22px rgba(0,0,0,0.22);
-}
-
-@media (max-width: 700px) {
-  .sub-upgrade-strip {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .sub-upgrade-strip__perks {
-    gap: 12px;
-  }
-  .sub-upgrade-strip__cta {
-    width: 100%;
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   PLAN CARD HEADER GRADIENTS (Pro & Business visual upgrade)
-   ══════════════════════════════════════════════════════════════ */
-
-/* Pro header — subtle green gradient */
-.sub-plan--premium .sub-plan__header {
-  background: linear-gradient(145deg, #e8f8ef 0%, #d1f5e2 100%) !important;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-}
-
-.sub-plan--premium {
-  border: 2px solid var(--accent);
-  box-shadow: 0 8px 32px rgba(30, 122, 78, 0.12);
-}
-
-.sub-plan--premium:hover {
-  box-shadow: 0 12px 40px rgba(30, 122, 78, 0.2) !important;
-  transform: translateY(-4px) !important;
-}
-
-.sub-plan--premium .sub-plan__name {
-  color: var(--accent);
-}
-
-/* Pro "Most popular" badge — filled green */
-.sub-plan--premium .sub-plan__popular {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-  box-shadow: 0 2px 10px rgba(30, 122, 78, 0.35);
-}
-
-/* Business header — subtle blue gradient */
-.sub-plan--studio .sub-plan__header {
-  background: linear-gradient(145deg, #eff6ff 0%, #dbeafe 100%) !important;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-}
-
-.sub-plan--studio {
-  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.08);
-}
-
-.sub-plan--studio:hover {
-  box-shadow: 0 10px 36px rgba(37, 99, 235, 0.16) !important;
-  transform: translateY(-3px) !important;
-}
-
-/* Business badge — filled blue */
-.sub-plan__badge-business {
-  background: #2563eb !important;
-  color: #fff !important;
-  border-color: #2563eb !important;
-  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
-}
-
-/* Starter (free) card — toned down to contrast with paid plans */
-.sub-plan--starter {
-  background: var(--surface-card);
-  opacity: 0.9;
-}
-
-.sub-plan--essentiel {
-  background: var(--surface-card);
-  border-color: var(--accent-border, rgba(30, 122, 78, 0.22));
-}
-.sub-plan--essentiel .sub-plan__name { color: var(--accent, #1e7a4e); }
-
-/* Upgrade button — pulsing animation to draw attention */
-@keyframes subBtnPulse {
-  0%, 100% { box-shadow: 0 3px 12px var(--accent-glow); }
-  50%       { box-shadow: 0 6px 24px rgba(30, 122, 78, 0.45); }
-}
-
-.sub-btn--upgrade:not(:disabled) {
-  animation: subBtnPulse 2.4s ease-in-out infinite;
-}
-
-.sub-btn--upgrade:hover {
-  animation: none;
-  background: var(--accent-hover, #185f3d);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(30, 122, 78, 0.45) !important;
-}
-
-/* Business upgrade button pulse — blue */
-@keyframes subBtnPulseBiz {
-  0%, 100% { box-shadow: 0 3px 12px rgba(37, 99, 235, 0.28); }
-  50%       { box-shadow: 0 6px 24px rgba(37, 99, 235, 0.5); }
-}
-
-.sub-btn--business:not(:disabled) {
-  animation: subBtnPulseBiz 2.6s ease-in-out infinite;
-}
-
-.sub-btn--business:hover {
-  animation: none;
-  background: #1d4ed8;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.5) !important;
-}
-
-/* Trial note — cleaner without icon */
-.sub-trial-note {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  text-align: center;
-  margin-top: 10px;
-  padding: 9px 18px;
-  max-width: 540px;
-  background: var(--accent-soft, #f0fdf4);
-  border: 1.5px solid var(--accent-border, #bbf7d0);
-  border-radius: var(--radius-md, 10px);
-  color: var(--accent-dark, #16a34a);
-  font-size: 0.8rem;
-  font-weight: 600;
-  line-height: 1.45;
-}
-
-/* Dark mode adjustments */
-[data-theme="dark"] .sub-upgrade-strip {
-  background: linear-gradient(135deg, #0a3d22 0%, #0f5232 50%, #0d4428 100%);
-}
-
-[data-theme="dark"] .sub-upgrade-strip__cta {
-  background: #e8f5ee;
-  color: #0a3d22;
-}
-
-[data-theme="dark"] .sub-plan--premium .sub-plan__header {
-  background: linear-gradient(145deg, rgba(30,122,78,0.18) 0%, rgba(30,122,78,0.1) 100%) !important;
-}
-
-[data-theme="dark"] .sub-plan--studio .sub-plan__header {
-  background: linear-gradient(145deg, rgba(37,99,235,0.14) 0%, rgba(37,99,235,0.08) 100%) !important;
-}
-
-/* ══════════ Sélecteur d'audience : Individuel / Équipe ══════════ */
-.sub-segment {
-  display: flex;
-  width: max-content;
-  max-width: 100%;
-  align-items: center;
-  background: var(--surface, #f5f4f1);
-  border: 1.5px solid var(--border-light);
-  border-radius: 999px;
-  padding: 4px;
-  gap: 2px;
-  margin: 6px auto 24px;
-}
-.sub-segment__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 24px;
-  border-radius: 999px;
-  border: none;
-  background: none;
-  font-size: 0.86rem;
-  font-weight: 600;
-  font-family: var(--font-primary);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: background 0.18s, color 0.18s;
-  white-space: nowrap;
-}
-.sub-segment__btn .material-symbols-outlined { font-size: 18px; }
-.sub-segment__btn.is-active {
-  background: var(--accent);
-  color: #fff;
-  box-shadow: 0 2px 8px var(--accent-glow);
-}
-
-/* ══════════ Plans : centrage flex (2 ou 3 cartes selon l'audience) ══════════ */
-.sub-plans {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: stretch;
-  gap: 18px;
-}
-.sub-plans > .sub-plan {
-  flex: 1 1 300px;
-  max-width: 360px;
-  min-width: 240px;
-}
-/* Le filtrage par groupe (« Individuel » / « Équipe ») a disparu avec
-   l'Essentiel : les trois formules tiennent sur une ligne et sont toutes
-   visibles. Masquer l'offre la plus chère derrière un onglet revenait à ne
-   pas la vendre. */
-
-/* ══════════ Carte « Sur mesure » (grandes entreprises) ══════════ */
-.sub-plan--custom {
-  border: 1.5px solid var(--border-light);
-  background: linear-gradient(180deg, #fbfaff 0%, var(--surface-card) 60%);
-}
-.sub-plan--custom .sub-plan__badge-business {
-  background: #ede9fe;
-  color: #6d28d9;
-  border-color: #ddd6fe;
-}
-.sub-plan__price--custom {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--ink, #141c25);
-  letter-spacing: -0.02em;
-}
-.sub-plan--custom .feat-check--business { fill: #6d28d9; color: #6d28d9; }
-.sub-btn--contact {
-  background: #141c25;
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  gap: 4px;
-}
-.sub-btn--contact:hover { background: #2a3441; color: #fff; }
-
-@media (max-width: 480px) {
-  .sub-segment__btn { padding: 9px 18px; font-size: 0.82rem; }
-  .sub-plans > .sub-plan { flex-basis: 100%; max-width: 420px; }
-}
-
-/* Rappel de l'offre sous le bouton d'achat. Elle est déjà appliquée au prix
-   affiché — c'est une information, plus un bouton « copier le code » que le
-   pro devait coller pour y avoir droit. */
-.sub-plan__offer-note {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 8px 0 0;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #16a34a;
-  text-align: center;
-  line-height: 1.4;
-}
-
-/* ── Prix barré quand une offre s'applique ─────────────────────────────────
-   Ces règles vivaient en `style.cssText` dans subscription.js : impossible à
-   surcharger, invisible depuis la feuille, et dupliquées à trois endroits.
-   Le JS ne pose plus que des classes. */
-.sub-plan__price.is-replaced { display: none; }
-
-.sub-promo-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* Reprend la typographie du prix qu'il remplace, pour que la carte ne bouge
-   pas quand une offre s'active. */
-.sub-promo-wrap__row {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-  font-size: 2.5rem;
-  font-weight: 800;
-  letter-spacing: -1.5px;
-  line-height: 1;
-}
+.sub-promo-wrap__row { display: flex; align-items: baseline; gap: 10px; }
 .sub-promo-wrap__old {
-  font-size: 1em;
-  font-weight: 800;
-  color: var(--text-muted, #9aa3ad);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-muted);
   text-decoration: line-through;
 }
 .sub-promo-wrap__new {
-  font-size: 1em;
+  font-size: 40px;
   font-weight: 800;
-  letter-spacing: -1.5px;
-  color: var(--accent, #16a34a);
+  letter-spacing: -.035em;
+  line-height: 1;
+  color: var(--accent);
 }
-
 .sub-promo-wrap__badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  width: fit-content;
+  align-self: flex-start;
   padding: 5px 12px;
-  border: 1px solid var(--accent-border, #bbf7d0);
-  border-radius: 8px;
-  background: var(--accent-soft, #f0fdf4);
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--accent, #16a34a);
-}
-
-.sub-promo-wrap__note {
-  font-size: 0.75rem;
-  font-weight: 500;
-  line-height: 1.4;
-  color: var(--text-secondary, #6b7280);
-}
-
-@media (max-width: 480px) {
-  .sub-promo-wrap__row { font-size: 2rem; gap: 8px; }
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   REFONTE DES FORMULES — Amateur / Pro / Pro+
-   ══════════════════════════════════════════════════════════════════════════ */
-
-/* Argument chiffré sous le prix du Pro. Encadré et non en simple texte gris :
-   c'est la phrase qui justifie la dépense, elle doit se lire avant la liste
-   des fonctions. */
-.sub-plan__pitch {
-  display: flex;
-  align-items: flex-start;
-  gap: 2px;
-  margin: 0 0 14px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--accent-soft, #e7f2ec);
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1.45;
-  color: var(--accent, #1e7a4e);
-}
-.sub-plan__pitch .material-symbols-outlined { flex: none; color: inherit; }
-
-/* « Tout l'Amateur, plus : » — sépare l'hérité du nouveau sans répéter les
-   lignes du plan précédent, ce qui allongeait les cartes pour rien. */
-.sub-plan__feature--head {
-  margin-bottom: 4px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .01em;
-  text-transform: uppercase;
-  color: var(--text-muted, #8a919e);
-}
-.sub-plan__feature--head span { color: inherit; }
-
-/* ── Tableau comparatif ─────────────────────────────────────────────────── */
-.sub-compare__th { padding: 16px 12px; text-align: center; vertical-align: bottom; }
-.sub-compare__plan {
-  display: block;
-  font-size: 15px;
-  font-weight: 750;
-  color: var(--text-primary, #141c25);
-}
-.sub-compare__price {
-  display: block;
-  margin-top: 3px;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text-muted, #8a919e);
-}
-.sub-compare__th--pro .sub-compare__plan { color: var(--accent, #1e7a4e); }
-
-/* Ligne de rubrique : sans elle, vingt-cinq lignes d'affilée deviennent
-   illisibles et personne ne descend jusqu'en bas. */
-.sub-compare__group td {
-  padding: 14px 14px 8px;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: .05em;
-  text-transform: uppercase;
-  color: var(--text-muted, #8a919e);
-  /* #FAFAFA plutôt que --surface-2 : ce dernier est un gris chaud nettement
-     plus soutenu, qui découpait le tableau en tranches au lieu de simplement
-     séparer les rubriques. */
-  background: #fafafa;
-}
-
-.sub-compare__yes { font-size: 19px; color: var(--accent, #1e7a4e); }
-.sub-compare__no  { font-size: 15px; color: var(--text-muted, #b6bcc5); }
-.sub-compare__val {
+  border-radius: var(--ds-r-pill, 999px);
+  background: var(--accent);
   font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary, #141c25);
+  font-weight: 700;
+  color: #fff;
 }
+.sub-promo-wrap__per { font-size: 13.5px; font-weight: 550; color: var(--text-muted); }
+.sub-promo-wrap__note { font-size: 12px; color: var(--text-muted); }
 
-/* ── Questions fréquentes ───────────────────────────────────────────────── */
-.sub-faq { max-width: 760px; margin: 56px auto 0; }
-.sub-faq__title {
+/* Le suffixe d'origine est masqué dès qu'un bloc promo occupe la ligne : le
+   JS en a replacé une copie à côté du prix remisé (branche « remise »), ou l'a
+   intégré à la note « puis 19€ / mois » (branche « essai »). Sans cette règle
+   il restait affiché seul sous la note, détaché de tout montant. */
+.sub-plan__pricing:has(.sub-promo-wrap) .sub-plan__per { display: none; }
+
+/* ── Tableau comparatif ──────────────────────────────────────────────────
+   La colonne recommandée est teintée sur toute sa hauteur : c'est ce qui
+   rattache le tableau à la carte, et ce qui le fait lire en colonnes. */
+.sub-compare { margin-top: 64px; }
+.sub-compare__title {
   margin: 0 0 18px;
   font-size: 22px;
   font-weight: 750;
-  letter-spacing: -0.02em;
+  letter-spacing: -.02em;
+  color: var(--text-primary);
+}
+/* Le tableau défile dans son propre conteneur : la page, elle, ne part
+   jamais en travers. */
+.sub-compare__wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-lg, 14px);
+}
+.sub-compare__table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  background: var(--bg-surface, #fff);
+}
+
+.sub-compare__table thead th {
+  padding: 18px 16px;
   text-align: center;
-  color: var(--text-primary, #141c25);
+  vertical-align: bottom;
+  font-weight: 700;
 }
-/* Un seul bloc continu, et non six cartes détachées.
-   Les écarts de 8 px laissaient voir le fond de page entre chaque question :
-   six bandes grises alternées, plus visibles que les questions elles-mêmes.
-   Ici les questions sont simplement séparées par un filet, comme les lignes
-   du tableau comparatif juste au-dessus. */
-.sub-faq__list {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--border-light, #e2e0db);
-  border-radius: 14px;
-  background: #fafafa;
-  overflow: hidden;
+.sub-compare__table thead th:first-child { text-align: left; }
+.sub-compare__plan {
+  display: block;
+  font-size: 15px;
+  letter-spacing: -.01em;
+  color: var(--text-primary);
 }
-
-.sub-faq__item + .sub-faq__item { border-top: 1px solid var(--border-light, #e2e0db); }
-
-/* La question ouverte passe en blanc : c'est le seul repère qui distingue
-   celle qu'on lit des cinq autres, maintenant qu'il n'y a plus de cadres. */
-.sub-faq__item[open] { background: #fff; }
-
-.sub-faq__q {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 16px 18px;
-  font-size: 14.5px;
-  font-weight: 650;
-  color: var(--text-primary, #141c25);
-  cursor: pointer;
-  list-style: none;
+.sub-compare__price {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
 }
-/* Retire le triangle natif, remplacé par le chevron. */
-.sub-faq__q::-webkit-details-marker { display: none; }
-.sub-faq__q::marker { content: ""; }
+.sub-compare__th--pro .sub-compare__plan { color: var(--accent); }
 
-.sub-faq__chevron {
-  flex: none;
-  font-size: 20px;
-  color: var(--text-muted, #8a919e);
-  transition: transform .18s ease;
+.sub-compare__table tbody td {
+  padding: 13px 16px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
 }
-.sub-faq__item[open] .sub-faq__chevron { transform: rotate(180deg); }
+.sub-compare__table tbody td:not(:first-child) { text-align: center; }
+.sub-compare__table tbody tr + tr td { border-top: 1px solid var(--border-light); }
 
-.sub-faq__a {
-  margin: 0;
-  padding: 0 18px 18px;
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--text-secondary, #4a5260);
-}
-
-@media (max-width: 700px) {
-  .sub-faq { margin-top: 40px; }
-  .sub-faq__title { font-size: 19px; }
-  .sub-faq__q { font-size: 13.5px; padding: 14px 15px; }
-  .sub-faq__a { padding: 0 15px 15px; font-size: 13.5px; }
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   HARMONISATION DES FORMULES
-   ─────────────────────────────────────────────────────────────────────────
-   Le Pro+ était bleu, le Pro vert, chacun avec son dégradé d'en-tête et son
-   ombre colorée : trois langages visuels sur une même ligne, et un bleu qui
-   n'appartient à aucune charte BranShee. On ramène tout à UNE couleur
-   d'accent, le vert, et à des cartes blanches.
-   ───────────────────────────────────────────────────────────────────────── */
-
-/* ── Cartes : blanches, filet fin, pas de dégradé ─────────────────────────
-   Seule la formule mise en avant est teintée. Une carte teintée sur trois se
-   remarque ; trois cartes teintées ne se remarquent plus. */
-.sub-plan {
-  background: #fff;
-  border: 1px solid var(--border-light, #e8e6e1);
-  border-radius: 16px;
-  box-shadow: none !important;
-  opacity: 1;
-}
-.sub-plan:hover { transform: none; box-shadow: 0 4px 20px rgba(20, 28, 37, .06) !important; }
-
-.sub-plan__header,
-.sub-plan--premium .sub-plan__header,
-.sub-plan--studio .sub-plan__header {
-  background: transparent !important;
-  padding-bottom: 4px;
-}
-
-/* Le Pro : teinte douce sur TOUTE la carte, pas seulement l'en-tête —
-   un en-tête coloré posé sur un corps blanc coupait la carte en deux. */
-.sub-plan--premium {
-  background: var(--accent-soft, #eef7f2) !important;
-  border: 1.5px solid var(--accent, #1e7a4e) !important;
-}
-.sub-plan--premium .sub-plan__price { color: var(--text-primary, #141c25); }
-
-/* Le Pro+ redevient une carte comme les autres. */
-.sub-plan--studio {
-  background: #fff !important;
-  border: 1px solid var(--border-light, #e8e6e1) !important;
-}
-.sub-plan--studio .sub-plan__price { color: var(--text-primary, #141c25) !important; }
-.sub-plan--studio .feat-check,
-.sub-plan--studio .feat-check--business { fill: var(--accent, #1e7a4e) !important; }
-
-/* ── Pastilles ───────────────────────────────────────────────────────────
-   Petite pastille en haut à droite plutôt qu'une étiquette centrée à cheval
-   sur la bordure : elle n'ampute plus le titre et se lit d'un coup d'œil. */
-.sub-plan__popular,
-.sub-plan__badge-business {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  left: auto;
-  transform: none;
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 0 !important;
+.sub-compare__group td {
+  padding: 12px 16px 9px;
+  background: var(--surface-2);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: .01em;
-  white-space: nowrap;
-  box-shadow: none !important;
-}
-.sub-plan__popular {
-  background: var(--accent, #1e7a4e) !important;
-  color: #fff !important;
-}
-/* Le Pro+ n'est pas « populaire » : sa pastille informe sans crier. */
-.sub-plan__badge-business {
-  background: var(--surface-2, #f2f1ee) !important;
-  color: var(--text-secondary, #4a5260) !important;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
-/* ── Boutons ─────────────────────────────────────────────────────────────
-   Noir partout, vert sur la seule formule mise en avant. C'est ce contraste
-   qui désigne le choix recommandé — pas trois boutons de trois couleurs. */
-.sub-btn--upgrade,
-.sub-btn--business {
-  background: #14181d !important;
-  border-color: #14181d !important;
-  color: #fff !important;
-  box-shadow: none !important;
-}
-.sub-btn--upgrade:hover,
-.sub-btn--business:hover { background: #000 !important; border-color: #000 !important; }
-
-.sub-plan--premium .sub-btn--upgrade {
-  background: var(--accent, #1e7a4e) !important;
-  border-color: var(--accent, #1e7a4e) !important;
-}
-.sub-plan--premium .sub-btn--upgrade:hover { background: #17603d !important; border-color: #17603d !important; }
-
-/* ── Tableau comparatif ──────────────────────────────────────────────────
-   La colonne mise en avant est teintée sur TOUTE sa hauteur : c'est ce qui
-   fait lire le tableau en colonnes plutôt qu'en lignes, et ce qui rattache
-   visuellement la carte Pro à sa colonne. */
 .sub-compare__table th:nth-child(3),
-.sub-compare__table td:nth-child(3) {
-  background: var(--accent-soft, #eef7f2);
+.sub-compare__table tbody td:nth-child(3) { background: var(--accent-soft); }
+.sub-compare__group td:nth-child(3) {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
 }
-.sub-compare__group td:nth-child(3) { background: #f2f6f3; }
 
-.sub-compare__th--biz .sub-compare__plan { color: var(--text-primary, #141c25) !important; }
+/* Aucun surlignage au survol : le tableau n'est pas cliquable, et la bande
+   grise traversait la colonne teintée du Pro en l'effaçant. */
 
-/* Coche cerclée, comme sur les tableaux de comparaison lisibles : le glyphe
-   seul se perd dans une colonne de vingt-cinq lignes. */
 .sub-compare__yes {
   display: inline-flex;
   align-items: center;
@@ -1760,25 +491,90 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 1.5px solid var(--accent, #1e7a4e);
-  font-size: 14px !important;
-  color: var(--accent, #1e7a4e);
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+}
+.sub-compare__yes .material-symbols-outlined { font-size: 14px; }
+.sub-compare__no { color: var(--text-muted); }
+.sub-compare__val { font-weight: 650; color: var(--text-primary); }
+
+/* ── Code promo ──────────────────────────────────────────────────────────
+   Saisi à la main, pour un code reçu par e-mail. Les offres mises en avant
+   par le superadmin, elles, s'appliquent toutes seules plus haut. */
+.sub-promo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+  margin-top: 40px;
+  padding: 20px 22px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-lg, 14px);
+}
+.sub-promo__head { display: flex; align-items: center; gap: 12px; flex: 1 1 260px; }
+.sub-promo__icon { font-size: 22px; color: var(--accent); }
+.sub-promo__text { display: flex; flex-direction: column; }
+.sub-promo__title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.sub-promo__desc { font-size: 12.5px; color: var(--text-muted); }
+
+.sub-promo__field { display: flex; gap: 8px; flex: 0 1 360px; }
+.sub-promo__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--ds-h-md, 38px);
+  padding: 0 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-md, 10px);
+  background: var(--bg-surface, #fff);
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+.sub-promo__input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--ds-ring);
 }
 
-.sub-compare__table td { padding: 13px 14px; }
-.sub-compare__table td:not(:first-child) { text-align: center; }
-.sub-compare__table tbody tr:not(.sub-compare__group) + tr:not(.sub-compare__group) td {
-  border-top: 1px solid var(--border-light, #eeece8);
+/* `.valid` / `.invalid` sont posées par subscription.js après la réponse du
+   serveur — injecté par le JS. Le paragraphe reste vide, donc invisible,
+   tant qu'aucun code n'a été soumis. */
+.sub-promo__status {
+  flex: 1 0 100%;
+  margin: 0;
+  font-size: 12.5px;
+}
+.sub-promo__status:empty { display: none; }
+.sub-promo__status.valid { color: var(--accent); font-weight: 600; }
+.sub-promo__status.invalid { color: var(--danger, #dc2626); font-weight: 600; }
+
+.sub-foot {
+  margin: 32px 0 0;
+  font-size: 12.5px;
+  text-align: center;
+  color: var(--text-muted);
 }
 
-/* Dernières traces de bleu : la colonne Pro+ du tableau gardait un fond et un
-   titre bleus hérités de l'ancienne charte « Business ». Le tableau ne doit
-   mettre en avant qu'UNE colonne — celle du Pro — sinon la mise en avant ne
-   veut plus rien dire. */
-.sub-compare__th--biz,
-.sub-compare__table th:nth-child(4),
-.sub-compare__table td:nth-child(4) {
-  background: transparent !important;
-  color: var(--text-primary, #141c25) !important;
+/* ── Responsive ──────────────────────────────────────────────────────────
+   Sous 980 px les trois cartes ne tiennent plus côte à côte sans écraser les
+   listes ; on empile, en gardant la carte recommandée en premier pour
+   qu'elle reste la première lue au pouce. */
+@media (max-width: 980px) {
+  .sub-plans { grid-template-columns: 1fr; max-width: 460px; margin-inline: auto; }
+  .sub-plan--premium { order: -1; }
 }
-.sub-compare__th--biz .sub-compare__price { color: var(--text-muted, #8a919e) !important; }
+
+@media (max-width: 700px) {
+  .sub-hero { padding: 28px 0 26px; }
+  .sub-alert { flex-wrap: wrap; }
+  .sub-alert__cta { width: 100%; }
+  .sub-compare { margin-top: 44px; }
+  .sub-compare__title { font-size: 19px; }
+  .sub-promo__field { flex: 1 1 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sub-toggle__btn, .sub-plan__btn { transition: none; }
+}
