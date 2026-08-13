@@ -60,3 +60,27 @@
   color: var(--text-secondary);
   line-height: 1.6;
 }
+
+/* ── Retour de paiement non vérifié ────────────────────────────────────────
+   Même carte, mais sans le vert de la réussite : cet écran s'affiche quand on
+   arrive sur l'adresse sans passer par Stripe. Le vert et les confettis y
+   annonçaient un achat qui n'avait pas eu lieu. */
+.page--payment-success .payment__success-wrapper--neutre .payment__success-icon svg {
+  fill: var(--text-muted, #8a919e);
+}
+.page--payment-success .payment__success-wrapper--neutre .payment__success-title h2 {
+  color: var(--text-primary, #141c25);
+}
+/* Deux boutons côte à côte dans l'état non vérifié : revenir aux formules,
+   ou rejoindre l'agenda. */
+.page--payment-success .payment__success-wrapper--neutre .payment__success-action {
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.payment__note {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary, #637083);
+}

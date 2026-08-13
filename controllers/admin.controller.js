@@ -3205,12 +3205,21 @@ exports.historyCheckConflicts = async (req, res) => {
 
 exports.paymentVerification = async (req, res) => {
   const { session_id } = req.query;
-  const renderSuccess = () => res.render("admin/payment-success", { t: res.locals.t });
+  // `verifie` commande le discours de la page. Il n'est vrai que lorsque
+  // Stripe a confirmé le paiement — pas quand quelqu'un tape l'adresse à la
+  // main. Aucun forfait n'était accordé dans ce cas (l'activation vient plus
+  // bas, après la vérification), mais l'écran affichait « Votre achat a été
+  // confirmé » et des confettis. Annoncer un achat qui n'a pas eu lieu, c'est
+  // se garantir un « j'ai payé et je n'ai rien reçu » à traiter plus tard.
+  const rendre = (verifie) =>
+    res.render("admin/payment-success", { t: res.locals.t, verifie });
+  const renderSuccess = () => rendre(true);
+  const renderNonVerifie = () => rendre(false);
 
   // Sans session_id on ne peut rien vérifier
   if (!session_id) {
     console.warn("[paymentVerification] Pas de session_id dans l'URL");
-    return renderSuccess();
+    return renderNonVerifie();
   }
 
   let session;
@@ -3218,7 +3227,7 @@ exports.paymentVerification = async (req, res) => {
     session = await stripe.checkout.sessions.retrieve(session_id);
   } catch (retrieveErr) {
     console.error("[paymentVerification] Impossible de récupérer la session Stripe:", retrieveErr.message);
-    return renderSuccess();
+    return renderNonVerifie();
   }
 
   console.log(`[paymentVerification] session=${session_id} payment_status=${session.payment_status} amount=${session.amount_total} customer=${session.customer} subscription=${session.subscription}`);
@@ -3260,8 +3269,11 @@ exports.paymentVerification = async (req, res) => {
   const userId = session.client_reference_id || session.metadata?.userId || (req.user && req.user._id.toString());
 
   if (!userId) {
+    // Le paiement est bien passé chez Stripe, mais on ne sait pas à QUI
+    // l'attribuer : le forfait n'est pas activé. Dire « c'est bon » ici
+    // enverrait le pro travailler en croyant être passé Pro.
     console.error("[paymentVerification] userId introuvable — plan NON activé");
-    return renderSuccess();
+    return renderNonVerifie();
   }
 
   try {

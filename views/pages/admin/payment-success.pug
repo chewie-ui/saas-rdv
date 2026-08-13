@@ -1,35 +1,68 @@
+//- Retour de Stripe après un paiement.
+//-
+//- Deux états, et un seul dit « merci » : cette page était affichée à
+//- l'identique — titre de confirmation et confettis — même quand rien n'avait
+//- été vérifié. Taper l'adresse à la main suffisait à obtenir un écran de
+//- réussite. Aucun forfait n'était accordé pour autant (le contrôleur
+//- n'active qu'après vérification auprès de Stripe), mais annoncer un achat
+//- qui n'a pas eu lieu est le meilleur moyen de recevoir un jour un « j'ai
+//- payé et je n'ai rien ».
 html
     head
+        meta(charset="utf-8")
+        meta(name="viewport" content="width=device-width, initial-scale=1")
+        title= verifie ? "Achat confirmé — BranShee" : "Achat non confirmé — BranShee"
+        //- Ni indexé ni suivi : ce sont des pages de retour de paiement.
+        meta(name="robots" content="noindex, nofollow")
         link(rel="stylesheet", href="/css/import.css")
         link(rel="stylesheet", href="/css/layouts/success-page.css")
     body
         .page.page--payment-success
             .payment__success
-                .payment__success-wrapper
+                .payment__success-wrapper(class=verifie ? '' : 'payment__success-wrapper--neutre')
                     .payment__success-icon
-                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg>
+                        if verifie
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor")
+                                path(d="m424-296 282-282-56-56-226 226-114-114-56 56 170 170Zm56 216q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
+                        else
+                            //- Point d'interrogation, pas une croix : on ne sait
+                            //- pas si le paiement a échoué ou n'a jamais eu lieu.
+                            //- Annoncer un échec serait aussi faux qu'annoncer
+                            //- une réussite.
+                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor")
+                                path(d="M478-240q21 0 35.5-14.5T528-290q0-21-14.5-35.5T478-340q-21 0-35.5 14.5T428-290q0 21 14.5 35.5T478-240Zm-36-154h74q0-33 7.5-52t42.5-52q26-26 41-49.5t15-56.5q0-56-41-86t-97-30q-57 0-92.5 30T342-618l66 26q5-18 22.5-39t53.5-21q32 0 48 17.5t16 38.5q0 20-12 37.5T506-526q-44 39-54 59t-10 73Zm38 314q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z")
                     .payment__success-content
                         .payment__success-title
-                            h2= t.payment.title
+                            if verifie
+                                h2= t.payment.title
+                            else
+                                h2 Nous n'avons pas pu confirmer votre achat
                         .payment__success-description
-                            p= t.payment.desc
+                            if verifie
+                                p= t.payment.desc
+                            else
+                                p
+                                    | Cette page se remplit à votre retour de la page de paiement.
+                                    | Aucun paiement n'a été enregistré pour l'instant, et rien ne vous a été débité.
+                                p.payment__note Si vous venez de payer, votre forfait peut mettre un instant à s'activer — rechargez la page des plans dans une minute. Si le problème persiste, écrivez-nous.
                         .payment__success-action.flex
-                            a.sm-btn.sm-btn--primary(href="/appointment")= t.payment.dashboard
+                            if verifie
+                                a.sm-btn.sm-btn--primary#dashboard-btn(href="/appointment")= t.payment.dashboard
+                            else
+                                a.sm-btn.sm-btn--primary(href="/subscription") Revenir aux formules
+                                a.sm-btn.sm-btn--ghost(href="/appointment")= t.payment.dashboard
 
-        script(src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js")
-        script.
-            // Explosion automatique au chargement
-            confetti({
-                particleCount: 150,
-                spread: 70,
-                origin: { y: .6 }
-            });
-
-            // Bonus : petite explosion quand on clique sur le bouton dashboard
-            document.getElementById('dashboard-btn').onclick = function() {
-                confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.9 }
-                });
-            };
+        //- Confettis réservés à un achat réellement vérifié : les afficher dans
+        //- les deux cas était précisément ce qui rendait l'écran trompeur.
+        if verifie
+            script(src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js")
+            script.
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                // `dashboard-btn` n'existait sur AUCUN élément : ce gestionnaire
+                // levait une TypeError à chaque chargement de la page. L'id est
+                // désormais posé sur le lien, et on vérifie quand même sa
+                // présence.
+                var btn = document.getElementById('dashboard-btn');
+                if (btn) btn.onclick = function () {
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.9 } });
+                };
