@@ -464,19 +464,18 @@ block content
                             td= t.subscription.compare_standard || 'Standard'
                             td= t.subscription.compare_priority || 'Prioritaire'
                             td= t.subscription.compare_dedicated || 'Dédié'
-            //- Compare CTAs
-            .sub-compare__actions
-                if !isPro
-                    //- L'Essentiel manquait sous le tableau : on comparait les
-                    //- quatre colonnes puis on ne pouvait choisir que Pro ou
-                    //- Business. Masqué si c'est déjà le plan en cours.
-                    if currentPlan !== 'essentiel'
-                        button.sub-btn.sub-btn--upgrade.sub-btn--essentiel#getEssPlan2
-                            | #{t.subscription.btn_get_ess || "Choisir l'Essentiel →"}
-                    button.sub-btn.sub-btn--upgrade#getProPlan2
-                        | #{t.subscription.btn_get_pro || 'Passer au Pro →'}
-                    button.sub-btn.sub-btn--upgrade.sub-btn--business#getBusinessPlan2
-                        | #{t.subscription.btn_get_business || 'Passer au Business →'}
+            //- Il y avait ici une rangée de boutons « Choisir l'Essentiel »,
+            //- « Passer au Pro », « Passer au Business ». Retirée :
+            //-
+            //- 1. Aucun n'était branché. Les identifiants getEssPlan2 /
+            //-    getProPlan2 / getBusinessPlan2 n'apparaissaient dans aucun
+            //-    fichier JavaScript — cliquer dessus ne faisait rien.
+            //- 2. Ils étaient illisibles : la rangée s'alignait sur les
+            //-    colonnes du tableau, ce qui étirait les libellés et laissait
+            //-    un bouton vide sous la colonne des intitulés.
+            //-
+            //- Les vrais boutons d'achat restent sur les cartes de plans, juste
+            //- au-dessus du tableau.
 
         //- ── Promo code ──────────────────────────────────────────────
         .sub-promo#promoCodeSection
@@ -531,45 +530,18 @@ block scripts
     script(src="/js/templates/dialog.js")
     script(src="/js/layouts/subscription.js")
     script.
-        // Wire getProPlan2 / getBusinessPlan2 (compare table CTAs) to the same handlers
         document.addEventListener('DOMContentLoaded', function() {
-            var p2 = document.getElementById('getProPlan2');
-            var b2 = document.getElementById('getBusinessPlan2');
+            // Le bandeau d'incitation rejoue le bouton de la carte Pro : c'est
+            // elle qui porte le prix, l'offre en cours et la boîte de
+            // confirmation. Un seul gestionnaire ici — subscription.js n'en
+            // pose plus, sinon la confirmation s'ouvrait deux fois.
             var ps = document.getElementById('getProPlanStrip');
             var p1 = document.getElementById('getProPlan');
-            var b1 = document.getElementById('getBusinessPlan');
-            if (p2 && p1) p2.addEventListener('click', function() { p1.click(); });
             if (ps && p1) ps.addEventListener('click', function() { p1.click(); });
 
-            // Essentiel : le bouton du tableau rejoue celui de la carte. Les
-            // deux plans sont dans le groupe « Individuel », deja affiche —
-            // pas besoin de basculer comme pour Business.
-            var e2 = document.getElementById('getEssPlan2');
-            var e1 = document.getElementById('getEssPlan');
-            if (e2 && e1) e2.addEventListener('click', function() { e1.click(); });
-
-            // « Passer au Business » sous le tableau comparatif : la carte
-            // Business vit dans le groupe « Équipe », or la page s'ouvre
-            // toujours sur « Individuel ». Le bouton lançait donc le paiement
-            // d'un plan dont on n'avait JAMAIS vu la fiche ni le prix.
-            // On bascule sur le bon groupe et on amène la carte à l'écran :
-            // c'est elle qui porte le detail et son propre bouton.
-            if (b2) b2.addEventListener('click', function () {
-                var seg2 = document.getElementById('audienceToggle');
-                var plans2 = document.getElementById('subPlans');
-                if (plans2) plans2.setAttribute('data-active', 'equipe');
-                if (seg2) seg2.querySelectorAll('.sub-segment__btn').forEach(function (b) {
-                    b.classList.toggle('is-active', b.dataset.aud === 'equipe');
-                });
-                var carte = document.querySelector('.sub-plan--studio');
-                if (carte) {
-                    carte.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // Halo bref : sans ça, on ne comprend pas ce qui vient de
-                    // bouger apres le defilement.
-                    carte.classList.add('sub-plan--flash');
-                    setTimeout(function () { carte.classList.remove('sub-plan--flash'); }, 1600);
-                }
-            });
+            // Le relais des boutons qui vivaient sous le tableau comparatif
+            // (getProPlan2 / getEssPlan2 / getBusinessPlan2) a été retiré avec
+            // eux : illisibles, et redondants avec les cartes juste au-dessus.
 
             // ── Sélecteur Individuel / Équipe : filtre les cartes de plan ──
             var seg = document.getElementById('audienceToggle');

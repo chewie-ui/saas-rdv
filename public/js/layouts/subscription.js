@@ -688,21 +688,17 @@ if (getBusinessPlan) getBusinessPlan.onclick = () => handlePlanPurchaseClick("bu
 const getEssPlan = document.getElementById("getEssPlan");
 if (getEssPlan)      getEssPlan.onclick      = () => handlePlanPurchaseClick("essentiel");
 
-// ── Bandeau d'incitation : achat direct du Pro ───────────────────────────────
-// Ce bouton écrivait « BETA » dans le champ code promo avant d'aller au
+// ── Bandeau d'incitation vers le Pro ─────────────────────────────────────────
+// Ce bouton écrivait ici « BETA » dans le champ code promo avant d'aller au
 // paiement. Or le code qui existe en base s'appelle « BETA100 » : le serveur
-// répondait donc « code invalide » juste avant le checkout, sur le bouton le
-// plus visible de la page.
+// répondait « code invalide » juste avant le checkout, sur le bouton le plus
+// visible de la page. Plus aucun code n'est appliqué en dur — les offres
+// automatiques ont déjà leur mécanisme (cf. OFFRES_AUTO), qui filtre selon le
+// compte, ce qu'un code écrit dans le JavaScript ne peut pas faire.
 //
-// On n'applique plus aucun code en dur. Les offres automatiques ont déjà leur
-// mécanisme — les codes marqués « offre mise en avant » en superadmin, qui
-// s'appliquent seuls, barrent le prix et partent au paiement (cf. OFFRES_AUTO).
-// Ce mécanisme-là filtre correctement selon le compte ; un code écrit dans le
-// JavaScript, non.
-const getProPlanStrip = document.getElementById("getProPlanStrip");
-if (getProPlanStrip) {
-  getProPlanStrip.onclick = () => handlePlanPurchaseClick("pro");
-}
+// Le clic n'est PAS rebranché ici : subscription.pug relaie déjà ce bouton
+// vers celui de la carte Pro. Poser un second gestionnaire ouvrait la boîte
+// de confirmation deux fois.
 
 // ── Offre mise en avant : appliquée dès l'ouverture de la page ──────────────
 // Remplace l'ancien bouton « copier le code » : le pro devait coller un code
