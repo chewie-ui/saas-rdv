@@ -1651,3 +1651,140 @@
   .sub-faq__q { font-size: 13.5px; padding: 14px 15px; }
   .sub-faq__a { padding: 0 15px 15px; font-size: 13.5px; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HARMONISATION DES FORMULES
+   ─────────────────────────────────────────────────────────────────────────
+   Le Pro+ était bleu, le Pro vert, chacun avec son dégradé d'en-tête et son
+   ombre colorée : trois langages visuels sur une même ligne, et un bleu qui
+   n'appartient à aucune charte BranShee. On ramène tout à UNE couleur
+   d'accent, le vert, et à des cartes blanches.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ── Cartes : blanches, filet fin, pas de dégradé ─────────────────────────
+   Seule la formule mise en avant est teintée. Une carte teintée sur trois se
+   remarque ; trois cartes teintées ne se remarquent plus. */
+.sub-plan {
+  background: #fff;
+  border: 1px solid var(--border-light, #e8e6e1);
+  border-radius: 16px;
+  box-shadow: none !important;
+  opacity: 1;
+}
+.sub-plan:hover { transform: none; box-shadow: 0 4px 20px rgba(20, 28, 37, .06) !important; }
+
+.sub-plan__header,
+.sub-plan--premium .sub-plan__header,
+.sub-plan--studio .sub-plan__header {
+  background: transparent !important;
+  padding-bottom: 4px;
+}
+
+/* Le Pro : teinte douce sur TOUTE la carte, pas seulement l'en-tête —
+   un en-tête coloré posé sur un corps blanc coupait la carte en deux. */
+.sub-plan--premium {
+  background: var(--accent-soft, #eef7f2) !important;
+  border: 1.5px solid var(--accent, #1e7a4e) !important;
+}
+.sub-plan--premium .sub-plan__price { color: var(--text-primary, #141c25); }
+
+/* Le Pro+ redevient une carte comme les autres. */
+.sub-plan--studio {
+  background: #fff !important;
+  border: 1px solid var(--border-light, #e8e6e1) !important;
+}
+.sub-plan--studio .sub-plan__price { color: var(--text-primary, #141c25) !important; }
+.sub-plan--studio .feat-check,
+.sub-plan--studio .feat-check--business { fill: var(--accent, #1e7a4e) !important; }
+
+/* ── Pastilles ───────────────────────────────────────────────────────────
+   Petite pastille en haut à droite plutôt qu'une étiquette centrée à cheval
+   sur la bordure : elle n'ampute plus le titre et se lit d'un coup d'œil. */
+.sub-plan__popular,
+.sub-plan__badge-business {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  left: auto;
+  transform: none;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 0 !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  box-shadow: none !important;
+}
+.sub-plan__popular {
+  background: var(--accent, #1e7a4e) !important;
+  color: #fff !important;
+}
+/* Le Pro+ n'est pas « populaire » : sa pastille informe sans crier. */
+.sub-plan__badge-business {
+  background: var(--surface-2, #f2f1ee) !important;
+  color: var(--text-secondary, #4a5260) !important;
+}
+
+/* ── Boutons ─────────────────────────────────────────────────────────────
+   Noir partout, vert sur la seule formule mise en avant. C'est ce contraste
+   qui désigne le choix recommandé — pas trois boutons de trois couleurs. */
+.sub-btn--upgrade,
+.sub-btn--business {
+  background: #14181d !important;
+  border-color: #14181d !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+.sub-btn--upgrade:hover,
+.sub-btn--business:hover { background: #000 !important; border-color: #000 !important; }
+
+.sub-plan--premium .sub-btn--upgrade {
+  background: var(--accent, #1e7a4e) !important;
+  border-color: var(--accent, #1e7a4e) !important;
+}
+.sub-plan--premium .sub-btn--upgrade:hover { background: #17603d !important; border-color: #17603d !important; }
+
+/* ── Tableau comparatif ──────────────────────────────────────────────────
+   La colonne mise en avant est teintée sur TOUTE sa hauteur : c'est ce qui
+   fait lire le tableau en colonnes plutôt qu'en lignes, et ce qui rattache
+   visuellement la carte Pro à sa colonne. */
+.sub-compare__table th:nth-child(3),
+.sub-compare__table td:nth-child(3) {
+  background: var(--accent-soft, #eef7f2);
+}
+.sub-compare__group td:nth-child(3) { background: #f2f6f3; }
+
+.sub-compare__th--biz .sub-compare__plan { color: var(--text-primary, #141c25) !important; }
+
+/* Coche cerclée, comme sur les tableaux de comparaison lisibles : le glyphe
+   seul se perd dans une colonne de vingt-cinq lignes. */
+.sub-compare__yes {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent, #1e7a4e);
+  font-size: 14px !important;
+  color: var(--accent, #1e7a4e);
+}
+
+.sub-compare__table td { padding: 13px 14px; }
+.sub-compare__table td:not(:first-child) { text-align: center; }
+.sub-compare__table tbody tr:not(.sub-compare__group) + tr:not(.sub-compare__group) td {
+  border-top: 1px solid var(--border-light, #eeece8);
+}
+
+/* Dernières traces de bleu : la colonne Pro+ du tableau gardait un fond et un
+   titre bleus hérités de l'ancienne charte « Business ». Le tableau ne doit
+   mettre en avant qu'UNE colonne — celle du Pro — sinon la mise en avant ne
+   veut plus rien dire. */
+.sub-compare__th--biz,
+.sub-compare__table th:nth-child(4),
+.sub-compare__table td:nth-child(4) {
+  background: transparent !important;
+  color: var(--text-primary, #141c25) !important;
+}
+.sub-compare__th--biz .sub-compare__price { color: var(--text-muted, #8a919e) !important; }
