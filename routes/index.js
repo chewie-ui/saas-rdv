@@ -9,6 +9,8 @@ const Review = require("../db/models/review.model");
 // Sert à savoir si un établissement a déjà reçu un rendez-vous : c'est l'une
 // des preuves qu'une fiche est réelle, dans le filtre de /search.
 const Booking = require("../db/models/book.model");
+// Prix d'appel des cartes de résultats (« dès 22 € ») dans /search.
+const Service = require("../db/models/company/service.model");
 const pug = require("pug");
 const path = require("path");
 const { sendEmail } = require("../utils/mailer");
@@ -318,6 +320,13 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
   try {
     const { name, location, category } = req.query;
 
+    // Note minimale (case « Note 4,5 et plus » de la barre latérale). Bornée à
+    // [0, 5] : le paramètre vient de l'URL, donc de n'importe qui.
+    const minRating = (() => {
+      const n = parseFloat(req.query.note);
+      return Number.isFinite(n) && n > 0 ? Math.min(n, 5) : null;
+    })();
+
     // Critères appliqués APRÈS la jointure de l'agrégation : on cherche donc
     // à la fois sur l'ÉTABLISSEMENT (`name`, `businessType` — source de vérité
     // depuis le multi-établissements) et sur son compte propriétaire (repli
@@ -488,9 +497,24 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
           ],
           as: "_r",
       } },
+      // Prix d'appel : la prestation active la MOINS chère. « dès 22 € » situe
+      // le budget depuis la liste — sans quoi le visiteur doit ouvrir chaque
+      // fiche pour comparer, et il n'en ouvre pas six.
+      // `price: {$gt: 0}` : le champ vaut null quand le pro ne l'a pas
+      // renseigné, et un 0 signifie « sur devis », pas « gratuit ».
+      { $lookup: {
+          from: Service.collection.name,
+          let: { cid: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$company", "$$cid"] }, active: { $ne: false }, price: { $gt: 0 } } },
+            { $group: { _id: null, min: { $min: "$price" } } },
+          ],
+          as: "_p",
+      } },
       { $addFields: {
           avgRating:   { $ifNull: [{ $first: "$_r.avg" }, 0] },
           reviewCount: { $ifNull: [{ $first: "$_r.n" }, 0] },
+          priceFrom:   { $ifNull: [{ $first: "$_p.min" }, null] },
           boostPosition: { $ifNull: ["$boostPosition", 0] },
           // Réplique exacte de utils/planLimits.getCompanyPlan() : le forfait
           // appartient à l'ÉTABLISSEMENT (company.plan/planStatus) et ne
@@ -516,6 +540,12 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
             ] },
           } },
       } },
+      // Filtre « bien noté » : il vient forcément ICI et non dans `searchMatch`,
+      // parce que `avgRating` n'existe qu'après la jointure des avis juste
+      // au-dessus. Placé côté serveur, il porte sur TOUS les résultats — un
+      // filtre en JavaScript n'aurait vu que les 24 fiches de la page, et le
+      // compteur aurait annoncé un total faux.
+      ...(minRating ? [{ $match: { avgRating: { $gte: minRating } } }] : []),
       { $addFields: {
           featured: { $in: ["$plan", ["pro", "business"]] },
           // Même ordre que sortEstablishments() : boostés d'abord, puis
@@ -530,7 +560,7 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
       { $sort: { boostRank: 1, boostPosition: 1, planRank: -1, avgRating: -1, reviewCount: -1, _id: 1 } },
       // `name` / `businessType` / `photo` de l'ÉTABLISSEMENT : c'est ce qui doit
       // s'afficher sur la carte (le compte propriétaire ne sert que de repli).
-      { $project: { _id: 1, slug: 1, name: 1, businessType: 1, photo: 1, boostPosition: 1, avgRating: 1, reviewCount: 1, plan: 1, featured: 1, estabLocation: 1, estabDescription: 1, owner: OWNER_FIELDS } },
+      { $project: { _id: 1, slug: 1, name: 1, businessType: 1, photo: 1, boostPosition: 1, avgRating: 1, reviewCount: 1, priceFrom: 1, plan: 1, featured: 1, estabLocation: 1, estabDescription: 1, owner: OWNER_FIELDS } },
       // $facet : la page ET le total en une seule requête.
       { $facet: {
           rows:  [{ $skip: (page - 1) * PAGE_SIZE }, { $limit: PAGE_SIZE }],
@@ -545,12 +575,37 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
 
     const allCategories = await getDynamicCategories();
 
+    // ── Prochains créneaux libres ─────────────────────────────────────────
+    // Voir les heures disponibles AVANT de cliquer, c'est ce qui sépare une
+    // plateforme de réservation d'un annuaire : on choisit son créneau depuis
+    // la liste au lieu d'ouvrir six fiches pour découvrir que personne n'est
+    // libre avant mardi.
+    //
+    // Borné à la page affichée (24 fiches au plus) et arrêté au premier jour
+    // qui donne des créneaux : le calcul coûte quelques requêtes par
+    // établissement. Si ce coût devient sensible, c'est ici qu'il faudra un
+    // cache court — pas dans la vue.
+    //
+    // Enveloppé dans un try/catch : des créneaux manquants font une carte un
+    // peu plus pauvre, jamais une page de recherche en erreur 500.
+    let creneauxParEtab = new Map();
+    try {
+      const { creneauxPourEtablissements } = require("../utils/searchSlots");
+      creneauxParEtab = await creneauxPourEtablissements(coachsWithRating.map((c) => c._id));
+    } catch (err) {
+      console.error("[/search] créneaux indisponibles:", err.message);
+    }
+    coachsWithRating.forEach((c) => {
+      c.creneaux = creneauxParEtab.get(String(c._id)) || null;
+    });
+
     res.render("client/search", {
       title: `Recherche — BranShee`,
       coachs: coachsWithRating,
       searchName: name || "",
       searchLocation: location || "",
       searchCategory: category || "",
+      minRating,
       allCategories,
       services: getServices(res.locals.lang),
       page,
