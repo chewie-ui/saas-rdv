@@ -2714,3 +2714,54 @@ body.appt-group-open { overflow: hidden; }
   /* Le quantième seul : plus court, donc plus gros sans déborder. */
   .dh-date { font-size: 18px; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CORRECTION — retour à la maquette (comparaison capture contre capture)
+   ─────────────────────────────────────────────────────────────────────────
+   Deux erreurs de lecture de ma part :
+
+   · j'avais mis les boutons en PILULE (999px). La maquette utilise des
+     rectangles ARRONDIS d'environ 10px. La pilule appartient aux pages
+     publiques ; l'agenda est un outil, ses commandes restent sobres.
+
+   · le calendrier était à ras bord. La maquette le pose en CARTE arrondie
+     cerclée d'un filet. `.calendar-section` portait bien `border-radius:15px`
+     — annulé plus bas par un `border-radius: 0`. On le rétablit.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.cal-today-btn,
+.cal-nav-btn,
+.cal-icon-btn,
+.cal-view-toggle,
+.cal-view-btn,
+.emp-filter-select,
+.cal-date-label { border-radius: 10px !important; }
+
+/* Le rail garde un rayon légèrement supérieur à ses segments, sinon les coins
+   du segment actif débordent visuellement de leur piste. */
+.cal-view-toggle { border-radius: 12px !important; }
+.cal-view-btn { border-radius: 9px !important; }
+
+/* La carte du calendrier. La grille défile verticalement et les en-têtes de
+   jour sont en `position:
+   sticky` — un overflow complet casserait les deux. On ne clippe donc QUE
+   l horizontal, comme la regle d origine. */
+.calendar-section {
+  border-radius: 16px !important;
+  border: 1px solid var(--border-light);
+  background-color: var(--color-white);
+  overflow-x: hidden;
+}
+
+@media (min-width: 820px) {
+  /* Filets pleins plutôt que pointillés : les demi-heures étaient en
+     `1px dashed`, ce qui donnait une grille grésillante là où la maquette a
+     des lignes nettes. On garde la distinction demi-heure / heure par
+     l'opacité, pas par le style de trait. */
+  .calendar-section .grid-section .cell.day--half {
+    border-bottom: 1px solid color-mix(in srgb, var(--border-light) 45%, transparent);
+  }
+  .calendar-section .grid-section .cell.day {
+    border-bottom: 1px solid color-mix(in srgb, var(--border-light) 80%, transparent);
+  }
+}
