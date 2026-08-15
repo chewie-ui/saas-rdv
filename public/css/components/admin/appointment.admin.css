@@ -2682,3 +2682,35 @@ body.appt-group-open { overflow: hidden; }
 /* Le rail garde son fond : sans lui, la pastille active flotte sans repère
    et on ne voit plus qu'il s'agit d'un choix entre deux options. */
 .cal-view-toggle { background: var(--surface-2); padding: 3px; }
+
+/* ── Alignement fidèle sur la maquette ─────────────────────────────────────
+   Écarts relevés en comparant les deux captures côte à côte. */
+
+/* Le rail du sélecteur est BLANC cerclé, pas un fond gris : le gris faisait
+   ressortir le rail lui-même autant que le choix qu'il contient. */
+.cal-view-toggle {
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border-light);
+  padding: 3px;
+}
+
+/* Le segment actif est en VERT FONCÉ, pas en noir. Le noir n'appartient à
+   aucune charte BranShee ; le vert profond reste dans la famille de l'accent
+   tout en se distinguant du vert vif des boutons d'action. */
+.cal-view-btn.is-active {
+  background: #0f3524 !important;
+  border-color: #0f3524 !important;
+  color: #fff !important;
+}
+.cal-view-btn.is-active .material-symbols-outlined { color: #fff !important; }
+
+@media (min-width: 820px) {
+  /* Aujourd'hui n'est plus repeint en vert : le repère rouge de l'heure
+     marque déjà la colonne du jour, et deux signaux pour la même information
+     se neutralisent. L'en-tête redevient un en-tête. */
+  .calendar-section .grid-section .cell.day-header.today .dh-date { color: var(--text-primary); }
+  .calendar-section .grid-section .cell.day-header.today .dh-name { color: var(--text-muted); }
+
+  /* Le quantième seul : plus court, donc plus gros sans déborder. */
+  .dh-date { font-size: 18px; }
+}
