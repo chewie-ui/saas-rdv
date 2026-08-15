@@ -969,3 +969,93 @@ a.ds-ico { text-decoration: none; }
   .ec-date { width: 62px; padding: 8px 4px; }
   .ec-date__n { font-size: 22px; }
 }
+
+/* ── Historique : une liste, pas un tableau ────────────────────────────────
+   Reprise de la maquette. Sur un historique, la seule question est « quand,
+   chez qui, quoi » : cinq colonnes en-têtées répondaient à des questions que
+   personne ne pose. Les deux actions, jusqu'ici enfouies sous un menu « ⋮ »,
+   sont visibles. */
+.ec-hist {
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  background: var(--bg-surface, #fff);
+  overflow: hidden;
+}
+
+.ec-hist__row {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+}
+.ec-hist__row + .ec-hist__row { border-top: 1px solid var(--border-light); }
+.ec-hist__row.is-canceled { opacity: .62; }
+
+/* Chasse fixe sur les dates : empilées, elles s'alignent au caractère près. */
+.ec-hist__date {
+  font-family: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ec-hist__who { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ec-hist__pro {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ec-hist__chip {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.ec-hist__svc {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ec-hist__act { display: flex; align-items: center; gap: 8px; justify-self: end; }
+.ec-hist__btn {
+  padding: 8px 15px;
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  background: var(--bg-surface, #fff);
+  font-size: 13px;
+  font-weight: 620;
+  color: var(--text-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ec-hist__btn:hover { border-color: var(--text-muted); }
+/* « Reprendre rdv » est l'action qui rapporte : elle porte l'accent, en fond
+   doux plutôt qu'en vert plein — c'est une liste, pas un appel à l'action. */
+.ec-hist__btn--again {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent);
+}
+.ec-hist__btn--again:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.ec-hist__done { font-size: 12.5px; color: var(--text-muted); white-space: nowrap; }
+
+@media (max-width: 820px) {
+  /* Quatre colonnes sur un téléphone donnaient 60px par cellule. On empile :
+     date + nom, puis prestation, puis les actions. */
+  .ec-hist__row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 14px 16px;
+  }
+  .ec-hist__act { justify-self: start; flex-wrap: wrap; }
+}

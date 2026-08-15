@@ -198,65 +198,39 @@ block content
         //- ══ Onglet : Historique ════════════════════════════════════════════
         .ds-panel#panel-hist
             if nbPast > 0
-                .ds-table-wrap
-                    table.ds-table.ec-table
-                        thead
-                            tr
-                                th Professionnel
-                                th Prestation
-                                th Date & heure
-                                th Statut
-                                th.ds-th--right Actions
-                        tbody
-                            each b in bookings.past
-                                - var estAnnule = b.status === 'canceled'
-                                - var dejaAvis = reviewedCompanyIds && reviewedCompanyIds.includes(String(b.company))
-                                tr(class=estAnnule ? 'is-canceled' : '')
-                                    td
-                                        .ds-person
-                                            img.ds-person__img(src=b.companyPhoto alt=b.companyName)
-                                            .ds-person__txt
-                                                span.ds-person__name= b.companyName
-                                                if b.companyType
-                                                    span.ds-person__sub= b.companyType
-                                    td
-                                        if b.serviceName
-                                            .ec-cell__main= b.serviceName
-                                        else
-                                            span.ec-dash —
-                                    td
-                                        .ec-when
-                                            span.ec-when__d= jourCourt(b.date)
-                                            span.ec-when__t= `${b.startTime} — ${b.endTime}`
-                                    td
-                                        if estAnnule
-                                            span.ec-badge.ec-badge--canceled
-                                                span.material-symbols-outlined cancel
-                                                span Annulé
-                                        else if dejaAvis
-                                            span.ec-badge.ec-badge--reviewed
-                                                span.material-symbols-outlined check_circle
-                                                span Avis déposé
-                                        else
-                                            span.ec-badge.ec-badge--past
-                                                span.material-symbols-outlined check
-                                                span Terminé
-                                    td.ds-td--actions
-                                        if b.companySlug && (!estAnnule || !dejaAvis)
-                                            .ds-menu
-                                                button.ds-ico(type="button" data-ec-menu aria-label="Actions")
-                                                    span.material-symbols-outlined more_vert
-                                                .ds-menu__list
-                                                    if !estAnnule
-                                                        a.ds-menu__item(href=`/${b.companySlug}`)
-                                                            span.material-symbols-outlined event_repeat
-                                                            span Réserver à nouveau
-                                                    if !dejaAvis
-                                                        a.ds-menu__item(href=`/${b.companySlug}#avis`)
-                                                            span.material-symbols-outlined star
-                                                            span Laisser un avis
-                                        else
-                                            span.ec-dash —
+                //- Une LISTE et non un tableau à cinq colonnes : sur un
+                //- historique, la seule question est « quand, chez qui, quoi ».
+                //- Les deux actions étaient enfouies sous un menu « ⋮ » — elles
+                //- sont désormais visibles, ce qui retire un clic à la seule
+                //- chose qu'on vient y faire.
+                .ec-hist
+                    each b in bookings.past
+                        -
+                            var estAnnule = b.status === 'canceled'
+                            var dejaAvis = reviewedCompanyIds && reviewedCompanyIds.includes(String(b.company))
+                            var prix = b.payment && b.payment.amount ? b.payment.amount : null
+                        .ec-hist__row(class=estAnnule ? 'is-canceled' : '')
+                            span.ec-hist__date= jourCourt(b.date)
+                            .ec-hist__who
+                                span.ec-hist__pro= b.companyName
+                                if estAnnule
+                                    span.ec-hist__chip Annulé
+                            span.ec-hist__svc
+                                if b.serviceName
+                                    = b.serviceName
+                                if b.serviceName && prix
+                                    |  ·
+                                if prix
+                                    = ' ' + prix + ' €'
+                            .ec-hist__act
+                                //- Un avis ne se laisse qu'une fois, et jamais
+                                //- sur un rendez-vous annulé — on n'y est pas allé.
+                                if b.companySlug && !dejaAvis && !estAnnule
+                                    a.ec-hist__btn(href=`/${b.companySlug}#avis`) Laisser un avis
+                                else if dejaAvis
+                                    span.ec-hist__done Avis déposé
+                                if b.companySlug && !estAnnule
+                                    a.ec-hist__btn.ec-hist__btn--again(href=`/${b.companySlug}`) Reprendre rdv
             else
                 .ec-empty
                     span.ec-empty__ic
