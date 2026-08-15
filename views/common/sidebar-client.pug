@@ -66,9 +66,16 @@ aside.sidebar#sidebar
 
         //- ── Footer: user profile ────────────────────────────────
         .sb-foot
+            //- Initiales plutôt que la photo de profil : sur le vert sombre de
+            //- cette barre, une photo se réduit à une tache indistincte de
+            //- 32px. Deux lettres sur un rond vert se lisent toujours.
+            -
+                var _mots = String((client && client.fullName) || '').trim().split(/\s+/).filter(Boolean)
+                var _ini = (_mots.length > 1
+                    ? _mots[0][0] + _mots[_mots.length - 1][0]
+                    : (_mots[0] || '?').slice(0, 2)).toUpperCase()
             .sb-user
-                .sb-user__avatar
-                    img(src=client.profilePicture || '/images/no-user.webp' alt=client.fullName)
+                .sb-user__avatar(aria-hidden="true")= _ini
                 .sb-user__info
                     span.sb-user__name= client.fullName
                     span.sb-user__plan= client.email
