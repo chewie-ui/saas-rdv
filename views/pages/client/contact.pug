@@ -33,12 +33,30 @@ block content
     main.ct
 
         if success
-            .ct-wrap
+            .ct-wrap.ct-wrap--done
                 .ct-card.ct-card--done
-                    span.material-symbols-outlined.ct-done__ico check_circle
+                    span.ct-done__ico
+                        span.material-symbols-outlined check
                     h1.ct-done__title= t.contact_page.success_title
                     p.ct-done__sub= t.contact_page.success_desc
-                    a.sm-btn.sm-btn--primary(href="/")= t.contact_page.back_home
+
+                    //- Le délai de réponse ET l'adresse : ce sont les deux
+                    //- seules questions qui restent une fois le message parti.
+                    //- « Nous reviendrons vers vous rapidement » ne répond ni à
+                    //- l'une ni à l'autre.
+                    .ct-done__facts
+                        .ct-done__fact
+                            span.ct-done__k= t.contact_page.response_label
+                            span.ct-done__v= t.contact_page.response_val
+                        .ct-done__fact
+                            span.ct-done__k= t.contact_page.email
+                            a.ct-done__v(href='mailto:' + supportEmail)= supportEmail
+
+                    .ct-done__act
+                        a.sm-btn.sm-btn--primary(href="/")= t.contact_page.back_home
+                        //- Une sortie utile plutôt qu'un cul-de-sac : quelqu'un
+                        //- qui vient d'écrire a le temps de lire.
+                        a.sm-btn.sm-btn--ghost(href="/blog")= t.contact_page.help_2
 
         else
             .ct-wrap

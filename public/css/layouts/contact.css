@@ -186,17 +186,93 @@ a.ct-direct__v:hover { color: #b7e7cd; }
 .ct-help__link:hover { color: var(--accent-hover); }
 .ct-help__link:hover .material-symbols-outlined { transform: translateX(3px); }
 
-/* ── Confirmation d'envoi ───────────────────────────────────────────────── */
-.ct-card--done { grid-column: 1 / -1; max-width: 560px; margin: 0 auto; text-align: center; }
-.ct-done__ico { font-size: 46px; color: var(--accent); }
+/* ── Confirmation d'envoi ───────────────────────────────────────────────────
+   La carte flottait au milieu d'un grand vide, et le pied de page remontait
+   sous elle en laissant l'écran à moitié blanc. Elle occupe désormais la
+   hauteur disponible, et elle RÉPOND aux deux questions qui restent une fois
+   le message parti : quand aurai-je une réponse, et où puis-je relancer. */
+.ct-wrap--done {
+  /* Remplit ce qui reste sous l'en-tête fixe, pied de page compris. */
+  min-height: calc(100vh - var(--sx-header-h, 68px) - 220px);
+  place-content: center;
+  grid-template-columns: minmax(0, 1fr);
+  padding-top: 56px;
+  padding-bottom: 56px;
+}
+
+.ct-card--done {
+  grid-column: 1 / -1;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 44px 36px;
+  text-align: center;
+}
+
+/* Coche cerclée plutôt que glyphe seul : à 46px, l'icône pleine criait plus
+   fort que le titre qu'elle accompagne. */
+.ct-done__ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.ct-done__ico .material-symbols-outlined { font-size: 32px; font-weight: 600; }
+
 .ct-done__title {
-  margin: 14px 0 8px;
-  font-size: 24px;
-  font-weight: 760;
-  letter-spacing: -.02em;
+  margin: 20px 0 8px;
+  font-size: 26px;
+  font-weight: 780;
+  letter-spacing: -.025em;
   color: var(--text-primary);
 }
-.ct-done__sub { margin: 0 0 22px; font-size: 14.5px; line-height: 1.6; color: var(--text-secondary); }
+.ct-done__sub {
+  margin: 0 0 26px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* Les deux faits utiles, encadrés : ils se lisent d'un coup d'œil sans se
+   confondre avec le texte de remerciement. */
+.ct-done__facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin-bottom: 26px;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: var(--border-light);
+}
+.ct-done__fact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 12px;
+  background: var(--bg-surface, #fff);
+}
+.ct-done__k { font-size: 11.5px; color: var(--text-muted); }
+.ct-done__v {
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--text-primary);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+a.ct-done__v:hover { color: var(--accent); }
+
+.ct-done__act { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+
+@media (max-width: 520px) {
+  .ct-card--done { padding: 32px 20px; }
+  .ct-done__facts { grid-template-columns: 1fr; }
+  .ct-done__act { flex-direction: column; }
+  .ct-done__act .sm-btn { width: 100%; }
+}
 
 /* ══ Responsive ═══════════════════════════════════════════════════════════ */
 
