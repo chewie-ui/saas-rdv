@@ -50,6 +50,18 @@ const articleSchema = new mongoose.Schema(
     // republier ferait remonter l'article comme s'il était neuf).
     publishedAt: { type: Date, default: null },
 
+    // ── Publication programmée ────────────────────────────────────────────
+    // Un brouillon portant une date passée est publié tout seul par le cron
+    // (utils/blogScheduler.js), qui prévient ensuite les moteurs.
+    //
+    // C'est ce qui permet d'écrire six articles un dimanche et de les laisser
+    // sortir un par semaine : le référencement récompense la régularité, et
+    // personne ne tient une régularité qui dépend de s'en souvenir.
+    //
+    // Ignoré dès que `status` vaut "published" : un article déjà en ligne
+    // n'est plus en attente de quoi que ce soit.
+    scheduledFor: { type: Date, default: null, index: true },
+
     seo: {
       metaTitle: { type: String, default: "", trim: true },
       metaDescription: { type: String, default: "", trim: true },

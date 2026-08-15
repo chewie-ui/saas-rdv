@@ -31,6 +31,8 @@ app.set("io", io);
 global.__branshee_io = io;
 
 const reminderScheduler = require("../utils/reminderScheduler");
+// Publication programmée des articles de blog (cf. utils/blogScheduler.js).
+const blogScheduler = require("../utils/blogScheduler");
 
 // ── Chat support : chaque socket rejoint sa room explicitement ─────────────
 // On a essayé de partager la session Express (passport) avec les sockets via
@@ -58,6 +60,10 @@ server.listen(PORT, () => {
   // (la production) tourne déjà sur la même base.
   if (process.env.DISABLE_SCHEDULER !== "1") {
     reminderScheduler.start();
+    // Même garde volontairement : deux instances branchées sur la même base
+    // publieraient le même article deux fois et le signaleraient deux fois
+    // aux moteurs de recherche.
+    blogScheduler.start();
   } else {
     console.log("[reminderScheduler] désactivé (DISABLE_SCHEDULER=1)");
   }

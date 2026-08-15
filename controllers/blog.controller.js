@@ -86,6 +86,24 @@ async function appliquerChamps(article, corps, estNouveau) {
   if (corps.authorName !== undefined) article.authorName = String(corps.authorName).trim().slice(0, 80);
   if (corps.contentHtml !== undefined) article.contentHtml = sanitizeArticleHtml(corps.contentHtml);
 
+  // ── Publication programmée ──────────────────────────────────────────────
+  // Une date dans le futur sur un brouillon suffit : utils/blogScheduler.js le
+  // publiera tout seul et préviendra les moteurs. Chaîne vide = on annule la
+  // programmation, l'article reste un brouillon indéfiniment.
+  //
+  // Une date INVALIDE est ignorée plutôt que stockée : un `Invalid Date` en
+  // base ne correspondrait jamais à `$lte: maintenant`, et l'article
+  // attendrait sa publication pour toujours sans que rien ne le signale.
+  if (corps.scheduledFor !== undefined) {
+    const brut = String(corps.scheduledFor).trim();
+    if (!brut) {
+      article.scheduledFor = null;
+    } else {
+      const d = new Date(brut);
+      if (!isNaN(d.getTime())) article.scheduledFor = d;
+    }
+  }
+
   if (corps.metaTitle !== undefined) article.seo.metaTitle = String(corps.metaTitle).trim().slice(0, 120);
   if (corps.metaDescription !== undefined) {
     article.seo.metaDescription = String(corps.metaDescription).trim().slice(0, 320);
