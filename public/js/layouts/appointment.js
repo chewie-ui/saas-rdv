@@ -46,19 +46,15 @@ function updateTimeline() {
   if (!gridSection) return;
   const gridRect = gridSection.getBoundingClientRect();
 
-  // Positionnement horizontal : restreindre à la colonne du jour actuel
-  const isMobile = window.matchMedia("(max-width: 819px)").matches;
-  if (isMobile) {
-    timeline.style.left  = "56px";
-    timeline.style.width = "calc(100% - 56px)";
-    timeline.style.right = "auto";
-  } else {
-    const todayRect = todayHeader.getBoundingClientRect();
-    const leftOffset = todayRect.left - gridRect.left;
-    timeline.style.left  = `${leftOffset}px`;
-    timeline.style.width = `${todayRect.width}px`;
-    timeline.style.right = "auto";
-  }
+  // Positionnement horizontal : la ligne couvre la colonne d'AUJOURD'HUI, et
+  // elle seule. Sur téléphone elle était étalée sur toute la largeur
+  // (`calc(100% - 56px)`), donc en travers des sept jours : elle affirmait
+  // qu'il est 14h30 un jeudi comme un dimanche. L'heure courante n'existe que
+  // dans une colonne — c'est ce qui la rend lisible d'un coup d'œil.
+  const todayRect = todayHeader.getBoundingClientRect();
+  timeline.style.left  = `${todayRect.left - gridRect.left}px`;
+  timeline.style.width = `${todayRect.width}px`;
+  timeline.style.right = "auto";
 
   // Positionnement vertical — works with any row granularity (30 min, 60 min…)
   for (let i = 0; i < timeCells.length; i++) {

@@ -2565,3 +2565,120 @@ body.appt-group-open { overflow: hidden; }
 }
 .multidate__chip-x:hover { background: rgba(0, 0, 0, .07); color: var(--text-primary, #141c25); }
 .multidate__chip-x .material-symbols-outlined { color: inherit; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   AGENDA — habillage repris de la maquette
+   ─────────────────────────────────────────────────────────────────────────
+   Uniquement de l'apparence : aucune structure touchée. La grille, les
+   pastilles de rendez-vous, les bandes de cours collectifs et les couleurs de
+   service (--pill-color, posée en style inline par la vue) restent telles
+   quelles — 1591 lignes de JS s'appuient sur ce DOM.
+
+   Les règles « bureau » sont enfermées dans le MÊME point de rupture que les
+   originales (min-width: 820px) : posées à la racine, elles s'appliqueraient
+   aussi au téléphone, dont la grille suit une toute autre mise en page.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ── Boutons de la barre d'outils ──────────────────────────────────────────
+   Tout en pilule, comme le reste de l'application depuis la refonte. */
+.cal-today-btn,
+.cal-nav-btn,
+.cal-icon-btn,
+.cal-view-toggle,
+.cal-view-btn,
+.emp-filter-select { border-radius: 999px; }
+
+/* « Aujourd'hui » repasse en bouton discret : le vert est réservé à l'action
+   principale de la page (« Nouveau rendez-vous »). Deux boutons verts côte à
+   côte ne désignent plus rien. */
+.cal-today-btn {
+  background: var(--bg-surface, #fff) !important;
+  border: 1px solid var(--border-light) !important;
+  color: var(--text-primary) !important;
+  box-shadow: none !important;
+}
+.cal-today-btn:hover {
+  background: var(--surface-2) !important;
+  border-color: var(--text-muted) !important;
+}
+
+/* Segment actif en encre plutôt qu'en vert : c'est un état de vue, pas une
+   action — et ça libère le vert pour les rendez-vous. */
+.cal-view-btn.is-active {
+  background: #14181d !important;
+  border-color: #14181d !important;
+  color: #fff !important;
+}
+.cal-view-btn.is-active .material-symbols-outlined { color: #fff !important; }
+
+@media (min-width: 820px) {
+  /* ── En-tête des jours : le NUMÉRO devient l'information principale ───────
+     Une ligne « Lun. 10 août » en 12,5px se lit mot à mot ; on repère une
+     colonne à son numéro, pas à son libellé. Le nom du jour passe donc en
+     petit et en gris, le quantième en gros et en encre. */
+  .calendar-section .grid-section .cell.day-header {
+    gap: 7px;
+    height: 52px;
+  }
+  .dh-name {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    text-transform: lowercase;
+    color: var(--text-muted);
+  }
+  .dh-date {
+    font-size: 17px;
+    font-weight: 750;
+    letter-spacing: -.02em;
+    color: var(--text-primary);
+  }
+  /* Jour fermé : tout s'estompe d'un bloc, badge compris — sinon le numéro
+     restait en encre pleine et le samedi criait aussi fort qu'un jour ouvré. */
+  .calendar-section .grid-section .cell.day-header.off-day .dh-name,
+  .calendar-section .grid-section .cell.day-header.off-day .dh-date {
+    color: var(--text-muted);
+  }
+  .dh-off { margin-left: auto; }
+
+  /* Aujourd'hui : le quantième prend l'accent. Un fond de colonne teinté
+     aurait concurrencé les pastilles de rendez-vous, qui sont déjà colorées. */
+  .calendar-section .grid-section .cell.day-header.today .dh-date { color: var(--accent); }
+  .calendar-section .grid-section .cell.day-header.today .dh-name { color: var(--accent); }
+
+  /* ── Grille : filets plus légers ────────────────────────────────────────
+     Les lignes horaires servent de repère, pas de dessin. Trop marquées,
+     elles concurrencent les rendez-vous qu'on vient lire. */
+  .calendar-section .grid-section .cell.day { border-color: color-mix(in srgb, var(--border-light) 55%, transparent); }
+  .calendar-section .grid-section .cell.time {
+    font-size: 11px;
+    font-weight: 550;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ── Repère de l'heure courante ────────────────────────────────────────────
+   La largeur est calculée par appointment.js et couvre la colonne du jour —
+   et elle seule. Le point à gauche marque l'ancrage ; sans lui, une fine
+   ligne rouge se confond avec une bordure de cellule. */
+.calendar-timeline { height: 2px; }
+.timeline-circle { box-shadow: 0 0 0 2px var(--color-white, #fff); }
+
+/* Deux segments actifs voisins ne peuvent pas être tous deux en encre pleine :
+   côte à côte, « Semaine » et « Confort » formaient deux pavés noirs qui
+   pesaient plus lourd que l'agenda lui-même. L'encre reste sur la VUE
+   (semaine/mois), la densité se contente d'une pastille blanche — c'est un
+   réglage de confort, pas un changement de contenu. */
+.cal-density-toggle .cal-view-btn.is-active {
+  background: var(--bg-surface, #fff) !important;
+  border: 1px solid var(--border-light) !important;
+  color: var(--text-primary) !important;
+  box-shadow: var(--ds-shadow-sm, 0 1px 2px rgba(16, 24, 40, .05)) !important;
+}
+.cal-density-toggle .cal-view-btn.is-active .material-symbols-outlined {
+  color: var(--text-muted) !important;
+}
+/* Le rail garde son fond : sans lui, la pastille active flotte sans repère
+   et on ne voit plus qu'il s'agit d'un choix entre deux options. */
+.cal-view-toggle { background: var(--surface-2); padding: 3px; }
