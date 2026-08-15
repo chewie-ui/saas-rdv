@@ -12,16 +12,31 @@ block content
         var nbAvis = (myReviews && myReviews.length) || 0;
 
     .ec-page
-        //- ── Barre d'action (le titre est déjà dans la barre du haut) ────────
-        .ec-toolbar
-            p.ec-toolbar__count
-                if nbUp > 0
-                    = nbUp + ' à venir · ' + nbPast + ' passé' + (nbPast > 1 ? 's' : '')
-                else if nbPast > 0
-                    = 'Aucun à venir · ' + nbPast + ' passé' + (nbPast > 1 ? 's' : '')
-                else
-                    | Aucun rendez-vous pour l'instant
-            a.sm-btn.sm-btn--primary(href="/search")
+        //- ── En-tête ─────────────────────────────────────────────────────────
+        //- Une salutation nommée plutôt qu'un simple compteur : c'est l'espace
+        //- personnel du client, pas un tableau de bord d'administration.
+        -
+            //- Prénom seul : « Bonjour Quentin Rennies » sonne comme un
+            //- publipostage. On coupe au premier espace, et on retombe sur un
+            //- bonjour neutre si le nom manque.
+            var _prenom = ((client && client.fullName) || '').trim().split(/\s+/)[0] || ''
+        .ec-head
+            .ec-head__txt
+                p.ec-head__eyebrow Espace client
+                h1.ec-head__title
+                    if _prenom
+                        = 'Bonjour ' + _prenom
+                    else
+                        | Bonjour
+                p.ec-head__sub
+                    if nbUp > 0
+                        = nbUp > 1 ? `${nbUp} rendez-vous à venir.` : '1 rendez-vous à venir.'
+                        |  Vous pouvez l'annuler depuis sa fiche.
+                    else if nbPast > 0
+                        = `Aucun rendez-vous à venir · ${nbPast} passé${nbPast > 1 ? 's' : ''}.`
+                    else
+                        | Aucun rendez-vous pour l'instant. Trouvez un professionnel près de chez vous.
+            a.sm-btn.sm-btn--primary.ec-head__cta(href="/search")
                 span.material-symbols-outlined(style="font-size:18px") add
                 span Prendre rendez-vous
 

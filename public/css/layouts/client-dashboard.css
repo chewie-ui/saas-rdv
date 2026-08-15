@@ -841,3 +841,53 @@ a.ds-ico { text-decoration: none; }
   .dash-pro-banner { padding: 20px; }
   .dash-pro-banner__art { display: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   EN-TÊTE DE L'ESPACE CLIENT
+   ─────────────────────────────────────────────────────────────────────────
+   Remplace l'ancienne barre d'action (un compteur + un bouton) : salutation
+   nommée à gauche, action à droite. On arrive ici pour voir SES rendez-vous,
+   pas pour lire une statistique.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.ec-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.ec-head__txt { min-width: 0; }
+
+.ec-head__eyebrow {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.ec-head__title {
+  margin: 0 0 8px;
+  font-size: clamp(26px, 3.4vw, 38px);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+.ec-head__sub {
+  margin: 0;
+  max-width: 60ch;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+/* Le bouton ne s'étire pas avec la colonne de texte : posé en haut à droite,
+   il reste à hauteur du titre. */
+.ec-head__cta { flex: none; align-self: flex-start; }
+
+@media (max-width: 700px) {
+  .ec-head { gap: 16px; }
+  .ec-head__cta { width: 100%; justify-content: center; }
+}

@@ -36,7 +36,11 @@ aside.sidebar#sidebar
                     a.sb-link(href=_estabHref class=pageName === 'Mes établissements' ? 'active' : '')
                         svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
                             path(d="M160-120v-650l320-150 320 150v650H160Zm240-80h160v-200H400v200Zm-160 0h80v-280h320v280h80v-528l-240-112-240 112v528Z")
-                        span= hasEstablishment ? 'Gérer mes établissements' : 'Commencer mon établissement'
+                        //- « Gérer mes établissements » passait sur deux lignes dans
+                        //- une barre de 248px et cassait l'alignement des entrées.
+                        //- Le verbe n'apporte rien ici : les autres entrées sont
+                        //- déjà des noms (« Mes rendez-vous », « Paramètres »).
+                        span= hasEstablishment ? 'Mes établissements' : 'Créer mon établissement'
 
             .sb-section
                 span.sb-section__title Compte

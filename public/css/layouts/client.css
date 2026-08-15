@@ -137,3 +137,104 @@
     padding: 32px 40px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ESPACE CLIENT — barre latérale sombre et boutons arrondis
+   ─────────────────────────────────────────────────────────────────────────
+   ⚠ TOUT est scopé sous `.client-layout`. Les classes `.sb-*` et `.sm-btn`
+   sont PARTAGÉES avec l'espace administrateur (sidebar.admin.css) : les
+   redéfinir sans portée aurait repeint tout le back-office en vert foncé et
+   arrondi chaque bouton de l'application.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ── Barre latérale ─────────────────────────────────────────────────────── */
+.client-layout .sidebar {
+  background: #0d2f20;
+  border-right: 0;
+}
+
+.client-layout .sb-logo__name { color: #fff; }
+/* Le logo est un SVG sombre à l'origine : sur fond vert foncé il disparaît.
+   On l'éclaircit sans le remplacer — c'est bien la marque BranShee. */
+.client-layout .sb-logo__mark { filter: brightness(0) invert(1); }
+
+.client-layout .sb-section__title {
+  color: #6f9a85;
+  letter-spacing: .12em;
+  font-size: 10.5px;
+}
+
+.client-layout .sb-link {
+  position: relative;
+  border-radius: 10px;
+  color: #c3dbd0;
+  font-weight: 550;
+  /* Une entrée tient sur UNE ligne : « Gérer mes établissements » passait sur
+     deux et décalait l'icône vers le haut. Le libellé a été raccourci dans la
+     vue ; l'ellipse est le filet de sécurité si une traduction rallonge. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.client-layout .sb-link svg { fill: currentColor; flex: none; }
+.client-layout .sb-link:hover { background: rgba(255, 255, 255, .07); color: #fff; }
+
+.client-layout .sb-link.active {
+  background: rgba(255, 255, 255, .10);
+  color: #fff;
+  font-weight: 650;
+}
+/* Barre verte à gauche de l'entrée courante : sur un fond déjà sombre, la
+   seule différence de teinte se lit mal. */
+.client-layout .sb-link.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 20px;
+  border-radius: 0 3px 3px 0;
+  background: #4cc088;
+  transform: translateY(-50%);
+}
+
+.client-layout .sb-foot { border-top: 1px solid rgba(255, 255, 255, .10); }
+.client-layout .sb-user__name { color: #fff; }
+.client-layout .sb-user__plan { color: #8fb3a3; }
+.client-layout .sb-close { color: #c3dbd0; }
+
+/* ── Boutons arrondis ───────────────────────────────────────────────────────
+   `.sm-btn` reste la classe partagée (cf. CONVENTIONS.md) — on ne crée pas de
+   bouton maison, on ajuste la forme dans cette zone seulement. */
+.client-layout .sm-btn {
+  border-radius: 999px;
+  font-weight: 600;
+}
+.client-layout .sm-btn--ghost { border-color: var(--border-light); }
+
+/* Les onglets et le reste du mobilier suivent la même forme, sinon la page
+   mélange deux vocabulaires : des pilules et des rectangles. */
+.client-layout .ds-tab { border-radius: 999px; }
+
+/* ── Lisibilité sur fond sombre ────────────────────────────────────────────
+   `!important` assumé, et limité à `.client-layout` : la barre latérale est
+   dessinée par sidebar.admin.css, une feuille PARTAGÉE avec le back-office
+   qu'on ne peut pas modifier sans repeindre l'administration. Les entrées
+   ressortaient en encre sombre sur le vert — illisibles.
+   Si un jour la barre client cesse d'emprunter la feuille admin, ces
+   `!important` doivent sauter avec. */
+.client-layout .sb-link,
+.client-layout .sb-link span { color: #c8ded4 !important; }
+.client-layout .sb-link:hover,
+.client-layout .sb-link:hover span,
+.client-layout .sb-link.active,
+.client-layout .sb-link.active span { color: #ffffff !important; }
+.client-layout .sb-section__title { color: #79a891 !important; }
+.client-layout .sb-user__name { color: #ffffff !important; }
+.client-layout .sb-user__plan { color: #93b7a6 !important; }
+.client-layout .sb-logo__name { color: #ffffff !important; }
+
+/* Le filtre précédent (brightness(0) invert(1)) repeignait TOUT le SVG en
+   blanc : le logo devenait un carré plein. L'icône BranShee est déjà un carré
+   vert à glyphe clair — elle se lit telle quelle sur le fond sombre. */
+.client-layout .sb-logo__mark { filter: none; }
