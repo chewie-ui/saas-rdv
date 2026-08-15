@@ -10,14 +10,21 @@
    ═════════════════════════════════════════════════════════════════════════ */
 
 .sx {
-  /* Hauteur de la topbar fixe (topbar.index.css : 64px, 68px ≥820).
-     SEULE source de vérité pour compenser le header et caler le sticky. */
+  /* Hauteur de la topbar fixe (topbar.index.css : .header est en
+     `position: fixed`, .header__bar fait 64px, 68px au-delà de 820px).
+     SEULE source de vérité : elle décale le contenu ET cale la colonne
+     collante plus bas. Sans le `padding-top` qui suit, la barre de recherche
+     se glisse SOUS le header et disparaît. */
   --sx-header-h: 64px;
   --sx-max: 1180px;
   --sx-gut: 16px;
 
+  padding-top: var(--sx-header-h);
   padding-bottom: 64px;
   font-variant-numeric: tabular-nums;
+}
+@media (min-width: 820px) {
+  .sx { --sx-header-h: 68px; }
 }
 
 /* ── Barre de recherche ──────────────────────────────────────────────────
