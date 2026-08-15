@@ -911,3 +911,61 @@ a.ds-ico { text-decoration: none; }
 .mv-slot:hover { border-color: var(--accent); color: var(--accent); }
 /* `.is-on` est posée par move-booking.js sur le créneau retenu. */
 .mv-slot.is-on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── Carte de rendez-vous : la date d'abord ────────────────────────────────
+   Reprise de la maquette. Le jour et l'heure passent dans une pastille à
+   gauche : c'est l'information qu'on vient vérifier. La photo du salon, elle,
+   ne dit pas quand on y va. */
+.ec-card__top { display: flex; align-items: flex-start; gap: 16px; }
+
+.ec-date {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 78px;
+  padding: 10px 6px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  text-align: center;
+}
+.ec-date__wd {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ec-date__n {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  line-height: 1.05;
+  color: var(--text-primary);
+}
+/* Chiffres à chasse fixe : deux cartes empilées alignent leurs heures. */
+.ec-date__h {
+  font-family: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* La photo du salon garde sa place, en plus petit, dans la ligne d'identité. */
+.ec-card__photo { width: 34px; height: 34px; border-radius: 9px; object-fit: cover; }
+
+.ec-chip-ok {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+  .ec-date { width: 62px; padding: 8px 4px; }
+  .ec-date__n { font-size: 22px; }
+}

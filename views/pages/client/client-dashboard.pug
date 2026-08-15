@@ -90,10 +90,25 @@ block content
                             var _validUrl = function(v) { return v && /^https?:\/\//.test(v) }
                         .ec-card.ec-card--next(data-booking-date=new Date(b.date).toISOString())
                             .ec-card__top
-                                img.ec-card__photo(src=b.companyPhoto alt=b.companyName)
+                                //- Pastille de date : le jour et l'heure sont ce
+                                //- qu'on vient vérifier ici. La photo du salon les
+                                //- reléguait au second plan — on la garde plus bas,
+                                //- dans la ligne d'identité.
+                                -
+                                    var _d = new Date(b.date);
+                                    var _jj = _d.toLocaleDateString('fr-FR', { weekday: 'short' }).replace(/\.$/, '');
+                                .ec-date
+                                    span.ec-date__wd= _jj
+                                    span.ec-date__n= _d.getDate()
+                                    span.ec-date__h= b.startTime
                                 .ec-card__id
                                     .ec-card__head
                                         span.ec-card__pro= b.companyName
+                                        //- Un rendez-vous à venir non annulé EST
+                                        //- confirmé : le dire évite au client de se
+                                        //- demander s'il doit rappeler.
+                                        if b.status !== 'canceled'
+                                            span.ec-chip-ok Confirmé
                                         if b.companyType
                                             span.ec-card__type= b.companyType
                                     if b.serviceName

@@ -212,9 +212,10 @@
 }
 .client-layout .sm-btn--ghost { border-color: var(--border-light); }
 
-/* Les onglets et le reste du mobilier suivent la même forme, sinon la page
-   mélange deux vocabulaires : des pilules et des rectangles. */
-.client-layout .ds-tab { border-radius: 999px; }
+/* PAS d'arrondi sur les onglets : ils sont SOULIGNÉS — ds.css leur donne un
+   "border-bottom" de 2px, coloré à l'état actif — et non encadrés. Un
+   border-radius courbe ce trait en ovale : l'onglet actif se retrouvait
+   cerclé d'une boucle noire tronquée. */
 
 /* ── Lisibilité sur fond sombre ────────────────────────────────────────────
    `!important` assumé, et limité à `.client-layout` : la barre latérale est
@@ -238,3 +239,56 @@
    blanc : le logo devenait un carré plein. L'icône BranShee est déjà un carré
    vert à glyphe clair — elle se lit telle quelle sur le fond sombre. */
 .client-layout .sb-logo__mark { filter: none; }
+
+/* ── Pied de la barre : le bloc du compte ──────────────────────────────────
+   La feuille partagée avec le back-office donne à `.sb-user` un fond clair
+   (`--surface`). Sur la barre verte, ça posait une CARTE BLANCHE en bas, avec
+   un courriel gris clair dessus : illisible, et visuellement détaché du reste.
+   Le bloc se fond désormais dans le vert, et tout son texte s'y lit. */
+.client-layout .sb-foot { border-top: 1px solid rgba(255, 255, 255, .12); }
+.client-layout .sb-user {
+  background: transparent !important;
+  color: #fff !important;
+}
+.client-layout .sb-user:hover { background: rgba(255, 255, 255, .07) !important; }
+
+.client-layout .sb-user__name {
+  font-weight: 700 !important;
+  color: #ffffff !important;
+}
+/* Le courriel est long : il doit pouvoir se tronquer proprement plutôt que
+   de déborder de la barre ou de passer sur deux lignes. */
+.client-layout .sb-user__plan {
+  color: #a9cebd !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.client-layout .sb-user__info { min-width: 0; }
+
+/* La pastille de l'avatar : cerclée de vert clair pour se détacher du fond
+   sombre — une photo sombre sur un vert sombre disparaissait. */
+.client-layout .sb-user__avatar {
+  border: 2px solid #3f7f61;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: none;
+}
+.client-layout .sb-user__avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ── Icônes de la barre ────────────────────────────────────────────────────
+   Elles héritaient de `currentColor`, donc du gris-vert du libellé : sur le
+   fond sombre elles se confondaient avec le texte au lieu de le devancer.
+   Un vert menthe les détache, sans les rendre plus lourdes que le libellé
+   qu'elles annoncent. L'entrée active passe au vert vif. */
+.client-layout .sb-link svg { fill: #6cbf99 !important; }
+.client-layout .sb-link:hover svg { fill: #8fd9b6 !important; }
+.client-layout .sb-link.active svg { fill: #4cc088 !important; }
+
+/* Pastille de compteur (« 2 » sur les établissements) : elle empruntait un
+   fond clair à la feuille admin et disparaissait sur le vert. */
+.client-layout .sb-link .sb-badge,
+.client-layout .sb-link__badge {
+  background: rgba(255, 255, 255, .14) !important;
+  color: #d7ece1 !important;
+}
