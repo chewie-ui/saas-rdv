@@ -1892,3 +1892,175 @@ exports.postClientPanel = async (req, res) => {
     error: null,
   });
 };
+
+/* ══════════════════════════════════════════════════════════════════════════
+   REPORT D'UN RENDEZ-VOUS PAR LE CLIENT
+   ─────────────────────────────────────────────────────────────────────────
+   Jusqu'ici, un client qui ne pouvait plus venir n'avait qu'une porte :
+   annuler, puis re-réserver. Deux actions, deux e-mails au pro, et surtout un
+   créneau rendu au public entre les deux — souvent repris par quelqu'un
+   d'autre. Le report déplace le rendez-vous d'un bloc, sans jamais le libérer.
+
+   AUTHENTIFICATION : le même `cancelToken` que l'annulation. C'est un secret
+   par rendez-vous, non devinable, déjà porté par les e-mails de confirmation.
+   On ne demande donc pas de session : le lien reçu par courriel doit marcher
+   pour un client qui n'a jamais créé de compte.
+
+   Le créneau est vérifié DEUX FOIS, à l'affichage puis à la validation : entre
+   les deux, le pro a pu poser une absence ou quelqu'un d'autre réserver.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+const { getAvailableSlots: _slotsDuJour } = require("../utils/mobileSlots");
+const { checkBookingConflict: _conflit } = require("../utils/bookingConflict");
+
+const _HHMM = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const _ISO_JOUR = /^\d{4}-\d{2}-\d{2}$/;
+
+function _enMinutes(hhmm) {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+}
+function _enHhmm(total) {
+  return String(Math.floor(total / 60)).padStart(2, "0") + ":" + String(total % 60).padStart(2, "0");
+}
+
+// Retrouve le rendez-vous à partir de son jeton. Renvoie null si le jeton ne
+// correspond pas — on ne distingue jamais « introuvable » de « mauvais jeton »,
+// sans quoi l'API confirmerait l'existence d'un rendez-vous à qui essaie.
+async function _bookingDuJeton(id, token) {
+  if (!id || !token) return null;
+  const b = await Booking.findOne({ _id: id, cancelToken: token }).lean().catch(() => null);
+  if (!b || b.status === "canceled") return null;
+  return b;
+}
+
+// ── GET : créneaux libres d'une journée, pour la boîte de report ───────────
+exports.rescheduleSlots = async (req, res) => {
+  try {
+    const booking = await _bookingDuJeton(req.params.id, req.query.token);
+    if (!booking) return res.status(404).json({ error: "Rendez-vous introuvable." });
+
+    const dateStr = String(req.query.date || "");
+    if (!_ISO_JOUR.test(dateStr)) return res.status(400).json({ error: "Date invalide." });
+
+    const duree = booking.slotTime || 30;
+    const r = await _slotsDuJour({
+      companyId: booking.company,
+      dateStr,
+      serviceDuration: duree,
+      employeeId: booking.employee ? String(booking.employee) : "all",
+    });
+    if (r.closed) return res.json({ slots: [], closed: true });
+
+    // Délai minimum de réservation : le parcours public l'applique, la liste
+    // doit donc l'appliquer aussi — sinon on propose un créneau que la
+    // validation refusera trois secondes plus tard.
+    const societe = await Company.findById(booking.company).select("minBookingLeadTime").lean();
+    const delai = Math.max(0, Number((societe && societe.minBookingLeadTime && societe.minBookingLeadTime.minutes) || 0));
+    const seuil = new Date(Date.now() + delai * 60000);
+    const parts = dateStr.split("-").map(Number);
+    const jour = new Date(parts[0], parts[1] - 1, parts[2]);
+    const memeJour =
+      seuil.getFullYear() === parts[0] && seuil.getMonth() === parts[1] - 1 && seuil.getDate() === parts[2];
+    const minMinutes = memeJour ? seuil.getHours() * 60 + seuil.getMinutes() : (seuil > jour ? Infinity : -1);
+
+    // NB : le créneau actuel du rendez-vous compte comme occupé — c'est lui.
+    // On sous-propose donc légèrement plutôt que de sur-proposer : jamais un
+    // créneau affiché ne sera refusé à la validation.
+    return res.json({ slots: (r.slots || []).filter((s) => _enMinutes(s) >= minMinutes), closed: false });
+  } catch (err) {
+    console.error("rescheduleSlots:", err.message);
+    return res.status(500).json({ error: "Créneaux indisponibles pour le moment." });
+  }
+};
+
+// ── POST : déplacement réel ────────────────────────────────────────────────
+exports.rescheduleBooking = async (req, res) => {
+  try {
+    const booking = await _bookingDuJeton(req.params.id, req.query.token);
+    if (!booking) return res.status(404).json({ error: "Rendez-vous introuvable ou déjà annulé." });
+
+    const dateStr = String(req.body.date || "");
+    const startTime = String(req.body.startTime || "");
+    if (!_ISO_JOUR.test(dateStr) || !_HHMM.test(startTime)) {
+      return res.status(400).json({ error: "Date ou heure invalide." });
+    }
+
+    const duree = booking.slotTime || 30;
+    const debut = _enMinutes(startTime);
+    const fin = debut + duree;
+    const parts = dateStr.split("-").map(Number);
+    const quand = new Date(parts[0], parts[1] - 1, parts[2], Math.floor(debut / 60), debut % 60, 0, 0);
+
+    const societe = await Company.findById(booking.company).select("minBookingLeadTime owner name").lean();
+    if (!societe) return res.status(404).json({ error: "Établissement introuvable." });
+
+    const delai = Math.max(0, Number((societe.minBookingLeadTime && societe.minBookingLeadTime.minutes) || 0));
+    if (quand.getTime() < Date.now() + delai * 60000) {
+      return res.status(400).json({ error: "Ce créneau est trop proche pour être réservé." });
+    }
+
+    // 1. L'horaire du pro autorise-t-il TOUJOURS ce créneau ? (absence ou
+    //    horaire spécial posé depuis l'affichage de la liste)
+    const ouvert = await isSlotOpenInSchedule({
+      companyId: booking.company,
+      dateStr,
+      startTime,
+      duration: duree,
+      employeeId: booking.employee ? String(booking.employee) : "all",
+    });
+    if (!ouvert) return res.status(409).json({ error: "Ce créneau n'est plus proposé par le professionnel." });
+
+    // 2. Quelqu'un d'autre l'a-t-il pris entre-temps ? `excludeBookingId` : le
+    //    rendez-vous qu'on déplace ne doit pas se bloquer lui-même.
+    const conflit = await _conflit({
+      Booking,
+      currentCompany: booking.company,
+      date: dateStr,
+      startTimeInMinutes: debut,
+      endTimeInMinutes: fin,
+      employeeId: booking.employee ? String(booking.employee) : null,
+      actualDuration: duree,
+      excludeBookingId: booking._id,
+    });
+    if (conflit) return res.status(409).json({ error: conflit });
+
+    const ancienneDate = booking.date;
+    const ancienneHeure = booking.startTime;
+
+    await Booking.updateOne(
+      { _id: booking._id, cancelToken: req.query.token },
+      { $set: { date: new Date(dateStr), startTime: startTime, endTime: _enHhmm(fin) } },
+    );
+
+    // 3. Prévenir le pro. Un report silencieux, c'est un professionnel qui
+    //    attend un client déjà parti — et un créneau qu'il croit libre occupé.
+    //    Best effort : l'e-mail ne doit pas faire échouer un report déjà écrit.
+    try {
+      const coach = await User.findById(societe.owner).select("email fullName").lean();
+      if (coach && coach.email) {
+        const enClair = (v) =>
+          new Date(v).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+        const client = [booking.name, booking.surname].filter(Boolean).join(" ") || "Un client";
+        await sendEmail({
+          to: coach.email,
+          subject: "Rendez-vous déplacé — " + client,
+          html:
+            "<p>Bonjour" + (coach.fullName ? " " + coach.fullName : "") + ",</p>" +
+            "<p><strong>" + client + "</strong> a déplacé son rendez-vous.</p>" +
+            "<p>Avant : " + enClair(ancienneDate) + " à " + ancienneHeure + "<br>" +
+            "Après : <strong>" + enClair(dateStr) + " à " + startTime + "</strong></p>" +
+            (booking.serviceName ? "<p>Prestation : " + booking.serviceName + "</p>" : "") +
+            "<p>Votre agenda est déjà à jour.</p>",
+        });
+      }
+    } catch (e) {
+      console.error("rescheduleBooking — e-mail au pro non envoye:", e.message);
+    }
+
+    return res.json({ ok: true, date: dateStr, startTime: startTime, endTime: _enHhmm(fin) });
+  } catch (err) {
+    console.error("rescheduleBooking:", err.message);
+    return res.status(500).json({ error: "Le report a échoué. Réessayez." });
+  }
+};

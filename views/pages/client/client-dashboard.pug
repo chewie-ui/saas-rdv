@@ -146,6 +146,19 @@ block content
                                 )
                                     span.material-symbols-outlined(style="font-size:16px") calendar_add_on
                                     span Ajouter à l'agenda
+                                //- Déplacer plutôt qu'annuler-puis-reréserver :
+                                //- entre les deux, le créneau repartait au
+                                //- public et se faisait souvent reprendre.
+                                button.sm-btn.sm-btn--ghost.js-move-btn(
+                                    type="button"
+                                    data-id=String(b._id)
+                                    data-token=b.cancelToken
+                                    data-name=b.companyName
+                                    data-service=(b.serviceName || '')
+                                    data-current=`${jourLong(b.date)} à ${b.startTime}`
+                                )
+                                    span.material-symbols-outlined(style="font-size:16px") event_repeat
+                                    span Déplacer
                                 button.sm-btn.sm-btn--danger.js-cancel-btn.ec-card__cancel(
                                     type="button"
                                     data-href=`/cancel-booking/${b._id}?token=${b.cancelToken}`
@@ -313,6 +326,22 @@ block content
                         strong Outlook
                         span Outlook.com · Microsoft 365
 
+    //- ── Boîte de report ────────────────────────────────────────────────────
+    //- Réutilise l'habillage `.cancel-modal-*` déjà stylé plutôt que d'ouvrir
+    //- un troisième vocabulaire de modale sur la même page.
+    .cancel-modal-overlay#moveOverlay(style="display:none")
+        .cancel-modal#moveModal
+            h3.cancel-modal__title Déplacer le rendez-vous
+            p.cancel-modal__info#moveInfo
+            .mv-field
+                label.mv-label(for="moveDate") Nouvelle date
+                input.mv-date#moveDate(type="date")
+            p.mv-status#moveStatus Choisissez une date pour voir les créneaux libres.
+            .mv-slots#moveSlots
+            .cancel-modal__actions
+                button.sm-btn.sm-btn--primary#moveConfirm(type="button" disabled) Confirmer le déplacement
+                button.sm-btn.sm-btn--ghost#moveClose(type="button") Annuler
+
     //- ── Modal annulation ───────────────────────────────────────────────────
     .cancel-modal-overlay#cancelModalOverlay(style="display:none")
         .cancel-modal#cancelModal
@@ -328,6 +357,7 @@ block content
                 button.sm-btn.sm-btn--ghost#cancelModalClose(type="button") Garder mon RDV
 
 block scripts
+    script(src="/js/layouts/client/move-booking.js" defer)
     script.
         (function() {
             /* ── Onglets ─────────────────────────────────────────────────── */

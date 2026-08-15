@@ -891,3 +891,23 @@ a.ds-ico { text-decoration: none; }
   .ec-head { gap: 16px; }
   .ec-head__cta { width: 100%; justify-content: center; }
 }
+
+/* ── Boîte de report ─────────────────────────────────────────────────────── */
+.mv-field { margin: 16px 0 10px; text-align: left; }
+.mv-label { display: block; margin-bottom: 6px; font-size: 12.5px; font-weight: 650; color: var(--text-secondary); }
+.mv-date {
+  width: 100%; height: 40px; padding: 0 12px;
+  border: 1px solid var(--border-light); border-radius: 999px;
+  background: var(--bg-surface, #fff); font: inherit; font-size: 14px; color: var(--text-primary);
+}
+.mv-date:focus { outline: none; border-color: var(--accent); box-shadow: var(--ds-ring); }
+.mv-status { margin: 6px 0 12px; font-size: 12.5px; color: var(--text-muted); text-align: left; }
+.mv-slots { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; max-height: 190px; overflow-y: auto; }
+.mv-slot {
+  padding: 8px 14px; border: 1px solid var(--border-light); border-radius: 999px;
+  background: var(--bg-surface, #fff); font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--text-primary); cursor: pointer;
+}
+.mv-slot:hover { border-color: var(--accent); color: var(--accent); }
+/* `.is-on` est posée par move-booking.js sur le créneau retenu. */
+.mv-slot.is-on { background: var(--accent); border-color: var(--accent); color: #fff; }

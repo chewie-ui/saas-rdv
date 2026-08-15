@@ -8,6 +8,8 @@ const {
   getBookingC,
   cancelBooking,
   cancelBookingPage,
+  rescheduleSlots,
+  rescheduleBooking,
   createBookingPaymentIntent,
   createBookingSetupIntent,
   markNoShow,
@@ -31,6 +33,14 @@ router.get("/get-booking/:companyId", getBookingC);
 // Un lien préchargé par une messagerie ne peut donc plus annuler tout seul.
 router.get("/cancel-booking/:userId", cancelBookingPage);
 router.post("/cancel-booking/:userId", cancelBooking);
+
+// ── Report d'un rendez-vous par le client ────────────────────────────────────
+// Même authentification que l'annulation : le `cancelToken` du rendez-vous,
+// passé en query. Pas de session exigée — le lien doit fonctionner depuis un
+// e-mail, pour un client qui n'a jamais créé de compte.
+// GET liste les créneaux d'un jour (ne modifie rien), POST déplace vraiment.
+router.get("/reprogrammer-booking/:id/creneaux", rescheduleSlots);
+router.post("/reprogrammer-booking/:id", rescheduleBooking);
 
 // ── Paiement réservation ──────────────────────────────────────────────────────
 router.post("/api/booking/payment-intent", createBookingPaymentIntent);
