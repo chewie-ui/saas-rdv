@@ -313,6 +313,10 @@ router.get("/", requireFeatureActive("home"), (req, res) => {
     metaDescription: pl.meta_desc || "Agenda en ligne gratuit : réservations 24h/24, rappels anti no-show, 0 % de commission, widget pour votre site. Pro à 19 €/mois, 1 mois offert.",
     canonical: "https://www.branshee.com/",
     becomeCoach: true,
+    // Prix affichés dans la section tarifs de la home. Même source que la page
+    // des formules et que le calcul du revenu récurrent : un montant ne peut
+    // pas diverger entre la vitrine et la facturation.
+    _tarifs: require("../utils/tarifs").FORFAITS,
   });
 });
 

@@ -1,0 +1,401 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   PAGE D'ACCUEIL — sections reprises de la maquette « Pour les pros »
+   ─────────────────────────────────────────────────────────────────────────
+   Toutes les classes sont préfixées `hp-`. C'est délibéré : landing-page.css
+   reste chargée à côté pour le visuel du planning (.pro-mock*), et deux
+   feuilles qui se disputeraient les mêmes sélecteurs finiraient en surcharges
+   `!important` — exactement ce qu'on vient de nettoyer sur la page des
+   formules.
+
+   Jetons consommés depuis import.css / ds.css, jamais redéfinis : la page suit
+   donc le thème sombre de l'application sans une règle de plus.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.hp {
+  /* Compense la topbar fixe (.header est en position:fixed — 64px, 68px
+     au-delà de 820px). Sans ce décalage, le hero passe DESSOUS et le titre
+     disparaît : c'est le défaut qui avait échappé à la relecture sur /search. */
+  padding-top: 64px;
+  font-variant-numeric: tabular-nums;
+}
+@media (min-width: 820px) {
+  .hp { padding-top: 68px; }
+}
+
+.hp .container {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ── Éléments partagés ──────────────────────────────────────────────────── */
+.hp-eyebrow {
+  margin: 0 0 14px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.hp-h1 {
+  margin: 0 0 18px;
+  font-size: clamp(34px, 5.2vw, 60px);
+  font-weight: 800;
+  letter-spacing: -.035em;
+  line-height: 1.04;
+  text-wrap: balance;
+  color: var(--text-primary);
+}
+.hp-h1__dot { color: var(--accent); }
+
+.hp-h2 {
+  margin: 0 0 14px;
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 780;
+  letter-spacing: -.03em;
+  line-height: 1.12;
+  text-wrap: balance;
+  color: var(--text-primary);
+}
+.hp-h2__em { color: var(--accent); }
+
+.hp-sub,
+.hp-lead {
+  margin: 0 0 26px;
+  max-width: 56ch;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* ── Boutons ─────────────────────────────────────────────────────────────
+   Un seul bouton plein par zone : le vert désigne l'action principale, le
+   contour la seconde. Deux boutons pleins côte à côte ne désignent rien. */
+.hp-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+.hp-cta--center { justify-content: center; }
+
+.hp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 26px;
+  border: 1px solid transparent;
+  border-radius: var(--ds-r-md, 10px);
+  font-size: 15px;
+  font-weight: 650;
+  text-align: center;
+  text-decoration: none;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.hp-btn--block { width: 100%; }
+
+.hp-btn--primary { background: var(--accent); color: #fff; }
+.hp-btn--primary:hover { background: var(--accent-hover); color: #fff; }
+
+.hp-btn--ghost {
+  background: var(--bg-surface, #fff);
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+.hp-btn--ghost:hover { border-color: var(--text-muted); color: var(--text-primary); }
+
+/* Variantes pour le bloc final, posé sur un fond vert foncé. */
+.hp-btn--light { background: #fff; color: #0f2e1f; }
+.hp-btn--light:hover { background: #eef5f1; color: #0f2e1f; }
+.hp-btn--outline-light {
+  background: transparent;
+  border-color: rgba(255, 255, 255, .38);
+  color: #fff;
+}
+.hp-btn--outline-light:hover { border-color: #fff; background: rgba(255, 255, 255, .08); color: #fff; }
+
+.hp-trust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.hp-trust__sep { opacity: .5; }
+
+/* ── 1. Hero ────────────────────────────────────────────────────────────── */
+.hp-hero { padding: 64px 0 56px; }
+.hp-hero__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 56px;
+  align-items: center;
+}
+.hp-hero__left { min-width: 0; }
+
+/* ── 2. Avant / Avec ────────────────────────────────────────────────────── */
+.hp-switch { padding: 24px 0 64px; }
+.hp-switch__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+.hp-panel {
+  padding: 26px 24px;
+  border-radius: var(--ds-r-lg, 14px);
+}
+.hp-panel--before {
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border-light);
+}
+/* Le vert foncé n'est pas décoratif : il marque visuellement le basculement
+   d'un état subi à un état choisi. C'est la seule surface sombre de la page. */
+.hp-panel--after {
+  background: #0f3524;
+  border: 1px solid #0f3524;
+}
+
+.hp-panel__pill {
+  display: inline-block;
+  margin-bottom: 18px;
+  padding: 5px 12px;
+  border-radius: var(--ds-r-pill, 999px);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.hp-panel--before .hp-panel__pill { background: #fdecec; color: #b4232b; }
+.hp-panel--after .hp-panel__pill { background: rgba(255, 255, 255, .14); color: #b7e7cd; }
+
+.hp-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.hp-panel__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+.hp-panel--before .hp-panel__list li { color: var(--text-secondary); }
+.hp-panel--after .hp-panel__list li { color: #eaf5ef; }
+
+.hp-panel__ico {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 14px;
+}
+.hp-panel--before .hp-panel__ico { background: #fdecec; color: #b4232b; }
+.hp-panel--after .hp-panel__ico { background: rgba(122, 214, 165, .22); color: #7ad6a5; }
+
+/* ── 3. Métiers ─────────────────────────────────────────────────────────── */
+.hp-trades { padding: 64px 0; border-top: 1px solid var(--border-light); }
+.hp-trades__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 26px;
+}
+.hp-trade {
+  padding: 16px 18px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-md, 10px);
+  background: var(--bg-surface, #fff);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ── 4. Mise en route ───────────────────────────────────────────────────── */
+.hp-steps { padding: 64px 0; border-top: 1px solid var(--border-light); }
+.hp-steps__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 30px;
+}
+.hp-step {
+  padding: 24px 22px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-lg, 14px);
+  background: var(--bg-surface, #fff);
+}
+.hp-step__n {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  font-weight: 750;
+  letter-spacing: .06em;
+  color: var(--accent);
+}
+.hp-step__t { margin: 0 0 7px; font-size: 16.5px; font-weight: 700; color: var(--text-primary); }
+.hp-step__d { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-secondary); }
+.hp-steps__note { margin: 20px 0 0; font-size: 13px; color: var(--text-muted); }
+
+/* ── 5. Ce qui est inclus ───────────────────────────────────────────────── */
+.hp-incl { padding: 64px 0; border-top: 1px solid var(--border-light); }
+.hp-incl__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px 28px;
+  margin-top: 12px;
+}
+.hp-incl__item { display: flex; align-items: flex-start; gap: 11px; }
+.hp-incl__ico {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  font-size: 15px;
+  color: var(--accent);
+}
+.hp-incl__t { margin: 0 0 3px; font-size: 14.5px; font-weight: 680; color: var(--text-primary); }
+.hp-incl__d { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+
+/* ── 6. Tarifs ──────────────────────────────────────────────────────────── */
+.hp-pricing { padding: 64px 0; border-top: 1px solid var(--border-light); }
+.hp-pricing__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 30px;
+  align-items: stretch;
+}
+.hp-plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 24px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-lg, 14px);
+  background: var(--bg-surface, #fff);
+}
+/* Une seule carte teintée : celle qu'on recommande. Trois cartes mises en
+   avant n'en mettent aucune en avant. */
+.hp-plan--reco { background: var(--accent-soft); border-color: var(--accent); }
+.hp-plan__pill {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 4px 11px;
+  border-radius: var(--ds-r-pill, 999px);
+  background: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+.hp-plan__name { margin: 0; padding-right: 84px; font-size: 17px; font-weight: 730; color: var(--text-primary); }
+.hp-plan__price { margin: 14px 0 22px; display: flex; align-items: baseline; gap: 5px; }
+.hp-plan__amount { font-size: 34px; font-weight: 800; letter-spacing: -.03em; color: var(--text-primary); }
+.hp-plan__per { font-size: 13.5px; color: var(--text-muted); }
+/* Colle le bouton en bas : les trois cartes s'alignent quelle que soit la
+   longueur du nom de la formule. */
+.hp-plan .hp-btn { margin-top: auto; }
+
+/* ── 7. Questions fréquentes ────────────────────────────────────────────── */
+.hp-faq { padding: 64px 0; border-top: 1px solid var(--border-light); }
+.hp-faq__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 800px;
+  margin-top: 26px;
+}
+.hp-faq__item {
+  border: 1px solid var(--border-light);
+  border-radius: var(--ds-r-lg, 14px);
+  background: var(--bg-surface, #fff);
+  overflow: hidden;
+}
+.hp-faq__item[open] { border-color: var(--accent); }
+.hp-faq__q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 20px;
+  font-size: 15px;
+  font-weight: 640;
+  color: var(--text-primary);
+  cursor: pointer;
+  list-style: none;
+}
+/* Retire le triangle natif, remplacé par le chevron. */
+.hp-faq__q::-webkit-details-marker { display: none; }
+.hp-faq__q::marker { content: ""; }
+.hp-faq__chev { flex: none; font-size: 20px; color: var(--text-muted); transition: transform .18s ease; }
+.hp-faq__item[open] .hp-faq__chev { transform: rotate(180deg); }
+.hp-faq__a { margin: 0; padding: 0 20px 18px; font-size: 14.5px; line-height: 1.6; color: var(--text-secondary); }
+
+/* ── 8. Dernier appel ───────────────────────────────────────────────────── */
+.hp-final { padding: 0 0 72px; }
+.hp-final__box {
+  padding: 56px 32px;
+  border-radius: 20px;
+  background: #0f3524;
+  text-align: center;
+}
+.hp-final__t {
+  margin: 0 0 12px;
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 780;
+  letter-spacing: -.03em;
+  text-wrap: balance;
+  color: #fff;
+}
+.hp-final__s {
+  margin: 0 auto 26px;
+  max-width: 52ch;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: #c7ddd1;
+}
+.hp-final__note { margin: 18px 0 0; font-size: 12.5px; color: #9dbcac; }
+
+/* ══ Responsive ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 1000px) {
+  /* Le visuel du planning passe sous le texte : côte à côte, il tombait à
+     ~330px de large et la grille horaire devenait illisible. */
+  .hp-hero__inner { grid-template-columns: 1fr; gap: 40px; }
+  .hp-trades__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hp-incl__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 820px) {
+  .hp-switch__grid { grid-template-columns: 1fr; }
+  .hp-steps__grid { grid-template-columns: 1fr; }
+  .hp-pricing__grid { grid-template-columns: 1fr; max-width: 420px; margin-inline: auto; }
+}
+
+@media (max-width: 620px) {
+  .hp-hero { padding: 36px 0 40px; }
+  .hp-switch { padding: 12px 0 44px; }
+  .hp-trades, .hp-steps, .hp-incl, .hp-pricing, .hp-faq { padding: 44px 0; }
+  .hp-trades__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hp-incl__grid { grid-template-columns: 1fr; }
+
+  /* Boutons pleine largeur : deux boutons côte à côte sur 375px donnaient des
+     libellés tronqués. */
+  .hp-cta { flex-direction: column; }
+  .hp-btn { width: 100%; }
+
+  .hp-final__box { padding: 40px 20px; border-radius: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hp-btn, .hp-faq__chev { transition: none; }
+}

@@ -1,9 +1,20 @@
 extends ../../layouts/index
 
-//- Homepage pro — page de conversion (trafic Ads + SEO).
-//- Tout le contenu vit dans t.pro_landing (locales/*.json) ; les prix affichés
-//- dans la copy (19 €, 15 €/39 € annuel) doivent rester synchronisés avec
-//- t.subscription si les tarifs changent un jour.
+//- ══════════════════════════════════════════════════════════════════════════
+//-  PAGE D'ACCUEIL — page de conversion (trafic Ads + SEO)
+//-  ─────────────────────────────────────────────────────────────────────────
+//-  Design repris de la maquette « Pour les pros » : titre-promesse, visuel
+//-  produit à droite, comparatif avant/après, métiers visés, mise en route en
+//-  trois étapes, tarifs, questions fréquentes.
+//-
+//-  TOUT le texte vient de `t.pro_landing` (locales/*.json, 6 langues). Ne rien
+//-  écrire en dur ici : la page est servie en FR/EN/NL/ES/IT/DE, et une chaîne
+//-  française codée en clair ne se verrait qu'à la lecture des cinq autres.
+//-
+//-  Les prix affichés proviennent de utils/tarifs.js (`_tarifs`), même source
+//-  que la page des formules et que le calcul du revenu récurrent — un montant
+//-  ne peut donc pas diverger entre la vitrine et la facturation.
+//- ══════════════════════════════════════════════════════════════════════════
 
 //- "append" (et non "block jsonld") : on garde les schémas WebSite +
 //- Organization du layout — la home est LA page où ils comptent pour Google.
@@ -41,7 +52,7 @@ block append jsonld
             "offers": {
                 "@type": "AggregateOffer",
                 "lowPrice": "0",
-                "highPrice": "49",
+                "highPrice": String((_tarifs && _tarifs.business && _tarifs.business.mensuel) || 49),
                 "priceCurrency": "EUR",
                 "offerCount": "3"
             }
@@ -51,44 +62,52 @@ block append jsonld
     script(type="application/ld+json")!= _ldSafe(_appLd)
 
 block links
+    //- Material Symbols n'est PAS chargée par layouts/index.pug. Les coches du
+    //- comparatif et les chevrons de la FAQ en dépendent : sans cette ligne,
+    //- les ligatures s'affichent en toutes lettres (« check », « close »).
+    //- `display=block` évite ce même texte brut pendant le chargement.
+    link(rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block")
+    //- landing-page.css reste chargée : elle porte le visuel du planning
+    //- (.pro-mock*) réutilisé tel quel dans le hero. home.css apporte les
+    //- nouvelles sections, toutes préfixées `hp-` — aucun sélecteur commun,
+    //- donc aucune collision de cascade entre les deux feuilles.
     link(rel="stylesheet", href="/css/layouts/landing-page.css")
+    link(rel="stylesheet", href="/css/layouts/client/home.css")
 
 block content
     - var pl = t.pro_landing
 
-    .pro-lp
+    .hp
 
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- 1. HERO — prix dans le titre, zéro friction
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        section.pro-hero
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- 1. HERO — la promesse, puis la preuve à droite
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.hp-hero
             .container
-                .pro-hero__inner
+                .hp-hero__inner
 
-                    .pro-hero__left
-                        //- Le point final passe en vert (accent) — même effet que
-                        //- la maquette validée. Remplace uniquement le "." de fin ;
-                        //- si la trad ne finit pas par un point, rien ne change.
-                        h1.pro-h1!= pl.hero.title_1.replace(/\.\s*$/, '<span class="pro-h1__dot">.</span>')
-                        p.pro-sub= pl.hero.sub
-                        .pro-actions
-                            a.sm-btn.sm-btn--primary(href="/register?intent=pro")= pl.hero.cta_free
-                        .pro-micro
-                            span
-                                svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
-                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                                = pl.hero.check_1
-                            span
-                                svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
-                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                                = pl.hero.check_2
-                            span
-                                svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
-                                    path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                                = pl.hero.check_3
-                        a.pro-hero__findpro(href="/search")= pl.hero.findpro
+                    .hp-hero__left
+                        p.hp-eyebrow= pl.hero.badge
 
-                    //- Mockup calendrier (UI démo, non traduit sauf pastilles)
+                        //- Le point final passe en vert. On ne remplace que le
+                        //- « . » de fin : si une traduction n'en a pas, rien ne
+                        //- change et le titre reste intact.
+                        h1.hp-h1!= pl.hero.title_1.replace(/\.\s*$/, '<span class="hp-h1__dot">.</span>')
+                        p.hp-sub= pl.hero.sub
+
+                        .hp-cta
+                            a.hp-btn.hp-btn--primary(href="/register?intent=pro")= pl.hero.cta_free
+                            //- Le second bouton s'adresse à l'autre moitié du
+                            //- trafic : celui qui cherche un pro, pas à en
+                            //- devenir un. Il part vers la recherche.
+                            a.hp-btn.hp-btn--ghost(href="/search")= pl.hero.cta_pro
+
+                        p.hp-trust
+                            span= pl.hero.check_1
+                            span.hp-trust__sep ·
+                            span= pl.hero.check_2
+                            span.hp-trust__sep ·
+                            span= pl.hero.check_3
                     .pro-hero__right
                         .pro-mock
                             a.pro-mock__price-pill(href="/register?intent=pro")= pl.hero.mock_pill
@@ -197,176 +216,126 @@ block content
                                     //- Cohérent avec la grille : Benjamin est le mercredi 19 à 11:00
                                     .pro-mock__pill Mer 19 · 11:00
                                     .pro-mock__pill.pro-mock__pill--green 90 €
-
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- 3. STATS — 4 chiffres honnêtes (produit, pas clients)
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        section.pro-stats
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- 2. AVANT / AVEC — le problème puis sa réponse, côte à côte
+        //-    C'est la section qui fait comprendre le produit en dix secondes :
+        //-    on ne décrit pas des fonctions, on décrit une journée de travail.
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.hp-switch
             .container
-                .pro-stats__grid
-                    each stat in pl.stats
-                        .pro-stat
-                            .pro-stat__n= stat.n
-                            .pro-stat__l= stat.l
-                            .pro-stat__s= stat.s
-
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- 5. FONCTIONNALITÉS — 3 rangées alternées
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        section.pro-funcs
-            .container
-                .pro-sec-hd
-                    .pro-pill= pl.funcs_hd.pill
-                    h2.pro-h2
-                        = pl.funcs_hd.title + ' '
-                        em= pl.funcs_hd.title_em
-                each row, index in pl.funcs
-                    .pro-func(class=index % 2 !== 0 ? 'pro-func--flip' : '')
-                        .pro-func__text
-                            .pro-func__tag= row.tag
-                            h3.pro-func__title= row.title
-                            p.pro-func__desc= row.desc
-                            ul.pro-func__bullets
-                                each item in row.items
-                                    li= item
-                            if row.roi
-                                .pro-func__roi
-                                    svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="16" height="16")
-                                        path(d="m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z")
-                                    span= row.roi
-                            .pro-func__actions
-                                a.sm-btn.sm-btn--primary(href=row.cta_href)= row.cta
-                        .pro-func__visual
-                            img.pro-func__img(src=row.image alt=row.title loading="lazy" width="560" height="420")
-
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- 7. COMMENT ÇA MARCHE — 3 étapes
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        section.pro-hiw#hiw
-            .container
-                .pro-sec-hd
-                    .pro-pill= pl.hiw.pill
-                    h2.pro-h2
-                        //- " + ' '" garantit l'espace entre les deux segments
-                        //- (un "|" vide ne produit pas d'espace en Pug).
-                        = pl.hiw.title + ' '
-                        em= pl.hiw.title_em
-                .pro-hiw__steps
-                    each step, idx in pl.hiw.steps
-                        .pro-step
-                            .pro-step__n= idx + 1
-                            h3.pro-step__title= step.title
-                            p.pro-step__desc= step.desc
-                .pro-hiw__cta
-                    a.sm-btn.sm-btn--primary(href="/register?intent=pro")= pl.hiw.cta
-                    p.pro-hiw__cta-note= pl.hiw.note
-
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- 9. TARIFS — 3 plans réels (#tarifs)
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        section.pro-pricing#tarifs
-            .container
-                .pro-sec-hd
-                    .pro-pill= pl.pricing.pill
-                    h2.pro-h2= pl.pricing.title
-                    p.pro-desc= pl.pricing.desc
-
-                .pro-plans
-                    .pro-plan
-                        h3.pro-plan__name= t.subscription.plan_1
-                        p.pro-plan__desc= pl.pricing.plan_1_tagline
-                        .pro-plan__price
-                            span.pro-plan__price-n= t.subscription.price_1
-                        .pro-plan__price-hint= pl.pricing.plan_1_price_sub
-                        ul.pro-plan__features
-                            each feature in pl.pricing.plan_1_features
+                .hp-switch__grid
+                    .hp-panel.hp-panel--before
+                        span.hp-panel__pill= pl.switch.before_label
+                        ul.hp-panel__list
+                            each ligne in pl.switch.before
                                 li
-                                    svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
-                                        path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                                    span= feature
-                        a.sm-btn.sm-btn--soft.pro-plan__cta(href="/register?intent=pro")= pl.pricing.plan_1_cta
-                        p.pro-plan__note= pl.pricing.plan_1_note
-
-                    .pro-plan.pro-plan--featured
-                        .pro-plan__badge= pl.pricing.popular
-                        h3.pro-plan__name= t.subscription.plan_2
-                        p.pro-plan__desc= pl.pricing.plan_2_tagline
-                        .pro-plan__price
-                            span.pro-plan__price-n= t.subscription.price_2
-                            span.pro-plan__price-s= t.subscription.price_2_sub
-                        .pro-plan__price-hint= pl.pricing.plan_2_price_hint
-                        ul.pro-plan__features
-                            each feature in pl.pricing.plan_2_features
+                                    span.material-symbols-outlined.hp-panel__ico close
+                                    span= ligne
+                    .hp-panel.hp-panel--after
+                        span.hp-panel__pill= pl.switch.after_label
+                        ul.hp-panel__list
+                            each ligne in pl.switch.after
                                 li
-                                    svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
-                                        path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                                    span= feature
-                        a.sm-btn.sm-btn--primary.pro-plan__cta(href="/register?intent=pro&plan=pro&billing=monthly")= pl.pricing.plan_2_cta
-                        p.pro-plan__note= pl.pricing.plan_2_note
+                                    span.material-symbols-outlined.hp-panel__ico check
+                                    span= ligne
 
-                    .pro-plan
-                        h3.pro-plan__name= t.subscription.plan_3
-                        p.pro-plan__desc= pl.pricing.plan_3_tagline
-                        .pro-plan__price
-                            span.pro-plan__price-n= t.subscription.price_3
-                            span.pro-plan__price-s= t.subscription.price_3_sub
-                        .pro-plan__price-hint= pl.pricing.plan_3_price_hint
-                        ul.pro-plan__features
-                            each feature in pl.pricing.plan_3_features
-                                li
-                                    svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
-                                        path(d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z")
-                                    span= feature
-                        a.sm-btn.sm-btn--soft.pro-plan__cta(href="/register?intent=pro&plan=business&billing=monthly")= pl.pricing.plan_3_cta
-
-                p.pro-pricing__note
-                    svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14")
-                        path(d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm240-120q33 0 56.5-23.5T560-360q0-33-23.5-56.5T480-440q-33 0-56.5 23.5T400-360q0 33 23.5 56.5T480-280ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z")
-                    = pl.pricing.note
-
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- 11. FAQ — 10 questions anti-objections
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        section.pro-faq.faq.padding-d
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- 3. MÉTIERS — à qui ça s'adresse
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.hp-trades
             .container
-                .faq__container
-                    .faq__title
-                        h2= pl.faq.title
-                        p= pl.faq.sub
-                    .faq__body
-                        each item, idx in pl.faq.items
-                            .faq__question(class=idx === 0 ? 'open' : '')
-                                .faq__answer-container
-                                    .faq__answer= item.q
-                                    .faq__icon.flex-c
-                                        svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24")
-                                            path(d="M0 0h24v24H0V0z" fill="none")
-                                            path(d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6-6-6z")
-                                .faq__response= item.a
+                h2.hp-h2= pl.trades.title
+                .hp-trades__grid
+                    each metier in pl.trades.items
+                        .hp-trade= metier
 
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //- 12. CTA FINAL — renversement du risque
-        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        section.pro-cta
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- 4. MISE EN ROUTE — trois étapes numérotées
+        //-    La numérotation encode une vraie séquence : on ne peut pas
+        //-    partager son lien avant d'avoir créé son compte.
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.hp-steps
             .container
-                .pro-cta__brand
-                    img.pro-cta__mark(src="/images/icon.svg" alt="" width="32" height="32")
-                    .pro-cta__name BranShee
-                h2.pro-cta__h2
-                    = pl.cta.title
-                    br
-                    span= pl.cta.title_em
-                p.pro-cta__sub= pl.cta.desc
-                .pro-cta__actions
-                    a.sm-btn.sm-btn--primary(href="/register?intent=pro")= pl.cta.btn_1
-                    a.sm-btn.sm-btn--ghost(href="/register?intent=pro&plan=pro&billing=monthly")= pl.cta.btn_2
-                a.pro-cta__contact(href="/contact")= pl.cta.contact
+                h2.hp-h2
+                    = pl.hiw.title + ' '
+                    span.hp-h2__em= pl.hiw.title_em
+                .hp-steps__grid
+                    each etape, i in pl.hiw.steps
+                        .hp-step
+                            span.hp-step__n= '0' + (i + 1)
+                            h3.hp-step__t= etape.title
+                            p.hp-step__d= etape.desc
+                p.hp-steps__note= pl.hiw.note
 
-        //- Barre d'action collante — mobile uniquement. Le trafic Ads est
-        //- surtout mobile et la page est longue : sans ça, le CTA disparaît dès
-        //- qu'on scrolle passé le hero. Toujours accessible en bas d'écran.
-        a.pro-sticky-cta(href="/register?intent=pro")= pl.hero.cta_free
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- 5. CE QUI EST INCLUS
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.hp-incl
+            .container
+                h2.hp-h2
+                    = pl.included.title + ' '
+                    span.hp-h2__em= pl.included.title_em
+                p.hp-lead= pl.included.intro
+                .hp-incl__grid
+                    each item in pl.included.items
+                        .hp-incl__item
+                            span.material-symbols-outlined.hp-incl__ico check
+                            div
+                                h3.hp-incl__t= item.title
+                                if item.desc
+                                    p.hp-incl__d= item.desc
 
-block scripts
-    script(src="/js/layouts/landing-page.js" type="module")
-    script(src="/js/layouts/client/landing-page.js" type="module")
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- 6. TARIFS — résumé, le détail vit sur la page des formules
+        //-    Prix lus dans utils/tarifs.js, jamais écrits en dur.
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.hp-pricing
+            .container
+                h2.hp-h2= pl.pricing.title
+                p.hp-lead= pl.pricing.desc
+                .hp-pricing__grid
+                    each cle in ['basic', 'pro', 'business']
+                        -
+                            var f = _tarifs[cle];
+                            var estPro = cle === 'pro';
+                        .hp-plan(class=estPro ? 'hp-plan--reco' : '')
+                            if estPro
+                                span.hp-plan__pill= pl.pricing.badge_popular || '★'
+                            h3.hp-plan__name= f.libelle
+                            p.hp-plan__price
+                                if f.mensuel === 0
+                                    span.hp-plan__amount= pl.pricing.free_label || '0 €'
+                                else
+                                    span.hp-plan__amount #{f.mensuel} €
+                                    span.hp-plan__per  / #{pl.pricing.per_month || 'mois'}
+                            a.hp-btn.hp-btn--block(
+                                href="/register?intent=pro"
+                                class=estPro ? 'hp-btn--primary' : 'hp-btn--ghost'
+                            )= pl.hero.cta_free
+
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- 7. QUESTIONS FRÉQUENTES — mêmes entrées que le JSON-LD FAQPage
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.hp-faq
+            .container
+                h2.hp-h2= (pl.faq && pl.faq.title) || 'Questions fréquentes'
+                .hp-faq__list
+                    each item in (pl.faq.items || [])
+                        details.hp-faq__item
+                            summary.hp-faq__q
+                                span= item.q
+                                span.material-symbols-outlined.hp-faq__chev expand_more
+                            p.hp-faq__a= item.a
+
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //- 8. DERNIER APPEL
+        //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        section.hp-final
+            .container
+                .hp-final__box
+                    h2.hp-final__t= pl.hiw.cta || pl.hero.cta_free
+                    p.hp-final__s= pl.hero.sub
+                    .hp-cta.hp-cta--center
+                        a.hp-btn.hp-btn--light(href="/register?intent=pro")= pl.hero.cta_free
+                        a.hp-btn.hp-btn--outline-light(href="/search")= pl.hero.cta_pro
+                    p.hp-final__note= pl.hiw.note
