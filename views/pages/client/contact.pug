@@ -1,101 +1,161 @@
 extends ../../layouts/index
 
 block links
+    //- Material Symbols n'est PAS chargée par layouts/index.pug. Les flèches
+    //- des liens et l'icône de confirmation en dépendent : sans cette ligne,
+    //- les ligatures s'affichent en toutes lettres (« arrow_forward »).
+    link(rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block")
     link(rel="stylesheet", href="/css/layouts/contact.css")
 
 block content
-    .contact-page
-        .contact-page__container.container
-            .contact-page__header
-                h1.contact-page__title= t.contact_page.title
-                p.contact-page__subtitle= t.contact_page.desc
+    //- ══════════════════════════════════════════════════════════════════════
+    //-  CONTACT — deux colonnes : le formulaire, puis les coordonnées.
+    //-
+    //-  Le contrat du POST /contact est INCHANGÉ : name, surname, email,
+    //-  subject, message. Le sujet passe d'un champ libre à une liste de
+    //-  choix, mais il part toujours dans le même champ `subject` — le
+    //-  contrôleur n'a pas bougé.
+    //-
+    //-  Pas de numéro de téléphone : BranShee n'en a pas de public. En
+    //-  afficher un serait promettre une joignabilité que personne ne tient.
+    //- ══════════════════════════════════════════════════════════════════════
+    -
+        var _sujets = (t.contact_page.subjects || []);
+        //- Les liens de la colonne droite pointent tous vers des pages
+        //- PUBLIQUES. /support existe mais exige d'être connecté : un visiteur
+        //- anonyme y serait renvoyé vers la page de connexion.
+        var _aide = [
+            { href: '/',       libelle: t.contact_page.help_1 },
+            { href: '/blog',   libelle: t.contact_page.help_2 },
+            { href: '/search', libelle: t.contact_page.help_3 },
+        ];
 
-            .contact-page__body
-                .contact-card
-                    if success
-                        .contact-success
-                            .contact-success__icon
-                                svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor")
-                                    path(d="m422.46-323.69 255.85-255.85L650-607.85 422.46-380.31l-114-114L280.15-466l142.31 142.31ZM480.13-120q-74.67 0-140.41-28.34-65.73-28.34-114.36-76.92-48.63-48.58-76.99-114.26Q120-405.19 120-479.87q0-74.67 28.34-140.41 28.34-65.73 76.92-114.36 48.58-48.63 114.26-76.99Q405.19-840 479.87-840q74.67 0 140.41 28.34 65.73 28.34 114.36 76.92 48.63 48.58 76.99 114.26Q840-554.81 840-480.13q0 74.67-28.34 140.41-28.34 65.73-76.92 114.36-48.58 48.63-114.26 76.99Q554.81-120 480.13-120Zm-.13-40q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z" transform="scale(0.025) translate(-120, -120)")
-                            h2= t.contact_page.success_title
-                            p= t.contact_page.success_desc
-                            a.sm-btn.sm-btn--primary(href="/")= t.contact_page.back_home
+    main.ct
 
-                    else
-                        if error
-                            .contact-error
-                                p= error
+        if success
+            .ct-wrap
+                .ct-card.ct-card--done
+                    span.material-symbols-outlined.ct-done__ico check_circle
+                    h1.ct-done__title= t.contact_page.success_title
+                    p.ct-done__sub= t.contact_page.success_desc
+                    a.sm-btn.sm-btn--primary(href="/")= t.contact_page.back_home
 
-                        form.contact-form(method="POST" action="/contact")
-                            .contact-form__row
-                                .field
-                                    label(for="name")= t.contact_page.firstname
-                                    input#name.input(
-                                        type="text"
-                                        name="name"
-                                        placeholder=t.contact_page.firstname_ph
-                                        required
-                                        value=formData ? formData.name : ''
-                                    )
-                                .field
-                                    label(for="surname")= t.contact_page.lastname
-                                    input#surname.input(
-                                        type="text"
-                                        name="surname"
-                                        placeholder=t.contact_page.lastname_ph
-                                        required
-                                        value=formData ? formData.surname : ''
-                                    )
+        else
+            .ct-wrap
+                //- ── Colonne gauche : le formulaire ──────────────────────
+                .ct-card
+                    h1.ct-title= t.contact_page.title
+                    p.ct-sub= t.contact_page.desc
 
-                            .field
-                                label(for="email")= t.contact_page.email
-                                input#email.input(
-                                    type="email"
-                                    name="email"
-                                    placeholder=t.contact_page.email_ph
-                                    required
-                                    value=formData ? formData.email : ''
+                    if error
+                        p.ct-error
+                            span.material-symbols-outlined error
+                            span= error
+
+                    form.ct-form(method="POST" action="/contact")
+                        .ct-row
+                            .ct-field
+                                label.ct-label(for="name")= t.contact_page.firstname
+                                input#name.ct-input(
+                                    type="text" name="name"
+                                    placeholder=t.contact_page.firstname_ph
+                                    required value=formData ? formData.name : ''
+                                )
+                            .ct-field
+                                label.ct-label(for="surname")= t.contact_page.lastname
+                                input#surname.ct-input(
+                                    type="text" name="surname"
+                                    placeholder=t.contact_page.lastname_ph
+                                    required value=formData ? formData.surname : ''
                                 )
 
-                            .field
-                                label(for="subject")= t.contact_page.subject
-                                input#subject.input(
-                                    type="text"
-                                    name="subject"
-                                    placeholder=t.contact_page.subject_ph
-                                    required
-                                    value=formData ? formData.subject : ''
-                                )
+                        .ct-field
+                            label.ct-label(for="email")= t.contact_page.email
+                            input#email.ct-input(
+                                type="email" name="email"
+                                placeholder=t.contact_page.email_ph
+                                required value=formData ? formData.email : ''
+                            )
 
-                            .field
-                                label(for="message")= t.contact_page.message
-                                textarea#message.input(
-                                    name="message"
-                                    rows="6"
-                                    placeholder=t.contact_page.message_ph
-                                    required
-                                )= formData ? formData.message : ''
+                        //- ── Sujet ───────────────────────────────────────
+                        //- Des choix plutôt qu'un champ vide : « migration
+                        //- depuis un autre outil » et « plusieurs
+                        //- établissements » sont les deux questions qui
+                        //- reviennent le plus, et les voir proposées dit au
+                        //- visiteur qu'on sait y répondre.
+                        //-
+                        //- Le champ caché porte la valeur envoyée : le
+                        //- contrôleur reçoit `subject` comme avant. Il est
+                        //- pré-rempli avec le premier choix, donc jamais vide
+                        //- même si le JS ne s'exécute pas.
+                        .ct-field
+                            span.ct-label= t.contact_page.subject
+                            input#subjectValue(type="hidden" name="subject" required
+                                value=(formData && formData.subject) || _sujets[0] || '')
+                            .ct-chips#subjectChips
+                                each s, i in _sujets
+                                    -
+                                        var _choisi = formData && formData.subject
+                                            ? formData.subject === s
+                                            : i === 0;
+                                    button.ct-chip(
+                                        type="button"
+                                        data-value=s
+                                        class=_choisi ? 'is-on' : ''
+                                        aria-pressed=_choisi ? 'true' : 'false'
+                                    )= s
 
-                            button.sm-btn.sm-btn--primary(type="submit")
-                                span= t.contact_page.send
+                        .ct-field
+                            label.ct-label(for="message")= t.contact_page.message
+                            textarea#message.ct-input.ct-textarea(
+                                name="message" rows="6"
+                                placeholder=t.contact_page.message_ph
+                                required
+                            )= formData ? formData.message : ''
 
-                .contact-infos
-                    .contact-info-card
-                        .contact-info-card__icon
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor")
-                                path(d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z")
-                        .contact-info-card__body
-                            h3= t.contact_page.email
-                            //- Était écrit en dur : la page annonçait une boîte
-                            //- qui n'existait pas, et tout ce qui y était envoyé
-                            //- rebondissait.
-                            p
-                                a(href='mailto:' + supportEmail)= supportEmail
+                        button.sm-btn.sm-btn--primary.ct-send(type="submit")
+                            span= t.contact_page.send
 
-                    .contact-info-card
-                        .contact-info-card__icon
-                            svg(xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor")
-                                path(d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z")
-                        .contact-info-card__body
-                            h3= t.contact_page.response_label
-                            p= t.contact_page.response_val
+                //- ── Colonne droite : coordonnées et liens ───────────────
+                aside.ct-side
+                    .ct-direct
+                        p.ct-eyebrow= t.contact_page.direct_label
+                        .ct-direct__item
+                            span.ct-direct__k= t.contact_page.email
+                            //- `supportEmail` vient du serveur
+                            //- (utils/adressesContact.js) : écrite en dur, la
+                            //- page a déjà annoncé une boîte inexistante, et
+                            //- tout ce qui y était envoyé rebondissait.
+                            a.ct-direct__v(href='mailto:' + supportEmail)= supportEmail
+                        .ct-direct__item
+                            span.ct-direct__k= t.contact_page.response_label
+                            span.ct-direct__v= t.contact_page.response_val
+
+                    .ct-help
+                        p.ct-eyebrow= t.contact_page.help_label
+                        each lien in _aide
+                            a.ct-help__link(href=lien.href)
+                                span= lien.libelle
+                                span.material-symbols-outlined arrow_forward
+
+block scripts
+    script.
+        (function () {
+            // Le sujet choisi alimente le champ caché envoyé au serveur.
+            // Sans JS, le champ garde sa valeur initiale (le premier choix) :
+            // le formulaire reste donc valide et envoyable.
+            var chips = document.getElementById('subjectChips');
+            var champ = document.getElementById('subjectValue');
+            if (!chips || !champ) return;
+            chips.addEventListener('click', function (e) {
+                var b = e.target.closest('.ct-chip');
+                if (!b) return;
+                chips.querySelectorAll('.ct-chip').forEach(function (x) {
+                    x.classList.remove('is-on');
+                    x.setAttribute('aria-pressed', 'false');
+                });
+                b.classList.add('is-on');
+                b.setAttribute('aria-pressed', 'true');
+                champ.value = b.dataset.value;
+            });
+        })();
