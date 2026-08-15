@@ -147,15 +147,8 @@ block content
             .cell.time-header GMT+1
             each weekday in weekDays
                 .cell.day-header(data-iso=weekday.isoDate class=[weekday.isToday && "today", weekday.isFocused && "focused", weekday.isDayOff && "off-day", weekday.isTimeOff && "time-off", weekday.isSpecial && "special-day"])
-                    //- « lun » et non « lun. » : l'abréviation française porte un
-                    //- point que la maquette n'a pas, et sept points sur une
-                    //- ligne d'en-têtes se voient.
-                    span.dh-name= String(weekday.label || '').replace(/\.$/, '')
-                    //- Le QUANTIÈME seul. `weekday.date` vaut « 10 août » : le
-                    //- mois est déjà écrit en toutes lettres au-dessus, dans le
-                    //- libellé de la semaine — le répéter sept fois allonge
-                    //- chaque en-tête sans rien apprendre.
-                    span.dh-date= weekday.dayNumber
+                    span.dh-name= weekday.label
+                    span.dh-date= weekday.date
                     if weekday.isSpecial
                         span.dh-off.dh-off--special(title=`Horaires spéciaux : ${weekday.specialLabel}`) Off
                     else if weekday.isDayOff
