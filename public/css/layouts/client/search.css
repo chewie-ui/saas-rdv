@@ -283,11 +283,14 @@
 }
 .srp-card[hidden] { display: none; }
 
-/* Cadre CARRÉ et image entière. Le cadre était en 112×92 avec `object-fit:
-   cover` : une photo verticale — le cas le plus courant, un pro debout dans
-   son local — se faisait rogner en haut et en bas, tête coupée comprise.
-   `contain` n'enlève rien de la photo ; le pro choisit son cadrage, pas nous.
-   Le fond gris comble ce qui dépasse du carré. */
+/* Cadre CARRÉ, rempli. Le cadre était en 112×92 : une photo verticale — le cas
+   le plus courant, un pro debout dans son local — perdait le haut et le bas.
+   Le carré ampute beaucoup moins qu'un rectangle horizontal, et il remplit
+   toujours son cadre : pas de bandes grises comme avec `contain`.
+
+   `object-position` biaisé vers le HAUT (35% et non 50%) : sur une photo de
+   personne, le sujet est dans le tiers supérieur. Un recadrage centré coupe
+   les têtes et garde les pieds. */
 .srp-card__thumb {
   width: 104px;
   height: 104px;
@@ -298,8 +301,8 @@
 .srp-card__img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  object-position: center;
+  object-fit: cover;
+  object-position: 50% 35%;
 }
 
 .srp-card__body { min-width: 0; }

@@ -688,3 +688,33 @@ body:has(.header__cb:checked) {
 /* ── Menu téléphone : page courante ─────────────────────────────────────── */
 .header__panel-link.is-active { color: var(--accent); font-weight: 650; }
 .header__panel-link.is-active svg { fill: var(--accent); }
+
+/* ── Boutons de la barre : en pilule ───────────────────────────────────────
+   Contrairement à l'agenda admin (rectangles arrondis, c'est un outil), la
+   barre publique de la maquette est entièrement en pilules. Portée limitée à
+   `.header` : `.sm-btn` est la classe partagée de toute l'application, la
+   redéfinir sans portée arrondirait chaque bouton du back-office. */
+.header .sm-btn,
+.header__logout,
+.header__install,
+.header .lang-trigger {
+  border-radius: 999px !important;
+}
+
+/* Les deux boutons-icônes deviennent des ronds parfaits plutôt que des
+   pilules étirées : ils ne portent pas de texte, rien ne justifie une
+   largeur supérieure à leur hauteur. */
+.header__logout,
+.header__install {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Le sélecteur de langue suit la même forme — c'est un bouton comme les
+   autres, et un rectangle au milieu de trois pilules se remarque. */
+.header .lang-trigger { padding: 0 12px; }
+.header__lang-panel { border-radius: 14px; }
