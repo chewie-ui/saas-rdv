@@ -8,6 +8,25 @@
                 img(src="/images/icon.svg" alt="BranShee")
             span.header__logo-name BranShee
 
+        //- ── Liens de pages (ordinateur) ─────────────────────────────────
+        //- Quatre entrées seulement. Une barre publique n'est pas un plan du
+        //- site : chaque lien ajouté dilue les trois autres et repousse les
+        //- boutons d'action. Le reste vit dans le pied de page.
+        //-
+        //- `reqPath` est posé par app.js (req.path, "" pour l'accueil) : c'est
+        //- lui qui marque la page courante — un lien actif calculé en
+        //- JavaScript clignoterait au chargement.
+        -
+            var _pages = [
+                { href: '/',        libelle: t.header.nav.home,    actif: !reqPath },
+                { href: '/search',  libelle: t.header.nav.search,  actif: reqPath === '/search' },
+                { href: '/blog',    libelle: t.header.nav.blog,    actif: (reqPath || '').indexOf('/blog') === 0 },
+                { href: '/contact', libelle: t.header.nav.contact, actif: reqPath === '/contact' },
+            ];
+        nav.header__pages(aria-label="Navigation principale")
+            each p in _pages
+                a.header__page(href=p.href class=p.actif ? 'is-active' : '' aria-current=p.actif ? 'page' : false)= p.libelle
+
         //- Right side
         .header__right
             //- Boutons nav (desktop inline, mobile dans le panel)
@@ -174,21 +193,29 @@
                         a.sm-btn.sm-btn--ghost(href="/login")
                             span= t.header.client_account
 
-        //- Liens utiles : le panneau ne contenait que deux boutons puis un grand
-        //- vide. Uniquement des routes qui existent (cf. footer), pas d'ancres.
+        //- Mêmes quatre pages que la barre de l'ordinateur : deux inventaires
+        //- différents selon la taille de l'écran, c'est un lien qu'on ne
+        //- retrouve plus une fois passé sur téléphone.
+        //- `/subscription` a été retiré : la route est réservée aux comptes
+        //- pros connectés (requirePermission billing.manage), elle renvoyait
+        //- donc un visiteur anonyme vers la connexion.
         .header__panel-links
-            a.header__panel-link(href="/search")
+            a.header__panel-link(href="/" class=!reqPath ? 'is-active' : '')
+                svg(viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true")
+                    path(d="M240-200h120v-240h240v240h120v-360L480-740 240-560v360Zm-80 80v-480l320-240 320 240v480H520v-240h-80v240H160Z")
+                span= t.header.nav.home
+            a.header__panel-link(href="/search" class=reqPath === '/search' ? 'is-active' : '')
                 svg(viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true")
                     path(d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z")
-                span= t.footer.book_now
-            a.header__panel-link(href="/subscription")
+                span= t.header.nav.search
+            a.header__panel-link(href="/blog" class=(reqPath || '').indexOf('/blog') === 0 ? 'is-active' : '')
                 svg(viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true")
-                    path(d="M441-120v-86q-53-12-91.5-46T293-348l74-30q15 48 44.5 73t77.5 25q41 0 69.5-18.5T587-356q0-35-22-55.5T463-458q-86-27-118-64.5T313-614q0-53 34.5-91.5T441-757v-83h80v83q42 4 72 26t46 55l-74 32q-12-25-31-38t-45-13q-38 0-59.5 17T408-614q0 33 30 52t104 40q69 20 104.5 63.5T682-352q0 60-38 98.5T521-206v86h-80Z")
-                span= t.footer.become_coach
-            a.header__panel-link(href="/contact")
+                    path(d="M320-280h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520Z")
+                span= t.header.nav.blog
+            a.header__panel-link(href="/contact" class=reqPath === '/contact' ? 'is-active' : '')
                 svg(viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true")
                     path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280 320-200v-80L480-520 160-720v80l320 200Z")
-                span= t.footer.contact
+                span= t.header.nav.contact
 
         //- Bloc d'installation — masqué par défaut, révélé par le JS uniquement
         //- si l'installation est réellement possible (Android avec l'événement
