@@ -136,12 +136,77 @@ router.get("/subscription", isAuth, injectCompany, requireFeatureActive("subscri
   // Stripe — sinon on afficherait une remise qu'on ne pourrait pas facturer.
   const env = require(`../environment/${process.env.NODE_ENV || "development"}`);
 
+  // ── Consommation réelle du forfait ────────────────────────────────────────
+  // La page affiche des jauges (SMS, collaborateurs, établissements…). Elles
+  // sont comptées ici et non estimées côté vue : une jauge qui ment sur ce
+  // qu'il reste est pire qu'une absence de jauge — elle décide d'un achat.
+  const { getSmsQuota, getCollaboratorLimit, getLimit } = require("../utils/planLimits");
+  const billingUser = res.locals.billingUser || req.user;
+
+  const smsUsage  = req.user.smsUsage || {};
+  const monthKey  = new Date().toISOString().slice(0, 7);
+  // Le compteur porte son mois : sans cette comparaison, un compte inactif
+  // depuis six mois afficherait le quota de mars comme consommé aujourd'hui.
+  const smsUsed   = smsUsage.monthKey === monthKey ? (smsUsage.count || 0) : 0;
+
+  const Company           = require("../db/models/company/company.model");
+  const CompanyMembership = require("../db/models/company/companyMembership.model");
+  const Service           = require("../db/models/company/service.model");
+  const compagnieId = res.locals.currentCompany && res.locals.currentCompany._id;
+
+  const [collaborateursUtilises, etablissementsUtilises, prestationsUtilisees] = await Promise.all([
+    compagnieId
+      ? CompanyMembership.countDocuments({ company: compagnieId, status: "accepted", isActive: { $ne: false } })
+      : 0,
+    Company.countDocuments({ owner: req.user._id, isDeleted: { $ne: true } }),
+    compagnieId ? Service.countDocuments({ company: compagnieId }) : 0,
+  ]);
+
+  const usage = {
+    sms:            { utilise: smsUsed,                 limite: getSmsQuota(billingUser) },
+    collaborateurs: { utilise: collaborateursUtilises,  limite: getCollaboratorLimit(billingUser) },
+    etablissements: { utilise: etablissementsUtilises,  limite: getLimit("companies", billingUser) },
+    prestations:    { utilise: prestationsUtilisees,    limite: getLimit("services", billingUser) },
+  };
+
+  // ── Historique de facturation (Stripe) ────────────────────────────────────
+  // Même lecture que sur /informations. Une erreur Stripe ne doit pas priver
+  // le pro de sa page d'abonnement : on retombe sur une liste vide, la vue
+  // affiche alors son état « aucune facture ».
+  let invoices = [];
+  const stripeCustomerId = req.user.subscription && req.user.subscription.stripeCustomerId;
+  if (stripeCustomerId) {
+    try {
+      const stripe = new (require("stripe"))(env.stripeSecretKey);
+      const invResult = await stripe.invoices.list({ customer: stripeCustomerId, limit: 12 });
+      invoices = invResult.data
+        // Les brouillons et les factures à 0 € (prorata neutre, essai) ne sont
+        // pas des paiements : les lister ferait croire à des prélèvements.
+        .filter((inv) => inv.status === "paid" || inv.status === "open")
+        .map((inv) => ({
+          id:        inv.id,
+          date:      inv.created * 1000,
+          amount:    ((inv.amount_paid || inv.amount_due || 0) / 100).toFixed(2).replace(".", ","),
+          currency:  (inv.currency || "eur").toUpperCase(),
+          status:    inv.status,
+          pdfUrl:    inv.invoice_pdf || inv.hosted_invoice_url || null,
+        }));
+    } catch (e) {
+      console.error("[/subscription] Stripe invoices:", e.message);
+    }
+  }
+
   res.render("admin/subscription", {
     pageName: "Subscription",
     title: "Plans",
     monthlyBookingCount,
     paymentMethods,
     defaultOffers,
+    usage,
+    invoices,
+    // Saisie de carte dans la modale « Gérer le paiement » : c'est Stripe.js
+    // qui reçoit le numéro, jamais notre serveur (cf. /informations).
+    stripePublishableKey: env.stripePublishableKey || "",
     // Prix et libellés commerciaux, source unique partagée avec le calcul du
     // revenu récurrent : un montant ne peut plus diverger entre la page des
     // plans et la comptabilité.

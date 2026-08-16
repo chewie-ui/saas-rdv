@@ -992,6 +992,16 @@
 
   updateUndoRedoBtns();
 
+  // Aperçu des trois états de disponibilité, affiché tout de suite : il ne
+  // dépend pas de l'iframe, donc rien ne justifie d'attendre son chargement.
+  //
+  // Cet appel se trouvait à la fin du SECOND bloc de ce fichier (deux IIFE
+  // séparés se suivent ici), où `updateDayPreviewSwatch` n'existe pas : il
+  // levait « updateDayPreviewSwatch is not defined » à chaque ouverture de la
+  // page, et l'aperçu ne s'initialisait qu'au premier passage dans
+  // `injectPreviewCss()`.
+  updateDayPreviewSwatch();
+
 })();
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1472,8 +1482,5 @@
       });
     }
   }
-
-  // Affiche l'aperçu disponibilité dès le chargement, sans attendre l'iframe.
-  updateDayPreviewSwatch();
 
 })();

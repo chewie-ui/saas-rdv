@@ -127,9 +127,9 @@
   white-space: nowrap;
 }
 .ch-pill__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.ch-pill--confirmed { background: #ecfdf3; color: #15803d; }
-.ch-pill--canceled  { background: #fef2f2; color: #b91c1c; }
-.ch-pill--noshow    { background: #fff7ed; color: #c2410c; }
+.ch-pill--confirmed { background: #ecfdf3; color: var(--success); }
+.ch-pill--canceled  { background: var(--danger-pale); color: #b91c1c; }
+.ch-pill--noshow    { background: var(--warning-pale); color: #c2410c; }
 
 /* Action ouvrir */
 .ch-td--action { text-align: right; }
@@ -205,7 +205,7 @@
   gap: 14px;
   padding: 0 14px;
   background: var(--accent-soft, #ecfdf3);
-  border: 1px solid #bbf7d0;
+  border: 1px solid var(--bs-green-border);
   border-radius: 12px;
 }
 .ch-bulkbar[hidden] { display: none; }
@@ -226,10 +226,10 @@
 /* Bouton Supprimer : rouge plein (plus propre que le blanc bordé gris sur le
    fond vert de la barre de sélection). */
 .ch-bulkbar .sm-btn--danger {
-  background: #dc2626;
-  border-color: #dc2626;
+  background: var(--danger);
+  border-color: var(--danger);
   color: #fff;
-  box-shadow: 0 1px 2px rgba(220, 38, 38, .25);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--danger) 25%, transparent);
 }
 .ch-bulkbar .sm-btn--danger:hover {
   background: #b91c1c;
@@ -365,9 +365,9 @@
 }
 .ch-menu__item .material-symbols-outlined { color: var(--text-secondary, #637083); }
 .ch-menu__item:hover { background: var(--surface-2, #f5f6f8); }
-.ch-menu__item--danger { color: #dc2626; }
-.ch-menu__item--danger .material-symbols-outlined { color: #dc2626; }
-.ch-menu__item--danger:hover { background: #fef2f2; }
+.ch-menu__item--danger { color: var(--danger); }
+.ch-menu__item--danger .material-symbols-outlined { color: var(--danger); }
+.ch-menu__item--danger:hover { background: var(--danger-pale); }
 .ch-menu__sep { height: 1px; background: var(--border-light, #f1f3f5); margin: 4px 0; }
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
@@ -512,14 +512,14 @@
 }
 .ch-input:focus {
   border-color: var(--accent, #16a34a);
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, .1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 10%, transparent);
 }
 .ch-modal__error {
   margin: 16px 0 0;
   padding: 10px 12px;
   font-size: 13px;
   color: #b91c1c;
-  background: #fef2f2;
+  background: var(--danger-pale);
   border-radius: 10px;
 }
 .ch-modal__error[hidden] { display: none; }

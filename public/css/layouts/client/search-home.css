@@ -1,0 +1,544 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   /search SANS CRITÈRE — écran « Accueil » de la maquette
+   ─────────────────────────────────────────────────────────────────────────
+   Couleurs, rayons, tailles et graisses recopiés au chiffre près depuis les
+   styles en ligne de la maquette (d'où les 17.5px / 12.5px / .045em).
+
+   Les jetons de l'application ne sont pas ceux de la maquette (accent #1e7a4e
+   contre #12a06e) : les valeurs vivent donc dans des variables locales
+   `--sh-*` posées sur `.sh`. Un seul endroit à éditer, zéro fuite ailleurs.
+
+   Comme la maquette, cet écran est en clair uniquement : c'est une vitrine
+   publique, et un jeu de couleurs à moitié appliqué (fonds sombres + accent
+   clair) serait pire que pas de thème sombre du tout.
+
+   Toutes les classes sont préfixées `sh-` : search.css (la page de résultats)
+   est une feuille distincte en `sx-`/`srp-`, aucun sélecteur commun.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.sh {
+  --sh-accent: #12a06e;
+  --sh-accent-deep: #0d7a54;
+  --sh-accent-soft: #e9f7f0;
+
+  --sh-ink: #1b2320;          /* noms, textes forts */
+  --sh-ink-title: #151a18;    /* h1 / h2 */
+  --sh-body: #5b636c;         /* chapô */
+  --sh-body-2: #6b737b;       /* métadonnées de carte */
+  --sh-muted: #9aa39d;
+
+  --sh-page: #fbfbf9;
+  --sh-card: #fff;
+  --sh-bd-card: #e8eaec;
+  --sh-bd-ctrl: #e0e3e5;
+  --sh-bd-row: #f0f1f0;
+
+  --sh-dark: #07301f;
+  --sh-mint: #6fd6a8;
+  --sh-dark-text: #d6e8de;
+  --sh-dark-lead: #a9c8ba;
+  --sh-dark-note: #8fb4a2;
+
+  --sh-r-card: 20px;
+  --sh-r-pill: 999px;
+
+  --sh-font: "Plus Jakarta Sans", sans-serif;
+  --sh-mono: "JetBrains Mono", monospace;
+
+  /* Compense la topbar fixe (.header est en position:fixed — 64px, 68px
+     au-delà de 820px). Sans ce décalage, le titre passe DESSOUS. */
+  padding-top: 64px;
+  display: block;
+  background: var(--sh-page);
+  color: #21262b;
+  font-family: var(--sh-font);
+  font-variant-numeric: tabular-nums;
+  text-wrap: pretty;
+}
+@media (min-width: 820px) {
+  .sh { padding-top: 68px; }
+}
+
+.sh-wrap { max-width: 1220px; margin: 0 auto; padding: 0 24px; }
+.sh-wrap--narrow { max-width: 1000px; text-align: center; }
+
+/* ── Éléments partagés ──────────────────────────────────────────────────── */
+.sh-eyebrow {
+  margin: 0;
+  font-family: var(--sh-mono);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--sh-accent);
+}
+.sh-eyebrow--light { color: var(--sh-mint); }
+
+.sh-h2 {
+  margin: 14px 0 0;
+  font-size: clamp(27px, 3.2vw, 38px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+  color: var(--sh-ink-title);
+}
+.sh-h2--mb { margin-bottom: 30px; }
+
+/* ── 1. Hero ────────────────────────────────────────────────────────────── */
+.sh-hero { padding: 72px 0 56px; }
+
+.sh-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  padding: 7px 14px 7px 11px;
+  border: 1px solid #dbe6e0;
+  border-radius: var(--sh-r-pill);
+  background: var(--sh-card);
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: #4d5560;
+}
+.sh-pill__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sh-accent); }
+
+/* 74px est la taille desktop de la maquette. Le clamp ne sert qu'à la
+   descente mobile : au-delà de ~1000px de fenêtre, on est bien à 74px. */
+.sh-h1 {
+  margin: 26px 0 0;
+  font-size: clamp(38px, 7.4vw, 74px);
+  font-weight: 800;
+  line-height: .98;
+  letter-spacing: -.045em;
+  text-wrap: balance;
+  color: var(--sh-ink-title);
+}
+
+.sh-lead {
+  margin: 22px auto 0;
+  max-width: 600px;
+  font-size: 17.5px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--sh-body);
+}
+
+/* ── Barre de recherche ─────────────────────────────────────────────────── */
+.sh-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 760px;
+  margin: 34px auto 0;
+  padding: 8px;
+  border: 1px solid var(--sh-bd-ctrl);
+  border-radius: var(--sh-r-pill);
+  background: var(--sh-card);
+  box-shadow: 0 12px 32px -20px rgba(15, 23, 25, .25);
+}
+.sh-search__field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 0 14px;
+}
+.sh-search__dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: #c3cac7; }
+.sh-search__field:focus-within .sh-search__dot { background: var(--sh-accent); }
+.sh-search__field input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  border: 0;
+  outline: none;
+  background: none;
+  font: 500 15px/1 var(--sh-font);
+  color: var(--sh-ink);
+}
+.sh-search__field input::placeholder { color: #9aa39d; }
+.sh-search__sep { flex: none; width: 1px; height: 28px; background: var(--sh-bd-card); }
+
+/* Croix « effacer ». `[hidden]` porte l'état : le script la révèle dès qu'il
+   y a du texte, il n'y a aucune classe à tenir synchronisée. */
+.sh-clear {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: #f2f4f2;
+  color: var(--sh-body-2);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.sh-clear[hidden] { display: none; }
+.sh-clear:hover { background: #e4e8e5; color: var(--sh-ink); }
+.sh-clear .material-symbols-outlined { font-size: 15px; }
+
+/* Le bouton est encré, pas vert : sur une barre blanche il doit se lire comme
+   l'action, pas comme une décoration de marque. Il passe au vert au survol —
+   c'est la maquette. */
+.sh-search__btn {
+  flex: none;
+  height: 44px;
+  padding: 0 26px;
+  border: 0;
+  border-radius: var(--sh-r-pill);
+  background: var(--sh-ink);
+  color: #fff;
+  font: 600 14.5px/1 var(--sh-font);
+  cursor: pointer;
+  transition: background .15s;
+}
+.sh-search__btn:hover { background: var(--sh-accent); }
+
+/* ── Menu d'autocomplétion ──────────────────────────────────────────────── */
+.sh-dd {
+  position: absolute;
+  top: calc(100% + 14px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: none;
+  padding: 6px;
+  border: 1px solid var(--sh-bd-card);
+  border-radius: 16px;
+  background: var(--sh-card);
+  box-shadow: 0 18px 40px -22px rgba(15, 23, 25, .38);
+  text-align: left;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.sh-dd.is-open { display: block; }
+.sh-dd__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--sh-ink);
+  cursor: pointer;
+}
+.sh-dd__item:hover { background: #f4f5f3; }
+.sh-dd__item .material-symbols-outlined { flex: none; font-size: 18px; color: var(--sh-muted); }
+.sh-dd__txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Métiers ────────────────────────────────────────────────────────────── */
+.sh-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 20px auto 0;
+}
+.sh-chip {
+  padding: 8px 14px;
+  border: 1px solid var(--sh-bd-ctrl);
+  border-radius: var(--sh-r-pill);
+  background: var(--sh-card);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  color: #4d5560;
+  text-decoration: none;
+  transition: border-color .15s, color .15s;
+}
+.sh-chip:hover { border-color: #b9c0c4; color: var(--sh-ink); }
+.sh-chip.is-on { border-color: var(--sh-accent); background: var(--sh-accent-soft); color: var(--sh-accent-deep); }
+
+/* ── 2. Chiffres ────────────────────────────────────────────────────────── */
+.sh-statsWrap { padding: 0; }
+.sh-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--sh-bd-card);
+  border-radius: var(--sh-r-card);
+  background: var(--sh-card);
+  overflow: hidden;
+}
+.sh-stat { padding: 26px 24px; border-right: 1px solid var(--sh-bd-row); }
+.sh-stat:last-child { border-right: 0; }
+.sh-stat__k { font-size: 30px; font-weight: 700; line-height: 1; letter-spacing: -.03em; color: var(--sh-accent); }
+.sh-stat__v { margin-top: 8px; font-size: 13px; font-weight: 500; line-height: 1.4; color: var(--sh-body-2); }
+
+/* ── 3. Établissements ──────────────────────────────────────────────────── */
+.sh-pros { padding: 64px 0 0; }
+.sh-sectionHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+.sh-ghostBtn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 42px;
+  padding: 0 20px;
+  border: 1px solid var(--sh-bd-ctrl);
+  border-radius: var(--sh-r-pill);
+  background: var(--sh-card);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--sh-ink);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color .15s;
+}
+.sh-ghostBtn:hover { border-color: #b9c0c4; }
+
+.sh-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+
+.sh-card {
+  display: block;
+  border: 1px solid var(--sh-bd-card);
+  border-radius: var(--sh-r-card);
+  background: var(--sh-card);
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color .15s;
+}
+.sh-card:hover { border-color: #c9d2cd; }
+
+.sh-card__thumb { position: relative; height: 168px; background: #f2f4f2; }
+/* `object-fit: cover` : les photos des pros ont tous les rapports possibles,
+   et une vignette déformée fait amateur — mieux vaut recadrer. */
+.sh-card__img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sh-card__rating {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border: 1px solid var(--sh-bd-card);
+  border-radius: var(--sh-r-pill);
+  background: var(--sh-card);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--sh-ink);
+}
+.sh-card__rating.is-new { color: var(--sh-accent-deep); }
+
+.sh-card__body { padding: 16px 18px 18px; }
+.sh-card__top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.sh-card__name { font-size: 16px; font-weight: 700; line-height: 1.2; color: var(--sh-ink); }
+.sh-card__verified {
+  padding: 4px 7px;
+  border-radius: var(--sh-r-pill);
+  background: var(--sh-accent-soft);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--sh-accent);
+}
+.sh-card__meta { margin-top: 6px; font-size: 13px; font-weight: 500; line-height: 1.4; color: var(--sh-body-2); }
+.sh-card__foot {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--sh-bd-row);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sh-card__from { font-size: 12.5px; font-weight: 500; line-height: 1; color: var(--sh-body-2); }
+.sh-card__go { font-size: 13px; font-weight: 600; line-height: 1; color: var(--sh-accent); white-space: nowrap; }
+
+/* ── 4. Comment ça marche ───────────────────────────────────────────────── */
+.sh-steps { padding: 76px 0 0; }
+.sh-steps__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.sh-step {
+  padding: 26px 24px 28px;
+  border: 1px solid var(--sh-bd-card);
+  border-radius: var(--sh-r-card);
+  background: var(--sh-card);
+}
+/* Le numéro est en mono, dans une pastille : c'est ce qui le fait lire comme
+   un repère de séquence et non comme du texte. */
+.sh-step__n {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: #f2f5f3;
+  font: 600 13px/1 var(--sh-mono);
+  color: var(--sh-accent);
+}
+.sh-step__t {
+  margin: 18px 0 8px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -.02em;
+  color: var(--sh-ink);
+}
+.sh-step__d { margin: 0; font-size: 14.5px; font-weight: 400; line-height: 1.6; color: var(--sh-body-2); }
+
+/* ── 5. Appel côté pro ──────────────────────────────────────────────────── */
+.sh-cta { padding: 76px 0 96px; }
+.sh-cta__box {
+  display: grid;
+  grid-template-columns: 1.05fr .95fr;
+  gap: 48px;
+  align-items: center;
+  padding: 52px;
+  border-radius: 28px;
+  background: var(--sh-dark);
+  overflow: hidden;
+}
+.sh-cta__t {
+  margin: 16px 0 0;
+  font-size: clamp(28px, 3.4vw, 42px);
+  font-weight: 700;
+  line-height: 1.06;
+  letter-spacing: -.035em;
+  color: #fff;
+}
+.sh-cta__s {
+  margin: 18px 0 26px;
+  max-width: 460px;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--sh-dark-lead);
+}
+.sh-cta__perks { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 28px; }
+.sh-perk {
+  padding: 8px 13px;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: var(--sh-r-pill);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--sh-dark-text);
+}
+.sh-cta__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.sh-cta__btn {
+  display: inline-flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 24px;
+  border-radius: var(--sh-r-pill);
+  background: #fff;
+  color: var(--sh-dark);
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  transition: background .15s;
+}
+.sh-cta__btn:hover { background: #d6f2e4; }
+.sh-cta__note { font-size: 12.5px; font-weight: 500; color: var(--sh-dark-note); }
+
+.sh-agenda {
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: var(--sh-r-card);
+  background: rgba(255, 255, 255, .05);
+}
+.sh-agenda__hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.sh-agenda__day { font-size: 13px; font-weight: 600; line-height: 1; color: #fff; }
+.sh-agenda__n { font: 400 11px/1 var(--sh-mono); color: var(--sh-dark-note); }
+.sh-agenda__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .06);
+}
+.sh-agenda__h { flex: none; font: 400 11.5px/1 var(--sh-mono); color: var(--sh-mint); }
+.sh-agenda__name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; line-height: 1; color: #fff; }
+.sh-agenda__svc { flex: none; font-size: 11.5px; font-weight: 500; line-height: 1; color: var(--sh-dark-lead); }
+.sh-agenda__free {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px dashed rgba(255, 255, 255, .18);
+  border-radius: 12px;
+  text-align: center;
+  font: 400 11.5px/1 var(--sh-mono);
+  color: var(--sh-dark-note);
+}
+
+/* ══ Couleur au survol des liens ══════════════════════════════════════════
+   import.css pose `a:hover { color: var(--accent-hover) }` sur TOUS les liens
+   du site, à une spécificité (0,1,1) qui bat celle d'une simple classe : sans
+   les règles ci-dessous, un lien-bouton se faisait reprendre sa couleur au
+   survol — jusqu'à devenir illisible sur son propre fond. */
+.sh-cta__btn:hover { color: var(--sh-dark); }
+.sh-chip.is-on:hover { color: var(--sh-accent-deep); }
+.sh-ghostBtn:hover,
+.sh-card:hover { color: var(--sh-ink); }
+
+/* ══ Responsive ═══════════════════════════════════════════════════════════
+   La maquette n'existe qu'en desktop : tout ce qui suit est la descente. */
+
+@media (max-width: 1000px) {
+  .sh-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Sur deux colonnes, le filet vertical de la 2e tuile tombait en bordure
+     de carte. On le retire une colonne sur deux et on ajoute un filet
+     horizontal sur la première rangée. */
+  .sh-stat:nth-child(2n) { border-right: 0; }
+  .sh-stat:nth-child(-n+2) { border-bottom: 1px solid var(--sh-bd-row); }
+
+  .sh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sh-cta__box { grid-template-columns: 1fr; gap: 32px; padding: 40px 32px; }
+}
+
+@media (max-width: 820px) {
+  .sh-steps__grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  /* La barre de recherche passe en colonne : trois zones côte à côte sur
+     375px laissaient ~90px par champ, de quoi lire deux lettres. */
+  .sh-search {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 10px;
+    border-radius: 22px;
+  }
+  .sh-search__field { padding: 0 10px; }
+  .sh-search__sep { width: auto; height: 1px; margin: 2px 10px; }
+  .sh-search__btn { width: 100%; margin-top: 6px; }
+  /* En colonne, un menu ancré sur le champ recouvre le champ suivant : on
+     l'ancre sur la barre entière. */
+  .sh-dd { left: 0; right: 0; }
+}
+
+@media (max-width: 620px) {
+  .sh-wrap { padding: 0 20px; }
+  .sh-hero { padding: 36px 0 40px; }
+  .sh-pros { padding: 48px 0 0; }
+  .sh-steps { padding: 48px 0 0; }
+  .sh-cta { padding: 48px 0 64px; }
+  .sh-grid { grid-template-columns: 1fr; }
+  .sh-sectionHead { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .sh-cta__box { padding: 32px 20px; border-radius: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sh-card, .sh-chip, .sh-ghostBtn, .sh-search__btn, .sh-cta__btn { transition: none; }
+}

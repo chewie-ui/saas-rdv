@@ -26,20 +26,24 @@
   --ds-fs-lg: 14px;     /* onglets, boutons */
   --ds-fs-title: 15px;  /* titres de section */
 
-  /* Rayons */
-  --ds-r-sm: 8px;
-  --ds-r-md: 10px;
-  --ds-r-lg: 14px;
-  --ds-r-pill: 999px;
+  /* Rayons — alignés sur le guide (design-tokens.css) : 8 / 12 / 16 / 999.
+     --ds-r-md valait 10 et --ds-r-lg 14, deux valeurs que le guide ne
+     reconnaît pas ; elles suivent maintenant les jetons partagés. */
+  --ds-r-sm: var(--bs-r-chip);   /* 8 */
+  --ds-r-md: var(--bs-r-ctrl);   /* 12 */
+  --ds-r-lg: var(--bs-r-card);   /* 16 */
+  --ds-r-pill: var(--bs-r-pill); /* 999 */
 
   /* Hauteurs de contrôle — un champ et un bouton doivent s'aligner */
   --ds-h-sm: 32px;
   --ds-h-md: 38px;
 
-  /* Ombres */
-  --ds-shadow-sm: 0 1px 2px rgba(16, 24, 40, .05);
-  --ds-shadow-md: 0 4px 12px -4px rgba(16, 24, 40, .12);
-  --ds-shadow-pop: 0 12px 28px -10px rgba(16, 24, 40, .28);
+  /* Ombres — le guide n'en reconnaît que trois, dont « aucune » par défaut.
+     --ds-shadow-md n'a pas d'équivalent : il est ramené sur l'ombre de carte,
+     la plus discrète, plutôt que d'inventer un quatrième niveau. */
+  --ds-shadow-sm: var(--bs-shadow-card);  /* 0 1px 2px rgba(16,40,30,.03) */
+  --ds-shadow-md: var(--bs-shadow-card);
+  --ds-shadow-pop: var(--bs-shadow-pop);  /* menus, récap collant */
 
   /* Anneau de focus — identique sur tous les contrôles */
   --ds-ring: 0 0 0 3px var(--accent-glow, rgba(30, 122, 78, .16));
@@ -65,18 +69,22 @@
 .av2-tabs::-webkit-scrollbar,
 .cz-tabs::-webkit-scrollbar { display: none; }
 
+/* Mesures de la maquette « Espace pro » (Admin.dc.html) : 13px de haut et bas,
+   28px entre deux onglets, 600/14px, et l'ACCENT — non plus l'encre — pour
+   l'onglet courant. Le gap du conteneur reste à 26 ; c'est `margin-right` qui
+   porte l'espacement dans la maquette, mais gap + margin se cumuleraient. */
 .ds-tab,
 .cd-tab,
 .av2-tab,
 .cz-tab {
-  padding: 10px 2px;
+  padding: 13px 0;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   font-family: inherit;
-  font-size: var(--ds-fs-lg);
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;
   white-space: nowrap;
@@ -91,9 +99,8 @@
 .cd-tab.is-active,
 .av2-tab.is-active,
 .cz-tab.is-active {
-  color: var(--text-primary);
-  border-bottom-color: var(--text-primary);
-  font-weight: 600;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 .ds-tab:focus-visible,
 .cd-tab:focus-visible,
@@ -236,7 +243,7 @@ input.ch-check {
 .av-4 { background: #ede9fe; color: #6d28d9; }
 .av-5 { background: #ffedd5; color: #c2410c; }
 .av-6 { background: #cffafe; color: #0e7490; }
-.av-7 { background: #f0fdf4; color: #15803d; }
+.av-7 { background: var(--success-pale); color: var(--success); }
 
 /* ── Bouton « ⋮ » de fin de ligne ─────────────────────────────────────────── */
 .ds-kebab,
@@ -631,7 +638,7 @@ input.ch-check {
   white-space: nowrap;
 }
 .ds-badge--success { border-color: var(--accent-border); background: var(--accent-soft); color: var(--accent); }
-.ds-badge--warning { border-color: rgba(217, 119, 6, .25); background: var(--warning-pale); color: var(--warning); }
+.ds-badge--warning { border-color: color-mix(in srgb, var(--warning) 25%, transparent); background: var(--warning-pale); color: var(--warning); }
 .ds-badge--danger  { border-color: var(--danger-border); background: var(--danger-pale); color: var(--danger); }
 .ds-badge--solid   { border-color: var(--accent); background: var(--accent); color: #fff; }
 

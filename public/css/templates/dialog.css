@@ -147,13 +147,13 @@
   border-radius: 10px;
   font-size: 13.5px;
   font-weight: 700;
-  background: #dc2626;
+  background: var(--danger);
   border: none;
   color: #fff;
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
   line-height: 1;
-  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.3);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--danger) 30%, transparent);
 }
 
 .dialog .dialog__wrapper .dialog__actions .dialog__btn2:hover {
@@ -168,11 +168,11 @@
 /* Variante prompt (bouton vert) */
 .dialog.dialog__prompt .dialog__wrapper .dialog__actions .dialog__btn2 {
   background: var(--main-color, #16a34a);
-  box-shadow: 0 1px 3px rgba(22, 163, 74, 0.3);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--success) 30%, transparent);
 }
 
 .dialog.dialog__prompt .dialog__wrapper .dialog__actions .dialog__btn2:hover {
-  background: #15803d;
+  background: var(--success);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -211,7 +211,7 @@
   justify-content: center;
   width: 20px;
   height: 20px;
-  background: #22c55e;
+  background: var(--success);
   border-radius: 50%;
   font-size: 11px;
   font-weight: 800;

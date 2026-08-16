@@ -8,29 +8,37 @@ block links
 
 block content
     //- ══════════════════════════════════════════════════════════════════════
-    //-  Les identifiants et les classes marqués « contrat JS » sont lus par
-    //-  public/js/layouts/subscription.js. Les renommer casse silencieusement
-    //-  la bascule mensuel/annuel, les prix barrés ou le paiement — sans la
-    //-  moindre erreur visible. Contrat exact :
+    //-  PAGE ABONNEMENT — reprise de l'écran « Abonnement » de la maquette
+    //-  ────────────────────────────────────────────────────────────────────
+    //-  Deux états mutuellement exclusifs :
+    //-    · SANS ABONNEMENT (plan gratuit) — ce qu'on a, ce qu'on n'a pas,
+    //-      et une seule action : choisir un forfait.
+    //-    · ABONNÉ — le forfait en cours, sa consommation, ses factures.
     //-
-    //-    #billMonthly / #billYearly      bascule (classe .active portée ici)
-    //-    .sub-plans                      conteneur (scroll après un code promo)
-    //-    .sub-plan--premium / --studio   cartes payantes, lues par PLANS_PAYANTS
-    //-    .sub-plan__price[data-monthly]  prix lu ET réécrit
-    //-    .sub-plan__per                  suffixe repris dans la note d'essai
-    //-    .sub-plan__pricing              parent où s'insère .sub-promo-wrap
-    //-    #getProPlan #getBusinessPlan #getFreePlan #getProPlanAlert
+    //-  La maquette portait une bascule « Aperçu de l'état » pour montrer les
+    //-  deux écrans côte à côte. Elle n'existe pas ici : l'état vient de
+    //-  l'abonnement réel (`isPro` / `currentPlan`), pas d'un bouton.
+    //-
+    //-  Les identifiants marqués « contrat JS » sont lus par
+    //-  public/js/layouts/subscription.js. Les renommer casse silencieusement
+    //-  le paiement, la bascule mensuel/annuel ou la résiliation. Contrat :
+    //-
+    //-    #subPlansModal #subPaymentModal   modales (attribut hidden)
+    //-    [data-sub-open="plans"|"payment"] ouvrent la modale correspondante
+    //-    [data-sub-close]                  ferment la modale courante
+    //-    .sub-pick[data-plan]              carte de plan sélectionnable
+    //-    .sub-pick__price[data-monthly]    prix lu ET réécrit à la bascule
+    //-    #billMonthly / #billYearly        bascule (classe .active portée ici)
+    //-    #subSummary #subConfirm           pied de la modale des offres
     //-    #cancelSubscriptionPro #retakeSubscription
     //-    #promoCodeInput #applyPromoBtn #promoCodeStatus
+    //-    [data-pm-id] [data-pm-default] [data-pm-delete] #addCardToggle
     //- ══════════════════════════════════════════════════════════════════════
 
     -
-        //- Libellé d'une offre mise en avant par le superadmin. La page
-        //- appelait déjà `_offerLabel(_proOffer)` — sauf que ni la fonction ni
-        //- les variables n'existaient : la mention « déjà appliqué » ne s'est
-        //- jamais affichée, alors que la remise, elle, partait bien au
-        //- paiement. On la calcule ici, à partir des offres que la route a
-        //- déjà filtrées pour CE compte.
+        var _libelle = function (cle) { return (_tarifs[cle] && _tarifs[cle].libelle) || 'Amateur'; };
+
+        //- Libellé d'une offre mise en avant par le superadmin.
         function _offerLabel(o) {
             if (!o) return '';
             if (o.discountType === 'trial')   return (o.trialDays || 30) + ' jours gratuits';
@@ -49,280 +57,377 @@ block content
             }
             return null;
         }
+
+        //- Une jauge à limite infinie n'a pas de fond de barre à remplir : on
+        //- affiche « ∞ » et une barre volontairement basse plutôt qu'un 100 %
+        //- qui laisserait croire à un plafond atteint.
+        function _jauge(u) {
+            if (!u) return { texte: '—', pct: 0, infini: false };
+            var illimite = !isFinite(u.limite);
+            var pct = illimite ? 12 : (u.limite > 0 ? Math.min(100, Math.round((u.utilise / u.limite) * 100)) : 0);
+            return {
+                texte:  u.utilise + ' / ' + (illimite ? '∞' : u.limite),
+                pct:    pct,
+                infini: illimite,
+                //- Rouge au plafond, ambre à partir de 80 % : la couleur doit
+                //- dire « il faut agir » avant que ce soit bloquant.
+                niveau: illimite ? 'ok' : (pct >= 100 ? 'full' : pct >= 80 ? 'warn' : 'ok'),
+            };
+        }
+
         var _proOffer = _offerFor('pro');
         var _bizOffer = _offerFor('business');
+        var _usage    = usage || {};
+        var _factures = invoices || [];
+        var _cartes   = paymentMethods || [];
 
-    .subscription
+        //- Prochaine échéance. `subscription.endDate` vient de la collection
+        //- Subscription (injectSubscription) ; sur un accès offert par le
+        //- superadmin il n'y en a pas — on ne promet alors aucune date.
+        var _prochaine = (subscription && subscription.endDate) ? new Date(subscription.endDate) : null;
+
+        //- « 1ᵉʳ septembre » et non « 1 septembre » : en français le premier
+        //- du mois est le seul jour ordinal. toLocaleDateString ne le sait pas.
+        function _dateLongue(d) {
+            if (!d) return '';
+            var jour = d.getDate();
+            var reste = d.toLocaleDateString('fr-BE', { month: 'long', year: 'numeric' });
+            return (jour === 1 ? '1ᵉʳ' : jour) + ' ' + reste;
+        }
+
+        //- Adresse de facturation, recomposée depuis l'objet `location`.
+        var _loc = (currentCompany && currentCompany.location) || null;
+        var _adresse = (_loc && _loc.address && _loc.city)
+            ? (_loc.address + ', ' + ((_loc.zip || '') + ' ' + _loc.city).trim())
+            : '';
+
+    //- Historique de facturation — même bloc dans les deux états, d'où le
+    //- mixin. Déclaré AVANT ses appels : Pug ne remonte pas les mixins.
+    mixin historiqueFactures(factures)
+        if factures && factures.length
+            .sub-invoices
+                .sub-invoices__head Historique de facturation
+                each f in factures
+                    .sub-invoice
+                        span.sub-invoice__date= new Date(f.date).toLocaleDateString('fr-BE', { day: '2-digit', month: 'short', year: 'numeric' })
+                        span.sub-invoice__plan= f.status === 'open' ? 'En attente' : ''
+                        span.sub-invoice__amount #{f.amount} €
+                        if f.pdfUrl
+                            //- rel="noopener" : la facture est hébergée chez
+                            //- Stripe, on ne lui donne pas la main sur l'onglet.
+                            a.sub-invoice__pdf(href=f.pdfUrl target="_blank" rel="noopener noreferrer") Reçu PDF
+                        else
+                            span.sub-invoice__pdf.is-off —
+
+    .sub
 
         //- ── Bandeaux d'état ──────────────────────────────────────────────
+        //- Gardés de l'ancienne page : ils portent une information que la
+        //- maquette n'avait pas à montrer (elle n'a pas d'abonnement expiré).
         if isExpired
-            .sub-alert.sub-alert--expired
-                span.material-symbols-outlined.sub-alert__icon error
+            .sub-alert.sub-alert--danger
+                span.material-symbols-outlined.sub-alert__ico error
                 .sub-alert__body
                     p.sub-alert__title= t.subscription.alert_expired_title
                     p.sub-alert__sub= t.subscription.alert_expired_sub
-                button.sub-alert__cta#getProPlanAlert(type="button")= t.subscription.alert_expired_btn
+                button.sub-alert__cta(type="button" data-sub-open="plans")= t.subscription.alert_expired_btn
 
-        else if user && user.isPremium && isExpiring
-            .sub-alert.sub-alert--warning
-                span.material-symbols-outlined.sub-alert__icon warning
+        else if isPro && isExpiring
+            .sub-alert.sub-alert--warn
+                span.material-symbols-outlined.sub-alert__ico warning
                 .sub-alert__body
                     if hoursLeft
                         p.sub-alert__title #{t.subscription.days_left} : #{hoursLeft} #{hoursLeft > 1 ? t.subscription.hours_suffix_many : t.subscription.hours_suffix_one}
                     else
                         p.sub-alert__title #{t.subscription.days_left} : #{daysLeft} #{daysLeft > 1 ? t.subscription.days_suffix_many : t.subscription.days_suffix_one}
                     p.sub-alert__sub= t.subscription.alert_expiring_sub
-                button.sub-alert__cta#getProPlanAlert(type="button")= t.subscription.alert_expiring_btn
+                button.sub-alert__cta(type="button" data-sub-open="plans")= t.subscription.alert_expiring_btn
 
-        //- ── Titre ────────────────────────────────────────────────────────
-        header.sub-hero
-            h1.sub-hero__title Un outil qui se rembourse tout seul
-            p.sub-hero__sub Commencez gratuitement, sans limite de rendez-vous. Passez au Pro le jour où les rappels automatiques vous manquent.
+        //- ══════════════════════════════════════════════════════════════════
+        //-  ÉTAT 1 — SANS ABONNEMENT
+        //- ══════════════════════════════════════════════════════════════════
+        if !isPro
+            .sub-head
+                .sub-head__text
+                    span.sub-badge.sub-badge--muted Aucun abonnement
+                    h2.sub-head__title Vous êtes sur le plan #{_libelle('basic')}
+                    p.sub-head__sub Gratuit et sans limite de durée. Les rappels automatiques, la synchronisation Google Agenda et le paiement en ligne demandent un forfait payant.
+                button.sub-btn.sub-btn--primary(type="button" data-sub-open="plans") Choisir un forfait
 
-            //- Le forfait est porté par l'établissement, pas par le compte :
-            //- on indique lequel sera facturé. `currentCompanyName` et non
-            //- `currentCompany.name` — sur les fiches antérieures au
-            //- multi-établissement, le nom vit sur le compte du patron et la
-            //- Company l'a vide ; le repli est déjà calculé dans injectCompany.
-            if currentCompany
-                p.sub-hero__scope
-                    span.material-symbols-outlined storefront
-                    | Forfait de l'établissement&nbsp;
-                    strong= currentCompanyName || 'Mon établissement'
+            .sub-split
 
-            .sub-toggle(role="group" aria-label="Période de facturation")
-                button.sub-toggle__btn.active#billMonthly(type="button")= t.subscription.monthly || 'Mensuel'
-                button.sub-toggle__btn#billYearly(type="button")
-                    = t.subscription.yearly || 'Annuel'
-                    span.sub-toggle__save −20%
+                //- Ce que le gratuit autorise, chiffré. Les compteurs viennent
+                //- de la base : c'est la même limite que celle appliquée au
+                //- moment d'ajouter une prestation ou un collaborateur.
+                .sub-card
+                    h3.sub-card__title Vos limites actuelles
+                    p.sub-card__sub Ce que le plan gratuit vous autorise aujourd'hui.
+                    .sub-gauges
+                        each cle in ['prestations', 'etablissements', 'collaborateurs']
+                            -
+                                var u = _usage[cle];
+                                var g = _jauge(u);
+                                var etiquettes = { prestations: 'Prestations au catalogue', etablissements: 'Établissements', collaborateurs: 'Collaborateurs' };
+                            .sub-gauge(class='is-' + g.niveau)
+                                .sub-gauge__head
+                                    span.sub-gauge__label= etiquettes[cle]
+                                    span.sub-gauge__value= g.texte
+                                .sub-gauge__track
+                                    .sub-gauge__fill(style='width:' + g.pct + '%')
 
-            //- Le mois offert n'est dû qu'UNE fois par compte
-            //- (utils/freeTrial.js). L'annoncer à quelqu'un qui l'a déjà
-            //- consommé, c'est promettre « 0 € aujourd'hui » à quelqu'un que le
-            //- serveur va débiter immédiatement.
-            if !isPro && essaiGratuitDisponible
-                p.sub-hero__trial
-                    span.material-symbols-outlined redeem
-                    | 1 mois offert sur les formules payantes — 0 € aujourd'hui, débité le mois suivant, annulable en un clic.
-
-        //- ── Les trois formules ───────────────────────────────────────────
-        //- Prix issus de utils/tarifs.js : même source que le calcul du revenu
-        //- récurrent, pour qu'un montant ne puisse pas diverger entre la page
-        //- des formules et la comptabilité.
-        .sub-plans#subPlans
-
-            //- ─── Amateur ───────────────────────────────────────────────
-            article.sub-plan.sub-plan--starter(class=(!isPro && currentPlan === 'basic') ? 'sub-plan--current' : '')
-                if !isPro && currentPlan === 'basic'
-                    span.sub-plan__pill.sub-plan__pill--muted Votre formule
-                h2.sub-plan__name= _tarifs.basic.libelle
-                p.sub-plan__for Pour commencer et se faire connaître
-                .sub-plan__pricing
-                    span.sub-plan__price Gratuit
-                    span.sub-plan__per pour toujours
-                .sub-plan__sep
-                .sub-plan__grow
-                    ul.sub-plan__feats
-                        each f in ['Rendez-vous illimités', 'Page de réservation en ligne', '5 prestations', 'Confirmations par e-mail', 'Historique de vos clients', 'Visible dans la recherche']
+                //- Ce qui manque, nommé. Le panneau sombre est la seule
+                //- surface foncée de l'état gratuit : c'est là que se prend
+                //- la décision.
+                .sub-unlock
+                    .sub-unlock__eyebrow Débloqué avec Pro
+                    ul.sub-unlock__list
+                        each f in ['Rappels automatiques 24h avant', '30 SMS inclus chaque mois', 'Synchronisation Google Agenda', 'Paiement en ligne par Stripe', 'Page personnalisable et liens sociaux']
                             li
-                                span.material-symbols-outlined.sub-plan__ok check
+                                span.sub-unlock__ico
+                                    span.material-symbols-outlined check
                                 span= f
-                        li.is-off
-                            span.material-symbols-outlined.sub-plan__lock lock
-                            span Rappels automatiques, Google Agenda, personnalisation
-                .sub-plan__cta
-                    if !isPro && currentPlan === 'basic'
-                        button.sub-plan__btn.sub-plan__btn--quiet(type="button" disabled)= t.subscription.btn_current
-                    else
-                        button.sub-plan__btn.sub-plan__btn--ghost#getFreePlan(type="button") Revenir à l'Amateur
+                    button.sub-btn.sub-btn--light.sub-btn--block(type="button" data-sub-open="plans")
+                        if essaiGratuitDisponible
+                            | Passer à Pro · 1ᵉʳ mois offert
+                        else
+                            | Passer à Pro
+                    if _proOffer
+                        p.sub-unlock__offer
+                            span.material-symbols-outlined card_giftcard
+                            | #{_offerLabel(_proOffer)} — déjà appliqué
 
-            //- ─── Pro (mis en avant) ────────────────────────────────────
-            article.sub-plan.sub-plan--premium(class=(currentPlan === 'pro' && isPro) ? 'sub-plan--current' : '')
-                span.sub-plan__pill.sub-plan__pill--reco= (currentPlan === 'pro' && isPro) ? 'Votre formule' : 'Recommandé'
-                h2.sub-plan__name= _tarifs.pro.libelle
-                p.sub-plan__for Pour qui travaille tous les jours
-                .sub-plan__pricing
-                    span.sub-plan__price(
-                        data-monthly=String(_tarifs.pro.mensuel)
-                        data-yearly=String(_tarifs.pro.annuelParMois)
-                    ) #{_tarifs.pro.mensuel}€
-                    span.sub-plan__per / mois
-                //- Argument chiffré plutôt que promotionnel : un pro ne compare
-                //- pas des fonctionnalités, il compare 19 € à une plage vide.
-                p.sub-plan__payback 2 rendez-vous manqués en moins, et l'abonnement est remboursé 4 fois.
-                .sub-plan__sep
-                p.sub-plan__eyebrow Tout l'Amateur, plus
-                .sub-plan__grow
-                    ul.sub-plan__feats
-                        each f in ['Rappels automatiques par e-mail', '50 rappels SMS par mois', 'Synchronisation Google Agenda', 'Page personnalisable', 'Prestations illimitées', '2 collaborateurs', 'Support prioritaire']
-                            li
-                                span.material-symbols-outlined.sub-plan__ok check
-                                span= f
-                .sub-plan__cta
-                    if currentPlan === 'pro' && isPro
-                        button.sub-plan__btn.sub-plan__btn--quiet(type="button" disabled)= t.subscription.btn_current
-                        .sub-plan__links
-                            if !autoRenew
-                                button.sub-plan__link#retakeSubscription(type="button")= t.subscription.btn_retake
-                            else
-                                button.sub-plan__link.sub-plan__link--danger#cancelSubscriptionPro(type="button")= t.subscription.btn_cancel
-                        p.sub-plan__left(class=isExpired ? 'is-expired' : isExpiring ? 'is-expiring' : '')
-                            if isExpired
-                                = t.subscription.expired_label
-                            else if isBetaAccess && daysLeft === null
-                                | Accès offert
-                            else if hoursLeft
-                                | #{t.subscription.days_left} :&nbsp;
-                                strong #{hoursLeft} #{hoursLeft > 1 ? t.subscription.hours_suffix_many : t.subscription.hours_suffix_one}
-                            else if daysLeft !== null
-                                | #{t.subscription.days_left} :&nbsp;
-                                strong #{daysLeft} #{t.subscription.days}
-                    else if currentPlan === 'business' && isPro
-                        //- Déjà au-dessus : proposer « Passer au Pro » serait
-                        //- une rétrogradation déguisée en achat.
-                        button.sub-plan__btn.sub-plan__btn--quiet(type="button" disabled) Inclus dans votre Pro+
-                    else
-                        button.sub-plan__btn.sub-plan__btn--accent#getProPlan(type="button")
-                            if essaiGratuitDisponible
-                                | Essayer le Pro gratuitement
-                            else
-                                | Passer au Pro
-                        if !isPro && _proOffer
-                            p.sub-plan__offer
-                                span.material-symbols-outlined card_giftcard
-                                | #{_offerLabel(_proOffer)} — déjà appliqué
+            //- Historique : vide par définition tant qu'aucun paiement n'a eu
+            //- lieu. Un compte redescendu en gratuit garde pourtant ses
+            //- anciennes factures — on les affiche alors plutôt que ce vide.
+            if _factures.length
+                +historiqueFactures(_factures)
+            else
+                .sub-empty
+                    p.sub-empty__title Aucune facture pour l'instant
+                    p.sub-empty__sub Vos reçus apparaîtront ici dès votre premier paiement. Aucune carte n'est enregistrée sur votre compte.
 
-            //- ─── Pro+ ──────────────────────────────────────────────────
-            article.sub-plan.sub-plan--studio(class=(currentPlan === 'business' && isPro) ? 'sub-plan--current' : '')
-                span.sub-plan__pill.sub-plan__pill--muted= (currentPlan === 'business' && isPro) ? 'Votre formule' : 'Équipes'
-                h2.sub-plan__name= _tarifs.business.libelle
-                p.sub-plan__for Pour les cabinets et les salons
-                .sub-plan__pricing
-                    span.sub-plan__price(
-                        data-monthly=String(_tarifs.business.mensuel)
-                        data-yearly=String(_tarifs.business.annuelParMois)
-                    ) #{_tarifs.business.mensuel}€
-                    span.sub-plan__per / mois
-                .sub-plan__sep
-                p.sub-plan__eyebrow Tout le Pro, plus
-                .sub-plan__grow
-                    ul.sub-plan__feats
-                        each f in ['200 rappels SMS par mois', '10 collaborateurs', 'Plusieurs établissements', 'Cours collectifs et ateliers', 'Votre site vitrine', 'Sans marque BranShee', 'Support dédié']
-                            li
-                                span.material-symbols-outlined.sub-plan__ok check
-                                span= f
-                .sub-plan__cta
-                    if currentPlan === 'business' && isPro
-                        button.sub-plan__btn.sub-plan__btn--quiet(type="button" disabled)= t.subscription.btn_current
-                        .sub-plan__links
-                            if !autoRenew
-                                button.sub-plan__link#retakeSubscription(type="button")= t.subscription.btn_retake
-                            else
-                                button.sub-plan__link.sub-plan__link--danger#cancelSubscriptionPro(type="button")= t.subscription.btn_cancel
-                    else
-                        button.sub-plan__btn.sub-plan__btn--dark#getBusinessPlan(type="button") Passer au Pro+
-                        if !isPro && _bizOffer
-                            p.sub-plan__offer
-                                span.material-symbols-outlined card_giftcard
-                                | #{_offerLabel(_bizOffer)} — déjà appliqué
+        //- ══════════════════════════════════════════════════════════════════
+        //-  ÉTAT 2 — ABONNÉ
+        //- ══════════════════════════════════════════════════════════════════
+        else
+            .sub-head.sub-head--dark
+                .sub-head__text
+                    span.sub-badge.sub-badge--on Forfait actuel
+                    h2.sub-head__title
+                        = _libelle(currentPlan)
+                        if _tarifs[currentPlan] && _tarifs[currentPlan].mensuel
+                            |  · #{_tarifs[currentPlan].mensuel} €/mois
+                    p.sub-head__sub
+                        if isBetaAccess
+                            | Accès offert par BranShee
+                            if _prochaine
+                                |  · jusqu'au #{_dateLongue(_prochaine)}
+                        else if !autoRenew
+                            | Résiliation programmée
+                            if _prochaine
+                                |  · actif jusqu'au #{_dateLongue(_prochaine)}
+                        else if _prochaine
+                            | Prochaine facture le #{_dateLongue(_prochaine)} · résiliable en un clic
+                        else
+                            | Sans engagement · résiliable en un clic
+                    //- Le forfait est porté par l'établissement, pas par le
+                    //- compte : on rappelle lequel est facturé.
+                    if currentCompany
+                        p.sub-head__scope
+                            span.material-symbols-outlined storefront
+                            = currentCompanyName || 'Mon établissement'
+                .sub-head__actions
+                    button.sub-btn.sub-btn--onDark(type="button" data-sub-open="plans") Changer d'offre
+                    button.sub-btn.sub-btn--light(type="button" data-sub-open="payment") Gérer le paiement
 
-        //- ── Tableau comparatif ───────────────────────────────────────────
-        //- Les lignes sont déclarées en données plutôt qu'en balisage : une
-        //- ligne oubliée dans une colonne était invisible à la relecture, et le
-        //- tableau promettait des limites que planLimits.js ne tenait pas.
-        //- true = inclus · false = absent · une chaîne = la valeur.
-        //-
-        //- Les rubriques nomment le RÉSULTAT pour le pro, pas la catégorie
-        //- technique : « ne plus perdre de rendez-vous » lui parle,
-        //- « notifications » non.
-        -
-            var _lignes = [
-                { groupe: 'Agenda et réservations' },
-                { l: 'Rendez-vous par mois',            a: 'Illimités', p: 'Illimités',  b: 'Illimités' },
-                { l: 'Prestations',                     a: '5',         p: 'Illimitées', b: 'Illimitées' },
-                { l: 'Page de réservation en ligne',    a: true,        p: true,         b: true },
-                { l: 'Réservation 24h/24',              a: true,        p: true,         b: true },
-                { l: 'Historique de vos clients',       a: true,        p: true,         b: true },
-                { l: 'Congés et indisponibilités',      a: true,        p: true,         b: true },
-                { l: 'Cours collectifs et ateliers',    a: false,       p: false,        b: true },
+            .sub-stats
+                each cle in ['sms', 'collaborateurs', 'etablissements']
+                    -
+                        var u = _usage[cle];
+                        var g = _jauge(u);
+                        var etiquettes = { sms: 'SMS envoyés', collaborateurs: 'Collaborateurs', etablissements: 'Établissements' };
+                    .sub-stat(class='is-' + g.niveau)
+                        .sub-stat__head
+                            span.sub-stat__label= etiquettes[cle]
+                            span.sub-stat__pct= g.infini ? '∞' : g.pct + '%'
+                        .sub-stat__value= g.texte
+                        .sub-gauge__track
+                            .sub-gauge__fill(style='width:' + g.pct + '%')
 
-                { groupe: 'Ne plus perdre de rendez-vous' },
-                { l: 'Confirmations par e-mail',        a: true,        p: true,         b: true },
-                { l: 'Rappels automatiques e-mail',     a: false,       p: true,         b: true },
-                { l: 'Rappels SMS par mois',            a: false,       p: '50',         b: '200' },
-                { l: 'Annulation en un clic',           a: true,        p: true,         b: true },
-                { l: 'Synchronisation Google Agenda',   a: false,       p: true,         b: true },
+            +historiqueFactures(_factures)
 
-                { groupe: 'Votre image' },
-                { l: 'Visible dans la recherche',       a: true,        p: true,         b: true },
-                { l: 'Page personnalisable',            a: false,       p: true,         b: true },
-                { l: 'Galerie photos',                  a: false,       p: true,         b: true },
-                { l: 'Avis clients',                    a: true,        p: true,         b: true },
-                { l: 'Votre site vitrine',              a: false,       p: false,        b: true },
-                { l: 'URL personnalisée',               a: false,       p: 'Option',     b: 'Incluse' },
-                { l: 'Sans marque BranShee',            a: false,       p: false,        b: true },
+            .sub-foot
+                if autoRenew
+                    button.sub-link.sub-link--danger#cancelSubscriptionPro(type="button")= t.subscription.btn_cancel
+                else
+                    button.sub-link#retakeSubscription(type="button")= t.subscription.btn_retake
 
-                { groupe: 'Organisation' },
-                { l: 'Collaborateurs inclus',           a: false,       p: '2',          b: '10' },
-                { l: 'Plusieurs établissements',        a: false,       p: false,        b: true },
-                { l: 'Formulaire de réservation',       a: '1 question', p: '5 questions', b: '10 questions' },
-                { l: 'Statistiques',                    a: 'Basiques',  p: 'Complètes',  b: 'Complètes' },
-                { l: 'Support',                         a: 'Standard',  p: 'Prioritaire', b: 'Dédié' },
-            ];
+    //- ══════════════════════════════════════════════════════════════════════
+    //-  MODALE — CHANGER D'OFFRE
+    //-  Elle porte la totalité du parcours d'achat : période, choix du plan,
+    //-  code promo, puis confirmation. Le pied résume ce qui sera prélevé —
+    //-  personne ne doit être débité sans avoir lu le montant.
+    //- ══════════════════════════════════════════════════════════════════════
+    .sub-modal#subPlansModal(hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="subPlansTitle")
+        .sub-modal__overlay(data-sub-close)
+        .sub-modal__box.sub-modal__box--wide(role="document")
+            .sub-modal__head
+                div
+                    h2.sub-modal__title#subPlansTitle Changer d'offre
+                    p.sub-modal__sub Le changement prend effet immédiatement, au prorata de votre période en cours.
+                button.sub-modal__x(type="button" data-sub-close aria-label="Fermer")
+                    span.material-symbols-outlined close
 
-        section.sub-compare
-            h2.sub-compare__title Comparer les formules
-            .sub-compare__wrap
-                table.sub-compare__table
-                    thead
-                        tr
-                            th(scope="col")
-                            th(scope="col")
-                                span.sub-compare__plan= _tarifs.basic.libelle
-                                span.sub-compare__price Gratuit
-                            th.sub-compare__th--pro(scope="col")
-                                span.sub-compare__plan= _tarifs.pro.libelle
-                                span.sub-compare__price #{_tarifs.pro.mensuel}€ / mois
-                            th(scope="col")
-                                span.sub-compare__plan= _tarifs.business.libelle
-                                span.sub-compare__price #{_tarifs.business.mensuel}€ / mois
-                    tbody
-                        each ligne in _lignes
-                            if ligne.groupe
-                                tr.sub-compare__group
-                                    td(colspan="4")= ligne.groupe
-                            else
-                                tr
-                                    td= ligne.l
-                                    each v in [ligne.a, ligne.p, ligne.b]
-                                        td
-                                            if v === true
-                                                span.sub-compare__yes
-                                                    span.material-symbols-outlined check
-                                            else if v === false
-                                                span.sub-compare__no —
-                                            else
-                                                span.sub-compare__val= v
+            .sub-modal__body
+                .sub-switch(role="group" aria-label="Période de facturation")
+                    button.sub-switch__btn.active#billMonthly(type="button")= t.subscription.monthly || 'Mensuel'
+                    button.sub-switch__btn#billYearly(type="button")
+                        = t.subscription.yearly || 'Annuel'
+                        |  · −20%
 
-        //- ── Code promo ───────────────────────────────────────────────────
-        section.sub-promo#promoCodeSection
-            .sub-promo__head
-                span.material-symbols-outlined.sub-promo__icon local_offer
-                .sub-promo__text
-                    span.sub-promo__title= t.subscription.promo_label
-                    span.sub-promo__desc Réduction immédiate sur votre abonnement
-            .sub-promo__field
-                input.sub-promo__input#promoCodeInput(
-                    type="text"
-                    placeholder=t.subscription.promo_placeholder
-                    autocomplete="off"
-                    spellcheck="false"
-                )
-                button.sm-btn.sm-btn--primary#applyPromoBtn(type="button")
-                    span= t.subscription.promo_apply
-            p.sub-promo__status#promoCodeStatus
+                .sub-picks
+                    each cle in ['basic', 'pro', 'business']
+                        -
+                            var f = _tarifs[cle];
+                            var estCourant = (cle === 'basic') ? !isPro : (isPro && currentPlan === cle);
+                            var offre = cle === 'pro' ? _proOffer : cle === 'business' ? _bizOffer : null;
+                            var caracs = {
+                                basic:    ['Réservations illimitées', 'Page publique partageable', '5 prestations maximum', '1 établissement'],
+                                pro:      ['Prestations illimitées', '5 employés · 2 collaborateurs', 'Rappels e-mail + 30 SMS/mois', 'Google Agenda & Stripe'],
+                                business: ['Tout ce que Pro contient', '10 employés · 10 collaborateurs', '100 SMS inclus par mois', 'Mon Site + URL personnalisée'],
+                            };
+                        button.sub-pick(
+                            type="button"
+                            data-plan=cle
+                            class=estCourant ? 'is-current' : ''
+                            aria-pressed="false"
+                        )
+                            .sub-pick__head
+                                span.sub-pick__name= f.libelle
+                                if estCourant
+                                    span.sub-pick__tag.sub-pick__tag--muted Forfait actuel
+                                else if cle === 'pro'
+                                    span.sub-pick__tag Populaire
+                                else if cle === 'business'
+                                    span.sub-pick__tag.sub-pick__tag--muted Équipes
+                            .sub-pick__pricing
+                                if f.mensuel === 0
+                                    span.sub-pick__price 0 €
+                                else
+                                    //- data-monthly / data-yearly : le JS
+                                    //- réécrit ce montant à chaque bascule.
+                                    span.sub-pick__price(
+                                        data-monthly=String(f.mensuel)
+                                        data-yearly=String(f.annuelParMois)
+                                    ) #{f.mensuel} €
+                                span.sub-pick__per /mois
+                            //- Ligne de note : réservée en hauteur pour que les
+                            //- trois cartes gardent le même alignement, qu'une
+                            //- offre soit annoncée ou non.
+                            .sub-pick__note
+                                if offre
+                                    = _offerLabel(offre)
+                                else if cle === 'pro' && essaiGratuitDisponible
+                                    | 1ᵉʳ mois offert
+                            ul.sub-pick__feats
+                                each c in caracs[cle]
+                                    li
+                                        span.material-symbols-outlined.sub-pick__ok check
+                                        span= c
+                            span.sub-pick__cta= estCourant ? 'Forfait actuel' : 'Choisir'
 
-        p.sub-foot Sans engagement · Résiliable en un clic · Aucune commission sur vos rendez-vous
+                //- Code promo. Absent de la maquette, gardé ici : les codes
+                //- existent en base, sont créés en superadmin et partent
+                //- réellement au paiement. Le supprimer de l'écran ne les
+                //- supprimerait pas du système — il les rendrait inutilisables.
+                .sub-promo#promoCodeSection
+                    label.sub-promo__label(for="promoCodeInput")= t.subscription.promo_label
+                    .sub-promo__field
+                        input.sub-promo__input#promoCodeInput(
+                            type="text"
+                            placeholder=t.subscription.promo_placeholder
+                            autocomplete="off"
+                            spellcheck="false"
+                        )
+                        button.sub-btn.sub-btn--quiet#applyPromoBtn(type="button")= t.subscription.promo_apply
+                    p.sub-promo__status#promoCodeStatus
+
+            .sub-modal__foot
+                p.sub-modal__summary#subSummary
+                .sub-modal__btns
+                    button.sub-btn.sub-btn--quiet(type="button" data-sub-close) Annuler
+                    button.sub-btn.sub-btn--primary#subConfirm(type="button") Confirmer
+
+    //- ══════════════════════════════════════════════════════════════════════
+    //-  MODALE — GÉRER LE PAIEMENT
+    //-  Le numéro de carte est saisi dans un champ Stripe.js : il ne transite
+    //-  jamais par notre serveur, on ne reçoit qu'un identifiant de moyen de
+    //-  paiement.
+    //- ══════════════════════════════════════════════════════════════════════
+    .sub-modal#subPaymentModal(hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="subPayTitle")
+        .sub-modal__overlay(data-sub-close)
+        .sub-modal__box(role="document")
+            .sub-modal__head
+                div
+                    h2.sub-modal__title#subPayTitle Gérer le paiement
+                    p.sub-modal__sub Paiements sécurisés par Stripe. BranShee ne stocke aucun numéro de carte.
+                button.sub-modal__x(type="button" data-sub-close aria-label="Fermer")
+                    span.material-symbols-outlined close
+
+            .sub-modal__body
+                p.sub-modal__eyebrow Moyens de paiement
+                .sub-cards#subCardList
+                    each pm in _cartes
+                        -
+                            //- La vignette de marque fait 44px de large : y
+                            //- écrire « MASTERCARD » débordait de la carte.
+                            //- On abrège comme la maquette, et la couleur suit
+                            //- la marque.
+                            var _marques = { visa: 'VISA', mastercard: 'MC', amex: 'AMEX', discover: 'DISC', diners: 'DINERS', jcb: 'JCB', unionpay: 'UP' };
+                            var _cle = String(pm.brand || '').toLowerCase();
+                            var _marque = _marques[_cle] || _cle.slice(0, 5).toUpperCase() || 'CARTE';
+                        .sub-card-row(class=pm.isDefault ? 'is-default' : '' data-pm-id=pm.id)
+                            button.sub-card-row__pick(type="button" data-pm-default=pm.id aria-label="Utiliser cette carte par défaut")
+                                span.sub-card-row__radio
+                                span.sub-card-row__brand(class='is-' + _cle)= _marque
+                                span.sub-card-row__info
+                                    span.sub-card-row__num •••• #{pm.last4}
+                                    span.sub-card-row__exp Expire #{String(pm.expMonth).padStart(2, '0')}/#{String(pm.expYear).slice(-2)}
+                                if pm.isDefault
+                                    span.sub-card-row__flag Par défaut
+                            button.sub-card-row__del(type="button" data-pm-delete=pm.id aria-label="Supprimer cette carte")
+                                span.material-symbols-outlined delete
+                    if !_cartes.length
+                        p.sub-cards__empty#subCardsEmpty Aucune carte enregistrée.
+
+                button.sub-addcard#addCardToggle(type="button")
+                    span.material-symbols-outlined add
+                    span Ajouter une carte
+
+                //- Champ Stripe monté à l'ouverture seulement : instancier
+                //- Elements au chargement de la page ferait un appel réseau à
+                //- Stripe sur chaque visite, y compris pour ne rien changer.
+                .sub-newcard#addCardForm(hidden)
+                    .sub-newcard__field#cardElement
+                    p.sub-newcard__err#cardError
+                    .sub-newcard__btns
+                        button.sub-btn.sub-btn--quiet(type="button" data-addcard-cancel) Annuler
+                        button.sub-btn.sub-btn--primary#saveCardBtn(type="button") Enregistrer la carte
+
+                p.sub-modal__eyebrow Adresse de facturation
+                .sub-billto
+                    .sub-billto__text
+                        strong= currentCompanyName || 'Mon établissement'
+                        //- `location` est un OBJET (adresse, ville, code
+                        //- postal). L'afficher tel quel imprimait
+                        //- « [object Object] » sur la facture à l'écran.
+                        if _adresse
+                            br
+                            = _adresse
+                    a.sub-link(href="/customize") Modifier
+
+            .sub-modal__foot.sub-modal__foot--end
+                button.sub-btn.sub-btn--quiet(type="button" data-sub-close) Fermer
 
     +dialog()
 
@@ -335,6 +440,7 @@ block scripts
                      trialDays: o.trialDays, applicablePlan: o.applicablePlan || 'all' };
         })).replace(/</g, '\\u003c');
     - var subTJson = JSON.stringify({ checking: t.subscription.promo_checking, invalid: t.subscription.promo_invalid, cancel_title: t.subscription.dialog_cancel_title, cancel_desc: t.subscription.dialog_cancel_desc, resume_title: t.subscription.dialog_resume_title, resume_desc: t.subscription.dialog_resume_desc, confirm: t.subscription.dialog_confirm, close: t.subscription.dialog_close, success_cancel: t.subscription.dialog_success_cancel, success_resume: t.subscription.dialog_success_resume })
+    script(src="https://js.stripe.com/v3/")
     script.
         window.__subT = !{subTJson};
         // Offres mises en avant par le superadmin. Elles s'appliquent toutes
@@ -342,18 +448,22 @@ block scripts
         // le code au paiement. La route a déjà écarté celles que ce compte ne
         // peut pas obtenir (expirées, épuisées, déjà utilisées par lui).
         window.__offresAuto = !{offresAutoJson};
-        // Cartes déjà enregistrées — utilisées par la boîte de confirmation
-        // d'achat pour proposer « payer avec la carte X ou en changer » plutôt
-        // que de débiter directement au clic.
+        // Cartes déjà enregistrées — la modale de paiement les liste, et la
+        // confirmation d'achat propose « payer avec la carte X » plutôt que de
+        // débiter directement au clic.
         window.__paymentMethods = !{JSON.stringify(paymentMethods || [])};
         // Le mois offert n'est dû qu'une fois par compte. `=== true` et non
         // `!== false` : si la variable venait à manquer, on annoncerait le prix
         // plein plutôt qu'une gratuité que le serveur refuserait. Décevoir en
         // bien vaut mieux que trahir une promesse.
         window.__trialAvailable = !{JSON.stringify(essaiGratuitDisponible === true)};
-    script(src="/js/templates/dialog.js")
+        // Forfait en cours : la modale s'ouvre dessus et le pied sait dire
+        // « conserver », « passer à » ou « rétrograder ».
+        window.__currentPlan = !{JSON.stringify(isPro ? (currentPlan || 'pro') : 'basic')};
+        window.__stripeKey   = !{JSON.stringify(stripePublishableKey || '')};
+    //- `type="module"` est OBLIGATOIRE : dialog.js commence par `export`.
+    //- Chargé en script classique, il levait « Unexpected token 'export' » à
+    //- chaque ouverture de la page. Les trois autres vues qui l'incluent
+    //- (informations, settings, landing-page) le font déjà correctement.
+    script(src="/js/templates/dialog.js" type="module")
     script(src="/js/layouts/subscription.js")
-    //- Aucun gestionnaire inline ici. Le bouton du bandeau d'expiration
-    //- (#getProPlanAlert) est déjà câblé par subscription.js, qui lui pose son
-    //- propre onclick : en rajouter un second rouvrait la boîte de
-    //- confirmation deux fois de suite.

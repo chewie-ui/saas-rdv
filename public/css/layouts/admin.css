@@ -25,11 +25,12 @@ svg {
 }
 
 .main-wrapper {
-  padding: 16px;
-  padding-bottom: 48px;
+  /* 28px / 34px / 72px : les marges de la maquette. Le bas est généreux —
+     la dernière carte ne doit pas coller au bord de la fenêtre. */
+  padding: 28px 34px 72px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   min-height: 100%;
   box-sizing: border-box;
 }
@@ -45,13 +46,27 @@ svg {
   gap: 0;
 }
 
+/* ── Barre du haut ────────────────────────────────────────────────────────
+   Valeurs de la maquette « Espace pro » : 72px de haut, 34px de gouttière,
+   fond translucide flouté.
+
+   `sticky` et non `fixed` : c'est `.main` qui défile (voir `.layout` plus
+   haut), la barre reste donc collée en haut de SA colonne sans qu'on ait à
+   compenser sa hauteur ailleurs. Le flou n'a d'effet que parce que le fond
+   est translucide — les deux vont ensemble. */
 .main .admin-nav {
-  padding: 10px 16px;
-  border-bottom: var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: 72px;
+  padding: 0 34px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 52px;
+  gap: 20px;
+  border-bottom: 1px solid var(--bs-border-2, #e6eae7);
+  background: color-mix(in srgb, var(--bg-app) 88%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 #openMenu {
@@ -84,20 +99,49 @@ svg {
 
 .admin-nav__title {
   flex: 1;
-  font-size: 16px;
-  font-weight: 600;
+  min-width: 0;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  /* 1.3 et non le 1.1 de la maquette : le titre est tronqué
+     (`overflow: hidden` plus bas), et « Disponibilités » ne laissait que
+     0,6px sous son p — pas encore coupé, mais à la merci d'un repli de
+     police. Le titre tient sur une ligne, la hauteur ne bouge donc pas. */
+  line-height: 1.3;
+  letter-spacing: -.03em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--text-primary);
-  margin: 0;
 }
 
 .admin-nav__actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
+}
+
+/* Cloche aux mesures de la maquette : 40px, rayon 11px, filet #e6eae7.
+   Surcharge LOCALE — la définition partagée vit dans ds.css et sert aussi
+   ailleurs ; on ne la déplace pas pour une page.
+
+   La maquette montre une simple pastille rouge. On garde le COMPTEUR : il
+   dit combien de messages attendent, ce qu'une pastille ne dit pas. Seules
+   ses couleurs s'alignent (#e5665a, liseré blanc de 1,5px). */
+.admin-nav .notif-bell__trigger {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  border-color: var(--bs-border-2, #e6eae7);
+  color: #5f6b64;
+}
+.admin-nav .notif-bell__trigger .material-symbols-outlined { font-size: 20px; }
+.admin-nav .notif-bell__badge {
+  top: -5px;
+  right: -5px;
+  background: #e5665a;
+  border-width: 1.5px;
 }
 
 /* ── Topnav CTA buttons now use .sm-btn system from classes.css ── */
@@ -145,19 +189,26 @@ svg {
 }
 
 /* ── Responsive admin layout ── */
-@media (min-width: 820px) {
-  /* Le hamburger reste visible tant que la sidebar n'est PAS fixe
-     (elle ne le devient qu'à ≥1024px, cf. sidebar.admin.css). Le cacher
-     dès 820px créait une zone morte : ni sidebar, ni bouton. */
+/* Sous 820px, la barre et les marges se resserrent. Les valeurs de la
+   maquette (72px de haut, 34px de gouttière, titre 22px) sont celles du
+   BUREAU : elles sont donc déclarées plus haut sans media query, et c'est ce
+   bloc-ci qui les réduit pour le téléphone.
+
+   Ce bloc disait l'inverse — il ciblait `min-width: 820px` et écrasait les
+   valeurs de la maquette sur tous les écrans larges, c'est-à-dire là où elles
+   comptaient. Le titre restait à 18px et la barre à 52px de haut. */
+@media (max-width: 819px) {
   .main-wrapper {
-    padding: 24px;
-    gap: 24px;
+    padding: 16px 16px 48px;
+    gap: 12px;
   }
   .main .admin-nav {
-    padding: 10px 28px;
+    min-height: 58px;
+    padding: 0 16px;
+    gap: 12px;
   }
   .admin-nav__title {
-    font-size: 18px;
+    font-size: 17px;
   }
 }
 
@@ -173,7 +224,7 @@ svg {
 }
 
 .plan-limit-banner--upgrade {
-  background: #fffbeb;
+  background: var(--warning-pale);
   border: 1px solid #fbbf24;
 }
 
@@ -184,7 +235,7 @@ svg {
 
 .plan-limit-banner__icon {
   flex-shrink: 0;
-  color: #d97706;
+  color: var(--warning);
 }
 
 .plan-limit-banner--max .plan-limit-banner__icon {
@@ -470,7 +521,7 @@ svg {
 
 .sync-opt__arrow { flex-shrink: 0; color: var(--text-muted, #9ca3af); }
 .sync-opt--gcal-connect { border: 1.5px solid var(--border-light, #e5e7eb); margin-bottom: 14px; }
-.sync-opt--gcal-connect:hover { border-color: var(--accent, #16a34a); background: rgba(22,163,74,0.05); }
+.sync-opt--gcal-connect:hover { border-color: var(--accent, #16a34a); background: color-mix(in srgb, var(--success) 5%, transparent); }
 
 /* ── Statut Google Calendar connecté ── */
 .sync-gcal-status {
@@ -479,8 +530,8 @@ svg {
   gap: 12px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: rgba(22,163,74,0.06);
-  border: 1px solid rgba(22,163,74,0.2);
+  background: color-mix(in srgb, var(--success) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 20%, transparent);
   margin-bottom: 12px;
 }
 .sync-gcal-status__text { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
@@ -839,7 +890,7 @@ svg {
 .upnudge__close .material-symbols-outlined { font-size: 18px; }
 
 /* Le quota approche : on hausse le ton sans crier. */
-.upnudge--urgent { border-color: #fed7aa; background: #fff7ed; }
+.upnudge--urgent { border-color: #fed7aa; background: var(--warning-pale); }
 .upnudge--urgent .upnudge__ic { color: #c2410c; }
 .upnudge--urgent .upnudge__title { color: #9a3412; }
 .upnudge--urgent .upnudge__text { color: #b45309; }
@@ -847,7 +898,7 @@ svg {
 .upnudge--urgent .upnudge__cta:hover { background: #9a3412; }
 
 /* Le quota est atteint : les clients ne peuvent plus reserver, c'est grave. */
-.upnudge--bloquant { border-color: #fecaca; background: #fef2f2; }
+.upnudge--bloquant { border-color: var(--danger-border); background: var(--danger-pale); }
 .upnudge--bloquant .upnudge__ic { color: #b91c1c; }
 .upnudge--bloquant .upnudge__title { color: #991b1b; }
 .upnudge--bloquant .upnudge__text { color: #b91c1c; }
@@ -871,8 +922,8 @@ svg {
   gap: 14px;
   margin: 0 0 18px;
   padding: 14px 18px;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
+  background: var(--warning-pale);
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, #fff);
   border-radius: 14px;
 }
 .pausebn__ic { flex-shrink: 0; font-size: 24px; color: #b45309; }
@@ -897,7 +948,7 @@ svg {
   gap: 14px;
   margin: 0 0 18px;
   padding: 14px 18px;
-  background: #eff6ff;
+  background: var(--info-pale);
   border: 1px solid #bfdbfe;
   border-radius: 14px;
 }
@@ -926,7 +977,7 @@ svg {
 .grantbn__close .material-symbols-outlined { font-size: 18px; color: inherit; }
 
 /* Dernier jour : on change de registre. */
-.grantbn--urgent { background: #fef2f2; border-color: #fecaca; }
+.grantbn--urgent { background: var(--danger-pale); border-color: var(--danger-border); }
 .grantbn--urgent .grantbn__ic { color: #b91c1c; }
 .grantbn--urgent .grantbn__title { color: #7f1d1d; }
 .grantbn--urgent .grantbn__text { color: #b91c1c; }

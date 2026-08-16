@@ -45,7 +45,11 @@ block content
             Object.assign(p, over || {})
             Object.keys(p).forEach(function (k) { if (!p[k]) delete p[k] })
             var qs = new URLSearchParams(p).toString()
-            return '/search' + (qs ? '?' + qs : '')
+            //- `/search` NU rend désormais l'accueil client, pas la liste.
+            //- « Tous » ou « Effacer les filtres » doivent montrer TOUS les
+            //- résultats, pas renvoyer le visiteur à la page de départ : on
+            //- garde donc au moins `page=1` pour rester côté résultats.
+            return '/search?' + (qs || 'page=1')
         }
         var _noteActive = (typeof minRating !== 'undefined') && minRating
 
@@ -59,16 +63,32 @@ block content
                 .sx-field
                     span.material-symbols-outlined.sx-field__ic(aria-hidden="true") search
                     input#inputName(type="text" name="name" placeholder="Métier, nom, salon…" value=searchName || "" aria-label="Métier, nom ou salon")
+                    //- Vider le champ sans recharger : le script l'affiche
+                    //- quand il y a du texte, le masque sinon.
+                    button.sx-clear(type="button" data-clear="inputName" title="Effacer" aria-label="Effacer le métier" hidden)
+                        span.material-symbols-outlined(aria-hidden="true") close
                     .sx-dd#menuNames
                 .sx-search__sep(aria-hidden="true")
                 .sx-field.sx-field--loc
                     span.material-symbols-outlined.sx-field__ic(aria-hidden="true") location_on
                     input#inputLocation(type="text" name="location" placeholder="Ville ou code postal" value=searchLocation || "" aria-label="Ville ou code postal")
+                    button.sx-clear(type="button" data-clear="inputLocation" title="Effacer" aria-label="Effacer la ville" hidden)
+                        span.material-symbols-outlined(aria-hidden="true") close
                     button.sx-geo#geoBtn(type="button" title="Autour de moi" aria-label="Autour de moi")
                         span.material-symbols-outlined(aria-hidden="true") my_location
                     .sx-dd#menuLocations
                 button.sx-submit#searchBtn(type="submit")
                     span.sx-submit__t Rechercher
+
+            //- Remise à zéro complète : repart de l'accueil de la recherche.
+            //- Distinct de « Effacer les filtres » (barre latérale), qui garde
+            //- la liste affichée en retirant seulement les critères.
+            if searchName || searchLocation || searchCategory || _noteActive
+                p.sx-active
+                    span.sx-active__txt Recherche en cours
+                    a.sx-active__reset(href="/search")
+                        span.material-symbols-outlined(aria-hidden="true") restart_alt
+                        | Nouvelle recherche
 
         //- ═══ CORPS : filtres + résultats ═══════════════════════════════════
         .sx-body
@@ -88,16 +108,28 @@ block content
                         h2.sx-facet__title Métier
                         ul.sx-facet__list
                             li
-                                a.sx-facet__item(
-                                    href=_url({ category: '', page: '' })
+                                //- `--all` est un repère pour le script : « Tous »
+                                //- est actif par défaut, le compter comme un
+                                //- filtre afficherait « 1 filtre » sur une
+                                //- recherche vierge.
+                                a.sx-facet__item.sx-facet__item--all(
+                                    href=_url({ category: '', name: '', page: '' })
                                     class=(!searchCategory ? 'is-active' : '')
                                 )
                                     span.sx-facet__lbl Tous
                                     span.sx-facet__n= _totalCats
                             each cat in _topCats
                                 li
+                                    //- `name: ''` : choisir un métier REMPLACE la
+                                    //- recherche libre au lieu de s'y ajouter.
+                                    //- Les deux portent sur le métier ; les
+                                    //- cumuler donnait « Coiffeur » ET « Médecin
+                                    //- généraliste », donc zéro résultat garanti
+                                    //- alors que le compteur de la facette en
+                                    //- annonçait sept. La ville, elle, est un
+                                    //- autre axe : on la conserve.
                                     a.sx-facet__item(
-                                        href=_url({ category: cat.name, page: '' })
+                                        href=_url({ category: cat.name, name: '', page: '' })
                                         title=cat.name
                                         class=(searchCategory && searchCategory.toLowerCase() === cat.name.toLowerCase() ? 'is-active' : '')
                                     )
@@ -124,7 +156,7 @@ block content
                             span Note 4,5 et plus
 
                     if searchName || searchLocation || searchCategory || _noteActive
-                        a.sx-side__reset(href="/search") Effacer les filtres
+                        a.sx-side__reset(href="/search?page=1") Effacer les filtres
 
             //- ── Résultats ─────────────────────────────────────────────────
             .sx-main
@@ -149,7 +181,7 @@ block content
                         span.material-symbols-outlined.sx-empty__ic(aria-hidden="true") search_off
                         p.sx-empty__t Aucun professionnel trouvé
                         p.sx-empty__s Essayez un autre métier, une autre ville, ou explorez toutes les catégories.
-                        a.sx-empty__btn(href="/search") Voir tous les professionnels
+                        a.sx-empty__btn(href="/search?page=1") Voir tous les professionnels
                 else
                     .sx-list#srpGrid
                         each coach in coachs
@@ -317,9 +349,12 @@ block scripts
                     ? SUGGEST.filter(function (s) { return norm(s).indexOf(q) !== -1; }).slice(0, 8)
                     : SUGGEST.slice(0, 8);
                 renderDD(menuNames, list, ICON_JOB, function (val) {
+                    // On REMPLIT le champ, on ne lance pas la recherche : même
+                    // défaut que sur l'accueil, choisir un métier partait
+                    // aussitôt et interdisait d'affiner la ville dans la foulée.
                     inputName.value = val;
                     menuNames.classList.remove('is-open');
-                    document.getElementById('sxForm').submit();
+                    inputLoc.focus();
                 });
             }
             inputName.addEventListener('focus', suggestJobs);
@@ -356,6 +391,25 @@ block scripts
             });
             inputLoc.addEventListener('blur', function () { setTimeout(function () { menuLoc.classList.remove('is-open'); }, 160); });
             document.addEventListener('click', function (e) { if (!e.target.closest('.sx-search')) closeAll(); });
+
+            // ══════════ Vider un champ ══════════
+            // La croix n'apparaît que si le champ contient quelque chose : un
+            // bouton « effacer » sur un champ vide n'efface rien et occupe la
+            // place du texte. Elle ne relance PAS la recherche — c'est
+            // « Rechercher » qui décide, comme pour les suggestions.
+            document.querySelectorAll('.sx-clear').forEach(function (btn) {
+                var champ = document.getElementById(btn.dataset.clear);
+                if (!champ) return;
+                var sync = function () { btn.hidden = !champ.value.trim(); };
+                sync();
+                champ.addEventListener('input', sync);
+                btn.addEventListener('click', function () {
+                    champ.value = '';
+                    sync();
+                    closeAll();
+                    champ.focus();
+                });
+            });
         })();
 
     script.
@@ -375,7 +429,7 @@ block scripts
                 });
             }
             // Nombre de filtres actifs, pour que le bouton replié le dise.
-            var actifs = document.querySelectorAll('.sx-facet__item.is-active:not([href="/search"]), .sx-check.is-on').length;
+            var actifs = document.querySelectorAll('.sx-facet__item.is-active:not(.sx-facet__item--all), .sx-check.is-on').length;
             var badge = document.getElementById('sxActiveCount');
             if (badge && actifs > 0) badge.textContent = actifs;
 

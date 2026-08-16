@@ -150,7 +150,7 @@
     if (!el) {
       el = document.createElement("div");
       el.id = "bkUploadProgress";
-      el.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:99999;max-width:90vw;text-align:center;display:flex;align-items:center;gap:10px;";
+      el.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f1412;color:#fff;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:99999;max-width:90vw;text-align:center;display:flex;align-items:center;gap:10px;";
       document.body.appendChild(el);
     }
     el.innerHTML = `<span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;display:inline-block;animation:bkUploadSpin .7s linear infinite;flex-shrink:0;"></span><span>${message}</span>`;
@@ -174,7 +174,7 @@
     const toast = document.createElement("div");
     toast.id = "bkUploadErrorToast";
     toast.textContent = message;
-    toast.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#dc2626;color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:99999;max-width:90vw;text-align:center;";
+    toast.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#c2554b;color:#fff;padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:99999;max-width:90vw;text-align:center;";
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 6000);
   }

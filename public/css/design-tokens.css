@@ -1,0 +1,133 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   BRANSHEE — JETONS DU DESIGN SYSTEM
+   ─────────────────────────────────────────────────────────────────────────
+   Transcription littérale du guide publié (artefact « BranShee — Design
+   System »). Chaque valeur est recopiée telle quelle, avec l'usage que le
+   guide lui donne — aucune n'a été arrondie, interprétée ou complétée.
+
+   Source conservée à la racine : `design-system-source.html`.
+
+   ── LES SIX RÈGLES DU GUIDE ─────────────────────────────────────────────
+   1. « Le vert est la seule couleur de marque. Tout le reste est neutre. »
+   2. « Les couleurs de statut ne servent qu'à communiquer un état, jamais à
+      décorer. »
+   3. « Un seul bouton vert par écran, sur l'action principale. »
+   4. « Le site public utilise des pilules (rayon 999px), l'espace pro des
+      rayons de 11-12px. »  ← c'est la règle qui distingue les deux mondes.
+   5. Badges : « fond teinté à 8%, texte dans la version foncée. Jamais de
+      fond saturé. »
+   6. Cartes : « trois familles seulement. Rayon 16-20px, bordure 1px, ombre
+      quasi nulle. »
+
+   ── POURQUOI UN FICHIER SÉPARÉ ──────────────────────────────────────────
+   Ce fichier ne contient QUE les valeurs brutes du guide, sous le préfixe
+   `--bs-`. Il ne stylise rien. C'est `import.css` qui, juste après l'avoir
+   importé, branche dessus ses jetons sémantiques historiques :
+
+       --accent      →  var(--bs-accent)
+       --border-light→  var(--bs-border)
+       --text-secondary → var(--bs-text-body)          …etc.
+
+   Toute l'application consomme déjà ces jetons sémantiques (`var(--accent)`
+   apparaît dans presque chaque feuille). Rebrancher leurs VALEURS suffit
+   donc à repeindre le site entier, sans toucher une seule page.
+
+   La séparation en deux fichiers garde les deux rôles distincts :
+   ici la vérité du guide, à côté la traduction vers les noms existants.
+   Pour revenir en arrière, il suffit de rétablir le bloc de import.css —
+   ce fichier-ci n'a alors plus aucun effet.
+
+   ── CE QUI NE SUIVRA PAS AUTOMATIQUEMENT ────────────────────────────────
+   Les couleurs écrites en dur dans les CSS de page (ex. `#0f3524` dans
+   contact.css, `--hp-*` dans client/home.css). Elles sont à reprendre une
+   par une ; le remap global les rend justement visibles, puisqu'elles
+   seront les seules à ne pas avoir bougé.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Vert de marque ────────────────────────────────────────────────────
+     Accent unique : actions, états actifs, liens. */
+  --bs-accent: #12a06e;         /* boutons primaires, liens, états actifs */
+  --bs-accent-hover: #0d8a5e;   /* survol du bouton primaire */
+  --bs-accent-text: #0d7a54;    /* texte vert sur fond clair */
+  --bs-green-deep: #07301f;     /* blocs sombres du site public */
+  --bs-green-sidebar: #082a1c;  /* fond de la sidebar pro */
+
+  /* ── Verts clairs ──────────────────────────────────────────────────────
+     Fonds teintés. Le guide précise : jamais de texte clair dessus. */
+  --bs-soft: #e9f7f0;           /* badge vérifié, créneaux libres */
+  --bs-soft-pro: #e6f6ee;       /* badges et icônes dans l'admin */
+  --bs-soft-row: #f4faf7;       /* ligne mise en avant du tableau tarifs */
+  --bs-green-border: #bfe4d3;   /* bordure de la carte Pro */
+  --bs-green-light: #6fd6a8;    /* surtitres sur fond sombre */
+
+  /* ── Neutres — « toute la structure, 90% de la surface » ──────────────── */
+  --bs-bg-site: #fbfbf9;        /* fond du site public */
+  --bs-bg-app: #f5f7f6;         /* fond de l'espace pro & client */
+  --bs-surface: #ffffff;        /* cartes, champs, barres */
+  --bs-border: #e9ece9;         /* contour des cartes */
+  --bs-border-strong: #e0e3e5;  /* contour des champs & boutons */
+
+  /* ── Texte — « quatre niveaux, pas plus » (cinq avec le désactivé) ────── */
+  --bs-text-title: #141a17;     /* titres et chiffres clés */
+  --bs-text-body: #3f474e;      /* paragraphes */
+  --bs-text-2: #6b737b;         /* descriptions, métadonnées */
+  --bs-text-muted: #98a29b;     /* labels, unités, placeholders */
+  --bs-text-off: #b4bdb7;       /* éléments inactifs */
+
+  /* ── Statuts — jamais décoratifs, uniquement pour un état ─────────────── */
+  --bs-success: #0d7a54;        /* confirmé, honoré, actif */
+  --bs-error: #c2554b;          /* annulé, échec, suppression */
+  --bs-warn: #b5843f;           /* absence, en attente */
+  --bs-info: #3f6fb5;           /* prestation technique, second praticien */
+  --bs-notif: #e5665a;          /* pastille de compteur non lu */
+
+  /* ── Badges : couples fond / texte, tels que listés par le guide ───────
+     Le fond est toujours une teinte pâle, le texte sa version foncée. */
+  --bs-badge-ok-bg: #e6f6ee;      --bs-badge-ok-fg: #0d7a54;   /* Confirmé */
+  --bs-badge-wait-bg: #fbf2e8;    --bs-badge-wait-fg: #b5843f; /* En attente, Absent */
+  --bs-badge-cancel-bg: #fbecea;  --bs-badge-cancel-fg: #c2554b;
+  --bs-badge-new-bg: #eaf1fc;     --bs-badge-new-fg: #3f6fb5;
+  --bs-badge-done-bg: #f2f4f2;    --bs-badge-done-fg: #6b737b;
+
+  /* ── Espacement — « multiples de 2 et 4. Les valeurs hors de cette liste
+        sont à éviter. » ─────────────────────────────────────────────────── */
+  --bs-sp-1: 4px;    /* entre une icône et son compteur */
+  --bs-sp-2: 8px;    /* entre pills, chips, petits boutons */
+  --bs-sp-3: 14px;   /* gap standard entre cartes (app) */
+  --bs-sp-4: 18px;   /* gap entre cartes (site public) */
+  --bs-sp-5: 26px;   /* padding intérieur d'une carte */
+  --bs-sp-6: 44px;   /* entre deux sections d'une page */
+  --bs-sp-7: 76px;   /* entre deux grands blocs du site */
+
+  /* ── Rayons ────────────────────────────────────────────────────────────
+     C'est ici que se joue la règle 4 : le site public prend --bs-r-pill,
+     l'espace pro --bs-r-ctrl. Les confondre est l'erreur la plus visible. */
+  --bs-r-chip: 8px;    /* chips, cellules */
+  --bs-r-ctrl: 12px;   /* champs, boutons de l'app */
+  --bs-r-card: 16px;   /* cartes app */
+  --bs-r-card-site: 20px; /* cartes site */
+  --bs-r-pill: 999px;  /* pilules, avatars */
+
+  /* ── Ombres — « aucune par défaut, partout » ──────────────────────────── */
+  --bs-shadow-none: none;
+  --bs-shadow-card: 0 1px 2px rgba(16, 40, 30, .03);      /* cartes espace pro */
+  --bs-shadow-pop: 0 12px 32px -20px rgba(15, 23, 25, .25); /* menus, récap collant */
+
+  /* ── Typographie ──────────────────────────────────────────────────────
+     « Plus Jakarta Sans pour tout le contenu. JetBrains Mono UNIQUEMENT
+     pour les surtitres, les heures et les valeurs techniques. » */
+  --bs-font: "Plus Jakarta Sans", system-ui, sans-serif;
+  --bs-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --bs-display-ls: -.045em;  /* interlettrage des très grands titres (800) */
+  --bs-title-ls: -.02em;
+
+  /* Liens et sélection, relevés sur le <body> du guide. */
+  --bs-link: #0d8a5e;
+  --bs-link-hover: #0a6e4b;
+  --bs-selection: #c9efdd;
+
+  /* Header de l'espace pro : « 72px de haut, fond translucide collant ». */
+  --bs-header-pro-h: 72px;
+}

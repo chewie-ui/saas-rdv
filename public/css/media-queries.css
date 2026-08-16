@@ -228,27 +228,14 @@
 
 /* ============================================================
    8. SUBSCRIPTION PAGE
+   ------------------------------------------------------------
+   Rien ici : la page d'abonnement porte ses propres points de rupture dans
+   public/css/layouts/subscription.css, chargée uniquement sur cette page.
+   Les quatre règles qui vivaient ici (`.sub-plans`, `.sub-billing-toggle`,
+   `.sub-compare__*`) visaient un balisage qui n'existe plus — et l'une
+   d'elles portait un `!important` chargé sur TOUTES les pages de l'admin
+   pour un sélecteur mort.
    ============================================================ */
-
-@media (max-width: 599px) {
-  .sub-plans {
-    grid-template-columns: 1fr !important;
-  }
-
-  .sub-billing-toggle {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .sub-compare__wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .sub-compare__table {
-    min-width: 500px;
-  }
-}
 
 /* ============================================================
    9. FORMS PAGE

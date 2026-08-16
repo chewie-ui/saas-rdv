@@ -1,580 +1,836 @@
 /* ══════════════════════════════════════════════════════════════════════════
-   PAGE DES FORMULES — /subscription
+   PAGE ABONNEMENT — valeurs reprises de la maquette, écran « Abonnement »
    ─────────────────────────────────────────────────────────────────────────
-   Réécrite de zéro. La version précédente avait accumulé trois langages
-   visuels superposés (dégradés, ombres colorées, un bleu hérité d'un ancien
-   plan « Business ») puis deux blocs de correctifs en `!important` pour les
-   annuler. Ici : une seule couleur d'accent — le vert —, des cartes blanches,
-   et la teinte réservée à la formule recommandée.
+   Couleurs, rayons, tailles et graisses sont recopiés au chiffre près depuis
+   les styles en ligne de la maquette (d'où les 13.5px / 11.5px / .03em qui
+   n'ont pas l'air de valeurs rondes).
 
-   Tout passe par les jetons de public/css/import.css : la page suit donc
-   automatiquement le thème sombre de l'application.
+   Les jetons de l'application ne sont pas ceux de la maquette : l'accent y est
+   #1e7a4e, la maquette dit #12a06e. Les valeurs vivent donc dans des variables
+   locales `--sb-*` posées sur `.sub` — un seul endroit à éditer, zéro fuite
+   vers le reste de l'admin.
 
-   ⚠ Certaines classes sont écrites par public/js/layouts/subscription.js et
-   n'apparaissent nulle part dans le Pug — .sub-promo-wrap et ses enfants,
-   .is-replaced, .sub-promo__status.valid/.invalid, .active sur la bascule.
-   Elles sont stylées ici, repérées par le commentaire « injecté par le JS ».
+   Le thème sombre reste supporté : le bloc `[data-theme="dark"] .sub` plus bas
+   ne remappe QUE les neutres (surfaces, contours, textes). L'accent et le vert
+   profond ne bougent pas — ce sont eux qui font reconnaître la marque, et un
+   admin qui travaille en sombre ne doit pas se retrouver avec une seule page
+   blanche au milieu de son outil.
    ═════════════════════════════════════════════════════════════════════════ */
 
-.subscription {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 4px 56px;
-  font-variant-numeric: tabular-nums;
+/* Les jetons portent sur `.sub` ET sur `.sub-modal` : les modales sont posées
+   en dehors de `.sub` (une modale rangée dans un conteneur en flex-column peut
+   se faire rogner par son contexte d'empilement). Sans cette seconde cible,
+   chaque `var(--sb-…)` y était invalide et les bordures retombaient sur
+   `currentColor` — la carte par défaut s'entourait de noir au lieu de vert. */
+.sub,
+.sub-modal {
+  --sb-accent: #12a06e;
+  --sb-accent-hover: #0d8a5e;
+  --sb-accent-deep: #0d7a54;
+  --sb-accent-soft: #e6f6ee;
 
-  /* `.main-wrapper` du layout admin est un conteneur flex en colonne : un
-     enfant y garde sa largeur MIN-CONTENT, et le tableau comparatif
-     (min-width: 640px) élargissait donc toute la page à 650px sur un écran de
-     375. Le couple min-width:0 + width:100% est nécessaire — `max-width` seul
-     ne contraint rien, et `max-width:100%` sur le tableau tourne en rond
-     puisque son parent a déjà été élargi par lui. */
-  min-width: 0;
-  width: 100%;
+  --sb-dark: #082a1c;          /* le vert profond des panneaux */
+  --sb-mint: #5fd39d;
+  --sb-dark-text: #d6e8de;
+  --sb-dark-lead: #9fc0b0;
+
+  --sb-ink: #141a17;           /* titres */
+  --sb-ink-2: #1a201d;         /* valeurs, libellés forts */
+  --sb-body: #3f474e;
+  --sb-body-2: #6b737b;
+  --sb-muted: #8c968f;
+  --sb-faint: #98a29b;
+
+  --sb-card: #fff;
+  --sb-bd: #e9ece9;            /* contour des cartes */
+  --sb-bd-ctrl: #e6eae7;       /* contour des contrôles */
+  --sb-bd-row: #f4f6f4;        /* filets internes */
+  --sb-bd-head: #eef0ee;
+  --sb-track: #eef1ef;         /* fond des jauges */
+  --sb-quiet: #f9fbfa;         /* fonds de champ */
+
+  --sb-warn: #b5843f;
+  --sb-danger: #c2554b;
+
+  --sb-r-hero: 18px;
+  --sb-r-card: 16px;
+  --sb-r-ctrl: 11px;
+  --sb-r-pill: 999px;
+
+  --sb-shadow: 0 1px 2px rgba(16, 40, 30, .03);
+  --sb-shadow-accent: 0 2px 8px rgba(18, 160, 110, .28);
+
+  font-variant-numeric: tabular-nums;
 }
 
-/* ── Bandeaux d'état ─────────────────────────────────────────────────────
-   Rouge et ambre sont sémantiques (échéance dépassée / imminente) : ils ne
-   comptent pas comme couleur d'accent et ne concurrencent pas le vert. */
+.sub {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+[data-theme="dark"] .sub,
+[data-theme="dark"] .sub-modal {
+  --sb-ink: var(--text-primary);
+  --sb-ink-2: var(--text-primary);
+  --sb-body: var(--text-secondary);
+  --sb-body-2: var(--text-secondary);
+  --sb-muted: var(--text-muted);
+  --sb-faint: var(--text-muted);
+
+  --sb-card: var(--surface-card);
+  --sb-bd: var(--border-light);
+  --sb-bd-ctrl: var(--border-light);
+  --sb-bd-row: var(--border-light);
+  --sb-bd-head: var(--border-light);
+  --sb-track: var(--surface-2);
+  --sb-quiet: var(--surface-2);
+  --sb-shadow: none;
+}
+
+/* ── Bandeaux d'état (expiré / bientôt expiré) ──────────────────────────── */
 .sub-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 22px;
+  border-radius: var(--sb-r-card);
+  border: 1px solid transparent;
+}
+.sub-alert--danger { background: #fdf1ef; border-color: #f3d9d4; }
+.sub-alert--warn { background: #fdf7ec; border-color: #f0e2c6; }
+[data-theme="dark"] .sub-alert--danger { background: rgba(194, 85, 75, .14); border-color: rgba(194, 85, 75, .34); }
+[data-theme="dark"] .sub-alert--warn { background: rgba(181, 132, 63, .14); border-color: rgba(181, 132, 63, .34); }
+
+.sub-alert__ico { flex: none; font-size: 22px; }
+.sub-alert--danger .sub-alert__ico { color: var(--sb-danger); }
+.sub-alert--warn .sub-alert__ico { color: var(--sb-warn); }
+.sub-alert__body { flex: 1; min-width: 0; }
+.sub-alert__title { margin: 0; font-size: 14px; font-weight: 700; line-height: 1.3; color: var(--sb-ink); }
+.sub-alert__sub { margin: 5px 0 0; font-size: 13px; line-height: 1.5; color: var(--sb-body-2); }
+.sub-alert__cta {
+  flex: none;
+  height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--sb-accent);
+  color: #fff;
+  font: 700 13px/1 var(--font-primary, "Plus Jakarta Sans", sans-serif);
+  cursor: pointer;
+}
+.sub-alert__cta:hover { background: var(--sb-accent-hover); }
+
+/* ── En-tête : le forfait, et ce qu'on peut en faire ────────────────────── */
+.sub-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 28px;
+  border-radius: var(--sb-r-hero);
+  background: var(--sb-card);
+  border: 1px solid var(--sb-bd);
+  box-shadow: var(--sb-shadow);
+}
+/* L'état abonné bascule sur le vert profond : la page dit d'abord « vous
+   payez », le reste n'est que du détail. */
+.sub-head--dark { background: var(--sb-dark); border-color: var(--sb-dark); box-shadow: none; }
+.sub-head__text { max-width: 560px; min-width: 0; }
+
+.sub-badge {
+  display: inline-block;
+  padding: 5px 11px;
+  border-radius: var(--sb-r-pill);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.sub-badge--muted { background: #f2f4f2; color: var(--sb-body-2); }
+[data-theme="dark"] .sub-badge--muted { background: var(--surface-2); color: var(--text-secondary); }
+.sub-badge--on { background: rgba(95, 211, 157, .16); color: var(--sb-mint); }
+
+.sub-head__title {
+  margin: 14px 0 0;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -.03em;
+  color: var(--sb-ink);
+}
+.sub-head--dark .sub-head__title { font-size: 30px; line-height: 1; color: #fff; }
+
+.sub-head__sub { margin: 10px 0 0; font-size: 14.5px; line-height: 1.6; color: var(--sb-body-2); }
+.sub-head--dark .sub-head__sub { font-size: 14px; line-height: 1.5; color: var(--sb-dark-lead); }
+
+.sub-head__scope {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sb-dark-lead);
+}
+.sub-head__scope .material-symbols-outlined { font-size: 16px; }
+
+.sub-head__actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ── Boutons ─────────────────────────────────────────────────────────────
+   Classes propres à la page : la maquette pose des boutons à rayon 11px et
+   ombre verte, là où `.sm-btn` porte le bouton de l'espace pro. Exception
+   §2 de CONVENTIONS.md (surface self-contained). */
+.sub-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 20px;
+  border: 1px solid transparent;
+  border-radius: var(--sb-r-ctrl);
+  font-family: var(--font-primary, "Plus Jakarta Sans", sans-serif);
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s, opacity .15s;
+}
+.sub-btn--block { width: 100%; }
+.sub-btn[disabled] { opacity: .55; cursor: not-allowed; }
+
+.sub-btn--primary {
+  height: 48px;
+  padding: 0 22px;
+  background: var(--sb-accent);
+  color: #fff;
+  font-size: 14px;
+  box-shadow: var(--sb-shadow-accent);
+}
+.sub-btn--primary:hover:not([disabled]) { background: var(--sb-accent-hover); }
+
+/* Bouton blanc sur fond vert profond. */
+.sub-btn--light { background: #fff; color: var(--sb-dark); }
+.sub-btn--light:hover { background: #e8f5ef; }
+
+/* Second bouton du bandeau sombre : présent sans concurrencer le blanc. */
+.sub-btn--onDark { background: rgba(255, 255, 255, .1); color: #fff; font-weight: 600; }
+.sub-btn--onDark:hover { background: rgba(255, 255, 255, .18); }
+
+.sub-btn--quiet {
+  height: 44px;
+  padding: 0 18px;
+  background: var(--sb-card);
+  border-color: var(--sb-bd-ctrl);
+  color: var(--sb-ink-2);
+  font-weight: 600;
+  font-size: 13px;
+}
+.sub-btn--quiet:hover { border-color: var(--sb-muted); }
+
+.sub-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sb-accent-deep);
+  cursor: pointer;
+}
+.sub-link:hover { text-decoration: underline; }
+.sub-link--danger { color: var(--sb-danger); }
+
+/* ── État gratuit : limites d'un côté, manques de l'autre ───────────────── */
+.sub-split {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.sub-card {
+  padding: 22px;
+  border-radius: var(--sb-r-card);
+  background: var(--sb-card);
+  border: 1px solid var(--sb-bd);
+  box-shadow: var(--sb-shadow);
+}
+.sub-card__title { margin: 0 0 4px; font-size: 15px; font-weight: 700; line-height: 1; letter-spacing: -.02em; color: var(--sb-ink); }
+.sub-card__sub { margin: 0 0 18px; font-size: 12.5px; line-height: 1.5; color: var(--sb-muted); }
+
+.sub-gauges { display: flex; flex-direction: column; gap: 16px; }
+.sub-gauge__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+.sub-gauge__label { font-size: 13px; font-weight: 600; line-height: 1; color: var(--sb-ink-2); }
+.sub-gauge__value { font-size: 12.5px; font-weight: 600; line-height: 1; color: var(--sb-faint); }
+/* Ambre à 80 %, rouge au plafond : la jauge doit alerter avant de bloquer. */
+.sub-gauge.is-warn .sub-gauge__value { color: var(--sb-warn); }
+.sub-gauge.is-full .sub-gauge__value { color: var(--sb-danger); }
+
+.sub-gauge__track { height: 7px; border-radius: 99px; background: var(--sb-track); overflow: hidden; }
+.sub-gauge__fill { height: 100%; border-radius: 99px; background: var(--sb-accent); transition: width .3s ease; }
+.sub-gauge.is-warn .sub-gauge__fill { background: var(--sb-warn); }
+.sub-gauge.is-full .sub-gauge__fill { background: var(--sb-danger); }
+
+.sub-unlock { padding: 22px; border-radius: var(--sb-r-card); background: var(--sb-dark); }
+.sub-unlock__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--sb-mint);
+}
+.sub-unlock__list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sub-unlock__list li {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--sb-dark-text);
+}
+/* Carré adouci de 17px, pas une pastille ronde : c'est la forme de la
+   maquette, et elle tient mieux une coche qu'un cercle de 17px. */
+.sub-unlock__ico {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+  border-radius: 5px;
+  background: rgba(95, 211, 157, .2);
+  color: var(--sb-mint);
+}
+.sub-unlock__ico .material-symbols-outlined { font-size: 12px; font-weight: 700; }
+.sub-unlock .sub-btn { margin-top: 20px; height: 44px; font-size: 13.5px; }
+.sub-unlock__offer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 12px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sb-mint);
+}
+.sub-unlock__offer .material-symbols-outlined { font-size: 15px; }
+
+.sub-empty {
+  padding: 40px;
+  border-radius: var(--sb-r-card);
+  background: var(--sb-card);
+  border: 1px solid var(--sb-bd);
+  box-shadow: var(--sb-shadow);
+  text-align: center;
+}
+.sub-empty__title { margin: 0; font-size: 15px; font-weight: 700; line-height: 1; letter-spacing: -.02em; color: var(--sb-ink); }
+.sub-empty__sub { margin: 10px auto 0; max-width: 380px; font-size: 13.5px; line-height: 1.6; color: var(--sb-muted); }
+
+/* ── État abonné : trois compteurs de consommation ──────────────────────── */
+.sub-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.sub-stat {
+  padding: 20px;
+  border-radius: var(--sb-r-card);
+  background: var(--sb-card);
+  border: 1px solid var(--sb-bd);
+  box-shadow: var(--sb-shadow);
+}
+.sub-stat__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sub-stat__label { font-size: 12.5px; font-weight: 500; line-height: 1; color: var(--sb-muted); }
+.sub-stat__pct { font-size: 12px; font-weight: 700; line-height: 1; color: var(--sb-accent-deep); }
+.sub-stat.is-warn .sub-stat__pct { color: var(--sb-warn); }
+.sub-stat.is-full .sub-stat__pct { color: var(--sb-danger); }
+.sub-stat__value {
+  margin-top: 14px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.03em;
+  color: var(--sb-ink);
+}
+.sub-stat .sub-gauge__track { margin-top: 14px; }
+.sub-stat.is-warn .sub-gauge__fill { background: var(--sb-warn); }
+.sub-stat.is-full .sub-gauge__fill { background: var(--sb-danger); }
+
+/* ── Historique de facturation ──────────────────────────────────────────── */
+.sub-invoices {
+  border-radius: var(--sb-r-card);
+  background: var(--sb-card);
+  border: 1px solid var(--sb-bd);
+  box-shadow: var(--sb-shadow);
+  overflow: hidden;
+}
+.sub-invoices__head {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--sb-bd-head);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -.02em;
+  color: var(--sb-ink);
+}
+.sub-invoice {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 20px;
+  align-items: center;
+  padding: 15px 22px;
+  border-bottom: 1px solid var(--sb-bd-row);
+}
+.sub-invoice:last-child { border-bottom: 0; }
+.sub-invoice__date { font-size: 13.5px; font-weight: 600; line-height: 1; color: var(--sb-ink-2); }
+.sub-invoice__plan { font-size: 13px; font-weight: 500; line-height: 1; color: var(--sb-muted); }
+.sub-invoice__amount { font-size: 13.5px; font-weight: 700; line-height: 1; color: var(--sb-ink-2); }
+.sub-invoice__pdf { font-size: 12.5px; font-weight: 600; line-height: 1; color: var(--sb-accent-deep); text-decoration: none; }
+.sub-invoice__pdf:hover { text-decoration: underline; }
+.sub-invoice__pdf.is-off { color: var(--sb-faint); cursor: default; }
+
+.sub-foot { padding-top: 6px; }
+
+/* ══ Modales ══════════════════════════════════════════════════════════════
+   `hidden` porte l'état fermé : pas de classe à oublier, et un lecteur
+   d'écran n'annonce pas une modale invisible.
+
+   NB : `.sub-modal` apparaît AUSSI tout en haut du fichier, dans la règle qui
+   déclare les jetons `--sb-*` (voir le commentaire ligne 20). Ce n'est pas un
+   doublon — les deux règles ne partagent aucune propriété : là-haut les
+   variables, ici la mise en page. Les séparer est voulu ; les fusionner
+   mélangerait le thème et le positionnement. */
+.sub-modal {
+  position: fixed;
+  inset: 0;
+  /* La maquette disait 60 — elle n'avait ni barre latérale ni bulle de
+     support. Dans l'admin, `.sidebar` monte à 1000 et `.support-widget` à
+     900 : à 60 la modale s'ouvrait DERRIÈRE eux. On se place au-dessus, mais
+     sous la boîte de confirmation partagée (dialog.css, 2 000 000) qui doit
+     pouvoir s'ouvrir par-dessus pour la résiliation. */
+  z-index: 1500;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 44px 24px;
+  overflow-y: auto;
+}
+.sub-modal[hidden] { display: none; }
+.sub-modal__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 26, 18, .45);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+.sub-modal__box {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  background: var(--sb-card);
+  border-radius: 20px;
+  box-shadow: 0 40px 80px -30px rgba(8, 26, 18, .5);
+}
+.sub-modal__box--wide { max-width: 980px; }
+
+.sub-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 26px 28px 0;
+}
+.sub-modal__title { margin: 0; font-size: 26px; font-weight: 800; line-height: 1.1; letter-spacing: -.03em; color: var(--sb-ink); }
+.sub-modal__box:not(.sub-modal__box--wide) .sub-modal__title { font-size: 24px; }
+.sub-modal__sub { margin: 9px 0 0; font-size: 14px; line-height: 1.5; color: var(--sb-muted); }
+.sub-modal__x {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--sb-bd-ctrl);
+  background: var(--sb-card);
+  color: #5f6b64;
+  cursor: pointer;
+}
+.sub-modal__x:hover { border-color: var(--sb-muted); }
+.sub-modal__x .material-symbols-outlined { font-size: 18px; }
+
+.sub-modal__body { padding: 20px 28px 0; }
+.sub-modal__eyebrow {
+  margin: 22px 0 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--sb-faint);
+}
+.sub-modal__body > .sub-modal__eyebrow:first-child { margin-top: 0; }
+
+.sub-modal__foot {
+  margin-top: 22px;
+  padding: 18px 28px;
+  border-top: 1px solid var(--sb-bd-head);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.sub-modal__foot--end { justify-content: flex-end; }
+.sub-modal__summary { margin: 0; flex: 1; min-width: 220px; font-size: 12.5px; font-weight: 500; line-height: 1.5; color: var(--sb-muted); }
+.sub-modal__btns { display: flex; gap: 10px; }
+.sub-modal__btns .sub-btn--primary { height: 44px; padding: 0 20px; font-size: 13px; }
+
+/* ── Bascule mensuel / annuel ───────────────────────────────────────────── */
+.sub-switch {
+  display: inline-flex;
+  padding: 5px;
+  border-radius: var(--sb-r-ctrl);
+  border: 1px solid var(--sb-bd-ctrl);
+  background: var(--sb-card);
+}
+.sub-switch__btn {
+  height: 34px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #5f6b64;
+  font: 600 12.5px/1 var(--font-primary, "Plus Jakarta Sans", sans-serif);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sub-switch__btn.active { background: var(--sb-dark); color: #fff; }
+[data-theme="dark"] .sub-switch__btn:not(.active) { color: var(--text-secondary); }
+
+/* ── Cartes de plan sélectionnables ─────────────────────────────────────── */
+.sub-picks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+  margin-top: 18px;
+}
+.sub-pick {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 20px;
+  text-align: left;
+  border: 1.5px solid var(--sb-bd);
+  border-radius: var(--sb-r-card);
+  background: var(--sb-card);
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.sub-pick:hover { border-color: #c9d5cd; }
+/* Sélection = contour accent + fond très pâle. Un seul plan sélectionné à la
+   fois : `aria-pressed` porte l'état, la classe ne fait que le peindre. */
+.sub-pick.is-picked { border-color: var(--sb-accent); background: #f7fcfa; }
+[data-theme="dark"] .sub-pick.is-picked { background: rgba(18, 160, 110, .1); }
+
+.sub-pick__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 24px; }
+.sub-pick__name { font-size: 17px; font-weight: 700; line-height: 1; letter-spacing: -.02em; color: var(--sb-ink); }
+.sub-pick__tag {
+  flex: none;
+  padding: 4px 9px;
+  border-radius: var(--sb-r-pill);
+  background: var(--sb-accent-soft);
+  color: var(--sb-accent-deep);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+.sub-pick__tag--muted { background: #f2f4f2; color: var(--sb-body-2); }
+[data-theme="dark"] .sub-pick__tag--muted { background: var(--surface-2); color: var(--text-secondary); }
+
+.sub-pick__pricing { margin-top: 14px; display: flex; align-items: baseline; gap: 6px; }
+.sub-pick__price { font-size: 32px; font-weight: 800; line-height: 1; letter-spacing: -.04em; color: var(--sb-ink); }
+.sub-pick__per { font-size: 12.5px; font-weight: 500; line-height: 1; color: var(--sb-faint); }
+/* Hauteur réservée : sans elle, la carte sans offre remontait de 16px et les
+   trois prix ne s'alignaient plus. */
+.sub-pick__note { margin-top: 8px; min-height: 16px; font-size: 11.5px; font-weight: 500; line-height: 1.4; color: var(--sb-accent-deep); }
+
+.sub-pick__feats {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 16px 0 0;
+  border-top: 1px solid #f0f2f0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+[data-theme="dark"] .sub-pick__feats { border-top-color: var(--border-light); }
+.sub-pick__feats li {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--sb-body);
+}
+.sub-pick__ok { flex: none; font-size: 15px; font-weight: 700; color: var(--sb-accent); }
+
+.sub-pick__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  margin-top: 18px;
+  border: 1px solid var(--sb-bd-ctrl);
+  /* 10px n'existe pas dans l'échelle du guide ; --sb-r-ctrl vaut 11px, comme
+     les autres contrôles de la page. */
+  border-radius: var(--sb-r-ctrl);
+  background: var(--sb-card);
+  color: var(--sb-ink-2);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Carte sélectionnée — état, pas action.
+   ─────────────────────────────────────────────────────────────────────────
+   Ce bloc était un aplat vert plein. Il entrait en concurrence directe avec
+   « Passer à Pro » en pied de modale : deux boutons verts pleins à l'écran,
+   dont un seul déclenche réellement le changement d'offre. Le guide tranche
+   (règle 3) : « un seul bouton vert par écran, sur l'action principale. »
+
+   Ici l'action principale est le pied de modale. Cette zone n'est pas un
+   bouton mais l'écho de la carte choisie : elle prend donc le traitement de
+   badge du guide — fond teinté, texte dans la version foncée, jamais saturé.
+   La bordure verte de la carte porte déjà la sélection ; le vert plein la
+   redisait une seconde fois, plus fort que l'action qui compte. */
+.sub-pick.is-picked .sub-pick__cta {
+  background: var(--sb-accent-soft);
+  border-color: var(--sb-accent);
+  color: var(--sb-accent-deep);
+}
+/* Le forfait déjà souscrit reste cliquable (on peut vouloir revenir dessus
+   après avoir cliqué ailleurs), mais ne se vend pas. */
+.sub-pick.is-current .sub-pick__cta { color: var(--sb-muted); }
+.sub-pick.is-current.is-picked .sub-pick__cta { color: var(--sb-accent-deep); }
+
+/* ── Code promo ─────────────────────────────────────────────────────────── */
+.sub-promo { margin-top: 20px; }
+.sub-promo__label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: #5f6b64;
+}
+[data-theme="dark"] .sub-promo__label { color: var(--text-secondary); }
+.sub-promo__field { display: flex; gap: 10px; flex-wrap: wrap; }
+.sub-promo__input {
+  flex: 1;
+  min-width: 200px;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--sb-bd-ctrl);
+  border-radius: var(--sb-r-ctrl);
+  background: var(--sb-quiet);
+  outline: none;
+  font: 500 13.5px/1 var(--font-primary, "Plus Jakarta Sans", sans-serif);
+  color: var(--sb-ink-2);
+  text-transform: uppercase;
+}
+.sub-promo__input:focus { border-color: var(--sb-accent); background: var(--sb-card); }
+.sub-promo__status { margin: 9px 0 0; min-height: 16px; font-size: 12.5px; font-weight: 500; line-height: 1.4; color: var(--sb-muted); }
+.sub-promo__status.is-ok { color: var(--sb-accent-deep); }
+.sub-promo__status.is-err { color: var(--sb-danger); }
+
+/* ── Moyens de paiement ─────────────────────────────────────────────────── */
+.sub-cards { margin-top: 14px; display: flex; flex-direction: column; gap: 9px; }
+.sub-cards__empty { margin: 0; padding: 16px; border-radius: 13px; border: 1px dashed var(--sb-bd-ctrl); font-size: 13px; color: var(--sb-muted); text-align: center; }
+
+.sub-card-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 0 0;
+  border-radius: 13px;
+  border: 1.5px solid var(--sb-bd);
+  background: var(--sb-card);
+}
+.sub-card-row.is-default { border-color: var(--sb-accent); background: #f7fcfa; }
+[data-theme="dark"] .sub-card-row.is-default { background: rgba(18, 160, 110, .1); }
+
+.sub-card-row__pick {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 26px;
-  padding: 14px 18px;
-  border: 1px solid transparent;
-  border-radius: var(--ds-r-lg, 14px);
-}
-.sub-alert__icon { flex: none; font-size: 22px; }
-.sub-alert__body { flex: 1 1 auto; min-width: 0; }
-.sub-alert__title { margin: 0; font-size: 14.5px; font-weight: 700; }
-.sub-alert__sub { margin: 2px 0 0; font-size: 13px; opacity: .85; }
-
-.sub-alert--expired {
-  background: var(--danger-pale, #fef2f2);
-  border-color: var(--danger-border, #fecaca);
-  color: var(--danger, #dc2626);
-}
-.sub-alert--warning {
-  background: #fffbeb;
-  border-color: #fde68a;
-  color: #92400e;
-}
-
-/* ⚠ Les COULEURS du bouton ne se règlent pas ici : btn-normalize.css possède
-   déjà `.sub-alert__cta` et lui impose `color: var(--danger) !important`
-   (fond rouge pâle, texte rouge, survol inversé). On ne lui dispute que la
-   géométrie. Une première version peignait le fond en `currentColor` en
-   croyant hériter du bandeau : le `!important` gardait le texte rouge, et le
-   bouton sortait rouge sur rouge — illisible. */
-.sub-alert__cta { flex: none; }
-
-/* Sur le bandeau ambre, en revanche, le rouge du normaliseur détonne : c'est
-   une échéance qui approche, pas une erreur. Le `!important` est ici obligé —
-   c'est le seul moyen de reprendre la main sur celui de btn-normalize. */
-.sub-alert--warning .sub-alert__cta {
-  background: #92400e;
-  border-color: #92400e;
-  color: #fffbeb !important;
-}
-.sub-alert--warning .sub-alert__cta:hover:not(:disabled) {
-  background: #78350f;
-  border-color: #78350f;
-  color: #fffbeb !important;
-}
-
-/* ── Titre ───────────────────────────────────────────────────────────────
-   Colonne flex et non `text-align` : la pastille d'établissement et la
-   bascule sont deux inline-flex, elles se collaient sur une même ligne. */
-.sub-hero {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 40px 0 34px;
-  text-align: center;
-}
-.sub-hero__title {
-  margin: 0 0 10px;
-  font-size: clamp(26px, 3.4vw, 36px);
-  font-weight: 800;
-  letter-spacing: -.03em;
-  line-height: 1.1;
-  text-wrap: balance;
-  color: var(--text-primary);
-}
-.sub-hero__sub {
-  margin: 0;
-  max-width: 52ch;
-  font-size: 14.5px;
-  line-height: 1.55;
-  color: var(--text-secondary);
-}
-
-.sub-hero__scope {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin: 18px 0 0;
-  padding: 6px 14px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-pill, 999px);
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-.sub-hero__scope .material-symbols-outlined { font-size: 17px; color: var(--text-muted); }
-.sub-hero__scope strong { color: var(--text-primary); font-weight: 650; }
-
-.sub-toggle {
-  display: inline-flex;
-  gap: 3px;
-  margin-top: 20px;
-  padding: 4px;
-  background: var(--surface-2);
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-pill, 999px);
-}
-.sub-toggle__btn {
-  padding: 8px 20px;
-  border: 0;
-  border-radius: var(--ds-r-pill, 999px);
+  padding: 14px;
   background: none;
-  font: inherit;
-  font-size: 13.5px;
-  font-weight: 650;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background .15s, color .15s;
-}
-/* `.active` est posée et retirée par subscription.js — injecté par le JS. */
-.sub-toggle__btn.active { background: var(--accent); color: #fff; }
-.sub-toggle__save { margin-left: 5px; font-size: 11.5px; font-weight: 700; opacity: .85; }
-
-.sub-hero__trial {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 18px 0 0;
-  padding: 9px 16px;
-  max-width: 68ch;
-  border-radius: var(--ds-r-md, 10px);
-  background: var(--accent-soft);
-  font-size: 13px;
-  font-weight: 550;
-  line-height: 1.45;
-  color: var(--accent);
+  border: 0;
+  font-family: inherit;
   text-align: left;
+  cursor: pointer;
 }
-.sub-hero__trial .material-symbols-outlined { flex: none; font-size: 18px; }
-
-/* ── Cartes ──────────────────────────────────────────────────────────────
-   Seule la formule recommandée est teintée, et sur toute sa hauteur. Une
-   carte teintée sur trois se remarque ; trois cartes teintées ne se
-   remarquent plus — et un en-tête coloré sur corps blanc coupe la carte en
-   deux. */
-.sub-plans {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-  align-items: stretch;
-  margin-top: 36px;
+.sub-card-row__radio {
+  flex: none;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  border: 1.5px solid #d6dade;
+  background: var(--sb-card);
 }
-
-.sub-plan {
-  position: relative;
+.sub-card-row.is-default .sub-card-row__radio {
+  border-color: var(--sb-accent);
+  /* Le point central est peint par le dégradé plutôt que par un enfant : une
+     coche de plus dans le DOM pour 7px de rond n'apporte rien. */
+  background: radial-gradient(circle, var(--sb-accent) 0 3.5px, var(--sb-card) 3.5px);
+}
+.sub-card-row__brand {
+  flex: none;
   display: flex;
-  flex-direction: column;
-  padding: 28px 24px 24px;
-  background: var(--bg-surface, #fff);
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-lg, 14px);
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 30px;
+  border-radius: 6px;
+  /* Neutre par défaut : une carte de marque inconnue ne doit pas emprunter le
+     bleu de Visa. */
+  background: var(--sb-ink-2);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: .04em;
+  text-transform: uppercase;
 }
-.sub-plan--premium {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-}
-
-/* Formule en cours : filet plus marqué. « Sur quelle formule suis-je ? » est
-   la première question qu'on se pose ici, et une pastille dans un coin se
-   repère mal ; le contour, lui, se voit avant même d'avoir lu. */
-.sub-plan--current { border-color: var(--text-secondary); }
-.sub-plan--premium.sub-plan--current { border-color: var(--accent); }
-
-.sub-plan__pill {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  padding: 5px 11px;
-  border-radius: var(--ds-r-pill, 999px);
-  font-size: 11px;
+.sub-card-row__brand.is-visa { background: #1a1f71; }
+.sub-card-row__brand.is-mastercard { background: #1a201d; }
+.sub-card-row__brand.is-amex { background: #1f72cd; }
+.sub-card-row__info { flex: 1; min-width: 0; }
+.sub-card-row__num { display: block; font-size: 13.5px; font-weight: 700; line-height: 1.2; color: var(--sb-ink-2); }
+.sub-card-row__exp { display: block; margin-top: 4px; font-size: 12px; font-weight: 500; line-height: 1.2; color: var(--sb-faint); }
+.sub-card-row__flag {
+  flex: none;
+  padding: 4px 9px;
+  border-radius: var(--sb-r-pill);
+  background: var(--sb-accent-soft);
+  color: var(--sb-accent-deep);
+  font-size: 10.5px;
   font-weight: 700;
+  line-height: 1;
   white-space: nowrap;
 }
-.sub-plan__pill--reco { background: var(--accent); color: #fff; }
-.sub-plan__pill--muted {
-  background: var(--surface-2);
-  border: 1px solid var(--border-light);
-  color: var(--text-secondary);
-}
-
-.sub-plan__name {
-  margin: 0;
-  padding-right: 100px; /* la pastille flotte au-dessus du coin droit */
-  font-size: 19px;
-  font-weight: 750;
-  letter-spacing: -.02em;
-  color: var(--text-primary);
-}
-.sub-plan__for { margin: 3px 0 0; font-size: 13px; color: var(--text-muted); }
-
-/* Parent du prix : c'est ici que le JS insère .sub-promo-wrap. D'où le
-   `flex-wrap` — sans lui, le bloc promo se tasserait sur la ligne du prix. */
-.sub-plan__pricing {
+.sub-card-row__del {
+  flex: none;
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px;
-  margin-top: 22px;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--sb-faint);
+  cursor: pointer;
 }
-.sub-plan__price {
-  font-size: 40px;
-  font-weight: 800;
-  letter-spacing: -.035em;
-  line-height: 1;
-  color: var(--text-primary);
-}
-.sub-plan__per { font-size: 13.5px; font-weight: 550; color: var(--text-muted); }
+.sub-card-row__del:hover { background: #fdf1ef; color: var(--sb-danger); }
+.sub-card-row__del .material-symbols-outlined { font-size: 18px; }
 
-.sub-plan__payback {
-  margin: 16px 0 0;
-  padding: 10px 12px;
-  border-radius: var(--ds-r-md, 10px);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1.45;
-  /* Vert foncé et non `--accent` : sur son propre fond teinté, l'accent ne
-     donnait que 3.9:1. C'est la phrase qui justifie la dépense — elle doit se
-     lire, pas se deviner. */
-  color: var(--accent-hover, #185f3d);
-}
-
-.sub-plan__sep { height: 1px; margin: 22px 0 18px; background: var(--border-light); }
-.sub-plan--premium .sub-plan__sep { background: color-mix(in srgb, var(--accent) 28%, transparent); }
-
-.sub-plan__eyebrow {
-  margin: 0 0 12px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .07em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-/* Pousse les boutons en bas : les trois cartes s'alignent quelle que soit la
-   longueur de leur liste. */
-.sub-plan__grow { flex: 1 1 auto; }
-
-.sub-plan__feats {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.sub-addcard {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  margin-top: 9px;
+  padding: 14px;
+  border-radius: 13px;
+  border: 1.5px dashed #cfdad3;
+  background: var(--sb-quiet);
+  color: var(--sb-accent-deep);
+  font: 600 13px/1 var(--font-primary, "Plus Jakarta Sans", sans-serif);
+  cursor: pointer;
 }
-.sub-plan__feats li {
+.sub-addcard:hover { border-color: var(--sb-accent); }
+.sub-addcard .material-symbols-outlined { font-size: 18px; }
+[data-theme="dark"] .sub-addcard { border-color: var(--border-medium); }
+
+.sub-newcard {
+  margin-top: 14px;
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--sb-quiet);
+  border: 1px solid var(--sb-bd-ctrl);
+}
+.sub-newcard[hidden] { display: none; }
+.sub-newcard__field {
+  padding: 13px 14px;
+  border: 1px solid #e0e3e5;
+  border-radius: var(--sb-r-ctrl);
+  background: var(--sb-card);
+}
+[data-theme="dark"] .sub-newcard__field { border-color: var(--border-light); }
+.sub-newcard__err { margin: 9px 0 0; min-height: 15px; font-size: 12.5px; font-weight: 500; color: var(--sb-danger); }
+.sub-newcard__btns { display: flex; justify-content: flex-end; gap: 10px; margin-top: 13px; }
+
+.sub-billto {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 13px;
+  border: 1px solid var(--sb-bd-ctrl);
+  background: var(--sb-quiet);
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  font-size: 13.5px;
-  line-height: 1.45;
-  color: var(--text-secondary);
+  justify-content: space-between;
+  gap: 16px;
 }
-.sub-plan__feats li.is-off { color: var(--text-muted); }
-.sub-plan__ok { flex: none; font-size: 17px; color: var(--accent); }
-.sub-plan__lock { flex: none; font-size: 16px; color: var(--text-muted); }
+.sub-billto__text { font-size: 13px; font-weight: 500; line-height: 1.6; color: var(--sb-body); }
 
-/* ── Boutons des cartes ──────────────────────────────────────────────────
-   Noir partout, vert sur la seule formule recommandée : c'est ce contraste
-   qui désigne le choix, pas trois boutons de trois couleurs. */
-.sub-plan__cta { margin-top: 22px; }
-.sub-plan__btn {
-  display: block;
-  width: 100%;
-  padding: 13px 18px;
-  border: 1px solid transparent;
-  border-radius: var(--ds-r-md, 10px);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 650;
-  text-align: center;
-  cursor: pointer;
-  transition: background .15s, border-color .15s;
-}
-.sub-plan__btn--accent { background: var(--accent); color: #fff; }
-.sub-plan__btn--accent:hover { background: var(--accent-hover); }
-.sub-plan__btn--dark { background: #14181d; color: #fff; }
-.sub-plan__btn--dark:hover { background: #000; }
-.sub-plan__btn--ghost {
-  background: transparent;
-  border-color: var(--border-light);
-  color: var(--text-secondary);
-}
-.sub-plan__btn--ghost:hover { background: var(--surface-2); color: var(--text-primary); }
-.sub-plan__btn--quiet {
-  background: transparent;
-  border-color: var(--border-light);
-  color: var(--text-muted);
-  cursor: default;
+/* ══ Responsive ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .sub-split { grid-template-columns: 1fr; }
+  .sub-stats { grid-template-columns: 1fr; }
+  .sub-picks { grid-template-columns: 1fr; }
+  .sub-modal { padding: 20px 14px; }
+  .sub-modal__head, .sub-modal__body { padding-left: 20px; padding-right: 20px; }
+  .sub-modal__foot { padding-left: 20px; padding-right: 20px; }
 }
 
-.sub-plan__links { display: flex; justify-content: center; margin-top: 12px; }
-.sub-plan__link {
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-.sub-plan__link:hover { color: var(--text-primary); }
-.sub-plan__link--danger { color: var(--danger, #dc2626); }
-.sub-plan__link--danger:hover { filter: brightness(.85); }
+@media (max-width: 620px) {
+  .sub-head { padding: 22px 20px; }
+  .sub-head__actions { width: 100%; }
+  .sub-head__actions .sub-btn { flex: 1; }
+  .sub-head__title { font-size: 24px; }
+  .sub-head--dark .sub-head__title { font-size: 25px; }
 
-.sub-plan__left {
-  margin: 10px 0 0;
-  font-size: 12.5px;
-  text-align: center;
-  color: var(--text-muted);
-}
-.sub-plan__left strong { color: var(--text-primary); }
-.sub-plan__left.is-expiring, .sub-plan__left.is-expiring strong { color: #b45309; }
-.sub-plan__left.is-expired,  .sub-plan__left.is-expired  strong { color: var(--danger, #dc2626); }
+  /* Le montant et le lien PDF passent sous la date : quatre colonnes sur
+     375px tronquaient le libellé du reçu. */
+  .sub-invoice { grid-template-columns: 1fr auto; gap: 6px 14px; }
+  .sub-invoice__plan { grid-column: 1; }
 
-.sub-plan__offer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin: 10px 0 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--accent);
-}
-.sub-plan__offer .material-symbols-outlined { font-size: 15px; }
-
-/* ── Prix promotionnel — injecté par le JS ───────────────────────────────
-   subscription.js remplace le prix par ce bloc quand une offre s'applique.
-   `.is-replaced` masque le prix plein ; il reste dans le DOM parce que le JS
-   relit son texte pour composer la ligne « puis 19€ / mois ». */
-.sub-plan__price.is-replaced { display: none; }
-
-.sub-promo-wrap {
-  flex: 1 0 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.sub-promo-wrap__row { display: flex; align-items: baseline; gap: 10px; }
-.sub-promo-wrap__old {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-decoration: line-through;
-}
-.sub-promo-wrap__new {
-  font-size: 40px;
-  font-weight: 800;
-  letter-spacing: -.035em;
-  line-height: 1;
-  color: var(--accent);
-}
-.sub-promo-wrap__badge {
-  align-self: flex-start;
-  padding: 5px 12px;
-  border-radius: var(--ds-r-pill, 999px);
-  background: var(--accent);
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-}
-.sub-promo-wrap__per { font-size: 13.5px; font-weight: 550; color: var(--text-muted); }
-.sub-promo-wrap__note { font-size: 12px; color: var(--text-muted); }
-
-/* Le suffixe d'origine est masqué dès qu'un bloc promo occupe la ligne : le
-   JS en a replacé une copie à côté du prix remisé (branche « remise »), ou l'a
-   intégré à la note « puis 19€ / mois » (branche « essai »). Sans cette règle
-   il restait affiché seul sous la note, détaché de tout montant. */
-.sub-plan__pricing:has(.sub-promo-wrap) .sub-plan__per { display: none; }
-
-/* ── Tableau comparatif ──────────────────────────────────────────────────
-   La colonne recommandée est teintée sur toute sa hauteur : c'est ce qui
-   rattache le tableau à la carte, et ce qui le fait lire en colonnes. */
-.sub-compare { margin-top: 64px; }
-.sub-compare__title {
-  margin: 0 0 18px;
-  font-size: 22px;
-  font-weight: 750;
-  letter-spacing: -.02em;
-  color: var(--text-primary);
-}
-/* Le tableau défile dans son propre conteneur : la page, elle, ne part
-   jamais en travers. */
-.sub-compare__wrap {
-  overflow-x: auto;
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-lg, 14px);
-}
-.sub-compare__table {
-  width: 100%;
-  min-width: 640px;
-  border-collapse: collapse;
-  background: var(--bg-surface, #fff);
-}
-
-.sub-compare__table thead th {
-  padding: 18px 16px;
-  text-align: center;
-  vertical-align: bottom;
-  font-weight: 700;
-}
-.sub-compare__table thead th:first-child { text-align: left; }
-.sub-compare__plan {
-  display: block;
-  font-size: 15px;
-  letter-spacing: -.01em;
-  color: var(--text-primary);
-}
-.sub-compare__price {
-  display: block;
-  margin-top: 2px;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-.sub-compare__th--pro .sub-compare__plan { color: var(--accent); }
-
-.sub-compare__table tbody td {
-  padding: 13px 16px;
-  font-size: 13.5px;
-  color: var(--text-secondary);
-}
-.sub-compare__table tbody td:not(:first-child) { text-align: center; }
-.sub-compare__table tbody tr + tr td { border-top: 1px solid var(--border-light); }
-
-.sub-compare__group td {
-  padding: 12px 16px 9px;
-  background: var(--surface-2);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .07em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.sub-compare__table th:nth-child(3),
-.sub-compare__table tbody td:nth-child(3) { background: var(--accent-soft); }
-.sub-compare__group td:nth-child(3) {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
-}
-
-/* Aucun surlignage au survol : le tableau n'est pas cliquable, et la bande
-   grise traversait la colonne teintée du Pro en l'effaçant. */
-
-.sub-compare__yes {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1.5px solid var(--accent);
-  color: var(--accent);
-}
-.sub-compare__yes .material-symbols-outlined { font-size: 14px; }
-.sub-compare__no { color: var(--text-muted); }
-.sub-compare__val { font-weight: 650; color: var(--text-primary); }
-
-/* ── Code promo ──────────────────────────────────────────────────────────
-   Saisi à la main, pour un code reçu par e-mail. Les offres mises en avant
-   par le superadmin, elles, s'appliquent toutes seules plus haut. */
-.sub-promo {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px 24px;
-  margin-top: 40px;
-  padding: 20px 22px;
-  background: var(--surface-2);
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-lg, 14px);
-}
-.sub-promo__head { display: flex; align-items: center; gap: 12px; flex: 1 1 260px; }
-.sub-promo__icon { font-size: 22px; color: var(--accent); }
-.sub-promo__text { display: flex; flex-direction: column; }
-.sub-promo__title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
-.sub-promo__desc { font-size: 12.5px; color: var(--text-muted); }
-
-.sub-promo__field { display: flex; gap: 8px; flex: 0 1 360px; }
-.sub-promo__input {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: var(--ds-h-md, 38px);
-  padding: 0 12px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-md, 10px);
-  background: var(--bg-surface, #fff);
-  font: inherit;
-  font-size: 13.5px;
-  color: var(--text-primary);
-  text-transform: uppercase;
-}
-.sub-promo__input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: var(--ds-ring);
-}
-
-/* `.valid` / `.invalid` sont posées par subscription.js après la réponse du
-   serveur — injecté par le JS. Le paragraphe reste vide, donc invisible,
-   tant qu'aucun code n'a été soumis. */
-.sub-promo__status {
-  flex: 1 0 100%;
-  margin: 0;
-  font-size: 12.5px;
-}
-.sub-promo__status:empty { display: none; }
-.sub-promo__status.valid { color: var(--accent); font-weight: 600; }
-.sub-promo__status.invalid { color: var(--danger, #dc2626); font-weight: 600; }
-
-.sub-foot {
-  margin: 32px 0 0;
-  font-size: 12.5px;
-  text-align: center;
-  color: var(--text-muted);
-}
-
-/* ── Responsive ──────────────────────────────────────────────────────────
-   Sous 980 px les trois cartes ne tiennent plus côte à côte sans écraser les
-   listes ; on empile, en gardant la carte recommandée en premier pour
-   qu'elle reste la première lue au pouce. */
-@media (max-width: 980px) {
-  .sub-plans { grid-template-columns: 1fr; max-width: 460px; margin-inline: auto; }
-  .sub-plan--premium { order: -1; }
-}
-
-@media (max-width: 700px) {
-  .sub-hero { padding: 28px 0 26px; }
-  .sub-alert { flex-wrap: wrap; }
-  .sub-alert__cta { width: 100%; }
-  .sub-compare { margin-top: 44px; }
-  .sub-compare__title { font-size: 19px; }
-  .sub-promo__field { flex: 1 1 100%; }
+  .sub-modal__title { font-size: 22px; }
+  .sub-modal__foot { flex-direction: column; align-items: stretch; }
+  .sub-modal__btns { justify-content: stretch; }
+  .sub-modal__btns .sub-btn { flex: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sub-toggle__btn, .sub-plan__btn { transition: none; }
+  .sub-btn, .sub-pick, .sub-gauge__fill { transition: none; }
 }

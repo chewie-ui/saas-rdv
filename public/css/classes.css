@@ -5,7 +5,9 @@
   gap: 8px;
   height: 38px;
   padding: 0 16px;
-  border-radius: var(--r-sm, 8px);
+  /* Rayon de l'application. Le site public le passe en pilule juste en
+     dessous — c'est la règle 4 du guide de style. */
+  border-radius: var(--bs-r-ctrl, 12px);
   font: 600 14px var(--font-primary);
   border: 1px solid transparent;
   cursor: pointer;
@@ -87,12 +89,12 @@
   /* White variant — for dark/colored backgrounds */
   &.sm-btn--white {
     background: #fff;
-    color: #0f4c2a;
+    color: var(--bs-green-deep);
     border-color: transparent;
     box-shadow: 0 3px 12px rgba(0,0,0,0.15);
     &:hover {
-      background: #f0fdf4;
-      color: #0f4c2a;
+      background: var(--success-pale);
+      color: var(--bs-green-deep);
       transform: translateY(-1px);
     }
   }
@@ -177,14 +179,14 @@
   border-color: var(--accent);
 }
 .btn-upgrade-business {
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--info-pale);
+  color: var(--info);
   border: 1.5px solid #bfdbfe;
 }
 .btn-upgrade-business:hover {
-  background: #2563eb;
+  background: var(--info);
   color: #fff;
-  border-color: #2563eb;
+  border-color: var(--info);
 }
 
 /* ===== Pills / badges ===== */
@@ -1267,3 +1269,17 @@
 .h-card     { font: 700 16px / 1.3 var(--font); color: var(--ink, #12171b); margin: 0; }
 .t-muted    { color: var(--muted, #7a7478); }
 .t-mono     { font-family: var(--mono); }
+/* ══════════════════════════════════════════════════════════════════════════
+   RÈGLE 4 DU GUIDE — deux formes de boutons
+   ─────────────────────────────────────────────────────────────────────────
+   « Le site public utilise des pilules (rayon 999px), l'espace pro des
+   rayons de 11-12px. »
+
+   `.sm-btn` ci-dessus porte le rayon de l'application (12px). Les 18 pages
+   du site vitrine passent par views/layouts/index.pug, qui pose
+   `body.site-public` : elles seules deviennent des pilules.
+
+   C'est la distinction qui manquait lors de la refonte de l'agenda, où des
+   pilules avaient été posées sur un écran de l'espace pro.
+   ══════════════════════════════════════════════════════════════════════════ */
+.site-public .sm-btn { border-radius: var(--bs-r-pill, 999px); }

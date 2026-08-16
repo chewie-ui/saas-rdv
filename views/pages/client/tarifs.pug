@@ -1,0 +1,268 @@
+extends ../../layouts/index
+
+//- ═══════════════════════════════════════════════════════════════════════════
+    TARIFS — page publique
+    ───────────────────────────────────────────────────────────────────────────
+    Structure et mesures reprises de la maquette « BranShee » (section Tarifs,
+    maquette-branshee-source.html lignes 760-870) : héros, bascule mensuel /
+    annuel, trois cartes, tableau comparatif, add-ons, questions, bandeau final.
+
+    ── CE QUI A ÉTÉ CORRIGÉ PAR RAPPORT À LA MAQUETTE ────────────────────────
+    La maquette présentait « Paiement en ligne Stripe » comme un avantage Pro
+    (— / ✓ / ✓). C'est faux : utils/planLimits.js verrouille SEIZE
+    fonctionnalités, et le paiement en ligne n'en fait pas partie. Il est donc
+    donné pour ce qu'il est — disponible sur tous les forfaits. Annoncer une
+    restriction inexistante sur une page de prix est un engagement commercial
+    qu'on ne peut pas tenir dans l'autre sens.
+
+    ── SOURCE DES CHIFFRES ───────────────────────────────────────────────────
+    Prix et add-ons : `_forfaits` / `_addons` / `_annuel`, posés par la route
+    depuis utils/tarifs.js. Aucun montant n'est écrit en dur dans ce fichier.
+    Les colonnes du tableau reflètent utils/planLimits.js, ligne à ligne.
+    ═══════════════════════════════════════════════════════════════════════════
+
+block links
+    link(rel="stylesheet", href="/css/layouts/client/tarifs.css")
+
+block content
+    main.tp
+        .tp__wrap
+
+            //- ── Héros ────────────────────────────────────────────────────
+            header.tp-hero
+                h1.tp-hero__title Un plan qui suit votre activité
+                p.tp-hero__lead
+                    | Commencez gratuitement, sans carte bancaire. Passez à Pro le jour
+                    | où votre agenda le demande — et repartez en arrière quand vous voulez.
+
+            //- Bascule mensuel / annuel. Sans JavaScript, le mensuel reste
+            //- affiché : c'est le prix par défaut, donc la page garde du sens.
+            .tp-toggle(role="group" aria-label="Période de facturation")
+                button.tp-toggle__btn.is-on(type="button" data-periode="mois" aria-pressed="true") Mensuel
+                button.tp-toggle__btn(type="button" data-periode="an" aria-pressed="false") Annuel · −20%
+
+            //- ── Les trois forfaits ───────────────────────────────────────
+            -
+                var _plans = [
+                    {
+                        cle: 'basic', nom: 'Amateur', tag: 'Gratuit', tagType: 'muted',
+                        desc: 'Pour démarrer : une page publique et des réservations illimitées.',
+                        note: 'Sans carte bancaire', noteAn: 'Sans carte bancaire',
+                        cta: 'Commencer gratuitement', ctaHref: '/register', ctaType: 'ink',
+                        feats: [
+                            'Réservations illimitées',
+                            'Page publique branshee.com/vous',
+                            "Jusqu'à 5 prestations",
+                            '1 établissement',
+                            'Confirmations par e-mail',
+                            'Paiement en ligne Stripe'
+                        ]
+                    },
+                    {
+                        cle: 'pro', nom: 'Pro', tag: 'Populaire', tagType: 'accent', vedette: true,
+                        desc: "Pour les indépendants actifs qui veulent moins d'absences.",
+                        cta: 'Choisir Pro', ctaHref: '/register', ctaType: 'accent',
+                        feats: [
+                            'Prestations illimitées',
+                            "Jusqu'à 5 employés · 2 collaborateurs",
+                            'Rappels e-mail + 30 SMS par mois',
+                            'Synchronisation Google Agenda',
+                            'Page personnalisable & liens sociaux',
+                            'Établissements illimités'
+                        ]
+                    },
+                    {
+                        cle: 'business', nom: 'Pro+', tag: 'Équipes', tagType: 'muted',
+                        desc: 'Pour les salons et les équipes multi-établissements.',
+                        note: 'Tout Pro, sans la marque BranShee',
+                        cta: 'Choisir Pro+', ctaHref: '/register', ctaType: 'ink',
+                        feats: [
+                            'Tout ce que Pro contient',
+                            "Jusqu'à 10 employés · 10 collaborateurs",
+                            '100 SMS inclus par mois',
+                            'Mon Site : mini-site vitrine',
+                            'URL personnalisée incluse',
+                            'E-mails sans marque BranShee'
+                        ]
+                    }
+                ];
+
+            .tp-plans
+                each p in _plans
+                    - var f = _forfaits[p.cle]
+                    - var an = _annuel[p.cle]
+                    article.tp-plan(class=p.vedette ? 'tp-plan--star' : '')
+                        .tp-plan__head
+                            span.tp-plan__name= p.nom
+                            span.tp-plan__tag(class='tp-plan__tag--' + p.tagType)= p.tag
+                        p.tp-plan__desc= p.desc
+
+                        .tp-plan__pricing
+                            //- data-mois / data-an : le script réécrit ce seul
+                            //- nœud à la bascule, jamais la carte entière.
+                            span.tp-plan__price(
+                                data-mois=String(f.mensuel)
+                                data-an=String(f.annuelParMois)
+                            ) #{f.mensuel} €
+                            span.tp-plan__per(
+                                data-per-mois="/mois"
+                                data-per-an=(f.mensuel === 0 ? "/mois" : "/mois, engagement annuel")
+                            ) /mois
+
+                        //- Ligne de note : hauteur réservée pour que les trois
+                        //- cartes gardent le même alignement, note ou pas.
+                        .tp-plan__note(
+                            data-note-an=(an ? 'Soit ' + an.total + ' € par an au lieu de ' + an.plein + ' €' : (p.noteAn || p.note || ''))
+                        )
+                            if p.cle === 'pro'
+                                | 1ᵉʳ mois offert, puis #{f.mensuel} €/mois
+                            else if p.note
+                                = p.note
+
+                        a.tp-plan__cta(href=p.ctaHref class='tp-plan__cta--' + p.ctaType)= p.cta
+                        a.tp-plan__alt(href="/contact") Nous contacter
+
+                        ul.tp-plan__feats
+                            each c in p.feats
+                                li.tp-plan__feat
+                                    span.tp-plan__check(aria-hidden="true") ✓
+                                    span= c
+
+            //- ── Tableau comparatif ───────────────────────────────────────
+            //- Chaque ligne reflète utils/planLimits.js. En modifier une ici
+            //- sans y toucher là-bas ferait mentir la page.
+            -
+                var _table = [
+                    { titre: 'Agenda & réservation', lignes: [
+                        { l: 'Réservations en ligne 24h/24',                    a: '✓', p: '✓', b: '✓' },
+                        { l: 'Réservations par mois',                           a: 'Illimité', p: 'Illimité', b: 'Illimité' },
+                        { l: 'Prestations au catalogue',                        a: '5', p: 'Illimité', b: 'Illimité' },
+                        { l: 'Plages, temps de battement, durée de créneau',    a: '—', p: '✓', b: '✓' },
+                        { l: 'Annuler / supprimer / restaurer un rendez-vous',  a: '—', p: '✓', b: '✓' },
+                        { l: 'Synchronisation Google Agenda',                   a: '—', p: '✓', b: '✓' }
+                    ]},
+                    { titre: 'Équipe & établissements', lignes: [
+                        { l: 'Employés',                    a: '—', p: '5', b: '10' },
+                        { l: 'Collaborateurs inclus',       a: '—', p: '2', b: '10' },
+                        { l: 'Sièges supplémentaires',      a: '—', p: '+' + _addons.collaborateur.mensuel + ' €/mois', b: '+' + _addons.collaborateur.mensuel + ' €/mois' },
+                        { l: 'Établissements',              a: '1', p: 'Illimité', b: 'Illimité' }
+                    ]},
+                    { titre: 'Clients & communications', lignes: [
+                        { l: 'Confirmations par e-mail',                    a: '✓', p: '✓', b: '✓' },
+                        { l: 'Rappels automatiques 24h avant',              a: '—', p: '✓', b: '✓' },
+                        { l: 'Rappels SMS inclus par mois',                 a: '—', p: '30', b: '100' },
+                        { l: 'Questions au formulaire de réservation',      a: '1', p: '5', b: '10' },
+                        { l: 'Fiches et historique clients',                a: '✓', p: '✓', b: '✓' }
+                    ]},
+                    { titre: 'Page publique & marque', lignes: [
+                        { l: 'Page de réservation partageable',             a: '✓', p: '✓', b: '✓' },
+                        { l: 'Personnalisation (couleurs, police, logo)',   a: '—', p: '✓', b: '✓' },
+                        { l: 'Liens réseaux sociaux',                       a: '—', p: '✓', b: '✓' },
+                        { l: 'Mon Site : mini-site vitrine',                a: '—', p: '—', b: '✓' },
+                        { l: 'URL personnalisée',                           a: 'Option', p: 'Option', b: 'Incluse' },
+                        { l: 'E-mails sans marque BranShee',                a: '—', p: '—', b: '✓' }
+                    ]},
+                    { titre: 'Paiements', lignes: [
+                        //- Disponible partout : aucun verrou de forfait ne
+                        //- porte sur le paiement en ligne (cf. planLimits.js).
+                        { l: 'Paiement en ligne Stripe',                    a: '✓', p: '✓', b: '✓' },
+                        { l: 'Paiement sur place',                          a: '✓', p: '✓', b: '✓' },
+                        { l: 'Sans engagement, résiliable en un clic',      a: '✓', p: '✓', b: '✓' }
+                    ]}
+                ];
+
+            h2.tp-h2 Comparer les offres
+            .tp-cmp
+                .tp-cmp__head
+                    .tp-cmp__cell
+                    each cle in ['basic', 'pro', 'business']
+                        .tp-cmp__col(class=cle === 'pro' ? 'is-star' : '')
+                            .tp-cmp__colname= _forfaits[cle].libelle
+                            .tp-cmp__colprice #{_forfaits[cle].mensuel} €/mois
+                each g in _table
+                    .tp-cmp__group= g.titre
+                    each r in g.lignes
+                        .tp-cmp__row
+                            .tp-cmp__label= r.l
+                            .tp-cmp__v(data-plan="Amateur")= r.a
+                            .tp-cmp__v.is-star(data-plan="Pro")= r.p
+                            .tp-cmp__v(data-plan="Pro+")= r.b
+
+            //- ── Add-ons ──────────────────────────────────────────────────
+            h2.tp-h2 Les options
+            p.tp-h2__lead
+                | Des modules facturés en plus du forfait, activables et résiliables
+                | à tout moment depuis votre espace.
+            .tp-addons
+                .tp-addon
+                    .tp-addon__body
+                        .tp-addon__name= _addons.customUrl.libelle
+                        p.tp-addon__desc
+                            | Votre propre nom de domaine à la place de branshee.com/vous.
+                            |  Incluse dans Pro+.
+                    .tp-addon__price
+                        .tp-addon__amount #{_addons.customUrl.mensuel} €
+                        .tp-addon__per par mois
+                .tp-addon
+                    .tp-addon__body
+                        .tp-addon__name= _addons.collaborateur.libelle
+                        p.tp-addon__desc
+                            | Au-delà des collaborateurs inclus dans votre forfait,
+                            |  chaque siège supplémentaire est facturé à l'unité.
+                    .tp-addon__price
+                        .tp-addon__amount #{_addons.collaborateur.mensuel} €
+                        .tp-addon__per par mois
+
+            //- ── Questions fréquentes ─────────────────────────────────────
+            -
+                var _faq = [
+                    {
+                        q: 'Est-ce vraiment gratuit pour commencer ?',
+                        r: "Oui. Le forfait Amateur est gratuit sans limite de temps, avec des réservations illimitées et jusqu'à 5 prestations. Aucune carte bancaire n'est demandée à l'inscription."
+                    },
+                    {
+                        q: 'Que se passe-t-il après le 1ᵉʳ mois offert ?',
+                        r: "Vous continuez à 19 €/mois, ou vous repassez sur Amateur gratuitement. Sans engagement, résiliable en un clic depuis votre espace. Le mois offert vaut une seule fois par compte."
+                    },
+                    {
+                        q: 'Mes clients doivent-ils créer un compte pour réserver ?',
+                        r: "Non. Ils réservent avec leur nom et leur e-mail, en moins de trente secondes. Ils peuvent créer un compte plus tard pour retrouver leur historique."
+                    },
+                    {
+                        q: 'Combien de temps faut-il pour être opérationnel ?',
+                        r: "La plupart des professionnels le sont en moins de dix minutes : prestations, horaires, puis partage du lien de réservation."
+                    },
+                    {
+                        q: 'Comment fonctionne le paiement en ligne ?',
+                        r: "BranShee s'appuie sur Stripe, sur tous les forfaits. Vos clients paient à la réservation et les fonds arrivent directement sur votre compte bancaire, sans intermédiaire."
+                    },
+                    {
+                        q: 'Puis-je changer de forfait en cours de route ?',
+                        r: "Oui, dans les deux sens et à tout moment. Le changement prend effet immédiatement, au prorata de votre période en cours."
+                    }
+                ];
+
+            h2.tp-h2 Questions fréquentes
+            .tp-faq
+                each f, i in _faq
+                    .tp-faq__item
+                        h3.tp-faq__h
+                            button.tp-faq__q(type="button" aria-expanded="false" aria-controls='faq-r-' + i id='faq-q-' + i)
+                                span= f.q
+                                span.tp-faq__sign(aria-hidden="true") +
+                        //- Ouvert par défaut dans le HTML : sans JavaScript, les
+                        //- réponses restent lisibles au lieu d'être perdues.
+                        .tp-faq__a(id='faq-r-' + i role="region" aria-labelledby='faq-q-' + i)
+                            p.tp-faq__txt= f.r
+
+            //- ── Bandeau final ────────────────────────────────────────────
+            section.tp-cta
+                .tp-cta__body
+                    h2.tp-cta__title Prêt à arrêter de décrocher ?
+                    p.tp-cta__lead
+                        | Vos premiers clients peuvent réserver dans cinq minutes.
+                        | Sans engagement, sans carte bancaire.
+                a.tp-cta__btn(href="/register") Créer mon agenda →
+
+block scripts
+    script(src="/js/layouts/tarifs.js" defer)

@@ -279,7 +279,7 @@
 .auth-error {
   background: var(--danger-pale);
   color: var(--danger);
-  border: 1px solid rgba(220,38,38,.2);
+  border: 1px solid color-mix(in srgb, var(--danger) 20%, transparent);
   border-radius: var(--radius-md);
   padding: 10px 14px;
   font-size: 13px;
@@ -296,7 +296,7 @@
 /* Champ en erreur (validation email invalide, réponse serveur, etc.) — entouré en rouge */
 .auth-input.auth-input--error {
   border-color: #ef4444 !important;
-  background: rgba(239, 68, 68, 0.04) !important;
+  background: color-mix(in srgb, var(--danger) 4%, transparent) !important;
   animation: auth-shake .3s ease;
 }
 @keyframes auth-shake {

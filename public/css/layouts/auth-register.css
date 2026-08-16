@@ -100,7 +100,7 @@
 
 .service-input--invalid {
   border-color: #ef4444 !important;
-  background: rgba(239, 68, 68, 0.04) !important;
+  background: color-mix(in srgb, var(--danger) 4%, transparent) !important;
 }
 
 /* Métier tapé à la main, absent de la liste conseillée — accepté, pas bloquant */
@@ -125,12 +125,12 @@
    vide ("met en vert si c bon et rouge si pas bon et si c vide laisse
    normal"). */
 .auth-input.auth-input--match {
-  border-color: #16a34a !important;
-  background: rgba(22, 163, 74, 0.05) !important;
+  border-color: var(--success) !important;
+  background: color-mix(in srgb, var(--success) 5%, transparent) !important;
 }
 .auth-input.auth-input--mismatch {
   border-color: #ef4444 !important;
-  background: rgba(239, 68, 68, 0.04) !important;
+  background: color-mix(in srgb, var(--danger) 4%, transparent) !important;
 }
 
 /* ── Checklist des règles du mot de passe ─────────────────────────────
@@ -174,18 +174,18 @@
 }
 
 .pwd-rule.ok {
-  color: #16a34a;
-  background: rgba(22, 163, 74, 0.08);
-  border-color: rgba(22, 163, 74, 0.25);
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 8%, transparent);
+  border-color: color-mix(in srgb, var(--success) 25%, transparent);
 }
 .pwd-rule.ok .pwd-rule__dot {
-  background: #16a34a;
+  background: var(--success);
 }
 
 .pwd-rule.bad {
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.06);
-  border-color: rgba(239, 68, 68, 0.2);
+  background: color-mix(in srgb, var(--danger) 6%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 20%, transparent);
 }
 .pwd-rule.bad .pwd-rule__dot {
   background: #ef4444;

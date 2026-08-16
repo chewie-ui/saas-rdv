@@ -1,84 +1,75 @@
-// Translations injected server-side
+/* ══════════════════════════════════════════════════════════════════════════
+   PAGE ABONNEMENT — comportement
+   ─────────────────────────────────────────────────────────────────────────
+   Écran repris de la maquette « Abonnement » : la page elle-même n'a que deux
+   actions (changer d'offre, gérer le paiement) ; tout le reste se passe dans
+   les deux modales.
+
+   Le parcours d'achat tient désormais en UN seul écran de confirmation : la
+   modale des offres montre le plan choisi, la période, la remise éventuelle,
+   le montant ET la carte qui sera débitée, puis un bouton qui nomme
+   explicitement l'opération (« Passer à Pro », « Rétrograder vers Amateur »).
+   L'ancienne boîte « Confirmer votre achat » qui s'ouvrait par-dessus faisait
+   double emploi — deux confirmations de suite, on ne lit plus ni l'une ni
+   l'autre.
+
+   Contrat DOM : voir l'en-tête de views/pages/admin/subscription.pug.
+   ═════════════════════════════════════════════════════════════════════════ */
+
 const subT = window.__subT || {};
 
-/* ── Billing toggle (Monthly / Yearly) ───────────────────────── */
-let isYearly = false;
+/* ── Éléments ─────────────────────────────────────────────────────────────*/
+const plansModal   = document.getElementById("subPlansModal");
+const paymentModal = document.getElementById("subPaymentModal");
+const billMonthly  = document.getElementById("billMonthly");
+const billYearly   = document.getElementById("billYearly");
+const summaryEl    = document.getElementById("subSummary");
+const confirmBtn   = document.getElementById("subConfirm");
+const pickEls      = Array.from(document.querySelectorAll(".sub-pick[data-plan]"));
+const templateDialog = document.getElementById("templateDialog");
 
-const billMonthly = document.getElementById("billMonthly");
-const billYearly  = document.getElementById("billYearly");
-const priceEls    = document.querySelectorAll(".sub-plan__price[data-monthly]");
-
-function updatePrices() {
-  priceEls.forEach((el) => {
-    const monthly = el.dataset.monthly;
-    const yearly  = el.dataset.yearly;
-    const val     = isYearly ? yearly : monthly;
-    if (!val) return;
-    // Le symbole reste où il était : « 19€ » devenait « €19 » dès la première
-    // bascule mensuel/annuel, parce qu'on le recollait toujours devant.
-    const texte  = el.textContent.trim();
-    const symbole = texte.replace(/[\d.,\s]/g, "") || "€";
-    el.textContent = /^\s*[^\d]/.test(texte) ? `${symbole}${val}` : `${val}${symbole}`;
-  });
-}
-
-const getProPlan         = document.getElementById("getProPlan");
-const getProPlanAlert    = document.getElementById("getProPlanAlert");
-const getBusinessPlan    = document.getElementById("getBusinessPlan");
-const cancelSubscriptionPro = document.getElementById("cancelSubscriptionPro");
-const getFreePlan        = document.getElementById("getFreePlan");
-const retakeSubscription = document.getElementById("retakeSubscription");
-const templateDialog     = document.getElementById("templateDialog");
-
-// ── Promo code ────────────────────────────────────────────────────────────────
 const promoCodeInput  = document.getElementById("promoCodeInput");
 const applyPromoBtn   = document.getElementById("applyPromoBtn");
 const promoCodeStatus = document.getElementById("promoCodeStatus");
-let appliedPromoCode  = null; // { code, discountType, discountValue, applicablePlan }
-let currentPlan       = "pro"; // plan courant sélectionné pour le checkout
 
-// Les trois plans payables, avec la classe de leur carte. Une seule liste :
-// ajouter un plan ici suffit à ce qu'il lise ses prix ET affiche les promos.
-// L'Essentiel n'est plus proposé (cf. utils/tarifs.js, `visible: false`) : sa
-// carte n'existe plus sur la page, il n'y a donc plus de prix à y décorer.
-const PLANS_PAYANTS = [
-  { cle: "pro",      carte: ".sub-plan--premium" },
-  { cle: "business", carte: ".sub-plan--studio" },
-];
+/* ── État ─────────────────────────────────────────────────────────────────*/
+const ORDRE = ["basic", "pro", "business"];
+const planActuel = window.__currentPlan || "basic";
 
-// Prix de base (mensuel / annuel) lus depuis les data attributes.
-//
-// L'Essentiel était écrit en dur à 9 € et exclu de la lecture du DOM : le jour
-// où son prix change en base de traductions, la remise aurait été calculée sur
-// un montant périmé. On le lit comme les autres, avec un repli sur le texte
-// affiché quand la carte n'a pas de `data-monthly` (cas de l'annuel Essentiel
-// non configuré dans Stripe, cf. essentielYearlyAvailable).
-const PRICES = { pro: { monthly: null, yearly: null }, business: { monthly: null, yearly: null } };
+let isYearly = false;
+// À l'ouverture, on présélectionne le forfait en cours — sauf sur le gratuit,
+// où présélectionner « Amateur » proposerait d'acheter ce qu'on a déjà.
+let planChoisi = planActuel === "basic" ? "pro" : planActuel;
+let appliedPromoCode = null;   // { code, discountType, discountValue, applicablePlan }
 
-PLANS_PAYANTS.forEach(({ cle, carte }) => {
-  const el = document.querySelector(`${carte} .sub-plan__price`);
-  if (!el) return;
-  const m = parseFloat(el.dataset.monthly);
-  const y = parseFloat(el.dataset.yearly);
-  const affiche = parseFloat(String(el.textContent).replace(",", ".").replace(/[^\d.]/g, ""));
-  PRICES[cle].monthly = Number.isFinite(m) ? m : (Number.isFinite(affiche) ? affiche : null);
-  // Sans tarif annuel propre, la bascule « Annuel » laisse le prix mensuel
-  // affiché : la remise doit donc porter sur ce même montant.
-  PRICES[cle].yearly = Number.isFinite(y) ? y : PRICES[cle].monthly;
+// Prix de base lus dans le DOM (data-monthly / data-yearly), écrits par Pug
+// depuis utils/tarifs.js — jamais recopiés ici, pour qu'un changement de tarif
+// n'ait qu'un seul endroit à toucher.
+const PRICES = {};
+pickEls.forEach((el) => {
+  const cle = el.dataset.plan;
+  const prix = el.querySelector(".sub-pick__price");
+  const m = prix ? parseFloat(prix.dataset.monthly) : NaN;
+  const y = prix ? parseFloat(prix.dataset.yearly) : NaN;
+  PRICES[cle] = {
+    monthly: Number.isFinite(m) ? m : 0,
+    // Sans tarif annuel propre, la bascule « Annuel » laisse le prix mensuel :
+    // la remise doit alors porter sur ce même montant.
+    yearly:  Number.isFinite(y) ? y : (Number.isFinite(m) ? m : 0),
+  };
 });
 
-function calcDiscounted(basePrice, type, value) {
-  if (!basePrice) return null;
-  if (type === "percent") return Math.max(0, basePrice * (1 - value / 100));
-  if (type === "fixed")   return Math.max(0, basePrice - value);
-  return basePrice;
-}
+const NOMS = {};
+pickEls.forEach((el) => {
+  const n = el.querySelector(".sub-pick__name");
+  NOMS[el.dataset.plan] = n ? n.textContent.trim() : el.dataset.plan;
+});
 
-// Offres mises en avant par le superadmin (cf. subscription.pug). Elles
-// s'appliquent sans que le pro ait à saisir quoi que ce soit : le prix plein
-// est barré, le prix remisé affiché, et le code part au paiement. Avant, on
-// annonçait « -20% » avec un code à copier-coller — remise affichée, plein
-// tarif facturé à qui ne le collait pas.
+/* ── Offres mises en avant par le superadmin ──────────────────────────────
+   Elles s'appliquent sans que le pro ait à saisir quoi que ce soit : le prix
+   remisé est affiché et le code part au paiement. Avant, on annonçait « -20% »
+   avec un code à copier-coller — remise affichée, plein tarif facturé à qui ne
+   le collait pas. */
 const OFFRES_AUTO = Array.isArray(window.__offresAuto) ? window.__offresAuto : [];
 
 // Même règle que le serveur (validate-promo et create-checkout) : un code visé
@@ -93,727 +84,589 @@ function promoCouvrePlan(promo, plan) {
     (plan === "pro" && ap === `premium_${billing}`);
 }
 
-// Renoncement explicite à l'offre (lien « Passer directement au plan payant »).
-// Sans ce drapeau, l'offre automatique reviendrait aussitôt et on rejouerait
-// l'essai gratuit que le pro vient justement de refuser.
-let offresAutoRefusees = false;
-
 // Un code saisi à la main l'emporte sur l'offre automatique : c'est un choix
-// explicite du pro (et il peut être meilleur).
+// explicite du pro, et il peut être meilleur.
 function promoPourPlan(plan) {
   if (promoCouvrePlan(appliedPromoCode, plan)) return appliedPromoCode;
-  if (offresAutoRefusees) return null;
   return OFFRES_AUTO.find((o) => promoCouvrePlan(o, plan)) || null;
 }
 
-/** « 12.50 » → « 12,50€ » · « 9.00 » → « 9€ » */
-function formatPrix(n) {
-  return n.toFixed(2).replace(/\.00$/, "").replace(".", ",") + "€";
+function calcDiscounted(base, type, value) {
+  if (!base) return null;
+  if (type === "percent") return Math.max(0, base * (1 - value / 100));
+  if (type === "fixed")   return Math.max(0, base - value);
+  return base;
 }
 
-function applyPromoToUI() {
-  // L'Essentiel était absent de cette boucle : une offre visant « tous les
-  // plans » — que le serveur accepte pourtant pour l'Essentiel au paiement —
-  // n'était annoncée que sur Pro et Business. Le pro qui prenait l'Essentiel
-  // recevait la remise sans qu'on la lui ait jamais promise ; celui qui la
-  // cherchait sur la page ne la voyait pas et partait.
-  PLANS_PAYANTS.forEach(({ cle: plan, carte }) => {
-    const priceEl = document.querySelector(`${carte} .sub-plan__price`);
-    if (!priceEl) return;
-
-    const base = isYearly ? PRICES[plan].yearly : PRICES[plan].monthly;
-    if (!base) return;
-
-    const promoData = promoPourPlan(plan);
-
-    // Supprimer l'ancien affichage promo s'il existe
-    const oldWrap = priceEl.parentNode.querySelector(".sub-promo-wrap");
-    if (oldWrap) oldWrap.remove();
-    priceEl.classList.remove("is-replaced");
-
-    if (!promoData) return;
-
-    const wrap = document.createElement("div");
-    wrap.className = "sub-promo-wrap";
-
-    if (promoData.discountType === "trial") {
-      // Essai : badge « X jours gratuits », puis le plein tarif en dessous —
-      // rien n'est barré, le prix ne baisse pas, il est seulement différé.
-      const badge = document.createElement("span");
-      badge.className = "sub-promo-wrap__badge";
-      badge.textContent = `🎁 ${promoData.trialDays || 30} jours gratuits`;
-
-      const sub = document.createElement("span");
-      sub.className = "sub-promo-wrap__note";
-      // On reprend le suffixe affiché par la carte plutôt que de le déduire du
-      // mode de facturation : en annuel, le prix montré reste un tarif MENSUEL
-      // (« 15€/mois, facturé à l'année »). Écrire « /an » à côté de 15 €
-      // annoncerait un abonnement quatre fois moins cher qu'il ne l'est.
-      const suffixe = (priceEl.parentNode.querySelector(".sub-plan__per") || {}).textContent || "";
-      sub.textContent = `puis ${priceEl.textContent.trim()} ${suffixe.trim()}`.trim();
-
-      wrap.appendChild(badge);
-      wrap.appendChild(sub);
-    } else {
-      // Remise en % ou en € : prix plein barré, prix remisé à côté.
-      const discounted = calcDiscounted(base, promoData.discountType, promoData.discountValue);
-      if (discounted === null) return;
-
-      const priceRow = document.createElement("div");
-      priceRow.className = "sub-promo-wrap__row";
-
-      const strike = document.createElement("span");
-      strike.className = "sub-promo-wrap__old";
-      strike.textContent = priceEl.textContent.trim();
-
-      const newPrice = document.createElement("span");
-      newPrice.className = "sub-promo-wrap__new";
-      newPrice.textContent = formatPrix(discounted);
-
-      priceRow.appendChild(strike);
-      priceRow.appendChild(newPrice);
-
-      // Le suffixe (« / mois ») est recopié DANS la ligne du prix remisé. Le
-      // bloc promo s'insère entre le prix et son suffixe : laissé à sa place,
-      // « / mois » se retrouvait seul sur une ligne sous la note, détaché du
-      // montant qu'il qualifie. L'original est masqué par la feuille de style
-      // (.sub-plan__pricing:has(.sub-promo-wrap) .sub-plan__per), pas retiré :
-      // c'est lui que relit la branche « essai » pour composer sa note.
-      const suffixe = priceEl.parentNode.querySelector(".sub-plan__per");
-      if (suffixe) {
-        const per = document.createElement("span");
-        per.className = "sub-promo-wrap__per";
-        per.textContent = suffixe.textContent.trim();
-        priceRow.appendChild(per);
-      }
-
-      wrap.appendChild(priceRow);
-
-      const sub = document.createElement("span");
-      sub.className = "sub-promo-wrap__note";
-      // Ces deux types de remise sont des coupons Stripe `duration: once` (cf.
-      // account.controller.js) : le dire, plutôt que laisser croire que le
-      // tarif remisé vaut pour toujours.
-      sub.textContent = "1ère facture uniquement, puis plein tarif";
-      wrap.appendChild(sub);
-    }
-
-    // `class` plutôt que `style.display` : le style vit dans la feuille CSS,
-    // et un `display` en dur écrasait celui de la règle au retour à l'état
-    // normal.
-    priceEl.classList.add("is-replaced");
-    priceEl.parentNode.insertBefore(wrap, priceEl.nextSibling);
-  });
+/** « 12.5 » → « 12,50 € » · « 9 » → « 9 € » */
+function fmtPrix(n) {
+  if (n == null || isNaN(n)) return null;
+  return n.toFixed(2).replace(/\.00$/, "").replace(".", ",") + " €";
 }
 
-// Reset prix quand on change mensuel/annuel. On redécore systématiquement :
-// une offre peut ne valoir que pour le mensuel ou que pour l'annuel, et le
-// prix barré doit suivre la bascule.
-const _origUpdatePrices = updatePrices;
-function updatePricesWithPromo() {
-  _origUpdatePrices();
-  applyPromoToUI();
+/** Prix réellement facturé pour ce plan, remise comprise. */
+function prixEffectif(plan) {
+  const base = PRICES[plan] ? PRICES[plan][isYearly ? "yearly" : "monthly"] : 0;
+  const promo = promoPourPlan(plan);
+  if (!promo) return base;
+  // Code de type « essai gratuit » : la première facture est à 0 € (Stripe
+  // décale la facturation à la fin de l'essai).
+  if (promo.discountType === "trial") return 0;
+  const remise = calcDiscounted(base, promo.discountType, promo.discountValue);
+  return remise === null ? base : remise;
 }
 
-if (billMonthly && billYearly) {
-  billMonthly.addEventListener("click", () => {
-    isYearly = false;
-    billMonthly.classList.add("active");
-    billYearly.classList.remove("active");
-    updatePricesWithPromo();
-  });
-  billYearly.addEventListener("click", () => {
-    isYearly = true;
-    billYearly.classList.add("active");
-    billMonthly.classList.remove("active");
-    updatePricesWithPromo();
-  });
-}
-
-// Plan applicable badge
-function showApplicablePlanBadge(promoData) {
-  const existing = document.getElementById("promoApplicableBadge");
-  if (existing) existing.remove();
-  if (!promoData) return;
-
-  const planLabels = {
-    all:               "✅ Valable sur tous les plans",
-    pro_monthly:       "✅ Valable sur Pro Mensuel uniquement",
-    pro_yearly:        "✅ Valable sur Pro Annuel uniquement",
-    business_monthly:  "✅ Valable sur Business Mensuel uniquement",
-    business_yearly:   "✅ Valable sur Business Annuel uniquement",
-  };
-  const label = planLabels[promoData.applicablePlan] || "✅ Code appliqué";
-  const badge = document.createElement("span");
-  badge.id = "promoApplicableBadge";
-  badge.style.cssText = "display:block;font-size:12px;color:#22c55e;margin-top:4px;";
-  badge.textContent = label;
-  promoCodeStatus.insertAdjacentElement("afterend", badge);
-}
-
-async function validatePromo() {
-  const code = promoCodeInput.value.trim().toUpperCase();
-  if (!code) return;
-
-  promoCodeStatus.textContent = subT.checking || "Vérification...";
-  promoCodeStatus.className   = "sub-promo__status";
-  appliedPromoCode = null;   // le temps de la vérification
-  applyPromoToUI();
-
-  const res  = await fetch("/api/validate-promo", {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify({ code, plan: currentPlan, billing: isYearly ? "yearly" : "monthly" }),
-  });
-  const data = await res.json();
-
-  if (data.valid) {
-    appliedPromoCode = data;
-    let discountLabel;
-    if (data.discountType === "trial") {
-      discountLabel = `${data.trialDays || 30} jours gratuits, puis plein tarif`;
-    } else if (data.discountType === "percent") {
-      discountLabel = `-${data.discountValue}% sur la 1ère facture`;
-    } else {
-      discountLabel = `-${data.discountValue}€ sur la 1ère facture`;
-    }
-    promoCodeStatus.textContent = `✓ Code "${data.code}" appliqué : ${discountLabel}`;
-    promoCodeStatus.className   = "sub-promo__status valid";
-    applyPromoToUI(data);
-    showApplicablePlanBadge(data);
-    // Scroll vers les cartes de plan pour que l'utilisateur voie les prix mis à jour
-    const plansSection = document.querySelector(".sub-plans");
-    if (plansSection) {
-      setTimeout(() => {
-        plansSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 120);
-    }
-  } else {
-    appliedPromoCode = null;
-    applyPromoToUI(null);
-    showApplicablePlanBadge(null);
-    promoCodeStatus.textContent = data.error || subT.invalid || "Code invalide.";
-    promoCodeStatus.className   = "sub-promo__status invalid";
-  }
-}
-
-if (applyPromoBtn && promoCodeInput) {
-  applyPromoBtn.addEventListener("click", validatePromo);
-  promoCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") validatePromo(); });
-}
-
-// ── Toast (remplace les alert() natifs) ──────────────────────────────────────
+/* ── Toast ────────────────────────────────────────────────────────────────*/
 function showToast(message, type = "success", duration = 3500) {
   const existing = document.querySelector(".bs-toast");
   if (existing) existing.remove();
-
   const toast = document.createElement("div");
   toast.className = `bs-toast bs-toast--${type}`;
   toast.textContent = message;
   document.body.appendChild(toast);
-
   setTimeout(() => {
     toast.classList.add("bs-toast--out");
     setTimeout(() => toast.remove(), 220);
   }, duration);
 }
 
-// ── Generic confirm dialog ────────────────────────────────────────────────────
+/* ── Boîte de confirmation générique (résiliation, reprise, suppression) ──*/
 function openDialog(title, desc, confirmLabel, closeLabel) {
   return new Promise((resolve) => {
-    const tmp      = templateDialog.content.cloneNode(true);
+    const tmp = templateDialog.content.cloneNode(true);
     const parentTmp = tmp.querySelector("#dialogWrp");
-    const close    = (value) => { parentTmp.remove(); resolve(value); };
+    const close = (value) => { parentTmp.remove(); resolve(value); };
 
-    tmp.querySelector(".dialog__h2").textContent    = title;
-    tmp.querySelector(".dialog__p").textContent     = desc;
-    tmp.querySelector(".dialog__btn2").innerHTML    = `<span>${confirmLabel}</span>`;
-    tmp.querySelector(".dialog__btn1").innerHTML    = `<span>${closeLabel}</span>`;
-    tmp.querySelector(".dialog__btn1").onclick      = () => close(false);
-    tmp.querySelector(".dialog__icon").onclick      = () => close(false);
-    // Fermer en cliquant sur l'overlay
+    tmp.querySelector(".dialog__h2").textContent = title;
+    tmp.querySelector(".dialog__p").textContent  = desc;
+    tmp.querySelector(".dialog__btn2").innerHTML = `<span>${confirmLabel}</span>`;
+    tmp.querySelector(".dialog__btn1").innerHTML = `<span>${closeLabel}</span>`;
+    tmp.querySelector(".dialog__btn1").onclick   = () => close(false);
+    tmp.querySelector(".dialog__icon").onclick   = () => close(false);
+    tmp.querySelector(".dialog__btn2").onclick   = () => close(true);
     parentTmp.addEventListener("click", (e) => { if (e.target === parentTmp) close(false); });
-    tmp.querySelector(".dialog__btn2").onclick      = () => close(true);
 
     document.body.appendChild(tmp);
   });
 }
 
-// ── Checkout helpers ──────────────────────────────────────────────────────────
-async function startCheckout(plan) {
-  currentPlan = plan || "pro";
-  const body = { plan: currentPlan, billing: isYearly ? "yearly" : "monthly" };
-  // Le code envoyé est celui réellement affiché sur CE plan — saisi à la main
-  // ou offre automatique. Le serveur revalide de toute façon (expiration,
-  // quota, déjà utilisé) : au pire l'offre est ignorée, jamais forcée.
-  const promoPlan = promoPourPlan(currentPlan);
-  if (promoPlan) body.promoCode = promoPlan.code;
-  if (selectedPaymentMethodId) body.paymentMethodId = selectedPaymentMethodId;
+/* ══ Modales ══════════════════════════════════════════════════════════════
+   `hidden` porte l'état : rien à synchroniser entre une classe et un attribut,
+   et un lecteur d'écran n'annonce jamais une modale fermée. */
+let modaleOuverte = null;
 
-  const response = await fetch("/account/create-checkout", {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify(body),
-  });
-  const data = await response.json();
-  if (data.url) window.location = data.url;
-  else if (data.upgraded) window.location = "/subscription/success";
-  else if (data.error) showToast(data.error, "error");
+function ouvrirModale(nom) {
+  const el = nom === "payment" ? paymentModal : plansModal;
+  if (!el) return;
+  fermerModale();
+  el.hidden = false;
+  el.setAttribute("aria-hidden", "false");
+  // Le fond ne doit pas défiler sous la modale — sinon on perd sa position de
+  // lecture en fermant.
+  document.body.style.overflow = "hidden";
+  modaleOuverte = el;
+  if (nom === "plans") {
+    planChoisi = planActuel === "basic" ? "pro" : planActuel;
+    rafraichirOffres();
+  }
+  const premier = el.querySelector(".sub-modal__x");
+  if (premier) premier.focus();
 }
 
-/* ── Boîte de confirmation avant paiement ──────────────────────────────────────
-   "si y a déjà une carte, demande payer instant avec carte X ou changer de
-   carte, et ajoute avant de payer l'option AJOUTER UN CODE PROMO et une
-   validation 'êtes-vous sûr de vouloir payer X €' — pas question que ça
-   débite direct au clic sur 'Acheter Business', c'est abusé."
-   ───────────────────────────────────────────────────────────────────────────── */
-let selectedPaymentMethodId = null;
-
-function fmtPrice(n) {
-  if (n == null || isNaN(n)) return null;
-  // Virgule décimale : une remise tombe rarement sur un compte rond et
-  // « 15.20 € » n'est pas un prix français.
-  return n.toFixed(2).replace(/\.00$/, "").replace(".", ",") + " €";
+function fermerModale() {
+  if (!modaleOuverte) return;
+  modaleOuverte.hidden = true;
+  modaleOuverte.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+  modaleOuverte = null;
+  fermerFormulaireCarte();
 }
 
-function cardLabel(pm) {
+document.querySelectorAll("[data-sub-open]").forEach((btn) => {
+  btn.addEventListener("click", () => ouvrirModale(btn.dataset.subOpen));
+});
+document.addEventListener("click", (e) => {
+  const fermeur = e.target.closest("[data-sub-close]");
+  if (fermeur) fermerModale();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && modaleOuverte) fermerModale();
+});
+
+/* ══ Modale « Changer d'offre » ═══════════════════════════════════════════*/
+
+function libelleCarte(pm) {
   return (pm.brand.charAt(0).toUpperCase() + pm.brand.slice(1)) + " •••• " + pm.last4;
 }
 
-function getPlanPrice(plan) {
-  const billing = isYearly ? "yearly" : "monthly";
-  const base = PRICES[plan] ? PRICES[plan][billing] : null;
-  if (base == null) return null;
+/** Redessine prix, notes, sélection, résumé et libellé du bouton. */
+function rafraichirOffres() {
+  pickEls.forEach((el) => {
+    const cle = el.dataset.plan;
+    const choisi = cle === planChoisi;
+    el.classList.toggle("is-picked", choisi);
+    el.setAttribute("aria-pressed", choisi ? "true" : "false");
 
-  // Même promo que celle affichée sur la carte du plan (code saisi OU offre
-  // mise en avant) : sans ça la carte annonçait 15,20 € et la confirmation
-  // 19 € — deux prix pour le même achat.
-  const promo = promoPourPlan(plan);
-  if (promo) {
-    // Code de type "essai gratuit" : le 1er paiement est 0 € (Stripe
-    // décale la première facturation à la fin du trial). On retourne 0
-    // pour que la confirmation affiche "0 €" et non le plein tarif
-    // ("jai activé BIENVENUE qui donne 1 mois gratuit mais il met 49 €").
-    if (promo.discountType === "trial") return 0;
-    const discounted = calcDiscounted(base, promo.discountType, promo.discountValue);
-    if (discounted !== null) return discounted;
-  }
-  return base;
-}
-
-// Retourne vrai si un code essai gratuit est actif et s'applique à ce plan.
-function isTrialActive(plan) {
-  const promo = promoPourPlan(plan);
-  if (promo && promo.discountType === "trial") return true;
-  // Le mois offert est appliqué par le SERVEUR sur un nouvel abonnement
-  // (cf. trial_period_days dans createCheckout), mais UNE SEULE FOIS par
-  // compte : `__trialAvailable` reflète cette éligibilité, calculée côté
-  // serveur (utils/freeTrial.js).
-  //
-  // Les deux sens comptent autant : annoncer « payer 19 € » juste après un
-  // bouton « Essayer gratuitement » trahit une promesse, et annoncer
-  // « 30 jours offerts » à quelqu'un qui sera débité tout de suite est pire
-  // encore.
-  return window.__trialAvailable !== false;
-}
-
-function confirmPurchase(plan) {
-  return new Promise((resolve) => {
-    const pms = window.__paymentMethods || [];
-    if (!selectedPaymentMethodId) {
-      const def = pms.find((pm) => pm.isDefault) || pms[0];
-      selectedPaymentMethodId = def ? def.id : null;
-    }
-
-    const planLabel    = plan === "business" ? "Business" : plan === "essentiel" ? "Essentiel" : "Pro";
-    const billingLabel = isYearly ? "facturation annuelle" : "facturation mensuelle";
-    let   price        = getPlanPrice(plan);
-    let   priceLabel   = fmtPrice(price);
-    // Détecter dès l'ouverture si un code essai gratuit est actif.
-    const trialActive  = isTrialActive(plan);
-    // La promo peut être nulle quand l'essai vient du serveur et non d'un code :
-    // sans cette garde, la boîte de confirmation plantait.
-    const promoPlan    = promoPourPlan(plan);
-    const trialDays    = trialActive ? ((promoPlan && promoPlan.trialDays) || 30) : 0;
-    // Prix affiché après l'essai : celui de la carte du plan, remise comprise —
-    // annoncer « puis 19 €/mois » sous un prix barré à 15,20 € est incohérent.
-    const billing      = isYearly ? "yearly" : "monthly";
-    const plein        = PRICES[plan] ? PRICES[plan][billing] : null;
-    const basePrice    = (promoPlan && promoPlan.discountType !== "trial" && plein != null)
-      ? calcDiscounted(plein, promoPlan.discountType, promoPlan.discountValue)
-      : plein;
-
-    const tmp       = templateDialog.content.cloneNode(true);
-    const parentTmp = tmp.querySelector("#dialogWrp");
-    const close     = (value) => { parentTmp.remove(); resolve(value); };
-
-    tmp.querySelector(".dialog__h2").textContent = "Confirmer votre achat";
-
-    const descEl = tmp.querySelector(".dialog__description");
-    descEl.innerHTML = "";
-
-    const intro = document.createElement("p");
-    intro.className = "dialog__p";
-    if (trialActive) {
-      // Code essai : 1er mois / N jours offerts, puis plein tarif.
-      intro.innerHTML = "Plan <strong>" + planLabel + "</strong> — " +
-        "<strong>" + trialDays + " jours offerts</strong>, puis " +
-        (basePrice != null ? "<strong>" + fmtPrice(basePrice) + "</strong>/mois" : "plein tarif") +
-        " (" + billingLabel + ").";
-    } else {
-      intro.innerHTML = "Vous êtes sur le point de souscrire au plan <strong>" + planLabel + "</strong>" +
-        (priceLabel ? " pour <strong>" + priceLabel + "</strong>" : "") +
-        " (" + billingLabel + ").";
-    }
-    descEl.appendChild(intro);
-
-    // ── Carte : "payer instant avec carte X ou changer de carte" ─────────────
-    let showPicker = false;
-    if (pms.length) {
-      const cardWrap = document.createElement("div");
-      cardWrap.className = "sub-confirm__card";
-
-      function renderCardChoice() {
-        cardWrap.innerHTML = "";
-        const current = pms.find((pm) => pm.id === selectedPaymentMethodId) || pms[0];
-
-        const row = document.createElement("div");
-        row.className = "sub-confirm__card-row";
-        const lbl = document.createElement("span");
-        lbl.className = "sub-confirm__card-label";
-        lbl.innerHTML = "Payer instantanément avec <strong>" + cardLabel(current) + "</strong>";
-        row.appendChild(lbl);
-
-        if (pms.length > 1) {
-          const switchBtn = document.createElement("button");
-          switchBtn.type = "button";
-          switchBtn.className = "sub-confirm__card-switch";
-          switchBtn.textContent = showPicker ? "Masquer" : "Changer de carte";
-          switchBtn.onclick = () => { showPicker = !showPicker; renderCardChoice(); };
-          row.appendChild(switchBtn);
-        }
-        cardWrap.appendChild(row);
-
-        if (showPicker) {
-          const list = document.createElement("div");
-          list.className = "sub-confirm__card-list";
-          pms.forEach((pm) => {
-            const item = document.createElement("label");
-            item.className = "sub-confirm__card-item" + (pm.id === selectedPaymentMethodId ? " active" : "");
-            const radio = document.createElement("input");
-            radio.type = "radio";
-            radio.name = "confirmCardChoice";
-            radio.value = pm.id;
-            radio.checked = pm.id === selectedPaymentMethodId;
-            radio.addEventListener("change", () => {
-              selectedPaymentMethodId = pm.id;
-              showPicker = false;
-              renderCardChoice();
-            });
-            const span = document.createElement("span");
-            span.innerHTML = cardLabel(pm) + "<small>Expire " +
-              String(pm.expMonth).padStart(2, "0") + "/" + String(pm.expYear).slice(-2) + "</small>";
-            item.appendChild(radio);
-            item.appendChild(span);
-            list.appendChild(item);
-          });
-          cardWrap.appendChild(list);
-        }
-      }
-      renderCardChoice();
-      descEl.appendChild(cardWrap);
-    }
-
-    // ── "Ajouter un code promo" avant de payer ───────────────────────────────
-    let priceStrongEls = [];
-    function refreshPriceDisplays() {
-      price = getPlanPrice(plan);
-      priceLabel = fmtPrice(price);
-      const isTrial = isTrialActive(plan);
-      if (isTrial) {
-        // En mode essai gratuit : le "fort" du texte "payer X" devient
-        // "votre essai gratuit" pour que la phrase reste cohérente.
-        priceStrongEls.forEach((el) => { el.textContent = "votre essai gratuit"; });
-        confirmBtnLabel.textContent = "Activer mon essai gratuit →";
+    const prixEl = el.querySelector(".sub-pick__price[data-monthly]");
+    if (prixEl) {
+      const base = PRICES[cle][isYearly ? "yearly" : "monthly"];
+      const promo = promoPourPlan(cle);
+      const remise = promo && promo.discountType !== "trial"
+        ? calcDiscounted(base, promo.discountType, promo.discountValue)
+        : null;
+      if (remise !== null && remise !== base) {
+        // Prix plein barré + prix remisé : le montant affiché est celui qui
+        // sera facturé, pas un tarif catalogue à corriger mentalement.
+        prixEl.innerHTML = `<s>${base} €</s> ${fmtPrix(remise)}`;
       } else {
-        priceStrongEls.forEach((el) => { el.textContent = priceLabel || ""; });
-        confirmBtnLabel.textContent = priceLabel ? ("Oui, payer " + priceLabel) : (subT.confirm || "Confirmer");
+        prixEl.textContent = base + " €";
       }
     }
 
-    if (!appliedPromoCode) {
-      const promoWrap = document.createElement("div");
-      promoWrap.className = "sub-confirm__promo";
+    const perEl = el.querySelector(".sub-pick__per");
+    if (perEl) perEl.textContent = isYearly && cle !== "basic" ? "/mois, annuel" : "/mois";
 
-      const toggle = document.createElement("button");
-      toggle.type = "button";
-      toggle.className = "sub-confirm__promo-toggle";
-      toggle.textContent = "+ Ajouter un code promo";
-
-      const form = document.createElement("div");
-      form.className = "sub-confirm__promo-form";
-      form.style.display = "none";
-
-      const input = document.createElement("input");
-      input.type = "text";
-      input.className = "sub-confirm__promo-input";
-      input.placeholder = "Code promo";
-
-      const applyBtn = document.createElement("button");
-      applyBtn.type = "button";
-      applyBtn.className = "sub-confirm__promo-apply";
-      applyBtn.textContent = "Appliquer";
-
-      const status = document.createElement("span");
-      status.className = "sub-confirm__promo-status";
-
-      form.appendChild(input);
-      form.appendChild(applyBtn);
-      promoWrap.appendChild(toggle);
-      promoWrap.appendChild(form);
-      promoWrap.appendChild(status);
-
-      toggle.addEventListener("click", () => {
-        const willShow = form.style.display === "none";
-        form.style.display = willShow ? "flex" : "none";
-        if (willShow) input.focus();
-      });
-
-      input.addEventListener("keydown", (e) => { if (e.key === "Enter") applyBtn.click(); });
-
-      applyBtn.addEventListener("click", async () => {
-        const code = input.value.trim().toUpperCase();
-        if (!code) return;
-        status.textContent = subT.checking || "Vérification...";
-        status.className = "sub-confirm__promo-status";
-        try {
-          const res  = await fetch("/api/validate-promo", {
-            method:  "POST",
-            headers: { "Content-Type": "application/json" },
-            body:    JSON.stringify({ code, plan, billing: isYearly ? "yearly" : "monthly" }),
-          });
-          const data = await res.json();
-          if (data.valid) {
-            appliedPromoCode = data;
-            if (promoCodeInput) promoCodeInput.value = data.code;
-            applyPromoToUI(data);
-            showApplicablePlanBadge(data);
-            status.textContent = '✓ Code "' + data.code + '" appliqué';
-            status.className   = "sub-confirm__promo-status valid";
-            form.style.display = "none";
-            toggle.style.display = "none";
-            refreshPriceDisplays();
-          } else {
-            status.textContent = data.error || subT.invalid || "Code invalide.";
-            status.className   = "sub-confirm__promo-status invalid";
-          }
-        } catch (e) {
-          status.textContent = "Erreur réseau. Veuillez réessayer.";
-          status.className   = "sub-confirm__promo-status invalid";
-        }
-      });
-
-      descEl.appendChild(promoWrap);
+    const noteEl = el.querySelector(".sub-pick__note");
+    if (noteEl) {
+      const promo = promoPourPlan(cle);
+      if (promo) {
+        noteEl.textContent = promo.discountType === "trial"
+          ? (promo.trialDays || 30) + " jours offerts"
+          : promo.discountType === "percent"
+            ? "−" + promo.discountValue + "% sur la 1ère facture"
+            : "−" + promo.discountValue + "€ sur la 1ère facture";
+      } else if (isYearly && cle !== "basic") {
+        noteEl.textContent = "Facturé " + (PRICES[cle].yearly * 12) + " € par an";
+      } else if (cle === "pro" && window.__trialAvailable === true) {
+        // « 1ᵉʳ » : l'ordinal français complet, comme sur la vitrine.
+        // Deux orthographes pour la même offre la font passer pour deux offres.
+        noteEl.textContent = "1ᵉʳ mois offert";
+      } else {
+        noteEl.textContent = "";
+      }
     }
 
-    // ── Validation finale : "êtes-vous sûr de vouloir payer X € ?" ───────────
-    const ask = document.createElement("p");
-    ask.className = "dialog__p sub-confirm__ask";
-    const askPriceEl = document.createElement("strong");
-    askPriceEl.className = "sub-confirm__price";
-    if (trialActive) {
-      // Code essai : la phrase de confirmation reflète le mois gratuit, pas
-      // un paiement ("jai activé BIENVENUE qui donne 1 mois gratuit mais il
-      // met payer 49 €").
-      askPriceEl.textContent = "votre essai gratuit";
-      ask.appendChild(document.createTextNode("Êtes-vous sûr·e de vouloir activer "));
-      ask.appendChild(askPriceEl);
-      ask.appendChild(document.createTextNode(" ?"));
+    const ctaEl = el.querySelector(".sub-pick__cta");
+    if (ctaEl) {
+      ctaEl.textContent = cle === planActuel
+        ? (choisi ? "Forfait actuel" : "Forfait actuel")
+        : (choisi ? "Sélectionné" : "Choisir");
+    }
+  });
+
+  majResume();
+}
+
+function majResume() {
+  if (!summaryEl || !confirmBtn) return;
+
+  const identique = planChoisi === planActuel;
+  const montee    = ORDRE.indexOf(planChoisi) > ORDRE.indexOf(planActuel);
+  const nom       = NOMS[planChoisi] || planChoisi;
+
+  if (identique) {
+    summaryEl.textContent = "Vous êtes déjà sur ce forfait.";
+    confirmBtn.textContent = "Conserver ce forfait";
+    confirmBtn.disabled = true;
+    return;
+  }
+  confirmBtn.disabled = false;
+
+  if (planChoisi === "basic") {
+    summaryEl.textContent = "Vous perdrez les rappels SMS et le paiement en ligne à la fin de la période déjà payée.";
+    confirmBtn.textContent = "Repasser en gratuit";
+    return;
+  }
+
+  const promo = promoPourPlan(planChoisi);
+  const prix  = prixEffectif(planChoisi);
+  const plein = PRICES[planChoisi][isYearly ? "yearly" : "monthly"];
+  const periode = isYearly ? ", facturé annuellement" : "";
+
+  // Deux sources de gratuité, à ne pas confondre :
+  //  · un code promo de type « trial » (N jours) ;
+  //  · le mois offert accordé par le serveur au PREMIER abonnement, une seule
+  //    fois par compte (utils/freeTrial.js) — il n'a pas de code.
+  // Les cartes annoncent déjà « 1ᵉʳ mois offert » à partir du second : si le
+  // pied disait au même moment « prélevé dès aujourd'hui », l'écran se
+  // contredisait sur le seul chiffre qui décide de l'achat.
+  const essaiCode    = promo && promo.discountType === "trial";
+  const premierAchat = planActuel === "basic";
+  const essaiServeur = premierAchat && window.__trialAvailable === true;
+  const jours = essaiCode ? (promo.trialDays || 30) : 0;
+
+  // Montant annoncé APRÈS la période offerte : le prix remisé s'il y a une
+  // réduction en cours, sinon le plein tarif. Annoncer « puis 19 € » sous une
+  // carte qui affiche 15,20 €, ce sont deux prix pour le même achat.
+  const apres = (promo && promo.discountType !== "trial") ? prix : plein;
+
+  let phrase;
+  if (essaiCode) {
+    phrase = `${jours} jours offerts, puis ${fmtPrix(apres)}/mois${periode} · 0 € aujourd'hui, annulable en un clic.`;
+  } else if (essaiServeur) {
+    phrase = `1ᵉʳ mois offert, puis ${fmtPrix(apres)}/mois${periode} · 0 € aujourd'hui, annulable en un clic.`;
+  } else if (premierAchat) {
+    // Premier abonnement : Stripe Checkout prend la main, il n'y a pas de
+    // prorata à annoncer et aucune carte enregistrée à nommer.
+    phrase = `${fmtPrix(prix)}/mois${periode} · paiement sécurisé par Stripe à l'étape suivante.`;
+  } else {
+    // Changement d'offre sur un abonnement actif : Stripe facture le prorata
+    // immédiatement. On nomme la carte débitée — personne ne doit découvrir le
+    // prélèvement après coup.
+    const pms = window.__paymentMethods || [];
+    const defaut = pms.find((pm) => pm.isDefault) || pms[0];
+    phrase = `Nouveau montant : ${fmtPrix(prix)}/mois${periode} · prélevé au prorata dès aujourd'hui`
+      + (defaut ? ` sur ${libelleCarte(defaut)}` : "") + ".";
+  }
+
+  summaryEl.textContent = phrase;
+  confirmBtn.textContent = montee ? `Passer à ${nom}` : `Rétrograder vers ${nom}`;
+}
+
+pickEls.forEach((el) => {
+  el.addEventListener("click", () => {
+    planChoisi = el.dataset.plan;
+    rafraichirOffres();
+  });
+});
+
+function setPeriode(annuel) {
+  isYearly = annuel;
+  if (billMonthly) billMonthly.classList.toggle("active", !annuel);
+  if (billYearly)  billYearly.classList.toggle("active", annuel);
+  rafraichirOffres();
+}
+if (billMonthly) billMonthly.addEventListener("click", () => setPeriode(false));
+if (billYearly)  billYearly.addEventListener("click", () => setPeriode(true));
+
+/* ── Code promo ───────────────────────────────────────────────────────────*/
+async function validatePromo() {
+  if (!promoCodeInput || !promoCodeStatus) return;
+  const code = promoCodeInput.value.trim().toUpperCase();
+  if (!code) return;
+
+  promoCodeStatus.textContent = subT.checking || "Vérification…";
+  promoCodeStatus.className = "sub-promo__status";
+  appliedPromoCode = null;
+  rafraichirOffres();
+
+  try {
+    const res = await fetch("/api/validate-promo", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ code, plan: planChoisi, billing: isYearly ? "yearly" : "monthly" }),
+    });
+    const data = await res.json();
+
+    if (data.valid) {
+      appliedPromoCode = data;
+      const remise = data.discountType === "trial"
+        ? `${data.trialDays || 30} jours gratuits, puis plein tarif`
+        : data.discountType === "percent"
+          ? `−${data.discountValue}% sur la 1ère facture`
+          : `−${data.discountValue}€ sur la 1ère facture`;
+      promoCodeStatus.textContent = `Code « ${data.code} » appliqué : ${remise}`;
+      promoCodeStatus.className = "sub-promo__status is-ok";
     } else {
-      askPriceEl.textContent = priceLabel || "";
-      ask.appendChild(document.createTextNode("Êtes-vous sûr·e de vouloir payer "));
-      ask.appendChild(askPriceEl);
-      ask.appendChild(document.createTextNode(" ?"));
+      appliedPromoCode = null;
+      promoCodeStatus.textContent = data.error || subT.invalid || "Code invalide.";
+      promoCodeStatus.className = "sub-promo__status is-err";
     }
-    priceStrongEls.push(askPriceEl);
-    descEl.appendChild(ask);
-
-    const confirmBtn = tmp.querySelector(".dialog__btn2");
-    confirmBtn.innerHTML = "";
-    const confirmBtnLabel = document.createElement("span");
-    // Label du bouton de confirmation selon le type de promo.
-    if (trialActive) {
-      confirmBtnLabel.textContent = "Activer mon essai gratuit →";
-    } else {
-      confirmBtnLabel.textContent = priceLabel ? ("Oui, payer " + priceLabel) : (subT.confirm || "Confirmer");
-    }
-    confirmBtn.appendChild(confirmBtnLabel);
-    confirmBtn.onclick = () => close(true);
-
-    // ── Lien "Passer directement au plan payant" (visible seulement en mode trial) ──
-    if (trialActive) {
-      const skipWrap = document.createElement("div");
-      skipWrap.style.cssText = "text-align:center;margin-top:10px;";
-      const skipLink = document.createElement("button");
-      skipLink.type = "button";
-      skipLink.style.cssText = "background:none;border:none;cursor:pointer;font-size:12px;color:#9ca3af;text-decoration:underline;padding:0;";
-      skipLink.textContent = "Passer directement au plan payant →";
-      skipLink.addEventListener("click", async () => {
-        parentTmp.remove();   // fermer ce dialog
-        resolve(false);       // annuler le flux trial
-        // Relancer un checkout sans promo trial
-        const savedPromo = appliedPromoCode;
-        appliedPromoCode = null;
-        offresAutoRefusees = true;   // l'offre mise en avant ne doit pas revenir
-        if (promoCodeInput) promoCodeInput.value = "";
-        applyPromoToUI();
-        const confirmed2 = await confirmPurchase(plan);
-        if (confirmed2) startCheckout(plan);
-        else {
-          appliedPromoCode = savedPromo;   // remettre si l'user annule
-          offresAutoRefusees = false;
-          applyPromoToUI();
-        }
-      });
-      skipWrap.appendChild(skipLink);
-      descEl.parentNode.insertBefore(skipWrap, confirmBtn.parentNode
-        ? confirmBtn.closest(".dialog__actions") || confirmBtn.parentNode
-        : descEl.nextSibling);
-      // On insère après descEl car la structure dialog n'est pas connue
-      descEl.after(skipWrap);
-    }
-
-    tmp.querySelector(".dialog__btn1").innerHTML = "<span>" + (subT.close || "Annuler") + "</span>";
-    tmp.querySelector(".dialog__btn1").onclick   = () => close(false);
-    tmp.querySelector(".dialog__icon").onclick   = () => close(false);
-    parentTmp.addEventListener("click", (e) => { if (e.target === parentTmp) close(false); });
-
-    document.body.appendChild(tmp);
+  } catch (_) {
+    appliedPromoCode = null;
+    promoCodeStatus.textContent = "Vérification impossible. Réessayez.";
+    promoCodeStatus.className = "sub-promo__status is-err";
+  }
+  rafraichirOffres();
+}
+if (applyPromoBtn) applyPromoBtn.addEventListener("click", validatePromo);
+if (promoCodeInput) {
+  promoCodeInput.addEventListener("keydown", (e) => {
+    // Le champ est dans une modale sans <form> : sans ça, Entrée ne faisait rien.
+    if (e.key === "Enter") { e.preventDefault(); validatePromo(); }
   });
 }
 
-async function handlePlanPurchaseClick(plan) {
-  currentPlan = plan;
-  const confirmed = await confirmPurchase(plan);
-  if (confirmed) startCheckout(plan);
+/* ── Départ vers le paiement ──────────────────────────────────────────────*/
+async function startCheckout(plan) {
+  const body = { plan, billing: isYearly ? "yearly" : "monthly" };
+  // Le code envoyé est celui réellement affiché sur CE plan — saisi à la main
+  // ou offre automatique. Le serveur revalide de toute façon (expiration,
+  // quota, déjà utilisé) : au pire l'offre est ignorée, jamais forcée.
+  const promo = promoPourPlan(plan);
+  if (promo) body.promoCode = promo.code;
+
+  const pms = window.__paymentMethods || [];
+  const defaut = pms.find((pm) => pm.isDefault) || pms[0];
+  if (defaut) body.paymentMethodId = defaut.id;
+
+  try {
+    const response = await fetch("/account/create-checkout", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(body),
+    });
+    const data = await response.json();
+    if (data.url) window.location = data.url;
+    else if (data.upgraded) window.location = "/subscription/success";
+    else if (data.error) { showToast(data.error, "error"); return false; }
+  } catch (_) {
+    showToast("Le paiement n'a pas pu démarrer. Réessayez.", "error");
+    return false;
+  }
+  return true;
 }
 
-if (getProPlan)      getProPlan.onclick      = () => handlePlanPurchaseClick("pro");
-if (getProPlanAlert) getProPlanAlert.onclick = () => handlePlanPurchaseClick("pro");
-if (getBusinessPlan) getBusinessPlan.onclick = () => handlePlanPurchaseClick("business");
-const getEssPlan = document.getElementById("getEssPlan");
-if (getEssPlan)      getEssPlan.onclick      = () => handlePlanPurchaseClick("essentiel");
+if (confirmBtn) {
+  confirmBtn.addEventListener("click", async () => {
+    if (planChoisi === planActuel) return;
 
-// ── Bandeau d'incitation vers le Pro ─────────────────────────────────────────
-// Ce bouton écrivait ici « BETA » dans le champ code promo avant d'aller au
-// paiement. Or le code qui existe en base s'appelle « BETA100 » : le serveur
-// répondait « code invalide » juste avant le checkout, sur le bouton le plus
-// visible de la page. Plus aucun code n'est appliqué en dur — les offres
-// automatiques ont déjà leur mécanisme (cf. OFFRES_AUTO), qui filtre selon le
-// compte, ce qu'un code écrit dans le JavaScript ne peut pas faire.
-//
-// Le clic n'est PAS rebranché ici : subscription.pug relaie déjà ce bouton
-// vers celui de la carte Pro. Poser un second gestionnaire ouvrait la boîte
-// de confirmation deux fois.
+    // Repasser en gratuit = résilier. On ne le fait pas passer par le
+    // checkout : il n'y a rien à payer, et l'annulation garde l'accès jusqu'à
+    // la fin de la période déjà réglée.
+    if (planChoisi === "basic") {
+      fermerModale();
+      return resilier();
+    }
 
-// ── Offre mise en avant : appliquée dès l'ouverture de la page ──────────────
-// Remplace l'ancien bouton « copier le code » : le pro devait coller un code
-// pour obtenir la remise qu'on lui affichait déjà. Le prix barré vaut
-// maintenant engagement — c'est ce montant-là qui part au paiement.
-applyPromoToUI();
+    confirmBtn.disabled = true;
+    const libelle = confirmBtn.textContent;
+    confirmBtn.textContent = "Redirection…";
+    const ok = await startCheckout(planChoisi);
+    if (!ok) { confirmBtn.disabled = false; confirmBtn.textContent = libelle; }
+  });
+}
 
-// ── Auto-checkout après inscription (avec promo auto-appliqué si présent) ─────
-(function() {
-  const params       = new URLSearchParams(window.location.search);
-  const autoPlan     = params.get("plan");
-  const autoBilling  = params.get("billing");
-  const autoCheckout = params.get("autoCheckout");
-  const autoPromo    = params.get("promo");
-  if (autoCheckout !== "1" || !autoPlan) return;
-
-  if (autoBilling === "yearly" && billYearly) {
-    isYearly = true;
-    billYearly.classList.add("active");
-    if (billMonthly) billMonthly.classList.remove("active");
-    updatePrices();
-  }
-
-  // Si un code promo est dans l'URL → l'appliquer avant le checkout
-  if (autoPromo && promoCodeInput) {
-    promoCodeInput.value = autoPromo;
-    validatePromo().then(() => {
-      setTimeout(() => startCheckout(autoPlan), 400);
-    });
-  } else {
-    setTimeout(() => startCheckout(autoPlan), 600);
-  }
-})();
-
-// ── Cancel subscription ───────────────────────────────────────────────────────
-const handleSubscriptionCancel = async function (e) {
-  e.preventDefault();
-
-  const isConfirmed = await openDialog(
-    subT.cancel_title || "Annuler l'abonnement",
-    subT.cancel_desc  || "Êtes-vous sûr de vouloir annuler votre abonnement ?",
+/* ── Résiliation / reprise ────────────────────────────────────────────────*/
+async function resilier() {
+  const confirme = await openDialog(
+    subT.cancel_title || "Résilier l'abonnement",
+    subT.cancel_desc  || "Votre forfait reste actif jusqu'à la fin de la période déjà payée. Confirmer la résiliation ?",
     subT.confirm      || "Confirmer",
     subT.close        || "Fermer"
   );
-
-  if (!isConfirmed) return;
+  if (!confirme) return;
 
   try {
     const response = await fetch("/account/cancel-subscription", {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
     });
     const data = await response.json();
-
     if (data.success) {
-      showToast(subT.success_cancel || data.message || "Abonnement annulé.", "success");
+      showToast(subT.success_cancel || data.message || "Abonnement résilié.", "success");
       setTimeout(() => window.location.reload(), 1500);
     } else {
       showToast(data.error || "Une erreur est survenue.", "error");
     }
-  } catch (err) {
-    console.error("Fetch error:", err);
+  } catch (_) {
     showToast("Une erreur est survenue. Veuillez réessayer.", "error");
   }
-};
+}
 
-if (cancelSubscriptionPro) cancelSubscriptionPro.onclick = handleSubscriptionCancel;
-if (getFreePlan)           getFreePlan.onclick           = handleSubscriptionCancel;
+const cancelBtn = document.getElementById("cancelSubscriptionPro");
+if (cancelBtn) cancelBtn.addEventListener("click", resilier);
 
-// ── Resume subscription ───────────────────────────────────────────────────────
-if (retakeSubscription) {
-  retakeSubscription.onclick = async function (e) {
-    e.preventDefault();
-
-    const isConfirmed = await openDialog(
-      subT.resume_title || "Reprendre le plan",
-      subT.resume_desc  || "Êtes-vous sûr de vouloir reprendre votre abonnement ?",
+const retakeBtn = document.getElementById("retakeSubscription");
+if (retakeBtn) {
+  retakeBtn.addEventListener("click", async () => {
+    const confirme = await openDialog(
+      subT.resume_title || "Reprendre le forfait",
+      subT.resume_desc  || "Votre abonnement reprendra normalement à la prochaine échéance. Confirmer ?",
       subT.confirm      || "Confirmer",
       subT.close        || "Fermer"
     );
-
-    if (!isConfirmed) return;
-
+    if (!confirme) return;
     try {
       const response = await fetch("/subscription/resume", {
-        method:  "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
       });
       const data = await response.json();
-
       if (data.success) {
         showToast(subT.success_resume || data.message || "Abonnement repris.", "success");
         setTimeout(() => location.reload(), 1500);
       } else {
         showToast(data.error || "Une erreur est survenue.", "error");
       }
-    } catch (err) {
-      console.error("Fetch error:", err);
+    } catch (_) {
       showToast("Une erreur est survenue. Veuillez réessayer.", "error");
     }
-  };
+  });
 }
+
+/* ══ Modale « Gérer le paiement » ═════════════════════════════════════════*/
+
+// Carte par défaut : c'est elle qui sera débitée à la prochaine échéance.
+document.querySelectorAll("[data-pm-default]").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    const id = btn.dataset.pmDefault;
+    const ligne = btn.closest(".sub-card-row");
+    if (ligne && ligne.classList.contains("is-default")) return;
+    btn.disabled = true;
+    try {
+      const res = await fetch("/account/payment-method/" + id + "/set-default", { method: "POST" });
+      const data = await res.json();
+      if (data.success || res.ok) {
+        // Repeindre tout de suite : attendre le rechargement laisserait le
+        // rond coché sur l'ancienne carte pendant une seconde.
+        document.querySelectorAll(".sub-card-row").forEach((r) => {
+          r.classList.toggle("is-default", r.dataset.pmId === id);
+          const flag = r.querySelector(".sub-card-row__flag");
+          if (flag && r.dataset.pmId !== id) flag.remove();
+        });
+        showToast("Carte par défaut mise à jour.", "success");
+        setTimeout(() => location.reload(), 900);
+      } else {
+        showToast(data.error || "Impossible de changer la carte par défaut.", "error");
+        btn.disabled = false;
+      }
+    } catch (_) {
+      showToast("Une erreur est survenue.", "error");
+      btn.disabled = false;
+    }
+  });
+});
+
+document.querySelectorAll("[data-pm-delete]").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    const id = btn.dataset.pmDelete;
+    const confirme = await openDialog(
+      "Supprimer cette carte",
+      "Elle ne pourra plus servir à régler votre abonnement. Confirmer la suppression ?",
+      "Supprimer",
+      "Annuler"
+    );
+    if (!confirme) return;
+    try {
+      const res = await fetch("/account/payment-method/" + id, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.error == null) {
+        showToast("Carte supprimée.", "success");
+        setTimeout(() => location.reload(), 900);
+      } else {
+        showToast(data.error || "Suppression impossible.", "error");
+      }
+    } catch (_) {
+      showToast("Une erreur est survenue.", "error");
+    }
+  });
+});
+
+/* ── Ajout d'une carte (Stripe Elements) ──────────────────────────────────
+   Le numéro est saisi dans une iframe servie par Stripe : il ne traverse
+   jamais notre page ni notre serveur, on ne reçoit qu'un identifiant de moyen
+   de paiement. */
+const addCardToggle = document.getElementById("addCardToggle");
+const addCardForm   = document.getElementById("addCardForm");
+const saveCardBtn   = document.getElementById("saveCardBtn");
+const cardErrorEl   = document.getElementById("cardError");
+let stripeInstance = null;
+let cardElement = null;
+let clientSecret = null;
+
+function fermerFormulaireCarte() {
+  if (addCardForm) addCardForm.hidden = true;
+  if (cardErrorEl) cardErrorEl.textContent = "";
+}
+
+if (addCardToggle) {
+  addCardToggle.addEventListener("click", async () => {
+    if (addCardForm && !addCardForm.hidden) { fermerFormulaireCarte(); return; }
+
+    const key = window.__stripeKey || "";
+    if (!key) {
+      showToast("Configuration Stripe manquante — contactez le support.", "error");
+      return;
+    }
+    if (!window.Stripe) {
+      showToast("Stripe n'a pas pu être chargé. Vérifiez votre connexion.", "error");
+      return;
+    }
+
+    addCardToggle.disabled = true;
+    try {
+      const res = await fetch("/account/payment-method/setup-intent", { method: "POST" });
+      const data = await res.json();
+      if (!data.clientSecret) throw new Error(data.error || "setup-intent indisponible");
+      clientSecret = data.clientSecret;
+
+      addCardForm.hidden = false;
+      // Elements n'est monté qu'une fois : le remonter à chaque ouverture
+      // recrée une iframe et perd la saisie en cours.
+      if (!cardElement) {
+        stripeInstance = window.Stripe(key);
+        const elements = stripeInstance.elements();
+        cardElement = elements.create("card", {
+          hidePostalCode: true,
+          style: { base: { fontSize: "14px", fontFamily: "'Plus Jakarta Sans', sans-serif", color: "#1a201d" } },
+        });
+        cardElement.mount("#cardElement");
+        cardElement.on("change", (ev) => {
+          if (cardErrorEl) cardErrorEl.textContent = ev.error ? ev.error.message : "";
+        });
+      }
+    } catch (e) {
+      showToast(e.message || "Impossible d'ouvrir le formulaire de carte.", "error");
+    }
+    addCardToggle.disabled = false;
+  });
+}
+
+document.querySelectorAll("[data-addcard-cancel]").forEach((btn) => {
+  btn.addEventListener("click", fermerFormulaireCarte);
+});
+
+if (saveCardBtn) {
+  saveCardBtn.addEventListener("click", async () => {
+    if (!stripeInstance || !cardElement || !clientSecret) return;
+    saveCardBtn.disabled = true;
+    const libelle = saveCardBtn.textContent;
+    saveCardBtn.textContent = "Enregistrement…";
+    try {
+      const result = await stripeInstance.confirmCardSetup(clientSecret, {
+        payment_method: { card: cardElement },
+      });
+      if (result.error) {
+        if (cardErrorEl) cardErrorEl.textContent = result.error.message;
+        saveCardBtn.disabled = false;
+        saveCardBtn.textContent = libelle;
+        return;
+      }
+      const newPmId = result.setupIntent && result.setupIntent.payment_method;
+      // Une carte qu'on vient d'ajouter est presque toujours celle qu'on veut
+      // utiliser : la poser par défaut évite un second aller-retour.
+      if (newPmId) {
+        await fetch("/account/payment-method/" + newPmId + "/set-default", { method: "POST" });
+      }
+      showToast("Carte enregistrée.", "success");
+      setTimeout(() => location.reload(), 900);
+    } catch (_) {
+      if (cardErrorEl) cardErrorEl.textContent = "Une erreur est survenue. Réessayez.";
+      saveCardBtn.disabled = false;
+      saveCardBtn.textContent = libelle;
+    }
+  });
+}
+
+/* ── Auto-checkout après inscription ──────────────────────────────────────
+   /register renvoie vers /subscription?autoCheckout=1&plan=pro : on ouvre la
+   modale sur le bon plan plutôt que de débiter sans rien montrer. */
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("autoCheckout") !== "1") return;
+
+  const plan = params.get("plan");
+  if (params.get("billing") === "yearly") setPeriode(true);
+  ouvrirModale("plans");
+  if (plan && PRICES[plan]) { planChoisi = plan; rafraichirOffres(); }
+
+  const promo = params.get("promo");
+  if (promo && promoCodeInput) {
+    promoCodeInput.value = promo;
+    validatePromo();
+  }
+})();
+
+// Premier rendu : applique les offres automatiques et calcule le résumé.
+rafraichirOffres();

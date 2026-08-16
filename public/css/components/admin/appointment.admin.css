@@ -408,7 +408,7 @@
 }
 
 .fill-dot--green {
-  background: #22c55e;
+  background: var(--success);
 }
 .fill-dot--orange {
   background: #f97316;
@@ -657,9 +657,9 @@
 }
 
 .cal-drag-ghost--conflict {
-  background: rgba(220, 38, 38, 0.12);
-  border-color: #dc2626;
-  color: #dc2626;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 /* Événement externe (Google Calendar) — créneau bloqué, non cliquable */
@@ -790,7 +790,7 @@
 .appt-pill[data-status="no-show"] {
   background-color: #fef3c7;
   color: #92400e;
-  border: 1.5px solid #fde68a;
+  border: 1.5px solid color-mix(in srgb, var(--warning) 30%, #fff);
 }
 
 .appt-pill[data-status="confirmed"],
@@ -1078,8 +1078,8 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #dc2626;
-  background: #fee2e2;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, #fff);
   border-radius: 6px;
   padding: 2px 8px;
   margin-top: 4px;
@@ -1117,7 +1117,7 @@
 }
 
 .appt-popup__detail-btn:hover {
-  background-color: var(--main-color-pale, rgba(34, 197, 94, 0.08));
+  background-color: var(--main-color-pale, color-mix(in srgb, var(--success) 8%, transparent));
   color: var(--accent);
 }
 
@@ -1264,7 +1264,7 @@
 
   /* Jour courant → en-tête vert + colonne teintée en vert léger */
   .calendar-section .grid-section .cell.day-header.today {
-    color: #1e7a4e;
+    color: var(--accent);
     font-weight: 700;
   }
 
@@ -1801,9 +1801,9 @@ body:has(.cal-month) .cal-month {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #dc2626;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  color: var(--danger);
+  background: var(--danger-pale);
+  border: 1px solid var(--danger-border);
   border-radius: 9px;
   padding: 10px 14px;
   font-size: 13px;
@@ -1817,7 +1817,7 @@ body:has(.cal-month) .cal-month {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
-  background: #dc2626;
+  background: var(--danger);
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z'/%3E%3C/svg%3E") center/contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath d='M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z'/%3E%3C/svg%3E") center/contain no-repeat;
 }
@@ -2172,7 +2172,7 @@ body.appt-group-open { overflow: hidden; }
 .appt-pill[data-status="pending"],
 .appt-pill:not([data-status]),
 .appt-pill[data-status=""] {
-  --pill-color: #16a34a;
+  --pill-color: var(--success);
   background-color: color-mix(in srgb, var(--pill-color) 13%, #fff);
   color: #1f2937;
   border: 1px solid color-mix(in srgb, var(--pill-color) 26%, #fff);
@@ -2231,9 +2231,15 @@ body.appt-group-open { overflow: hidden; }
   padding: 1px 7px;
   align-items: center;
 }
+/* 1.35 et non 1.15 : ce libellé porte un NOM DE CLIENT et il est tronqué
+   (`overflow: hidden`, imposé par l'ellipse). À 11px, une boîte de 1,15
+   ne laissait que ~0,4px sous la ligne de base — assez pour « Sara Mansour »,
+   pas pour « Benjamin Gauthier » ni « Jean Dupont ». Le défaut ne se voit
+   jamais en recette : il dépend du nom que le client a tapé.
+   La pastille garde sa hauteur, fixée par son `padding` et par l'heure. */
 .appt-pill--short .appt-pill__name {
   font-size: 11px;
-  line-height: 1.15;
+  line-height: 1.35;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2268,7 +2274,7 @@ body.appt-group-open { overflow: hidden; }
 
 /* Pilule « résumé » (4+ RDV sur un même créneau) : même logique teintée */
 .appt-pill--summary {
-  --pill-color: #16a34a;
+  --pill-color: var(--success);
   background-color: color-mix(in srgb, var(--pill-color) 13%, #fff);
   color: #1f2937;
   border: 1px solid color-mix(in srgb, var(--pill-color) 26%, #fff);
@@ -2312,7 +2318,7 @@ body.appt-group-open { overflow: hidden; }
    L'en-tête passe en vert et toute la colonne du jour prend un fond vert très
    léger pour repérer « aujourd'hui » d'un coup d'œil. ═══════════════════════════ */
 .calendar-section .grid-section .cell.day-header.today {
-  color: #1e7a4e;
+  color: var(--accent);
   font-weight: 700;
 }
 .calendar-section .grid-section .cell.day.today {
@@ -2324,7 +2330,7 @@ body.appt-group-open { overflow: hidden; }
 }
 /* Bandeau semaine (sélecteur en haut) : numéro du jour actuel en vert aussi. */
 .calendar__week-day.today .calendar__week-day-number {
-  color: #1e7a4e;
+  color: var(--accent);
 }
 
 /* ══════════ Jours à horaires spéciaux = même gris que les jours OFF, + horaires ══

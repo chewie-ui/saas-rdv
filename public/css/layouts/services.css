@@ -37,8 +37,8 @@
 
 .services-counter--full {
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.07);
-  border-color: rgba(239, 68, 68, 0.25);
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 25%, transparent);
 }
 
 .services-page {
@@ -289,8 +289,8 @@
 }
 
 .badge--category {
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--info-pale);
+  color: var(--info);
   border: 1px solid #bfdbfe;
 }
 
@@ -301,7 +301,7 @@
 }
 
 .badge--fee {
-  background: #fff7ed;
+  background: var(--warning-pale);
   color: #c2410c;
   border: 1px solid #fed7aa;
 }
@@ -413,8 +413,8 @@
 .btn--icon .material-symbols-outlined { margin: 0; color: currentColor; }
 .btn--icon:hover { background: var(--surface); }
 
-.btn--danger { border-color: rgba(239,68,68,.2); }
-.btn--danger:hover { background: rgba(239,68,68,.07); border-color: rgba(239,68,68,.35); }
+.btn--danger { border-color: color-mix(in srgb, var(--danger) 20%, transparent); }
+.btn--danger:hover { background: color-mix(in srgb, var(--danger) 7%, transparent); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
 .btn--danger svg { fill: #ef4444; }
 .btn--danger .material-symbols-outlined { color: #ef4444; }
 
@@ -1059,7 +1059,7 @@
 
 .cat-style-opt.is-active {
   border-color: var(--main-color);
-  background: var(--main-color-soft, rgba(34,197,94,0.08));
+  background: var(--main-color-soft, color-mix(in srgb, var(--success) 8%, transparent));
   color: var(--main-color);
 }
 
@@ -1351,4 +1351,4 @@
   transition: background 0.12s;
   z-index: 2;
 }
-.svc-img-upload__remove:hover { background: rgba(220,38,38,0.85); }
+.svc-img-upload__remove:hover { background: color-mix(in srgb, var(--danger) 85%, transparent); }

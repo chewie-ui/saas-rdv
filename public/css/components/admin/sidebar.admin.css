@@ -1,25 +1,66 @@
-/* ============================================================
-   Sidebar — BranShee admin
-   ============================================================ */
+/* ══════════════════════════════════════════════════════════════════════════
+   SIDEBAR — espace pro
+   ─────────────────────────────────────────────────────────────────────────
+   Refonte d'après la maquette « Espace pro — BranShee » (artefact
+   c49f268d, décodé dans maquette-espace-pro.html lignes 210-255). Mesures,
+   rayons et couleurs relevés sur le fichier source.
 
-/* ── Shell ──────────────────────────────────────────────────── */
+   ── CE QUI N'A PAS BOUGÉ, ET POURQUOI ────────────────────────────────────
+   `views/common/sidebar.pug` n'est PAS touché. Il porte dix contrôles de
+   permissions (services, formulaires, disponibilités, facturation,
+   collaborateurs, grades, journaux…), le sélecteur multi-établissements avec
+   photos, la jauge de quota et le badge « profil incomplet ». Refondre le
+   balisage aurait fait disparaître tout cela en silence — c'est exactement
+   ce qui avait imposé de reprendre l'agenda. Seules les couleurs et les
+   mesures changent ici ; les noms de classes sont ceux d'avant.
+
+   ── DEUX BARRES, UNE SEULE FEUILLE ───────────────────────────────────────
+   `sidebar-client.pug` (espace client) réutilise ces classes, et
+   `client.css` l'importe puis surcharge sous `.client-layout`. Ces
+   surcharges étaient écrites contre une barre CLAIRE ; la barre devient
+   sombre, elles restent gagnantes (spécificité + !important) et deviennent
+   pour la plupart redondantes. À nettoyer plus tard, pas en même temps.
+
+   ── LA JAUGE DE QUOTA ────────────────────────────────────────────────────
+   Absente de la maquette, conservée sur demande explicite : elle est
+   habillée aux couleurs de la barre sombre plutôt que supprimée.
+   ═════════════════════════════════════════════════════════════════════════ */
+
 .sidebar {
+  /* Palette de la barre, relevée sur la maquette. Elle est locale : ces
+     teintes n'existent nulle part ailleurs dans l'application, les publier
+     en jetons globaux laisserait croire qu'on peut s'en servir ailleurs. */
+  --sb-bg: #082a1c;          /* fond de la barre */
+  --sb-text: #c7ddd0;        /* texte courant */
+  --sb-link: #a9c8ba;        /* libellé d'un lien au repos */
+  --sb-link-on: #f0fff8;     /* libellé du lien actif */
+  --sb-ico: #6d9781;         /* icône au repos */
+  --sb-ico-on: #5fd39d;      /* icône du lien actif */
+  --sb-rail: #22c58a;        /* filet vertical du lien actif */
+  /* Surtitre de section. La maquette donne #5a8571, qui tombe à 3,70:1 sur ce
+     fond — sous le seuil AA de 4,5:1, et ces libellés sont en 10px. Éclairci
+     d'un cran : même rôle visuel, texte réellement lisible. */
+  --sb-title: #7ba894;
+  --sb-mint: #5fd39d;        /* plan, accents secondaires */
+  --sb-quiet: #9fc0b0;       /* icônes discrètes du pied */
+  --sb-fill: rgba(255, 255, 255, .04);
+  --sb-fill-2: rgba(255, 255, 255, .07);
+  --sb-line: rgba(255, 255, 255, .09);
+  --sb-on-bg: rgba(95, 211, 157, .12); /* fond du lien actif */
+
   width: 100%;
-  background: var(--color-white);
-  border-right: 1px solid var(--border-light);
+  height: 100%;
   position: fixed;
   top: 0;
   left: -100%;
-  height: 100%;
-  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1000;
   display: flex;
   flex-direction: column;
+  background: var(--sb-bg);
+  color: var(--sb-text);
+  transition: left .25s cubic-bezier(.4, 0, .2, 1);
 }
-
-.sidebar.open {
-  left: 0;
-}
+.sidebar.open { left: 0; }
 
 .sb-wrap {
   display: flex;
@@ -28,1302 +69,639 @@
   overflow: hidden;
 }
 
-/* ── Header ─────────────────────────────────────────────────── */
+/* Ascenseur discret : sur fond sombre, la barre par défaut du navigateur
+   dessine un rectangle clair très visible le long de la navigation. */
+.sidebar ::-webkit-scrollbar { width: 10px; height: 10px; }
+.sidebar ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, .13);
+  border: 3px solid var(--sb-bg);
+  border-radius: 99px;
+}
+.sidebar * { scrollbar-color: rgba(255, 255, 255, .13) transparent; }
+
+/* ── En-tête : logo ─────────────────────────────────────────────────────── */
 .sb-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 16px 14px;
+  padding: 22px 20px 12px;
   flex-shrink: 0;
 }
 
 .sb-logo {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 11px;
   text-decoration: none;
+  min-width: 0;
 }
-
 .sb-logo__mark {
   width: 32px;
   height: 32px;
+  flex: none;
   border-radius: 10px;
-  flex-shrink: 0;
-  display: block;
+  background: var(--bs-accent, #12a06e);
   object-fit: contain;
+  padding: 5px;
 }
-
 .sb-logo__name {
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: -0.3px;
-  color: var(--ink, #0c0d0e);
-  font-family: var(--font-primary);
+  font: 800 19px/1 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  letter-spacing: -.02em;
+  color: #fff;
+  white-space: nowrap;
 }
 
 .sb-close {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: none;
-  background: none;
-  border-radius: 8px;
+  flex: none;
+  border: 0;
+  border-radius: 9px;
+  background: var(--sb-fill);
+  color: var(--sb-quiet);
   cursor: pointer;
-  color: var(--text-muted);
-  transition: background 0.15s, color 0.15s;
-  flex-shrink: 0;
 }
+.sb-close:hover { background: var(--sb-fill-2); color: #fff; }
 
-.sb-close:hover {
-  background: var(--surface, #f5f4f1);
-  color: var(--text-primary);
-}
-
-.sb-close svg {
-  fill: currentColor;
-}
-.sb-close .material-symbols-outlined {
-  color: currentColor;
-}
-
-/* ── Établissement actif + switcher ────────────────────────────── */
+/* ── Sélecteur d'établissement ──────────────────────────────────────────── */
 .sb-estab {
   position: relative;
-  margin: 0 10px 8px;
+  padding: 6px 16px 12px;
   flex-shrink: 0;
 }
 
-/* Trigger button */
 .sb-estab__current {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 6px 8px;
-  border-radius: 8px;
-  border: none;
-  background: none;
-  font-family: inherit;
+  gap: 11px;
+  padding: 10px 12px;
+  border: 1px solid var(--sb-line);
+  border-radius: 13px;
+  background: var(--sb-fill);
   cursor: pointer;
   text-align: left;
-  transition: background 0.12s;
+  transition: background-color .15s, border-color .15s;
 }
+.sb-estab__current:hover { background: var(--sb-fill-2); }
+/* Non cliquable quand le compte n'a qu'un établissement : le curseur ne doit
+   pas promettre un menu qui n'existe pas. */
+.sb-estab:not(.sb-estab--switchable) .sb-estab__current { cursor: default; }
+.sb-estab:not(.sb-estab--switchable) .sb-estab__caret { display: none; }
 
-.sb-estab__current:hover {
-  background: var(--surface, #f5f4f1);
-}
-
-/* Letter avatar in trigger */
 .sb-estab__avatar {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  background: var(--accent, #1a7a4a);
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--bs-accent, #12a06e);
   color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: var(--font-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  letter-spacing: 0;
-  overflow: hidden;
+  font: 700 13px/1.2 var(--bs-font, "Plus Jakarta Sans", sans-serif);
 }
-
-/* Photo d'établissement à la place de l'initiale, dans les 3 avatars du
-   switcher (déclencheur, en-tête du panneau, liste des établissements) —
-   même règle partagée, la taille du conteneur fait déjà foi. */
-.sb-estab__avatar img,
-.sb-estab__panel-avatar img,
-.sb-estab__opt-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
+.sb-estab__avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 .sb-estab__name {
   flex: 1;
+  min-width: 0;
+  font: 700 13.5px/1.1 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  color: #fff;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
 }
+.sb-estab__caret { flex: none; color: var(--sb-ico); transition: transform .15s; }
+.sb-estab.open .sb-estab__caret { transform: rotate(180deg); }
 
-.sb-estab__caret {
-  flex-shrink: 0;
-  color: var(--text-muted);
-  transition: transform 0.15s;
-}
-
-.sb-estab.open .sb-estab__caret {
-  transform: rotate(180deg);
-}
-
-/* Dropdown panel */
+/* Panneau de bascule — surface CLAIRE posée sur la barre sombre : c'est un
+   menu, pas une partie de la navigation, et le contraste le dit. */
 .sb-estab__panel {
   display: none;
   position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  background: var(--color-white);
-  border: 1px solid var(--border-light);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-  padding: 6px;
-  z-index: 50;
-  max-height: 320px;
-  overflow-y: auto;
+  left: 16px;
+  right: 16px;
+  top: calc(100% - 6px);
+  z-index: 40;
+  padding: 8px;
+  border: 1px solid var(--bs-border, #e9ece9);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: var(--bs-shadow-pop, 0 12px 32px -20px rgba(15, 23, 25, .25));
 }
+.sb-estab.open .sb-estab__panel { display: block; }
 
-.sb-estab.open .sb-estab__panel {
-  display: block;
-}
-
-/* Panel header — big avatar + company name */
 .sb-estab__panel-head {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 8px 10px;
+  padding: 6px 8px 10px;
 }
-
 .sb-estab__panel-avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
+  flex: none;
   border-radius: 8px;
-  background: var(--accent, #1a7a4a);
+  overflow: hidden;
+  background: var(--bs-accent, #12a06e);
   color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  font-family: var(--font-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  font: 700 12px/1.2 var(--bs-font, "Plus Jakarta Sans", sans-serif);
 }
-
+.sb-estab__panel-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .sb-estab__panel-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Company options */
-.sb-estab__opt {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  width: 100%;
-  padding: 7px 8px;
-  border-radius: 8px;
-  border: none;
-  background: none;
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-.sb-estab__opt:hover { background: var(--surface, #f5f4f1); }
-
-.sb-estab__opt.is-active { cursor: default; }
-
-/* Letter avatar per company option */
-.sb-estab__opt-avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: var(--border-light);
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 700;
-  font-family: var(--font-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.sb-estab__opt-avatar.is-active {
-  background: var(--accent, #1a7a4a);
-  color: #fff;
-}
-
-.sb-estab__opt-info {
-  flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.sb-estab__opt-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
+  font: 700 13px/1.2 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  color: var(--bs-text-title, #141a17);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.sb-estab__opt-tag {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.sb-estab__opt svg { flex-shrink: 0; color: var(--accent); }
-.sb-estab__opt .material-symbols-outlined { flex-shrink: 0; color: var(--accent); font-size: 19px; }
-.sb-estab__opt-check { font-variation-settings: "FILL" 1; }
-
-/* Back / espace client link + add establishment */
-.sb-estab__back,
-.sb-estab__add {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  width: 100%;
-  padding: 7px 8px;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: background 0.12s, color 0.12s;
-}
-
-.sb-estab__back:hover {
-  background: var(--surface, #f5f4f1);
-  color: var(--text-primary);
-}
-
-.sb-estab__add {
-  color: var(--accent, #16a34a);
-  font-weight: 600;
-}
-
-.sb-estab__add:hover {
-  background: #f0fdf4;
-  color: var(--accent, #16a34a);
-}
-
-.sb-estab__back svg { flex-shrink: 0; fill: currentColor; opacity: 0.6; }
-.sb-estab__back .material-symbols-outlined { flex-shrink: 0; color: currentColor; opacity: 0.6; }
-.sb-estab__add svg { flex-shrink: 0; fill: currentColor; }
-.sb-estab__add .material-symbols-outlined { flex-shrink: 0; color: currentColor; }
 
 .sb-estab__sep {
   height: 1px;
-  margin: 5px 2px;
-  background: var(--border-light);
+  margin: 6px 0;
+  background: var(--bs-border, #e9ece9);
 }
 
-/* ── Navigation ─────────────────────────────────────────────── */
-.sb-nav {
-  flex: 1;
-  overflow-y: auto;
-  padding: 4px 8px 8px;
-  display: flex;
-  flex-direction: column;
-  scrollbar-width: none;
-}
-
-.sb-nav::-webkit-scrollbar { display: none; }
-
-.sb-section {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Espace entre les groupes (menu non pliable, style « réglages »). */
-.sb-section + .sb-section {
-  margin-top: 16px;
-}
-
-/* Titre de groupe : petit libellé gris, non pliable (plus de chevron). */
-.sb-section__title {
-  display: block;
-  padding: 4px 10px 6px;
-  font-family: var(--font-primary);
-  font-size: 11.5px;
-  font-weight: 400;
-  letter-spacing: 0.02em;
-  color: #637083;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Liens du groupe — toujours visibles. */
-.sb-section__links {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 0;
-}
-
-/* ── Nav links (sub-items) ──────────────────────────────────── */
-.sb-link {
+.sb-estab__opt,
+.sb-estab__add {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 7px 10px;
-  border-radius: 7px;
+  gap: 10px;
+  padding: 8px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--bs-text-body, #3f474e);
+  font: 600 13px/1.2 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  text-align: left;
   text-decoration: none;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 400;
-  font-family: var(--font-primary);
-  transition: background 0.12s, color 0.12s;
-  position: relative;
+  cursor: pointer;
 }
+.sb-estab__opt:hover,
+.sb-estab__add:hover { background: var(--bs-bg-app, #f5f7f6); }
 
-.sb-link svg {
-  fill: currentColor;
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  opacity: 0.45;
-  transition: opacity 0.12s;
-}
-.sb-link .material-symbols-outlined {
-  color: currentColor;
-  flex-shrink: 0;
-  font-size: 16px;
-  opacity: 0.45;
-  transition: opacity 0.12s;
-}
-
-.sb-link span {
-  flex: 1;
-  white-space: nowrap;
+.sb-estab__opt-avatar {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 8px;
   overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sb-link:hover {
-  background: var(--surface, #f5f4f1);
-  color: var(--text-primary);
-}
-
-.sb-link:hover svg { opacity: 0.7; }
-.sb-link:hover .material-symbols-outlined { opacity: 0.7; }
-
-.sb-link.active {
-  background: var(--accent-soft, #e8f5ee);
-  color: var(--accent);
-  font-weight: 500;
-}
-
-.sb-link.active svg { opacity: 1; }
-.sb-link.active .material-symbols-outlined { opacity: 1; }
-
-.sb-link.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 22%;
-  height: 56%;
-  width: 2.5px;
-  background: var(--accent);
-  border-radius: 0 2px 2px 0;
-}
-
-/* ── Badge notification sidebar ─────────────────────────────── */
-.sb-badge {
-  flex: 0 !important;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 99px;
-  background: #ef4444;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 18px;
-  text-align: center;
-  letter-spacing: 0;
-}
-
-.sb-badge {
-  flex: none !important;
-  display: inline-flex;
+  background: var(--bs-badge-done-bg, #f2f4f2);
+  color: var(--bs-text-2, #6b737b);
+  display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 17px;
-  height: 17px;
+  font: 700 11px/1.2 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+}
+.sb-estab__opt-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.sb-estab__opt-avatar.is-active {
+  background: var(--bs-accent, #12a06e);
+  color: #fff;
+}
+
+.sb-estab__opt-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.sb-estab__opt-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--bs-text-title, #141a17);
+}
+.sb-estab__opt-tag {
+  font: 600 10.5px/1 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  color: var(--bs-text-muted, #98a29b);
+}
+.sb-estab__opt-check { flex: none; font-size: 17px; color: var(--bs-accent, #12a06e); }
+.sb-estab__add { color: var(--bs-accent-text, #0d7a54); }
+.sb-estab__add svg { flex: none; }
+
+/* ── Navigation ─────────────────────────────────────────────────────────── */
+.sb-nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px 12px 12px;
+}
+
+.sb-section { margin-bottom: 18px; }
+.sb-section:last-child { margin-bottom: 0; }
+
+.sb-section__title {
+  display: block;
+  padding: 0 12px 9px;
+  font: 700 10px/1 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--sb-title);
+}
+
+.sb-section__links { display: flex; flex-direction: column; gap: 2px; }
+
+.sb-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  text-decoration: none;
+  font: 600 14px/1 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  color: var(--sb-link);
+  transition: background-color .13s, color .13s;
+}
+/* Dimensions et couleur, communes aux deux familles d'icônes. */
+.sb-link svg {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  fill: currentColor;
+  color: var(--sb-ico);
+  transition: color .13s;
+}
+/* Les icônes de l'espace PRO sont celles de la maquette : dessinées au TRAIT
+   (stroke 1.8), pas remplies. Un `fill` les transformerait en taches pleines
+   — c'est toute la différence entre le pictogramme de l'artefact et un glyphe.
+   ⚠ Discriminé par le `viewBox` et NON par une règle globale : `.sb-link` est
+   aussi la classe de `sidebar-client.pug`, dont les cinq icônes sont des
+   tracés Material PLEINS (viewBox `0 -960 960 960`). Un `fill: none` général
+   les faisait disparaître — une forme pleine sans remplissage ne dessine rien,
+   et l'espace client se serait retrouvé avec une navigation sans icônes. */
+.sb-link svg[viewBox="0 0 24 24"] {
+  fill: none;
+  stroke: currentColor;
+}
+.sb-link .material-symbols-outlined {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  color: var(--sb-ico);
+  transition: color .13s;
+}
+/* Le libellé se tronque au lieu de pousser son badge hors de la carte : à
+   256px, « Personnaliser » suivi d'un badge d'alerte débordait sinon.
+
+   `line-height` explicite, et c'est LA ligne importante : `.sb-link` déclare
+   `14px/1`, soit une boîte de ligne haute de 14px pour des glyphes qui en
+   demandent près de 18. Combiné à `overflow: hidden` — indispensable à la
+   troncature — cela rognait les jambages : « Logs » perdait la queue de son
+   g, « Personnaliser » et « Disponibilités » celle de leur p.
+
+   On ne peut pas s'en sortir avec `overflow-x` seul : `text-overflow` exige
+   `overflow: hidden`, et un `overflow-y: visible` associé est recalculé en
+   `auto` par la spécification, ce qui créerait un conteneur défilant.
+   Agrandir la boîte de ligne est donc la bonne réponse — et elle ne change
+   pas la hauteur du lien, déjà fixée par l'icône de 19px. */
+.sb-link span:not([class]) {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sb-link:hover { background: var(--sb-fill); color: #fff; }
+.sb-link:hover svg,
+.sb-link:hover .material-symbols-outlined { color: var(--sb-link); }
+
+.sb-link.active {
+  background: var(--sb-on-bg);
+  color: var(--sb-link-on);
+}
+.sb-link.active svg,
+.sb-link.active .material-symbols-outlined { color: var(--sb-ico-on); }
+
+/* Filet vertical du lien actif — le repère le plus lisible de la maquette. */
+.sb-link.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--sb-rail);
+}
+
+/* Lien présent mais sans droit d'accès : visible pour dire que la
+   fonctionnalité existe, inerte pour ne pas mener à un refus. */
+.sb-link--disabled { opacity: .42; pointer-events: none; }
+
+.sb-link:focus-visible,
+.sb-estab__current:focus-visible,
+.sb-user:focus-visible {
+  outline: 2px solid var(--sb-mint);
+  outline-offset: -2px;
+}
+
+/* Compteur (collaborateurs en attente) et alerte (profil incomplet). */
+.sb-badge {
+  min-width: 19px;
+  height: 19px;
+  flex: none;
   padding: 0 5px;
   border-radius: 999px;
-  background: #ef4444;
+  background: var(--bs-notif, #e5665a);
   color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 10.5px/1 var(--bs-font, "Plus Jakarta Sans", sans-serif);
 }
+.sb-badge--warn { background: var(--bs-warn, #b5843f); }
 
-.sb-badge--warn {
-  background: #f97316;
-}
-
-.sb-link--disabled {
-  opacity: 0.45;
-  pointer-events: none;
-  cursor: default;
-}
-
-/* External link: show ext icon inline */
-.sb-link--ext {
-  justify-content: space-between;
-}
-
-.sb-ext-icon {
-  fill: currentColor;
-  opacity: 0.4;
-  flex-shrink: 0;
-  transition: opacity 0.12s, transform 0.12s;
-}
-
-.sb-link--ext:hover .sb-ext-icon {
-  opacity: 0.8;
-  transform: translate(1px, -1px);
-}
-
-/* ── Footer ─────────────────────────────────────────────────── */
+/* ── Pied ───────────────────────────────────────────────────────────────── */
 .sb-foot {
   flex-shrink: 0;
-  border-top: 1px solid var(--border-light);
-  padding: 8px 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+  padding: 10px 14px 16px;
+  border-top: 1px solid var(--sb-fill-2);
 }
 
-/* Footer bottom links (Paramètres, Voir calendrier) */
-.sb-foot-links {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding-bottom: 4px;
-}
-
+.sb-foot-links { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
 .sb-foot-link {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 6px 8px;
-  border-radius: 8px;
-  font-family: var(--font-primary);
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: background 0.12s, color 0.12s;
-}
-
-.sb-foot-link svg {
-  flex-shrink: 0;
-  fill: currentColor;
-  opacity: 0.6;
-}
-.sb-foot-link .material-symbols-outlined {
-  flex-shrink: 0;
-  color: currentColor;
-  opacity: 0.6;
-}
-
-.sb-foot-link .sb-ext-icon {
-  margin-left: auto;
-  opacity: 0.4;
-}
-
-.sb-foot-link:hover {
-  background: var(--surface, #f5f4f1);
-  color: var(--text-primary);
-}
-
-.sb-foot-link:hover svg {
-  opacity: 0.9;
-}
-.sb-foot-link:hover .material-symbols-outlined {
-  opacity: 0.9;
-}
-
-.sb-foot-link.is-active {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-
-.sb-foot-link.is-active svg {
-  opacity: 1;
-}
-.sb-foot-link.is-active .material-symbols-outlined {
-  opacity: 1;
-}
-
-/* Plan badge on Abonnement link */
-.sb-foot-plan-badge {
-  margin-left: auto;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: var(--surface-2, #eceae6);
-  color: var(--text-secondary);
-  letter-spacing: 0.03em;
-}
-
-/* ── Language selector ──────────────────────────────────────── */
-.sb-lang {
-  position: relative;
-}
-
-.sb-lang__btn {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: 100%;
-  padding: 7px 10px;
-  border: 1px solid var(--border-light);
-  border-radius: 9px;
-  background: none;
-  cursor: pointer;
-  font-size: 0.82rem;
-  font-weight: 600;
-  font-family: var(--font-primary);
-  color: var(--text-secondary);
-  transition: border-color 0.15s, background 0.15s;
-}
-
-.sb-lang__btn:hover {
-  border-color: var(--accent-border, #a8d5bc);
-  background: var(--accent-soft, #e8f5ee);
-  color: var(--accent);
-}
-
-.sb-lang__flag {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.sb-lang__code {
-  flex: 1;
-  text-align: left;
-}
-
-.sb-lang__caret {
-  flex-shrink: 0;
-  color: var(--text-muted);
-  transition: transform 0.2s;
-}
-
-.sb-lang.open .sb-lang__caret {
-  transform: rotate(180deg);
-}
-
-.sb-lang.open .sb-lang__btn {
-  border-color: var(--accent-border, #a8d5bc);
-  background: var(--accent-soft, #e8f5ee);
-  color: var(--accent);
-}
-
-/* Language dropdown panel */
-.sb-lang__panel {
-  display: none;
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  background: var(--color-white);
-  border: 1px solid var(--border-light);
-  border-radius: 12px;
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
-  overflow: hidden;
-  z-index: 50;
-  flex-direction: column;
-  padding: 4px;
-}
-
-.sb-lang.open .sb-lang__panel {
-  display: flex;
-}
-
-.sb-lang__opt {
-  display: flex;
-  align-items: center;
-  gap: 9px;
+  gap: 11px;
   padding: 8px 10px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  border-radius: 8px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  font-family: var(--font-primary);
-  color: var(--text-primary);
-  transition: background 0.12s;
-  text-align: left;
-}
-
-.sb-lang__opt:hover {
-  background: var(--surface, #f5f4f1);
-}
-
-.sb-lang__opt img {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-/* ── Quota card (free users) ────────────────────────────────── */
-.sb-quota {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--surface-card, #fff);
-  border: 1px solid var(--border-light);
+  border-radius: 10px;
   text-decoration: none;
-  margin-bottom: 6px;
-  transition: border-color 0.15s, background 0.15s;
-  cursor: pointer;
+  font: 600 12.5px/1 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  color: var(--sb-link);
 }
+.sb-foot-link svg { flex: none; fill: currentColor; color: var(--sb-ico); }
+.sb-foot-link svg[viewBox="0 0 24 24"] { fill: none; stroke: currentColor; }
 
-.sb-quota:hover {
-  border-color: var(--accent-border);
-  background: var(--accent-soft, #f0fdf4);
+.sb-foot-link span { flex: 1; min-width: 0; }
+.sb-foot-link:hover { background: var(--sb-fill); color: #fff; }
+.sb-foot-link.is-active { background: var(--sb-on-bg); color: var(--sb-link-on); }
+.sb-ext-icon { opacity: .55; }
+
+/* ── Jauge de quota (conservée, absente de la maquette) ─────────────────── */
+.sb-quota {
+  display: block;
+  margin-bottom: 10px;
+  padding: 12px 13px;
+  border: 1px solid var(--sb-line);
+  border-radius: 13px;
+  background: var(--sb-fill);
+  text-decoration: none;
+  transition: background-color .15s;
 }
+.sb-quota:hover { background: var(--sb-fill-2); }
 
 .sb-quota__top {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 6px;
+  gap: 10px;
 }
-
 .sb-quota__label {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-family: var(--font-primary);
+  font: 600 11.5px/1 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  color: var(--sb-link);
 }
-
 .sb-quota__count {
-  font-size: 11.5px;
-  color: var(--text-secondary);
-  font-family: var(--font-primary);
+  /* JetBrains Mono : le guide la réserve aux valeurs techniques, un compteur
+     en fait partie — et les chiffres ne dansent pas d'un mois sur l'autre. */
+  font: 500 11.5px/1 var(--bs-mono, "JetBrains Mono", monospace);
+  color: var(--sb-quiet);
 }
-
-.sb-quota__count strong {
-  color: var(--ink);
-  font-weight: 700;
-}
+.sb-quota__count strong { color: #fff; font-weight: 700; }
 
 .sb-quota__bar {
   height: 5px;
-  background: var(--surface-2, #eceae6);
+  margin: 9px 0 8px;
   border-radius: 999px;
+  background: rgba(255, 255, 255, .1);
   overflow: hidden;
 }
-
 .sb-quota__fill {
   height: 100%;
-  background: var(--accent);
   border-radius: 999px;
-  transition: width 0.4s ease;
+  background: var(--sb-mint);
+  transition: width .3s;
 }
+.sb-quota--warn   .sb-quota__fill { background: var(--bs-warn, #b5843f); }
+.sb-quota--danger .sb-quota__fill { background: var(--bs-error, #c2554b); }
 
-.sb-quota__bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
+.sb-quota__bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .sb-quota__hint {
-  font-size: 10.5px;
-  color: var(--text-muted);
-  font-family: var(--font-primary);
+  font: 500 10.5px/1.3 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  color: var(--sb-quiet);
 }
+.sb-quota__cta { flex: none; font-size: 13px; color: var(--sb-mint); }
 
-.sb-quota__cta {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--accent);
-  font-family: var(--font-primary);
-}
-
-/* Warn state (65–89%) */
-.sb-quota--warn .sb-quota__fill  { background: #d97706; }
-.sb-quota--warn .sb-quota__count strong { color: #92400e; }
-.sb-quota--warn { border-color: #fde68a; }
-
-/* Danger state (90%+) */
-.sb-quota--danger .sb-quota__fill  { background: var(--danger, #dc2626); }
-.sb-quota--danger .sb-quota__count strong { color: var(--danger); }
-.sb-quota--danger .sb-quota__hint  { color: var(--danger); font-weight: 600; }
-.sb-quota--danger { border-color: #fca5a5; }
-
-[data-theme="dark"] .sb-quota {
-  background: var(--surface-card);
-}
-[data-theme="dark"] .sb-quota:hover {
-  background: rgba(30, 122, 78, 0.08);
-}
-
-/* ── User profile chip + popup ──────────────────────────────── */
-.sb-user-wrap {
-  position: relative;
-}
+/* ── Compte ─────────────────────────────────────────────────────────────── */
+.sb-user-wrap { position: relative; }
 
 .sb-user {
+  /* Le compte occupe toute la largeur du pied. Il partageait sa rangée avec un
+     bouton carré de déconnexion, retiré depuis : « Déconnexion » est déjà dans
+     le menu qu'ouvre ce bouton, et la rangée à deux éléments comprimait le nom
+     pour proposer une seconde fois la même action. */
+  width: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   padding: 8px 10px;
-  border-radius: 12px;
-  width: 100%;
-  border: 1px solid var(--border-light);
-  background: var(--surface-card, #fff);
+  border: 0;
+  border-radius: 11px;
+  background: none;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
   text-align: left;
+  transition: background-color .15s;
 }
+.sb-user:hover { background: var(--sb-fill); }
 
-.sb-user:hover {
-  border-color: var(--border-medium, #d1d5db);
-  background: var(--surface, #f5f4f1);
+.sb-user__caret {
+  flex: none;
+  color: var(--sb-ico);
+  transition: transform .15s;
 }
+.sb-user-wrap.is-open .sb-user__caret { transform: rotate(180deg); }
 
-.sb-user-wrap.is-open .sb-user {
-  border-color: var(--accent-border);
-  background: var(--surface, #f5f4f1);
-}
+/* `.sb-user-row` et `.sb-user-logout` ont été supprimés avec le bouton carré
+   de déconnexion : garder leurs règles aurait laissé deux sélecteurs morts
+   que la prochaine lecture aurait pris pour du style actif. */
 
-[data-theme="dark"] .sb-user {
-  background: var(--surface-card);
-  border-color: var(--border-light);
+.sb-user__avatar {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--bs-accent, #12a06e);
 }
-[data-theme="dark"] .sb-user:hover,
-[data-theme="dark"] .sb-user-wrap.is-open .sb-user {
-  background: rgba(255,255,255,0.04);
-}
+.sb-user__avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-/* User panel popup */
+.sb-user__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sb-user__name {
+  font: 700 12.5px/1.2 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sb-user__plan,
+.sb-user__badge {
+  font: 600 10.5px/1.2 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  color: var(--sb-mint);
+}
+.sb-user__plan { color: var(--sb-quiet); }
+
+/* Menu du compte — surface claire, comme le sélecteur d'établissement. */
 .sb-user-panel {
   display: none;
   position: absolute;
-  bottom: calc(100% + 8px);
   left: 0;
   right: 0;
-  background: var(--color-white);
-  border: 1px solid var(--border-light);
+  bottom: calc(100% + 8px);
+  z-index: 50;
+  padding: 8px;
+  border: 1px solid var(--bs-border, #e9ece9);
   border-radius: 14px;
-  box-shadow: 0 -2px 6px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.12);
-  z-index: 60;
-  overflow: hidden;
-  padding: 5px;
+  background: #fff;
+  box-shadow: var(--bs-shadow-pop, 0 12px 32px -20px rgba(15, 23, 25, .25));
 }
 
-.sb-user-panel__header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px 10px;
-}
-
+.sb-user-panel__header { display: flex; align-items: center; gap: 10px; padding: 6px 8px 10px; }
 .sb-user-panel__avatar {
   width: 34px;
   height: 34px;
+  flex: none;
   border-radius: 50%;
   overflow: hidden;
-  flex-shrink: 0;
-  background: var(--accent-soft);
+  background: var(--bs-badge-done-bg, #f2f4f2);
 }
-
-.sb-user-panel__avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.sb-user-panel__info {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
+.sb-user-panel__avatar img { width: 100%; height: 100%; object-fit: cover; }
+.sb-user-panel__info { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .sb-user-panel__name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  font-family: var(--font-primary);
-  white-space: nowrap;
+  font: 700 13px/1.2 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  color: var(--bs-text-title, #141a17);
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
 .sb-user-panel__email {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-family: var(--font-primary);
-  white-space: nowrap;
+  font: 500 11.5px/1.2 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  color: var(--bs-text-muted, #98a29b);
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.sb-user-panel__sep {
-  height: 1px;
-  background: var(--border-light);
-  margin: 3px 0;
-}
+.sb-user-panel__sep { height: 1px; margin: 6px 0; background: var(--bs-border, #e9ece9); }
 
-/* Upgrade CTA in user popup */
+.sb-user-panel__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--bs-text-body, #3f474e);
+  font: 600 13px/1 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.sb-user-panel__item svg { flex: none; fill: currentColor; color: var(--bs-text-muted, #98a29b); }
+.sb-user-panel__item:hover { background: var(--bs-bg-app, #f5f7f6); }
+.sb-user-panel__item--danger { color: var(--bs-error, #c2554b); }
+.sb-user-panel__item--danger svg { color: currentColor; }
+.sb-user-panel__item--danger:hover { background: var(--bs-badge-cancel-bg, #fbecea); }
+
+/* Invitation à passer Pro : la seule surface verte du menu. */
 .sb-user-panel__upgrade {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: linear-gradient(120deg, #f0fdf4 0%, #dcfce7 100%);
-  border: 1px solid #bbf7d0;
+  padding: 10px;
+  border-radius: 11px;
+  background: var(--bs-soft-pro, #e6f6ee);
+  color: var(--bs-accent-text, #0d7a54);
   text-decoration: none;
-  margin-bottom: 4px;
-  transition: background 0.15s, border-color 0.15s;
 }
-
-.sb-user-panel__upgrade:hover {
-  background: linear-gradient(120deg, #dcfce7 0%, #bbf7d0 100%);
-  border-color: #86efac;
-}
-
-.sb-user-panel__upgrade > svg {
-  fill: var(--accent);
-  flex-shrink: 0;
-  opacity: 0.7;
-}
-.sb-user-panel__upgrade > .material-symbols-outlined {
-  color: var(--accent);
-  flex-shrink: 0;
-  opacity: 0.7;
-}
-
-.sb-user-panel__upgrade-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.sb-user-panel__upgrade-left > svg {
-  fill: var(--accent);
-  flex-shrink: 0;
-}
-.sb-user-panel__upgrade-left > .material-symbols-outlined {
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
-.sb-user-panel__upgrade-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
+.sb-user-panel__upgrade:hover { background: var(--bs-soft, #e9f7f0); }
+.sb-user-panel__upgrade svg { flex: none; fill: currentColor; }
+.sb-user-panel__upgrade-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.sb-user-panel__upgrade-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .sb-user-panel__upgrade-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--accent-dark, #15803d);
-  font-family: var(--font-primary);
-  white-space: nowrap;
+  font: 700 12.5px/1.2 var(--bs-font, "Plus Jakarta Sans", sans-serif);
 }
-
 .sb-user-panel__upgrade-sub {
-  font-size: 10.5px;
-  color: #16a34a;
-  font-family: var(--font-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  opacity: 0.8;
+  font: 500 11px/1.2 var(--bs-font, "Plus Jakarta Sans", sans-serif);
+  opacity: .8;
 }
 
-[data-theme="dark"] .sb-user-panel__upgrade {
-  background: rgba(30, 122, 78, 0.12);
-  border-color: rgba(30, 122, 78, 0.3);
-}
-[data-theme="dark"] .sb-user-panel__upgrade:hover {
-  background: rgba(30, 122, 78, 0.2);
-}
-[data-theme="dark"] .sb-user-panel__upgrade-title { color: #4ade80; }
-[data-theme="dark"] .sb-user-panel__upgrade-sub   { color: #86efac; }
-[data-theme="dark"] .sb-user-panel__upgrade > svg  { fill: #4ade80; }
-[data-theme="dark"] .sb-user-panel__upgrade > .material-symbols-outlined { color: #4ade80; }
-[data-theme="dark"] .sb-user-panel__upgrade-left > svg { fill: #4ade80; }
-[data-theme="dark"] .sb-user-panel__upgrade-left > .material-symbols-outlined { color: #4ade80; }
-
-.sb-user-panel__item {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 10px;
-  border-radius: 8px;
-  font-family: var(--font-primary);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  text-decoration: none;
-  transition: background 0.12s;
+/* ── Classes héritées, encore présentes dans la feuille mais plus dans les
+      gabarits. Habillées au minimum pour qu'une réapparition ne casse rien,
+      sans reconduire leurs anciennes couleurs claires. ─────────────────── */
+.sb-link--ext .sb-ext-icon { opacity: .55; }
+.sb-foot-plan-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--sb-on-bg);
+  color: var(--sb-mint);
+  font: 700 10px/1.6 var(--bs-font, "Plus Jakarta Sans", sans-serif);
 }
 
-.sb-user-panel__item svg {
-  flex-shrink: 0;
-  fill: currentColor;
-  opacity: 0.6;
-}
-.sb-user-panel__item .material-symbols-outlined {
-  flex-shrink: 0;
-  color: currentColor;
-  opacity: 0.6;
-}
-
-.sb-user-panel__item:hover {
-  background: var(--surface, #f5f4f1);
-}
-
-.sb-user-panel__item--danger {
-  color: #dc2626;
-}
-
-.sb-user-panel__item--danger svg {
-  opacity: 0.8;
-}
-.sb-user-panel__item--danger .material-symbols-outlined {
-  opacity: 0.8;
-}
-
-.sb-user__avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: var(--accent-soft);
-}
-
-.sb-user__avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.sb-user__info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.sb-user__name {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: var(--font-primary);
-}
-
-.sb-user__badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--accent);
-  font-family: var(--font-primary);
-}
-
-.sb-user__badge svg {
-  fill: #e0b200;
-}
-.sb-user__badge .material-symbols-outlined {
-  color: #e0b200;
-}
-
-.sb-user__badge--business {
-  color: #7c3aed;
-}
-
-.sb-user__badge--business svg {
-  fill: #7c3aed;
-}
-.sb-user__badge--business .material-symbols-outlined {
-  color: #7c3aed;
-}
-
-.sb-user__plan {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-muted);
-  font-family: var(--font-primary);
-}
-
-/* ── Dark mode toggle (in topnav) ───────────────────────────── */
-.admin-nav .theme-toggle {
-  display: flex;
-  padding: 8px;
-  border: 1px solid var(--border-light);
-  border-radius: 10px;
-  background: var(--color-white);
-  color: var(--text-secondary);
-  cursor: pointer;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s, color 0.15s, transform 0.2s;
-  flex-shrink: 0;
-}
-
-.admin-nav .theme-toggle:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
-  border-color: var(--accent-border);
-  transform: rotate(20deg);
-}
-
-.admin-nav .theme-toggle svg {
-  width: 18px;
-  height: 18px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.admin-nav .theme-toggle .material-symbols-outlined {
-  font-size: 18px;
-  color: currentColor;
-}
-
-.admin-nav .theme-toggle .theme-toggle__moon {
-  fill: currentColor;
-  stroke: none;
-}
-
-/* ── Dark mode adjustments ──────────────────────────────────── */
-[data-theme="dark"] .sidebar {
-  background: var(--surface-card, #161616);
-  border-color: var(--border-light);
-}
-
-[data-theme="dark"] .sb-estab__current:hover {
-  background: rgba(255,255,255,0.06);
-}
-
-[data-theme="dark"] .sb-estab__panel {
-  background: var(--surface-card, #1e1e1e);
-  border-color: var(--border-light);
-}
-
-[data-theme="dark"] .sb-estab__opt:hover,
-[data-theme="dark"] .sb-estab__back:hover,
-[data-theme="dark"] .sb-estab__add:hover {
-  background: rgba(255,255,255,0.06);
-}
-
-[data-theme="dark"] .sb-estab__opt-avatar {
-  background: rgba(255,255,255,0.1);
-  color: var(--text-primary);
-}
-
-[data-theme="dark"] .sb-link:hover {
-  background: rgba(255,255,255,0.05);
-}
-
-[data-theme="dark"] .sb-link.active {
-  background: rgba(30,122,78,0.15);
-}
-
-[data-theme="dark"] .sb-link.active::before,
-[data-theme="dark"] .sb-section.has-active > .sb-section__hd .sb-section__hd-inner {
-  color: var(--accent);
-}
-
-[data-theme="dark"] .sb-logo__name {
-  color: var(--text-primary);
-}
-
-[data-theme="dark"] .sb-section__hd:hover {
-  background: rgba(255,255,255,0.05);
-}
-
-[data-theme="dark"] .sb-section__hd:hover .sb-section__hd-inner {
-  color: var(--text-primary);
-}
-
-[data-theme="dark"] .sb-section.has-active > .sb-section__hd .sb-section__hd-inner {
-  color: var(--accent);
-}
-
-/* Footer links — dark mode */
-[data-theme="dark"] .sb-foot-link {
-  color: var(--text-secondary);
-}
-[data-theme="dark"] .sb-foot-link:hover {
-  background: rgba(255,255,255,0.05);
-  color: var(--text-primary);
-}
-[data-theme="dark"] .sb-foot-link.is-active {
-  background: rgba(30,122,78,0.15);
-  color: var(--accent);
-}
-
-/* User panel — dark mode */
-[data-theme="dark"] .sb-user:hover,
-[data-theme="dark"] .sb-user-wrap.is-open .sb-user {
-  background: rgba(255,255,255,0.05);
-}
-[data-theme="dark"] .sb-user-panel {
-  background: var(--surface-card, #1e1e1e);
-  border-color: var(--border-light);
-}
-[data-theme="dark"] .sb-user-panel__item {
-  color: var(--text-primary);
-}
-[data-theme="dark"] .sb-user-panel__item:hover {
-  background: rgba(255,255,255,0.06);
-}
-[data-theme="dark"] .sb-user-panel__item--danger {
-  color: #f87171;
-}
-
-/* Language selector — dark mode */
-[data-theme="dark"] .sb-lang__btn {
-  color: var(--text-primary);
-  border-color: var(--border-light);
-  background: transparent;
-}
-[data-theme="dark"] .sb-lang__btn:hover,
-[data-theme="dark"] .sb-lang.open .sb-lang__btn {
-  background: rgba(30,122,78,0.12);
-  border-color: var(--accent-border);
-  color: var(--accent);
-}
-[data-theme="dark"] .sb-lang__caret {
-  color: var(--text-primary);
-}
-[data-theme="dark"] .sb-lang__panel {
-  background: var(--surface-card);
-  border-color: var(--border-light);
-}
-[data-theme="dark"] .sb-lang__opt {
-  color: var(--text-primary);
-}
-[data-theme="dark"] .sb-lang__opt:hover {
-  background: rgba(255,255,255,0.06);
-  color: var(--text-primary);
-}
-
-/* ── Upgrade chip (free users) ──────────────────────────────── */
-.sb-upgrade-chip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 13px;
-  border-radius: 12px;
-  background: linear-gradient(120deg, #0d5c36 0%, #1e7a4e 100%);
-  color: #fff;
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 700;
-  transition: transform 0.15s, box-shadow 0.15s;
-  box-shadow: 0 2px 10px rgba(13, 92, 54, 0.3);
-  margin-bottom: 4px;
-}
-
-.sb-upgrade-chip:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(13, 92, 54, 0.42);
-  color: #fff;
-}
-
-.sb-upgrade-chip__left {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.sb-upgrade-chip__left svg {
-  fill: #6ee7b7;
-  flex-shrink: 0;
-}
-.sb-upgrade-chip__left .material-symbols-outlined {
-  color: #6ee7b7;
-  flex-shrink: 0;
-}
-
-.sb-upgrade-chip__arrow {
-  font-size: 15px;
-  opacity: 0.85;
-}
-
-[data-theme="dark"] .sb-upgrade-chip {
-  background: linear-gradient(120deg, #0a3d22 0%, #0f5232 100%);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.4);
-}
-
-/* ── Responsive ─────────────────────────────────────────────── */
+/* ══ Responsive ═══════════════════════════════════════════════════════════ */
 @media (min-width: 1024px) {
-  /* Hamburger hidden when sidebar always visible */
-  #openMenu {
-    display: none;
-  }
-}
-
-@media (min-width: 1024px) {
+  /* 256px : la mesure de la maquette (l'ancienne barre en faisait 260). */
   .sidebar {
-    width: 260px;
-    min-width: 260px;
     position: sticky;
     top: 0;
-    height: 100vh;
     left: 0;
+    width: 256px;
+    min-width: 256px;
+    height: 100vh;
   }
-
-  .sb-close {
-    display: none;
-  }
+  .sb-close { display: none; }
+  #openMenu { display: none; }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Couleurs sidebar (demande client) : libellés #141C25, icônes #637083.
-   Mode clair uniquement — le thème sombre conserve ses propres couleurs.
-   L'élément actif (page courante) garde l'accent vert comme repère.
-   ═══════════════════════════════════════════════════════════════════════════ */
-:root:not([data-theme="dark"]) .sb-link { color: #141C25; }
-:root:not([data-theme="dark"]) .sb-link svg { fill: #637083; opacity: 1; }
-:root:not([data-theme="dark"]) .sb-link .material-symbols-outlined { color: #637083; opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .sb-link,
+  .sb-user,
+  .sb-quota,
+  .sb-quota__fill,
+  .sb-estab__caret,
+  .sb-estab__current { transition: none; }
+}
 
-:root:not([data-theme="dark"]) .sb-link.active { color: var(--accent); }
-:root:not([data-theme="dark"]) .sb-link.active svg { fill: var(--accent); }
-:root:not([data-theme="dark"]) .sb-link.active .material-symbols-outlined { color: var(--accent); }
+/* ══════════════════════════════════════════════════════════════════════════
+   JAMBAGES — même défaut que sur « Logs », partout où il se reproduit
+   ─────────────────────────────────────────────────────────────────────────
+   La maquette écrit ses libellés en `taille/1` ou `/1.1`. Sur un texte qui ne
+   déborde pas, aucune conséquence. Mais dès qu'un élément porte
+   `overflow: hidden` — ce que la troncature impose — la boîte de ligne
+   devient une lame : tout ce qui descend sous la ligne de base est coupé.
+
+   Ces quatre-là tronquent tous un contenu SAISI PAR L'UTILISATEUR (nom
+   d'établissement, nom de personne, adresse e-mail). Le défaut y est donc
+   invisible en recette — « Studio Névé » n'a pas de jambage — et apparaît
+   chez le client qui s'appelle Dupont ou dont le salon s'appelle Époque.
+
+   Placé en fin de feuille : même spécificité que les règles d'origine, donc
+   c'est l'ordre qui tranche.
+   ═════════════════════════════════════════════════════════════════════════ */
+.sb-estab__name,
+.sb-estab__panel-name,
+.sb-estab__opt-name,
+.sb-user__name,
+.sb-user-panel__name,
+.sb-user-panel__email { line-height: 1.35; }

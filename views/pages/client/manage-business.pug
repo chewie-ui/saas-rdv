@@ -299,9 +299,16 @@ block content
                             var f = _tarifs[cle];
                             var estPro = cle === 'pro';
                         .hp-plan(class=estPro ? 'hp-plan--reco' : '')
-                            if estPro
-                                span.hp-plan__pill= pl.pricing.badge_popular || '★'
-                            h3.hp-plan__name= f.libelle
+                            //- Nom et étiquette sur une même ligne, alignés aux
+                            //- deux bords : c'est la disposition de la maquette.
+                            //- L'étiquette était auparavant en `position:absolute`,
+                            //- ce qui obligeait à réserver 84px de marge à droite
+                            //- du nom — une valeur qui cassait dès qu'une langue
+                            //- allongeait le libellé de la formule.
+                            .hp-plan__head
+                                h3.hp-plan__name= f.libelle
+                                if estPro
+                                    span.hp-plan__pill= pl.pricing.badge_popular || '★'
                             p.hp-plan__price
                                 if f.mensuel === 0
                                     span.hp-plan__amount= pl.pricing.free_label || '0 €'

@@ -1,236 +1,384 @@
 /* ══════════════════════════════════════════════════════════════════════════
-   RECHERCHE — /search
+   RÉSULTATS DE RECHERCHE — /search?name=…
    ─────────────────────────────────────────────────────────────────────────
-   Deux colonnes : facettes à gauche, résultats à droite. La carte de résultat
-   porte les heures libres, ce qui est tout l'enjeu de la page — on vient ici
-   pour réserver, pas pour lire un annuaire.
+   Écran « Recherche » de la maquette : barre compacte, facettes à gauche,
+   liste de résultats à droite. La carte porte les heures libres, ce qui est
+   tout l'enjeu de la page — on vient ici pour réserver, pas pour lire un
+   annuaire.
 
-   Jetons consommés depuis import.css / ds.css, jamais redéfinis ici : la page
-   suit donc le thème sombre de l'application sans règle supplémentaire.
+   Sans aucun critère, la route rend `client/search-home` (l'écran « Accueil »
+   de la même maquette, feuille `search-home.css`, classes `sh-`). Aucun
+   sélecteur commun entre les deux : `sx-`/`srp-` ici, `sh-` là-bas.
+
+   Couleurs, rayons, tailles et graisses recopiés au chiffre près depuis les
+   styles en ligne de la maquette. Ils ne coïncident pas avec les jetons de
+   l'application (accent #1e7a4e contre #12a06e) : ils vivent donc dans des
+   variables locales `--sx-*` posées sur `.sx`. Comme la maquette, l'écran est
+   en clair uniquement — c'est une vitrine publique.
    ═════════════════════════════════════════════════════════════════════════ */
 
 .sx {
+  --sx-accent: #12a06e;
+  --sx-accent-deep: #0d7a54;
+  --sx-accent-soft: #e9f7f0;
+
+  --sx-ink: #1b2320;
+  --sx-body: #4d5560;
+  --sx-body-2: #6b737b;
+  --sx-muted: #9aa39d;
+  --sx-faint: #a9b0b8;
+
+  --sx-page: #fbfbf9;
+  --sx-card: #fff;
+  --sx-bd-card: #e8eaec;
+  --sx-bd-ctrl: #e0e3e5;
+  --sx-bd-row: #f0f1f0;
+  --sx-hover: #f4f5f3;
+
+  --sx-r-card: 20px;
+  --sx-r-item: 10px;
+  --sx-r-pill: 999px;
+
+  --sx-font: "Plus Jakarta Sans", sans-serif;
+  --sx-mono: "JetBrains Mono", monospace;
+
   /* Hauteur de la topbar fixe (topbar.index.css : .header est en
      `position: fixed`, .header__bar fait 64px, 68px au-delà de 820px).
      SEULE source de vérité : elle décale le contenu ET cale la colonne
-     collante plus bas. Sans le `padding-top` qui suit, la barre de recherche
-     se glisse SOUS le header et disparaît. */
+     collante plus bas. Sans ce `padding-top`, la barre de recherche se glisse
+     SOUS le header et disparaît. */
   --sx-header-h: 64px;
-  --sx-max: 1180px;
-  --sx-gut: 16px;
 
-  padding-top: var(--sx-header-h);
-  padding-bottom: 64px;
+  display: block;
+  padding: calc(var(--sx-header-h) + 36px) 24px 96px;
+  background: var(--sx-page);
+  color: #21262b;
+  font-family: var(--sx-font);
   font-variant-numeric: tabular-nums;
+  text-wrap: pretty;
 }
 @media (min-width: 820px) {
   .sx { --sx-header-h: 68px; }
 }
 
-/* ── Barre de recherche ──────────────────────────────────────────────────
-   Compacte, pas un grand hero : sur une page de résultats, ce que le
-   visiteur vient voir ce sont les pros. */
-.sx-searchbar {
-  padding: 22px var(--sx-gut) 18px;
-  border-bottom: 1px solid var(--border-light);
-  background: var(--bg-surface, #fff);
-}
+.sx-searchbar,
+.sx-body { max-width: 1220px; margin: 0 auto; }
 
+/* ── Barre de recherche ─────────────────────────────────────────────────── */
 .sx-search {
   display: flex;
   align-items: center;
-  gap: 0;
-  max-width: var(--sx-max);
-  margin: 0 auto;
-  padding: 5px 5px 5px 6px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-pill, 999px);
-  background: var(--bg-surface, #fff);
+  gap: 6px;
+  max-width: 700px;
+  padding: 7px;
+  border: 1px solid var(--sx-bd-ctrl);
+  border-radius: var(--sx-r-pill);
+  background: var(--sx-card);
 }
-.sx-search:focus-within { border-color: var(--accent); box-shadow: var(--ds-ring); }
+.sx-search:focus-within { border-color: #b9c0c4; }
 
 .sx-field {
   position: relative;
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1 1 0;
-  min-width: 0;
-  padding: 0 12px;
+  padding: 0 6px 0 14px;
 }
-.sx-field__ic { flex: none; font-size: 19px; color: var(--text-muted); }
+.sx-field__ic { flex: none; font-size: 18px; color: var(--sx-muted); }
 .sx-field input {
   width: 100%;
   min-width: 0;
-  height: 42px;
+  height: 40px;
   border: 0;
+  outline: none;
   background: none;
-  font: inherit;
-  font-size: 14.5px;
-  color: var(--text-primary);
+  font: 500 14.5px/1 var(--sx-font);
+  color: var(--sx-ink);
 }
-.sx-field input:focus { outline: none; }
-.sx-field input::placeholder { color: var(--text-muted); }
+.sx-field input::placeholder { color: var(--sx-muted); }
+.sx-search__sep { flex: none; width: 1px; height: 24px; background: var(--sx-bd-card); }
 
-.sx-search__sep { width: 1px; height: 26px; background: var(--border-light); flex: none; }
-
-.sx-geo {
+/* Croix « effacer », logée en bout de champ. `[hidden]` porte l'état : le
+   script la révèle dès qu'il y a du texte, et rien à désynchroniser. */
+.sx-clear {
   flex: none;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: #f2f4f2;
+  color: var(--sx-body-2);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.sx-clear[hidden] { display: none; }
+.sx-clear:hover { background: #e4e8e5; color: var(--sx-ink); }
+.sx-clear .material-symbols-outlined { font-size: 15px; }
+
+/* Rappel qu'une recherche est en cours + sortie de secours vers une page
+   vierge. « Effacer les filtres » (barre latérale) garde la liste ; ceci
+   ramène à l'accueil de la recherche. */
+.sx-active {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--sx-muted);
+}
+.sx-active__reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px 5px 8px;
+  border: 1px solid var(--sx-bd-ctrl);
+  border-radius: var(--sx-r-pill);
+  background: var(--sx-card);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sx-ink);
+  text-decoration: none;
+  transition: border-color .15s;
+}
+.sx-active__reset:hover { border-color: #b9c0c4; color: var(--sx-ink); }
+.sx-active__reset .material-symbols-outlined { font-size: 15px; color: var(--sx-accent); }
+
+/* Bouton « Autour de moi », logé dans le champ ville. */
+.sx-geo {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   border: 0;
   border-radius: 50%;
   background: none;
-  color: var(--text-muted);
+  color: var(--sx-muted);
   cursor: pointer;
+  transition: background .15s, color .15s;
 }
-.sx-geo:hover { background: var(--surface-2); color: var(--text-primary); }
-.sx-geo .material-symbols-outlined { font-size: 19px; }
-.sx-geo.is-active { color: var(--accent); }
-.sx-geo.is-loading { animation: sx-pulse 1s ease-in-out infinite; }
-@keyframes sx-pulse { 50% { opacity: .4; } }
+.sx-geo:hover { background: var(--sx-hover); color: var(--sx-ink); }
+.sx-geo.is-active { background: var(--sx-accent-soft); color: var(--sx-accent-deep); }
+.sx-geo.is-loading { opacity: .5; pointer-events: none; }
+.sx-geo .material-symbols-outlined { font-size: 18px; }
 
-/* Bouton sombre plutôt que vert : le vert est réservé à l'acte de réserver.
-   Deux verts sur la même page se disputent l'attention. */
+/* Le bouton est encré, pas vert : sur une barre blanche il doit se lire comme
+   l'action. Il passe au vert au survol — c'est la maquette. */
 .sx-submit {
   flex: none;
-  height: 42px;
-  padding: 0 26px;
+  height: 40px;
+  padding: 0 22px;
   border: 0;
-  border-radius: var(--ds-r-pill, 999px);
-  background: #14181d;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 650;
+  border-radius: var(--sx-r-pill);
+  background: var(--sx-ink);
   color: #fff;
+  font: 600 13.5px/1 var(--sx-font);
   cursor: pointer;
+  transition: background .15s;
 }
-.sx-submit:hover { background: #000; }
+.sx-submit:hover { background: var(--sx-accent); }
 
-/* ── Menus d'autocomplétion ──────────────────────────────────────────────
-   `.is-open` est posée par le script de la page. */
+/* ── Menus d'autocomplétion ─────────────────────────────────────────────── */
 .sx-dd {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 14px);
   left: 0;
   right: 0;
-  z-index: 40;
+  z-index: 20;
   display: none;
-  overflow: hidden;
   padding: 6px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-lg, 14px);
-  background: var(--bg-surface, #fff);
-  box-shadow: var(--ds-shadow-pop, 0 12px 28px -10px rgba(16, 24, 40, .28));
+  border: 1px solid var(--sx-bd-card);
+  border-radius: 16px;
+  background: var(--sx-card);
+  box-shadow: 0 18px 40px -22px rgba(15, 23, 25, .38);
+  max-height: 320px;
+  overflow-y: auto;
 }
 .sx-dd.is-open { display: block; }
 .sx-dd__item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 11px;
-  border-radius: var(--ds-r-sm, 8px);
+  padding: 10px 12px;
+  border-radius: var(--sx-r-item);
   font-size: 14px;
-  color: var(--text-primary);
+  font-weight: 500;
+  color: var(--sx-ink);
   cursor: pointer;
 }
-.sx-dd__item:hover { background: var(--surface-2); }
-.sx-dd__item .material-symbols-outlined { font-size: 18px; color: var(--text-muted); }
+.sx-dd__item:hover { background: var(--sx-hover); }
+.sx-dd__item .material-symbols-outlined { flex: none; font-size: 18px; color: var(--sx-muted); }
 .sx-dd__txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Corps : facettes + résultats ───────────────────────────────────────── */
 .sx-body {
+  margin-top: 28px;
   display: grid;
-  grid-template-columns: 208px minmax(0, 1fr);
-  gap: 28px;
-  max-width: var(--sx-max);
-  margin: 0 auto;
-  padding: 26px var(--sx-gut) 0;
+  grid-template-columns: 246px 1fr;
+  gap: 26px;
+  /* `stretch` et non `start` : les deux colonnes prennent la hauteur de la
+     rangée. Deux conséquences, toutes deux voulues —
+     · l'état « aucun résultat » remplit sa colonne au lieu de laisser un trou
+       blanc à côté d'une barre latérale deux fois plus haute ;
+     · la barre latérale a enfin de la course pour coller (`position: sticky`
+       sur un conteneur à la hauteur de son contenu ne colle à rien, elle
+       défilait avec la page). */
+  align-items: stretch;
 }
 
-/* ── Barre latérale ─────────────────────────────────────────────────────── */
 .sx-side { min-width: 0; }
+/* 100px : la topbar (68px) plus une respiration, comme la maquette. */
 .sx-side__panel {
   position: sticky;
-  top: calc(var(--sx-header-h) + 16px);
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  top: 100px;
+  padding: 22px;
+  border: 1px solid var(--sx-bd-card);
+  border-radius: var(--sx-r-card);
+  background: var(--sx-card);
 }
 
-/* Le bouton n'existe que sur téléphone (cf. média plus bas). */
-.sx-side__toggle { display: none; }
-
-.sx-facet__title {
-  margin: 0 0 10px;
+/* Bouton de repli — téléphone uniquement (cf. media queries). */
+.sx-side__toggle {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--sx-bd-ctrl);
+  border-radius: var(--sx-r-pill);
+  background: var(--sx-card);
+  font: 600 13.5px/1 var(--sx-font);
+  color: var(--sx-ink);
+  cursor: pointer;
+}
+.sx-side__toggle .material-symbols-outlined { font-size: 18px; }
+.sx-side__count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--sx-r-pill);
+  background: var(--sx-accent);
+  color: #fff;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  line-height: 20px;
+  text-align: center;
 }
-.sx-facet__list { list-style: none; margin: 0; padding: 0; }
+.sx-side__count:empty { display: none; }
 
+.sx-facet + .sx-facet { margin-top: 24px; }
+.sx-facet[hidden] { display: none; }
+.sx-facet__title {
+  margin: 0;
+  font-family: var(--sx-mono);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--sx-muted);
+}
+
+.sx-facet__list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 .sx-facet__item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 7px 10px;
-  border-radius: var(--ds-r-sm, 8px);
+  padding: 9px 11px;
+  border-radius: var(--sx-r-item);
   font-size: 13.5px;
-  color: var(--text-secondary);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--sx-body);
   text-decoration: none;
 }
-.sx-facet__item:hover { background: var(--surface-2); color: var(--text-primary); }
-.sx-facet__item.is-active {
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-weight: 650;
+.sx-facet__item:hover { background: var(--sx-hover); color: var(--sx-ink); }
+.sx-facet__item.is-active { background: var(--sx-accent-soft); color: var(--sx-accent-deep); }
+/* Deux corrections, une seule cause. `import.css` pose un `*` universel à
+   `font-size: 14px` : ce libellé ne recevait donc PAS les 13.5px de son
+   parent — un sélecteur universel bat l'héritage. Il calculait 14px avec la
+   `line-height: 1` héritée, soit une boîte de 14px pour 15px d'encre, et
+   `overflow: hidden` (nécessaire à la troncature) coupait la jambe du p de
+   « Kinésithérapeute ».
+
+   `font-size: inherit` rend la déclaration du parent effective, et la
+   hauteur de ligne explicite laisse passer les jambages. Voir la même note
+   en fin de sidebar.admin.css : c'est le piège le plus reproductible de
+   cette maquette, qui écrit ses libellés en `taille/1`. */
+.sx-facet__lbl {
+  min-width: 0;
+  font-size: inherit;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.sx-facet__lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sx-facet__n { flex: none; font-size: 12px; color: var(--text-muted); }
-.sx-facet__item.is-active .sx-facet__n { color: inherit; }
+.sx-facet__n { flex: none; font: 400 11px/1 var(--sx-mono); color: var(--sx-faint); }
+.sx-facet__item.is-active .sx-facet__n { color: var(--sx-accent-deep); }
 
-.sx-facet__hint { margin: 8px 0 0; font-size: 12.5px; color: var(--text-muted); }
+.sx-range { width: 100%; margin: 16px 0 6px; accent-color: var(--sx-accent); }
+.sx-facet__hint { margin: 0; font-size: 12.5px; font-weight: 500; line-height: 1.4; color: var(--sx-body-2); }
 
-.sx-range { width: 100%; accent-color: var(--accent); }
-
-/* Case à cocher qui est en réalité un LIEN (filtre serveur) : elle doit donc
-   se lire comme une case, pas comme un lien. */
+/* Case à cocher : carré adouci de 18px, pas une pastille ronde. */
 .sx-check {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 6px 0;
-  font-size: 13.5px;
-  color: var(--text-secondary);
+  gap: 10px;
+  margin-top: 14px;
   text-decoration: none;
+  cursor: pointer;
 }
 .sx-check__box {
   flex: none;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 18px;
   height: 18px;
-  border: 1.5px solid var(--border-light);
-  border-radius: 5px;
-  background: var(--bg-surface, #fff);
+  border: 1px solid var(--sx-bd-ctrl);
+  border-radius: 6px;
+  background: var(--sx-card);
+  color: transparent;
 }
-.sx-check__box .material-symbols-outlined { font-size: 14px; color: #fff; opacity: 0; }
-.sx-check.is-on { color: var(--text-primary); font-weight: 600; }
-.sx-check.is-on .sx-check__box { background: var(--accent); border-color: var(--accent); }
-.sx-check.is-on .sx-check__box .material-symbols-outlined { opacity: 1; }
+.sx-check__box .material-symbols-outlined { font-size: 13px; font-weight: 700; }
+.sx-check.is-on .sx-check__box { border-color: var(--sx-accent); background: var(--sx-accent); color: #fff; }
+.sx-check > span:last-child { font-size: 13.5px; font-weight: 500; color: var(--sx-body); }
 
-.sx-side__reset { font-size: 12.5px; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; }
-.sx-side__reset:hover { color: var(--text-primary); }
+.sx-side__reset {
+  display: inline-block;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--sx-bd-row);
+  width: 100%;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sx-accent-deep);
+  text-decoration: none;
+}
+.sx-side__reset:hover { text-decoration: underline; }
 
 /* ── En-tête des résultats ──────────────────────────────────────────────── */
-.sx-main { min-width: 0; }
+/* Colonne en flex : l'état « aucun résultat » peut alors occuper la hauteur
+   restante. Sans ça, la carte vide faisait 200px face à une barre latérale de
+   500px, et la recherche infructueuse se terminait sur un grand trou blanc —
+   d'autant plus visible que l'écran est haut. */
+.sx-main { min-width: 0; display: flex; flex-direction: column; }
 
 .sx-results-hd {
   display: flex;
@@ -240,209 +388,188 @@
   flex-wrap: wrap;
   margin-bottom: 14px;
 }
-.sx-count { margin: 0; font-size: 14px; color: var(--text-primary); }
-.sx-count strong { font-weight: 750; }
-.sx-count__sub { color: var(--text-muted); }
+.sx-count { margin: 0; font-size: 13.5px; font-weight: 500; line-height: 1.4; color: var(--sx-body-2); }
+.sx-count strong { font-weight: 700; color: var(--sx-ink); }
 
-.sx-sort { display: flex; align-items: center; gap: 8px; }
-.sx-sort__lbl { font-size: 13px; color: var(--text-muted); }
+.sx-sort { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 500; color: var(--sx-body-2); }
 .sx-sort__sel {
-  height: var(--ds-h-sm, 32px);
-  padding: 0 10px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-md, 10px);
-  background: var(--bg-surface, #fff);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
+  padding: 7px 12px;
+  border: 1px solid var(--sx-bd-ctrl);
+  border-radius: var(--sx-r-pill);
+  background: var(--sx-card);
+  font: 600 12.5px/1 var(--sx-font);
+  color: var(--sx-ink);
   cursor: pointer;
 }
+.sx-sort__sel:focus { outline: none; border-color: var(--sx-accent); }
 
-.sx-geo-status { margin: 0 0 12px; font-size: 12.5px; color: var(--accent); }
+.sx-geo-status { margin: 0; font-size: 12.5px; font-weight: 500; color: var(--sx-accent-deep); }
 .sx-geo-status:empty { display: none; }
+.sx-geo-status.is-on { margin-bottom: 12px; }
 
-/* ── Liste et cartes ────────────────────────────────────────────────────── */
+/* ── Liste de résultats ─────────────────────────────────────────────────── */
 .sx-list { display: flex; flex-direction: column; gap: 12px; }
 
+/* 132px / 1fr / auto : photo, contenu, prix. C'est la grille de la maquette. */
 .srp-card {
-  position: relative;
   display: grid;
-  grid-template-columns: 104px minmax(0, 1fr) auto;
-  gap: 18px;
+  grid-template-columns: 132px 1fr auto;
+  gap: 20px;
   align-items: center;
-  padding: 16px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-lg, 14px);
-  background: var(--bg-surface, #fff);
-  transition: border-color .15s, box-shadow .15s;
+  padding: 14px;
+  border: 1px solid var(--sx-bd-card);
+  border-radius: var(--sx-r-card);
+  background: var(--sx-card);
+  transition: border-color .15s;
 }
-.srp-card:hover {
-  border-color: var(--text-muted);
-  box-shadow: var(--ds-shadow-md, 0 4px 12px -4px rgba(16, 24, 40, .12));
-}
+.srp-card:hover { border-color: #c9d2cd; }
 .srp-card[hidden] { display: none; }
 
-/* Cadre CARRÉ, rempli. Le cadre était en 112×92 : une photo verticale — le cas
-   le plus courant, un pro debout dans son local — perdait le haut et le bas.
-   Le carré ampute beaucoup moins qu'un rectangle horizontal, et il remplit
-   toujours son cadre : pas de bandes grises comme avec `contain`.
-
-   `object-position` biaisé vers le HAUT (35% et non 50%) : sur une photo de
-   personne, le sujet est dans le tiers supérieur. Un recadrage centré coupe
-   les têtes et garde les pieds. */
 .srp-card__thumb {
-  width: 104px;
   height: 104px;
+  border-radius: 14px;
   overflow: hidden;
-  border-radius: var(--ds-r-md, 10px);
-  background: var(--surface-2);
+  background: #f2f4f2;
 }
-.srp-card__img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 35%;
-}
+.srp-card__img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .srp-card__body { min-width: 0; }
+.srp-card__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.srp-card__name { margin: 0; font-size: 17px; font-weight: 700; line-height: 1.2; color: var(--sx-ink); }
 
-.srp-card__top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.srp-card__name { margin: 0; font-size: 15.5px; font-weight: 700; letter-spacing: -.01em; }
+/* Lien étiré sur toute la carte : la carte contient d'autres liens (les
+   créneaux), et un <a> dans un <a> est du HTML invalide. Le ::after passe
+   donc dessous — les créneaux, en position relative, restent cliquables. */
+.srp-card__link { color: inherit; text-decoration: none; }
+.srp-card__link::after { content: ""; position: absolute; inset: 0; z-index: 0; }
+.srp-card { position: relative; }
+.srp-slots, .srp-card__book { position: relative; z-index: 1; }
 
-/* Lien étiré : toute la carte est cliquable, sans imbriquer un <a> dans un
-   <a> — ce que les créneaux, eux-mêmes des liens, rendraient invalide. */
-.srp-card__link { color: var(--text-primary); text-decoration: none; }
-.srp-card__link::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
-.srp-card__link:hover { color: var(--accent); }
-
-.srp-card__verified { font-size: 17px; color: var(--accent); }
-
+.srp-card__verified { font-size: 17px; color: var(--sx-accent); }
 .srp-card__rating {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 12.5px;
-  color: var(--text-secondary);
+  padding: 4px 8px;
+  border-radius: var(--sx-r-pill);
+  background: #f2f4f2;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--sx-ink);
 }
-.srp-card__star { font-size: 15px; color: #f59e0b; }
-.srp-card__rating-val { font-weight: 700; color: var(--text-primary); }
-.srp-card__rating-n { color: var(--text-muted); }
-
+.srp-card__star { font-size: 13px; color: #d9a441; }
 .srp-card__new,
 .srp-card__badge {
-  padding: 2px 8px;
-  border-radius: var(--ds-r-pill, 999px);
+  padding: 4px 8px;
+  border-radius: var(--sx-r-pill);
+  background: var(--sx-accent-soft);
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--sx-accent-deep);
 }
-.srp-card__new { background: var(--surface-2); color: var(--text-muted); }
-.srp-card__badge { background: var(--accent-soft); color: var(--accent); }
 
 .srp-card__meta {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 4px;
+  margin-top: 6px;
   font-size: 13px;
-  color: var(--text-muted);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--sx-body-2);
 }
-/* Séparateurs en points, générés — pas des nœuds texte à maintenir, et la
-   distance injectée par le script en hérite automatiquement. */
-.srp-card__meta > * + *::before { content: "·"; margin-right: 6px; }
-.srp-card__dist { color: var(--accent); font-weight: 600; }
-
-/* ── Créneaux ────────────────────────────────────────────────────────────
-   Le cœur de la page : voir les heures libres avant de cliquer. Ils passent
-   AU-DESSUS du lien étiré (z-index) pour rester cliquables séparément. */
-.srp-slots {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
-}
-.srp-slots__day {
-  margin-right: 2px;
+.srp-card__meta:empty { display: none; }
+.srp-card__type::after { content: " ·"; }
+.srp-card__dist {
+  padding: 2px 8px;
+  border-radius: var(--sx-r-pill);
+  background: var(--sx-accent-soft);
   font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: .02em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--sx-accent-deep);
 }
+
+/* Les heures libres, vues AVANT le clic : c'est ce qui sépare une plateforme
+   de réservation d'un annuaire. */
+.srp-slots { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+.srp-slots__day { font: 500 12px/1 var(--sx-font); color: var(--sx-muted); }
 .srp-slot {
-  padding: 5px 10px;
-  border: 1px solid transparent;
-  border-radius: var(--ds-r-sm, 8px);
-  background: var(--accent-soft);
-  font-size: 12.5px;
-  font-weight: 650;
-  color: var(--accent);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--sx-accent-soft);
+  font: 600 12px/1 var(--sx-mono);
+  color: var(--sx-accent-deep);
   text-decoration: none;
+  transition: background .15s;
 }
-.srp-slot:hover { background: var(--accent); color: #fff; }
+.srp-slot:hover { background: #d5efe2; }
+.srp-noslot { margin: 12px 0 0; font-size: 12.5px; font-weight: 500; color: var(--sx-muted); }
 
-.srp-noslot { margin: 10px 0 0; font-size: 12.5px; color: var(--text-muted); }
-
-/* ── Colonne prix + réserver ────────────────────────────────────────────── */
 .srp-card__aside {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
   text-align: right;
-}
-.srp-card__from { font-size: 11.5px; color: var(--text-muted); }
-.srp-card__price {
-  font-size: 21px;
-  font-weight: 750;
-  letter-spacing: -.02em;
-  color: var(--text-primary);
-}
-.srp-card__book {
-  position: relative;
-  z-index: 1;
-  margin-top: 8px;
-  padding: 9px 20px;
-  border-radius: var(--ds-r-md, 10px);
-  background: var(--accent);
-  font-size: 13.5px;
-  font-weight: 650;
-  color: #fff;
-  text-decoration: none;
+  padding-right: 8px;
   white-space: nowrap;
 }
-.srp-card__book:hover { background: var(--accent-hover); color: #fff; }
+.srp-card__from { display: block; font-size: 12px; font-weight: 500; line-height: 1; color: var(--sx-muted); }
+.srp-card__price {
+  display: block;
+  margin-top: 6px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -.02em;
+  color: var(--sx-ink);
+}
+.srp-card__book {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 10px 16px;
+  border-radius: var(--sx-r-pill);
+  background: var(--sx-accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  transition: background .15s;
+}
+.srp-card__book:hover { background: #0d8a5e; }
 
-/* ── Vide ───────────────────────────────────────────────────────────────── */
+/* ── Aucun résultat ─────────────────────────────────────────────────────── */
 .sx-empty {
-  padding: 56px 24px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-lg, 14px);
-  background: var(--bg-surface, #fff);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* Un plancher, pas une hauteur figée : la carte suit la barre latérale
+     quand celle-ci est longue, et reste présentable quand elle est courte. */
+  min-height: 320px;
+  padding: 56px 32px;
+  border: 1px solid var(--sx-bd-card);
+  border-radius: var(--sx-r-card);
+  background: var(--sx-card);
   text-align: center;
 }
-.sx-empty__ic { font-size: 40px; color: var(--text-muted); }
-.sx-empty__t { margin: 12px 0 4px; font-size: 16px; font-weight: 700; color: var(--text-primary); }
-.sx-empty__s { margin: 0 0 18px; font-size: 13.5px; color: var(--text-muted); }
+.sx-empty__ic { font-size: 36px; color: var(--sx-muted); }
+.sx-empty__t { margin: 16px 0 0; font-size: 19px; font-weight: 700; letter-spacing: -.02em; color: var(--sx-ink); }
+.sx-empty__s { margin: 10px auto 0; max-width: 420px; font-size: 14px; line-height: 1.6; color: var(--sx-body-2); }
 .sx-empty__btn {
-  display: inline-block;
-  padding: 10px 20px;
-  border-radius: var(--ds-r-md, 10px);
-  background: var(--accent);
-  font-size: 14px;
-  font-weight: 650;
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  margin-top: 22px;
+  padding: 0 22px;
+  border-radius: var(--sx-r-pill);
+  background: var(--sx-accent);
   color: #fff;
+  font-size: 14px;
+  font-weight: 700;
   text-decoration: none;
 }
+.sx-empty__btn:hover { background: #0d8a5e; }
 
 /* ── Pagination ─────────────────────────────────────────────────────────── */
 .sx-pager {
@@ -454,133 +581,89 @@
 }
 .sx-pager__n,
 .sx-pager__nav {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
-  height: 36px;
+  min-width: 38px;
+  height: 38px;
   padding: 0 10px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-md, 10px);
+  border: 1px solid var(--sx-bd-ctrl);
+  border-radius: var(--sx-r-pill);
+  background: var(--sx-card);
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--sx-ink);
   text-decoration: none;
 }
 .sx-pager__n:hover,
-.sx-pager__nav:hover { background: var(--surface-2); color: var(--text-primary); }
-.sx-pager__n.is-current { background: var(--accent); border-color: var(--accent); color: #fff; }
+.sx-pager__nav:hover { border-color: #b9c0c4; }
+.sx-pager__n.is-current { background: var(--sx-ink); border-color: var(--sx-ink); color: #fff; }
 .sx-pager__nav.is-disabled { opacity: .4; pointer-events: none; }
-.sx-pager__gap { padding: 0 4px; color: var(--text-muted); }
-.sx-pager__info { margin: 10px 0 0; font-size: 12.5px; text-align: center; color: var(--text-muted); }
+.sx-pager__nav .material-symbols-outlined { font-size: 18px; }
+.sx-pager__gap { padding: 0 4px; color: var(--sx-muted); }
+.sx-pager__info { margin: 12px 0 0; text-align: center; font-size: 12.5px; font-weight: 500; color: var(--sx-muted); }
+
+/* ══ Couleur au survol des liens ══════════════════════════════════════════
+   import.css pose `a:hover { color: var(--accent-hover) }` sur TOUS les liens
+   du site. Sa spécificité (0,1,1) bat celle d'une simple classe (0,1,0) : un
+   lien mis en forme comme un bouton perdait donc son texte au survol — blanc
+   sur vert au repos, vert foncé sur vert foncé une fois la souris dessus,
+   c'est-à-dire invisible. Chaque lien-bouton repose donc sa couleur ici, à une
+   spécificité qui l'emporte (0,2,0).
+
+   À retenir pour toute nouvelle page : un `<a>` stylé en bouton DOIT déclarer
+   sa couleur au survol, sinon elle lui est reprise. */
+.sx-empty__btn:hover,
+.srp-card__book:hover { color: #fff; }
+
+.srp-slot:hover,
+.sx-side__reset:hover,
+.sx-facet__item.is-active:hover { color: var(--sx-accent-deep); }
+
+.srp-card__link:hover,
+.sx-pager__n:hover,
+.sx-pager__nav:hover { color: var(--sx-ink); }
 
 /* ══ Responsive ═══════════════════════════════════════════════════════════ */
 
-/* Sous 940px, la colonne de facettes ne tient plus à côté des cartes sans
-   les écraser : elle devient un panneau repliable au-dessus des résultats. */
-@media (max-width: 940px) {
+@media (max-width: 900px) {
+  /* Les facettes passent dans un panneau repliable : à 246px de large, la
+     colonne mangeait la moitié de l'écran pour trois liens. */
   .sx-body { grid-template-columns: 1fr; gap: 16px; }
-
-  .sx-side__toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 9px 16px;
-    border: 1px solid var(--border-light);
-    border-radius: var(--ds-r-pill, 999px);
-    background: var(--bg-surface, #fff);
-    font: inherit;
-    font-size: 13.5px;
-    font-weight: 650;
-    color: var(--text-primary);
-    cursor: pointer;
-  }
-  .sx-side__count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    border-radius: 999px;
-    background: var(--accent);
-    font-size: 11px;
-    color: #fff;
-  }
-  .sx-side__count:empty { display: none; }
-
-  /* `.is-open` est posée par le script. */
-  .sx-side__panel {
-    position: static;
-    display: none;
-    margin-top: 14px;
-    padding: 16px;
-    border: 1px solid var(--border-light);
-    border-radius: var(--ds-r-lg, 14px);
-    background: var(--bg-surface, #fff);
-  }
-  .sx-side__panel.is-open { display: flex; }
-
-  /* Les métiers passent en rangée de pastilles défilante : une liste
-     verticale de dix lignes repousserait les résultats hors de l'écran. */
-  .sx-facet__list {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: none;
-  }
-  .sx-facet__list::-webkit-scrollbar { display: none; }
-  .sx-facet__item {
-    flex: none;
-    border: 1px solid var(--border-light);
-    border-radius: var(--ds-r-pill, 999px);
-    padding: 7px 13px;
-  }
-  .sx-facet__item.is-active { border-color: var(--accent); }
+  .sx-side__toggle { display: flex; }
+  .sx-side__panel { display: none; position: static; }
+  .sx-side__panel.is-open { display: block; margin-top: 10px; }
 }
 
-@media (max-width: 700px) {
-  .sx-searchbar { padding: 14px var(--sx-gut); }
+@media (max-width: 720px) {
+  .sx { padding-left: 20px; padding-right: 20px; }
 
-  /* La barre passe en bloc : trois zones sur une ligne de 375px donnaient des
-     champs de 90px, dans lesquels on ne lit pas ce qu'on tape. */
-  .sx-search {
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 8px;
-    border-radius: var(--ds-r-lg, 14px);
-  }
-  .sx-field { flex: 1 0 100%; padding: 0 6px; }
-  .sx-search__sep { display: none; }
-  .sx-field + .sx-field { border-top: 1px solid var(--border-light); padding-top: 4px; }
-  .sx-submit { flex: 1 0 100%; }
-  .sx-dd { left: -8px; right: -8px; }
+  /* La barre passe en colonne : trois zones côte à côte sur 375px laissaient
+     ~90px par champ, de quoi lire deux lettres. */
+  .sx-search { flex-direction: column; align-items: stretch; gap: 4px; padding: 10px; border-radius: 22px; }
+  .sx-field { padding: 0 10px; }
+  .sx-search__sep { width: auto; height: 1px; margin: 2px 10px; }
+  .sx-submit { width: 100%; margin-top: 6px; }
 
-  /* La carte passe en deux colonnes, le prix et le bouton sous le corps :
-     trois colonnes sur 375px laissaient 90px au nom du salon. */
-  .srp-card {
-    grid-template-columns: 84px minmax(0, 1fr);
-    gap: 12px;
-    padding: 13px;
-  }
-  .srp-card__thumb { width: 84px; height: 84px; }
+  /* La carte passe en deux lignes : photo + contenu, puis le prix en bas.
+     Trois colonnes sur 375px réduisaient le contenu à ~110px. */
+  .srp-card { grid-template-columns: 96px 1fr; gap: 14px; }
+  .srp-card__thumb { height: 96px; }
   .srp-card__aside {
     grid-column: 1 / -1;
-    flex-direction: row;
+    display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
-    margin-top: 4px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-light);
+    gap: 12px;
+    padding: 12px 0 0;
+    border-top: 1px solid var(--sx-bd-row);
+    text-align: left;
   }
-  .srp-card__from { order: 1; }
-  .srp-card__price { order: 2; margin-right: auto; margin-left: 4px; }
-  .srp-card__book { order: 3; margin-top: 0; }
+  .srp-card__from { display: inline; }
+  .srp-card__price { display: inline; margin: 0 0 0 4px; }
+  .srp-card__book { margin: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .srp-card { transition: none; }
-  .sx-geo.is-loading { animation: none; }
+  .srp-card, .srp-slot, .srp-card__book, .sx-submit, .sx-geo { transition: none; }
 }

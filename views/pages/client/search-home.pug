@@ -1,0 +1,323 @@
+extends ../../layouts/index
+
+//- ══════════════════════════════════════════════════════════════════════════
+//-  /search SANS CRITÈRE — écran « Accueil » de la maquette
+//-  ─────────────────────────────────────────────────────────────────────────
+//-  C'est l'accueil CÔTÉ CLIENT : celui qui cherche un professionnel. La
+//-  racine "/" reste l'accueil côté PRO (manage-business) — deux publics, deux
+//-  pages, une seule URL par public.
+//-
+//-  Dès qu'un critère est saisi, la même route rend `client/search` (la liste
+//-  de résultats). Le formulaire ci-dessous poste donc sur /search en GET :
+//-  aucun JavaScript n'est nécessaire pour passer d'un écran à l'autre, et le
+//-  résultat est partageable par son URL.
+//- ══════════════════════════════════════════════════════════════════════════
+
+block links
+    //- Material Symbols n'est pas chargée par layouts/index.pug ; les icônes
+    //- des champs et les coches en dépendent. `display=block` évite d'afficher
+    //- « search » en toutes lettres pendant le chargement.
+    link(rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block")
+    link(rel="stylesheet", href="/css/layouts/client/search-home.css")
+
+block content
+    -
+        //- Les métiers réellement présents sur la plateforme, les plus fournis
+        //- d'abord. Proposer une catégorie vide enverrait sur une page « aucun
+        //- résultat » — la pire première impression possible.
+        var _cats = (allCategories || []).filter(function (c) { return c.count > 0; }).slice(0, 9);
+
+        //- Compteur arrondi à la centaine inférieure : « 500+ » tient dans le
+        //- temps, « 512 professionnels » est faux dès le lendemain.
+        var _n = totalResults || 0;
+        var _nRound = _n >= 100 ? (Math.floor(_n / 100) * 100) + '+' : String(_n);
+
+    main.sh
+
+        //- ═══ 1. LA PROMESSE + LA RECHERCHE ═════════════════════════════════
+        section.sh-hero
+            .sh-wrap.sh-wrap--narrow
+                p.sh-pill
+                    span.sh-pill__dot
+                    | #{_nRound} professionnels · réservations 24h/24
+                h1.sh-h1
+                    | Le rendez-vous,
+                    br
+                    | réglé en trois clics.
+                p.sh-lead Coiffeurs, coachs, thérapeutes, tatoueurs : trouvez un pro près de vous, voyez ses vraies disponibilités et réservez sans appeler. Gratuit, sans compte.
+
+                //- GET vers /search : la soumission bascule sur l'écran de
+                //- résultats côté serveur, sans JavaScript.
+                form.sh-search#shForm(action="/search" method="get" autocomplete="off" role="search")
+                    .sh-search__field
+                        span.sh-search__dot(aria-hidden="true")
+                        input#inputName(type="text" name="name" placeholder="Nom, métier, salon…" aria-label="Nom, métier ou salon")
+                        //- Vider le champ. Affiché par le script uniquement
+                        //- quand il y a du texte à effacer.
+                        button.sh-clear(type="button" data-clear="inputName" title="Effacer" aria-label="Effacer le métier" hidden)
+                            span.material-symbols-outlined(aria-hidden="true") close
+                        .sh-dd#menuNames
+                    .sh-search__sep(aria-hidden="true")
+                    .sh-search__field
+                        span.sh-search__dot(aria-hidden="true")
+                        input#inputLocation(type="text" name="location" placeholder="Ville ou code postal" aria-label="Ville ou code postal")
+                        button.sh-clear(type="button" data-clear="inputLocation" title="Effacer" aria-label="Effacer la ville" hidden)
+                            span.material-symbols-outlined(aria-hidden="true") close
+                        .sh-dd#menuLocations
+                    button.sh-search__btn(type="submit") Rechercher
+
+                //- Chaque métier est un LIEN, pas un filtre JavaScript : il
+                //- mène à une URL indexable et partageable.
+                if _cats.length
+                    .sh-chips
+                        a.sh-chip.is-on(href="/search?page=1") Tous
+                        each cat in _cats
+                            a.sh-chip(href='/search?category=' + encodeURIComponent(cat.name))= cat.name
+
+        //- ═══ 2. LES CHIFFRES ═══════════════════════════════════════════════
+        section.sh-statsWrap
+            .sh-wrap
+                .sh-stats
+                    .sh-stat
+                        .sh-stat__k= _nRound
+                        .sh-stat__v Professionnels actifs sur BranShee
+                    .sh-stat
+                        .sh-stat__k 24h/24
+                        .sh-stat__v Réservations prises automatiquement
+                    .sh-stat
+                        .sh-stat__k 0 appel
+                        .sh-stat__v Après la mise en place
+                    .sh-stat
+                        .sh-stat__k ≤ 5 min
+                        .sh-stat__v Pour être opérationnel
+
+        //- ═══ 3. LES ÉTABLISSEMENTS ═════════════════════════════════════════
+        //- Mêmes fiches que la recherche, dans le même ordre (boost, forfait,
+        //- note) : la vitrine ne montre rien que la recherche ne remonterait.
+        if coachs && coachs.length
+            section.sh-pros
+                .sh-wrap
+                    .sh-sectionHead
+                        div
+                            p.sh-eyebrow Près de vous
+                            h2.sh-h2 Ils réservent déjà en ligne
+                        a.sh-ghostBtn(href="/search?page=1") Voir les #{_nRound} pros
+
+                    .sh-grid
+                        each coach in coachs
+                            -
+                                //- Nom / photo / métier de l'ÉTABLISSEMENT d'abord :
+                                //- depuis le multi-établissements c'est la source de
+                                //- vérité, le compte propriétaire n'est qu'un repli
+                                //- pour les fiches antérieures.
+                                var photo = coach.photo || coach.owner.businessPicture || coach.owner.profilePicture || '/images/no-user.webp';
+                                var name  = coach.name || coach.owner.businessName || coach.owner.fullName || 'Professionnel';
+                                var btype = coach.businessType || coach.owner.businessType || '';
+                                var city  = coach.estabLocation && coach.estabLocation.city ? coach.estabLocation.city : '';
+                                var slug  = coach.slug || String(coach._id);
+                                var note  = Math.round((coach.avgRating || 0) * 10) / 10;
+                            a.sh-card(href='/' + slug)
+                                .sh-card__thumb
+                                    img.sh-card__img(src=photo alt="" loading="lazy" decoding="async" width="380" height="168")
+                                    if coach.reviewCount > 0
+                                        span.sh-card__rating ★ #{note.toFixed(1)}
+                                    else
+                                        span.sh-card__rating.is-new Nouveau
+                                .sh-card__body
+                                    .sh-card__top
+                                        span.sh-card__name= name
+                                        if coach.owner.verified
+                                            span.sh-card__verified Vérifié
+                                    .sh-card__meta
+                                        if btype
+                                            = btype
+                                        if btype && city
+                                            |  ·
+                                        if city
+                                            = ' ' + city
+                                    .sh-card__foot
+                                        //- « dès X € » n'apparaît que si une
+                                        //- prestation a un prix : afficher « dès — »
+                                        //- ne renseigne personne.
+                                        if coach.priceFrom
+                                            span.sh-card__from dès #{coach.priceFrom} €
+                                        else
+                                            span.sh-card__from Voir les prestations
+                                        span.sh-card__go Réserver →
+
+        //- ═══ 4. COMMENT ÇA MARCHE ══════════════════════════════════════════
+        section.sh-steps
+            .sh-wrap
+                p.sh-eyebrow Côté client
+                h2.sh-h2.sh-h2--mb Trente secondes, pas un appel
+                .sh-steps__grid
+                    -
+                        var _etapes = [
+                            { n: '01', t: 'Trouvez votre pro', d: 'Par métier, par ville, ou les deux. Chaque fiche montre les prestations, les tarifs et les avis.' },
+                            { n: '02', t: 'Choisissez un créneau', d: 'Les horaires affichés sont les vraies disponibilités du professionnel, à la minute près.' },
+                            { n: '03', t: 'Recevez la confirmation', d: 'Par e-mail immédiatement, puis un rappel avant le rendez-vous. Annulable en un clic.' },
+                        ];
+                    each e in _etapes
+                        .sh-step
+                            span.sh-step__n= e.n
+                            h3.sh-step__t= e.t
+                            p.sh-step__d= e.d
+
+        //- ═══ 5. L'AUTRE MOITIÉ DU TRAFIC ═══════════════════════════════════
+        //- Une partie des visiteurs de cette page ne cherche pas un pro : elle
+        //- veut en devenir un. On la renvoie vers l'offre plutôt que de la
+        //- laisser repartir.
+        section.sh-cta
+            .sh-wrap
+                .sh-cta__box
+                    .sh-cta__left
+                        p.sh-eyebrow.sh-eyebrow--light Pour les indépendants
+                        h2.sh-cta__t
+                            | Votre agenda en ligne,
+                            br
+                            | prêt en 5 minutes.
+                        p.sh-cta__s Un lien à partager, des réservations qui arrivent la nuit, des rappels automatiques. Vous ne décrochez plus pendant une prestation.
+                        .sh-cta__perks
+                            each perk in ['Page publique', 'Rappels automatiques', 'Paiement en ligne', '0 % de commission']
+                                span.sh-perk= perk
+                        .sh-cta__actions
+                            a.sh-cta__btn(href="/") Découvrir l'offre pro →
+                            span.sh-cta__note Sans carte bancaire
+
+                    //- Aperçu d'agenda : illustration, pas des données réelles.
+                    //- `aria-hidden` — un lecteur d'écran n'a rien à faire d'un
+                    //- planning fictif.
+                    .sh-agenda(aria-hidden="true")
+                        .sh-agenda__hd
+                            span.sh-agenda__day Mardi 18 août
+                            span.sh-agenda__n 4 rdv
+                        -
+                            var _rdv = [
+                                { h: '09:00', n: 'Sara M.',   s: 'Coupe' },
+                                { h: '10:30', n: 'Pierre L.', s: 'Barbe' },
+                                { h: '13:00', n: 'Benjamin',  s: 'Couleur' },
+                                { h: '15:00', n: 'Léa P.',    s: 'Brushing' },
+                            ];
+                        each r in _rdv
+                            .sh-agenda__row
+                                span.sh-agenda__h= r.h
+                                span.sh-agenda__name= r.n
+                                span.sh-agenda__svc= r.s
+                        .sh-agenda__free créneau libre · 16:30
+
+block scripts
+    script.
+        window.__services   = !{JSON.stringify(services || [])};
+        window.__categories = !{JSON.stringify((allCategories || []).map(function (c) { return c.name; }))};
+
+    script.
+        (function () {
+            // ══════════ Autocomplétion (métiers + villes) ══════════
+            // Même comportement que sur la page de résultats : le visiteur qui
+            // arrive ici et celui qui affine sa recherche doivent retrouver les
+            // mêmes suggestions.
+            var inputName = document.getElementById('inputName');
+            var menuNames = document.getElementById('menuNames');
+            var inputLoc  = document.getElementById('inputLocation');
+            var menuLoc   = document.getElementById('menuLocations');
+            if (!inputName || !inputLoc) return;
+
+            function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+            var CATS = window.__categories || [];
+            var SERVICES = window.__services || [];
+            var catSet = {};
+            CATS.forEach(function (c) { catSet[norm(c)] = true; });
+            var SUGGEST = CATS.concat(SERVICES.filter(function (s) { return !catSet[norm(s)]; }));
+
+            var ICON_JOB = '<span class="material-symbols-outlined" aria-hidden="true">search</span>';
+            var ICON_PIN = '<span class="material-symbols-outlined" aria-hidden="true">location_on</span>';
+
+            function renderDD(menu, items, icon, onPick) {
+                menu.innerHTML = '';
+                if (!items.length) { menu.classList.remove('is-open'); return; }
+                items.forEach(function (it) {
+                    var row = document.createElement('div');
+                    row.className = 'sh-dd__item';
+                    row.innerHTML = icon + '<span class="sh-dd__txt">' + it.replace(/</g, '&lt;') + '</span>';
+                    // mousedown et non click : le blur du champ ferme le menu
+                    // avant qu'un click ne parte.
+                    row.addEventListener('mousedown', function (e) { e.preventDefault(); onPick(it); });
+                    menu.appendChild(row);
+                });
+                menu.classList.add('is-open');
+            }
+
+            function suggestJobs() {
+                menuLoc.classList.remove('is-open');
+                var q = norm(inputName.value.trim());
+                var list = q
+                    ? SUGGEST.filter(function (s) { return norm(s).indexOf(q) !== -1; }).slice(0, 8)
+                    : SUGGEST.slice(0, 8);
+                renderDD(menuNames, list, ICON_JOB, function (val) {
+                    // On REMPLIT le champ, on ne lance pas la recherche.
+                    // Soumettre au clic sur une suggestion empêchait d'ajouter
+                    // une ville : le métier choisi, la page partait aussitôt.
+                    // Le focus passe donc sur la ville, et c'est « Rechercher »
+                    // qui décide — nulle part ailleurs.
+                    inputName.value = val;
+                    menuNames.classList.remove('is-open');
+                    inputLoc.focus();
+                });
+            }
+            inputName.addEventListener('focus', suggestJobs);
+            inputName.addEventListener('input', suggestJobs);
+            inputName.addEventListener('blur', function () { setTimeout(function () { menuNames.classList.remove('is-open'); }, 160); });
+
+            var locTimer;
+            inputLoc.addEventListener('input', function () {
+                menuNames.classList.remove('is-open');
+                clearTimeout(locTimer);
+                var val = inputLoc.value.trim();
+                if (val.length < 2) { menuLoc.classList.remove('is-open'); return; }
+                locTimer = setTimeout(function () {
+                    fetch('https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&accept-language=fr&q=' + encodeURIComponent(val))
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            var seen = {};
+                            var items = (data || []).map(function (el) {
+                                var a = el.address || {};
+                                var city = a.city || a.town || a.village || a.municipality || (el.display_name || '').split(',')[0];
+                                var region = a.state || a.county || '';
+                                if (region && region.toLowerCase() === city.toLowerCase()) region = '';
+                                return city ? (city + (region ? ' · ' + region : '')) : null;
+                            }).filter(function (x) { if (!x || seen[x]) return false; seen[x] = 1; return true; }).slice(0, 6);
+                            renderDD(menuLoc, items, ICON_PIN, function (val) {
+                                inputLoc.value = val.split(' · ')[0];
+                                menuLoc.classList.remove('is-open');
+                            });
+                        })
+                        .catch(function () { menuLoc.classList.remove('is-open'); });
+                }, 320);
+            });
+            inputLoc.addEventListener('blur', function () { setTimeout(function () { menuLoc.classList.remove('is-open'); }, 160); });
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('.sh-search')) {
+                    menuNames.classList.remove('is-open');
+                    menuLoc.classList.remove('is-open');
+                }
+            });
+
+            // ══════════ Vider un champ ══════════
+            // La croix n'apparaît que si le champ contient quelque chose, et
+            // ne lance pas la recherche : c'est « Rechercher » qui décide.
+            document.querySelectorAll('.sh-clear').forEach(function (btn) {
+                var champ = document.getElementById(btn.dataset.clear);
+                if (!champ) return;
+                var sync = function () { btn.hidden = !champ.value.trim(); };
+                sync();
+                champ.addEventListener('input', sync);
+                btn.addEventListener('click', function () {
+                    champ.value = '';
+                    sync();
+                    menuNames.classList.remove('is-open');
+                    menuLoc.classList.remove('is-open');
+                    champ.focus();
+                });
+            });
+        })();

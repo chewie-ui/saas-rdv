@@ -9,7 +9,7 @@
 
 /* ── HERO ─────────────────────────────────────────────────────── */
 .lp-pro__hero {
-  background: linear-gradient(135deg, #0d3d24 0%, #16a34a 55%, #22c55e 100%);
+  background: linear-gradient(135deg, var(--bs-green-deep) 0%, var(--success) 55%, var(--success) 100%);
   padding: 80px 24px 72px;
   text-align: center;
   color: #fff;
@@ -40,7 +40,7 @@
   margin: 0 0 20px;
 }
 
-.lp-pro__h1-accent { color: #bbf7d0; }
+.lp-pro__h1-accent { color: var(--bs-green-border); }
 
 .lp-pro__sub {
   font-size: clamp(1rem, 2vw, 1.2rem);
@@ -59,7 +59,7 @@
   align-items: center;
   justify-content: center;
   background: #fff;
-  color: #15803d;
+  color: var(--success);
   font-size: 16px;
   font-weight: 800;
   padding: 16px 40px;
@@ -93,7 +93,7 @@
   color: rgba(255,255,255,.8);
 }
 
-.lp-pro__trust-item svg { fill: #86efac; }
+.lp-pro__trust-item svg { fill: var(--bs-green-light); }
 
 /* Social proof sous le CTA */
 .lp-pro__social-proof {
@@ -131,16 +131,16 @@
 }
 
 .lp-pro__sp-text strong {
-  color: #bbf7d0;
+  color: var(--bs-green-border);
   font-weight: 800;
 }
 
 /* ── GARANTIES ───────────────────────────────────────────────── */
 .lp-pro__guarantees {
   padding: 20px 0;
-  background: #f0fdf4;
-  border-top: 1px solid #bbf7d0;
-  border-bottom: 1px solid #bbf7d0;
+  background: var(--success-pale);
+  border-top: 1px solid var(--bs-green-border);
+  border-bottom: 1px solid var(--bs-green-border);
 }
 
 .lp-pro__guarantees-grid {
@@ -157,10 +157,10 @@
   gap: 7px;
   font-size: 13.5px;
   font-weight: 600;
-  color: #15803d;
+  color: var(--success);
 }
 
-.lp-pro__guarantee svg { flex-shrink: 0; fill: #16a34a; }
+.lp-pro__guarantee svg { flex-shrink: 0; fill: var(--success); }
 
 /* ── PROBLÈME / SOLUTION ─────────────────────────────────────── */
 .lp-pro__ps {
@@ -183,8 +183,8 @@
   margin-bottom: 16px;
 }
 
-.lp-pro__ps-label--bad  { color: #dc2626; }
-.lp-pro__ps-label--good { color: #16a34a; }
+.lp-pro__ps-label--bad  { color: var(--danger); }
+.lp-pro__ps-label--good { color: var(--success); }
 
 .lp-pro__ps-list {
   list-style: none;
@@ -204,11 +204,11 @@
   line-height: 1.5;
 }
 
-.lp-pro__icon-bad  { color: #dc2626; font-weight: 800; flex-shrink: 0; }
-.lp-pro__icon-good { color: #16a34a; font-weight: 800; flex-shrink: 0; }
+.lp-pro__icon-bad  { color: var(--danger); font-weight: 800; flex-shrink: 0; }
+.lp-pro__icon-good { color: var(--success); font-weight: 800; flex-shrink: 0; }
 
-.lp-pro__ps-before { background: #fff; border: 1.5px solid #fee2e2; border-radius: 16px; padding: 24px; }
-.lp-pro__ps-after  { background: #fff; border: 1.5px solid #bbf7d0; border-radius: 16px; padding: 24px; }
+.lp-pro__ps-before { background: #fff; border: 1.5px solid color-mix(in srgb, var(--danger) 12%, #fff); border-radius: 16px; padding: 24px; }
+.lp-pro__ps-after  { background: #fff; border: 1.5px solid var(--bs-green-border); border-radius: 16px; padding: 24px; }
 
 .lp-pro__ps-arrow {
   font-size: 2.5rem;
@@ -239,13 +239,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: var(--success-pale);
+  border: 1px solid var(--bs-green-border);
   border-radius: 10px;
   padding: 10px 14px;
   font-size: 13px;
   font-weight: 600;
-  color: #15803d;
+  color: var(--success);
 }
 
 /* ── COMMENT ÇA MARCHE ───────────────────────────────────────── */
@@ -272,7 +272,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #16a34a;
+  background: var(--success);
   color: #fff;
   font-size: 16px;
   font-weight: 800;
@@ -315,8 +315,8 @@
 }
 
 .lp-pro__plan--featured {
-  border-color: #16a34a;
-  box-shadow: 0 8px 32px rgba(22,163,74,.15);
+  border-color: var(--success);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--success) 15%, transparent);
   transform: scale(1.03);
 }
 
@@ -325,7 +325,7 @@
   top: -12px;
   left: 50%;
   transform: translateX(-50%);
-  background: #16a34a;
+  background: var(--success);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -363,12 +363,12 @@
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
-  background: #16a34a;
+  background: var(--success);
   color: #fff;
   transition: background .15s;
 }
 
-.lp-pro__plan-cta:hover { background: #15803d; }
+.lp-pro__plan-cta:hover { background: var(--success); }
 
 .lp-pro__plan-cta--ghost {
   background: transparent;
@@ -382,7 +382,7 @@
 .lp-pro__final {
   padding: 80px 24px;
   text-align: center;
-  background: linear-gradient(135deg, #0d3d24 0%, #16a34a 100%);
+  background: linear-gradient(135deg, var(--bs-green-deep) 0%, var(--success) 100%);
   color: #fff;
 }
 
@@ -433,7 +433,7 @@
 .lp-pro__stat-item strong {
   font-size: 1.4rem;
   font-weight: 900;
-  color: #16a34a;
+  color: var(--success);
   letter-spacing: -0.03em;
   line-height: 1;
 }
@@ -455,13 +455,13 @@
 /* ── PLAN NOTE ────────────────────────────────────────────────── */
 .lp-pro__plan-note {
   font-size: 11.5px;
-  color: #16a34a;
+  color: var(--success);
   font-weight: 600;
   margin: -8px 0 0;
   padding: 5px 10px;
-  background: #f0fdf4;
+  background: var(--success-pale);
   border-radius: 6px;
-  border: 1px solid #bbf7d0;
+  border: 1px solid var(--bs-green-border);
   text-align: center;
 }
 
@@ -509,7 +509,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #16a34a, #22c55e);
+  background: linear-gradient(135deg, var(--success), var(--success));
   color: #fff;
   font-size: 14px;
   font-weight: 800;
@@ -552,7 +552,7 @@
 }
 
 .lp-pro__faq-item[open] {
-  border-color: #16a34a;
+  border-color: var(--success);
 }
 
 .lp-pro__faq-q {
@@ -581,7 +581,7 @@
 
 .lp-pro__faq-item[open] .lp-pro__faq-chevron {
   transform: rotate(90deg);
-  color: #16a34a;
+  color: var(--success);
 }
 
 .lp-pro__faq-a {
@@ -611,7 +611,7 @@
 
 .lp-pro__sticky-btn {
   display: block;
-  background: #16a34a;
+  background: var(--success);
   color: #fff;
   font-size: 15px;
   font-weight: 800;
@@ -622,7 +622,7 @@
   transition: background .15s;
 }
 
-.lp-pro__sticky-btn:hover { background: #15803d; }
+.lp-pro__sticky-btn:hover { background: var(--success); }
 
 .lp-pro__sticky-note {
   font-size: 11px;

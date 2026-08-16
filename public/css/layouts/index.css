@@ -2,6 +2,25 @@
 @import url("../components/index/topbar.index.css");
 @import url("../components/index/footer.index.css");
 
+/* ── Pied de page collé en bas ────────────────────────────────────────────
+   Sur une page publique courte — une recherche sans résultat, une erreur, une
+   page légale — le pied de page s'arrêtait où finissait le contenu et laissait
+   une bande blanche en dessous. Invisible sur un écran de portable, très
+   visible sur un grand écran : c'est exactement là que ça se voyait.
+
+   `margin-top: auto` sur le pied suffit : la colonne flex absorbe l'espace
+   restant AU-DESSUS de lui. Rien d'autre à annoter — pas de `flex: 1` sur le
+   contenu, donc aucune page ne se met à étirer ses sections.
+
+   `100dvh` et non `100vh` : sur mobile, `vh` compte la barre d'adresse
+   rétractable et ajoutait ~60px de vide en bas. */
+body.site-public {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+body.site-public > footer { margin-top: auto; }
+
 .content-wrapper {
   min-height: 100vh;
   display: flex;

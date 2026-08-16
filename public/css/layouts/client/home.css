@@ -1,255 +1,403 @@
 /* ══════════════════════════════════════════════════════════════════════════
-   PAGE D'ACCUEIL — sections reprises de la maquette « Pour les pros »
+   PAGE D'ACCUEIL — valeurs reprises telles quelles de la maquette
    ─────────────────────────────────────────────────────────────────────────
-   Toutes les classes sont préfixées `hp-`. C'est délibéré : landing-page.css
-   reste chargée à côté pour le visuel du planning (.pro-mock*), et deux
-   feuilles qui se disputeraient les mêmes sélecteurs finiraient en surcharges
-   `!important` — exactement ce qu'on vient de nettoyer sur la page des
-   formules.
+   Source : `maquette-branshee-source.html`, écran « Pour les pros »
+   (lignes 663-762). Couleurs, rayons, tailles et graisses sont recopiés au
+   chiffre près depuis les styles en ligne de la maquette — d'où les
+   14.5px / 11.5px / .045em qui n'ont l'air d'être des valeurs rondes.
 
-   Jetons consommés depuis import.css / ds.css, jamais redéfinis : la page suit
-   donc le thème sombre de l'application sans une règle de plus.
+   Deux sections n'existent pas sur l'écran « Pour les pros » : les tarifs et
+   la FAQ. Elles reprennent les valeurs de l'écran « Tarifs » de la MÊME
+   maquette (lignes 764-905), c'est-à-dire le même système. Chaque bloc
+   concerné le signale.
+
+   ── Pourquoi des valeurs en dur et non les jetons de import.css ──────────
+   Les jetons de l'application ne sont pas ceux de la maquette : l'accent y
+   est #1e7a4e, la maquette dit #12a06e. Réutiliser les jetons donnerait une
+   page « proche » de la maquette, jamais identique. Les valeurs vivent donc
+   dans des variables locales `--hp-*` posées sur `.hp` : un seul endroit à
+   éditer si la maquette bouge, et zéro fuite vers le reste de l'app.
+
+   Conséquence assumée : cette page ne suit plus le thème sombre. La maquette
+   est une vitrine publique en clair, et un jeu de couleurs à moitié appliqué
+   (fonds sombres + accent clair) serait pire que pas de thème sombre du tout.
+
+   Toutes les classes restent préfixées `hp-` : landing-page.css est chargée à
+   côté pour le visuel du planning (.pro-mock*), et deux feuilles qui se
+   disputeraient les mêmes sélecteurs finiraient en surcharges `!important`.
    ═════════════════════════════════════════════════════════════════════════ */
 
 .hp {
+  /* Palette exacte de la maquette. Les noms suivent ceux de ses constantes
+     JS (ligne 1117) : ACCENT, SOFT, INK, MUTED, BD. */
+  --hp-accent: #12a06e;
+  --hp-accent-hover: #0d8a5e;
+  --hp-accent-deep: #0d7a54;
+  --hp-soft: #e9f7f0;
+
+  --hp-ink: #1b2320;          /* titres de cartes, textes forts */
+  --hp-ink-title: #151a18;    /* h1 / h2 — un cran plus noir que --hp-ink */
+  --hp-body: #5b636c;         /* paragraphes d'introduction */
+  --hp-body-2: #6b737b;       /* textes de carte, plus clairs */
+  --hp-body-3: #3f474e;       /* listes de fonctionnalités */
+  --hp-muted: #9aa39d;        /* mentions, unités, métadonnées */
+
+  --hp-page: #fbfbf9;         /* fond de page (body de la maquette) */
+  --hp-card: #fff;
+  --hp-bd-card: #e8eaec;      /* contour des cartes */
+  --hp-bd-ctrl: #e0e3e5;      /* contour des boutons secondaires */
+  --hp-bd-row: #f0f1f0;       /* filets internes (FAQ, cartes tarifs) */
+
+  --hp-dark: #07301f;         /* le vert profond des panneaux « Avec » */
+  --hp-dark-mint: #6fd6a8;
+  --hp-dark-text: #d6e8de;
+  --hp-dark-lead: #a9c8ba;
+  --hp-dark-note: #8fb4a2;
+
+  --hp-red: #b04435;          /* panneau « Avant » */
+  --hp-red-soft: #fbf0ef;
+
+  --hp-r-card: 24px;          /* grandes cartes */
+  --hp-r-panel: 20px;         /* cartes moyennes (étapes, add-ons) */
+  --hp-r-chip: 14px;          /* vignettes métiers */
+  --hp-r-pill: 999px;
+
+  --hp-font: "Plus Jakarta Sans", sans-serif;
+  --hp-mono: "JetBrains Mono", monospace;
+
   /* Compense la topbar fixe (.header est en position:fixed — 64px, 68px
      au-delà de 820px). Sans ce décalage, le hero passe DESSOUS et le titre
      disparaît : c'est le défaut qui avait échappé à la relecture sur /search. */
   padding-top: 64px;
+  background: var(--hp-page);
+  color: #21262b;
+  font-family: var(--hp-font);
   font-variant-numeric: tabular-nums;
+  text-wrap: pretty;
 }
 @media (min-width: 820px) {
   .hp { padding-top: 68px; }
 }
 
+/* 1220px et 24px de gouttière : les deux valeurs de la maquette. */
 .hp .container {
-  max-width: 1140px;
+  max-width: 1220px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
 }
 
 /* ── Éléments partagés ──────────────────────────────────────────────────── */
+
+/* Sur-titre : mono 11px, interlettrage .16em. C'est le seul endroit de la
+   page où la maquette sort de Plus Jakarta Sans. */
 .hp-eyebrow {
-  margin: 0 0 14px;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: .14em;
+  margin: 0;
+  font-family: var(--hp-mono);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: .16em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--hp-accent);
 }
 
+/* 62px est la taille de la maquette (desktop). Le clamp ne sert qu'à la
+   descente mobile : au-delà de ~1190px de fenêtre, on est bien à 62px. */
 .hp-h1 {
-  margin: 0 0 18px;
-  font-size: clamp(34px, 5.2vw, 60px);
+  margin: 18px 0 0;
+  font-size: clamp(36px, 5.2vw, 62px);
   font-weight: 800;
-  letter-spacing: -.035em;
-  line-height: 1.04;
+  line-height: 1.02;
+  letter-spacing: -.045em;
   text-wrap: balance;
-  color: var(--text-primary);
+  color: var(--hp-ink-title);
 }
-.hp-h1__dot { color: var(--accent); }
+.hp-h1__dot { color: var(--hp-accent); }
 
 .hp-h2 {
-  margin: 0 0 14px;
-  font-size: clamp(24px, 3vw, 34px);
-  font-weight: 780;
-  letter-spacing: -.03em;
-  line-height: 1.12;
-  text-wrap: balance;
-  color: var(--text-primary);
-}
-.hp-h2__em { color: var(--accent); }
-
-.hp-sub,
-.hp-lead {
   margin: 0 0 26px;
-  max-width: 56ch;
-  font-size: 16px;
+  font-size: clamp(27px, 3.2vw, 38px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+  color: var(--hp-ink-title);
+}
+.hp-h2__em { color: var(--hp-accent); }
+
+.hp-sub {
+  margin: 20px 0 30px;
+  max-width: 520px;
+  font-size: 17px;
+  font-weight: 400;
   line-height: 1.6;
-  color: var(--text-secondary);
+  color: var(--hp-body);
+}
+.hp-lead {
+  margin: -8px 0 22px;
+  max-width: 560px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--hp-body-2);
 }
 
 /* ── Boutons ─────────────────────────────────────────────────────────────
-   Un seul bouton plein par zone : le vert désigne l'action principale, le
-   contour la seconde. Deux boutons pleins côte à côte ne désignent rien. */
-.hp-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+   Boutons en pilule (999px), hauteur fixe 50px, comme le hero de la
+   maquette. Un seul bouton plein par zone : le vert désigne l'action
+   principale, le contour la seconde.
+
+   Ces classes `hp-` relèvent de l'exception §2 de CONVENTIONS.md (pages
+   publiques self-contained) : `.sm-btn` porte le bouton à coins arrondis de
+   l'espace pro, pas la pilule de la vitrine. */
+.hp-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
 .hp-cta--center { justify-content: center; }
 
 .hp-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 26px;
+  height: 50px;
+  padding: 0 26px;
   border: 1px solid transparent;
-  border-radius: var(--ds-r-md, 10px);
+  border-radius: var(--hp-r-pill);
+  font-family: var(--hp-font);
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 700;
+  line-height: 1;
   text-align: center;
   text-decoration: none;
   transition: background .15s, border-color .15s, color .15s;
 }
 .hp-btn--block { width: 100%; }
 
-.hp-btn--primary { background: var(--accent); color: #fff; }
-.hp-btn--primary:hover { background: var(--accent-hover); color: #fff; }
+.hp-btn--primary { background: var(--hp-accent); color: #fff; }
+.hp-btn--primary:hover { background: var(--hp-accent-hover); color: #fff; }
 
+/* Le bouton secondaire de la maquette est un cran plus discret que le
+   principal : 14.5px en 600, et non 15px en 700. */
 .hp-btn--ghost {
-  background: var(--bg-surface, #fff);
-  border-color: var(--border-light);
-  color: var(--text-primary);
+  padding: 0 22px;
+  background: var(--hp-card);
+  border-color: var(--hp-bd-ctrl);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--hp-ink);
 }
-.hp-btn--ghost:hover { border-color: var(--text-muted); color: var(--text-primary); }
+.hp-btn--ghost:hover { border-color: #b9c0c4; color: var(--hp-ink); }
 
-/* Variantes pour le bloc final, posé sur un fond vert foncé. */
-.hp-btn--light { background: #fff; color: #0f2e1f; }
-.hp-btn--light:hover { background: #eef5f1; color: #0f2e1f; }
+/* Variantes pour le bloc final, posé sur le vert profond. */
+.hp-btn--light { height: 52px; padding: 0 28px; background: #fff; color: var(--hp-dark); }
+.hp-btn--light:hover { background: #d6f2e4; color: var(--hp-dark); }
 .hp-btn--outline-light {
+  height: 52px;
+  padding: 0 28px;
   background: transparent;
-  border-color: rgba(255, 255, 255, .38);
+  border-color: rgba(111, 214, 168, .38);
+  font-weight: 600;
+  color: var(--hp-dark-text);
+}
+.hp-btn--outline-light:hover {
+  border-color: var(--hp-dark-mint);
+  background: rgba(111, 214, 168, .12);
   color: #fff;
 }
-.hp-btn--outline-light:hover { border-color: #fff; background: rgba(255, 255, 255, .08); color: #fff; }
 
 .hp-trust {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin: 16px 0 0;
-  font-size: 13px;
-  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--hp-muted);
 }
-.hp-trust__sep { opacity: .5; }
+.hp-trust__sep { opacity: .6; }
 
-/* ── 1. Hero ────────────────────────────────────────────────────────────── */
-.hp-hero { padding: 64px 0 56px; }
+/* ── 1. Hero ──────────────────────────────────────────────────────────────
+   1.02fr / .98fr : la colonne texte est très légèrement plus large que le
+   visuel, ce qui recentre optiquement le titre. */
+.hp-hero { padding: 64px 0 0; }
 .hp-hero__inner {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: 1.02fr .98fr;
   gap: 56px;
   align-items: center;
 }
 .hp-hero__left { min-width: 0; }
 
+/* Le cadre du visuel produit. .pro-mock vient de landing-page.css avec les
+   jetons de l'app (radius-xl, ombre portée, rotation) ; on le ramène aux
+   valeurs de la maquette : carte blanche droite, filet #e8eaec, 24px, sans
+   ombre. La rotation part avec l'ombre — inclinée et sans relief, la carte
+   passait pour un défaut d'alignement. */
+.hp .pro-mock {
+  background: var(--hp-card);
+  border: 1px solid var(--hp-bd-card);
+  border-radius: var(--hp-r-card);
+  box-shadow: none;
+  padding: 18px;
+  transform: none;
+}
+
 /* ── 2. Avant / Avec ────────────────────────────────────────────────────── */
-.hp-switch { padding: 24px 0 64px; }
+.hp-switch { padding: 72px 0 0; }
 .hp-switch__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
   align-items: stretch;
 }
 
 .hp-panel {
-  padding: 26px 24px;
-  border-radius: var(--ds-r-lg, 14px);
+  padding: 30px;
+  border-radius: var(--hp-r-card);
 }
 .hp-panel--before {
-  background: var(--bg-surface, #fff);
-  border: 1px solid var(--border-light);
+  background: var(--hp-card);
+  border: 1px solid var(--hp-bd-card);
 }
-/* Le vert foncé n'est pas décoratif : il marque visuellement le basculement
-   d'un état subi à un état choisi. C'est la seule surface sombre de la page. */
+/* Le vert profond n'est pas décoratif : il marque le basculement d'un état
+   subi à un état choisi. C'est la seule surface sombre de la page — et le
+   panneau n'a pas de contour, contrairement à son voisin clair. */
 .hp-panel--after {
-  background: #0f3524;
-  border: 1px solid #0f3524;
+  background: var(--hp-dark);
+  border: 1px solid var(--hp-dark);
 }
 
 .hp-panel__pill {
   display: inline-block;
-  margin-bottom: 18px;
-  padding: 5px 12px;
-  border-radius: var(--ds-r-pill, 999px);
+  padding: 6px 12px;
+  border-radius: var(--hp-r-pill);
   font-size: 11.5px;
-  font-weight: 700;
+  font-weight: 600;
+  line-height: 1;
 }
-.hp-panel--before .hp-panel__pill { background: #fdecec; color: #b4232b; }
-.hp-panel--after .hp-panel__pill { background: rgba(255, 255, 255, .14); color: #b7e7cd; }
+.hp-panel--before .hp-panel__pill { background: var(--hp-red-soft); color: var(--hp-red); }
+.hp-panel--after .hp-panel__pill { background: rgba(111, 214, 168, .16); color: var(--hp-dark-mint); }
 
 .hp-panel__list {
   list-style: none;
-  margin: 0;
+  margin: 20px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 13px;
+  gap: 14px;
 }
 .hp-panel__list li {
   display: flex;
   align-items: flex-start;
-  gap: 11px;
+  gap: 12px;
   font-size: 14.5px;
-  line-height: 1.45;
+  font-weight: 500;
+  line-height: 1.5;
 }
-.hp-panel--before .hp-panel__list li { color: var(--text-secondary); }
-.hp-panel--after .hp-panel__list li { color: #eaf5ef; }
+.hp-panel--before .hp-panel__list li { color: var(--hp-body); }
+.hp-panel--after .hp-panel__list li { color: var(--hp-dark-text); }
 
+/* 18px, rayon 6px : la maquette utilise un carré adouci, pas une pastille
+   ronde. Le `margin-top:2px` aligne l'icône sur la première ligne de texte. */
 .hp-panel__ico {
   flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  font-size: 14px;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
 }
-.hp-panel--before .hp-panel__ico { background: #fdecec; color: #b4232b; }
-.hp-panel--after .hp-panel__ico { background: rgba(122, 214, 165, .22); color: #7ad6a5; }
+.hp-panel--before .hp-panel__ico { background: var(--hp-red-soft); color: var(--hp-red); }
+.hp-panel--after .hp-panel__ico { background: rgba(111, 214, 168, .2); color: var(--hp-dark-mint); }
 
 /* ── 3. Métiers ─────────────────────────────────────────────────────────── */
-.hp-trades { padding: 64px 0; border-top: 1px solid var(--border-light); }
+.hp-trades { padding: 72px 0 0; }
 .hp-trades__grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 26px;
+  gap: 10px;
 }
 .hp-trade {
-  padding: 16px 18px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-md, 10px);
-  background: var(--bg-surface, #fff);
+  padding: 18px;
+  border: 1px solid var(--hp-bd-card);
+  border-radius: var(--hp-r-chip);
+  background: var(--hp-card);
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  line-height: 1.3;
+  color: var(--hp-ink);
 }
 
 /* ── 4. Mise en route ───────────────────────────────────────────────────── */
-.hp-steps { padding: 64px 0; border-top: 1px solid var(--border-light); }
+.hp-steps { padding: 72px 0 0; }
 .hp-steps__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
-  margin-top: 30px;
 }
 .hp-step {
-  padding: 24px 22px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-lg, 14px);
-  background: var(--bg-surface, #fff);
+  padding: 26px;
+  border: 1px solid var(--hp-bd-card);
+  border-radius: var(--hp-r-panel);
+  background: var(--hp-card);
 }
+/* Le numéro est en mono, comme le sur-titre du hero : c'est ce qui le fait
+   lire comme un repère et non comme du texte. */
 .hp-step__n {
   display: block;
-  margin-bottom: 12px;
-  font-size: 12.5px;
-  font-weight: 750;
-  letter-spacing: .06em;
-  color: var(--accent);
+  font-family: var(--hp-mono);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--hp-accent);
 }
-.hp-step__t { margin: 0 0 7px; font-size: 16.5px; font-weight: 700; color: var(--text-primary); }
-.hp-step__d { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-secondary); }
-.hp-steps__note { margin: 20px 0 0; font-size: 13px; color: var(--text-muted); }
+.hp-step__t {
+  margin: 16px 0 8px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -.02em;
+  color: var(--hp-ink);
+}
+.hp-step__d {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--hp-body-2);
+}
+.hp-steps__note {
+  margin: 20px 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--hp-muted);
+}
 
-/* ── 5. Ce qui est inclus ───────────────────────────────────────────────── */
-.hp-incl { padding: 64px 0; border-top: 1px solid var(--border-light); }
+/* ── 5. Ce qui est inclus ─────────────────────────────────────────────────
+   Pas d'équivalent sur l'écran « Pour les pros ». Valeurs reprises des
+   cartes « add-ons » de l'écran Tarifs (rayon 20px, padding 24px, titre
+   16px/700, texte 13.5px/1.55) : c'est le même motif titre + description
+   courte, dans la même maquette. */
+.hp-incl { padding: 72px 0 0; }
 .hp-incl__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 22px 28px;
-  margin-top: 12px;
+  gap: 18px;
 }
-.hp-incl__item { display: flex; align-items: flex-start; gap: 11px; }
+.hp-incl__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 24px;
+  border: 1px solid var(--hp-bd-card);
+  border-radius: var(--hp-r-panel);
+  background: var(--hp-card);
+}
 .hp-incl__ico {
   flex: none;
   display: inline-flex;
@@ -257,115 +405,196 @@
   justify-content: center;
   width: 22px;
   height: 22px;
-  border-radius: 50%;
-  background: var(--accent-soft);
+  margin-top: 1px;
+  border-radius: 6px;
+  background: var(--hp-soft);
   font-size: 15px;
-  color: var(--accent);
+  font-weight: 700;
+  color: var(--hp-accent);
 }
-.hp-incl__t { margin: 0 0 3px; font-size: 14.5px; font-weight: 680; color: var(--text-primary); }
-.hp-incl__d { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.hp-incl__t {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--hp-ink);
+}
+.hp-incl__d {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--hp-body-2);
+}
 
-/* ── 6. Tarifs ──────────────────────────────────────────────────────────── */
-.hp-pricing { padding: 64px 0; border-top: 1px solid var(--border-light); }
+/* ── 6. Tarifs ────────────────────────────────────────────────────────────
+   Valeurs de l'écran « Tarifs » de la maquette (l'écran « Pour les pros »
+   n'affiche pas de prix). */
+.hp-pricing { padding: 72px 0 0; }
 .hp-pricing__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
-  margin-top: 30px;
   align-items: stretch;
 }
 .hp-plan {
-  position: relative;
   display: flex;
   flex-direction: column;
-  padding: 26px 24px;
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-lg, 14px);
-  background: var(--bg-surface, #fff);
+  padding: 28px;
+  border: 1px solid var(--hp-bd-card);
+  border-radius: var(--hp-r-card);
+  background: var(--hp-card);
 }
-/* Une seule carte teintée : celle qu'on recommande. Trois cartes mises en
-   avant n'en mettent aucune en avant. */
-.hp-plan--reco { background: var(--accent-soft); border-color: var(--accent); }
-.hp-plan__pill {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  padding: 4px 11px;
-  border-radius: var(--ds-r-pill, 999px);
-  background: var(--accent);
-  font-size: 11px;
-  font-weight: 700;
-  color: #fff;
+/* Une seule carte mise en avant : celle qu'on recommande. La maquette ne la
+   teinte pas — elle change le contour et pose une ombre verte très diffuse.
+   Trois cartes teintées n'en mettent aucune en avant. */
+.hp-plan--reco {
+  border-color: #bfe4d3;
+  box-shadow: 0 24px 50px -34px rgba(18, 160, 110, .55);
 }
-.hp-plan__name { margin: 0; padding-right: 84px; font-size: 17px; font-weight: 730; color: var(--text-primary); }
-.hp-plan__price { margin: 14px 0 22px; display: flex; align-items: baseline; gap: 5px; }
-.hp-plan__amount { font-size: 34px; font-weight: 800; letter-spacing: -.03em; color: var(--text-primary); }
-.hp-plan__per { font-size: 13.5px; color: var(--text-muted); }
-/* Colle le bouton en bas : les trois cartes s'alignent quelle que soit la
-   longueur du nom de la formule. */
-.hp-plan .hp-btn { margin-top: auto; }
 
-/* ── 7. Questions fréquentes ────────────────────────────────────────────── */
-.hp-faq { padding: 64px 0; border-top: 1px solid var(--border-light); }
-.hp-faq__list {
+/* Nom et étiquette sur une même ligne, alignés aux deux bords. Le min-height
+   maintient l'alignement vertical des cartes sans étiquette. */
+.hp-plan__head {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 800px;
-  margin-top: 26px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 26px;
 }
-.hp-faq__item {
-  border: 1px solid var(--border-light);
-  border-radius: var(--ds-r-lg, 14px);
-  background: var(--bg-surface, #fff);
+.hp-plan__name {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -.02em;
+  color: var(--hp-ink);
+}
+.hp-plan__pill {
+  flex: none;
+  padding: 5px 10px;
+  border-radius: var(--hp-r-pill);
+  background: var(--hp-soft);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--hp-accent-deep);
+}
+.hp-plan__price {
+  margin: 12px 0 22px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.hp-plan__amount {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.04em;
+  color: var(--hp-ink-title);
+}
+.hp-plan__per {
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--hp-muted);
+}
+/* 48px et non 50px : dans la maquette, le bouton d'une carte tarif est un
+   cran plus bas que celui du hero. `margin-top:auto` colle les trois
+   boutons en bas quelle que soit la longueur du nom de la formule. */
+.hp-plan .hp-btn {
+  height: 48px;
+  margin-top: auto;
+  padding: 0 20px;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+/* ── 7. Questions fréquentes ──────────────────────────────────────────────
+   Valeurs de l'écran « Tarifs ». La liste forme UNE carte : les `details`
+   n'ont pas de contour propre, juste un filet de séparation, et le rayon
+   n'est porté que par le conteneur (d'où `overflow:hidden`). */
+.hp-faq { padding: 72px 0 0; }
+.hp-faq__list {
+  border: 1px solid var(--hp-bd-card);
+  border-radius: var(--hp-r-card);
+  background: var(--hp-card);
   overflow: hidden;
 }
-.hp-faq__item[open] { border-color: var(--accent); }
+.hp-faq__item { border-bottom: 1px solid var(--hp-bd-row); }
+.hp-faq__item:last-child { border-bottom: 0; }
 .hp-faq__q {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  padding: 16px 20px;
-  font-size: 15px;
-  font-weight: 640;
-  color: var(--text-primary);
+  gap: 20px;
+  padding: 22px 26px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--hp-ink);
   cursor: pointer;
   list-style: none;
 }
 /* Retire le triangle natif, remplacé par le chevron. */
 .hp-faq__q::-webkit-details-marker { display: none; }
 .hp-faq__q::marker { content: ""; }
-.hp-faq__chev { flex: none; font-size: 20px; color: var(--text-muted); transition: transform .18s ease; }
+.hp-faq__chev {
+  flex: none;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--hp-accent);
+  transition: transform .18s ease;
+}
 .hp-faq__item[open] .hp-faq__chev { transform: rotate(180deg); }
-.hp-faq__a { margin: 0; padding: 0 20px 18px; font-size: 14.5px; line-height: 1.6; color: var(--text-secondary); }
+.hp-faq__a {
+  margin: 0;
+  padding: 0 26px 24px;
+  font-size: 14.5px;
+  font-weight: 400;
+  line-height: 1.65;
+  color: var(--hp-body);
+}
 
-/* ── 8. Dernier appel ───────────────────────────────────────────────────── */
-.hp-final { padding: 0 0 72px; }
+/* ── 8. Dernier appel ─────────────────────────────────────────────────────
+   Le pavé final de l'écran « Tarifs » : rayon 28px (le plus grand de la
+   maquette) et 52px de marge intérieure. */
+.hp-final { padding: 72px 0 96px; }
 .hp-final__box {
-  padding: 56px 32px;
-  border-radius: 20px;
-  background: #0f3524;
+  padding: 52px;
+  border-radius: 28px;
+  background: var(--hp-dark);
   text-align: center;
 }
 .hp-final__t {
-  margin: 0 0 12px;
-  font-size: clamp(24px, 3vw, 34px);
-  font-weight: 780;
-  letter-spacing: -.03em;
+  margin: 0;
+  font-size: clamp(27px, 3.2vw, 38px);
+  font-weight: 700;
+  line-height: 1.06;
+  letter-spacing: -.035em;
   text-wrap: balance;
   color: #fff;
 }
 .hp-final__s {
-  margin: 0 auto 26px;
-  max-width: 52ch;
-  font-size: 15.5px;
+  margin: 14px auto 0;
+  max-width: 520px;
+  font-size: 16px;
+  font-weight: 400;
   line-height: 1.6;
-  color: #c7ddd1;
+  color: var(--hp-dark-lead);
 }
-.hp-final__note { margin: 18px 0 0; font-size: 12.5px; color: #9dbcac; }
+.hp-final__s + .hp-cta { margin-top: 28px; }
+.hp-final__note {
+  margin: 18px 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--hp-dark-note);
+}
 
-/* ══ Responsive ═══════════════════════════════════════════════════════════ */
+/* ══ Responsive ═══════════════════════════════════════════════════════════
+   La maquette n'existe qu'en desktop : tout ce qui suit est la descente,
+   sans nouvelle valeur de couleur ni de graisse. */
 
 @media (max-width: 1000px) {
   /* Le visuel du planning passe sous le texte : côte à côte, il tombait à
@@ -379,21 +608,26 @@
   .hp-switch__grid { grid-template-columns: 1fr; }
   .hp-steps__grid { grid-template-columns: 1fr; }
   .hp-pricing__grid { grid-template-columns: 1fr; max-width: 420px; margin-inline: auto; }
+  .hp-final__box { padding: 40px 28px; }
 }
 
 @media (max-width: 620px) {
-  .hp-hero { padding: 36px 0 40px; }
-  .hp-switch { padding: 12px 0 44px; }
-  .hp-trades, .hp-steps, .hp-incl, .hp-pricing, .hp-faq { padding: 44px 0; }
+  .hp .container { padding: 0 20px; }
+  .hp-hero { padding: 36px 0 0; }
+  .hp-switch, .hp-trades, .hp-steps, .hp-incl, .hp-pricing, .hp-faq { padding: 48px 0 0; }
+  .hp-final { padding: 48px 0 72px; }
   .hp-trades__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hp-incl__grid { grid-template-columns: 1fr; }
+  .hp-panel, .hp-plan { padding: 24px 20px; }
+  .hp-faq__q { padding: 18px 20px; }
+  .hp-faq__a { padding: 0 20px 20px; }
 
   /* Boutons pleine largeur : deux boutons côte à côte sur 375px donnaient des
      libellés tronqués. */
-  .hp-cta { flex-direction: column; }
+  .hp-cta { flex-direction: column; align-items: stretch; }
   .hp-btn { width: 100%; }
 
-  .hp-final__box { padding: 40px 20px; border-radius: 16px; }
+  .hp-final__box { padding: 36px 20px; border-radius: 20px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

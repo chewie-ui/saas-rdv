@@ -142,7 +142,7 @@
   background: var(--danger);
   color: #fff !important;
   border-color: var(--danger);
-  box-shadow: 0 4px 14px rgba(220,38,38,.25);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--danger) 25%, transparent);
   transform: translateY(-1px);
 }
 
@@ -201,14 +201,22 @@
 }
 
 /* ──────────────────────────────────────────────────────────
-   SUBSCRIPTION full-width buttons
+   SUBSCRIPTION buttons
+   ──────────────────────────────────────────────────────────
+   `width: 100%` a été retiré d'ici. Il datait de l'ancienne page, où
+   `.sub-btn` ne servait qu'aux gros appels à l'action pleine largeur des
+   cartes de forfait. `.sub-btn` est depuis la classe générique de la page :
+   la largeur forcée écrasait le bouton « Appliquer » du code promo, qui
+   occupait toute la ligne et rejetait son champ au-dessus.
+
+   La pleine largeur est désormais explicite, via `.sub-btn--block`
+   (subscription.css) — c'est d'ailleurs pour cela que cette classe existe.
    ────────────────────────────────────────────────────────── */
 .sub-btn,
 .sub-btn--upgrade,
 .sub-btn--current,
 .sub-btn--outline,
 .sub-btn--premium-current {
-  width: 100%;
   padding: 12px 18px;
   border-radius: var(--radius-md);
 }

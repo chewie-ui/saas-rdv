@@ -14,20 +14,20 @@
 .ec-pro {
   display: flex; align-items: center; gap: 16px;
   padding: 16px 18px; margin-bottom: 24px;
-  border: 1px solid #bbf7d0; border-radius: 16px;
-  background: linear-gradient(180deg, #f0fdf4, #fff 70%);
+  border: 1px solid var(--bs-green-border); border-radius: 16px;
+  background: linear-gradient(180deg, var(--success-pale), #fff 70%);
   text-decoration: none; color: inherit;
 }
 .ec-pro__ic {
   flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
-  width: 46px; height: 46px; border-radius: 13px; background: #dcfce7; color: #16a34a;
+  width: 46px; height: 46px; border-radius: 13px; background: var(--success-pale); color: var(--success);
 }
 .ec-pro__ic .material-symbols-outlined { font-size: 26px; }
 .ec-pro__txt { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-.ec-pro__badge { align-self: flex-start; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #15803d; background: #dcfce7; border-radius: 999px; padding: 2px 8px; margin-bottom: 2px; }
+.ec-pro__badge { align-self: flex-start; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--success); background: var(--success-pale); border-radius: 999px; padding: 2px 8px; margin-bottom: 2px; }
 .ec-pro__title { font-size: 14.5px; font-weight: 700; }
 .ec-pro__sub { font-size: 12.5px; color: var(--text-secondary, #64748b); line-height: 1.45; }
-.ec-pro__arrow { color: #16a34a; flex-shrink: 0; }
+.ec-pro__arrow { color: var(--success); flex-shrink: 0; }
 
 /* État vide */
 .ec-empty { text-align: center; padding: 54px 24px; border: 1px solid var(--border-light, #eceae6); border-radius: 16px; }
@@ -60,7 +60,7 @@
 
 /* Pastille date & heure (à droite) */
 .ec-when { display: flex; align-items: center; gap: 11px; flex-shrink: 0; padding: 9px 15px; border-radius: 13px; background: #fff; border: 1px solid #c9efd6; }
-.ec-when .material-symbols-outlined { font-size: 24px; color: #16a34a; }
+.ec-when .material-symbols-outlined { font-size: 24px; color: var(--success); }
 .ec-when__txt { display: flex; flex-direction: column; line-height: 1.25; }
 .ec-when__d { font-size: 13.5px; font-weight: 700; text-transform: capitalize; }
 .ec-when__t { font-size: 12px; color: var(--text-muted, #6b7280); }
@@ -109,8 +109,8 @@
 .ec-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 4px 11px; }
 .ec-badge .material-symbols-outlined { font-size: 15px; }
 .ec-badge--past { background: var(--surface, #f1f5f9); color: var(--text-muted, #6b7280); }
-.ec-badge--canceled { background: #fef2f2; color: #dc2626; }
-.ec-badge--reviewed { background: #f0fdf4; color: #15803d; }
+.ec-badge--canceled { background: var(--danger-pale); color: var(--danger); }
+.ec-badge--reviewed { background: var(--success-pale); color: var(--success); }
 
 /* Cellule « Note » (avis) */
 .ec-stars { display: inline-flex; gap: 1px; }
@@ -232,7 +232,7 @@ a.ds-ico { text-decoration: none; }
 }
 
 .dash-card--upcoming {
-  border-color: var(--main-color-border, rgba(34,197,94,0.3));
+  border-color: var(--main-color-border, color-mix(in srgb, var(--success) 30%, transparent));
   background: var(--main-color-pale, #f0fdf4);
 }
 
@@ -587,12 +587,12 @@ a.ds-ico { text-decoration: none; }
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--danger-pale);
+  border: 1px solid var(--danger-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #dc2626;
+  color: var(--danger);
   margin: 0 auto;
 }
 
@@ -622,7 +622,7 @@ a.ds-ico { text-decoration: none; }
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: #fffbeb;
+  background: var(--warning-pale);
   border: 1.5px solid #fbbf24;
   border-radius: 10px;
   padding: 12px 14px;
@@ -634,7 +634,7 @@ a.ds-ico { text-decoration: none; }
 .cancel-modal__warning svg {
   flex-shrink: 0;
   margin-top: 1px;
-  stroke: #d97706;
+  stroke: var(--warning);
 }
 
 .cancel-modal__actions {
@@ -778,14 +778,14 @@ a.ds-ico { text-decoration: none; }
   margin-bottom: 24px;
   border-radius: 18px;
   text-decoration: none;
-  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  background: linear-gradient(135deg, var(--success) 0%, var(--success) 100%);
   color: #fff;
-  box-shadow: 0 10px 30px rgba(22, 163, 74, 0.25);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--success) 25%, transparent);
   transition: transform .18s ease, box-shadow .18s ease;
 }
 .dash-pro-banner:hover {
   transform: translateY(-2px);
-  box-shadow: 0 16px 38px rgba(22, 163, 74, 0.32);
+  box-shadow: 0 16px 38px color-mix(in srgb, var(--success) 32%, transparent);
 }
 .dash-pro-banner__glow {
   position: absolute;
@@ -830,7 +830,7 @@ a.ds-ico { text-decoration: none; }
   padding: 10px 18px;
   border-radius: 10px;
   background: #fff;
-  color: #15803d;
+  color: var(--success);
 }
 .dash-pro-banner__art {
   position: relative;

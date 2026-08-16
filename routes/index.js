@@ -62,23 +62,52 @@ function serializeTeamMember(m) {
 // fait apparaître une catégorie dans la sidebar qui renvoie ensuite "0
 // professionnels trouvés" au clic, puisque /search ne liste que des Companies.
 async function getDynamicCategories() {
-  const counts = await User.aggregate([
-    {
-      $match: {
-        businessType: { $exists: true, $ne: "" },
-        $or: [{ isDisabled: false }, { isDisabled: { $exists: false } }],
-      },
-    },
-    { $lookup: { from: "companies", localField: "_id", foreignField: "owner", as: "company" } },
-    { $match: { company: { $elemMatch: { isPaused: { $ne: true } } } } },
+  // On compte des ÉTABLISSEMENTS, exactement ceux que /search accepterait, et
+  // non des comptes utilisateurs. La version précédente partait des User et se
+  // contentait de vérifier qu'ils possédaient une Company non mise en pause :
+  // elle annonçait « Médecin généraliste 7 » alors que le clic donnait zéro
+  // résultat, parce que ces sept fiches étaient encore nommées
+  // « Établissement » — donc écartées par le filtre « jamais configurée » du
+  // pipeline de recherche, que le compteur ignorait.
+  //
+  // Les trois conditions ci-dessous doivent rester le MIROIR de celles de
+  // /search. Si l'une bouge là-bas, la corriger ici : c'est précisément leur
+  // divergence qui produisait un compteur mensonger.
+  const NOM_PAR_DEFAUT = /^\s*(établissement|etablissement)\s*$/i;
+  const nomValide = { $exists: true, $nin: ["", null], $not: NOM_PAR_DEFAUT };
+
+  const counts = await Companies.aggregate([
+    { $match: { isPaused: { $ne: true }, isDeleted: { $ne: true } } },
+    { $lookup: { from: User.collection.name, localField: "owner", foreignField: "_id", as: "owner" } },
+    { $unwind: "$owner" },
+    { $match: { "owner.isDisabled": { $ne: true } } },
+    // Preuve qu'une fiche a déjà servi : on s'arrête au premier rendez-vous
+    // trouvé, on ne compte pas.
+    { $lookup: {
+        from: Booking.collection.name,
+        let: { cid: "$_id" },
+        pipeline: [{ $match: { $expr: { $eq: ["$company", "$$cid"] } } }, { $limit: 1 }, { $project: { _id: 1 } }],
+        as: "_rdv",
+    } },
+    { $match: { $or: [
+        { name: nomValide },
+        { "owner.businessName": nomValide },
+        { "_rdv.0": { $exists: true } },
+    ] } },
+    // Métier EFFECTIF : celui de l'établissement, à défaut celui du compte —
+    // même repli que le filtre `category` de la recherche.
+    { $addFields: { _type: { $let: {
+        vars: { ct: { $trim: { input: { $ifNull: ["$businessType", ""] } } } },
+        in: { $cond: [{ $ne: ["$$ct", ""] }, "$$ct", { $trim: { input: { $ifNull: ["$owner.businessType", ""] } } }] },
+    } } } },
+    { $match: { _type: { $ne: "" } } },
     // Regroupe par valeur normalisée (espaces + casse) pour fusionner les
     // doublons type "Développeur freelance" / "développeur freelance " qui
     // apparaissaient sinon comme deux catégories distinctes dans la sidebar.
-    { $project: { businessType: 1, _norm: { $toLower: { $trim: { input: "$businessType" } } } } },
-    { $group: { _id: "$_norm", name: { $first: "$businessType" }, count: { $sum: 1 } } },
+    { $group: { _id: { $toLower: "$_type" }, name: { $first: "$_type" }, count: { $sum: 1 } } },
     { $sort: { count: -1 } },
   ]);
-  return counts.map(c => ({ name: (c.name || "").trim(), count: c.count }));
+  return counts.map((c) => ({ name: (c.name || "").trim(), count: c.count }));
 }
 
 /* ── Tri des établissements : Business > Pro > Gratuit, puis par boost, puis par note ── */
@@ -373,7 +402,18 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
       // normalisation faite dans getDynamicCategories pour fusionner les
       // doublons "Développeur freelance" / "développeur freelance ").
       const crx = { $regex: `^\\s*${escapeRegex(category.trim())}\\s*$`, $options: "i" };
-      conditions.push({ $or: [{ businessType: crx }, { "owner.businessType": crx }] });
+      // On filtre sur le métier EFFECTIF (`_type`, calculé plus bas), pas sur
+      // « celui de l'établissement OU celui du compte ».
+      //
+      // Avec l'ancien `$or`, un établissement déclaré « Kinésithérapeute »
+      // dont le patron est resté « Chirurgien dentiste » sur son compte
+      // remontait dans les DEUX catégories — alors que sa carte n'en affiche
+      // qu'une. « Chirurgien dentiste » annonçait 1 et rendait 2.
+      //
+      // `_type` reprend exactement le repli de la carte (établissement, à
+      // défaut compte) et celui de getDynamicCategories : compteur et liste
+      // mesurent désormais la même chose.
+      conditions.push({ _type: crx });
     }
 
     // PAS de filtre isPremium — tous les établissements, gratuits ET premium.
@@ -484,6 +524,18 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
               { $ne: ["$$cd", ""] },
               "$$cd",
               { $cond: ["$_isPrimary", { $ifNull: ["$owner.description", ""] }, ""] },
+            ] },
+          } },
+          // Métier EFFECTIF : celui de l'établissement, à défaut celui du
+          // compte. Même repli que la carte de résultat et que
+          // getDynamicCategories — c'est ce qui fait qu'une facette « 2 »
+          // donne exactement deux fiches.
+          _type: { $let: {
+            vars: { ct: { $trim: { input: { $ifNull: ["$businessType", ""] } } } },
+            in: { $cond: [
+              { $ne: ["$$ct", ""] },
+              "$$ct",
+              { $trim: { input: { $ifNull: ["$owner.businessType", ""] } } },
             ] },
           } },
       } },
@@ -603,6 +655,31 @@ router.get("/search", requireFeatureActive("search"), async (req, res) => {
       c.creneaux = creneauxParEtab.get(String(c._id)) || null;
     });
 
+    // ── Deux écrans pour une seule URL ───────────────────────────────────
+    // Sans aucun critère, /search n'est pas une page de résultats : c'est la
+    // page d'accueil des CLIENTS (celle des pros vit sur "/"). Elle présente
+    // la recherche, les métiers et quelques établissements, au lieu d'aligner
+    // 24 fiches que personne n'a demandées.
+    //
+    // Dès qu'un critère est présent — y compris `page`, sinon la pagination
+    // renverrait sur l'accueil — on rend la liste de résultats.
+    const aucunCritere = !name && !location && !category && !minRating && !req.query.page;
+
+    if (aucunCritere) {
+      return res.render("client/search-home", {
+        title: "Trouver un professionnel et réserver en ligne | BranShee",
+        metaDescription:
+          "Coiffeurs, coachs, thérapeutes, tatoueurs : trouvez un pro près de chez vous, voyez ses vraies disponibilités et réservez en ligne. Gratuit, sans compte.",
+        canonical: "https://www.branshee.com/search",
+        // Les mieux classés de la même passe (boost, forfait, note) : la
+        // vitrine montre donc exactement ce que la recherche remonterait.
+        coachs: coachsWithRating.slice(0, 6),
+        totalResults,
+        allCategories,
+        services: getServices(res.locals.lang),
+      });
+    }
+
     res.render("client/search", {
       title: `Recherche — BranShee`,
       coachs: coachsWithRating,
@@ -656,6 +733,37 @@ router.get("/app", async (req, res) => {
     // tout le monde — jamais un écran d'erreur au lancement de l'app.
     return res.redirect("/login");
   }
+});
+
+/**
+ * Page tarifs publique.
+ *
+ * Le pied de page pointait « Tarifs » vers /subscription, qui exige une
+ * session : un visiteur qui voulait connaître les prix tombait sur la page de
+ * connexion. C'est la page manquante, pas un doublon — /subscription reste
+ * l'écran de GESTION de l'abonnement, réservé aux comptes.
+ *
+ * Les montants viennent de utils/tarifs.js, la source unique déjà utilisée par
+ * /subscription et l'export CRM : les recopier ici les aurait laissés diverger
+ * au premier changement de prix.
+ */
+router.get("/tarifs", (req, res) => {
+  const { FORFAITS, ADDONS } = require("../utils/tarifs");
+  const prix = (cle) => FORFAITS[cle].mensuel;
+  const prixAn = (cle) => FORFAITS[cle].annuelParMois;
+
+  res.render("client/tarifs", {
+    title: "Tarifs — BranShee",
+    alwaysSticky: true,
+    _forfaits: FORFAITS,
+    _addons: ADDONS,
+    // Économie annuelle calculée, jamais écrite à la main : « soit 180 € au
+    // lieu de 228 € » doit suivre le prix, sinon la promesse devient fausse.
+    _annuel: {
+      pro: { total: prixAn("pro") * 12, plein: prix("pro") * 12 },
+      business: { total: prixAn("business") * 12, plein: prix("business") * 12 },
+    },
+  });
 });
 
 router.get("/contact", (req, res) => {

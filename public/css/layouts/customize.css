@@ -104,9 +104,9 @@
 }
 
 .cz-plan-badge--pro {
-  background: rgba(34, 197, 94, 0.1);
-  color: #16a34a;
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+  color: var(--success);
+  border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
 }
 
 .cz-plan-badge--business {
@@ -148,8 +148,8 @@
 }
 
 .cz-billing-save {
-  background: #dcfce7;
-  color: #15803d;
+  background: var(--success-pale);
+  color: var(--success);
   font-size: 10px;
   font-weight: 700;
   padding: 2px 6px;
@@ -293,7 +293,7 @@
   background: linear-gradient(
     135deg,
     rgba(99, 102, 241, 0.07) 0%,
-    rgba(34, 197, 94, 0.05) 100%
+    color-mix(in srgb, var(--success) 5%, transparent) 100%
   );
   border: 1px solid rgba(99, 102, 241, 0.2);
   border-radius: 14px;
@@ -466,9 +466,9 @@
 
 /* ── Feedback d'erreur sur boutons "Enregistrer" (flash temporaire) ───────── */
 .sm-btn.is-error {
-  background: #fef2f2 !important;
+  background: var(--danger-pale) !important;
   border-color: #fca5a5 !important;
-  color: #dc2626 !important;
+  color: var(--danger) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -626,8 +626,8 @@
 }
 .cz-page .sec-vis:hover { border-color: #d1d5db; }
 .cz-page .sec-vis:has(.sec-vis__cb:checked) {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
+  border-color: var(--bs-green-border);
+  background: var(--success-pale);
 }
 
 /* Case native masquée */
@@ -663,7 +663,7 @@
 }
 .cz-page .sec-vis__cb:checked ~ .sec-vis__track { background: var(--accent, #16a34a); }
 .cz-page .sec-vis__cb:checked ~ .sec-vis__track::after { transform: translateX(17px); }
-.cz-page .sec-vis__cb:focus-visible ~ .sec-vis__track { box-shadow: 0 0 0 3px rgba(22, 163, 74, .2); }
+.cz-page .sec-vis__cb:focus-visible ~ .sec-vis__track { box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 20%, transparent); }
 
 /* Libellé — seul le nom de la section. L'état (visible / masqué) est porté par
    la position + la couleur de l'interrupteur, donc aucun texte ne change de
@@ -717,7 +717,7 @@
 }
 .cz-page .about-editor__area:focus {
   border-color: var(--accent, #16a34a);
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, .12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 12%, transparent);
 }
 
 /* Pied allégé : compteur à gauche, astuce à droite */
@@ -770,7 +770,7 @@
 .psel__btn:hover { border-color: #d1d5db; }
 .psel.is-open .psel__btn {
   border-color: var(--accent, #16a34a);
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, .12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 12%, transparent);
 }
 .psel__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .psel__label.is-empty { color: #9ca3af; font-weight: 400; }

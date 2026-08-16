@@ -13,8 +13,8 @@
   font-size: 13.5px; font-weight: 600;
 }
 .st-toast .material-symbols-outlined { font-size: 20px; }
-.st-toast--success { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
-.st-toast--error { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
+.st-toast--success { background: var(--success-pale); border-color: var(--bs-green-border); color: var(--success); }
+.st-toast--error { background: var(--danger-pale); border-color: var(--danger-border); color: var(--danger); }
 
 /* ── Onglets : petites icônes ──────────────────────────────────────────── */
 .st-page .ds-tab { display: inline-flex; align-items: center; gap: 7px; }
@@ -57,7 +57,7 @@
 .st-lang__check { margin-left: auto; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 999px; background: var(--surface, #f1f5f9); color: transparent; transition: background .12s, color .12s; }
 .st-lang__check .material-symbols-outlined { font-size: 15px; }
 .st-lang.is-active { border-color: #86e0a6; background: #f7fefb; }
-.st-lang.is-active .st-lang__check { background: #16a34a; color: #fff; }
+.st-lang.is-active .st-lang__check { background: var(--success); color: #fff; }
 
 /* ── Paiement : état vide + note ───────────────────────────────────────── */
 .st-cards-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 40px 22px; border: 1px dashed var(--border-medium, #d7dce3); border-radius: 16px; max-width: 760px; }
@@ -65,7 +65,7 @@
 .st-cards-empty__ic .material-symbols-outlined { font-size: 28px; }
 .st-cards-empty__title { font-size: 14.5px; font-weight: 700; margin: 0; }
 .st-cards-empty__sub { font-size: 12.5px; color: var(--text-muted, #6b7280); margin: 0; }
-.st-cards-note { display: flex; align-items: flex-start; gap: 8px; max-width: 760px; margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; font-size: 12.5px; line-height: 1.5; }
+.st-cards-note { display: flex; align-items: flex-start; gap: 8px; max-width: 760px; margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: var(--info-pale); border: 1px solid #bfdbfe; color: #1d4ed8; font-size: 12.5px; line-height: 1.5; }
 .st-cards-note .material-symbols-outlined { font-size: 18px; flex-shrink: 0; }
 
 /* ── Champ téléphone : indicatif + drapeau + numéro ────────────────────── */
@@ -80,7 +80,7 @@
 .phone-flag-menu.is-open { display: block; }
 .phone-flag-option { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 13.5px; color: var(--text-primary, #0f172a); transition: background .12s; }
 .phone-flag-option:hover { background: #f6fef9; }
-.phone-flag-option.is-selected { background: #f0fdf4; }
+.phone-flag-option.is-selected { background: var(--success-pale); }
 .phone-flag-option img { width: 22px; height: 16px; object-fit: cover; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.07); flex-shrink: 0; }
 .phone-flag-option__name { flex: 1; }
 .phone-flag-option__code { color: var(--text-muted, #6b7280); font-size: 12.5px; }

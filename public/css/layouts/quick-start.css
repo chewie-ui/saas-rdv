@@ -145,14 +145,14 @@
   border-color: var(--accent, #16a34a);
   background: var(--surface-card, #fff);
 }
-.qs-input.is-error { border-color: #ef4444; background: rgba(239, 68, 68, 0.04); }
+.qs-input.is-error { border-color: #ef4444; background: color-mix(in srgb, var(--danger) 4%, transparent); }
 .qs-input--time { width: auto; min-width: 120px; }
 
 .qs-error {
   display: none;
   margin: 7px 0 0;
   font-size: 12.5px;
-  color: #dc2626;
+  color: var(--danger);
 }
 .qs-error.is-visible { display: block; }
 
@@ -266,7 +266,7 @@
   transition: filter .15s;
 }
 .qs-link__copy:hover { filter: brightness(1.08); }
-.qs-link__copy.is-copied { background: #15803d; }
+.qs-link__copy.is-copied { background: var(--success); }
 .qs-link__copy .material-symbols-outlined { font-size: 19px; }
 
 .qs-services {
@@ -384,4 +384,4 @@
   text-align: left;
 }
 .qs-type-req:hover { color: #c2410c; }
-.qs-type-req:disabled { color: #16a34a; text-decoration: none; cursor: default; font-weight: 700; }
+.qs-type-req:disabled { color: var(--success); text-decoration: none; cursor: default; font-weight: 700; }

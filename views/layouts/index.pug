@@ -126,8 +126,12 @@ html(lang=_lang)
                 }
 
         block links
-    body
-    
+    //- `site-public` distingue le site vitrine de l'espace pro/client. Le guide
+        de style impose deux formes de boutons : pilules ici, rayon 12px dans
+        l'application (voir la règle 4 dans design-tokens.css). Sans ce crochet,
+        les deux mondes partagent `.sm-btn` et ne peuvent pas diverger.
+    body.site-public
+
         include ../common/topbar
 
         block content

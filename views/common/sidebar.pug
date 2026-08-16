@@ -69,12 +69,16 @@ aside.sidebar#sidebar
                     span.sb-section__title= t.sidebar.title_1
                     .sb-section__links
                         a.sb-link.sb-link--dashboard(href="/panel" class=pageName === 'Dashboard' ? 'active' : '')
-                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M520-600v-240h320v240H520ZM120-440v-400h320v400H120Zm400 320v-400h320v400H520Zm-400 0v-240h320v240H120Zm80-400h160v-240H200v240Zm400 320h160v-240H600v240Zm0-480h160v-80H600v80ZM200-200h160v-80H200v80Zm160-320Zm240-160Zm0 240ZM360-280Z")
+                            svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                rect(x="3" y="3" width="7.5" height="7.5" rx="1.6")
+                                rect(x="13.5" y="3" width="7.5" height="7.5" rx="1.6")
+                                rect(x="3" y="13.5" width="7.5" height="7.5" rx="1.6")
+                                rect(x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6")
                             span Dashboard
                         a.sb-link(href="/appointment" class=pageName === 'Appointment' ? 'active' : '')
-                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M200-640h560v-80H200v80Zm0 0v-80 80Zm0 560q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v227q-19-9-39-15t-41-9v-43H200v400h252q7 22 16.5 42T491-80H200Zm378.5-18.5Q520-157 520-240t58.5-141.5Q637-440 720-440t141.5 58.5Q920-323 920-240T861.5-98.5Q803-40 720-40T578.5-98.5ZM787-145l28-28-75-75v-112h-40v128l87 87Z")
+                            svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                rect(x="3" y="4.5" width="18" height="16" rx="3")
+                                path(d="M3 9h18M8 2.5v4M16 2.5v4")
                             span= t.sidebar.a_2
                         //- Lien « Historique » (/history) retiré du menu — la page reste
                         //- accessible (route conservée) mais on coupe tout accès UI, la
@@ -83,8 +87,9 @@ aside.sidebar#sidebar
                         //- reste accessible (route conservée) le temps de valider la
                         //- nouvelle section « Clients » (/clients-hub) qui la remplace.
                         a.sb-link(href="/clients-hub" class=pageName === 'ClientsHub' ? 'active' : '')
-                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M40-160v-160q0-29 14-53t38-38q60-36 137-64.5T480-560q0 0 .5 0t.5 0q-25 20-40 49.5T440-360v40q-77 5-146.5 30.5T178-232q-9 5-13.5 13.5T160-200v40h280v40H40Zm440 0v-160q0-33 23.5-56.5T560-360h240q33 0 56.5 23.5T880-280v120q0 33-23.5 56.5T800-80H560q-33 0-56.5-23.5T480-160Zm60-240v-40q0-58 41-99t99-41q58 0 99 41t41 99v40h-40v-40q0-42-29-71t-71-29q-42 0-71 29t-29 71v40h-40ZM360-560q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Zm0-80q33 0 56.5-23.5T440-720q0-33-23.5-56.5T360-800q-33 0-56.5 23.5T280-720q0 33 23.5 56.5T360-640Zm0-80Z")
+                            svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                circle(cx="9" cy="8" r="3.2")
+                                path(d="M3.5 20a5.5 5.5 0 0 1 11 0M16 5.5a3 3 0 0 1 0 5.6M20.5 20a5 5 0 0 0-3.5-4.8")
                             span Clients
 
                 //- ── 2. Mon activité ──────────────────────────────────
@@ -97,13 +102,16 @@ aside.sidebar#sidebar
                     .sb-section__links
                         if canSeeServices
                             a.sb-link(href="/services" class=pageName === 'Services' ? 'active' : '')
-                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                    path(d="M160-120q-33 0-56.5-23.5T80-200v-440q0-33 23.5-56.5T160-720h160v-80q0-33 23.5-56.5T400-880h160q33 0 56.5 23.5T640-800v80h160q33 0 56.5 23.5T880-640v440q0 33-23.5 56.5T800-120H160Zm0-80h640v-440H160v440Zm80-80h200v-120H240v120Zm280 0h200v-120H520v120ZM240-400h200v-120H240v120Zm280 0h200v-120H520v120ZM400-720h160v-80H400v80ZM160-200v-440 440Z")
+                                svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                    circle(cx="6" cy="6" r="2.6")
+                                    circle(cx="6" cy="18" r="2.6")
+                                    path(d="M8.2 7.8 20 18M20 6 8.2 16.2")
                                 span= t.sidebar.a_8
                         - const hasAvailAccess = permissions && (permissions.availability.manageShared || permissions.availability.manageOwnSchedule || permissions.availability.manageOthersSchedule || permissions.availability.manageOwnTimeOff || permissions.availability.manageOthersTimeOff)
                         a.sb-link(href=(hasAvailAccess ? '/availability' : '#') class=[pageName === 'Availability' ? 'active' : '', !hasAvailAccess ? 'sb-link--disabled' : ''].filter(Boolean).join(' '))
-                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="m612-292 56-56-148-148v-184h-80v216l172 172ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400Zm0 320q133 0 226.5-93.5T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160Z")
+                            svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                circle(cx="12" cy="12" r="9")
+                                path(d="M12 7v5l3.5 2")
                             span= t.sidebar.a_3
                         if canSeeCustomize
                             //- « Profil incomplet » se juge sur l'ÉTABLISSEMENT
@@ -113,15 +121,19 @@ aside.sidebar#sidebar
                             - var _estabName = (currentCompany && currentCompany.name) || user.businessName
                             - var _profileIncomplete = !_estabPic || !_estabName
                             a.sb-link(href="/customize-calendar" class=pageName === 'Customize' ? 'active' : '')
-                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                    path(d="M400-80q-33 0-56.5-23.5T320-160v-40H160q-33 0-56.5-23.5T80-280v-480q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v480q0 33-23.5 56.5T800-200H640v40q0 33-23.5 56.5T560-80H400Zm-240-280h640v-400H160v400Zm0 0v-400 400Z")
+                                svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                    path(d="M12 3a9 9 0 1 0 0 18c1 0 1.6-.8 1.6-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.1 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5c0-3.6-4-6.4-9-6.4Z")
+                                    circle(cx="7.5" cy="11" r="1")
+                                    circle(cx="12" cy="8" r="1")
+                                    circle(cx="16" cy="11" r="1")
                                 span= t.sidebar.a_customize
                                 if _profileIncomplete
                                     span.sb-badge.sb-badge--warn !
                         if canSeeForms
                             a.sb-link(href="/forms" class=pageName === t.sidebar.a_9 ? 'active' : '')
-                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                    path(d="M348.5-291.5Q360-303 360-320t-11.5-28.5Q337-360 320-360t-28.5 11.5Q280-337 280-320t11.5 28.5Q303-280 320-280t28.5-11.5Zm0-160Q360-463 360-480t-11.5-28.5Q337-520 320-520t-28.5 11.5Q280-497 280-480t11.5 28.5Q303-440 320-440t28.5-11.5Zm0-160Q360-623 360-640t-11.5-28.5Q337-680 320-680t-28.5 11.5Q280-657 280-640t11.5 28.5Q303-600 320-600t28.5-11.5ZM440-280h240v-80H440v80Zm0-160h240v-80H440v80Zm0-160h240v-80H440v80ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z")
+                                svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                    rect(x="4" y="3" width="16" height="18" rx="2.5")
+                                    path(d="M8 8h8M8 12h8M8 16h5")
                                 span= t.sidebar.a_9
 
                 //- ── 3. Communication ─────────────────────────────────
@@ -129,16 +141,19 @@ aside.sidebar#sidebar
                     span.sb-section__title Communication
                     .sb-section__links
                         a.sb-link(href="/mon-site" class=pageName === 'MonSite' ? 'active' : '')
-                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M200-160q-33 0-56.5-23.5T120-240v-480q0-33 23.5-56.5T200-800h560q33 0 56.5 23.5T840-720v480q0 33-23.5 56.5T800-160H200Zm0-80h560v-400H200v400Zm80-40h400v-80H280v80Zm0-160h400v-80H280v80Zm-80-200v-80 80Z")
+                            svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                circle(cx="12" cy="12" r="9")
+                                path(d="M3 12h18M12 3c2.5 2.4 2.5 15.6 0 18M12 3c-2.5 2.4-2.5 15.6 0 18")
                             span Mon site web
                         a.sb-link(href="/parrainage" class=pageName === 'Parrainage' ? 'active' : '')
-                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M160-80q-33 0-56.5-23.5T80-160v-440q0-33 23.5-56.5T160-680h200v-120q0-33 23.5-56.5T440-880h80q33 0 56.5 23.5T600-800v120h200q33 0 56.5 23.5T880-600v440q0 33-23.5 56.5T800-80H160Zm0-80h640v-440H600q0 33-23.5 56.5T520-520h-80q-33 0-56.5-23.5T360-600H160v440Zm200-40h240v-40q0-50-35-85t-85-35q-50 0-85 35t-35 85v40ZM440-600h80v-200h-80v200Zm80 160Z")
+                            svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                rect(x="3.5" y="8" width="17" height="12" rx="2")
+                                path(d="M3.5 12h17M12 8v12M12 8S10.5 4 8 4s-2 4 4 4Zm0 0s1.5-4 4-4 2 4-4 4Z")
                             span Parrainage
                         a.sb-link(href="/sms" class=pageName === 'Sms' ? 'active' : '')
-                            svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                path(d="M240-400h480v-80H240v80Zm0-120h480v-80H240v80Zm0-120h480v-80H240v80ZM80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z")
+                            svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                path(d="M4 5h16v11H8l-4 3.5V5Z")
+                                path(d="M8 9.5h8M8 12.5h5")
                             span SMS
 
                 //- ── Abonnement ───────────────────────────────────────
@@ -150,8 +165,9 @@ aside.sidebar#sidebar
                         span.sb-section__title Facturation
                         .sb-section__links
                             a.sb-link(href="/subscription" class=pageName === 'Subscription' ? 'active' : '')
-                                svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                    path(d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm0-80h640v-400H160v400Zm0-480h640v-80H160v80Zm0 0v-80 80Z")
+                                svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                    rect(x="3" y="5" width="18" height="14" rx="2.5")
+                                    path(d="M3 9.5h18")
                                 span= t.sidebar.a_1 || 'Abonnement'
 
                 //- ── 4. Équipe ────────────────────────────────────────
@@ -164,20 +180,22 @@ aside.sidebar#sidebar
                         .sb-section__links
                             if canSeeCollaborators
                                 a.sb-link(href=`/etablissement/${currentCompany._id}/collaborateurs` class=pageName === 'Collaborateurs' ? 'active' : '')
-                                    svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                        path(d="M0-240v-86q0-36 19-67t52-49q57-30 119-46t130-16q68 0 130 16t119 46q33 18 52 49t19 67v86H0Zm640 0v-86q0-36-19.5-67.5T568-441q44 6 89.5 22.5T720-385q24 14 38 35.5t14 49.5v60h-132Zm-440-80h280v-6q0-15-9-26.5t-23-19.5q-44-24-91-36t-97-12q-50 0-97 12t-91 36q-14 8-23 19.5t-9 26.5v6Zm140-200q-50 0-85-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35Zm320-40q-18 0-33-3t-29-8q14-21 21.5-46t7.5-53q0-28-7.5-53T568-758q14-5 29-8t33-3q50 0 85 35t35 85q0 50-35 85t-85 35Z")
+                                    svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                        circle(cx="8" cy="9" r="2.6")
+                                        circle(cx="16" cy="9" r="2.6")
+                                        path(d="M3.5 19a4.5 4.5 0 0 1 9 0M11.5 19a4.5 4.5 0 0 1 9 0")
                                     span= t.sidebar.a_collaborators
                                     if pendingMembershipsCount > 0
                                         span.sb-badge= pendingMembershipsCount > 9 ? '9+' : pendingMembershipsCount
                             if canSeeGrades
                                 a.sb-link(href=`/etablissement/${currentCompany._id}/grades` class=pageName === 'Grades' ? 'active' : '')
-                                    svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                        path(d="M480-80q-139-35-229.5-159.5T160-516v-244l320-120 320 120v244Q720-291 629-167T480-80Zm-40-200 198-198-57-57-141 141-57-57-56 56 113 115Z")
+                                    svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                        path(d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z")
                                     span= t.sidebar.a_grades
                             if canSeeLogs
                                 a.sb-link(href="/logs" class=pageName === 'Logs' ? 'active' : '')
-                                    svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
-                                        path(d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z")
+                                    svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                        path(d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3")
                                     span= t.sidebar.a_logs
 
 
@@ -188,16 +206,24 @@ aside.sidebar#sidebar
             //- pour éviter un doublon.
             .sb-foot-links
                 a.sb-foot-link(href="/support" class=pageName === 'Support' ? 'is-active' : '')
-                    svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                        path(d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z")
+                    svg(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                        circle(cx="12" cy="12" r="9")
+                        path(d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.3")
+                        path(d="M12 17h.01")
                     span= t.sidebar.a_support
                 if currentCompany
                     a.sb-foot-link.sb-foot-link--ext(href=`/${currentCompany.slug || currentCompany._id}` target="_blank")
-                        svg(viewBox="0 -960 960 960" height="16" width="16" fill="currentColor")
-                            path(d="M200-640h560v-80H200v80Zm0 0v-80 80Zm0 560q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T800-80H200Zm0-80h600v-400H200v400Zm0-480h600v-80H200v80Z")
+                        //- Icône « calendrier » du même jeu que la navigation :
+                        //- ce lien ouvre la page de réservation publique.
+                        svg(viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                            rect(x="3" y="4.5" width="18" height="16" rx="3")
+                            path(d="M3 9h18M8 2.5v4M16 2.5v4")
                         span= t.sidebar.a_5
-                        svg.sb-ext-icon(viewBox="0 -960 960 960" height="11" width="11" fill="currentColor")
-                            path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z")
+                        //- Flèche « ouvre dans un nouvel onglet », en trait elle
+                        //- aussi pour ne pas jurer à côté de la précédente.
+                        svg.sb-ext-icon(viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                            path(d="M14 4h6v6M20 4l-9 9")
+                            path(d="M18 14v5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 19V8a1.5 1.5 0 0 1 1.5-1.5H10")
 
             //- ── Quota RDV card (free users) ──────────────────────────
             if !isPro && monthlyBookingsLimit !== undefined && isFinite(monthlyBookingsLimit)
@@ -220,21 +246,27 @@ aside.sidebar#sidebar
 
             //- ── User profile chip + popup ────────────────────────────
             .sb-user-wrap#sidebarUserWrap
-                button.sb-user#sidebarUserBtn(type="button")
+                //- Le bouton carré de déconnexion qui doublait cette ligne a été
+                //- retiré : « Déconnexion » figure déjà dans le menu ci-dessous,
+                //- et deux chemins vers la même action encombraient le pied pour
+                //- rien. Le compte occupe donc toute la largeur.
+                button.sb-user#sidebarUserBtn(type="button" aria-haspopup="true" aria-expanded="false" aria-controls="sidebarUserPanel")
                     .sb-user__avatar
                         img(src=user.profilePicture alt=user.fullName)
                     .sb-user__info
                         span.sb-user__name= user.fullName
+                        //- « Plan X » et non « X » seul : le libellé dit ce
+                        //- qu'il désigne. « Free » sous un nom se lisait
+                        //- comme une qualité de la personne.
                         if isPro
                             span.sb-user__badge(class=currentPlan === 'business' ? 'sb-user__badge--business' : '')
-                                if currentPlan === 'business'
-                                    | Business
-                                else
-                                    | Pro
+                                = 'Plan ' + (currentPlan === 'business' ? 'Pro+' : 'Pro')
                         else
-                            span.sb-user__plan Free
-                    svg(viewBox="0 0 24 24" height="14" width="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.35")
-                        path(d="M8 9l4-4 4 4M8 15l4 4 4-4")
+                            span.sb-user__plan Plan gratuit
+                    //- Chevron, pas la double flèche de tri qui était là :
+                    //- ce bouton ouvre un menu, il ne trie rien.
+                    svg.sb-user__caret(viewBox="0 0 24 24" height="13" width="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                        polyline(points="6 9 12 15 18 9")
                 .sb-user-panel#sidebarUserPanel
                     .sb-user-panel__header
                         .sb-user-panel__avatar
@@ -283,15 +315,24 @@ aside.sidebar#sidebar
             var userPanel = document.getElementById('sidebarUserPanel');
             var userWrap = document.getElementById('sidebarUserWrap');
             if (userBtn && userPanel) {
+                var setOpen = function (open) {
+                    userWrap.classList.toggle('is-open', open);
+                    userPanel.style.display = open ? 'block' : 'none';
+                    userBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+                };
                 userBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
-                    var isOpen = userWrap.classList.toggle('is-open');
-                    userPanel.style.display = isOpen ? 'block' : 'none';
+                    setOpen(!userWrap.classList.contains('is-open'));
                 });
                 document.addEventListener('click', function (e) {
-                    if (!userWrap.contains(e.target)) {
-                        userWrap.classList.remove('is-open');
-                        userPanel.style.display = 'none';
+                    if (!userWrap.contains(e.target)) setOpen(false);
+                });
+                // Échap ferme le menu et rend le focus au bouton : sans ça, on
+                // restait piégé dans un menu ouvert au clavier.
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape' && userWrap.classList.contains('is-open')) {
+                        setOpen(false);
+                        userBtn.focus();
                     }
                 });
             }

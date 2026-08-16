@@ -17,13 +17,13 @@ block links
             display:flex; align-items:center; justify-content:center;
             flex-shrink:0; transition:all .2s;
         }
-        .reg-progress__dot.done { background:#15803d; border-color:#15803d; color:#fff; }
-        .reg-progress__dot.current { background:#fff; border-color:#15803d; color:#15803d; }
+        .reg-progress__dot.done { background:var(--accent); border-color:var(--accent); color:#fff; }
+        .reg-progress__dot.current { background:#fff; border-color:var(--accent); color:var(--accent); }
         .reg-progress__label { font-size:12px; font-weight:500; color:#9ca3af; transition:color .2s; white-space:nowrap; }
-        .reg-progress__label.current { color:#15803d; font-weight:600; }
+        .reg-progress__label.current { color:var(--accent); font-weight:600; }
         .reg-progress__label.done { color:#374151; }
         .reg-progress__line { flex:1; height:2px; background:#e5e7eb; margin:0 8px; transition:background .2s; }
-        .reg-progress__line.done { background:#15803d; }
+        .reg-progress__line.done { background:var(--accent); }
 
         /* Sur mobile, 4 labels en nowrap ne tiennent pas dans la largeur —
            ça faisait déborder toute la page horizontalement. On ne garde que
@@ -57,8 +57,8 @@ block links
         .auth-pwd-toggle { position:absolute; right:10px; background:none; border:none; cursor:pointer; color:var(--text-muted,#9ca3af); padding:4px; display:flex; align-items:center; transition:color .15s; border-radius:4px; }
         .auth-pwd-toggle:hover { color:var(--text-primary,#111); }
         .auth-label-opt { color:var(--text-muted,#9ca3af); font-weight:400; font-size:12px; }
-        .auth-plan-badge { display:inline-flex; align-items:center; gap:7px; background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:10px; padding:9px 14px; font-size:13px; font-weight:700; color:#15803d; margin-bottom:8px; width:100%; box-sizing:border-box; }
-        .auth-plan-badge svg { stroke:#15803d; flex-shrink:0; }
+        .auth-plan-badge { display:inline-flex; align-items:center; gap:7px; background:var(--success-pale); border:1.5px solid var(--bs-green-border); border-radius:10px; padding:9px 14px; font-size:13px; font-weight:700; color:var(--accent); margin-bottom:8px; width:100%; box-sizing:border-box; }
+        .auth-plan-badge svg { stroke:var(--accent); flex-shrink:0; }
         .auth-promo-badge { display:inline-flex; align-items:center; gap:6px; background:#fffbeb; border:1.5px solid #fde68a; border-radius:10px; padding:7px 13px; font-size:12.5px; font-weight:600; color:#92400e; margin-bottom:14px; width:100%; box-sizing:border-box; }
         .auth-promo-badge svg { stroke:#d97706; flex-shrink:0; }
         .auth-promo-badge strong { color:#b45309; }
@@ -73,12 +73,12 @@ block links
             border:1.5px solid #e5e7eb; border-radius:12px; padding:14px 16px;
             cursor:pointer; transition:border-color .15s, background .15s;
         }
-        .intent-card:hover { border-color:#bbf7d0; background:#f8fdfa; }
+        .intent-card:hover { border-color:var(--bs-green-border); background:#f8fdfa; }
         .intent-card input[type="radio"] { accent-color:var(--accent,#16a34a); width:17px; height:17px; flex-shrink:0; }
         .intent-card__body { display:flex; flex-direction:column; gap:2px; }
         .intent-card__label { font-size:14px; font-weight:600; color:#1f2937; }
         .intent-card__sub { font-size:12.5px; color:#6b7280; }
-        .intent-card.is-selected { border-color:#15803d; background:#f0fdf4; }
+        .intent-card.is-selected { border-color:var(--accent); background:var(--success-pale); }
 
 block content
     .auth-split

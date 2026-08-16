@@ -113,7 +113,37 @@ Règles :
   (`--radius-*`, `--shadow`, `--surface`, `--border-light`, `--text-muted`…).
 - **Traductions** : les textes visibles passent par `t.*` (6 langues :
   fr/en/es/it/de/nl dans `locales/`). Ajouter la clé dans **toutes** les langues.
-- _(Quentin ajoutera ici ses consignes : police, palette, etc.)_
+
+### 3 bis. Guide de style — `public/css/design-tokens.css`
+
+Les valeurs du guide publié par Quentin (couleurs, espacement, rayons, ombres)
+sont transcrites dans **`public/css/design-tokens.css`** sous le préfixe
+`--bs-`. `import.css` y branche ses jetons sémantiques : changer une valeur là
+repeint tout le site.
+
+Les six règles à respecter :
+
+1. **Le vert est la seule couleur de marque.** Tout le reste est neutre.
+2. **Les couleurs de statut ne décorent jamais** — elles ne servent qu'à
+   signaler un état (confirmé, annulé, en attente…).
+3. **Un seul bouton vert par écran**, sur l'action principale.
+4. **Deux formes de boutons** : le **site public** (les 18 pages qui étendent
+   `views/layouts/index.pug`, donc `body.site-public`) utilise des **pilules**
+   (999px) ; l'**espace pro et client** utilise **12px**. Ne pas confondre —
+   c'est l'erreur qui a fait reprendre la refonte de l'agenda.
+5. **Badges** : fond teinté pâle, texte dans la version foncée. Jamais de fond
+   saturé. Les couples sont dans `design-tokens.css` (`--bs-badge-*`).
+6. **Cartes** : rayon 16px (app) ou 20px (site), bordure 1px, ombre quasi nulle.
+
+Échelle d'espacement : **4 · 8 · 14 · 18 · 26 · 44 · 76**. Rayons : **8 · 12 ·
+16 · 20 · 999**. Les valeurs hors de ces listes sont à éviter.
+
+Typographie : **Plus Jakarta Sans** pour tout le contenu ; **JetBrains Mono**
+uniquement pour les surtitres, les heures et les valeurs techniques.
+
+⚠️ **Ne jamais écrire une couleur en dur.** Un balayage a déjà remplacé 329
+occurrences (`#dc2626`, `#d97706`, `#2563eb`…) par les jetons ; en réintroduire
+une recrée l'incohérence que ce travail a supprimée.
 
 ## 4. Vérification
 

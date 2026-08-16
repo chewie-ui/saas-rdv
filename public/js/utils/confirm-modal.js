@@ -7,35 +7,38 @@ function __buildModalShell(opts) {
 
   const danger = opts.danger !== false;
   const iconName = opts.icon || (danger ? "delete" : "info");
-  const iconBg = danger ? "#fef2f2" : "#eff6ff";
-  const iconBorder = danger ? "#fecaca" : "#bfdbfe";
-  const iconColor = danger ? "#dc2626" : "#2563eb";
-  const confirmBg = danger ? "#dc2626" : "#2563eb";
-  const confirmBgHover = danger ? "#b91c1c" : "#1d4ed8";
-  const confirmShadow = danger ? "rgba(220,38,38,.3)" : "rgba(37,99,235,.3)";
+  // Couleurs du design system (design-tokens.css) plutôt que la palette
+  // rouge/bleu Tailwind d'origine : les popups juraient avec le reste de
+  // l'espace pro, qui n'utilise que le vert de marque et le rouge d'erreur.
+  const iconBg = danger ? "#fbecea" : "#e6f6ee";
+  const iconBorder = danger ? "rgba(194,85,75,.22)" : "#bfe4d3";
+  const iconColor = danger ? "#c2554b" : "#0d7a54";
+  const confirmBg = danger ? "#c2554b" : "#12a06e";
+  const confirmBgHover = danger ? "#a8463d" : "#0d8a5e";
+  const confirmShadow = danger ? "rgba(194,85,75,.28)" : "rgba(18,160,110,.28)";
   const maxWidth = opts.maxWidth || "420px";
 
   const overlay = document.createElement("div");
   overlay.id = "__confirmModal";
-  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;";
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(12,26,20,.42);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;";
   overlay.innerHTML = `
     <style>
       @keyframes __cmSlideIn{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
-      #__confirmModal .cm{background:#fff;border-radius:20px;max-width:${maxWidth};width:100%;max-height:80vh;box-shadow:0 24px 48px -8px rgba(0,0,0,.22);display:flex;flex-direction:column;overflow:hidden;animation:__cmSlideIn .18s cubic-bezier(.34,1.4,.64,1)}
+      #__confirmModal .cm{background:#fff;border-radius:20px;max-width:${maxWidth};width:100%;max-height:80vh;box-shadow:0 24px 48px -8px rgba(16,40,30,.24);display:flex;flex-direction:column;overflow:hidden;font-family:"Plus Jakarta Sans",system-ui,sans-serif;animation:__cmSlideIn .18s cubic-bezier(.34,1.4,.64,1)}
       #__confirmModal .cm__head{padding:24px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-      #__confirmModal .cm__icon-wrap{width:44px;height:44px;border-radius:50%;background:${iconBg};border:1px solid ${iconBorder};display:flex;align-items:center;justify-content:center;flex-shrink:0}
+      #__confirmModal .cm__icon-wrap{width:44px;height:44px;border-radius:13px;background:${iconBg};border:1px solid ${iconBorder};display:flex;align-items:center;justify-content:center;flex-shrink:0}
       #__confirmModal .cm__icon-wrap .material-symbols-outlined{font-size:22px;color:${iconColor}}
-      #__confirmModal .cm__close{background:none;border:none;cursor:pointer;color:#9ca3af;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;flex-shrink:0;padding:0}
+      #__confirmModal .cm__close{background:none;border:none;cursor:pointer;color:#98a29b;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;flex-shrink:0;padding:0}
       #__confirmModal .cm__close .material-symbols-outlined{font-size:18px}
-      #__confirmModal .cm__close:hover{background:#f3f4f6;color:#111}
-      #__confirmModal .cm__body{padding:16px 24px 24px;display:flex;flex-direction:column;gap:6px;overflow-y:auto}
+      #__confirmModal .cm__close:hover{background:#f2f4f2;color:#141a17}
+      #__confirmModal .cm__body{padding:16px 24px 24px;display:flex;flex-direction:column;gap:7px;overflow-y:auto}
       #__confirmModal .cm__body:has(+ .cm__actions){padding-bottom:0}
-      #__confirmModal .cm__title{font-size:17px;font-weight:700;color:#111;margin:0}
-      #__confirmModal .cm__desc{font-size:13.5px;color:#6b7280;line-height:1.55;margin:0;white-space:pre-line}
-      #__confirmModal .cm__actions{padding:20px 24px 24px;display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
-      #__confirmModal .cm__cancel{display:inline-flex;align-items:center;justify-content:center;padding:9px 18px;border-radius:10px;font-size:13.5px;font-weight:600;background:#f3f4f6;border:1px solid #e5e7eb;color:#4b5563;cursor:pointer;font-family:inherit;transition:background .15s}
-      #__confirmModal .cm__cancel:hover{background:#e9eaec}
-      #__confirmModal .cm__confirm{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 20px;border-radius:10px;font-size:13.5px;font-weight:700;background:${confirmBg};border:none;color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 1px 3px ${confirmShadow};transition:background .15s}
+      #__confirmModal .cm__title{font-size:17px;font-weight:700;letter-spacing:-.02em;color:#141a17;margin:0}
+      #__confirmModal .cm__desc{font-size:13.5px;color:#8c968f;line-height:1.55;margin:0;white-space:pre-line}
+      #__confirmModal .cm__actions{padding:20px 24px 24px;display:flex;gap:10px;justify-content:flex-end;flex-shrink:0}
+      #__confirmModal .cm__cancel{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 18px;border-radius:12px;font-size:13px;font-weight:600;background:#fff;border:1px solid #e6eae7;color:#1a201d;cursor:pointer;font-family:inherit;transition:background .15s,border-color .15s}
+      #__confirmModal .cm__cancel:hover{background:#f7faf8;border-color:#e0e3e5}
+      #__confirmModal .cm__confirm{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:42px;padding:0 20px;border-radius:12px;font-size:13.5px;font-weight:700;background:${confirmBg};border:none;color:#fff;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px ${confirmShadow};transition:background .15s}
       #__confirmModal .cm__confirm:hover{background:${confirmBgHover}}
       #__confirmModal .cm__confirm.loading{opacity:.6;cursor:wait;pointer-events:none}
       #__confirmModal .cm__confirm .material-symbols-outlined{font-size:16px}

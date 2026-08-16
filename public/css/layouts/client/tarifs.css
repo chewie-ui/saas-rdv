@@ -1,0 +1,429 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   TARIFS — page publique
+   ─────────────────────────────────────────────────────────────────────────
+   Mesures relevées sur la maquette (maquette-branshee-source.html, section
+   Tarifs, lignes 760-870) : tailles, graisses, interlettrages, rayons et
+   espacements sont ceux du fichier source, pas des approximations.
+
+   Les COULEURS passent par les jetons du guide (design-tokens.css) : la
+   maquette et le guide donnent les mêmes valeurs (#12a06e, #07301f, #e6f6ee…),
+   donc les nommer plutôt que les recopier ne change rien au rendu et fait
+   suivre la page si une teinte bouge.
+
+   ── UN ÉCART ASSUMÉ AVEC LE GUIDE ────────────────────────────────────────
+   Le guide fixe les cartes du site public à 20px de rayon ; la maquette de
+   cette page utilise 24px (28px pour le bandeau final). La demande était de
+   reproduire CETTE maquette : ses valeurs l'emportent ici, et elles sont
+   regroupées dans les variables ci-dessous pour rester repérables.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.tp {
+  /* Compense l'en-tête fixe (.header est en position:fixed — 64px, 68px
+     au-delà de 820px). Sans ce décalage, le titre passe SOUS la barre. */
+  padding: calc(64px + 64px) 24px 96px;
+  background: var(--bs-bg-site);
+}
+@media (min-width: 820px) {
+  .tp { padding-top: calc(68px + 64px); }
+}
+
+.tp__wrap { max-width: 1220px; margin: 0 auto; }
+
+/* Rayons propres à cette maquette (voir l'écart assumé ci-dessus). */
+.tp {
+  --tp-r-card: 24px;
+  --tp-r-addon: 20px;
+  --tp-r-cta: 28px;
+}
+
+/* ── Héros ──────────────────────────────────────────────────────────────── */
+.tp-hero { max-width: 620px; }
+.tp-hero__title {
+  margin: 0;
+  font: 800 clamp(38px, 5.2vw, 60px) / 1.02 var(--bs-font);
+  letter-spacing: var(--bs-display-ls);
+  color: var(--bs-text-title);
+  text-wrap: balance;
+}
+.tp-hero__lead {
+  margin: 20px 0 0;
+  font: 400 17px/1.6 var(--bs-font);
+  color: var(--bs-text-2);
+}
+
+/* ── Bascule mensuel / annuel ───────────────────────────────────────────── */
+.tp-toggle {
+  margin-top: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid var(--bs-border-strong);
+  border-radius: var(--bs-r-pill);
+  background: var(--bs-surface);
+}
+.tp-toggle__btn {
+  padding: 9px 18px;
+  border: 0;
+  border-radius: var(--bs-r-pill);
+  background: none;
+  color: var(--bs-text-2);
+  font: 600 13.5px/1 var(--bs-font);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color .15s, color .15s;
+}
+.tp-toggle__btn.is-on {
+  background: var(--bs-green-deep);
+  color: #fff;
+}
+.tp-toggle__btn:focus-visible { outline: 2px solid var(--bs-accent); outline-offset: 2px; }
+
+/* ── Les trois cartes ───────────────────────────────────────────────────── */
+.tp-plans {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--bs-sp-4);
+  align-items: start;
+}
+
+.tp-plan {
+  padding: 28px;
+  border: 1px solid var(--bs-border);
+  border-radius: var(--tp-r-card);
+  background: var(--bs-surface);
+}
+/* La carte mise en avant : bordure verte et ombre portée colorée. C'est le
+   seul relief de la page — le guide veut des ombres quasi nulles partout
+   ailleurs, celle-ci sert à désigner l'offre recommandée. */
+.tp-plan--star {
+  border-color: var(--bs-green-border);
+  box-shadow: 0 24px 50px -34px rgba(18, 160, 110, .55);
+}
+
+.tp-plan__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 26px;
+}
+.tp-plan__name {
+  font: 700 19px/1 var(--bs-font);
+  letter-spacing: var(--bs-title-ls);
+  color: var(--bs-text-title);
+}
+.tp-plan__tag {
+  flex: none;
+  padding: 5px 10px;
+  border-radius: var(--bs-r-pill);
+  font: 600 11px/1 var(--bs-font);
+  white-space: nowrap;
+}
+.tp-plan__tag--accent { background: var(--bs-soft-pro); color: var(--bs-accent-text); }
+.tp-plan__tag--muted { background: var(--bs-badge-done-bg); color: var(--bs-text-2); }
+
+/* Hauteur réservée : sans elle, une description plus courte remontait le prix
+   d'une carte et les trois montants ne s'alignaient plus. */
+.tp-plan__desc {
+  margin: 12px 0 22px;
+  min-height: 42px;
+  font: 400 13.5px/1.55 var(--bs-font);
+  color: var(--bs-text-2);
+}
+
+.tp-plan__pricing { display: flex; align-items: baseline; gap: 8px; }
+.tp-plan__price {
+  font: 800 44px/1 var(--bs-font);
+  letter-spacing: -.04em;
+  color: var(--bs-text-title);
+}
+.tp-plan__per { font: 500 13.5px/1 var(--bs-font); color: var(--bs-text-muted); }
+
+.tp-plan__note {
+  margin-top: 10px;
+  min-height: 18px;
+  font: 500 12.5px/1.4 var(--bs-font);
+  color: var(--bs-accent);
+}
+
+.tp-plan__cta,
+.tp-plan__alt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border-radius: var(--bs-r-pill);
+  text-decoration: none;
+  cursor: pointer;
+}
+.tp-plan__cta {
+  margin-top: 22px;
+  height: 48px;
+  border: 0;
+  font: 700 14.5px/1 var(--bs-font);
+  transition: background-color .15s;
+}
+/* Un seul bouton vert plein par écran (règle 3 du guide) : c'est celui de
+   l'offre recommandée. Les deux autres cartes prennent l'encre sombre. */
+.tp-plan__cta--accent { background: var(--bs-accent); color: #fff; }
+.tp-plan__cta--accent:hover { background: var(--bs-accent-hover); color: #fff; }
+.tp-plan__cta--ink { background: var(--bs-text-title); color: #fff; }
+.tp-plan__cta--ink:hover { background: var(--bs-green-deep); color: #fff; }
+
+.tp-plan__alt {
+  margin-top: 8px;
+  height: 44px;
+  border: 1px solid var(--bs-border-strong);
+  background: var(--bs-surface);
+  color: var(--bs-text-title);
+  font: 600 13.5px/1 var(--bs-font);
+  transition: border-color .15s, background-color .15s;
+}
+.tp-plan__alt:hover { border-color: var(--bs-text-muted); background: var(--bs-bg-site); }
+
+.tp-plan__feats {
+  margin: 22px 0 0;
+  padding: 20px 0 0;
+  list-style: none;
+  border-top: 1px solid var(--bs-border);
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.tp-plan__feat {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font: 500 13.5px/1.6 var(--bs-font);
+  color: var(--bs-text-body);
+}
+.tp-plan__check {
+  flex: none;
+  line-height: 1.6;
+  font-weight: 700;
+  color: var(--bs-accent);
+}
+
+/* ── Titres de section ──────────────────────────────────────────────────── */
+.tp-h2 {
+  margin: var(--bs-sp-7) 0 20px;
+  font: 700 clamp(26px, 3.4vw, 32px) / 1.1 var(--bs-font);
+  letter-spacing: -.03em;
+  color: var(--bs-text-title);
+}
+.tp-h2__lead {
+  margin: -8px 0 22px;
+  max-width: 560px;
+  font: 400 15px/1.6 var(--bs-font);
+  color: var(--bs-text-2);
+}
+
+/* ── Tableau comparatif ─────────────────────────────────────────────────── */
+.tp-cmp {
+  border: 1px solid var(--bs-border);
+  border-radius: var(--tp-r-card);
+  background: var(--bs-surface);
+  overflow: hidden;
+}
+
+.tp-cmp__head,
+.tp-cmp__row {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+}
+.tp-cmp__head { border-bottom: 1px solid var(--bs-border); }
+.tp-cmp__cell { padding: 20px 24px; }
+
+.tp-cmp__col { padding: 20px 12px; text-align: center; }
+.tp-cmp__col.is-star { background: var(--bs-soft-row); }
+.tp-cmp__colname { font: 700 15px/1 var(--bs-font); color: var(--bs-text-title); }
+.tp-cmp__col.is-star .tp-cmp__colname { color: var(--bs-accent-text); }
+.tp-cmp__colprice {
+  margin-top: 6px;
+  font: 500 12px/1 var(--bs-font);
+  color: var(--bs-text-muted);
+}
+
+.tp-cmp__group {
+  padding: 11px 24px;
+  border-bottom: 1px solid var(--bs-border);
+  background: var(--bs-bg-site);
+  /* JetBrains Mono : le guide la réserve aux surtitres et aux valeurs
+     techniques — un intitulé de groupe en fait partie. */
+  font: 500 10.5px/1 var(--bs-mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--bs-text-muted);
+}
+
+/* Filet interne plus clair que le contour de la carte : la maquette distingue
+   les deux (#f4f5f4 contre #e9ece9). `--bs-badge-done-bg` porte exactement ce
+   gris neutre dans le guide — pas de jeton fantôme inventé pour l'occasion. */
+.tp-cmp__row { border-bottom: 1px solid var(--bs-badge-done-bg); }
+.tp-cmp__row:last-child { border-bottom: 0; }
+.tp-cmp__label {
+  padding: 14px 24px;
+  font: 500 13.5px/1.4 var(--bs-font);
+  color: var(--bs-text-body);
+}
+.tp-cmp__v {
+  padding: 14px 12px;
+  text-align: center;
+  font: 600 13px/1.4 var(--bs-font);
+  color: var(--bs-text-body);
+}
+.tp-cmp__v.is-star { background: var(--bs-soft-row); color: var(--bs-accent-text); }
+
+/* ── Options ────────────────────────────────────────────────────────────── */
+.tp-addons { display: grid; grid-template-columns: 1fr 1fr; gap: var(--bs-sp-4); }
+.tp-addon {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 24px;
+  border: 1px solid var(--bs-border);
+  border-radius: var(--tp-r-addon);
+  background: var(--bs-surface);
+}
+.tp-addon__body { flex: 1; min-width: 0; }
+.tp-addon__name { font: 700 16px/1.2 var(--bs-font); color: var(--bs-text-title); }
+.tp-addon__desc {
+  margin: 8px 0 0;
+  font: 400 13.5px/1.55 var(--bs-font);
+  color: var(--bs-text-2);
+}
+.tp-addon__price { flex: none; text-align: right; }
+.tp-addon__amount {
+  font: 700 22px/1 var(--bs-font);
+  letter-spacing: -.03em;
+  color: var(--bs-text-title);
+}
+.tp-addon__per {
+  margin-top: 4px;
+  font: 500 11.5px/1 var(--bs-font);
+  color: var(--bs-text-muted);
+}
+
+/* ── Questions fréquentes ───────────────────────────────────────────────── */
+.tp-faq {
+  border: 1px solid var(--bs-border);
+  border-radius: var(--tp-r-card);
+  background: var(--bs-surface);
+  overflow: hidden;
+}
+.tp-faq__item { border-bottom: 1px solid var(--bs-border); }
+.tp-faq__item:last-child { border-bottom: 0; }
+
+.tp-faq__h { margin: 0; }
+.tp-faq__q {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 26px;
+  border: 0;
+  background: none;
+  text-align: left;
+  font: 600 16px/1.4 var(--bs-font);
+  color: var(--bs-text-title);
+  cursor: pointer;
+}
+.tp-faq__sign {
+  flex: none;
+  font: 400 18px/1 var(--bs-font);
+  color: var(--bs-accent);
+}
+.tp-faq__q:focus-visible { outline: 2px solid var(--bs-accent); outline-offset: -3px; }
+
+/* Ouvert par défaut. Le script referme tout au chargement : sans JavaScript,
+   les réponses restent donc lisibles plutôt que définitivement masquées. */
+.tp-faq__a { padding: 0 26px 22px; }
+.tp-faq__txt {
+  margin: 0;
+  max-width: 78ch;
+  font: 400 14.5px/1.65 var(--bs-font);
+  color: var(--bs-text-2);
+}
+.tp-faq__item.is-closed .tp-faq__a { display: none; }
+
+/* ── Bandeau final ──────────────────────────────────────────────────────── */
+.tp-cta {
+  margin-top: 40px;
+  padding: 52px;
+  border-radius: var(--tp-r-cta);
+  background: var(--bs-green-deep);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+}
+.tp-cta__title {
+  margin: 0;
+  font: 700 clamp(28px, 3.8vw, 38px) / 1.06 var(--bs-font);
+  letter-spacing: -.035em;
+  color: #fff;
+  text-wrap: balance;
+}
+.tp-cta__lead {
+  margin: 14px 0 0;
+  max-width: 520px;
+  font: 400 16px/1.6 var(--bs-font);
+  color: #a9c8ba;
+}
+.tp-cta__btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 52px;
+  padding: 0 28px;
+  border-radius: var(--bs-r-pill);
+  background: #fff;
+  color: var(--bs-green-deep);
+  font: 700 15px/1 var(--bs-font);
+  text-decoration: none;
+  transition: background-color .15s;
+}
+.tp-cta__btn:hover { background: #d6f2e4; color: var(--bs-green-deep); }
+
+/* ══ Responsive ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 1000px) {
+  .tp-plans { grid-template-columns: 1fr; max-width: 460px; }
+  .tp-addons { grid-template-columns: 1fr; }
+  .tp-cta { flex-direction: column; align-items: flex-start; padding: 36px; }
+}
+
+@media (max-width: 760px) {
+  .tp { padding-left: 16px; padding-right: 16px; }
+
+  /* Le tableau garde ses quatre colonnes mais défile horizontalement : les
+     empiler produisait 24 blocs illisibles. Le conteneur seul défile, jamais
+     la page. */
+  .tp-cmp { overflow-x: auto; }
+  .tp-cmp__head,
+  .tp-cmp__group,
+  .tp-cmp__row { min-width: 620px; }
+
+  .tp-plan { padding: 22px; }
+  .tp-faq__q { padding: 18px 20px; font-size: 15px; }
+  .tp-faq__a { padding: 0 20px 18px; }
+  .tp-cta { padding: 28px 22px; }
+  .tp-cta__btn { width: 100%; justify-content: center; }
+}
+
+@media (max-width: 420px) {
+  .tp-toggle { width: 100%; }
+  .tp-toggle__btn { flex: 1; padding: 9px 10px; }
+  .tp-addon { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .tp-addon__price { text-align: left; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-toggle__btn,
+  .tp-plan__cta,
+  .tp-plan__alt,
+  .tp-cta__btn { transition: none; }
+}

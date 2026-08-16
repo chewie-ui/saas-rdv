@@ -6,6 +6,11 @@
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap");
 @import url("/css/btn-normalize.css");
 
+/* Valeurs brutes du guide de style publié (préfixe --bs-). Importé en
+   PREMIER : le bloc « TOKENS » ci-dessous s'y branche. Voir design-tokens.css
+   pour les six règles du guide et ce qui ne suit pas automatiquement. */
+@import url("./design-tokens.css");
+
 @import url("./classes.css");
 /* Base de composants partagée (onglets, tableaux, champs, étiquettes…).
    Chargée après classes.css et AVANT les CSS de page, pour qu'une page
@@ -24,31 +29,38 @@
   --family-primary: var(--font-primary);
   --family-secondary: var(--font-primary);
 
-  --accent: #1e7a4e;
-  --accent-hover: #185f3d;
-  --accent-active: #124f33;
-  --accent-soft: #e8f5ee;
-  --accent-soft-hover: #d4edde;
-  --accent-border: rgba(30, 122, 78, 0.22);
-  --accent-glow: rgba(30, 122, 78, 0.16);
+  /* ── Branchement sur le guide (design-tokens.css) ──────────────────────
+     Les noms ci-dessous ne changent pas : c'est ce qui permet de repeindre
+     l'application entière sans toucher une page. Seules les VALEURS
+     pointent désormais vers les jetons --bs-*. */
+
+  --accent: var(--bs-accent);              /* #12a06e (était #1e7a4e) */
+  --accent-hover: var(--bs-accent-hover);  /* #0d8a5e */
+  --accent-active: var(--bs-link-hover);   /* #0a6e4b — le plus foncé du guide */
+  --accent-soft: var(--bs-soft);           /* #e9f7f0 */
+  /* Le guide ne donne pas de survol pour les fonds teintés : on l'obtient en
+     approfondissant le soft avec l'accent, pour qu'il suive toute retouche. */
+  --accent-soft-hover: color-mix(in srgb, var(--bs-accent) 14%, #fff);
+  --accent-border: color-mix(in srgb, var(--bs-accent) 22%, transparent);
+  --accent-glow: color-mix(in srgb, var(--bs-accent) 16%, transparent);
 
   --main-color: var(--accent);
   --main-color-hover: var(--accent-hover);
   --main-color-dark: var(--accent-active);
   --main-color-light: var(--accent-border);
   --main-color-pale: var(--accent-soft);
-  --main-color-subtle: #f0faf4;
+  --main-color-subtle: var(--bs-soft-row);   /* #f4faf7 */
   --main-color-glow: var(--accent-glow);
   --main-color-border: var(--accent-border);
   --green-primary: var(--accent);
   --green-light: var(--accent-border);
   --green-soft: var(--accent-soft);
 
-  --ink: #0c0d0e;
-  --ink-2: #1e2025;
-  --surface: #f5f4f1;
-  --surface-2: #eceae6;
-  --surface-card: #ffffff;
+  --ink: var(--bs-text-title);   /* #141a17 — « titres et chiffres clés » */
+  --ink-2: var(--bs-text-body);  /* #3f474e — « paragraphes » */
+  --surface: var(--bs-bg-app);   /* #f5f7f6 — fond de l'espace pro & client */
+  --surface-2: var(--bs-badge-done-bg); /* #f2f4f2 — le neutre creux du guide */
+  --surface-card: var(--bs-surface);    /* #ffffff */
 
   --black: var(--ink);
   --white: #ffffff;
@@ -60,16 +72,26 @@
   --color-surface-2: var(--surface-2);
 
   --text-primary: var(--ink);
-  --text-secondary: #4a5260;
-  --text-muted: #8a919e;
+  --text-secondary: var(--bs-text-body);  /* #3f474e */
+
+  /* Le guide distingue « Secondaire » (#6b737b) et « Discret » (#98a29b).
+     L'application n'a qu'un `--text-muted`, et elle s'en sert AUSSI pour des
+     métadonnées qui se lisent (dates, noms de service, compteurs). Le brancher
+     sur #98a29b les ferait tomber à 2,6:1 sur blanc — sous le seuil AA.
+     On le branche donc sur « Secondaire » (4,9:1, AA), et « Discret » reste
+     disponible sous --text-faint pour ce qui ne se lit pas vraiment :
+     placeholders, unités, étiquettes. */
+  --text-muted: var(--bs-text-2);   /* #6b737b */
+  --text-faint: var(--bs-text-muted); /* #98a29b */
+  --text-off: var(--bs-text-off);     /* #b4bdb7 — éléments inactifs */
 
   --grey-primary: var(--text-secondary);
   --grey-light: var(--ink-2);
   --grey-bg: var(--surface);
   --grey-soft: var(--surface-2);
 
-  --border-light: #e2e0db;
-  --border-medium: #c8c5be;
+  --border-light: var(--bs-border);          /* #e9ece9 — contour des cartes */
+  --border-medium: var(--bs-border-strong);  /* #e0e3e5 — champs & boutons */
   --border: 1px solid var(--border-light);
 
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04);
@@ -77,23 +99,28 @@
   --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05);
   --shadow-card: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.05);
 
-  --danger: #dc2626;
-  --danger-pale: #fef2f2;
-  --danger-border: rgba(220, 38, 38, 0.22);
-  --warning: #d97706;
-  --warning-pale: #fffbeb;
-  --success: var(--accent);
-  --success-pale: var(--accent-soft);
-  --info: #2563eb;
-  --info-pale: #eff6ff;
+  /* Statuts — « jamais décoratifs, uniquement pour un état ». Les paires
+     pâle/foncé sont celles des badges du guide. */
+  --danger: var(--bs-error);                 /* #c2554b */
+  --danger-pale: var(--bs-badge-cancel-bg);  /* #fbecea */
+  --danger-border: color-mix(in srgb, var(--bs-error) 22%, transparent);
+  --warning: var(--bs-warn);                 /* #b5843f */
+  --warning-pale: var(--bs-badge-wait-bg);   /* #fbf2e8 */
+  --success: var(--bs-success);              /* #0d7a54 */
+  --success-pale: var(--bs-badge-ok-bg);     /* #e6f6ee */
+  --info: var(--bs-info);                    /* #3f6fb5 */
+  --info-pale: var(--bs-badge-new-bg);       /* #eaf1fc */
 
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
-  --radius-2xl: 24px;
-  --radius-full: 9999px;
+  /* Rayons — le guide n'en reconnaît que cinq : 8 / 12 / 16 / 20 / 999.
+     L'échelle historique en comptait six, dont trois hors-guide (10, 14, 18) ;
+     chacune est ramenée sur la valeur voisine du guide. */
+  --radius-xs: 4px;                       /* hors guide : détails internes */
+  --radius-sm: var(--bs-r-chip);          /* 8  — chips, cellules */
+  --radius-md: var(--bs-r-ctrl);          /* 12 — champs, boutons de l'app */
+  --radius-lg: var(--bs-r-card);          /* 16 — cartes app */
+  --radius-xl: var(--bs-r-card-site);     /* 20 — cartes site */
+  --radius-2xl: var(--bs-r-card-site);    /* 20 — le guide s'arrête à 20 */
+  --radius-full: var(--bs-r-pill);        /* 999 */
 
   --t-fast: all 0.15s ease;
   --t-base: all 0.25s ease;
@@ -126,10 +153,13 @@
   --border-light: #2a2b2f;
   --border-medium: #3d3f44;
 
-  --accent-soft: rgba(30, 122, 78, 0.14);
-  --accent-soft-hover: rgba(30, 122, 78, 0.22);
-  --main-color-pale: rgba(30, 122, 78, 0.14);
-  --main-color-subtle: rgba(30, 122, 78, 0.08);
+  /* Le guide ne décrit pas de thème sombre : on garde la construction
+     existante (l'accent dilué dans le fond) en la faisant simplement suivre
+     le nouveau vert, au lieu de figer l'ancien en dur. */
+  --accent-soft: color-mix(in srgb, var(--bs-accent) 14%, transparent);
+  --accent-soft-hover: color-mix(in srgb, var(--bs-accent) 22%, transparent);
+  --main-color-pale: color-mix(in srgb, var(--bs-accent) 14%, transparent);
+  --main-color-subtle: color-mix(in srgb, var(--bs-accent) 8%, transparent);
 
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.25);
   --shadow-p: 0 4px 24px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.3);

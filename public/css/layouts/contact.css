@@ -147,10 +147,11 @@
    information qu'on vient parfois chercher sans remplir le formulaire. */
 .ct-direct {
   padding: 24px 22px;
-  border-radius: 16px;
-  background: #0f3524;
+  /* Carte du site public : le guide donne 20px (contre 16px dans l'app). */
+  border-radius: var(--bs-r-card-site);
+  background: var(--bs-green-deep);
 }
-.ct-direct .ct-eyebrow { color: #7fbfa0; }
+.ct-direct .ct-eyebrow { color: var(--bs-green-light); }
 .ct-direct__item { display: flex; flex-direction: column; gap: 3px; }
 .ct-direct__item + .ct-direct__item { margin-top: 18px; }
 .ct-direct__k { font-size: 12.5px; color: #9dc4b2; }
