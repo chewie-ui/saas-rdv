@@ -14,6 +14,7 @@ const {
   updateSlotMode,
   updateSmartGrouping,
   updateBookingLeadTime,
+  updateBookingRules,
   updateScheduleMode,
 } = require("../controllers/company.controller");
 const isAuth = require("../middlewares/isAuth");
@@ -51,6 +52,7 @@ router.patch("/company/buffer", isAuth, injectCompany, requirePermission("availa
 router.patch("/company/slot-mode", isAuth, injectCompany, requirePermission("availability.manageShared"), updateSlotMode);
 router.patch("/company/smart-grouping", isAuth, injectCompany, requirePermission("availability.manageShared"), updateSmartGrouping);
 router.patch("/company/booking-lead-time", isAuth, injectCompany, requirePermission("availability.manageShared"), updateBookingLeadTime);
+router.patch("/company/booking-rules", isAuth, injectCompany, requirePermission("availability.manageShared"), updateBookingRules);
 router.patch("/company/schedule-mode", isAuth, injectCompany, requirePermission("availability.manageShared"), updateScheduleMode);
 
 module.exports = router;

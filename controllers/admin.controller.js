@@ -847,7 +847,7 @@ exports.appointment = async (req, res) => {
 // les employés sont occupés). Partagé entre createAdminBooking et
 // createAdminBlock (absences). Retourne un message d'erreur ou null. ───────
 // Implémentation partagée avec l'API mobile — cf. utils/bookingConflict.js
-const { checkBookingConflict } = require("../utils/bookingConflict");
+const { checkBookingConflict, inspectBookingConflict } = require("../utils/bookingConflict");
 
 // ── Création manuelle d'un rendez-vous depuis le panel admin ─────────────────
 exports.createAdminBooking = async (req, res) => {
@@ -987,16 +987,23 @@ exports.createAdminBooking = async (req, res) => {
     const endTimeInMinutes = startTimeInMinutes + actualDuration;
     const endTime = `${String(Math.floor(endTimeInMinutes / 60)).padStart(2, "0")}:${String(endTimeInMinutes % 60).padStart(2, "0")}`;
 
+    // Surbooking : quand l'établissement l'autorise, un chevauchement ne
+    // bloque plus la création — mais le RDV doit être marqué `overbooked`,
+    // sinon l'index unique de book.model.js le rejetterait (E11000) et le
+    // réglage resterait sans effet.
+    let estEnSurbooking = false;
     if (!isGroup) {
-      const conflictMessage = await checkBookingConflict({
+      const { message: conflictMessage, hadConflict } = await inspectBookingConflict({
         Booking, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, actualDuration,
       });
-      if (conflictMessage) {
+      if (conflictMessage && !company.allowOverbooking) {
         return res.json({ success: false, error: "conflict", message: conflictMessage });
       }
+      estEnSurbooking = hadConflict;
     }
 
     const newBooking = await Booking.create({
+      overbooked: estEnSurbooking,
       date: new Date(date),
       startTime,
       endTime,
@@ -1373,7 +1380,7 @@ exports.availability = async (req, res) => {
     getSlotConfig(currentCompany),
     Service.countDocuments({ company: currentCompany, active: true }),
     getBookableTeam(currentCompany._id),
-    Company.findById(currentCompany._id).select("smartGrouping minBookingLeadTime scheduleMode owner ownerEmployeeProfile.schedule").lean(),
+    Company.findById(currentCompany._id).select("smartGrouping minBookingLeadTime scheduleMode owner ownerEmployeeProfile.schedule bookingHorizonDays autoConfirm waitlistEnabled allowOverbooking").lean(),
   ]);
   const availFeatures = getLimit("availability", res.locals.billingUser);
 
@@ -1456,6 +1463,16 @@ exports.availability = async (req, res) => {
     availFeatures,
     smartGrouping: Object.assign({ enabled: false, windowHours: 3, weekdays: [] }, companyDoc?.smartGrouping || {}),
     minBookingLeadTime: companyDoc?.minBookingLeadTime || { enabled: false, minutes: 60 },
+    // Règles de réservation. `lean()` n'applique pas les valeurs par défaut du
+    // schéma aux documents qui n'ont pas encore le champ : on les repose ici,
+    // sinon un établissement d'avant ces réglages afficherait « confirmation
+    // automatique désactivée » alors qu'elle est bien active.
+    bookingRules: {
+      bookingHorizonDays: Number(companyDoc?.bookingHorizonDays) || 0,
+      autoConfirm: companyDoc?.autoConfirm !== false,
+      waitlistEnabled: companyDoc?.waitlistEnabled === true,
+      allowOverbooking: companyDoc?.allowOverbooking === true,
+    },
     // Réglages portés par le compte (téléphone obligatoire, messages d'emails…).
     calendarSettings: req.user?.calendarSettings || {},
   });
@@ -4106,5 +4123,141 @@ exports.onboardingLinkShared = async (req, res) => {
   } catch (err) {
     console.error("[onboardingLinkShared]", err);
     return res.status(500).json({ success: false });
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  DEMANDES DE RENDEZ-VOUS EN ATTENTE
+//  ─────────────────────────────────────────────────────────────────────────
+//  N'existent que lorsque l'établissement a désactivé la confirmation
+//  automatique (Company.autoConfirm = false) : la réservation du client est
+//  alors créée en `status: "pending"` et occupe déjà le créneau, en attendant
+//  que le pro l'accepte ou la refuse ici.
+// ═══════════════════════════════════════════════════════════════════════════
+
+exports.pendingBookingsPage = async (req, res) => {
+  const currentCompany = res.locals.currentCompany;
+  if (!currentCompany) return res.redirect("/etablissement/mes-etablissements");
+
+  const debutDuJour = new Date();
+  debutDuJour.setHours(0, 0, 0, 0);
+
+  // Les demandes pour une date PASSÉE sont listées à part : il n'y a plus rien
+  // à valider, mais les masquer entièrement laisserait le pro sans explication
+  // sur un créneau resté occupé.
+  const [aVenir, passees, societe] = await Promise.all([
+    Booking.find({ company: currentCompany._id, status: "pending", date: { $gte: debutDuJour } })
+      .sort({ date: 1, startTime: 1 }).lean(),
+    Booking.find({ company: currentCompany._id, status: "pending", date: { $lt: debutDuJour } })
+      .sort({ date: -1, startTime: -1 }).limit(30).lean(),
+    Company.findById(currentCompany._id).select("autoConfirm").lean(),
+  ]);
+
+  res.render("admin/pending-bookings", {
+    pageName: "PendingBookings",
+    title: "Demandes de rendez-vous",
+    demandes: aVenir,
+    demandesPassees: passees,
+    autoConfirm: societe?.autoConfirm !== false,
+  });
+};
+
+// Accepter : la demande devient un rendez-vous confirmé.
+exports.confirmPendingBooking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Filtre sur `status: "pending"` autant que sur l'établissement : évite de
+    // « re-confirmer » un RDV déjà annulé, et rend l'appel idempotent.
+    const booking = await Booking.findOneAndUpdate(
+      { _id: id, company: res.locals.currentCompany?._id, status: "pending" },
+      { status: "confirmed" },
+      { new: true },
+    ).lean();
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Cette demande n'existe plus ou a déjà été traitée." });
+    }
+
+    const companyDoc = await Company.findById(booking.company);
+    logActivity({
+      company: booking.company,
+      user: req.user,
+      role: await resolveActorRole(companyDoc, req.user),
+      action: "booking.confirm",
+      description: `a accepté la demande de ${booking.name || ""} ${booking.surname || ""}`.trim(),
+    });
+
+    if (booking.email) {
+      try {
+        const html = pug.renderFile(path.join(__dirname, "../views/templates/emails/booking-confirmed-request.pug"), {
+          name: booking.name || "",
+          surname: booking.surname || "",
+          date: booking.date,
+          startHour: booking.startTime || "",
+          endHour: booking.endTime || "",
+          serviceName: booking.serviceName || "",
+          companyName: companyDoc?.name || "",
+        });
+        await sendEmail(booking.email, "Votre rendez-vous est confirmé — BranShee", html);
+      } catch (mailErr) {
+        console.error("Confirm request email error:", mailErr.message);
+      }
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("[confirmPendingBooking]", err);
+    return res.status(500).json({ success: false, message: "Erreur serveur." });
+  }
+};
+
+// Refuser : la demande est annulée et le créneau redevient libre.
+// Volontairement SANS la barrière « forfait Pro » de cancelBooking : le pro a
+// pu activer la validation manuelle quel que soit son forfait, il doit
+// pouvoir refuser sans être bloqué — sinon la demande resterait éternellement
+// en attente à occuper le créneau.
+exports.refusePendingBooking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const motif = String(req.body?.motif || "").trim().slice(0, 500);
+
+    const booking = await Booking.findOneAndUpdate(
+      { _id: id, company: res.locals.currentCompany?._id, status: "pending" },
+      { status: "canceled" },
+      { new: true },
+    ).lean();
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Cette demande n'existe plus ou a déjà été traitée." });
+    }
+
+    const companyDoc = await Company.findById(booking.company);
+    logActivity({
+      company: booking.company,
+      user: req.user,
+      role: await resolveActorRole(companyDoc, req.user),
+      action: "booking.refuse",
+      description: `a refusé la demande de ${booking.name || ""} ${booking.surname || ""}`.trim(),
+    });
+
+    if (booking.email) {
+      try {
+        const html = pug.renderFile(path.join(__dirname, "../views/templates/emails/booking-refused.pug"), {
+          name: booking.name || "",
+          surname: booking.surname || "",
+          date: booking.date,
+          startHour: booking.startTime || "",
+          serviceName: booking.serviceName || "",
+          companyName: companyDoc?.name || "",
+          motif,
+        });
+        await sendEmail(booking.email, "Votre demande de rendez-vous n'a pas pu être acceptée", html);
+      } catch (mailErr) {
+        console.error("Refuse request email error:", mailErr.message);
+      }
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("[refusePendingBooking]", err);
+    return res.status(500).json({ success: false, message: "Erreur serveur." });
   }
 };

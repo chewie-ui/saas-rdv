@@ -78,11 +78,20 @@ router.get("/appointment", isAuth, injectCompany, requireFeatureActive("admin_pa
 router.post("/appointment/create", isAuth, injectCompany, requireFeatureActive("admin_panel"), adminController.createAdminBooking);
 router.post("/appointment/block", isAuth, injectCompany, requireFeatureActive("admin_panel"), adminController.createAdminBlock);
 router.patch("/appointment/block/:id", isAuth, injectCompany, requireFeatureActive("admin_panel"), adminController.updateAdminBlock);
-router.get("/availability", isAuth, injectCompany, availability);
-// Ancienne page conservée (au cas où) sur /availability-old.
-router.get("/availability-old", isAuth, injectCompany, availabilityOld);
-// Ancienne URL de la refonte → redirection permanente vers /availability.
-router.get("/availability-v2", isAuth, injectCompany, (req, res) => res.redirect(301, "/availability"));
+// ── Disponibilités ──────────────────────────────────────────────────────────
+// Les trois générations partagent le même contrôleur : il prépare déjà toutes
+// les données (schedule, daysOff, employees, slotConfig, availFeatures…).
+// Seule la vue rendue change, via `res.locals._availView`.
+// /availability = la nouvelle page (copie de la maquette).
+router.get("/availability", isAuth, injectCompany, (req, res) => {
+  res.locals._availView = "admin/availability-new";
+  return availability(req, res);
+});
+// Les deux générations précédentes restent joignables, rien n'est supprimé :
+router.get("/availability-v2", isAuth, injectCompany, availability);        // refonte précédente
+router.get("/availability-old", isAuth, injectCompany, availabilityOld);    // toute première version
+// Ancienne URL de travail → /availability.
+router.get("/availability-new", isAuth, injectCompany, (req, res) => res.redirect(301, "/availability"));
 router.get("/group-sessions", isAuth, injectCompany, requireAdminFeature("group_sessions"), requirePermission("groupSessions.view"), listGroupSessions);
 router.get("/group-sessions/participants", isAuth, injectCompany, requireAdminFeature("group_sessions"), requirePermission("groupSessions.view"), getSessionParticipants);
 router.post("/api/courses", isAuth, injectCompany, requireAdminFeature("group_sessions"), requirePermission("groupSessions.manage"), createCourse);
@@ -271,6 +280,14 @@ router.patch("/edit-interval", injectCompany, requirePermission("availability.ma
 router.delete("/appointment/:bookId/delete", isAuth, injectCompany, requirePermission("appointments.cancelDelete"), deleteBooking);
 router.patch("/appointment/:bookId/restore", isAuth, injectCompany, requirePermission("appointments.cancelDelete"), restoreBooking);
 router.patch("/appointment/:id/cancel", isAuth, injectCompany, requirePermission("appointments.cancelDelete"), cancelBooking);
+
+// ── Demandes de rendez-vous en attente ──────────────────────────────────────
+// Accepter/refuser relève de la GESTION des RDV (appointments.manage), pas de
+// l'annulation : refuser une demande jamais acceptée n'est pas la même chose
+// qu'annuler un rendez-vous confirmé, et ne doit pas exiger le même droit.
+router.get("/demandes", isAuth, injectCompany, requirePermission("appointments.view"), adminController.pendingBookingsPage);
+router.patch("/appointment/:id/confirm", isAuth, injectCompany, requirePermission("appointments.manage"), adminController.confirmPendingBooking);
+router.patch("/appointment/:id/refuse", isAuth, injectCompany, requirePermission("appointments.manage"), adminController.refusePendingBooking);
 router.patch("/appointment/:id/send-reminder", isAuth, injectCompany, requirePermission("appointments.manage"), adminController.sendManualReminder);
 router.get("/appointment/week-data", isAuth, injectCompany, getWeekData);
 

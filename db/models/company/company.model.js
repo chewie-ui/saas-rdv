@@ -325,6 +325,45 @@ const companySchema = schema(
       minutes: { type: Number, default: 60 },
     },
 
+    // ── Horizon de réservation ────────────────────────────────────────────────
+    // Jusqu'où dans le futur un client peut réserver. 0 = pas de limite
+    // (comportement historique, donc valeur par défaut : activer une limite
+    // doit être un choix explicite, jamais une conséquence d'une migration).
+    bookingHorizonDays: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 730,
+    },
+
+    // ── Confirmation automatique ──────────────────────────────────────────────
+    // true (défaut) = une réservation client est immédiatement "confirmed",
+    // comme avant. false = elle arrive en "pending" et attend la validation de
+    // l'admin. Un RDV en attente OCCUPE quand même le créneau (sinon deux
+    // clients pourraient réserver la même heure en attendant la validation).
+    autoConfirm: {
+      type: Boolean,
+      default: true,
+    },
+
+    // ── Liste d'attente ───────────────────────────────────────────────────────
+    // Quand un créneau est complet, le client peut demander à être prévenu s'il
+    // se libère. L'alerte part à l'annulation d'un RDV (voir utils/waitlist.js).
+    waitlistEnabled: {
+      type: Boolean,
+      default: false,
+    },
+
+    // ── Surbooking ────────────────────────────────────────────────────────────
+    // Autorise plusieurs RDV sur le même créneau pour le même employé.
+    // ⚠️ Désactive le garde-fou anti-double-réservation de checkBookingConflict
+    // pour cet établissement : c'est un choix assumé de l'admin, jamais un
+    // défaut.
+    allowOverbooking: {
+      type: Boolean,
+      default: false,
+    },
+
     // ── Question préalable au choix du service ────────────────────────────────
     // Ex: "Est-ce la première fois que vous nous consultez ?" → 2 réponses
     // fixes (nouveau / déjà venu), dont le libellé exact reste personnalisable.

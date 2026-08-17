@@ -340,6 +340,25 @@ exports.createBooking = async (req, res) => {
       }
     }
 
+    // ── Horizon de réservation — revalidé côté serveur pour la même raison
+    // que le délai minimum : la liste de créneaux le respecte déjà, mais un
+    // appel direct à cette route la contournerait. ─────────────────────────
+    const _horizonDays = Math.max(0, Number(response.bookingHorizonDays) || 0);
+    if (_horizonDays > 0) {
+      const maintenant = new Date();
+      const limite = new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate());
+      limite.setDate(limite.getDate() + _horizonDays);
+      const jour = new Date(date);
+      const jourSeul = new Date(jour.getFullYear(), jour.getMonth(), jour.getDate());
+      if (jourSeul.getTime() > limite.getTime()) {
+        return res.json({
+          success: false,
+          error: "beyond_horizon",
+          message: `Vous ne pouvez pas réserver à plus de ${_horizonDays} jours à l'avance.`,
+        });
+      }
+    }
+
     // ── Plan gate: monthly bookings cap for basic (free) plan ─────────────
     if (response.owner) {
       const companyOwner = await User.findById(response.owner).lean();
@@ -666,6 +685,31 @@ exports.createBooking = async (req, res) => {
       }
     }
 
+    // ── Surbooking ────────────────────────────────────────────────────────
+    // Ce chemin public n'a jamais eu de contrôle de conflit explicite : il
+    // s'appuie sur l'index unique de book.model.js. On ne l'ajoute donc PAS
+    // ici (ce serait changer le comportement existant) — on regarde
+    // uniquement, quand le surbooking est autorisé, s'il y a chevauchement,
+    // pour marquer le RDV `overbooked` et le faire sortir de cet index.
+    // Sans ce marquage, la base rejetterait la réservation (E11000) et le
+    // réglage n'aurait aucun effet.
+    let estEnSurbooking = false;
+    if (response.allowOverbooking && !isGroup) {
+      const { inspectBookingConflict } = require("../utils/bookingConflict");
+      const [_h, _m] = startTime.split(":").map(Number);
+      const debutMin = _h * 60 + _m;
+      const { hadConflict } = await inspectBookingConflict({
+        Booking,
+        currentCompany: company,
+        date,
+        startTimeInMinutes: debutMin,
+        endTimeInMinutes: debutMin + actualDuration,
+        employeeId,
+        actualDuration,
+      });
+      estEnSurbooking = hadConflict;
+    }
+
     const newBooking = await Booking.create({
       date: new Date(date),
       startTime,
@@ -677,7 +721,11 @@ exports.createBooking = async (req, res) => {
       message,
       slotTime: actualDuration,   // store the ACTUAL duration, not the default slot
       endTime,
-      status: "confirmed",
+      // Confirmation automatique désactivée → le RDV attend la validation de
+      // l'admin. Il occupe quand même le créneau : tous les contrôles de
+      // conflit filtrent sur `status !== "canceled"`.
+      status: response.autoConfirm === false ? "pending" : "confirmed",
+      overbooked: estEnSurbooking,
       formAnswers: Array.isArray(formAnswers) ? formAnswers : [],
       // Identité unifiée (cf. plan d'unification) : un User connecté compte
       // comme son propre "client" — repli sur l'ancien compte Client séparé
@@ -1069,10 +1117,27 @@ exports.getBooking = async (req, res) => {
 
   // Get company config so we can compute slot granularity / buffer / mode.
   const [companyDoc, team] = await Promise.all([
-    Company.findById(companyId).select("slotTime bufferTime bufferBefore bufferAfter slotMode slotInterval owner smartGrouping minBookingLeadTime").lean(),
+    Company.findById(companyId).select("slotTime bufferTime bufferBefore bufferAfter slotMode slotInterval owner smartGrouping minBookingLeadTime bookingHorizonDays").lean(),
     // Inutile quand un employé précis est filtré.
     specificEmployee ? Promise.resolve([]) : getBookableTeam(companyId),
   ]);
+
+  // ── Horizon de réservation ────────────────────────────────────────────────
+  // Symétrique du délai minimum : celui-ci ferme le futur lointain. Au-delà de
+  // `bookingHorizonDays` jours, la journée est intégralement bloquée.
+  // On ne sort PAS de la fonction ici : la réponse attendue est la liste des
+  // créneaux BLOQUÉS — renvoyer une liste vide signifierait « rien de bloqué »,
+  // soit exactement l'inverse. On réutilise donc le mécanisme du délai
+  // minimum, qui sait déjà couvrir une journée entière.
+  // 0 = pas de limite (valeur par défaut, comportement historique).
+  const horizonDays = Math.max(0, Number(companyDoc?.bookingHorizonDays) || 0);
+  let auDelaDeLHorizon = false;
+  if (horizonDays > 0) {
+    const limite = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    limite.setDate(limite.getDate() + horizonDays);
+    const jourDemande = new Date(requestedDate.getFullYear(), requestedDate.getMonth(), requestedDate.getDate());
+    auDelaDeLHorizon = jourDemande.getTime() > limite.getTime();
+  }
 
   // ── Délai minimum de réservation ──────────────────────────────────────────
   // "On vous propose un créneau dans 5 min, pas le temps de vous préparer" —
@@ -1117,7 +1182,10 @@ exports.getBooking = async (req, res) => {
 
       // Block past slots + délai minimum (every minute mark — the client
       // only checks the exact slot strings returned by /get-schedule).
-      const cutoffG = Math.min(Math.max(nowMinutes, leadCutoffMinutesForDay), 24 * 60);
+      // Idem pour les cours collectifs : l'horizon ferme la journée entière.
+      const cutoffG = auDelaDeLHorizon
+        ? 24 * 60
+        : Math.min(Math.max(nowMinutes, leadCutoffMinutesForDay), 24 * 60);
       if (cutoffG > 0) {
         // Minute par minute (et non tous les 5 min) : le créneau d'un cours
         // ponctuel peut tomber sur n'importe quelle minute (ex: 19:07), il
@@ -1185,7 +1253,11 @@ exports.getBooking = async (req, res) => {
   // (délai minimum de réservation configuré par l'admin) — peut couvrir la
   // journée entière si le délai dépasse les heures restantes de ce jour.
   function blockPastSlots(blockedSet) {
-    const cutoff = Math.min(Math.max(nowMinutes, leadCutoffMinutesForDay), 24 * 60);
+    // Au-delà de l'horizon, toute la journée est fermée : même mécanisme que
+    // le délai minimum quand il dépasse les heures restantes.
+    const cutoff = auDelaDeLHorizon
+      ? 24 * 60
+      : Math.min(Math.max(nowMinutes, leadCutoffMinutesForDay), 24 * 60);
     if (cutoff <= 0) return;
     for (let t = 0; t < cutoff; t += step) {
       blockedSet.add(minutesToTimeStr(t));

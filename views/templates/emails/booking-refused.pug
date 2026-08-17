@@ -1,0 +1,82 @@
+//- Email envoyé quand le pro REFUSE une demande de rendez-vous en attente.
+//- Ton volontairement neutre : un refus n'est presque jamais un rejet du
+//- client, c'est un créneau qui ne convient pas. On invite donc explicitement
+//- à retenter une autre date plutôt que de clore la conversation.
+-
+  var _year = new Date().getFullYear()
+  var _clientName = (name || '') + (surname ? ' ' + surname : '')
+  var _dateStr = date ? new Date(date).toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) : ''
+
+div(style="margin:0;padding:0;background-color:#f4f7f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;")
+  table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0;padding:0;background-color:#f4f7f5;")
+    tr
+      td(align="center" style="padding:40px 16px;")
+        table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;margin:0 auto;")
+
+          tr
+            td(align="center" style="padding:0 0 20px;")
+              a(href="https://www.branshee.com" style="display:inline-block;text-decoration:none;")
+                table(cellpadding="0" cellspacing="0" role="presentation" style="display:inline-table;")
+                  tr
+                    td(valign="middle" style="padding-right:8px;")
+                      span(style="display:block;width:32px;height:32px;background:#1a7a4a;border-radius:9px;font-size:16px;font-weight:800;color:#ffffff;text-align:center;line-height:32px;") B
+                    td(valign="middle")
+                      span(style="font-size:15px;font-weight:700;color:#1e2923;letter-spacing:-0.2px;") BranShee
+
+          tr
+            td(style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.06);border:1px solid #e5ede8;")
+
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="background:#1e2923;padding:36px 40px;text-align:center;")
+                    p(style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;") Ce créneau n'a pas pu être retenu
+                    p(style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.65);") Votre demande de rendez-vous n'a pas été acceptée.
+
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="padding:28px 40px 0;")
+                    p(style="margin:0;font-size:15px;color:#374151;line-height:1.6;")
+                      | Bonjour&nbsp;
+                      strong(style="color:#1e2923;")= _clientName
+                      | ,
+                    p(style="margin:12px 0 0;font-size:14px;color:#6b7280;line-height:1.65;")
+                      if companyName
+                        | #{companyName} n'a pas pu retenir votre demande pour le créneau suivant :
+                      else
+                        | Votre demande n'a pas pu être retenue pour le créneau suivant :
+
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="padding:20px 40px 24px;")
+                    table(width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f8faf9;border:1px solid #e0ebe5;border-radius:12px;")
+                      tr
+                        td(style="padding:22px 28px;")
+                          p(style="margin:0;font-weight:600;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;") Créneau demandé
+                          p(style="margin:4px 0 0;font-size:14px;color:#1e2923;font-weight:500;text-transform:capitalize;")= _dateStr
+                          p(style="margin:3px 0 0;font-size:13px;color:#9ca3af;")= startHour
+                          if serviceName
+                            p(style="margin:10px 0 0;font-size:13px;color:#6b7280;")= serviceName
+
+              //- Motif libre saisi par le pro au moment du refus.
+              if motif && motif.length > 0
+                table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                  tr
+                    td(style="padding:0 40px 24px;")
+                      table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                        tr
+                          td(style="padding:14px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;")
+                            p(style="margin:0 0 4px;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;") Message de l'établissement
+                            p(style="margin:0;font-size:14px;color:#475569;line-height:1.5;")= motif
+
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="padding:0 40px 36px;text-align:center;")
+                    p(style="margin:0;font-size:13px;color:#6b7280;line-height:1.65;") Le créneau est de nouveau libre pour d'autres clients. N'hésitez pas à en choisir un autre — l'établissement reste disponible.
+
+              table(width="100%" cellpadding="0" cellspacing="0" role="presentation")
+                tr
+                  td(style="padding:20px 40px;background:#f8faf9;border-top:1px solid #e8efeb;text-align:center;")
+                    p(style="margin:0;font-size:13px;color:#9ca3af;") Au plaisir de vous accueillir une prochaine fois.
+                    p(style="margin:8px 0 0;font-size:11px;color:#d1d5db;") © #{_year} BranShee. Tous droits réservés.
+                    p(style="margin:6px 0 0;font-size:11px;")
+                      a(href="https://www.branshee.com" style="color:#b8ccbe;text-decoration:none;") www.branshee.com

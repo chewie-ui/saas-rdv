@@ -319,6 +319,32 @@ exports.updateBookingLeadTime = async (req, res) => {
   }
 };
 
+// ── Règles de réservation (horizon, confirmation auto, attente, surbooking) ──
+// Regroupées : ce sont quatre réglages d'une même carte côté admin, toujours
+// enregistrés ensemble. Chaque champ reste optionnel — on n'écrit que ce qui
+// est explicitement fourni, pour ne jamais réinitialiser un réglage absent.
+exports.updateBookingRules = async (req, res) => {
+  try {
+    const { bookingHorizonDays, autoConfirm, waitlistEnabled, allowOverbooking } = req.body;
+    const update = {};
+
+    if (bookingHorizonDays !== undefined) {
+      // 0 = pas de limite. Plafonné à 2 ans : au-delà, l'horizon n'a plus de
+      // sens et la génération de créneaux deviendrait inutilement lourde.
+      update.bookingHorizonDays = Math.max(0, Math.min(730, Math.round(Number(bookingHorizonDays)) || 0));
+    }
+    if (autoConfirm !== undefined) update.autoConfirm = !!autoConfirm;
+    if (waitlistEnabled !== undefined) update.waitlistEnabled = !!waitlistEnabled;
+    if (allowOverbooking !== undefined) update.allowOverbooking = !!allowOverbooking;
+
+    await Company.findByIdAndUpdate(res.locals.currentCompany._id, { $set: update });
+    return res.json({ success: true, ...update });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: "Server error" });
+  }
+};
+
 // ── Horaire commun pour tous les employés VS horaire propre à chacun ───────
 // Au tout premier passage en "perEmployee", chaque employé dont le schedule
 // individuel est encore vide reçoit une COPIE de l'horaire commun actuel

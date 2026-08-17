@@ -80,6 +80,17 @@ aside.sidebar#sidebar
                                 rect(x="3" y="4.5" width="18" height="16" rx="3")
                                 path(d="M3 9h18M8 2.5v4M16 2.5v4")
                             span= t.sidebar.a_2
+                        //- « Demandes » n'apparaît que s'il y en a : l'entrée est
+                        //- inutile pour les établissements en confirmation
+                        //- automatique, c'est-à-dire l'immense majorité.
+                        if pendingBookingsCount > 0 || pageName === 'PendingBookings'
+                            a.sb-link(href="/demandes" class=pageName === 'PendingBookings' ? 'active' : '')
+                                svg(viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true")
+                                    circle(cx="12" cy="12" r="9")
+                                    path(d="M12 7v5l3.5 2")
+                                span Demandes
+                                if pendingBookingsCount > 0
+                                    span.sb-badge.sb-badge--warn= pendingBookingsCount > 9 ? '9+' : pendingBookingsCount
                         //- Lien « Historique » (/history) retiré du menu — la page reste
                         //- accessible (route conservée) mais on coupe tout accès UI, la
                         //- nouvelle section « Clients » (/clients-hub) la remplace.

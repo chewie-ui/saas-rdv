@@ -41,9 +41,14 @@ const bookingSchema = new schema(
       required: true,
     },
 
+    // "pending" = en attente de validation de l'admin, quand l'établissement a
+    // désactivé la confirmation automatique (Company.autoConfirm). Un RDV
+    // "pending" occupe le créneau exactement comme un "confirmed" : tous les
+    // contrôles de conflit filtrent sur `status !== "canceled"`, jamais sur
+    // `status === "confirmed"`.
     status: {
       type: String,
-      enum: ["canceled", "confirmed"],
+      enum: ["canceled", "confirmed", "pending"],
       required: true,
     },
 
@@ -99,6 +104,16 @@ const bookingSchema = new schema(
     // n'apparaît pas dans les dossiers clients/patients. Le motif (ex:
     // "dentiste", "pause") est stocké dans `message`.
     isBlock: {
+      type: Boolean,
+      default: false,
+    },
+
+    // Ce RDV a été créé PAR-DESSUS un créneau déjà occupé, ce que seul
+    // Company.allowOverbooking autorise. Sert au filtre partiel de l'index
+    // unique plus bas : marqué true, ce document sort de l'index et n'entre
+    // donc pas en collision — sans quoi le surbooking serait rejeté par la
+    // base (E11000) quoi qu'en dise le réglage.
+    overbooked: {
       type: Boolean,
       default: false,
     },
@@ -201,11 +216,17 @@ const bookingSchema = new schema(
 // checkBookingConflict, qui empêche toute NOUVELLE réservation sur le créneau.
 // Rien à migrer : db/index.js supprime et resynchronise cet index au démarrage,
 // et complète `isBlock` sur les documents antérieurs au champ.
+// `overbooked: false` dans le filtre partiel : c'est ce qui permet le
+// surbooking SANS retirer le garde-fou à tout le monde. Un RDV créé malgré un
+// conflit (uniquement possible si l'établissement a activé Company
+// .allowOverbooking) est marqué `overbooked: true` et sort donc de l'index —
+// les autres restent protégés contre la double-réservation, y compris contre
+// une course entre deux requêtes simultanées.
 bookingSchema.index(
   { company: 1, date: 1, startTime: 1, employee: 1 },
   {
     unique: true,
-    partialFilterExpression: { status: "confirmed", isGroup: false, isBlock: false },
+    partialFilterExpression: { status: "confirmed", isGroup: false, isBlock: false, overbooked: false },
   },
 );
 

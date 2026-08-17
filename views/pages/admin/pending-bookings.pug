@@ -1,0 +1,114 @@
+extends ../../layouts/admin
+
+//- ═══════════════════════════════════════════════════════════════════════════
+    DEMANDES DE RENDEZ-VOUS EN ATTENTE
+    ───────────────────────────────────────────────────────────────────────────
+    Contrepartie indispensable du réglage « Confirmation automatique » de la
+    page Disponibilités : sans cet écran, une demande créée en `pending`
+    occuperait un créneau sans que personne ne puisse jamais la traiter.
+
+    Mêmes conventions que service-new / availability-new : styles inline,
+    la feuille externe ne gère que :hover et :focus-visible.
+    ═══════════════════════════════════════════════════════════════════════════
+
+block links
+    link(rel="stylesheet" href="/css/layouts/pending-bookings.css")
+
+block content
+    -
+        var ACCENT = '#12a06e';
+        var JOURS = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+        var MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+        function joli(d) {
+            var x = new Date(d);
+            if (isNaN(x.getTime())) return '';
+            return JOURS[x.getDay()] + ' ' + x.getDate() + ' ' + MOIS[x.getMonth()] + ' ' + x.getFullYear();
+        }
+        function prix(p) {
+            if (p === null || p === undefined || p === '') return '';
+            return Number(p) === 0 ? 'Gratuit' : Number(p) + ' €';
+        }
+        var _n = (demandes || []).length;
+        var _p = (demandesPassees || []).length;
+
+    #pbRoot(style="min-width:0")
+
+        div(style="margin-bottom:20px")
+            h1(style="margin:0;font:800 24px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em;color:#141a17") Demandes de rendez-vous
+            p(style="margin:8px 0 0;font:400 13px/1.6 'Plus Jakarta Sans',sans-serif;color:#8c968f") Ces créneaux sont déjà réservés en votre nom le temps que vous décidiez — personne d'autre ne peut les prendre.
+
+        //- Rappel si le réglage a été remis en automatique : les demandes déjà
+        //- en attente ne disparaissent pas toutes seules, il faut les traiter.
+        if autoConfirm && (_n > 0 || _p > 0)
+            div(style="margin-bottom:18px;padding:14px 16px;border-radius:12px;background:#fdf9ef;border:1px solid #f0e4cd;font:500 13px/1.6 'Plus Jakarta Sans',sans-serif;color:#8a6320")
+                | La confirmation automatique est réactivée : les nouvelles réservations sont confirmées directement. Les demandes ci-dessous datent d'avant et attendent toujours votre réponse.
+
+        if _n === 0
+            div(style="padding:56px 24px;text-align:center;background:#fff;border:1px solid #e9ece9;border-radius:16px")
+                span(style="display:inline-flex;width:52px;height:52px;border-radius:16px;background:#e9f7f0;color:#0d7a54;align-items:center;justify-content:center")
+                    svg(width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                        path(d="M20 6 9 17l-5-5")
+                p(style="margin:16px 0 0;font:700 16px/1.3 'Plus Jakarta Sans',sans-serif;color:#141a17") Aucune demande en attente
+                p(style="margin:8px 0 0;font:400 13px/1.6 'Plus Jakarta Sans',sans-serif;color:#8c968f") Tout est traité. Les nouvelles demandes apparaîtront ici.
+
+        else
+            p(style="margin:0 0 14px;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#b5843f")= _n + (_n > 1 ? ' demandes attendent votre réponse' : ' demande attend votre réponse')
+
+            div(style="display:flex;flex-direction:column;gap:12px")
+                each d in demandes
+                    .pb-card(data-pbid=String(d._id) style="background:#fff;border:1px solid #e9ece9;border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                        div(style="display:flex;align-items:flex-start;gap:16px;padding:20px;flex-wrap:wrap")
+
+                            span(style=`width:4px;align-self:stretch;min-height:56px;border-radius:3px;background:${d.serviceColor || '#b5843f'};flex:none`)
+
+                            div(style="flex:1;min-width:200px")
+                                div(style="display:flex;align-items:center;gap:10px;flex-wrap:wrap")
+                                    span(style="font:700 16px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#1a201d")= ((d.name || '') + ' ' + (d.surname || '')).trim() || 'Client'
+                                    span(style="padding:4px 10px;border-radius:999px;background:#fbf2e8;color:#b5843f;font:700 10.5px/1 'Plus Jakarta Sans',sans-serif;white-space:nowrap") EN ATTENTE
+                                div(style="margin-top:8px;font:600 13.5px/1.4 'Plus Jakarta Sans',sans-serif;color:#141a17;text-transform:capitalize")= joli(d.date)
+                                div(style="margin-top:3px;font:500 13px/1.4 'Plus Jakarta Sans',sans-serif;color:#5f6b64")
+                                    = (d.startTime || '') + (d.endTime ? ' — ' + d.endTime : '')
+                                    if d.serviceName
+                                        |  ·&nbsp;
+                                        span= d.serviceName
+                                    if d.price !== undefined && d.price !== null && d.price !== ''
+                                        |  ·&nbsp;
+                                        span= prix(d.price)
+                                div(style="margin-top:10px;display:flex;flex-wrap:wrap;gap:14px;font:500 12.5px/1.4 'Plus Jakarta Sans',sans-serif;color:#8c968f")
+                                    if d.email
+                                        a(href=`mailto:${d.email}` style="color:#0d7a54;text-decoration:none")= d.email
+                                    if d.phone
+                                        a(href=`tel:${d.phone}` style="color:#0d7a54;text-decoration:none")= d.phone
+                                    if d.employeeName
+                                        span= 'avec ' + d.employeeName
+                                if d.message
+                                    p(style="margin:12px 0 0;padding:11px 13px;border-radius:10px;background:#f7faf8;border:1px solid #e6eae7;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#5f6b64")= d.message
+
+                            .pb-actions(style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap")
+                                button.pb-refuse(type="button" style="height:40px;padding:0 15px;border-radius:11px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#c2554b;white-space:nowrap") Refuser
+                                button.pb-accept(type="button" style="height:40px;padding:0 18px;border-radius:11px;border:0;background:#12a06e;color:#fff;cursor:pointer;font:700 12.5px/1 'Plus Jakarta Sans',sans-serif;white-space:nowrap;box-shadow:0 2px 8px rgba(18,160,110,.28)") Accepter
+
+                        //- Zone de refus, dépliée à la demande : un motif est
+                        //- facultatif mais transmis au client tel quel.
+                        .pb-refuse-box(hidden style="padding:0 20px 20px;border-top:1px solid #f1f3f1;margin-top:0")
+                            p(style="margin:16px 0 10px;font:600 12px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.04em;color:#5f6b64") MOTIF (FACULTATIF, ENVOYÉ AU CLIENT)
+                            textarea.pb-motif(rows="2" maxlength="500" placeholder="Ex : je suis absent ce jour-là, je vous propose le lendemain à la même heure." style="width:100%;padding:11px 13px;border:1px solid #e0e3e5;border-radius:11px;background:#fff;outline:none;resize:vertical;font:500 13px/1.6 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+                            div(style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap")
+                                button.pb-refuse-cancel(type="button" style="height:38px;padding:0 15px;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d") Annuler
+                                button.pb-refuse-confirm(type="button" style="height:38px;padding:0 16px;border-radius:10px;border:0;background:#c2554b;color:#fff;cursor:pointer;font:700 12.5px/1 'Plus Jakarta Sans',sans-serif") Refuser et libérer le créneau
+
+        //- ── Demandes dont la date est passée ─────────────────────────────
+        if _p > 0
+            div(style="margin-top:32px")
+                h2(style="margin:0;font:700 15.5px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17") Demandes expirées
+                p(style="margin:7px 0 14px;font:400 12.5px/1.6 'Plus Jakarta Sans',sans-serif;color:#8c968f") Leur date est passée : il n'y a plus rien à confirmer. Refusez-les pour libérer définitivement le créneau et retirer la demande de cette liste.
+                div(style="display:flex;flex-direction:column;gap:10px")
+                    each d in demandesPassees
+                        .pb-card(data-pbid=String(d._id) style="background:#fff;border:1px solid #e9ece9;border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;opacity:.75")
+                            div(style="flex:1;min-width:180px")
+                                span(style="font:700 14px/1.2 'Plus Jakarta Sans',sans-serif;color:#1a201d")= ((d.name || '') + ' ' + (d.surname || '')).trim() || 'Client'
+                                div(style="margin-top:5px;font:500 12.5px/1.4 'Plus Jakarta Sans',sans-serif;color:#8c968f;text-transform:capitalize")= joli(d.date) + ' · ' + (d.startTime || '')
+                            .pb-actions(style="display:flex;gap:8px;flex-wrap:wrap")
+                                button.pb-refuse-direct(type="button" style="height:36px;padding:0 14px;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:#c2554b;white-space:nowrap") Libérer le créneau
+
+    script(src="/js/layouts/pending-bookings.js" defer)

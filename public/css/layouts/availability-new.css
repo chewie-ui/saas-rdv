@@ -1,0 +1,52 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   AVAILABILITY-NEW — copie de la maquette (voir availability-new.pug)
+   ─────────────────────────────────────────────────────────────────────────
+   Même parti pris que service-new : l'apparence est inline dans le Pug, ce
+   fichier ne fait QUE ce qu'un attribut style ne peut pas faire.
+
+   Le filet [hidden] est indispensable, pas cosmétique : plusieurs éléments
+   portent à la fois `hidden` et un `display:` inline (panneaux d'onglet,
+   zone des créneaux d'un jour, barre de sélection du calendrier). Une règle
+   d'auteur bat toujours le `[hidden]{display:none}` de la feuille
+   user-agent, quelle que soit la spécificité — sans ce !important, ces
+   éléments resteraient visibles en permanence.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+#avnRoot [hidden] { display: none !important; }
+
+#avnRoot { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+
+/* ── Hover (ceux que la maquette déclare via style-hover) ─────────────────── */
+#avnRoot .avn-time:hover { border-color: #12a06e; }
+#avnRoot .avn-addrange:hover { border-color: #12a06e; }
+#avnRoot .avn-rangedel:hover,
+#avnRoot .avn-congeslotdel:hover { color: #c2554b; }
+#avnRoot .avn-congedel:hover { background: rgba(255, 255, 255, .26); }
+#avnRoot .avn-timeopt:hover { background: #f2f5f3; }
+
+/* ── Focus clavier (absent de la maquette, ajouté pour l'accessibilité) ──── */
+#avnRoot button:focus-visible,
+#avnRoot input:focus-visible {
+    outline: 2px solid #12a06e;
+    outline-offset: 2px;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+/* `!important` obligatoire ici, et ce n'est pas de la paresse : l'apparence
+   étant portée par des attributs `style`, une règle de feuille externe ne
+   peut PAS les battre (un style en ligne l'emporte toujours, quelle que soit
+   la spécificité du sélecteur). Sans ça ces deux blocs sont inertes. */
+
+/* La colonne latérale ne colle plus une fois les colonnes empilées : figer un
+   bloc au milieu du flux vertical ressemble à un bug d'affichage. */
+@media (max-width: 900px) {
+    #avnPanelHoraires > div:last-child { position: static !important; }
+}
+
+/* La maquette réserve 170px fixes au libellé du jour ; sous 520px il ne reste
+   plus rien pour les heures. On laisse la ligne passer sur deux niveaux
+   plutôt que d'écraser les boutons. */
+@media (max-width: 520px) {
+    #avnRoot .avn-daytoggle { width: 100% !important; }
+    #avnRoot .avn-ranges { min-width: 0 !important; }
+}

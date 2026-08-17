@@ -1,0 +1,523 @@
+extends ../../layouts/admin
+
+//- ═══════════════════════════════════════════════════════════════════════════
+    AVAILABILITY-NEW — copie de la maquette Claude Design
+    ───────────────────────────────────────────────────────────────────────────
+    Source : projet « Redesign complet Branshee », Admin.dc.html, écran
+    Disponibilités (lignes 1156-1383) + les 4 modales partagées (783-888) :
+    calendrier de congé, « pour qui », suppression, sélecteur d'heure.
+
+    Comme pour service-new : styles INLINE, valeur pour valeur. Aucune classe
+    ne porte l'apparence — une règle globale de l'app l'écraserait (c'est ce
+    qui a cassé la page Services deux fois). La feuille externe ne gère que
+    :hover, :focus-visible et le filet [hidden].
+
+    Écarts assumés (la maquette est une démo, pas branchée sur le schéma) :
+      - « Horizon de réservation », « Confirmation automatique », « Liste
+        d'attente » et « Surbooking » n'existent NULLE PART dans le backend
+        (ni champ, ni logique). Ils ne sont pas rendus : un interrupteur qui
+        ne commande rien ferait croire à un réglage appliqué.
+      - Le multi-créneaux (« + Créneau »), le battement et le pas des créneaux
+        sont réservés au forfait Pro (utils/planLimits → availability) : la
+        maquette les montre toujours, ici ils sont verrouillés si le forfait
+        ne les couvre pas.
+      - weekdayIndex suit la convention JS : 0 = dimanche … 6 = samedi. La
+        maquette affiche lundi en premier, l'ordre d'affichage est donc
+        recalculé, jamais l'indice stocké.
+    ═══════════════════════════════════════════════════════════════════════════
+
+block links
+    link(rel="stylesheet" href="/css/layouts/availability-new.css")
+
+block content
+    -
+        var ACCENT = '#12a06e';
+        var NOMS = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+        // La maquette liste lundi → dimanche ; l'indice stocké reste JS.
+        var ORDRE = [1, 2, 3, 4, 5, 6, 0];
+        var DOW = ORDRE.map(function (d) {
+            return { d: d, l: NOMS[d].slice(0, 2), l3: NOMS[d].slice(0, 3) };
+        });
+
+        var _sched = (currentCompany && currentCompany.schedule) || [];
+        function _jour(idx) {
+            for (var i = 0; i < _sched.length; i++) { if (_sched[i].weekdayIndex === idx) return _sched[i]; }
+            return { weekdayIndex: idx, dayOff: true, workingHours: [] };
+        }
+        var _jours = ORDRE.map(function (idx) {
+            var j = _jour(idx);
+            var wh = (j.workingHours || []).filter(function (h) { return h && h.start && h.end; });
+            return { idx: idx, nom: NOMS[idx], ferme: !!j.dayOff, plages: wh };
+        });
+
+        var _feat = availFeatures || {};
+        var _indiv = scheduleMode === 'perEmployee';
+
+        // getBookableTeam renvoie { id, _id, firstName, lastName, … } — jamais
+        // `fullName`. On normalise ici une fois pour toutes.
+        var _emps = (employees || []).map(function (e) {
+            var nom = ((e.firstName || '') + ' ' + (e.lastName || '')).trim();
+            return { _id: String(e._id || e.id), nom: nom || 'Sans nom' };
+        });
+
+        // Congés : DaysOff.dates[] → { id, date ISO, libellé, journée entière,
+        // créneaux, employés }. Trié par date.
+        var _conges = ((daysOff && daysOff.dates) || []).slice().sort(function (a, b) {
+            return new Date(a.date) - new Date(b.date);
+        }).map(function (d) {
+            var dt = new Date(d.date);
+            var DOWS = ['Dim.','Lun.','Mar.','Mer.','Jeu.','Ven.','Sam.'];
+            var MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+            var wh = (d.workingHours || []).filter(function (h) { return h && h.start && h.end; });
+            var ids = (d.employees || []).map(function (e) { return String(e._id || e); });
+            var noms = ids.length
+                ? _emps.filter(function (e) { return ids.indexOf(String(e._id)) >= 0; }).map(function (e) { return e.nom; })
+                : ['Tous les employés'];
+            return {
+                id: String(d._id),
+                iso: dt.toISOString().slice(0, 10),
+                libelle: DOWS[dt.getDay()] + ' ' + dt.getDate() + ' ' + MOIS[dt.getMonth()],
+                journeeEntiere: wh.length === 0,
+                creneaux: wh.map(function (h) { return { start: h.start, end: h.end }; }),
+                employes: noms,
+                employeIds: ids,
+            };
+        });
+
+        // ── Statistiques (recalculées côté client à chaque changement) ──
+        function _min(t) { var p = String(t).split(':'); return (Number(p[0]) || 0) * 60 + (Number(p[1]) || 0); }
+        var _ouverts = _jours.filter(function (j) { return !j.ferme; });
+        var _totalMin = _ouverts.reduce(function (t, j) {
+            return t + j.plages.reduce(function (u, p) { return u + Math.max(0, _min(p.end) - _min(p.start)); }, 0);
+        }, 0);
+        var _pas = Number(slotInterval) || 30;
+        var _battement = Number(bufferAfter) || 0;
+        var _bufBefore = Number(bufferBefore) || 0;
+        var _slotMode = slotMode === 'interval' ? 'interval' : 'fixed';
+
+        // ── Délai minimum : valeur brute en minutes + décomposition pour la
+        // saisie libre (on remonte à l'unité la plus lisible : 1440 → 1 jour).
+        var _leadOn = !!(minBookingLeadTime && minBookingLeadTime.enabled);
+        var _lead = _leadOn ? (Number(minBookingLeadTime.minutes) || 0) : 0;
+        var _leadUnit = 'minutes', _leadValue = _lead;
+        if (_lead > 0 && _lead % 1440 === 0) { _leadUnit = 'days'; _leadValue = _lead / 1440; }
+        else if (_lead > 0 && _lead % 60 === 0) { _leadUnit = 'hours'; _leadValue = _lead / 60; }
+        var _leadPresets = [
+            { m: 0, l: 'Aucun' }, { m: 30, l: '30 min' }, { m: 60, l: '1 h' }, { m: 120, l: '2 h' },
+            { m: 240, l: '4 h' }, { m: 1440, l: '1 j' }, { m: 2880, l: '2 j' }, { m: 10080, l: '7 j' },
+        ];
+
+        // ── Règles de réservation ──
+        var _rules = bookingRules || {};
+        var _horizon = Number(_rules.bookingHorizonDays) || 0;
+        var _autoConfirm = _rules.autoConfirm !== false;
+        var _waitlist = _rules.waitlistEnabled === true;
+        var _overbooking = _rules.allowOverbooking === true;
+        var _horizons = [
+            { v: 0, l: 'Sans limite' }, { v: 15, l: '15 jours' }, { v: 30, l: '30 jours' },
+            { v: 60, l: '60 jours' }, { v: 180, l: '6 mois' },
+        ];
+
+        // ── Regroupement des rendez-vous ──
+        var _sg = smartGrouping || {};
+        var _sgOn = _sg.enabled === true;
+        var _sgWindow = Number(_sg.windowHours) || 3;
+        var _sgDays = (_sg.weekdays || []).map(Number);
+
+        // ── Téléphone obligatoire (porté par le COMPTE, pas l'établissement) ──
+        // Actif tant qu'il n'a pas été explicitement désactivé.
+        var _phoneRequired = !calendarSettings || calendarSettings.phoneRequired !== false;
+
+    #avnRoot(style="min-width:0")
+        //- ── Onglets ──────────────────────────────────────────────────────
+        div(style="display:flex;gap:0;border-bottom:1px solid #e6eae7;margin-bottom:22px")
+            - var _onglets = [{ k:'horaires', l:'Horaires' }, { k:'regles', l:'Règles de réservation' }, { k:'creneaux', l:'Créneaux' }]
+            each t, ti in _onglets
+                button.avn-tab(type="button" data-avntab=t.k style=`position:relative;padding:13px 0;margin-right:28px;border:0;background:none;cursor:pointer;font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:${ti === 0 ? ACCENT : '#8c968f'}`)
+                    = t.l
+                    span.avn-tabbar(style=`position:absolute;left:0;right:0;bottom:-1px;height:2px;background:${ti === 0 ? ACCENT : 'transparent'}`)
+
+        //- ── Statistiques ─────────────────────────────────────────────────
+        div(style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px")
+            div(style="background:#fff;border:1px solid #e9ece9;border-radius:14px;padding:16px 18px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                div#avnStatDays(style="font:800 22px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em;color:#141a17")= _ouverts.length
+                div(style="margin-top:7px;font:500 11.5px/1.3 'Plus Jakarta Sans',sans-serif;color:#8c968f") jours ouverts
+            div(style="background:#fff;border:1px solid #e9ece9;border-radius:14px;padding:16px 18px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                div#avnStatHours(style="font:800 22px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em;color:#141a17")= Math.round(_totalMin / 60) + ' h'
+                div(style="margin-top:7px;font:500 11.5px/1.3 'Plus Jakarta Sans',sans-serif;color:#8c968f") par semaine
+            div(style="background:#fff;border:1px solid #e9ece9;border-radius:14px;padding:16px 18px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                div#avnStatSlots(style="font:800 22px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em;color:#141a17")= Math.floor(_totalMin / _pas)
+                div(style="margin-top:7px;font:500 11.5px/1.3 'Plus Jakarta Sans',sans-serif;color:#8c968f") créneaux théoriques
+            div(style="background:#fff;border:1px solid #e9ece9;border-radius:14px;padding:16px 18px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                div#avnStatConges(style="font:800 22px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em;color:#141a17")= _conges.length
+                div(style="margin-top:7px;font:500 11.5px/1.3 'Plus Jakarta Sans',sans-serif;color:#8c968f") congés planifiés
+
+        //- ═══ ONGLET HORAIRES ═══
+        #avnPanelHoraires(data-avnpanel="horaires" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;align-items:start")
+            div(style="min-width:0;display:flex;flex-direction:column;gap:14px")
+                div(style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px")
+                    div(style="display:inline-flex;padding:5px;border-radius:11px;border:1px solid #e6eae7;background:#fff")
+                        button#avnModeShared(type="button" data-avnmode="shared" style=`height:36px;padding:0 16px;border:0;border-radius:8px;cursor:pointer;white-space:nowrap;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;background:${!_indiv ? ACCENT : 'transparent'};color:${!_indiv ? '#fff' : '#5f6b64'}`) Horaire commun
+                        button#avnModePer(type="button" data-avnmode="perEmployee" style=`height:36px;padding:0 16px;border:0;border-radius:8px;cursor:pointer;white-space:nowrap;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;background:${_indiv ? ACCENT : 'transparent'};color:${_indiv ? '#fff' : '#5f6b64'}`) Individuel par employé
+                    span(style="font:500 12px/1 'Plus Jakarta Sans',sans-serif;color:#98a29b;white-space:nowrap")= (currentCompany && currentCompany.city ? currentCompany.city : 'Bruxelles') + ' · GMT+1'
+
+                #avnEmpRow(hidden=!_indiv style="display:flex;flex-wrap:wrap;gap:8px")
+                    each e in _emps
+                        - var _on = String(e._id) === String(selectedEmployeeId)
+                        button.avn-emp(type="button" data-avnemp=String(e._id) style=`padding:10px 15px;border-radius:11px;cursor:pointer;white-space:nowrap;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;border:1px solid ${_on ? ACCENT : '#e0e3e5'};background:${_on ? '#082a1c' : '#fff'};color:${_on ? '#fff' : '#4d5560'}`)= e.nom
+
+                //- Liste des 7 jours
+                #avnDays(style="background:#fff;border:1px solid #e9ece9;border-radius:16px;padding:4px 20px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                    each j, ji in _jours
+                        .avn-day(data-avnday=j.idx style=`display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:15px 0;border-bottom:1px solid ${ji === _jours.length - 1 ? 'transparent' : '#f1f3f1'}`)
+                            button.avn-daytoggle(type="button" style="display:flex;align-items:center;gap:13px;width:170px;flex:none;border:0;background:none;cursor:pointer;text-align:left;padding:0")
+                                span.avn-sw(style=`width:44px;height:26px;flex:none;border-radius:999px;padding:3px;background:${!j.ferme ? ACCENT : '#d6dade'};display:flex;transition:background .18s`)
+                                    span.avn-sw__knob(style=`width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(${!j.ferme ? '18px' : '0px'});transition:transform .18s`)
+                                span.avn-dayname(style=`font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:${!j.ferme ? '#1a201d' : '#98a29b'}`)= j.nom
+                            .avn-ranges(hidden=j.ferme style="flex:1;min-width:200px;display:flex;align-items:center;gap:10px;flex-wrap:wrap")
+                                each p, pi in j.plages
+                                    .avn-range(style="display:flex;align-items:center;gap:8px")
+                                        button.avn-time(type="button" data-avnfield="start" style="height:40px;padding:0 14px;border-radius:11px;border:1px solid #e6eae7;background:#f9fbfa;cursor:pointer;display:flex;align-items:center;font:600 13px/1 ui-monospace,'Plus Jakarta Sans',monospace;color:#1a201d")= p.start
+                                        span(style="color:#c0c8c2") —
+                                        button.avn-time(type="button" data-avnfield="end" style="height:40px;padding:0 14px;border-radius:11px;border:1px solid #e6eae7;background:#f9fbfa;cursor:pointer;display:flex;align-items:center;font:600 13px/1 ui-monospace,'Plus Jakarta Sans',monospace;color:#1a201d")= p.end
+                                        if pi > 0
+                                            button.avn-rangedel(type="button" style="width:26px;height:26px;border:0;border-radius:8px;background:none;cursor:pointer;color:#b4bdb7;font:400 13px/1 'Plus Jakarta Sans',sans-serif") ✕
+                                if _feat.ranges
+                                    button.avn-addrange(type="button" style="height:40px;padding:0 13px;border-radius:11px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#0d7a54;white-space:nowrap") + Créneau
+                            span.avn-closed(hidden=!j.ferme style="flex:1;font:500 13px/1 'Plus Jakarta Sans',sans-serif;color:#c0c8c2") Fermé
+
+                //- Congés & fermetures
+                div(style="background:#fff;border:1px solid #e9ece9;border-radius:16px;padding:22px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                    div(style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px")
+                        div
+                            h3(style="margin:0;font:700 15.5px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17") Congés &amp; fermetures
+                            p(style="margin:7px 0 0;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8c968f") Vos clients ne pourront pas réserver sur ces périodes.
+                        button.avn-opencal(type="button" style="height:40px;padding:0 15px;border-radius:11px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#0d7a54;white-space:nowrap") + Ajouter
+                    #avnCongesGrid(style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px")
+                        each c in _conges
+                            .avn-conge(data-avnconge=c.id style="border:1px solid #e9ece9;border-radius:14px;overflow:hidden;background:#fff")
+                                div(style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#0d5f43")
+                                    span(style="font:700 13px/1.2 'Plus Jakarta Sans',sans-serif;color:#fff;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap")= c.libelle
+                                    button.avn-congedel(type="button" data-avnlabel=c.libelle data-avnwho=c.employes.join(', ') style="width:28px;height:28px;flex:none;border-radius:8px;border:0;background:rgba(255,255,255,.14);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center")
+                                        svg(width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                            path(d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6")
+                                div(style="padding:14px")
+                                    span.avn-congefull(hidden=!c.journeeEntiere style="display:inline-block;padding:7px 12px;border-radius:999px;background:#e9f7f0;font:700 11.5px/1 'Plus Jakarta Sans',sans-serif;color:#0d7a54") Journée entière
+                                    .avn-congeslots
+                                        each s in c.creneaux
+                                            .avn-congeslot(style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap")
+                                                button.avn-time(type="button" data-avnfield="start" style="height:34px;padding:0 11px;border-radius:9px;border:1px solid #e6eae7;background:#f9fbfa;cursor:pointer;font:600 12px/1 ui-monospace,monospace;color:#1a201d")= s.start
+                                                span(style="color:#c0c8c2") —
+                                                button.avn-time(type="button" data-avnfield="end" style="height:34px;padding:0 11px;border-radius:9px;border:1px solid #e6eae7;background:#f9fbfa;cursor:pointer;font:600 12px/1 ui-monospace,monospace;color:#1a201d")= s.end
+                                                button.avn-congeslotdel(type="button" style="width:26px;height:26px;border:0;border-radius:8px;background:none;cursor:pointer;color:#b4bdb7;font:400 13px/1 'Plus Jakarta Sans',sans-serif") ✕
+                                    div(style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px")
+                                        each n in c.employes
+                                            span(style="padding:5px 10px;border-radius:999px;border:1px solid #cfe8dd;font:600 11px/1 'Plus Jakarta Sans',sans-serif;color:#0d7a54")= n
+                                    button.avn-congeaddslot(type="button" style="margin-top:12px;width:100%;height:36px;border-radius:10px;border:1px dashed #cfdad3;background:#fbfcfb;cursor:pointer;font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:#0d7a54") + Ajouter un créneau
+                        button.avn-opencal(type="button" style="border:1.5px dashed #cfdad3;background:#fbfcfb;border-radius:14px;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;color:#0d7a54;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif")
+                            span(style="width:34px;height:34px;border-radius:50%;background:#12a06e;color:#fff;display:flex;align-items:center;justify-content:center;font:400 19px/1 'Plus Jakarta Sans',sans-serif") +
+                            | Ajouter un congé
+
+            //- Colonne latérale
+            div(style="position:sticky;top:96px;min-width:0;display:flex;flex-direction:column;gap:14px")
+                div(style="background:#fdf9ef;border:1px solid #f0e4cd;border-radius:16px;padding:18px")
+                    div(style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;color:#b5843f") MODE ACTUEL
+                    p#avnModeNote(style="margin:11px 0 0;font:500 13px/1.6 'Plus Jakarta Sans',sans-serif;color:#7d6132")= _indiv ? "Horaire individuel : chaque employé a ses propres jours et heures. Sélectionnez un membre au-dessus pour modifier son planning." : "Horaire commun à tous les collaborateurs. Pour définir un horaire différent par employé, passez en mode individuel."
+                div(style="background:#fff;border:1px solid #e9ece9;border-radius:16px;padding:22px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                    div(style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;color:#98a29b")
+                        | CRÉNEAUX GÉNÉRÉS ·&nbsp;
+                        span#avnPreviewDay= _ouverts.length ? _ouverts[0].nom : '—'
+                    p#avnPreviewHint(style="margin:10px 0 14px;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8c968f")
+                    #avnPreviewSlots(style="display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:7px")
+
+        //- ═══ ONGLET RÈGLES DE RÉSERVATION ═══
+        //- Contient TOUT ce que servait l'ancienne page (regroupement, délai
+        //- avec saisie libre, téléphone obligatoire) plus les quatre règles
+        //- ajoutées (horizon, confirmation auto, liste d'attente, surbooking).
+        #avnPanelRegles(data-avnpanel="regles" hidden style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;align-items:start")
+
+            div(style="display:flex;flex-direction:column;gap:14px;min-width:0")
+
+                //- ── Délai minimum ────────────────────────────────────────
+                div(style="background:#fff;border:1px solid #e9ece9;border-radius:16px;padding:24px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                    div(style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px")
+                        div
+                            h3(style="margin:0;font:700 15.5px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17") Délai minimum avant réservation
+                            p(style="margin:7px 0 0;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8c968f") Empêche un client de réserver un créneau trop proche — pour vous laisser le temps de vous préparer.
+                        button.avn-flip#avnLeadOn(type="button" data-avnon=_leadOn style="border:0;background:none;cursor:pointer;padding:0;flex:none")
+                            span.avn-sw(style=`width:44px;height:26px;border-radius:999px;padding:3px;background:${_leadOn ? ACCENT : '#d6dade'};display:flex`)
+                                span.avn-sw__knob(style=`width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(${_leadOn ? '18px' : '0px'});transition:transform .18s`)
+                    #avnLeadRow(hidden=!_leadOn style="margin-top:16px")
+                        div(style="font:600 11.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.04em;color:#5f6b64;margin-bottom:10px") AUCUNE RÉSERVATION MOINS DE
+                        #avnLeadPresets(style="display:flex;flex-wrap:wrap;gap:8px")
+                            each p in _leadPresets
+                                - var _on = _lead === p.m
+                                button.avn-lead(type="button" data-avnminutes=p.m style=`padding:10px 15px;border-radius:11px;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;border:1px solid ${_on ? ACCENT : '#e0e3e5'};background:${_on ? '#e9f7f0' : '#fff'};color:${_on ? '#0d7a54' : '#4d5560'}`)= p.l
+                        //- Saisie libre : les puces ne couvrent pas tout, et un
+                        //- pro peut vouloir « 3 h » ou « 10 jours » précisément.
+                        div(style="margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap")
+                            span(style="font:500 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#8c968f") ou personnalisé :
+                            input#avnLeadValue(type="number" min="0" step="1" value=_leadValue style="width:84px;height:40px;padding:0 12px;border:1px solid #e0e3e5;border-radius:11px;background:#fff;outline:none;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+                            select#avnLeadUnit(style="height:40px;padding:0 12px;border:1px solid #e0e3e5;border-radius:11px;background:#fff;outline:none;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+                                option(value="minutes" selected=(_leadUnit === 'minutes')) minutes
+                                option(value="hours" selected=(_leadUnit === 'hours')) heures
+                                option(value="days" selected=(_leadUnit === 'days')) jours
+                            span(style="font:500 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#8c968f") avant le créneau
+
+                //- ── Horizon de réservation ───────────────────────────────
+                div(style="background:#fff;border:1px solid #e9ece9;border-radius:16px;padding:24px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                    h3(style="margin:0;font:700 15.5px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17") Horizon de réservation
+                    p(style="margin:7px 0 14px;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8c968f") Jusqu'où vos clients peuvent réserver à l'avance.
+                    #avnHorizons(style="display:flex;flex-wrap:wrap;gap:8px")
+                        each h in _horizons
+                            - var _on = _horizon === h.v
+                            button.avn-horizon(type="button" data-avndays=h.v style=`padding:10px 15px;border-radius:11px;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;border:1px solid ${_on ? ACCENT : '#e0e3e5'};background:${_on ? '#e9f7f0' : '#fff'};color:${_on ? '#0d7a54' : '#4d5560'}`)= h.l
+                    div(style="margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap")
+                        span(style="font:500 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#8c968f") ou personnalisé :
+                        input#avnHorizonValue(type="number" min="0" max="730" step="1" value=_horizon style="width:84px;height:40px;padding:0 12px;border:1px solid #e0e3e5;border-radius:11px;background:#fff;outline:none;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+                        span(style="font:500 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#8c968f") jours (0 = sans limite)
+
+                //- ── Regroupement des rendez-vous ─────────────────────────
+                div(style="background:#fff;border:1px solid #e9ece9;border-radius:16px;padding:24px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                    div(style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px")
+                        div
+                            h3(style="margin:0;font:700 15.5px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17") Regroupement des rendez-vous
+                            p(style="margin:7px 0 0;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8c968f") Idéal quand vous démarrez avec peu de clients : met en avant les créneaux proches de vos RDV déjà confirmés. Les autres restent réservables, juste repliés sous « Voir plus d'horaires ».
+                        button.avn-flip#avnSgOn(type="button" data-avnon=_sgOn style="border:0;background:none;cursor:pointer;padding:0;flex:none")
+                            span.avn-sw(style=`width:44px;height:26px;border-radius:999px;padding:3px;background:${_sgOn ? ACCENT : '#d6dade'};display:flex`)
+                                span.avn-sw__knob(style=`width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(${_sgOn ? '18px' : '0px'});transition:transform .18s`)
+                    #avnSgRow(hidden=!_sgOn style="margin-top:16px")
+                        div(style="font:600 11.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.04em;color:#5f6b64;margin-bottom:10px") REGROUPER LES CRÉNEAUX DANS UNE FENÊTRE DE
+                        #avnSgWindow(style="display:flex;flex-wrap:wrap;gap:8px")
+                            each h in [1, 2, 3, 4, 6]
+                                - var _on = _sgWindow === h
+                                button.avn-sgwin(type="button" data-avnhours=h style=`padding:10px 15px;border-radius:11px;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;border:1px solid ${_on ? ACCENT : '#e0e3e5'};background:${_on ? '#e9f7f0' : '#fff'};color:${_on ? '#0d7a54' : '#4d5560'}`)= h + 'h'
+                        div(style="margin:16px 0 10px;font:600 11.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.04em;color:#5f6b64")
+                            | UNIQUEMENT CES JOURS&nbsp;
+                            span(style="font-weight:500;letter-spacing:0;color:#98a29b") (aucun coché = tous les jours)
+                        #avnSgDays(style="display:flex;flex-wrap:wrap;gap:8px")
+                            each dd in DOW
+                                - var _on = _sgDays.indexOf(dd.d) >= 0
+                                button.avn-sgday(type="button" data-avnday=dd.d style=`padding:10px 15px;border-radius:11px;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;border:1px solid ${_on ? ACCENT : '#e0e3e5'};background:${_on ? '#e9f7f0' : '#fff'};color:${_on ? '#0d7a54' : '#4d5560'}`)= dd.l3
+
+            div(style="display:flex;flex-direction:column;gap:14px;min-width:0")
+
+                //- ── Interrupteurs simples ────────────────────────────────
+                div(style="background:#fff;border:1px solid #e9ece9;border-radius:16px;padding:24px;box-shadow:0 1px 2px rgba(16,40,30,.03);display:flex;flex-direction:column;gap:18px")
+
+                    div(style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px")
+                        div
+                            h3(style="margin:0;font:700 15.5px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17") Confirmation automatique
+                            p(style="margin:7px 0 0;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8c968f") Sinon, chaque demande attend votre validation.
+                        button.avn-flip#avnAutoConfirm(type="button" data-avnon=_autoConfirm style="border:0;background:none;cursor:pointer;padding:0;flex:none")
+                            span.avn-sw(style=`width:44px;height:26px;border-radius:999px;padding:3px;background:${_autoConfirm ? ACCENT : '#d6dade'};display:flex`)
+                                span.avn-sw__knob(style=`width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(${_autoConfirm ? '18px' : '0px'});transition:transform .18s`)
+                    p#avnAutoWarn(hidden=_autoConfirm style="margin:0;padding:12px 14px;border-radius:11px;background:#f7faf8;border:1px solid #e6eae7;font:600 12px/1.5 'Plus Jakarta Sans',sans-serif;color:#0d7a54")
+                        | Les demandes arriveront « en attente » et bloqueront déjà le créneau. Vous les acceptez ou les refusez depuis&nbsp;
+                        a(href="/demandes" style="color:#0d7a54;text-decoration:underline") Demandes
+                        | , qui apparaît dans le menu dès qu'il y en a une.
+
+                    div(style="height:1px;background:#f1f3f1")
+
+                    div(style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px")
+                        div
+                            h3(style="margin:0;font:700 15.5px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17") Liste d'attente
+                            p(style="margin:7px 0 0;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8c968f") Prévenir automatiquement en cas de désistement.
+                        button.avn-flip#avnWaitlist(type="button" data-avnon=_waitlist style="border:0;background:none;cursor:pointer;padding:0;flex:none")
+                            span.avn-sw(style=`width:44px;height:26px;border-radius:999px;padding:3px;background:${_waitlist ? ACCENT : '#d6dade'};display:flex`)
+                                span.avn-sw__knob(style=`width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(${_waitlist ? '18px' : '0px'});transition:transform .18s`)
+                    p#avnWaitWarn(hidden=!_waitlist style="margin:0;padding:12px 14px;border-radius:11px;background:#fdf9ef;border:1px solid #f0e4cd;font:600 12px/1.5 'Plus Jakarta Sans',sans-serif;color:#8a6320") L'inscription côté client et l'e-mail de désistement ne sont pas encore branchés : ce réglage est enregistré mais sans effet pour l'instant.
+
+                    div(style="height:1px;background:#f1f3f1")
+
+                    div(style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px")
+                        div
+                            h3(style="margin:0;font:700 15.5px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17") Autoriser le surbooking
+                            p(style="margin:7px 0 0;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8c968f") Deux rendez-vous sur le même créneau, à vos risques.
+                        button.avn-flip#avnOverbooking(type="button" data-avnon=_overbooking style="border:0;background:none;cursor:pointer;padding:0;flex:none")
+                            span.avn-sw(style=`width:44px;height:26px;border-radius:999px;padding:3px;background:${_overbooking ? ACCENT : '#d6dade'};display:flex`)
+                                span.avn-sw__knob(style=`width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(${_overbooking ? '18px' : '0px'});transition:transform .18s`)
+
+                    div(style="height:1px;background:#f1f3f1")
+
+                    div(style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px")
+                        div
+                            h3(style="margin:0;font:700 15.5px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17") Téléphone obligatoire
+                            p(style="margin:7px 0 0;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8c968f") Le client doit indiquer un numéro pour réserver en ligne. Sans lui, impossible de le joindre en cas d'imprévu — et aucun rappel SMS ou WhatsApp ne peut partir.
+                        button.avn-flip#avnPhoneRequired(type="button" data-avnon=_phoneRequired style="border:0;background:none;cursor:pointer;padding:0;flex:none")
+                            span.avn-sw(style=`width:44px;height:26px;border-radius:999px;padding:3px;background:${_phoneRequired ? ACCENT : '#d6dade'};display:flex`)
+                                span.avn-sw__knob(style=`width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(${_phoneRequired ? '18px' : '0px'});transition:transform .18s`)
+
+                //- ── Ce que font ces règles ───────────────────────────────
+                div(style="background:#fff;border:1px solid #e9ece9;border-radius:16px;padding:24px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                    div(style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;color:#98a29b") CE QUE VERRA VOTRE CLIENT
+                    p#avnRulesEcho(style="margin:12px 0 0;font:400 13px/1.7 'Plus Jakarta Sans',sans-serif;color:#5f6b64")
+
+        //- ═══ ONGLET CRÉNEAUX ═══
+        #avnPanelCreneaux(data-avnpanel="creneaux" hidden style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;align-items:start")
+
+            div(style="display:flex;flex-direction:column;gap:14px;min-width:0")
+
+                //- ── Durée globale des créneaux ───────────────────────────
+                div(style="background:#fff;border:1px solid #e9ece9;border-radius:16px;padding:24px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                    h3(style="margin:0;font:700 15.5px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17") Durée globale des créneaux
+                    p(style="margin:7px 0 14px;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8c968f") Durée par défaut des créneaux proposés en ligne.
+                    #avnSlotTimes(style=`display:flex;flex-wrap:wrap;gap:8px;${_feat.slotDuration ? '' : 'opacity:.4;pointer-events:none'}`)
+                        each v in (timeSlot || [])
+                            - var _on = String(currentSlotTime) === String(v)
+                            button.avn-slottime(type="button" data-avnslottime=v style=`padding:10px 15px;border-radius:11px;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;border:1px solid ${_on ? ACCENT : '#e0e3e5'};background:${_on ? '#e9f7f0' : '#fff'};color:${_on ? '#0d7a54' : '#4d5560'}`)= v + 'm'
+                    if !_feat.slotDuration
+                        div(style="margin-top:14px;display:flex;align-items:flex-start;gap:12px;padding:16px;border-radius:12px;background:#fdf9ef;border:1px solid #f0e4cd")
+                            span(style="width:34px;height:34px;flex:none;border-radius:10px;background:#e9f7f0;color:#0d7a54;display:flex;align-items:center;justify-content:center")
+                                svg(width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                    rect(x="3" y="11" width="18" height="11" rx="2")
+                                    path(d="M7 11V7a5 5 0 0 1 10 0v4")
+                            div
+                                strong(style="display:block;font:700 13px/1.3 'Plus Jakarta Sans',sans-serif;color:#141a17") Durée des créneaux personnalisée
+                                span(style="display:block;margin-top:5px;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8a6320") Choisissez librement la durée de vos créneaux avec le forfait Pro.
+                                a(href="/subscription" style="display:inline-block;margin-top:10px;height:34px;line-height:34px;padding:0 14px;border-radius:10px;border:1px solid #e6eae7;background:#fff;font:600 12.5px/34px 'Plus Jakarta Sans',sans-serif;color:#0d7a54;text-decoration:none") Passer au Pro →
+                    if hasServices && _feat.slotDuration
+                        p(style="margin:14px 0 0;font:400 12px/1.5 'Plus Jakarta Sans',sans-serif;color:#98a29b") Vos prestations ont chacune leur propre durée : c'est elle qui prime. Cette valeur ne sert que lorsqu'aucune prestation n'est choisie.
+
+                //- ── Temps tampon ─────────────────────────────────────────
+                div(style="background:#fff;border:1px solid #e9ece9;border-radius:16px;padding:24px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                    h3(style="margin:0;font:700 15.5px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17") Temps tampon entre les réservations
+                    p(style="margin:7px 0 0;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8c968f") Bloque automatiquement ce temps avant et/ou après chaque RDV pour vous laisser le temps de vous organiser. Réglez chaque sens indépendamment.
+                    if !_feat.buffer
+                        p(style="margin:12px 0 0;padding:11px 13px;border-radius:11px;background:#fdf9ef;border:1px solid #f0e4cd;font:600 12px/1.5 'Plus Jakarta Sans',sans-serif;color:#8a6320") Réglage inclus à partir du forfait Pro.
+                    div(style=`margin-top:18px;display:flex;flex-direction:column;gap:20px;${_feat.buffer ? '' : 'opacity:.4;pointer-events:none'}`)
+                        div
+                            div(style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d;margin-bottom:10px") Avant le rendez-vous
+                            input#avnBufBefore(type="range" min="0" max="120" step="5" value=_bufBefore style="width:100%;accent-color:#12a06e")
+                            div(style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;font:500 11.5px/1 'Plus Jakarta Sans',sans-serif;color:#98a29b")
+                                span 0
+                                span#avnBufBeforeVal(style="font:700 12px/1 'Plus Jakarta Sans',sans-serif;color:#0d7a54")= _bufBefore + ' min'
+                                span 120
+                        div
+                            div(style="font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d;margin-bottom:10px") Après le rendez-vous
+                            input#avnBufAfter(type="range" min="0" max="120" step="5" value=_battement style="width:100%;accent-color:#12a06e")
+                            div(style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;font:500 11.5px/1 'Plus Jakarta Sans',sans-serif;color:#98a29b")
+                                span 0
+                                span#avnBufAfterVal(style="font:700 12px/1 'Plus Jakarta Sans',sans-serif;color:#0d7a54")= _battement + ' min'
+                                span 120
+
+                //- ── Mode de génération ───────────────────────────────────
+                div(style="background:#fff;border:1px solid #e9ece9;border-radius:16px;padding:24px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                    h3(style="margin:0;font:700 15.5px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17") Mode de génération des créneaux
+                    p(style="margin:7px 0 14px;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8c968f") Comment les heures proposées à vos clients sont calculées.
+                    div(style="display:flex;flex-direction:column;gap:10px")
+                        button#avnSlotModeFixed(type="button" data-avnslotmode="fixed" style=`width:100%;text-align:left;padding:15px 16px;border-radius:12px;cursor:pointer;border:1px solid ${_slotMode !== 'interval' ? ACCENT : '#e6eae7'};background:${_slotMode !== 'interval' ? '#e9f7f0' : '#f9fbfa'}`)
+                            div(style=`font:700 13.5px/1.2 'Plus Jakarta Sans',sans-serif;color:${_slotMode !== 'interval' ? '#0c5e42' : '#1a201d'}`) Sur la durée de la prestation
+                            div(style=`margin-top:6px;font:400 12.5px/1.4 'Plus Jakarta Sans',sans-serif;color:${_slotMode !== 'interval' ? '#3f8468' : '#8c968f'}`) Un créneau démarre quand le précédent finit (9h00, 9h30, 10h00…).
+                        button#avnSlotModeInterval(type="button" data-avnslotmode="interval" style=`width:100%;text-align:left;padding:15px 16px;border-radius:12px;cursor:pointer;border:1px solid ${_slotMode === 'interval' ? ACCENT : '#e6eae7'};background:${_slotMode === 'interval' ? '#e9f7f0' : '#f9fbfa'}`)
+                            div(style=`font:700 13.5px/1.2 'Plus Jakarta Sans',sans-serif;color:${_slotMode === 'interval' ? '#0c5e42' : '#1a201d'}`) À intervalle fixe
+                            div(style=`margin-top:6px;font:400 12.5px/1.4 'Plus Jakarta Sans',sans-serif;color:${_slotMode === 'interval' ? '#3f8468' : '#8c968f'}`) Une heure proposée tous les X minutes, quelle que soit la durée (9h00, 9h10, 9h20…).
+                    #avnIntervalRow(hidden=(_slotMode !== 'interval') style="margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap")
+                        span(style="font:500 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#8c968f") Proposer une heure toutes les
+                        input#avnSlotInterval(type="number" min="5" max="120" step="5" value=_pas style="width:84px;height:40px;padding:0 12px;border:1px solid #e0e3e5;border-radius:11px;background:#fff;outline:none;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+                        span(style="font:500 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#8c968f") minutes
+
+            //- ── Aperçu ───────────────────────────────────────────────────
+            div(style="background:#fff;border:1px solid #e9ece9;border-radius:16px;padding:24px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                div(style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;color:#98a29b")
+                    | RÉSULTAT ·&nbsp;
+                    span#avnPreviewDay2= _ouverts.length ? _ouverts[0].nom : '—'
+                p#avnPreviewHint2(style="margin:10px 0 16px;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8c968f")
+                #avnPreviewSlots2(style="display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:7px")
+
+        //- ── Pied : Annuler / Enregistrer ─────────────────────────────────
+        div(style="margin-top:20px;display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap")
+            span#avnDirty(hidden style="margin-right:auto;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#b5843f") Modifications non enregistrées
+            button#avnCancel(type="button" style="height:46px;padding:0 18px;border-radius:12px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d") Annuler
+            button#avnSave(type="button" style="height:46px;padding:0 22px;border-radius:12px;border:0;background:#12a06e;color:#fff;cursor:pointer;font:700 13.5px/1 'Plus Jakarta Sans',sans-serif;box-shadow:0 2px 8px rgba(18,160,110,.28)") Enregistrer
+
+        //- ═══ MODALE : CALENDRIER DE CONGÉ ═══
+        .avn-overlay#avnCalOv(hidden style="position:fixed;inset:0;z-index:62;background:rgba(8,26,18,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:24px")
+            div(style="width:100%;max-width:400px;background:#fff;border-radius:22px;padding:18px;box-shadow:0 40px 80px -30px rgba(8,26,18,.55)")
+                div(style="display:flex;align-items:center;gap:8px;margin-bottom:16px")
+                    button#avnCalPrev(type="button" style="width:34px;height:34px;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;color:#5f6b64;font:400 14px/1 'Plus Jakarta Sans',sans-serif") ‹
+                    span#avnCalLabel(style="flex:1;text-align:center;font:700 15px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17")
+                    button#avnCalNext(type="button" style="width:34px;height:34px;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;color:#5f6b64;font:400 14px/1 'Plus Jakarta Sans',sans-serif") ›
+                    button.avn-x(type="button" data-avnclose style="width:34px;height:34px;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;color:#5f6b64;font:400 14px/1 'Plus Jakarta Sans',sans-serif") ✕
+                div(style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px")
+                    each d in ['DIM','LUN','MAR','MER','JEU','VEN','SAM']
+                        span(style="text-align:center;font:700 10px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#98a29b;padding:6px 0")= d
+                #avnCalGrid(style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px")
+                p(style="margin:14px 2px 0;font:500 11.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#98a29b") Cliquez les jours à bloquer. Un point vert signale un congé déjà enregistré.
+                #avnCalBar(hidden style="margin-top:14px;display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:999px;background:#12a06e")
+                    span#avnCalCount(style="flex:1;font:700 13px/1 'Plus Jakarta Sans',sans-serif;color:#fff")
+                    button#avnCalClear(type="button" style="width:26px;height:26px;border-radius:50%;border:0;background:rgba(255,255,255,.2);color:#fff;cursor:pointer;font:400 12px/1 'Plus Jakarta Sans',sans-serif") ✕
+                    button#avnCalNextStep(type="button" style="height:32px;padding:0 14px;border-radius:999px;border:0;background:#fff;color:#0c5e42;cursor:pointer;font:700 12.5px/1 'Plus Jakarta Sans',sans-serif;white-space:nowrap") Suivant
+
+        //- ═══ MODALE : POUR QUI ═══
+        .avn-overlay#avnWhoOv(hidden style="position:fixed;inset:0;z-index:63;background:rgba(8,26,18,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:24px")
+            div(style="width:100%;max-width:440px;background:#fff;border-radius:20px;box-shadow:0 40px 80px -30px rgba(8,26,18,.55)")
+                div(style="padding:24px 24px 0")
+                    h2#avnWhoTitle(style="margin:0;font:800 19px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17")
+                    div(style="margin-top:18px;display:flex;flex-direction:column;gap:9px")
+                        button.avn-whoopt(type="button" data-avnwho="all" style=`display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px 15px;border-radius:12px;cursor:pointer;border:1.5px solid ${ACCENT};background:#e9f7f0;font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#0c5e42`)
+                            span(style=`width:18px;height:18px;flex:none;border-radius:50%;border:1.5px solid ${ACCENT};display:flex;align-items:center;justify-content:center`)
+                                span.avn-dot(style=`width:8px;height:8px;border-radius:50%;background:${ACCENT}`)
+                            | Tous les employés
+                        button.avn-whoopt(type="button" data-avnwho="some" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px 15px;border-radius:12px;cursor:pointer;border:1.5px solid #e6eae7;background:#fff;font:600 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+                            span(style="width:18px;height:18px;flex:none;border-radius:50%;border:1.5px solid #cfd6d1;display:flex;align-items:center;justify-content:center")
+                                span.avn-dot(style="width:8px;height:8px;border-radius:50%;background:transparent")
+                            | Sélectionner des employés
+                        #avnWhoList(hidden style="display:flex;flex-direction:column;gap:7px;padding-left:6px")
+                            each e in _emps
+                                button.avn-whoemp(type="button" data-avnemp=String(e._id) style="display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:12px 14px;border:0;border-radius:11px;cursor:pointer;background:#f7faf8;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+                                    span.avn-check(style="width:18px;height:18px;flex:none;border-radius:6px;border:1.5px solid #d6dade;background:#fff;color:#fff;display:flex;align-items:center;justify-content:center;font:700 10px/1 'Plus Jakarta Sans',sans-serif")
+                                    = e.nom
+                div(style="margin-top:22px;padding:16px 24px;border-top:1px solid #eef0ee;display:flex;justify-content:space-between;gap:10px")
+                    button#avnWhoBack(type="button" style="height:42px;padding:0 16px;border-radius:11px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#5f6b64") ← Dates
+                    div(style="display:flex;gap:10px")
+                        button.avn-btn-ghost(type="button" data-avnclose style="height:42px;padding:0 16px;border-radius:11px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d") Annuler
+                        button#avnWhoConfirm(type="button" style="height:42px;padding:0 20px;border-radius:11px;border:0;background:#12a06e;color:#fff;cursor:pointer;font:700 12.5px/1 'Plus Jakarta Sans',sans-serif") Confirmer
+
+        //- ═══ MODALE : SUPPRESSION DE CONGÉ ═══
+        .avn-overlay#avnDelOv(hidden style="position:fixed;inset:0;z-index:64;background:rgba(8,26,18,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:24px")
+            div(style="width:100%;max-width:400px;background:#fff;border-radius:20px;padding:26px;box-shadow:0 40px 80px -30px rgba(8,26,18,.55)")
+                span(style="width:44px;height:44px;border-radius:14px;background:#fbecea;color:#c2554b;display:flex;align-items:center;justify-content:center")
+                    svg(width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                        path(d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6")
+                h2(style="margin:18px 0 0;font:800 19px/1.25 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17") Supprimer ce jour de congé ?
+                p(style="margin:11px 0 0;font:400 13.5px/1.6 'Plus Jakarta Sans',sans-serif;color:#8c968f")
+                    strong#avnDelLabel(style="color:#1a201d")
+                    |  redeviendra réservable pour&nbsp;
+                    span#avnDelWho
+                    | . Les rendez-vous déjà pris ne sont pas affectés.
+                div(style="margin-top:22px;display:flex;justify-content:flex-end;gap:10px")
+                    button.avn-btn-ghost(type="button" data-avnclose style="height:42px;padding:0 16px;border-radius:11px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d") Annuler
+                    button#avnDelConfirm(type="button" style="height:42px;padding:0 18px;border-radius:11px;border:0;background:#c2554b;color:#fff;cursor:pointer;font:700 12.5px/1 'Plus Jakarta Sans',sans-serif") Supprimer
+
+        //- ═══ MODALE : SÉLECTEUR D'HEURE ═══
+        .avn-overlay#avnTimeOv(hidden style="position:fixed;inset:0;z-index:65;background:rgba(8,26,18,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:24px")
+            div(style="width:100%;max-width:320px;background:#fff;border-radius:20px;box-shadow:0 40px 80px -30px rgba(8,26,18,.55);overflow:hidden")
+                div(style="padding:18px 18px 0;display:flex;align-items:center;justify-content:space-between;gap:12px")
+                    h2#avnTimeTitle(style="margin:0;font:700 15px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17")
+                    button.avn-x(type="button" data-avnclose style="width:32px;height:32px;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;color:#5f6b64;font:400 14px/1 'Plus Jakarta Sans',sans-serif") ✕
+                div(style="padding:14px 18px")
+                    input#avnTimeQuery(type="text" placeholder="Tapez une heure — ex : 18 ou 09:30" style=`width:100%;height:44px;padding:0 14px;border:1.5px solid ${ACCENT};border-radius:12px;background:#fff;outline:none;font:500 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d`)
+                #avnTimeList(style="max-height:260px;overflow-y:auto;padding:0 10px 14px")
+
+        script#avnSchedule(type="application/json")!= JSON.stringify(_jours)
+        script#avnConges(type="application/json")!= JSON.stringify(_conges)
+        script#avnEmployees(type="application/json")!= JSON.stringify(_emps.map(function (e) { return { id: String(e._id), name: e.nom }; }))
+        -
+            var _cfg = {
+                companyId: String(currentCompany._id),
+                scheduleMode: scheduleMode,
+                selectedEmployeeId: String(selectedEmployeeId || ''),
+                canEdit: !!canEditSchedule,
+                slotInterval: _pas, slotMode: _slotMode, slotTime: Number(currentSlotTime) || 30,
+                bufferBefore: _bufBefore, bufferAfter: _battement,
+                leadOn: _leadOn, leadMinutes: _lead,
+                horizonDays: _horizon,
+                autoConfirm: _autoConfirm, waitlist: _waitlist, overbooking: _overbooking,
+                phoneRequired: _phoneRequired,
+                sgOn: _sgOn, sgWindow: _sgWindow, sgDays: _sgDays,
+                features: { ranges: !!_feat.ranges, buffer: !!_feat.buffer, slotDuration: !!_feat.slotDuration },
+            };
+        script#avnConfig(type="application/json")!= JSON.stringify(_cfg)
+
+    script(src="/js/layouts/availability-new.js" defer)

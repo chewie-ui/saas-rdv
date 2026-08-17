@@ -141,6 +141,22 @@ module.exports = async (req, res, next) => {
       });
     }
 
+    // Demandes de rendez-vous en attente (badge sidebar « Demandes »).
+    // Elles n'existent que si l'établissement a désactivé la confirmation
+    // automatique. Compte les RDV à venir uniquement : une demande pour une
+    // date passée n'a plus rien à valider et ne doit pas gonfler le badge
+    // indéfiniment.
+    res.locals.pendingBookingsCount = 0;
+    if (currentCompany) {
+      const debutDuJour = new Date();
+      debutDuJour.setHours(0, 0, 0, 0);
+      res.locals.pendingBookingsCount = await Booking.countDocuments({
+        company: currentCompany._id,
+        status: "pending",
+        date: { $gte: debutDuJour },
+      });
+    }
+
     // Système de grades/permissions — le patron a toujours tout ;
     // un collaborateur sans grade assigné (rare, juste après une migration
     // ratée ou un bug) n'a aucun accès plutôt qu'un accès par défaut.

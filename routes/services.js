@@ -10,12 +10,24 @@ const guard = [isAuth, injectCompany];
 const guardView = [...guard, requirePermission("services.view")];
 const guardManage = [...guard, requirePermission("services.manage")];
 
-// Page admin — /services sert désormais la nouvelle page (ex-« Services v2 »).
-router.get("/services", ...guardView, ctrl.servicesV2);
-// Ancienne page conservée (au cas où) sur /services-old.
-router.get("/services-old", ...guardView, ctrl.servicesPage);
-// Ancienne URL de la refonte → redirection permanente vers /services.
-router.get("/services-v2", ...guard, (req, res) => res.redirect(301, "/services"));
+// ── Page admin ──────────────────────────────────────────────────────────────
+// Les trois générations partagent le MÊME contrôleur (`servicesV2`) : il
+// prépare déjà `services`, `categories`, `serviceColors`, `employees` et
+// `maxServices`. Seule la vue rendue change, via ce petit adaptateur — aucune
+// requête supplémentaire, et les anciennes pages restent intactes.
+const rendreAvec = (vue) => (req, res, next) => {
+  const render = res.render.bind(res);
+  res.render = (v, data) => render(v === "admin/services" ? vue : v, data);
+  return ctrl.servicesV2(req, res, next);
+};
+
+// /services = la nouvelle page (copie de la maquette, voir service-new.pug).
+router.get("/services", ...guardView, rendreAvec("admin/service-new"));
+// Les deux générations précédentes restent joignables, rien n'est supprimé :
+router.get("/services-v2", ...guardView, rendreAvec("admin/services"));   // tableau + questionnaire
+router.get("/services-old", ...guardView, ctrl.servicesPage);             // toute première version
+// Ancienne URL de travail de la refonte → /services.
+router.get("/service-new", ...guard, (req, res) => res.redirect(301, "/services"));
 
 // API admin (CRUD)
 router.post("/api/services", ...guardManage, ctrl.createService);

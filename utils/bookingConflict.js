@@ -8,7 +8,17 @@
 const { getCoursesForDate, courseRangesFor } = require("./recurringCourses");
 const { getBookableTeam } = require("./bookableTeam");
 
-async function checkBookingConflict({
+// Contrat historique conservé : renvoie un message d'erreur, ou null.
+async function checkBookingConflict(options) {
+  const { message } = await inspectBookingConflict(options);
+  return message;
+}
+
+// Même logique, mais renvoie le détail : { message, hadConflict }.
+// `hadConflict` sert au surbooking — quand l'établissement l'autorise, on
+// laisse passer la réservation MAIS on doit savoir qu'elle chevauche pour la
+// marquer `overbooked: true` (cf. l'index unique de book.model.js).
+async function inspectBookingConflict({
   Booking,
   currentCompany,
   date,
@@ -16,7 +26,7 @@ async function checkBookingConflict({
   endTimeInMinutes,
   employeeId,
   actualDuration,
-  excludeBookingId, // pour une reprogrammation : ignorer le RDV qu'on déplace
+  excludeBookingId,
 }) {
   const baseConflictQuery = { company: currentCompany, date: new Date(date), status: { $ne: "canceled" } };
   if (excludeBookingId) baseConflictQuery._id = { $ne: excludeBookingId };
@@ -34,13 +44,17 @@ async function checkBookingConflict({
       ...baseConflictQuery,
       $or: [{ employee: employeeId }, { employee: null }],
     }).select("startTime slotTime").lean();
-    if (overlapping.some(overlapsRange)) return "Cet employé a déjà un rendez-vous sur ce créneau.";
+    if (overlapping.some(overlapsRange)) {
+      return { message: "Cet employé a déjà un rendez-vous sur ce créneau.", hadConflict: true };
+    }
 
     const coursesForThisDate = await getCoursesForDate(currentCompany, date);
     const courseConflict = courseRangesFor(coursesForThisDate, employeeId)
       .some(([rs, re]) => startTimeInMinutes < re && endTimeInMinutes > rs);
-    if (courseConflict) return "Cet employé est en cours collectif sur ce créneau.";
-    return null;
+    if (courseConflict) {
+      return { message: "Cet employé est en cours collectif sur ce créneau.", hadConflict: true };
+    }
+    return { message: null, hadConflict: false };
   }
 
   // Aucun employé précisé — bloqué seulement quand TOUTE l'équipe bookable est
@@ -75,7 +89,9 @@ async function checkBookingConflict({
     const ranges = busyByEmployee.get(m.id) || [];
     return ranges.some(([rs, re]) => startTimeInMinutes < re && endTimeInMinutes > rs);
   });
-  return allBusy ? "Tous les employés sont déjà occupés sur ce créneau." : null;
+  return allBusy
+    ? { message: "Tous les employés sont déjà occupés sur ce créneau.", hadConflict: true }
+    : { message: null, hadConflict: false };
 }
 
-module.exports = { checkBookingConflict };
+module.exports = { checkBookingConflict, inspectBookingConflict };

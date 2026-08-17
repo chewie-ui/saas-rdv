@@ -1,0 +1,45 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   SERVICE-NEW — copie de la maquette (voir service-new.pug)
+   ─────────────────────────────────────────────────────────────────────────
+   L'apparence est presque entièrement inline dans le Pug, comme dans la
+   maquette source : ça évite toute collision de cascade avec le reste de
+   l'app (c'est ce qui a cassé la page deux fois de suite auparavant). Ce
+   fichier ne fait donc QUE ce qu'un attribut style ne peut pas faire :
+   - forcer [hidden] à gagner sur n'importe quel display inline/externe
+     (même bug que le précédent : une règle d'auteur bat toujours la feuille
+     user-agent, quelle que soit sa spécificité — donc un [hidden] combiné à
+     un display inline sur LE MÊME élément ne se cache plus sans ce filet) ;
+   - :hover, exactement les 3 endroits où la maquette le déclare
+     (style-hover="…") — nulle part ailleurs, pour rester fidèle ;
+   - :focus-visible, absent de la maquette mais nécessaire à l'accessibilité.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+#svnRoot [hidden] { display: none !important; }
+
+#svnRoot { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+
+/* ── Hover (les 3 déclarés par la maquette) ───────────────────────────────── */
+#svnRoot .svn-btn-ghost:hover { border-color: #c3ccc6; }
+#svnRoot .svn-btn-danger-hover:hover { color: #c2554b; }
+#svnRoot .svn-row:hover { background: #fafcfb; }
+
+/* ── Focus clavier (absent de la maquette, ajouté pour l'accessibilité) ──── */
+#svnRoot button:focus-visible,
+#svnRoot input:focus-visible,
+#svnRoot textarea:focus-visible {
+    outline: 2px solid #12a06e;
+    outline-offset: 2px;
+}
+
+/* ── Scroll interne des modales sur petit écran ───────────────────────────── */
+#svnRoot .svn-overlay { -webkit-overflow-scrolling: touch; }
+
+/* ── Étroit : la ligne de prestation défile dans SA carte ─────────────────── */
+/* La grille de la maquette est fixe (26px 6px 1fr + 5 colonnes auto) et ne
+   tient pas sous ~700px : sans ça, la fin de la ligne (bouton supprimer) est
+   simplement coupée. On la fait défiler dans son propre conteneur — la page,
+   elle, ne défile jamais horizontalement. Rien ne change au-dessus de 700px. */
+@media (max-width: 700px) {
+    #svnRoot .svn-gbody { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #svnRoot .svn-row { min-width: 640px; }
+}

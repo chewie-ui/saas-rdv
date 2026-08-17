@@ -1,0 +1,413 @@
+extends ../../layouts/admin
+
+//- ═══════════════════════════════════════════════════════════════════════════
+    SERVICE-NEW — copie de la maquette Claude Design
+    ───────────────────────────────────────────────────────────────────────────
+    Source : projet « Redesign complet Branshee », Admin.dc.html, écran Services
+    (lu via DesignSync, copie locale gitignorée maquette-admin.dc.html,
+    lignes 638-782 pour l'écran, 890-1155 pour les 3 modales).
+
+    Traduction littérale : chaque style inline de la maquette est repris tel
+    quel (mêmes couleurs, mêmes tailles). Aucune classe CSS ne porte
+    l'apparence — c'est ce qui a cassé deux fois de suite (une règle globale
+    de l'app, plus spécifique ou simplement postérieure dans la cascade,
+    écrasait silencieusement le style de la page). Le CSS externe ne gère que
+    ce qu'un attribut style ne peut pas faire : :hover et :focus-visible.
+
+    Écarts volontaires par rapport à la maquette (elle est une démo, pas
+    branchée sur le vrai schéma) :
+      - catégories = { name, icon } sans id réel → on route par NOM.
+      - frais d'annulation réel = { enabled, type, value } : pas de champ
+        « délai (h) » en base — retiré plutôt que silencieusement ignoré.
+      - palette de couleurs = la vraie palette serveur (utils/serviceColors),
+        avec les couleurs déjà prises grisées : le serveur refuse un doublon,
+        la palette figée de la maquette rendait la création impossible.
+      - image du service et sessions ponctuelles d'un cours : la maquette les
+        dessine sans les brancher (bouton/case décoratifs) ; ici elles sont
+        réellement fonctionnelles, sinon le formulaire n'est pas validable.
+    ═══════════════════════════════════════════════════════════════════════════
+
+block links
+    link(rel="stylesheet" href="/css/layouts/service-new.css")
+
+block content
+    -
+        var _svcs = (services || []).filter(function (s) { return s.type !== 'group'; });
+        var _crs  = (services || []).filter(function (s) { return s.type === 'group'; });
+        var _cats = categories || [];
+        // getBookableTeam renvoie { id, _id, firstName, lastName, … } — jamais
+        // `fullName` : les puces d'employés s'affichaient vides.
+        var _emps = (employees || []).map(function (e) {
+            var nom = ((e.firstName || '') + ' ' + (e.lastName || '')).trim();
+            return { _id: String(e._id || e.id), nom: nom || 'Sans nom' };
+        });
+
+        var COLORS = ['#1e7a4e','#2563eb','#7c3aed','#db2777','#ea580c','#0891b2','#ca8a04','#dc2626','#4f46e5','#0d9488'];
+        var ICONS  = ['✂️','💅','🧖','🌿','💪','👁️','🌸','⚡','💎','❤️','🎨','🔥','🌞','🧘','🧴','⭐'];
+        var DOW    = [{ l:'Lu', d:1 }, { l:'Ma', d:2 }, { l:'Me', d:3 }, { l:'Je', d:4 }, { l:'Ve', d:5 }, { l:'Sa', d:6 }, { l:'Di', d:0 }];
+        var ACCENT = '#12a06e';
+
+        function fmtDur(min, max) {
+            var n = parseInt(min, 10) || 0;
+            var base = (n >= 60) ? (n % 60 ? Math.floor(n / 60) + ' h ' + (n % 60) : Math.floor(n / 60) + ' h') : (n + ' min');
+            if (max && Number(max) > n) return n + '–' + max + ' min';
+            return base;
+        }
+        function fmtPrice(p) {
+            if (p === null || p === undefined || p === '') return '—';
+            return Number(p) === 0 ? 'Gratuit' : Number(p) + ' €';
+        }
+
+        // Groupes = catégories dans leur ordre + « Sans catégorie » à la fin
+        // (toujours affichée si non vide, comme la maquette).
+        var _groups = _cats.map(function (c) {
+            return { name: c.name, icon: c.icon || '🏷️', isReal: true, items: [] };
+        });
+        var _none = { name: 'Sans catégorie', icon: '—', isReal: false, items: [] };
+        _svcs.forEach(function (s) {
+            var g = null;
+            for (var i = 0; i < _groups.length; i++) { if (_groups[i].name === s.category) { g = _groups[i]; break; } }
+            (g || _none).items.push(s);
+        });
+        var _allGroups = _groups.concat(_none.items.length ? [_none] : []);
+
+        var _off = _svcs.filter(function (s) { return !s.active; }).length;
+
+        // Fiches complètes pour l'édition sans aller-retour serveur.
+        var _svcFiches = {};
+        _svcs.forEach(function (s) {
+            _svcFiches[String(s._id)] = {
+                name: s.name || '', description: s.description || '',
+                price: (s.price === null || s.price === undefined) ? '' : s.price,
+                duration: s.duration || 30, durationMax: s.durationMax || '',
+                category: s.category || '', color: s.color || COLORS[0],
+                active: s.active !== false,
+                cancellationFee: s.cancellationFee || null,
+                image: s.image || '',
+            };
+        });
+        var _crsFiches = {};
+        _crs.forEach(function (c) {
+            _crsFiches[String(c._id)] = {
+                name: c.name || '', description: c.description || '',
+                price: (c.price === null || c.price === undefined) ? '' : c.price,
+                duration: c.duration || 60, capacity: c.capacity || 10,
+                location: c.location || '',
+                blocksIndividualBookings: c.blocksIndividualBookings !== false,
+                employees: (c.employees || []).map(function (e) { return String(e._id || e); }),
+                mode: (c.recurring && c.recurring.enabled) ? 'recurring' : 'fixed',
+                weekdays: (c.recurring && c.recurring.weekdays) || [],
+                startTime: (c.recurring && c.recurring.startTime) || '',
+                sessions: (c.sessions || []).map(function (sess) {
+                    var d = new Date(sess.date);
+                    var iso = isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+                    return { date: iso, startTime: sess.startTime, endTime: sess.endTime };
+                }),
+            };
+        });
+
+    #svnRoot(style="min-width:0")
+        //- ── En-tête : onglets + actions ──────────────────────────────────
+        div(style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:1px solid #e6eae7;margin-bottom:18px")
+            div(style="display:flex")
+                button.svn-tab#svnTabServices(type="button" data-svntab="services" style=`position:relative;display:flex;align-items:center;gap:9px;padding:13px 0;margin-right:26px;border:0;background:none;cursor:pointer;font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:${ACCENT}`)
+                    | Prestations
+                    span#svnTabServicesN(style="padding:3px 8px;border-radius:999px;background:#e6f6ee;color:#0d7a54;font:700 11px/1 'Plus Jakarta Sans',sans-serif")= _svcs.length
+                    span#svnTabServicesBar(style=`position:absolute;left:0;right:0;bottom:-1px;height:2px;background:${ACCENT}`)
+                button.svn-tab#svnTabCourses(type="button" data-svntab="courses" style="position:relative;display:flex;align-items:center;gap:9px;padding:13px 0;margin-right:26px;border:0;background:none;cursor:pointer;font:600 14px/1 'Plus Jakarta Sans',sans-serif;color:#8c968f")
+                    | Cours collectifs
+                    span#svnTabCoursesN(style="padding:3px 8px;border-radius:999px;background:#f2f4f2;color:#8c968f;font:700 11px/1 'Plus Jakarta Sans',sans-serif")= _crs.length
+                    span#svnTabCoursesBar(style="position:absolute;left:0;right:0;bottom:-1px;height:2px;background:transparent")
+            div(style="display:flex;gap:10px;padding-bottom:10px;flex-wrap:wrap")
+                button.svn-btn-ghost#svnNewCat(type="button" style="height:42px;padding:0 16px;border-radius:11px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d;white-space:nowrap") + Catégorie
+                button#svnNewSvc(type="button" style="height:42px;padding:0 18px;border-radius:11px;border:0;background:#12a06e;color:#fff;cursor:pointer;font:700 13px/1 'Plus Jakarta Sans',sans-serif;white-space:nowrap;box-shadow:0 2px 8px rgba(18,160,110,.28)") + Nouveau service
+                button#svnNewCrs(type="button" style="height:42px;padding:0 18px;border-radius:11px;border:0;background:#082a1c;color:#fff;cursor:pointer;font:700 13px/1 'Plus Jakarta Sans',sans-serif;white-space:nowrap") + Cours collectif
+
+        p#svnSummary(style="margin:0 0 14px;font:500 13px/1 'Plus Jakarta Sans',sans-serif;color:#8c968f")= _svcs.length + ' prestation' + (_svcs.length > 1 ? 's' : '') + ' · ' + _cats.length + ' catégorie' + (_cats.length > 1 ? 's' : '') + ' · ' + _off + ' masquée(s)'
+
+        //- ── Onglet Prestations ───────────────────────────────────────────
+        div#svnPanelServices(data-svnpanel="services" style="display:flex;flex-direction:column;gap:14px")
+            each g, gi in _allGroups
+                .svn-group(data-svngroup=g.name style="background:#fff;border:1px solid #e9ece9;border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                    div(style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid #f1f3f1;background:#fafcfb")
+                        button.svn-gtoggle(type="button" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;border:0;background:none;cursor:pointer;text-align:left;padding:0")
+                            span.svn-chevron(style="width:11px;text-align:center;font:400 11px/1 'Plus Jakarta Sans',sans-serif;color:#98a29b") ▾
+                            span(style="width:34px;height:34px;flex:none;border-radius:11px;background:#f2f5f3;display:flex;align-items:center;justify-content:center;font-size:16px")= g.icon
+                            div(style="min-width:0")
+                                div(style="font:700 15px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#141a17")= g.name
+                                div.svn-gcount(style="margin-top:4px;font:500 12px/1.2 'Plus Jakarta Sans',sans-serif;color:#98a29b")= g.items.length + (g.items.length > 1 ? ' prestations' : ' prestation')
+                        if g.isReal
+                            button.svn-btn-danger-hover(type="button" data-svncatdel=g.name style="height:34px;padding:0 12px;border-radius:9px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:#8c968f;white-space:nowrap") Supprimer
+
+                    .svn-gbody
+                        if g.items.length === 0
+                            div(style="padding:26px 20px;text-align:center;font:500 13px/1.5 'Plus Jakarta Sans',sans-serif;color:#b4bdb7") Aucune prestation ici — créez-en une ou déplacez-en depuis une autre catégorie.
+                        each sv, i in g.items
+                            .svn-row(data-svnrow=String(sv._id) data-svncat=(g.isReal ? g.name : '') style="display:grid;grid-template-columns:26px 6px minmax(0,1fr) auto auto auto auto auto;gap:14px;align-items:center;padding:14px 20px;border-bottom:1px solid #f4f6f4")
+                                div(style="display:flex;flex-direction:column;gap:2px")
+                                    button.svn-up(type="button" data-svnmove="up" style=`width:22px;height:16px;border:0;background:none;cursor:pointer;padding:0;font:400 10px/1 'Plus Jakarta Sans',sans-serif;color:${i === 0 ? '#d6dade' : '#5f6b64'}`) ▲
+                                    button.svn-down(type="button" data-svnmove="down" style=`width:22px;height:16px;border:0;background:none;cursor:pointer;padding:0;font:400 10px/1 'Plus Jakarta Sans',sans-serif;color:${i === g.items.length - 1 ? '#d6dade' : '#5f6b64'}`) ▼
+                                span(style=`width:6px;height:40px;border-radius:3px;background:${sv.color || COLORS[0]}`)
+                                div(style="min-width:0")
+                                    div.svn-svname(style=`font:700 14.5px/1.2 'Plus Jakarta Sans',sans-serif;color:${sv.active !== false ? '#1a201d' : '#98a29b'}`)= sv.name
+                                    div(style="margin-top:5px;font:400 12.5px/1.4 'Plus Jakarta Sans',sans-serif;color:#98a29b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap")= sv.description || ''
+                                span(style="padding:5px 11px;border-radius:999px;background:#f2f4f2;font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:#5f6b64;white-space:nowrap")= fmtDur(sv.duration, sv.durationMax)
+                                span(style="font:700 15.5px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#1a201d;white-space:nowrap")= fmtPrice(sv.price)
+                                button.svn-toggle(type="button" data-svntoggle=String(sv._id) style="display:flex;align-items:center;gap:9px;border:0;background:none;cursor:pointer;padding:0")
+                                    span.svn-sw(style=`width:38px;height:22px;border-radius:999px;padding:3px;background:${sv.active !== false ? ACCENT : '#d6dade'};display:flex`)
+                                        span.svn-sw__knob(style=`width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(${sv.active !== false ? '16px' : '0px'});transition:transform .18s`)
+                                    span.svn-sw__lb(style=`font:600 12px/1 'Plus Jakarta Sans',sans-serif;color:${sv.active !== false ? '#0d7a54' : '#98a29b'};white-space:nowrap`)= sv.active !== false ? 'Actif' : 'Masqué'
+                                button.svn-edit(type="button" data-svnedit=String(sv._id) style="width:36px;height:36px;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;color:#5f6b64;display:flex;align-items:center;justify-content:center")
+                                    svg(width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round")
+                                        path(d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z")
+                                        path(d="m15 5 4 4")
+                                .svn-delzone(data-svndel=String(sv._id) style="display:flex;gap:6px;justify-content:flex-end")
+                                    button.svn-del-idle(type="button" data-svnask style="width:36px;height:36px;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;color:#c2554b;font:400 15px/1 'Plus Jakarta Sans',sans-serif") ✕
+
+        //- ── Onglet Cours collectifs ──────────────────────────────────────
+        div#svnPanelCourses(data-svnpanel="courses" hidden style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px")
+            if _crs.length === 0
+                div(style="grid-column:1/-1;padding:40px 20px;text-align:center;font:500 13px/1.5 'Plus Jakarta Sans',sans-serif;color:#b4bdb7") Aucun cours collectif — créez-en un avec « + Cours collectif ».
+            each c in _crs
+                - var _rec = c.recurring && c.recurring.enabled
+                - var _sess = c.sessions || []
+                .svn-course(data-svncourse=String(c._id) style="background:#fff;border:1px solid #e9ece9;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(16,40,30,.03)")
+                    div(style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px")
+                        div(style="min-width:0")
+                            div(style="font:700 16px/1.2 'Plus Jakarta Sans',sans-serif;letter-spacing:-.02em;color:#1a201d")= c.name
+                            p(style="margin:7px 0 0;font:400 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#8c968f")= c.description || ''
+                        span.svn-modebadge(style=`padding:5px 10px;border-radius:999px;background:${_rec ? '#e6f6ee' : '#eaf1fc'};color:${_rec ? '#0d7a54' : '#3f6fb5'};font:700 10.5px/1 'Plus Jakarta Sans',sans-serif;white-space:nowrap`)= _rec ? 'Récurrent' : 'Dates ponctuelles'
+
+                    if _rec
+                        div(style="margin-top:16px;display:flex;align-items:center;gap:6px;flex-wrap:wrap")
+                            each dd in DOW
+                                - var _on = (c.recurring.weekdays || []).indexOf(dd.d) >= 0
+                                span(style=`width:30px;height:30px;border-radius:9px;background:${_on ? '#082a1c' : '#f4f6f4'};color:${_on ? '#fff' : '#b4bdb7'};display:flex;align-items:center;justify-content:center;font:700 11.5px/1 'Plus Jakarta Sans',sans-serif`)= dd.l
+                            span(style="margin-left:6px;font:700 13px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")= c.recurring.startTime || ''
+                    else
+                        div(style="margin-top:16px;font:500 12.5px/1.5 'Plus Jakarta Sans',sans-serif;color:#5f6b64")= _sess.length + (_sess.length > 1 ? ' séances programmées' : ' séance programmée')
+
+                    div(style="margin-top:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px")
+                        div(style="padding:12px;border-radius:11px;background:#f7faf8")
+                            div(style="font:700 15px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")= fmtPrice(c.price)
+                            div(style="margin-top:5px;font:500 10.5px/1 'Plus Jakarta Sans',sans-serif;color:#98a29b") par personne
+                        div(style="padding:12px;border-radius:11px;background:#f7faf8")
+                            div(style="font:700 15px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")= fmtDur(c.duration)
+                            div(style="margin-top:5px;font:500 10.5px/1 'Plus Jakarta Sans',sans-serif;color:#98a29b") par séance
+                        div(style="padding:12px;border-radius:11px;background:#f7faf8")
+                            div(style="font:700 15px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")= (c.capacity || 1)
+                            div(style="margin-top:5px;font:500 10.5px/1 'Plus Jakarta Sans',sans-serif;color:#98a29b") maximum
+
+                    div(style="margin-top:14px;display:flex;flex-direction:column;gap:6px")
+                        span(style=`font:500 12px/1.4 'Plus Jakarta Sans',sans-serif;color:${c.blocksIndividualBookings !== false ? '#b5843f' : '#98a29b'}`)= c.blocksIndividualBookings !== false ? 'RDV bloqués pendant le cours' : 'RDV individuels autorisés en parallèle'
+                        span(style="font:500 12px/1.4 'Plus Jakarta Sans',sans-serif;color:#98a29b")= c.location || 'Adresse habituelle'
+
+                    .svn-cfoot(style="margin-top:16px;padding-top:16px;border-top:1px solid #f1f3f1;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap")
+                        button.svn-crs-idle(type="button" data-svnask style="height:38px;padding:0 14px;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#c2554b") Supprimer
+                        button(type="button" data-svnedit-course=String(c._id) style="height:38px;padding:0 16px;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d") Modifier
+
+        //- ═══ MODALE : SERVICE ═══
+        .svn-overlay#svnSvcOv(hidden style="position:fixed;inset:0;z-index:60;background:rgba(8,26,18,.45);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;padding:40px 24px;overflow-y:auto")
+            div(style="width:100%;max-width:900px;background:#fff;border-radius:20px;box-shadow:0 40px 80px -30px rgba(8,26,18,.5)")
+                div(style="display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px 28px 0")
+                    h2#svnSvcTitle(style="margin:0;font:800 22px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em;color:#141a17") Nouveau service
+                    button.svn-x(type="button" data-svnclose style="width:36px;height:36px;flex:none;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;color:#5f6b64;font:400 16px/1 'Plus Jakarta Sans',sans-serif") ✕
+
+                #svnSvcErr.svn-err(hidden style="margin:16px 28px 0;padding:12px 14px;border-radius:10px;background:#fdecea;color:#a02a20;font:600 12.5px/1.4 'Plus Jakarta Sans',sans-serif")
+
+                div(style="padding:22px 28px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:28px;align-items:start")
+                    div(style="display:flex;flex-direction:column;gap:16px")
+                        label(style="display:block")
+                            span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") NOM DU SERVICE *
+                            input#svnFName(type="text" placeholder="Ex : Coupe simple, Massage détente…" style="width:100%;height:46px;padding:0 14px;border:1px solid #e0e3e5;border-radius:12px;background:#fff;outline:none;font:500 14px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+
+                        div
+                            span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") IMAGE DU SERVICE (OPTIONNEL)
+                            label#svnImgBox(for="svnImgFile" style="height:120px;border-radius:12px;background:#f4f6f4;border:1px solid #eef0ee;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;cursor:pointer;position:relative;overflow:hidden;background-size:cover;background-position:center")
+                                input#svnImgFile(type="file" accept="image/*" style="display:none")
+                                span#svnImgPh(style="width:34px;height:34px;border-radius:10px;background:#e8ebe9;display:flex;align-items:center;justify-content:center;color:#98a29b;font:400 15px/1 'Plus Jakarta Sans',sans-serif") ▣
+                                span#svnImgTxt(style="font:500 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#8c968f") Cliquez pour ajouter une image
+                                button#svnImgRemove(type="button" hidden style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:8px;border:0;background:rgba(20,26,23,.55);color:#fff;cursor:pointer;font:400 13px/1 'Plus Jakarta Sans',sans-serif") ✕
+
+                        div
+                            span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") CATÉGORIE
+                            #svnFCats(style="display:flex;flex-wrap:wrap;gap:8px")
+                                button.svn-chip(type="button" data-svncat="" style=`padding:9px 13px;border-radius:10px;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;border:1px solid ${ACCENT};background:#e9f7f0;color:#0d7a54;white-space:nowrap`) Aucune catégorie
+                                each c in _cats
+                                    button.svn-chip(type="button" data-svncat=c.name style="padding:9px 13px;border-radius:10px;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;border:1px solid #e0e3e5;background:#fff;color:#4d5560;white-space:nowrap")= (c.icon ? c.icon + '  ' : '') + c.name
+
+                        label(style="display:block")
+                            span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") DESCRIPTION (OPTIONNEL)
+                            textarea#svnFDesc(rows="3" placeholder="Ce que comprend la prestation…" style="width:100%;padding:13px 14px;border:1px solid #e0e3e5;border-radius:12px;background:#fff;outline:none;resize:vertical;font:500 13.5px/1.6 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+
+                        div(style="display:grid;grid-template-columns:1fr 1fr;gap:12px")
+                            label(style="display:block")
+                                span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") PRIX (€)
+                                input#svnFPrice(type="number" min="0" step="1" placeholder="25" style="width:100%;height:46px;padding:0 14px;border:1px solid #e0e3e5;border-radius:12px;background:#fff;outline:none;font:500 14px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+                            label(style="display:block")
+                                span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") DURÉE (MIN)
+                                input#svnFDur(type="number" min="5" step="5" placeholder="30" style="width:100%;height:46px;padding:0 14px;border:1px solid #e0e3e5;border-radius:12px;background:#fff;outline:none;font:500 14px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+
+                        button#svnFApprox(type="button" style="display:flex;align-items:center;gap:12px;border:0;background:none;cursor:pointer;padding:0;text-align:left")
+                            span.svn-sw(style="width:44px;height:26px;flex:none;border-radius:999px;padding:3px;background:#d6dade;display:flex")
+                                span.svn-sw__knob(style="width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(0px);transition:transform .18s")
+                            span(style="font:700 11px/1.4 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") DURÉE APPROXIMATIVE
+                                |
+                                span(style="font-weight:500;letter-spacing:0;color:#98a29b") (ex : 30 à 40 min)
+                        label#svnFDurMaxWrap(hidden style="display:block;margin-top:-6px")
+                            span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") JUSQU'À (MIN)
+                            input#svnFDurMax(type="number" min="5" step="5" placeholder="40" style="width:100%;height:46px;padding:0 14px;border:1px solid #e0e3e5;border-radius:12px;background:#fff;outline:none;font:500 14px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+
+                        div
+                            span(style="display:block;margin-bottom:10px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") COULEUR (CALENDRIER)
+                            #svnFColors(style="display:flex;flex-wrap:wrap;gap:12px")
+                                each col, ci in COLORS
+                                    button.svn-color(type="button" data-svncolor=col style=`width:32px;height:32px;border-radius:50%;border:0;cursor:pointer;background:${col};box-shadow:${ci === 0 ? '0 0 0 2px #fff, 0 0 0 4px ' + col : 'none'};color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px/1 'Plus Jakarta Sans',sans-serif`)= ci === 0 ? '✓' : ''
+
+                    div(style="display:flex;flex-direction:column;gap:22px")
+                        div
+                            div(style="display:flex;align-items:center;justify-content:space-between;gap:16px")
+                                span(style="font:700 12.5px/1.3 'Plus Jakarta Sans',sans-serif;letter-spacing:.04em;color:#141a17") STATUT DU SERVICE
+                                button#svnFActive(type="button" style="border:0;background:none;cursor:pointer;padding:0;flex:none")
+                                    span.svn-sw(style=`width:44px;height:26px;border-radius:999px;padding:3px;background:${ACCENT};display:flex`)
+                                        span.svn-sw__knob(style="width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(18px);transition:transform .18s")
+                            p#svnFActiveLb(style="margin:10px 0 0;font:400 12.5px/1.55 'Plus Jakarta Sans',sans-serif;color:#8c968f") Service actif — visible et réservable par les clients.
+
+                        div
+                            div(style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px")
+                                span(style="font:700 12.5px/1.4 'Plus Jakarta Sans',sans-serif;letter-spacing:.04em;color:#141a17") FRAIS D'ANNULATION PERSONNALISÉS POUR CE SERVICE
+                                button#svnFFee(type="button" style="border:0;background:none;cursor:pointer;padding:0;flex:none")
+                                    span.svn-sw(style="width:44px;height:26px;border-radius:999px;padding:3px;background:#d6dade;display:flex")
+                                        span.svn-sw__knob(style="width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(0px);transition:transform .18s")
+                            p(style="margin:10px 0 0;font:400 12.5px/1.55 'Plus Jakarta Sans',sans-serif;color:#8c968f") Remplace la politique d'annulation globale pour ce service uniquement (annulation tardive ou absence non excusée).
+                            #svnFFeeWrap(hidden style="margin-top:14px")
+                                label(style="display:block")
+                                    span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") MONTANT (€)
+                                    input#svnFFeeAmt(type="number" min="0" step="1" placeholder="15" style="width:100%;height:44px;padding:0 14px;border:1px solid #e0e3e5;border-radius:11px;background:#f9fbfa;outline:none;font:500 13.5px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+
+                        div(style="padding:16px;border-radius:12px;background:#f7faf8;border:1px solid #e6eae7")
+                            div(style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#0d7a54") APERÇU CLIENT
+                            div(style="margin-top:14px;display:flex;align-items:center;gap:14px")
+                                span#svnPvColor(style=`width:6px;height:40px;border-radius:3px;background:${COLORS[0]}`)
+                                div(style="flex:1;min-width:0")
+                                    div#svnPvName(style="font:700 14.5px/1.2 'Plus Jakarta Sans',sans-serif;color:#1a201d") Nom du service
+                                    div#svnPvMeta(style="margin-top:5px;font:500 12px/1.2 'Plus Jakarta Sans',sans-serif;color:#98a29b") 30 min · Sans catégorie
+                                span#svnPvPrice(style="font:700 15px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d") 0 €
+
+                div(style="margin-top:24px;padding:18px 28px;border-top:1px solid #eef0ee;display:flex;justify-content:flex-end;gap:10px")
+                    button.svn-btn-ghost(type="button" data-svnclose style="height:44px;padding:0 18px;border-radius:11px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d") Annuler
+                    button#svnFSave(type="button" style="height:44px;padding:0 20px;border-radius:11px;border:0;background:#12a06e;color:#fff;cursor:pointer;font:700 13px/1 'Plus Jakarta Sans',sans-serif;box-shadow:0 2px 8px rgba(18,160,110,.28)") Créer le service
+
+        //- ═══ MODALE : COURS COLLECTIF ═══
+        .svn-overlay#svnCrsOv(hidden style="position:fixed;inset:0;z-index:60;background:rgba(8,26,18,.45);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;padding:40px 24px;overflow-y:auto")
+            div(style="width:100%;max-width:900px;background:#fff;border-radius:20px;box-shadow:0 40px 80px -30px rgba(8,26,18,.5)")
+                div(style="display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px 28px 0")
+                    h2#svnCrsTitle(style="margin:0;font:800 22px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em;color:#141a17") Nouveau cours collectif
+                    button.svn-x(type="button" data-svnclose style="width:36px;height:36px;flex:none;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;color:#5f6b64;font:400 16px/1 'Plus Jakarta Sans',sans-serif") ✕
+
+                #svnCrsErr.svn-err(hidden style="margin:16px 28px 0;padding:12px 14px;border-radius:10px;background:#fdecea;color:#a02a20;font:600 12.5px/1.4 'Plus Jakarta Sans',sans-serif")
+
+                div(style="padding:22px 28px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:28px;align-items:start")
+                    div(style="display:flex;flex-direction:column;gap:16px")
+                        label(style="display:block")
+                            span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") NOM DU COURS *
+                            input#svnCName(type="text" placeholder="Ex : Yoga, Pilates, Cross-training…" style="width:100%;height:46px;padding:0 14px;border:1px solid #e0e3e5;border-radius:12px;background:#fff;outline:none;font:500 14px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+                        label(style="display:block")
+                            span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") DESCRIPTION
+                            textarea#svnCDesc(rows="3" placeholder="Quelques mots pour décrire le cours…" style="width:100%;padding:13px 14px;border:1px solid #e0e3e5;border-radius:12px;background:#fff;outline:none;resize:vertical;font:500 13.5px/1.6 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+                        div(style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px")
+                            label(style="display:block")
+                                span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") PRIX (€)
+                                input#svnCPrice(type="number" min="0" step="1" placeholder="15" style="width:100%;height:46px;padding:0 12px;border:1px solid #e0e3e5;border-radius:12px;background:#fff;outline:none;font:500 14px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+                            label(style="display:block")
+                                span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") DURÉE (MIN) *
+                                input#svnCDur(type="number" min="5" step="5" value="60" style="width:100%;height:46px;padding:0 12px;border:1px solid #e0e3e5;border-radius:12px;background:#fff;outline:none;font:500 14px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+                            label(style="display:block")
+                                span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") PLACES *
+                                input#svnCPlaces(type="number" min="1" max="500" value="10" style="width:100%;height:46px;padding:0 12px;border:1px solid #e0e3e5;border-radius:12px;background:#fff;outline:none;font:500 14px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+                        label(style="display:block")
+                            span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") LIEU (OPTIONNEL)
+                            input#svnCLoc(type="text" placeholder="Laissez vide pour utiliser votre adresse habituelle" style="width:100%;height:46px;padding:0 14px;border:1px solid #e0e3e5;border-radius:12px;background:#fff;outline:none;font:500 14px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+
+                        div(style="padding-top:6px")
+                            div(style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px")
+                                span(style="font:700 12.5px/1.4 'Plus Jakarta Sans',sans-serif;letter-spacing:.04em;color:#141a17") BLOQUER LES RENDEZ-VOUS PENDANT CE COURS
+                                button#svnCBlock(type="button" style="border:0;background:none;cursor:pointer;padding:0;flex:none")
+                                    span.svn-sw(style=`width:44px;height:26px;border-radius:999px;padding:3px;background:${ACCENT};display:flex`)
+                                        span.svn-sw__knob(style="width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(18px);transition:transform .18s")
+                            p#svnCBlockLb(style="margin:10px 0 0;font:400 12.5px/1.55 'Plus Jakarta Sans',sans-serif;color:#8c968f") Activé : personne ne peut réserver un rendez-vous individuel pendant le cours.
+
+                        div
+                            div(style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px")
+                                span(style="font:700 12.5px/1.4 'Plus Jakarta Sans',sans-serif;letter-spacing:.04em;color:#141a17") CE COURS A UN OU PLUSIEURS EMPLOYÉS ASSIGNÉS ?
+                                button#svnCEmpFlag(type="button" style="border:0;background:none;cursor:pointer;padding:0;flex:none")
+                                    span.svn-sw(style="width:44px;height:26px;border-radius:999px;padding:3px;background:#d6dade;display:flex")
+                                        span.svn-sw__knob(style="width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(0px);transition:transform .18s")
+                            p(style="margin:10px 0 0;font:400 12.5px/1.55 'Plus Jakarta Sans',sans-serif;color:#8c968f") Si activé, seuls les employés cochés seront indisponibles pour d'autres RDV sur ce créneau — les autres restent réservables normalement.
+                            #svnCEmpWrap(hidden style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px")
+                                each e in _emps
+                                    span.svn-empchip(data-svnemp=String(e._id) style="display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border-radius:10px;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;border:1px solid #e0e3e5;background:#fff;color:#4d5560")= e.nom
+
+                    div(style="display:flex;flex-direction:column;gap:18px")
+                        div
+                            span(style="display:block;margin-bottom:10px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") MODE DE PLANIFICATION
+                            div(style="display:flex;flex-direction:column;gap:10px")
+                                button#svnModeRec(type="button" data-svnmode="recurring" style=`width:100%;text-align:left;padding:15px 16px;border-radius:12px;cursor:pointer;border:1px solid ${ACCENT};background:#e9f7f0`)
+                                    div(style="font:700 13.5px/1.2 'Plus Jakarta Sans',sans-serif;color:#0c5e42") Cours récurrent
+                                    div(style="margin-top:6px;font:400 12.5px/1.4 'Plus Jakarta Sans',sans-serif;color:#3f8468") Se répète chaque semaine, mêmes jours et heure
+                                button#svnModeFix(type="button" data-svnmode="fixed" style="width:100%;text-align:left;padding:15px 16px;border-radius:12px;cursor:pointer;border:1px solid #e6eae7;background:#f9fbfa")
+                                    div(style="font:700 13.5px/1.2 'Plus Jakarta Sans',sans-serif;color:#1a201d") Dates ponctuelles
+                                    div(style="margin-top:6px;font:400 12.5px/1.4 'Plus Jakarta Sans',sans-serif;color:#8c968f") Chaque séance a sa propre date et son horaire
+
+                        #svnCRecWrap
+                            div
+                                span(style="display:block;margin-bottom:10px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") JOUR(S) DE LA SEMAINE *
+                                #svnCDays(style="display:flex;flex-wrap:wrap;gap:8px")
+                                    each dd in DOW
+                                        button.svn-day(type="button" data-svnday=dd.d style="width:46px;height:44px;border-radius:11px;cursor:pointer;font:700 13px/1 'Plus Jakarta Sans',sans-serif;border:1px solid #e0e3e5;background:#fff;color:#4d5560")= dd.l
+                            label(style="display:block;margin-top:16px")
+                                span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") HEURE *
+                                input#svnCTime(type="time" style="width:100%;height:46px;padding:0 14px;border:1px solid #e0e3e5;border-radius:12px;background:#fff;outline:none;font:500 14px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d")
+
+                        #svnCFixWrap(hidden style="padding:16px;border-radius:12px;border:1px dashed #cfdad3;background:#fbfcfb")
+                            div(style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") SÉANCES
+                            #svnCSess(style="margin-top:12px;display:flex;flex-direction:column;gap:8px")
+                            button#svnCAddSess(type="button" style="margin-top:12px;height:40px;padding:0 15px;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 12.5px/1 'Plus Jakarta Sans',sans-serif;color:#0d7a54") + Ajouter une date
+
+                        div(style="padding:16px;border-radius:12px;background:#f7faf8;border:1px solid #e6eae7")
+                            div(style="font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#0d7a54") RÉCAPITULATIF
+                            p#svnCSummary(style="margin:10px 0 0;font:500 13px/1.6 'Plus Jakarta Sans',sans-serif;color:#3f474e") Votre cours · 1 h · 10 places · 0 € · choisissez au moins un jour
+
+                div(style="margin-top:24px;padding:18px 28px;border-top:1px solid #eef0ee;display:flex;justify-content:flex-end;gap:10px")
+                    button.svn-btn-ghost(type="button" data-svnclose style="height:44px;padding:0 18px;border-radius:11px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d") Annuler
+                    button#svnCSave(type="button" style="height:44px;padding:0 20px;border-radius:11px;border:0;background:#12a06e;color:#fff;cursor:pointer;font:700 13px/1 'Plus Jakarta Sans',sans-serif;box-shadow:0 2px 8px rgba(18,160,110,.28)") Créer le cours
+
+        //- ═══ MODALE : CATÉGORIE ═══
+        .svn-overlay#svnCatOv(hidden style="position:fixed;inset:0;z-index:61;background:rgba(8,26,18,.45);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;padding:60px 24px;overflow-y:auto")
+            div(style="width:100%;max-width:480px;background:#fff;border-radius:20px;box-shadow:0 40px 80px -30px rgba(8,26,18,.5)")
+                div(style="display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px 26px 0")
+                    h2(style="margin:0;font:800 21px/1.1 'Plus Jakarta Sans',sans-serif;letter-spacing:-.03em;color:#141a17") Nouvelle catégorie
+                    button.svn-x(type="button" data-svnclose style="width:36px;height:36px;flex:none;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;color:#5f6b64;font:400 16px/1 'Plus Jakarta Sans',sans-serif") ✕
+                #svnCatErr.svn-err(hidden style="margin:16px 26px 0;padding:12px 14px;border-radius:10px;background:#fdecea;color:#a02a20;font:600 12.5px/1.4 'Plus Jakarta Sans',sans-serif")
+                div(style="padding:22px 26px 0")
+                    span(style="display:block;margin-bottom:8px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") NOM DE LA CATÉGORIE
+                    input#svnCatName(type="text" maxlength="40" placeholder="Ex : Corps, Tête, Visage…" style=`width:100%;height:48px;padding:0 14px;border:1.5px solid ${ACCENT};border-radius:12px;background:#fff;outline:none;font:500 14px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d`)
+                    span(style="display:block;margin:20px 0 10px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") ICÔNE (OPTIONNELLE)
+                    #svnCatIcons(style="display:grid;grid-template-columns:repeat(8,1fr);gap:8px")
+                        each ico, ii in ICONS
+                            button.svn-icon(type="button" data-svnicon=ico style=`height:44px;border-radius:11px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;border:1.5px solid ${ii === 0 ? ACCENT : '#eef0ee'};background:${ii === 0 ? '#e9f7f0' : '#fff'}`)= ico
+                    p(style="margin:18px 0 0;font:400 12.5px/1.6 'Plus Jakarta Sans',sans-serif;color:#8c968f") Créez la catégorie, puis rangez vos services dessous — ou choisissez-la dans la fiche d'un service.
+                div(style="margin-top:22px;padding:18px 26px;border-top:1px solid #eef0ee;display:flex;justify-content:flex-end;gap:10px")
+                    button.svn-btn-ghost(type="button" data-svnclose style="height:44px;padding:0 18px;border-radius:11px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 13px/1 'Plus Jakarta Sans',sans-serif;color:#1a201d") Annuler
+                    button#svnCatSave(type="button" style="height:44px;padding:0 20px;border-radius:11px;border:0;background:#12a06e;color:#fff;cursor:pointer;font:700 13px/1 'Plus Jakarta Sans',sans-serif") Créer la catégorie
+
+        script#svnServiceFiches(type="application/json")!= JSON.stringify(_svcFiches)
+        script#svnCourseFiches(type="application/json")!= JSON.stringify(_crsFiches)
+        script#svnEmployees(type="application/json")!= JSON.stringify(_emps.map(function (e) { return { id: String(e._id), name: e.nom }; }))
+        script#svnCategories(type="application/json")!= JSON.stringify(_cats)
+        script#svnColors(type="application/json")!= JSON.stringify(COLORS)
+        //- Couleurs déjà prises (le serveur refuse un doublon) : la maquette a
+        //- une palette figée, ce qui rendait la création impossible à l'aveugle.
+        script#svnUsedColors(type="application/json")!= JSON.stringify(serviceColors || [])
+
+    script(src="/js/layouts/service-new.js" defer)

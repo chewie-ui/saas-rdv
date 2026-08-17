@@ -1,0 +1,29 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   DEMANDES DE RENDEZ-VOUS EN ATTENTE
+   ─────────────────────────────────────────────────────────────────────────
+   Comme service-new / availability-new : l'apparence est inline dans le Pug,
+   ce fichier ne fait que ce qu'un attribut style ne peut pas exprimer.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+#pbRoot [hidden] { display: none !important; }
+
+#pbRoot { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+
+#pbRoot .pb-card:hover { border-color: #dbe3dd; }
+#pbRoot .pb-refuse:hover,
+#pbRoot .pb-refuse-direct:hover { border-color: #c2554b; }
+
+#pbRoot button:focus-visible,
+#pbRoot textarea:focus-visible {
+    outline: 2px solid #12a06e;
+    outline-offset: 2px;
+}
+
+#pbRoot button[disabled] { cursor: not-allowed; }
+
+/* Sur mobile, les actions passent sous la fiche et s'étirent : des boutons
+   de 40px collés au bord droit sont difficiles à viser au pouce. */
+@media (max-width: 560px) {
+    #pbRoot .pb-actions { width: 100% !important; }
+    #pbRoot .pb-actions button { flex: 1 1 auto; }
+}
