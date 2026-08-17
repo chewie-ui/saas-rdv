@@ -6,6 +6,32 @@
 
 /* ── Design tokens ──────────────────────────────────────────────────────── */
 :root {
+  /* Tokens applicatifs repris de design-tokens.css / import.css.
+     La page de réservation ne charge PAS import.css (voir booking.pug) : sans
+     ces copies, chaque `var(--accent)`, `var(--success)`… du fichier est
+     invalide et la déclaration entière est ignorée — ce qui rendait par ex. le
+     bloc « Créer mon compte » blanc sur blanc. Garder aligné sur
+     design-tokens.css en cas de changement de palette. */
+  --accent:           #12a06e;
+  --main-color:       #12a06e;
+  --success:          #0d7a54;
+  --success-pale:     #e6f6ee;
+  --danger:           #c2554b;
+  --danger-pale:      #fbecea;
+  --danger-border:    color-mix(in srgb, #c2554b 22%, transparent);
+  --warning:          #b5843f;
+  --warning-pale:     #fbf2e8;
+  --bs-green-deep:    #07301f;
+  --bs-green-light:   #6fd6a8;
+  --bs-green-border:  #bfe4d3;
+  --color-white:      #ffffff;
+  --ink:              #141a17;
+  --text-primary:     #141a17;
+  --text-secondary:   #3f474e;
+  --text-muted:       #6b737b;
+  --border-light:     #e9ece9;
+  --bg-secondary:     #f1f4f2;
+
   /* Accent — overridden by pug :root injection */
   --bk-accent:        var(--success);
   --bk-accent-text:   #ffffff;
@@ -3533,7 +3559,12 @@ body.bk-embed #bkCart .bk-cart {
 /* ── Post-booking signup nudge ───────────────────────────────────────────── */
 .bk-signup-nudge {
   margin: 20px 0 4px;
-  background: linear-gradient(135deg, var(--bs-green-deep) 0%, var(--accent) 100%);
+  /* Teinté avec l'accent de l'établissement. Les deux extrémités sont
+     assombries au noir : même avec un accent très clair (jaune, pastel), le
+     fond reste assez sombre pour que le texte blanc passe. */
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--bk-accent) 45%, #000) 0%,
+    color-mix(in srgb, var(--bk-accent) 88%, #000) 100%);
   border-radius: 16px;
   padding: 20px;
   color: #fff;
@@ -3643,7 +3674,7 @@ body.bk-embed #bkCart .bk-cart {
   width: 100%;
   padding: 12px;
   background: #fff;
-  color: var(--bs-green-deep);
+  color: color-mix(in srgb, var(--bk-accent) 70%, #000);
   border: none;
   border-radius: 10px;
   font-size: 14px;
@@ -3653,7 +3684,7 @@ body.bk-embed #bkCart .bk-cart {
   box-shadow: 0 3px 12px rgba(0,0,0,0.15);
 }
 
-.bk-signup-nudge__btn:hover    { background: var(--success-pale); transform: translateY(-1px); }
+.bk-signup-nudge__btn:hover    { background: color-mix(in srgb, var(--bk-accent) 8%, #fff); transform: translateY(-1px); }
 .bk-signup-nudge__btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
 .bk-signup-nudge__success {
