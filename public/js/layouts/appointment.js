@@ -692,14 +692,46 @@ setInterval(updateTimeline, 60000);
     submitBtn.disabled = true;
     const echecs = [];
     let crees = 0;
+
+    // `forcer` passe à true dès que le pro a accepté de poser un rendez-vous
+    // par-dessus une absence : on ne lui repose plus la question pour les
+    // dates suivantes de la même série.
+    let forcer = false;
+    const envoyer = (c, forcerSurAbsence) =>
+      fetch("/appointment/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          Object.assign({ date: c.date, startTime: c.time, forcerSurAbsence }, payload)
+        ),
+      }).then((r) => r.json());
+
     for (const c of creneaux) {
       try {
-        const res = await fetch("/appointment/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(Object.assign({ date: c.date, startTime: c.time }, payload)),
-        });
-        const data = await res.json();
+        let data = await envoyer(c, forcer);
+
+        // Le créneau n'est bloqué que par une absence que le pro s'est posée
+        // lui-même : on lui dit LAQUELLE et on le laisse trancher, au lieu du
+        // message trompeur « cet employé a déjà un rendez-vous ».
+        if (!data.success && data.error === "absence_conflict") {
+          const abs = data.absence || {};
+          const quand = abs.start && abs.end ? "de " + abs.start + " à " + abs.end : "sur ce créneau";
+          const accepte = await window
+            .confirmModal(
+              "Vous êtes en absence " + quand,
+              (abs.motif ? "Motif noté : « " + abs.motif + " ». " : "") +
+                "Ce rendez-vous tombe pendant cette absence. Voulez-vous le placer quand même ? " +
+                "L'absence est conservée : le rendez-vous se pose simplement par-dessus.",
+              { confirmLabel: "Oui, placer le rendez-vous", cancelLabel: "Non, annuler", danger: false }
+            )
+            .then(() => true)
+            .catch(() => false);
+          if (accepte) {
+            forcer = true;
+            data = await envoyer(c, true);
+          }
+        }
+
         if (data.success) { crees++; calendrierPerime = true; }
         // `motif` = étiquette courte, accolée à la date quand il y en a
         // plusieurs ; `seul` = le message exact affiché pour un rendez-vous

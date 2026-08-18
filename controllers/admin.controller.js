@@ -993,11 +993,28 @@ exports.createAdminBooking = async (req, res) => {
     // réglage resterait sans effet.
     let estEnSurbooking = false;
     if (!isGroup) {
-      const { message: conflictMessage, hadConflict } = await inspectBookingConflict({
+      const { message: conflictMessage, hadConflict, absence } = await inspectBookingConflict({
         Booking, currentCompany, date, startTimeInMinutes, endTimeInMinutes, employeeId, actualDuration,
       });
       if (conflictMessage && !company.allowOverbooking) {
-        return res.json({ success: false, error: "conflict", message: conflictMessage });
+        // Le seul obstacle est une absence que le pro s'est posée lui-même :
+        // on ne refuse pas sèchement, on lui dit LAQUELLE et on le laisse
+        // décider. Le client renvoie alors `forcerSurAbsence`.
+        // L'absence n'est PAS supprimée : elle peut couvrir toute la journée
+        // et d'autres rendez-vous, la détruire pour un seul RDV serait
+        // disproportionné. Le rendez-vous se pose simplement par-dessus,
+        // exactement comme une absence se pose par-dessus des RDV existants.
+        if (absence && !req.body.forcerSurAbsence) {
+          return res.json({
+            success: false,
+            error: "absence_conflict",
+            message: conflictMessage,
+            absence,
+          });
+        }
+        if (!absence) {
+          return res.json({ success: false, error: "conflict", message: conflictMessage });
+        }
       }
       estEnSurbooking = hadConflict;
     }
