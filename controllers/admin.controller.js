@@ -390,7 +390,11 @@ exports.appointment = async (req, res) => {
     Company.findById(currentCompany).select("slotTime schedule").lean(),
     getBookableTeam(currentCompany),
     DaysOff.findOne({ company: currentCompany }).lean(),
-    Service.find({ company: currentCompany, active: true }).select("_id name duration durationMax price employees color").lean(),
+    // Les services MASQUÉS sont inclus : masquer sert à les retirer de la
+    // page publique, pas à empêcher le pro de les utiliser lui-même (ex. une
+    // prestation réservée aux habitués, ou une nouveauté pas encore annoncée).
+    // Le champ `active` est renvoyé pour que le sélecteur les signale.
+    Service.find({ company: currentCompany }).select("_id name duration durationMax price employees color active").sort({ active: -1, order: 1 }).lean(),
     // Filet de secours pour les anciens RDV créés avant qu'on fige la couleur
     // sur la réservation elle-même (serviceColor) — inclut les services
     // désactivés (mais pas supprimés) pour ne pas leur faire perdre leur
@@ -863,8 +867,14 @@ exports.createAdminBooking = async (req, res) => {
     const rawEmail = req.body.email;
     const email = typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : rawEmail;
 
-    if (!date || !startTime || !name || !email) {
-      return res.json({ success: false, error: "missing_fields", message: "Veuillez remplir tous les champs obligatoires." });
+    // E-mail et téléphone facultatifs : quand c'est le PRO qui saisit le
+    // rendez-vous, il a souvent le client en face de lui ou au téléphone et
+    // ne connaît ni l'un ni l'autre. Exiger l'e-mail l'obligeait à
+    // inventer une adresse bidon, qui polluait ensuite la fiche client et
+    // faisait partir des confirmations dans le vide.
+    // Seuls la date, l'heure et le nom restent indispensables.
+    if (!date || !startTime || !name) {
+      return res.json({ success: false, error: "missing_fields", message: "La date, l'heure et le nom sont nécessaires." });
     }
 
     const Service = require("../db/models/company/service.model");
@@ -1088,7 +1098,12 @@ exports.createAdminBooking = async (req, res) => {
       },
     );
 
-    await sendEmail(email, "Confirmation de votre rendez-vous — BranShee", htmlTemplate);
+    // Sans adresse (saisie par le pro sans e-mail), il n'y a personne à
+    // prévenir : on saute l'envoi au lieu d'appeler sendEmail avec une
+    // destination vide, qui ferait échouer toute la création du rendez-vous.
+    if (email) {
+      await sendEmail(email, "Confirmation de votre rendez-vous — BranShee", htmlTemplate);
+    }
 
     // ── Confirmation WhatsApp / SMS au client (canal prioritaire WhatsApp,
     // repli SMS ; même système de crédits + toggles établissement) ──────────

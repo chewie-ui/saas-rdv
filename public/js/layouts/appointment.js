@@ -624,8 +624,11 @@ setInterval(updateTimeline, 60000);
     let name  = nameInput.value.trim();
     let email = emailInput.value.trim();
 
-    if (!creneaux.length || !name || !email) {
-      showError("Veuillez remplir les champs obligatoires (date, heure de début, prénom, email).");
+    // E-mail et téléphone facultatifs quand c'est le PRO qui saisit : il a
+    // souvent le client en face de lui et ne les connaît pas. Sans e-mail,
+    // aucune confirmation ne part — c'est voulu et sans conséquence.
+    if (!creneaux.length || !name) {
+      showError("Il manque la date, l'heure de début ou le prénom.");
       return;
     }
 
@@ -633,7 +636,10 @@ setInterval(updateTimeline, 60000);
     // téléphone) existe déjà sous un autre e-mail : on le signale, sinon le
     // pro se retrouve avec deux fiches et un historique coupé en deux. Un
     // client choisi dans la liste ne déclenche évidemment rien.
-    if (!clientChoisi) {
+    // Sans e-mail NI téléphone il ne reste que le nom : trop faible pour
+    // affirmer un doublon, on n'interroge donc pas (deux « Marie » ne sont
+    // pas la même personne).
+    if (!clientChoisi && (email || phoneInput.value.trim())) {
       try {
         const q = new URLSearchParams({
           email,

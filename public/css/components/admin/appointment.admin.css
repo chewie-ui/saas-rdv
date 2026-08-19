@@ -971,6 +971,13 @@
   border-bottom: 1px solid var(--border-light);
 }
 
+/* `display:flex` ci-dessous (et un second dans btn-normalize.css) battait le
+   `[hidden]{display:none}` du navigateur : une règle d'auteur l'emporte
+   toujours sur la feuille user-agent, quelle que soit la spécificité. Le
+   crayon « Modifier l'absence » restait donc visible sur les vrais
+   rendez-vous, alors que le JS le marquait bien `hidden`. */
+.appt-popup__tool-btn[hidden] { display: none !important; }
+
 .appt-popup__tool-btn {
   display: flex;
   align-items: center;

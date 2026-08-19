@@ -413,7 +413,12 @@ block content
                             select.input#newApptService
                                 option(value="")= t.appt.no_service
                                 each svc in services
-                                    option(value=String(svc._id) data-duration=svc.duration data-duration-max=(svc.durationMax || ''))= svc.name.length > 40 ? svc.name.slice(0, 40) + '…' : svc.name
+                                    //- Un service masqué reste proposable au PRO (il ne l'est
+                                    //- plus au client sur la page publique) : on le signale
+                                    //- pour qu'il ne croie pas l'avoir remis en ligne.
+                                    - var svcNom = svc.name.length > 34 ? svc.name.slice(0, 34) + '…' : svc.name
+                                    - var svcSuffixe = svc.active === false ? '  (masqué)' : ''
+                                    option(value=String(svc._id) data-duration=svc.duration data-duration-max=(svc.durationMax || '') data-hidden=(svc.active === false ? '1' : ''))= svcNom + svcSuffixe
 
                 if employees && employees.length > 1
                     .edit-fields-row

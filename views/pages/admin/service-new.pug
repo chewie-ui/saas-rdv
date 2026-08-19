@@ -260,9 +260,17 @@ block content
 
                         div
                             span(style="display:block;margin-bottom:10px;font:700 11px/1 'Plus Jakarta Sans',sans-serif;letter-spacing:.06em;color:#5f6b64") COULEUR (CALENDRIER)
-                            #svnFColors(style="display:flex;flex-wrap:wrap;gap:12px")
+                            #svnFColors(style="display:flex;flex-wrap:wrap;gap:12px;align-items:center")
                                 each col, ci in COLORS
                                     button.svn-color(type="button" data-svncolor=col style=`width:32px;height:32px;border-radius:50%;border:0;cursor:pointer;background:${col};box-shadow:${ci === 0 ? '0 0 0 2px #fff, 0 0 0 4px ' + col : 'none'};color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px/1 'Plus Jakarta Sans',sans-serif`)= ci === 0 ? '✓' : ''
+                                //- Pastille « couleur libre » : la palette ne couvre que 10
+                                //- teintes, or chaque service doit avoir la sienne — au-delà
+                                //- de 10 prestations il n'y avait plus aucun choix possible.
+                                //- Le champ natif est superposé et invisible : il ouvre le
+                                //- sélecteur du système, plus fiable qu'un nuancier maison.
+                                label#svnColorCustom(style="position:relative;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;border:1.5px dashed #c3ccc6;background:#fff;color:#5f6b64;font:400 17px/1 'Plus Jakarta Sans',sans-serif" title="Choisir une autre couleur")
+                                    span#svnColorCustomMark(style="pointer-events:none") +
+                                    input#svnColorPicker(type="color" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;padding:0;border:0;cursor:pointer")
 
                     div(style="display:flex;flex-direction:column;gap:22px")
                         div

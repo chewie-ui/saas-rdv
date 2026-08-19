@@ -113,7 +113,6 @@ export const initAppointmentPopup = function () {
   const svcRow     = document.getElementById("apptPopupServiceRow");
   const svcName    = document.getElementById("apptPopupServiceName");
   const canceledEl = document.getElementById("apptPopupCanceled");
-  const editBtn    = document.getElementById("apptPopupEdit");
   const deleteBtn  = document.getElementById("apptPopupDelete");
   const closeBtn   = document.getElementById("apptPopupClose");
   const detailBtn  = document.getElementById("apptPopupDetailBtn");
@@ -176,10 +175,8 @@ export const initAppointmentPopup = function () {
       dotEl.style.background   = d.color || "";
     }
 
-    // Edit / detail links — "Voir le détail" mène à la page d'édition d'un
-    // vrai RDV (nom, email...) : ça n'a pas de sens pour un bloc d'absence,
-    // qui n'a pas de client.
-    if (editBtn) editBtn.onclick = () => { window.location.href = `/clients-hub/${currentId}?edit=1`; };
+    // « Voir le détail » mène à la fiche du client : ça n'a pas de sens
+    // pour une absence, qui n'a pas de client — on le masque alors.
     if (detailBtn) detailBtn.href = `/clients-hub/${currentId}`;
     if (detailBtn) detailBtn.style.display = d.isBlock === "1" ? "none" : "";
 

@@ -269,7 +269,18 @@ exports.getServices = async (req, res) => {
   try {
     const { companyId, publicOnly } = req.query;
     const query = { company: companyId };
-    if (publicOnly === "1") query.active = true;
+    // Route PUBLIQUE, sans authentification : par défaut on ne renvoie que
+    // les services actifs. Auparavant il fallait demander `publicOnly=1` pour
+    // les filtrer — un simple appel /api/services?companyId=… exposait donc
+    // les prestations masquées de n'importe quel établissement (nom, prix,
+    // durée). Le masquage doit valoir pour tout le monde SAUF le pro sur son
+    // propre établissement ; ses pages admin passent de toute façon par
+    // servicesV2, jamais par cette route.
+    const estProprietaire =
+      !!req.user &&
+      !!res.locals.currentCompany &&
+      String(res.locals.currentCompany._id) === String(companyId);
+    if (!estProprietaire || publicOnly === "1") query.active = true;
 
     const services = await Service.find(query)
       .populate("employees", "fullName profilePicture")
