@@ -270,6 +270,28 @@
       b.style.boxShadow = on ? "0 0 0 2px #fff, 0 0 0 4px " + hex : "none";
       b.textContent = on ? "✓" : "";
     });
+
+    // Pastille « couleur libre » : elle prend l'apparence de la teinte
+    // choisie dès qu'on sort de la palette, pour qu'on voie ce qui est
+    // sélectionné sans avoir à rouvrir le sélecteur.
+    var champ = $("svnColorPicker");
+    if (champ) {
+      var horsPalette = COLORS.indexOf(sf.color) === -1;
+      var marque = $("svnColorCustomMark");
+      // Le champ affiche toujours la couleur courante, pour que le sélecteur
+      // s'ouvre sur la bonne teinte. `is-vierge` le repeint en blanc tant
+      // qu'on est resté dans la palette, sinon la pastille afficherait une
+      // couleur qui n'est pas celle du service.
+      champ.value = /^#[0-9a-f]{6}$/i.test(sf.color) ? sf.color : "#12a06e";
+      champ.classList.toggle("is-vierge", !horsPalette);
+      champ.style.border = horsPalette ? "0" : "1.5px dashed #c3ccc6";
+      champ.style.boxShadow = horsPalette ? "0 0 0 2px #fff, 0 0 0 4px " + sf.color : "none";
+      if (marque) {
+        marque.textContent = horsPalette ? "✓" : "+";
+        marque.style.color = horsPalette ? "#fff" : "#5f6b64";
+      }
+    }
+
     $("svnPvColor").style.background = sf.color;
   }
   function paintPreview() {
@@ -349,8 +371,40 @@
     var b = e.target.closest(".svn-color");
     if (!b) return;
     sf.color = b.dataset.svncolor;
+    // Reprendre une couleur de la palette corrige forcément un éventuel
+    // « couleur déjà utilisée » : le message ne doit pas survivre à sa cause.
+    hideErr($("svnSvcErr"));
     paintColors();
   });
+
+  // ── Couleur libre ────────────────────────────────────────────────────
+  // Le sélecteur natif se ferme sur un choix, mais émet « input » en continu
+  // pendant que l'utilisateur déplace le curseur : on écoute les deux pour
+  // que l'aperçu suive en direct, et on ne prévient qu'au « change » final
+  // — sinon l'alerte se déclencherait à chaque nuance survolée.
+  var champCouleur = $("svnColorPicker");
+  if (champCouleur) {
+    champCouleur.addEventListener("input", function () {
+      var v = String(this.value || "").toLowerCase();
+      if (!/^#[0-9a-f]{6}$/.test(v)) return;
+      sf.color = v;
+      paintColors();
+    });
+    champCouleur.addEventListener("change", function () {
+      var v = String(this.value || "").toLowerCase();
+      if (!/^#[0-9a-f]{6}$/.test(v)) return;
+      // Le serveur refuse deux services de même couleur : on le dit tout de
+      // suite plutôt que de laisser découvrir l'erreur à l'enregistrement.
+      if (colorTaken(v)) {
+        showErr($("svnSvcErr"), "Cette couleur est déjà utilisée par une autre prestation. Choisissez-en une autre.");
+        sf.color = firstFreeColor();
+      } else {
+        hideErr($("svnSvcErr"));
+        sf.color = v;
+      }
+      paintColors();
+    });
+  }
   $("svnFApprox").addEventListener("click", function () {
     sf.approx = !sf.approx;
     toggleSw($("svnFApprox"), sf.approx);

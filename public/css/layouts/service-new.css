@@ -43,3 +43,34 @@
     #svnRoot .svn-gbody { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     #svnRoot .svn-row { min-width: 640px; }
 }
+
+/* ── Pastille « couleur libre » ───────────────────────────────────────────── */
+/* Un input[type=color] s'affiche par défaut comme un rectangle bordé, très
+   différent d'un navigateur à l'autre. On le ramène au même rond de 32px que
+   les autres pastilles. Le champ reste VISIBLE (pas d'opacity:0 masqué sous
+   un libellé) : plusieurs navigateurs refusent d'ouvrir le sélecteur natif
+   depuis un contrôle invisible, c'est ce qui empêchait le « + » de réagir. */
+#svnRoot .svn-colorpicker {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: 1.5px dashed #c3ccc6;
+    box-sizing: border-box;
+}
+/* Chrome / Edge / Safari */
+#svnRoot .svn-colorpicker::-webkit-color-swatch-wrapper { padding: 0; }
+#svnRoot .svn-colorpicker::-webkit-color-swatch {
+    border: 0;
+    border-radius: 50%;
+}
+/* Firefox */
+#svnRoot .svn-colorpicker::-moz-color-swatch {
+    border: 0;
+    border-radius: 50%;
+}
+/* Tant qu'aucune couleur libre n'est choisie, la pastille reste blanche avec
+   le « + » ; le JS retire cette classe dès qu'on sort de la palette. */
+#svnRoot .svn-colorpicker.is-vierge::-webkit-color-swatch { background: #fff !important; }
+#svnRoot .svn-colorpicker.is-vierge::-moz-color-swatch { background: #fff !important; }
+
+#svnRoot .svn-colorpicker:hover { border-color: #12a06e; }
