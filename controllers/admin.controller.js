@@ -852,6 +852,8 @@ exports.appointment = async (req, res) => {
 // createAdminBlock (absences). Retourne un message d'erreur ou null. ───────
 // Implémentation partagée avec l'API mobile — cf. utils/bookingConflict.js
 const { checkBookingConflict, inspectBookingConflict } = require("../utils/bookingConflict");
+const { dossierKey } = require("../utils/dossierKey");
+const { preserveClient } = require("../utils/preserveClient");
 
 // ── Création manuelle d'un rendez-vous depuis le panel admin ─────────────────
 exports.createAdminBooking = async (req, res) => {
@@ -1663,6 +1665,8 @@ exports.deleteBooking = async (req, res) => {
   const data = await Booking.findOneAndDelete({ _id: bookId, company: res.locals.currentCompany?._id });
 
   if (data) {
+    // Le client doit survivre à la suppression de son rendez-vous.
+    await preserveClient(res.locals.currentCompany?._id, data).catch(() => {});
     const companyDoc = await Company.findById(data.company);
 
     // Sync Google Calendar
@@ -2180,18 +2184,32 @@ exports.clientsHubInit = async (req, res) => {
     // et n'existent donc dans aucun Booking.
     const ClientDossier = require("../db/models/clientDossier.model");
     const dossiers = await ClientDossier.find({ company: res.locals.currentCompany._id })
-      .select("email altName fullName firstName lastName phone createdAt createdManually").lean();
+      .select("email altName fullName firstName lastName phone createdAt createdManually hadBookings clientKey").lean();
 
     const altMap = {};
     dossiers.forEach((d) => { if (d.altName) altMap[d.email] = d.altName; });
     clients.forEach((c) => { c.altName = altMap[(c.email || "").trim().toLowerCase()] || ""; });
 
-    const dejaListes = new Set(clients.map((c) => (c.email || "").trim().toLowerCase()).filter(Boolean));
+    // Indexé par CLÉ et non par e-mail : un client sans adresse aurait sinon
+    // été considéré comme absent, et se serait affiché deux fois — une fois
+    // via ses rendez-vous, une fois via son dossier.
+    const dejaListes = new Set(
+      clients
+        .map((c) => dossierKey({ email: c.email, phone: c.phone, firstName: c.name, lastName: c.surname }))
+        .filter(Boolean),
+    );
     for (const d of dossiers) {
       const mail = (d.email || "").trim().toLowerCase();
-      // `createdManually` : voir le modèle — un dossier né d'une note ou d'un
-      // blocage n'est pas un client à afficher.
-      if (!mail || !d.createdManually || dejaListes.has(mail)) continue;
+      // Un dossier né d'une simple note ou d'un blocage n'est pas un client
+      // à afficher. En revanche `hadBookings` marque quelqu'un qui a bel et
+      // bien été client : il reste listé même après suppression de tous ses
+      // rendez-vous.
+      const vraiClient = d.createdManually || d.hadBookings;
+      if (!vraiClient) continue;
+      // Repli sur la clé quand il n'y a pas d'e-mail — sinon un client sans
+      // adresse serait écarté ici alors qu'on vient de le préserver.
+      const identifiant = mail || d.clientKey || "";
+      if (!identifiant || dejaListes.has(identifiant)) continue;
       const morceaux = (d.fullName || "").trim().split(/\s+/);
       clients.push({
         name: d.firstName || morceaux[0] || "",
@@ -2236,6 +2254,12 @@ exports.clientsHubInit = async (req, res) => {
 // l'établissement courant (anti-IDOR) — on ne supprime que ses propres RDV.
 exports.clientsHubBulkDelete = async (req, res) => {
   try {
+    // Cette route sert DEUX intentions opposées : « supprimer ce rendez-vous »
+    // (le client doit rester) et « supprimer ce client » (il doit partir).
+    // On ne le devine pas — l'interface le dit explicitement. Par défaut on
+    // PRÉSERVE : perdre un client par erreur est bien plus grave que laisser
+    // une fiche vide de trop.
+    const supprimerClient = req.body.supprimerClient === true;
     let { ids, dossierIds } = req.body;
     if (!Array.isArray(ids)) ids = ids ? [ids] : [];
     ids = ids.filter(Boolean);
@@ -2255,6 +2279,14 @@ exports.clientsHubBulkDelete = async (req, res) => {
       emails = [...new Set(concernes.map((b) => (b.email || "").trim().toLowerCase()).filter(Boolean))];
     }
 
+    // Suppression d'un simple rendez-vous : on pose le dossier témoin AVANT,
+    // tant que les coordonnées du client sont encore lisibles.
+    if (!supprimerClient && ids.length) {
+      const aPreserver = await Booking.find({ _id: { $in: ids }, company: companyId })
+        .select("name surname email phone isBlock").lean();
+      for (const b of aPreserver) await preserveClient(companyId, b).catch(() => {});
+    }
+
     const result = ids.length
       ? await Booking.deleteMany({ _id: { $in: ids }, company: companyId })
       : { deletedCount: 0 };
@@ -2262,10 +2294,22 @@ exports.clientsHubBulkDelete = async (req, res) => {
     // Seuls les dossiers créés à la main sont supprimables ici : ceux nés d'une
     // note ou d'un blocage doivent survivre (on ne débloque pas quelqu'un en
     // supprimant ses rendez-vous, et on ne perd pas un suivi).
-    const critereDossier = { company: companyId, createdManually: true, $or: [] };
-    if (dossierIds.length) critereDossier.$or.push({ _id: { $in: dossierIds } });
-    if (emails.length) critereDossier.$or.push({ email: { $in: emails } });
-    if (critereDossier.$or.length) await ClientDossier.deleteMany(critereDossier);
+    // `hadBookings` s'ajoute à `createdManually` : supprimer volontairement
+    // un client depuis cette page doit emporter le dossier témoin posé à la
+    // suppression de ses rendez-vous, sinon il resterait listé pour toujours.
+    const cibles = supprimerClient ? [] : null;
+    if (cibles === null) return res.json({ success: true, deleted: result.deletedCount });
+    if (dossierIds.length) cibles.push({ _id: { $in: dossierIds } });
+    if (emails.length) cibles.push({ email: { $in: emails } });
+    if (cibles.length) {
+      await ClientDossier.deleteMany({
+        company: companyId,
+        $and: [
+          { $or: [{ createdManually: true }, { hadBookings: true }] },
+          { $or: cibles },
+        ],
+      });
+    }
 
     return res.json({ success: true, deleted: result.deletedCount });
   } catch (err) {
@@ -2499,9 +2543,16 @@ exports.clientsHubDetail = async (req, res) => {
     };
 
     // Autres RDV du même client (même email OU même téléphone).
+    // Même précédence que la clé de dossier : e-mail, sinon téléphone,
+    // sinon nom. Sans le repli sur le nom, un client noté sans coordonnées
+    // n'avait qu'un seul rendez-vous visible dans sa fiche, même s'il en
+    // avait dix.
     const or = [];
     if (booking.email) or.push({ email: booking.email });
-    if (booking.phone) or.push({ phone: booking.phone });
+    else if (booking.phone) or.push({ phone: booking.phone });
+    else if ((booking.name || "").trim()) {
+      or.push({ name: booking.name || "", surname: booking.surname || "" });
+    }
     let clientBookings = ctx.booking ? [booking] : [];
     if (or.length) {
       const trouves = await Booking.find({
@@ -2518,9 +2569,15 @@ exports.clientsHubDetail = async (req, res) => {
     const [services, employees, dossier] = await Promise.all([
       Service.find({ company: companyId, active: true }).select("_id name duration durationMax price").lean(),
       getBookableTeam(companyId),
-      booking.email
-        ? ClientDossier.findOne({ company: companyId, email: booking.email.trim().toLowerCase() }).lean()
-        : null,
+      // Recherché par CLÉ : un client sans e-mail a désormais un dossier
+      // identifié par son téléphone ou son nom.
+      (function () {
+        const cle = dossierKey({
+          email: booking.email, phone: booking.phone,
+          firstName: booking.name, lastName: booking.surname,
+        });
+        return cle ? ClientDossier.findOne({ company: companyId, clientKey: cle }).lean() : null;
+      })(),
     ]);
 
     // Entrées du dossier, plus récentes d'abord.
@@ -2568,6 +2625,10 @@ exports.clientsHubBlock = async (req, res) => {
     const ctx = await resoudreClient(companyId, id);
     if (!ctx) return res.status(404).json({ success: false });
 
+    // Le blocage, LUI, exige une adresse : la réservation publique reconnaît
+    // un client bloqué par son e-mail (cf. booking.controller). Bloquer
+    // quelqu'un sans adresse enregistrerait un drapeau que rien ne lirait —
+    // le pro se croirait protégé alors que le client pourrait réserver.
     const email = ctx.email;
     if (!email) return res.status(400).json({ success: false, error: "no_email" });
 
@@ -2599,14 +2660,17 @@ exports.clientsHubSaveNotes = async (req, res) => {
     const ctx = await resoudreClient(companyId, id);
     if (!ctx) return res.status(404).json({ success: false });
 
-    const email = ctx.email;
-    if (!email) return res.status(400).json({ success: false, error: "no_email" });
+    const email = ctx.email || "";
+    // Une note peut se prendre sur un client sans e-mail : la clé retombe
+    // sur son téléphone, sinon sur son nom.
+    const cle = dossierKey({ email: email, phone: ctx.phone, fullName: ctx.fullName });
+    if (!cle) return res.status(400).json({ success: false, error: "no_identity" });
 
     const ClientDossier = require("../db/models/clientDossier.model");
     const notes = String(req.body.notes || "").slice(0, 5000);
     const fullName = ctx.fullName;
     await ClientDossier.findOneAndUpdate(
-      { company: companyId, email },
+      { company: companyId, clientKey: cle },
       { $set: { generalInfo: notes }, $setOnInsert: { company: companyId, email, fullName, phone: ctx.phone } },
       { new: true, upsert: true }
     );
@@ -2624,12 +2688,17 @@ async function _getOrCreateDossier(bookingId, companyId) {
   // client créé à la main (voir resoudreClient).
   const ctx = await resoudreClient(companyId, bookingId);
   if (!ctx) return { error: "not_found" };
-  if (!ctx.email) return { error: "no_email" };
+  // Un client SANS e-mail a maintenant un dossier : identifié par son
+  // téléphone, sinon par son nom. Seul un client sans aucune de ces trois
+  // informations reste impossible à ficher — il n'y aurait rien pour le
+  // reconnaître d'une fois sur l'autre.
+  const cle = dossierKey({ email: ctx.email, phone: ctx.phone, fullName: ctx.fullName });
+  if (!cle) return { error: "no_identity" };
   const ClientDossier = require("../db/models/clientDossier.model");
-  let dossier = await ClientDossier.findOne({ company: companyId, email: ctx.email });
+  let dossier = await ClientDossier.findOne({ company: companyId, clientKey: cle });
   if (!dossier) {
     dossier = await ClientDossier.create({
-      company: companyId, email: ctx.email,
+      company: companyId, email: ctx.email || "",
       fullName: ctx.fullName,
       phone: ctx.phone,
     });
@@ -2663,7 +2732,7 @@ exports.clientsHubDossierContact = async (req, res) => {
     if (!/^[a-f0-9]{24}$/i.test(req.params.id)) return res.status(400).json({ success: false });
     const companyId = res.locals.currentCompany._id;
     const { dossier, error } = await _getOrCreateDossier(req.params.id, companyId);
-    if (error === "no_email") return res.status(400).json({ success: false, error: "no_email" });
+    if (error === "no_identity") return res.status(400).json({ success: false, error: "no_identity" });
     if (error) return res.status(404).json({ success: false });
 
     dossier.altName = String(req.body.altName || "").trim().slice(0, 120);
@@ -2682,7 +2751,7 @@ exports.clientsHubDossierAdd = async (req, res) => {
     if (!/^[a-f0-9]{24}$/i.test(req.params.id)) return res.status(400).json({ success: false });
     const companyId = res.locals.currentCompany._id;
     const { dossier, error } = await _getOrCreateDossier(req.params.id, companyId);
-    if (error === "no_email") return res.status(400).json({ success: false, error: "no_email" });
+    if (error === "no_identity") return res.status(400).json({ success: false, error: "no_identity" });
     if (error) return res.status(404).json({ success: false });
 
     const note = (req.body.note || "").trim();
@@ -2799,6 +2868,7 @@ exports.historyDeleteRow = async (req, res) => {
     // IDOR : scopé à l'établissement courant.
     const response = await Booking.findOneAndDelete({ _id: id, company: res.locals.currentCompany?._id });
     if (response) {
+      await preserveClient(res.locals.currentCompany?._id, response).catch(() => {});
       return res.json({ success: true });
     } else {
       return res.status(404).json({ success: false });

@@ -361,7 +361,7 @@ block scripts
                 var res = await fetch('/clients-hub/bookings', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ids: ids, dossierIds: dossierIds || [] })
+                    body: JSON.stringify({ ids: ids, dossierIds: dossierIds || [], supprimerClient: true })
                 });
                 if (!res.ok) throw new Error('delete failed');
                 return res.json();

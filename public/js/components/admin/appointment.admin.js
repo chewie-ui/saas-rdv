@@ -209,11 +209,13 @@ export const initAppointmentPopup = function () {
         : null;
     }
 
-    // Dossier client → fiche clients-hub, onglet « Dossier » (et non plus
-    // l'ancienne page /clients/:email). Caché si pas d'email (événement
-    // "autre" sans client, ou dossier impossible à tenir sans email).
+    // Dossier client → fiche clients-hub, onglet « Dossier ». Affiché dès
+    // qu'il y a un client, MÊME sans e-mail : le dossier est désormais
+    // identifié par e-mail, sinon téléphone, sinon nom (cf.
+    // utils/dossierKey), et le pro peut ajouter l'adresse ensuite. Seules
+    // les absences n'en ont pas — elles n'ont pas de client.
     if (dossierBtn) {
-      if (d.email && d.isBlock !== "1") {
+      if (d.isBlock !== "1") {
         dossierBtn.href = `/clients-hub/${currentId}?tab=dossier`;
         dossierBtn.style.display = "";
       } else {

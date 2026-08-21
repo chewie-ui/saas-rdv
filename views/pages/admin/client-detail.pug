@@ -688,7 +688,10 @@ block scripts
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             ids: CLIENT_IDS,
-                            dossierIds: MANUAL_CLIENT_ID ? [MANUAL_CLIENT_ID] : []
+                            dossierIds: MANUAL_CLIENT_ID ? [MANUAL_CLIENT_ID] : [],
+                            // Intention explicite : c'est bien le CLIENT qu'on supprime,
+                            // pas seulement ses rendez-vous.
+                            supprimerClient: true
                         })
                     });
                     if (!res.ok) throw new Error('fail');

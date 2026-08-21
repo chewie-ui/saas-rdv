@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const { syncClientIdentity } = require("../utils/syncClientIdentity");
 const attachOrphanBookings = require("../utils/attachOrphanBookings");
 const Client = require("../db/models/client.model");
 const User = require("../db/models/user.model");
@@ -324,11 +325,15 @@ exports.updateProfile = async (req, res) => {
       // Le modèle User n'a ni "location" (texte libre) ni "languages"/
       // "emailNotifications" — ces champs sont masqués côté template pour
       // un compte unifié (cf. client-settings.pug) et ignorés ici.
+      // L'état AVANT est relu d'abord : il sert à repérer les rendez-vous
+      // qui portaient bien CETTE identité (cf. utils/syncClientIdentity).
+      const avant = await User.findById(req.user._id).select("fullName phone").lean();
       await User.findByIdAndUpdate(req.user._id, {
         fullName: fullName.trim(),
         phone: cleanPhone,
         ...personal,
       });
+      await syncClientIdentity(req.user._id, avant || {}, { fullName: fullName.trim(), phone: cleanPhone });
       return res.redirect("/espace-client/parametres?success=profile");
     }
 
@@ -338,6 +343,7 @@ exports.updateProfile = async (req, res) => {
       parsedLanguages = Array.isArray(languages) ? languages : [languages];
     }
 
+    const avantClient = await Client.findById(req.client._id).select("fullName phone").lean();
     await Client.findByIdAndUpdate(req.client._id, {
       fullName: fullName.trim(),
       phone: cleanPhone,
@@ -346,6 +352,7 @@ exports.updateProfile = async (req, res) => {
       languages: parsedLanguages,
       emailNotifications: emailNotifications === "on",
     });
+    await syncClientIdentity(req.client._id, avantClient || {}, { fullName: fullName.trim(), phone: cleanPhone });
 
     return res.redirect("/espace-client/parametres?success=profile");
   } catch (err) {
