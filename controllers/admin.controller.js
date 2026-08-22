@@ -2332,18 +2332,48 @@ function echapperRegex(s) {
 // Clients de l'établissement, dédupliqués comme dans la liste : e-mail d'abord,
 // à défaut téléphone, à défaut nom complet.
 async function chercherClients(companyId, motif, limite) {
-  const rx = new RegExp(echapperRegex(motif), "i");
+  // Le motif est découpé en MOTS, et chaque mot doit se retrouver quelque
+  // part (prénom, nom, e-mail ou téléphone). Auparavant le motif entier était
+  // comparé à chaque champ pris isolément : taper « anne l » ne trouvait
+  // plus rien, puisque ni « Anne » ni « Lescroart » ne contiennent « anne l ».
+  // Le prénom et le nom étant stockés séparément, aucun champ ne contient
+  // jamais le nom complet.
+  const mots = motif.split(/s+/).filter(Boolean);
+  const plusieursMots = mots.length > 1;
+
+  // Sur les NOMS, chaque mot doit commencer un mot du champ — pas se trouver
+  // n'importe où. « (^|espace) » couvre les noms composés : « greef » trouve
+  // bien « DE GREEF ». Sans cette ancre, une lettre isolée remontait tout le
+  // monde.
+  const rxNom = (mot) => new RegExp("(^|\s)" + echapperRegex(mot), "i");
+
+  // E-mail et téléphone ne sont interrogés que sur une recherche d'UN seul
+  // mot : quand on tape « anne l », on cherche une personne, pas un « l »
+  // caché dans « gmail.com » ou « exemple.be ».
+  const surTousLesChamps = (champsNom, champsContact) =>
+    mots.map((mot) => {
+      const ou = champsNom.map((c) => ({ [c]: rxNom(mot) }));
+      if (!plusieursMots) {
+        const libre = new RegExp(echapperRegex(mot), "i");
+        champsContact.forEach((c) => ou.push({ [c]: libre }));
+      }
+      return { $or: ou };
+    });
+
   const ClientDossier = require("../db/models/clientDossier.model");
   const [bookings, dossiers] = await Promise.all([
     Booking.find({
       company: companyId,
       isBlock: { $ne: true },
-      $or: [{ name: rx }, { surname: rx }, { email: rx }, { phone: rx }],
+      $and: surTousLesChamps(["name", "surname"], ["email", "phone"]),
     }).sort({ date: -1, startTime: -1 }).select("name surname email phone date").limit(300).lean(),
     ClientDossier.find({
       company: companyId,
-      createdManually: true,
-      $or: [{ firstName: rx }, { lastName: rx }, { fullName: rx }, { email: rx }, { phone: rx }],
+      // `hadBookings` s'ajoute : un client conservé après suppression de tous
+      // ses rendez-vous doit rester trouvable, sinon il est visible dans la
+      // liste mais introuvable à la recherche.
+      $or: [{ createdManually: true }, { hadBookings: true }],
+      $and: surTousLesChamps(["firstName", "lastName", "fullName"], ["email", "phone"]),
     }).select("firstName lastName fullName email phone").limit(50).lean(),
   ]);
 
