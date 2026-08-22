@@ -260,6 +260,9 @@ router.get("/history/search", isAuth, injectCompany, requirePermission("appointm
 router.get("/clients-hub", isAuth, injectCompany, requirePermission("appointments.view"), adminController.clientsHubInit);
 router.delete("/clients-hub/bookings", isAuth, injectCompany, requirePermission("appointments.cancelDelete"), adminController.clientsHubBulkDelete);
 router.get("/clients-hub/search", isAuth, injectCompany, requirePermission("appointments.view"), adminController.clientsHubSearch);
+// Fusionner deux fiches d'une même personne. Exige le droit de suppression :
+// l'opération fait disparaître une fiche, comme une suppression.
+router.post("/clients-hub/merge", isAuth, injectCompany, requirePermission("appointments.cancelDelete"), adminController.clientsHubMerge);
 router.get("/clients-hub/lookup", isAuth, injectCompany, requirePermission("appointments.view"), adminController.clientsHubLookup);
 router.post("/clients-hub/new", isAuth, injectCompany, requirePermission("clients.manage"), adminController.clientsHubCreate);
 router.get("/clients-hub/:id", isAuth, injectCompany, requirePermission("appointments.view"), adminController.clientsHubDetail);

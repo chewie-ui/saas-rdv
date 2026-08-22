@@ -2389,6 +2389,11 @@ async function chercherClients(companyId, motif, limite) {
     const vu = map.get(k);
     if (vu) { vu.count++; continue; }
     map.set(k, {
+      // `id` = l'identifiant par lequel l'app désigne un client partout
+      // ailleurs : son rendez-vous le plus récent (ou son dossier). Il
+      // manquait, ce qui rendait tout résultat de recherche inexploitable
+      // pour agir sur le client — seulement pour l'afficher.
+      id: String(b._id),
       name: b.name || "", surname: b.surname || "",
       email: b.email || "", phone: b.phone || "",
       lastDate: b.date, count: 1,
@@ -2397,6 +2402,7 @@ async function chercherClients(companyId, motif, limite) {
   for (const d of dossiers) {
     const morceaux = (d.fullName || "").trim().split(/\s+/);
     const c = {
+      id: String(d._id),
       name: d.firstName || morceaux[0] || "",
       surname: d.lastName || morceaux.slice(1).join(" "),
       email: d.email || "", phone: d.phone || "",
@@ -2628,6 +2634,9 @@ exports.clientsHubDetail = async (req, res) => {
       // fiche qu'il faut viser. Sans ça, « Supprimer le client » envoyait une
       // liste vide et le serveur refusait.
       manualClientId: ctx.booking ? "" : String(ctx.dossier._id),
+      // Identifiant par lequel CETTE fiche est désignée (celui de l'URL) :
+      // nécessaire à la fusion, qui doit dire quelle fiche conserver.
+      currentClientId: String(id),
       dossierEntries,
       defaultDuration: (res.locals.currentCompany && res.locals.currentCompany.slotTime) || 30,
       hasServices: services.length > 0,
@@ -4391,5 +4400,57 @@ exports.refusePendingBooking = async (req, res) => {
   } catch (err) {
     console.error("[refusePendingBooking]", err);
     return res.status(500).json({ success: false, message: "Erreur serveur." });
+  }
+};
+
+// ── Fusionner deux fiches clients ──────────────────────────────────────────
+// Une même personne apparaît deux fois dès que ses rendez-vous ne partagent
+// pas la même clé de regroupement : réservation en ligne avec e-mail d'un
+// côté, saisie manuelle sans coordonnées de l'autre. Le pro choisit la fiche
+// à conserver ; les rendez-vous de l'autre reçoivent ses coordonnées et les
+// deux se rejoignent.
+exports.clientsHubMerge = async (req, res) => {
+  try {
+    const companyId = res.locals.currentCompany?._id;
+    const { sourceId, targetId } = req.body || {};
+    const oid = (v) => /^[a-f0-9]{24}$/i.test(String(v || ""));
+    if (!oid(sourceId) || !oid(targetId)) {
+      return res.status(400).json({ success: false, error: "ids_invalides" });
+    }
+    if (String(sourceId) === String(targetId)) {
+      return res.status(400).json({ success: false, error: "meme_fiche" });
+    }
+
+    const [source, cible] = await Promise.all([
+      resoudreClient(companyId, sourceId),
+      resoudreClient(companyId, targetId),
+    ]);
+    if (!source || !cible) return res.status(404).json({ success: false, error: "introuvable" });
+
+    // Refus explicite plutôt que fusion silencieuse au mauvais endroit : sans
+    // e-mail, téléphone ni nom, on ne sait pas quels rendez-vous déplacer.
+    const { mergeClients } = require("../utils/mergeClients");
+    let resultat;
+    try {
+      resultat = await mergeClients(companyId, source, cible);
+    } catch (e) {
+      if (e.message === "source_non_identifiable") {
+        return res.status(400).json({ success: false, error: "source_non_identifiable" });
+      }
+      throw e;
+    }
+
+    logActivity({
+      company: companyId,
+      user: req.user,
+      role: res.locals.membershipRole,
+      action: "client.merge",
+      description: `a fusionné la fiche de ${source.fullName || "(sans nom)"} dans celle de ${cible.fullName || "(sans nom)"}`,
+    });
+
+    return res.json({ success: true, ...resultat });
+  } catch (err) {
+    console.error("clientsHubMerge error:", err.message);
+    return res.status(500).json({ success: false });
   }
 };

@@ -65,6 +65,12 @@ block content
                         button.cd-menu__item#cdBlock(type="button")
                             span.material-symbols-outlined(style="font-size:18px") block
                             span Bloquer le client
+                        //- Une même personne apparaît deux fois dès que ses
+                        //- rendez-vous ne partagent pas la même clé (e-mail
+                        //- d'un côté, saisie sans coordonnées de l'autre).
+                        button.cd-menu__item#cdMerge(type="button")
+                            span.material-symbols-outlined(style="font-size:18px") merge
+                            span Fusionner avec une autre fiche
                         .cd-menu__sep
                         button.cd-menu__item.cd-menu__item--danger#cdDelete(type="button")
                             span.material-symbols-outlined(style="font-size:18px") delete
@@ -666,6 +672,94 @@ block scripts
             }
 
             var CLIENT_IDS = !{safeJson((clientBookings || []).map(function (b) { return String(b._id); }))};
+
+            // ── Fusionner avec une autre fiche ────────────────────────
+            // Deux fiches pour la même personne apparaissent dès que ses
+            // rendez-vous ne partagent pas la même clé de regroupement
+            // (e-mail d'un côté, saisie sans coordonnées de l'autre). On
+            // demande LAQUELLE absorber, puis on confirme en toutes lettres.
+            var FICHE_COURANTE = '#{currentClientId || ""}';
+            var mergeBtn = document.getElementById('cdMerge');
+            if (mergeBtn) mergeBtn.addEventListener('click', function () {
+                menu.hidden = true;
+                var overlay = window.showModal({
+                    title: 'Fusionner avec une autre fiche',
+                    desc: "Cherchez la fiche en double. Ses rendez-vous, ses notes et son suivi seront rattachés à CETTE fiche-ci, puis elle disparaîtra.",
+                    maxWidth: '520px',
+                    bodyHtml:
+                        '<input id="cdMergeQ" placeholder="Nom, e-mail ou téléphone…" ' +
+                        'style="width:100%;height:44px;padding:0 14px;border:1px solid #e0e3e5;border-radius:11px;outline:none;font:500 14px/1 inherit">' +
+                        '<div id="cdMergeRes" style="margin-top:10px;max-height:260px;overflow-y:auto"></div>'
+                });
+                var champ = overlay.querySelector('#cdMergeQ');
+                var boite = overlay.querySelector('#cdMergeRes');
+                if (!champ || !boite) return;
+                champ.focus();
+
+                var minuteur = null;
+                champ.addEventListener('input', function () {
+                    clearTimeout(minuteur);
+                    var v = champ.value.trim();
+                    if (v.length < 2) { boite.innerHTML = ''; return; }
+                    minuteur = setTimeout(function () {
+                        fetch('/clients-hub/search?q=' + encodeURIComponent(v))
+                            .then(function (x) { return x.json(); })
+                            .catch(function () { return {}; })
+                            .then(function (r) {
+                                var liste = ((r && r.clients) || []).filter(function (c) {
+                                    // Ne jamais se proposer soi-même comme fiche à absorber.
+                                    return c.id && String(c.id) !== FICHE_COURANTE;
+                                });
+                                if (!liste.length) {
+                                    boite.innerHTML = '<p style="margin:8px 2px;font:500 13px/1.5 inherit;color:#8c968f">Aucune autre fiche trouvée.</p>';
+                                    return;
+                                }
+                                boite.innerHTML = liste.map(function (c) {
+                                    var nom = ((c.name || '') + ' ' + (c.surname || '')).trim() || '(sans nom)';
+                                    var det = [c.email, c.phone].filter(Boolean).join(' · ') || 'aucune coordonnée';
+                                    var nb = c.count ? c.count + ' RDV' : 'aucun RDV';
+                                    return '<button type="button" class="cd-merge-opt" data-id="' + c.id + '" data-nom="' + nom.replace(/"/g, '&quot;') + '" ' +
+                                        'style="display:block;width:100%;text-align:left;padding:11px 13px;margin-bottom:6px;border:1px solid #e6eae7;border-radius:11px;background:#fff;cursor:pointer">' +
+                                        '<span style="display:block;font:700 13.5px/1.3 inherit;color:#1a201d">' + nom + '</span>' +
+                                        '<span style="display:block;margin-top:3px;font:400 12px/1.3 inherit;color:#8c968f">' + det + ' · ' + nb + '</span>' +
+                                        '</button>';
+                                }).join('');
+                            });
+                    }, 250);
+                });
+
+                boite.addEventListener('click', async function (e) {
+                    var b = e.target.closest('.cd-merge-opt');
+                    if (!b) return;
+                    var id = b.dataset.id, nom = b.dataset.nom;
+                    overlay.remove();
+
+                    var ok = await window.confirmModal(
+                        'Fusionner « ' + nom + ' » dans cette fiche ?',
+                        "Ses rendez-vous, ses notes et son suivi seront rattachés ici, et sa fiche disparaîtra. Cette action est irréversible."
+                    );
+                    if (!ok) return;
+
+                    try {
+                        var res = await fetch('/clients-hub/merge', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ sourceId: id, targetId: FICHE_COURANTE })
+                        });
+                        var data = await res.json().catch(function () { return {}; });
+                        if (!res.ok || !data.success) {
+                            var msg = data.error === 'source_non_identifiable'
+                                ? "Cette fiche n'a ni e-mail, ni téléphone, ni nom : impossible de savoir quels rendez-vous rattacher."
+                                : "La fusion a échoué.";
+                            window.confirmModal('Impossible', msg, { alertOnly: true });
+                            return;
+                        }
+                        window.location.reload();
+                    } catch (err) {
+                        window.confirmModal('Erreur', 'La fusion a échoué.', { alertOnly: true });
+                    }
+                });
+            });
 
             // ── Supprimer le client (tous ses RDV) ────────────────────
             // Client créé à la main : aucun rendez-vous à supprimer, c'est sa
