@@ -2338,14 +2338,14 @@ async function chercherClients(companyId, motif, limite) {
   // plus rien, puisque ni « Anne » ni « Lescroart » ne contiennent « anne l ».
   // Le prénom et le nom étant stockés séparément, aucun champ ne contient
   // jamais le nom complet.
-  const mots = motif.split(/s+/).filter(Boolean);
+  const mots = motif.split(/\s+/).filter(Boolean);
   const plusieursMots = mots.length > 1;
 
   // Sur les NOMS, chaque mot doit commencer un mot du champ — pas se trouver
   // n'importe où. « (^|espace) » couvre les noms composés : « greef » trouve
   // bien « DE GREEF ». Sans cette ancre, une lettre isolée remontait tout le
   // monde.
-  const rxNom = (mot) => new RegExp("(^|\s)" + echapperRegex(mot), "i");
+  const rxNom = (mot) => new RegExp("(^|\\s)" + echapperRegex(mot), "i");
 
   // E-mail et téléphone ne sont interrogés que sur une recherche d'UN seul
   // mot : quand on tape « anne l », on cherche une personne, pas un « l »
