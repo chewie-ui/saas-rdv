@@ -122,7 +122,7 @@
     var chevron = t.querySelector(".svn-chevron");
     var closed = body.style.display === "none";
     body.style.display = closed ? "" : "none";
-    chevron.textContent = closed ? "▾" : "▸";
+    chevron.textContent = closed ? "expand_more" : "chevron_right";
   });
 
   /* ── Suppression de catégorie (immédiate, comme la maquette) ──────────── */
@@ -168,7 +168,8 @@
 
   /* ── Suppression en ligne (services et cours) ─────────────────────────── */
   function idleDelHtml() {
-    return '<button type="button" data-svnask style="width:36px;height:36px;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;color:#c2554b;font:400 15px/1 \'Plus Jakarta Sans\',sans-serif">✕</button>';
+    return '<button type="button" data-svnask style="width:36px;height:36px;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;color:#c2554b;display:flex;align-items:center;justify-content:center">'
+      + '<span class="material-symbols-outlined" style="font-size:18px">close</span></button>';
   }
   function confirmDelHtml() {
     return '<button type="button" data-svnabort style="height:36px;padding:0 12px;border-radius:10px;border:1px solid #e6eae7;background:#fff;cursor:pointer;font:600 12px/1 \'Plus Jakarta Sans\',sans-serif;color:#5f6b64">Non</button>'
@@ -268,7 +269,8 @@
       b.style.cursor = taken ? "not-allowed" : "pointer";
       b.title = taken ? "Déjà utilisée par un autre service" : "";
       b.style.boxShadow = on ? "0 0 0 2px #fff, 0 0 0 4px " + hex : "none";
-      b.textContent = on ? "✓" : "";
+      var marqueCouleur = b.querySelector(".svn-colormark");
+      if (marqueCouleur) marqueCouleur.textContent = on ? "check" : "";
     });
 
     // Pastille « couleur libre » : elle prend l'apparence de la teinte
@@ -287,7 +289,7 @@
       champ.style.border = horsPalette ? "0" : "1.5px dashed #c3ccc6";
       champ.style.boxShadow = horsPalette ? "0 0 0 2px #fff, 0 0 0 4px " + sf.color : "none";
       if (marque) {
-        marque.textContent = horsPalette ? "✓" : "+";
+        marque.textContent = horsPalette ? "check" : "add";
         marque.style.color = horsPalette ? "#fff" : "#5f6b64";
       }
     }
@@ -505,7 +507,15 @@
       b.style.background = on ? "#e9f7f0" : "#fff";
       b.style.color = on ? "#0d7a54" : "#4d5560";
       var emp = EMPLOYEES.find(function (e) { return e.id === b.dataset.svnemp; });
-      b.textContent = (emp ? emp.name : "") + (on ? " ✓" : "");
+      b.innerHTML = "";
+      b.appendChild(document.createTextNode(emp ? emp.name : ""));
+      if (on) {
+        var ic = document.createElement("span");
+        ic.className = "material-symbols-outlined";
+        ic.style.fontSize = "16px";
+        ic.textContent = "check";
+        b.appendChild(ic);
+      }
     });
   }
   function dayLabel(n) { var d = DOW.find(function (x) { return x.d === n; }); return d ? d.l : ""; }
@@ -532,7 +542,8 @@
       '<input type="date" value="' + (sess.date || "") + '" style="height:40px;padding:0 10px;border:1px solid #e0e3e5;border-radius:9px;background:#fff;outline:none;font:500 13px/1 \'Plus Jakarta Sans\',sans-serif;color:#1a201d">'
       + '<input type="time" value="' + (sess.startTime || "") + '" style="width:90px;height:40px;padding:0 8px;border:1px solid #e0e3e5;border-radius:9px;background:#fff;outline:none;font:500 13px/1 \'Plus Jakarta Sans\',sans-serif;color:#1a201d">'
       + '<input type="time" value="' + (sess.endTime || "") + '" style="width:90px;height:40px;padding:0 8px;border:1px solid #e0e3e5;border-radius:9px;background:#fff;outline:none;font:500 13px/1 \'Plus Jakarta Sans\',sans-serif;color:#1a201d">'
-      + '<button type="button" style="width:36px;height:36px;border-radius:9px;border:1px solid #e6eae7;background:#fff;cursor:pointer;color:#c2554b;font:400 14px/1 \'Plus Jakarta Sans\',sans-serif">✕</button>';
+      + '<button type="button" style="width:36px;height:36px;border-radius:9px;border:1px solid #e6eae7;background:#fff;cursor:pointer;color:#c2554b;display:flex;align-items:center;justify-content:center">'
+      + '<span class="material-symbols-outlined" style="font-size:16px">close</span></button>';
     var inputs = row.querySelectorAll("input");
     inputs[0].addEventListener("change", function () { cf.sessions[idx].date = this.value; });
     inputs[1].addEventListener("change", function () { cf.sessions[idx].startTime = this.value; });

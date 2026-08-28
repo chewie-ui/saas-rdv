@@ -128,8 +128,12 @@
 /* ──────────────────────────────────────────────────────────
    DANGER buttons
    ────────────────────────────────────────────────────────── */
-.btn--danger-ghost,
-.sub-alert__cta {
+/* `.sub-alert__cta` retiré de ce groupe : subscription.css le veut vert plein
+   (c'est le bouton d'ACTION « Renouveler maintenant »), ce fichier le voulait
+   rouge fantôme. Résultat : fond vert de l'un + `color: var(--danger)
+   !important` de l'autre — du texte rouge sur fond vert, illisible. Un seul
+   propriétaire désormais : subscription.css. */
+.btn--danger-ghost {
   padding: 8px 14px;
   font-size: 13px;
   background: var(--danger-pale);
@@ -137,8 +141,7 @@
   border-color: var(--danger-border);
   box-shadow: none;
 }
-.btn--danger-ghost:hover:not(:disabled),
-.sub-alert__cta:hover:not(:disabled) {
+.btn--danger-ghost:hover:not(:disabled) {
   background: var(--danger);
   color: #fff !important;
   border-color: var(--danger);

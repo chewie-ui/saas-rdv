@@ -21,13 +21,28 @@ function getPlan(user) {
   if (!user) return "basic";
   const sub = user.subscription;
 
-  // manualPremium / isPremium bypass : on fait confiance au plan stocké s'il
-  // est un plan payant connu (essentiel/pro/business), sinon "pro" (octroi
-  // manuel superadmin sans plan précis).
-  if (user.manualPremium || user.isPremium) {
+  // ── Octroi manuel (superadmin) ────────────────────────────────────────────
+  // L'échéance est vérifiée ICI, et pas seulement dans injectSubscription.
+  // Ce middleware ne tourne que sur les requêtes web authentifiées : tout ce
+  // qui l'évite — tâches de fond, API mobile, tunnel de réservation public —
+  // lisait un octroi périmé comme un abonnement valide et continuait à ouvrir
+  // les fonctionnalités payantes. Même garde que getCompanyPlan() applique à
+  // `grantExpiry` : un accès offert expiré ne doit JAMAIS rien débloquer.
+  const octroiExpire =
+    user.manualPremiumExpiry && new Date(user.manualPremiumExpiry) <= new Date();
+
+  if ((user.manualPremium || user.isPremium) && !octroiExpire) {
     if (PAID_PLANS.includes(sub && sub.plan)) return sub.plan;
     return "pro";
   }
+  // Octroi expiré : on ne retombe QUE sur un vrai abonnement Stripe.
+  // Un octroi superadmin écrit `subscription: { plan, status: "active" }` sans
+  // aucun identifiant Stripe. Passé l'échéance, ce résidu se lisait comme un
+  // abonnement payant valide et rendait la révocation totalement inopérante —
+  // le compte gardait son forfait indéfiniment. La présence d'un
+  // `stripeSubscriptionId` est ce qui distingue un client qui paie vraiment
+  // d'un accès qui avait été offert.
+  if (octroiExpire && !(sub && sub.stripeSubscriptionId)) return "basic";
 
   if (!sub || sub.status !== "active") return "basic";
   return PAID_PLANS.includes(sub.plan) ? sub.plan : "basic";
