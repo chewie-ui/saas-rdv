@@ -2629,7 +2629,18 @@ exports.clientsHubDetail = async (req, res) => {
       services,
       employees,
       generalNotes: (dossier && dossier.generalInfo) || "",
-      hasEmailForNotes: !!booking.email,
+      // Un dossier n'exige plus d'e-mail : il est identifié par e-mail, sinon
+      // téléphone, sinon nom (cf. utils/dossierKey). Le nom du drapeau reste
+      // `hasEmailForNotes` — il est lu à cinq endroits de la vue — mais il
+      // signifie désormais « ce client est identifiable, on peut lui tenir un
+      // dossier ». Sans ça, l'interface refusait les notes que le serveur
+      // acceptait pourtant.
+      hasEmailForNotes: !!dossierKey({
+        email: booking.email,
+        phone: booking.phone,
+        firstName: booking.name,
+        lastName: booking.surname,
+      }),
       // Client créé à la main : il n'a aucun rendez-vous à supprimer, c'est sa
       // fiche qu'il faut viser. Sans ça, « Supprimer le client » envoyait une
       // liste vide et le serveur refusait.
