@@ -46,8 +46,8 @@ block content
                                 if d.count
                                     |  · #{d.count} établissement#{d.count > 1 ? 's' : ''}
                         .jt-row__actions
-                            button.sm-btn.sm-btn--primary.jt-act(type="button" data-status="approved") Valider
-                            button.sm-btn.sm-btn--ghost.jt-act(type="button" data-status="blocked") Bloquer
+                            button.sa-btn.sa-btn--primary.jt-act(type="button" data-status="approved") Valider
+                            button.sa-btn.jt-act(type="button" data-status="blocked") Bloquer
 
         //- ── Métiers orange ─────────────────────────────────────────────────
         h2.jt-section Métiers non reconnus, utilisés par des établissements
@@ -72,10 +72,10 @@ block content
                             else
                                 span.jt-tag.jt-tag--wait Non tranché
                         .jt-row__actions
-                            button.sm-btn.sm-btn--primary.jt-act(type="button" data-status="approved" disabled=(o.status === 'approved')) Valider
-                            button.sm-btn.sm-btn--ghost.jt-act(type="button" data-status="blocked" disabled=(o.status === 'blocked')) Bloquer
+                            button.sa-btn.sa-btn--primary.jt-act(type="button" data-status="approved" disabled=(o.status === 'approved')) Valider
+                            button.sa-btn.jt-act(type="button" data-status="blocked" disabled=(o.status === 'blocked')) Bloquer
                             if o.status !== 'pending'
-                                button.sm-btn.sm-btn--ghost.jt-act(type="button" data-status="pending") Annuler
+                                button.sa-btn.jt-act(type="button" data-status="pending") Annuler
 
     script.
         (function () {

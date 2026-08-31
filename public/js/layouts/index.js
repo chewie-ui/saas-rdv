@@ -343,6 +343,27 @@ function telephoneSaisi() {
 }
 
 /* ── Cart render ────────────────────────────────────────────────────────── */
+// La barre tient-elle sur une seule ligne ? On le constate après coup au
+// lieu de le deviner avec une largeur seuil.
+//
+// On mesure DEUX replis, et pas seulement celui du récapitulatif comme
+// avant : la barre elle-même peut passer sur trois lignes (Retour /
+// récapitulatif / Continuer) alors que le récapitulatif, lui, tient sur une
+// seule — un nom de prestation court dans un cadre étroit suffit. Ce cas
+// gardait le rayon « pilule » sur une barre haute de 150 px, d'où le gros
+// galet aux bords qui rognent le texte. Rejoué au redimensionnement.
+function mesurerRepli(barre) {
+  if (!barre) return false;
+  const surPlusieursLignes = (parent) => {
+    const items = [...parent.children].filter(
+      (e) => !e.classList.contains("bk-cart__sep") && !e.classList.contains("bk-cart__hint"),
+    );
+    return items.length > 1 && items.some((el) => el.offsetTop > items[0].offsetTop);
+  };
+  const recapEl = barre.querySelector(".bk-cart__recap");
+  return surPlusieursLignes(barre) || (!!recapEl && surPlusieursLignes(recapEl));
+}
+
 function renderCart() {
   if (stepIdx === STEPS.length - 1) { cart.innerHTML = ""; return; }
 
@@ -401,17 +422,13 @@ function renderCart() {
 
   const showBack = stepIdx > 0;
 
-  // Le récapitulatif tient-il sur une seule ligne ? On le constate après coup
-  // au lieu de le deviner avec une largeur seuil : dès qu'il s'empile, les
-  // traits verticaux n'ont plus rien à séparer et resteraient orphelins en
-  // bout de ligne. Rejoué au redimensionnement (cf. plus bas).
   function majEmpilementRecap() {
     const barre = cart.querySelector(".bk-cart");
-    const recapEl = cart.querySelector(".bk-cart__recap");
-    if (!barre || !recapEl) return;
-    const items = [...recapEl.children].filter((e) => !e.classList.contains("bk-cart__sep"));
-    const empile = items.length > 1 && items.some((el) => el.offsetTop > items[0].offsetTop);
-    barre.classList.toggle("is-stacked", empile);
+    if (!barre) return;
+    // On repart toujours de l'état non replié : les styles empilés changent la
+    // mise en page, mesurer par-dessus reviendrait à mesurer sa propre sortie.
+    barre.classList.remove("is-stacked");
+    barre.classList.toggle("is-stacked", mesurerRepli(barre));
   }
   if (!renderCart._resizeBranche) {
     renderCart._resizeBranche = true;
@@ -420,14 +437,11 @@ function renderCart() {
       clearTimeout(minuteur);
       minuteur = setTimeout(() => {
         const barre = document.querySelector("#bkCart .bk-cart");
-        const recapEl = document.querySelector("#bkCart .bk-cart__recap");
-        if (!barre || !recapEl) return;
+        if (!barre) return;
         // On repart d'un état non empilé, sinon les séparateurs restent cachés
         // et l'on mesure une disposition qui n'existe plus.
         barre.classList.remove("is-stacked");
-        const items = [...recapEl.children].filter((e) => !e.classList.contains("bk-cart__sep"));
-        const empile = items.length > 1 && items.some((el) => el.offsetTop > items[0].offsetTop);
-        barre.classList.toggle("is-stacked", empile);
+        barre.classList.toggle("is-stacked", mesurerRepli(barre));
       }, 120);
     });
   }
@@ -1769,11 +1783,19 @@ async function renderDetailsPane() {
               <p class="bk-login-sub">Il sert à retrouver, déplacer ou annuler vos rendez-vous. Il se crée sur branshee.com — et pas besoin de l'attendre pour réserver ici.</p>
             </div>
           </div>
+          <!-- Un vrai lien, pas un bouton piloté en JavaScript. L'ancienne
+               version appelait window.confirmModal() avant d'ouvrir l'onglet,
+               or confirm-modal.js n'est PAS chargé sur la page publique : le
+               clic levait « confirmModal is not a function » et ne faisait
+               rien. Un <a target="_blank"> n'a besoin d'aucun script, ne peut
+               pas être bloqué comme une popup ouverte après un await, et
+               montre sa destination au survol. L'avertissement que la modale
+               affichait est de toute façon juste en dessous. -->
           <div class="bk-login-toggle" id="bkLoginChoices">
-            <button class="bk-login-toggle-btn" id="bkOpenSiteAccount" type="button">
+            <a class="bk-login-toggle-btn" id="bkOpenSiteAccount" href="${SITE_URL}/client/register" target="_blank" rel="noopener">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               Créer un compte sur branshee.com
-            </button>
+            </a>
           </div>
           <p class="bk-embed-note">
             Vous réservez depuis le site de votre professionnel. La connexion ne
@@ -1963,24 +1985,6 @@ function bindDetailsPane() {
       document.getElementById("bkLoginEmail")?.focus();
     });
   }
-
-  // Iframe : ni la connexion ni l'inscription ne peuvent aboutir ici (cookie
-  // tiers bloqué, Google refusant l'iframe). Une seule porte, donc, et elle
-  // mène ailleurs — on prévient avant d'ouvrir un onglet plutôt que d'en faire
-  // surgir un sans explication, et on rappelle qu'aucun compte n'est
-  // nécessaire pour réserver : c'est le chemin le plus court, et il est ici.
-  document.getElementById("bkOpenSiteAccount")?.addEventListener("click", async () => {
-    const ok = await window.confirmModal(
-      "Créer un compte sur branshee.com",
-      "Les comptes ne fonctionnent pas depuis le site de votre professionnel. " +
-        "Nous allons ouvrir branshee.com dans un nouvel onglet.\n\n" +
-        "Vous n'avez pas besoin de compte pour réserver : remplissez simplement " +
-        "vos coordonnées ci-dessous. Vos rendez-vous seront rattachés à votre " +
-        "compte dès qu'il existera, s'il porte le même e-mail.",
-      { confirmLabel: "Ouvrir branshee.com" }
-    );
-    if (ok) window.open(SITE_URL + "/client/register", "_blank", "noopener");
-  });
 
   document.getElementById("bkShowRegister")?.addEventListener("click", () => {
     loginChoices.style.display  = "none";

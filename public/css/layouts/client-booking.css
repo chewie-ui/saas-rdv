@@ -2143,11 +2143,34 @@ body.bk-embed #bkCart .bk-cart {
   min-width: 0;
 }
 
-/* Récapitulatif empilé sur plusieurs lignes : le trait vertical qui séparait
-   deux entrées côte à côte n'a plus rien à séparer et reste orphelin en bout
-   de ligne. La classe est posée par renderCart() après mesure — pas de
-   largeur seuil devinée, on regarde ce qui s'est réellement passé. */
-.bk-cart.is-stacked .bk-cart__recap > .bk-cart__sep { display: none; }
+/* ── Barre repliée sur plusieurs lignes ────────────────────────────────────
+   La classe est posée par renderCart() après mesure — pas de largeur seuil
+   devinée, on regarde ce qui s'est réellement passé.
+
+   Le rayon « pilule » ne vaut que pour une barre d'UNE ligne. Dès qu'elle en
+   fait trois (Retour / récapitulatif / Continuer), les mêmes 999 px en font
+   un gros galet dont les courbes mangent « ← Retour » à gauche et serrent le
+   bouton en bas. On repasse alors à la carte — c'est exactement la mise en
+   page déjà utilisée sous 700 px, plutôt qu'un troisième dessin à tenir. */
+.bk-cart.is-stacked {
+  border-radius: 16px;
+  padding: 10px;
+  gap: 8px;
+}
+.bk-cart.is-stacked .bk-cart__recap {
+  flex: 1 1 100%;
+  order: -1;
+  justify-content: flex-start;
+  gap: 4px 14px;
+  padding: 2px 6px 6px;
+}
+/* Les deux traits verticaux, pas seulement celui du récapitulatif : celui qui
+   précède le bouton est un enfant DIRECT de la barre, que l'ancienne règle
+   (`.bk-cart__recap > .bk-cart__sep`) ne visait pas. Il restait donc suspendu
+   en bout de ligne, sans rien séparer. */
+.bk-cart.is-stacked .bk-cart__sep { display: none; }
+.bk-cart.is-stacked .bk-cart__next { flex: 1; justify-content: center; padding: 0 12px; }
+.bk-cart.is-stacked .bk-cart__back { flex-shrink: 0; }
 
 .bk-cart__k {
   font-size: 10px;
@@ -2311,7 +2334,12 @@ body.bk-embed #bkCart .bk-cart {
     padding: 2px 6px 6px;
   }
   .bk-cart__v { max-width: none; white-space: normal; }
-  .bk-cart__sep { display: none; }
+  /* `.bk-cart .bk-cart__sep`, et pas `.bk-cart__sep` seul : le trait est un
+     <div> DANS le récapitulatif, donc `.bk-cart__recap > div { display: flex }`
+     (0,1,1) l'emportait sur cette règle (0,1,0). Le séparateur restait donc
+     visible sur téléphone, en travers du récapitulatif empilé, alors que
+     cette ligne était censée le retirer depuis le début. */
+  .bk-cart .bk-cart__sep { display: none; }
   .bk-cart { padding: 8px; gap: 8px; width: 100%; border-radius: 14px; }
   .bk-cart__next { flex: 1; justify-content: center; padding: 0 12px; }
   .bk-cart__back { flex-shrink: 0; }
@@ -3450,14 +3478,19 @@ body.bk-embed #bkCart .bk-cart {
   flex-wrap: wrap;
 }
 
+/* La classe habille aussi bien un <button> qu'un <a> : le renvoi vers
+   branshee.com est un vrai lien (voir index.js). D'où `text-decoration` et
+   `font-family`, que <button> hérite mais pas <a>, et l'inverse. */
 .bk-login-toggle-btn {
   background: var(--bk-accent, #22c55e);
   color: #fff;
   border: none;
   border-radius: 8px;
   padding: 8px 14px;
+  font-family: inherit;
   font-size: 13px;
   font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
