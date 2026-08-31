@@ -119,10 +119,16 @@ exports.establishmentsPage = async (req, res) => {
     Client.aggregate([{ $group: { _id: "$company", count: { $sum: 1 } } }]),
   ]);
 
-  // Ne lister que les VRAIS établissements : ceux qui ont un nom affichable.
-  // Un compte pro inscrit mais jamais configuré crée une Company vide (name ""),
-  // affichée « — / — » — on l'exclut (même critère que l'affichage dans la vue).
-  let liste = brutes.filter((c) => (c.name || c.owner?.businessName || "").trim() !== "");
+  // Les établissements sans nom étaient EXCLUS de cette liste : une inscription
+  // pro s'arrêtant avant l'étape « nommez votre établissement » laisse une
+  // Company vide, qu'on cachait pour éviter des lignes « — / — ». Résultat :
+  // ces comptes apparaissaient dans Utilisateurs mais nulle part ici, et le
+  // compte semblait renvoyer vers un établissement introuvable. On les affiche
+  // désormais, marqués « Non configuré » — un abandon en cours d'inscription
+  // est précisément ce qu'un superadmin doit pouvoir voir.
+  const configuré = (c) => (c.name || c.owner?.businessName || "").trim() !== "";
+  let liste = brutes;
+  if (filtres.statut === "non_configure") liste = liste.filter((c) => !configuré(c));
 
   const rdv = new Map(parEtab.map((b) => [String(b._id), b.count]));
   const rdv30 = new Map(parEtab30j.map((b) => [String(b._id), b.count]));
@@ -175,6 +181,11 @@ exports.establishmentsPage = async (req, res) => {
   const tous = toutes.filter((c) => (c.name || c.owner?.businessName || "").trim() !== "");
   const kpis = {
     total: tous.length,
+    // Les chiffres clés restent calculés sur les établissements CONFIGURÉS —
+    // compter une inscription abandonnée comme un établissement fausserait le
+    // parc et le MRR. Mais la liste, elle, les affiche : sans ce compteur,
+    // l'écart entre « Total » et le nombre de lignes serait inexplicable.
+    nonConfigures: toutes.length - tous.length,
     enPause: tous.filter((c) => c.isPaused).length,
     nouveaux7j: tous.filter((c) => parDate(c.createdAt) >= il7j.getTime()).length,
     sansRdv: tous.filter((c) => !(rdv.get(String(c._id)) || 0)).length,
@@ -380,14 +391,25 @@ async function chargerComptes({ search, statut, plan, estab }) {
     .select("fullName email phone isPremium manualPremium manualPremiumExpiry subscription createdAt isDisabled lastLoginAt")
     .lean();
 
+  // `isDeleted` est INDISPENSABLE ici. Supprimer un établissement pose aussi
+  // `isPaused: true` (cf. establishment.controller) : sans le drapeau de
+  // suppression, une fiche supprimée s'affichait « En pause » — alors que la
+  // page Établissements, elle, l'exclut. Les deux écrans se contredisaient, et
+  // le compte semblait avoir un établissement introuvable.
   const companies = await Company.find({ owner: { $in: users.map((u) => u._id) } })
-    .select("name slug owner isPaused")
+    .select("name slug owner isPaused isDeleted")
     .lean();
   const parProprietaire = new Map();
   companies.forEach((c) => {
     const cle = String(c.owner);
     if (!parProprietaire.has(cle)) parProprietaire.set(cle, []);
     parProprietaire.get(cle).push(c);
+  });
+  // Un établissement vivant passe devant : la ligne du tableau n'en montre
+  // qu'un, et montrer une fiche supprimée quand il en reste une active serait
+  // le pire des deux choix.
+  parProprietaire.forEach((liste) => {
+    liste.sort((a, b) => (a.isDeleted ? 1 : 0) - (b.isDeleted ? 1 : 0));
   });
 
   let liste = users.map((u) => ({
@@ -397,8 +419,12 @@ async function chargerComptes({ search, statut, plan, estab }) {
   }));
 
   if (plan && plan !== "tous") liste = liste.filter((u) => u.planKey === plan);
-  if (estab === "avec") liste = liste.filter((u) => u.establishments.length > 0);
-  if (estab === "sans") liste = liste.filter((u) => u.establishments.length === 0);
+  // « Avec / sans établissement » se lit sur les fiches VIVANTES : un compte
+  // dont le seul établissement a été supprimé n'en a plus, et le classer
+  // « avec » le rendait introuvable dans les deux filtres à la fois.
+  const vivants = (u) => u.establishments.filter((e) => !e.isDeleted).length;
+  if (estab === "avec") liste = liste.filter((u) => vivants(u) > 0);
+  if (estab === "sans") liste = liste.filter((u) => vivants(u) === 0);
   return liste;
 }
 
@@ -557,7 +583,7 @@ exports.userDetails = async (req, res) => {
       .lean();
     if (!u) return res.status(404).json({ error: "Compte introuvable." });
 
-    const companies = await Company.find({ owner: u._id }).select("name slug isPaused createdAt").lean();
+    const companies = await Company.find({ owner: u._id }).select("name slug isPaused isDeleted createdAt").lean();
     const ids = companies.map((c) => c._id);
     // Même correctif qu'establishmentDetails : les clients se déduisent des
     // emails distincts sur les réservations, pas d'un `company` inexistant
@@ -599,6 +625,7 @@ exports.userDetails = async (req, res) => {
         name: c.name || "",
         slug: c.slug || "",
         isPaused: !!c.isPaused,
+        isDeleted: !!c.isDeleted,
         createdAt: c.createdAt,
       })),
       stats: { clients, reservations, connexions },
@@ -634,7 +661,7 @@ exports.usersExport = async (req, res) => {
         echapper(u.phone || ""),
         echapper(u.planLabel),
         echapper(u.isDisabled ? "Désactivé" : "Actif"),
-        echapper(u.establishments.map((e) => e.name || e.slug).join(", ")),
+        echapper(u.establishments.map((e) => (e.name || e.slug || "sans nom") + (e.isDeleted ? " (supprimé)" : e.isPaused ? " (en pause)" : "")).join(", ")),
         echapper(u.createdAt ? new Date(u.createdAt).toLocaleDateString("fr-FR") : ""),
         echapper(u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString("fr-FR") : "jamais"),
       ].join(";"));

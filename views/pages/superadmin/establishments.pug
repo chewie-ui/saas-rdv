@@ -46,6 +46,11 @@ block content
                     span Établissements
                 .sa-kpi__value= kpis.total.toLocaleString('fr-FR')
                 .sa-kpi__delta(class=kpis.nouveaux7j ? 'sa-kpi__delta--up' : '')= '+' + kpis.nouveaux7j + ' sur 7 jours'
+                //- Le total ne compte que les établissements configurés ; la
+                //- liste, elle, montre aussi les inscriptions abandonnées.
+                //- Sans cette ligne, l'écart serait inexplicable.
+                if kpis.nonConfigures
+                    .sa-kpi__delta(title="Inscriptions pro arrêtées avant de nommer l'établissement — visibles dans la liste")= kpis.nonConfigures + ' inscription' + (kpis.nonConfigures > 1 ? 's' : '') + ' non terminée' + (kpis.nonConfigures > 1 ? 's' : '')
             .sa-kpi
                 .sa-kpi__label
                     span.material-symbols-outlined check_circle
@@ -105,6 +110,7 @@ block content
                 option(value="actif" selected=filtres.statut === 'actif') Actifs
                 option(value="pause" selected=filtres.statut === 'pause') En pause
                 option(value="supprime" selected=filtres.statut === 'supprime') Supprimés par le pro
+                option(value="non_configure" selected=filtres.statut === 'non_configure') Inscriptions non terminées
             .sa-toolbar__end
                 select.sa-select(name="tri" data-auto)
                     option(value="recent" selected=filtres.tri === 'recent') Plus récents
@@ -160,7 +166,15 @@ block content
                                         else
                                             span.sa-av(style='background:' + couleurAvatar(c.slug || c.displayName))= (c.displayName || '?')[0].toUpperCase()
                                         div
-                                            .sa-person__name.js-name= c.displayName || '—'
+                                            //- Un tiret ne dit rien : la fiche EST là, elle n'a
+                                            //- simplement jamais été nommée (inscription arrêtée
+                                            //- avant l'étape suivante). On le nomme, sinon la
+                                            //- ligne passe pour une donnée manquante et le
+                                            //- compte semble absent de la liste.
+                                            if c.displayName
+                                                .sa-person__name.js-name= c.displayName
+                                            else
+                                                .sa-person__name.js-name.sa-muted(title="Inscription commencée, établissement jamais configuré") Sans nom
                                             .sa-person__mail
                                                 span.js-type= c.displayType || 'Métier non renseigné'
                                 td
@@ -199,6 +213,13 @@ block content
                                         span.sa-tag.sa-tag--red
                                             span.sa-tag__dot
                                             span Supprimé
+                                    //- Avant « Actif » : une fiche jamais nommée n'est
+                                    //- active nulle part — elle n'a pas de page publique,
+                                    //- et l'annoncer « Actif » masquerait un abandon.
+                                    else if !c.displayName
+                                        span.sa-tag.sa-tag--amber(title="Inscription pro arrêtée avant de nommer l'établissement")
+                                            span.sa-tag__dot
+                                            span Non configuré
                                     else if c.isPaused
                                         span.sa-tag.sa-tag--amber.js-statut
                                             span.sa-tag__dot

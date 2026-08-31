@@ -170,7 +170,11 @@ block content
                 button.ch-modal__close#chNewClose(type="button" aria-label="Fermer")
                     span.material-symbols-outlined close
             .ch-modal__body
-                p.ch-modal__hint L'e-mail identifie le client : c'est lui qui rattachera ses futurs rendez-vous à cette fiche.
+                //- L'identité d'une fiche suit la même précédence que partout
+                //- ailleurs (cf. utils/dossierKey) : e-mail, sinon téléphone,
+                //- sinon nom. On le dit, plutôt que de laisser croire que
+                //- l'e-mail est indispensable.
+                p.ch-modal__hint Le nom suffit. Ajoutez l'e-mail ou le téléphone si vous les avez : ils rattacheront automatiquement ses futurs rendez-vous à cette fiche.
                 .ch-modal__grid
                     .ch-field
                         label(for="chNewFirst") Prénom
@@ -179,7 +183,7 @@ block content
                         label(for="chNewLast") Nom
                         input.ch-input#chNewLast(type="text" maxlength="80" autocomplete="off")
                     .ch-field.ch-field--full
-                        label(for="chNewEmail") E-mail *
+                        label(for="chNewEmail") E-mail
                         input.ch-input#chNewEmail(type="email" maxlength="160" autocomplete="off" placeholder="prenom@exemple.be")
                     .ch-field.ch-field--full
                         label(for="chNewPhone") Téléphone

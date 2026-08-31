@@ -127,6 +127,13 @@ exports.createUser = async (req, res) => {
       referralCode,
       referredBy: referrerId,
       acquisition,
+      // L'inscription connecte le compte (req.login plus bas), mais seule la
+      // route /login estampillait `lastLoginAt` : tout nouvel inscrit
+      // s'affichait « jamais connecté » côté superadmin, y compris pendant
+      // qu'il utilisait l'application. Impossible d'y distinguer un compte
+      // abandonné d'un compte tout neuf — exactement la question qu'on pose à
+      // cette colonne.
+      lastLoginAt: new Date(),
     });
 
     // Incrémenter les stats du parrain
@@ -139,6 +146,13 @@ exports.createUser = async (req, res) => {
       await Company.create({
         _id: companyId,
         owner: user._id,
+        // Le métier est demandé au formulaire d'inscription, et n'était
+        // recopié que sur le COMPTE : l'établissement naissait sans métier ni
+        // nom. Un pro qui s'arrêtait juste après l'inscription laissait donc
+        // une fiche entièrement vide — invisible dans les listes, et affichée
+        // « /undefined » côté superadmin. On reprend ici ce qu'il a déjà
+        // saisi ; le nom, lui, se remplit à l'étape suivante.
+        businessType: businessType || "",
         schedule: [
           { weekdayIndex: 1, workingHours: [{ start: "09:00", end: "18:00" }] },
           { weekdayIndex: 2, workingHours: [{ start: "09:00", end: "18:00" }] },

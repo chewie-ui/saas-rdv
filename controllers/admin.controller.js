@@ -2494,21 +2494,33 @@ exports.clientsHubCreate = async (req, res) => {
     const email = String(req.body.email || "").trim().toLowerCase().slice(0, 160);
     const phone = String(req.body.phone || "").trim().slice(0, 40);
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.json({ success: false, message: "Indiquez une adresse e-mail valide." });
-    }
+    // L'e-mail est FACULTATIF : un pro note souvent un client au téléphone
+    // sans connaître son adresse. Seul un nom est exigé — il suffit à
+    // identifier le dossier (cf. utils/dossierKey : e-mail, sinon téléphone,
+    // sinon nom). Une adresse MAL FORMÉE reste refusée : mieux vaut pas
+    // d'e-mail qu'un e-mail faux, qui enverrait les confirmations dans le vide.
     if (!prenom && !nom) {
       return res.json({ success: false, message: "Indiquez au moins un nom ou un prénom." });
     }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.json({ success: false, message: "Cette adresse e-mail n'est pas valide. Laissez le champ vide si vous ne l'avez pas." });
+    }
 
     // Déjà client ? On n'en crée pas un deuxième : on renvoie vers sa fiche.
-    const rdv = await Booking.findOne({ company: companyId, email, isBlock: { $ne: true } })
-      .sort({ date: -1 }).select("_id").lean();
+    // Sans e-mail, filtrer sur `email: ""` remonterait n'importe quel client
+    // sans adresse : on cherche alors sur le téléphone, sinon sur le nom exact.
+    const critereRdv = { company: companyId, isBlock: { $ne: true } };
+    if (email) critereRdv.email = email;
+    else if (phone) { critereRdv.phone = phone; critereRdv.email = { $in: ["", null] }; }
+    else { critereRdv.name = prenom; critereRdv.surname = nom; critereRdv.email = { $in: ["", null] }; }
+    const rdv = await Booking.findOne(critereRdv).sort({ date: -1 }).select("_id").lean();
     if (rdv) {
       return res.json({ success: false, message: "Ce client existe déjà — voici sa fiche.", redirect: `/clients-hub/${rdv._id}` });
     }
     const ClientDossier = require("../db/models/clientDossier.model");
-    const existant = await ClientDossier.findOne({ company: companyId, email }).select("_id").lean();
+    // Même raison : le doublon se cherche par CLÉ, pas par e-mail.
+    const cleNouveau = dossierKey({ email, phone, firstName: prenom, lastName: nom });
+    const existant = await ClientDossier.findOne({ company: companyId, clientKey: cleNouveau }).select("_id").lean();
     if (existant) {
       return res.json({ success: false, message: "Ce client existe déjà — voici sa fiche.", redirect: `/clients-hub/${existant._id}` });
     }

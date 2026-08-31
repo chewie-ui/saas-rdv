@@ -254,7 +254,13 @@ block content
                     svg(width="15" height="15" viewBox="0 -960 960 960" fill="currentColor")
                         path(d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z")
             else
-                a.bk-sign-btn(href="/login") Se connecter
+                //- Retiré par index.js quand la page est encadrée dans le site
+                //- d'un professionnel : la connexion n'y aboutit pas (cookie
+                //- tiers bloqué), et un bouton qui ne peut pas tenir sa
+                //- promesse vaut moins que pas de bouton du tout. Le serveur,
+                //- lui, ne sait pas qu'il est dans une iframe — d'où le
+                //- repère plutôt qu'une condition Pug.
+                a.bk-sign-btn#bkHeaderSignIn(href="/login") Se connecter
 
     //- ── Main ───────────────────────────────────────────────────────────────
     main.bk-main

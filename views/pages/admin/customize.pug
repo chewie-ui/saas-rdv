@@ -1066,11 +1066,44 @@ block content
                 //- ── Le parcours ────────────────────────────────────────────
                 .czi-steps
 
-                    //- ÉTAPE 1 — la plateforme commande tout le reste : c'est
-                    //- elle qui décide du code généré, d'où sa place en tête.
+                    //- ÉTAPE 1 — le FORMAT, avant la plateforme : c'est lui qui
+                    //- décide de ce qu'on affiche ensuite (les dimensions ne
+                    //- concernent que le calendrier posé dans la page) et de
+                    //- la nature du code. Le calendrier intégré était le seul
+                    //- format proposé ; il oblige le pro à lui trouver une
+                    //- place et une hauteur, et sur beaucoup de sites il finit
+                    //- coincé en bas de page ou coupé.
                     section.czi-step
                         .czi-step__head
                             span.czi-step__num 1
+                            .czi-step__titles
+                                h3.czi-step__title Sous quelle forme ?
+                                p.czi-step__sub Le calendrier dans la page, un bouton qui l'ouvre par-dessus, ou un simple lien.
+                        .czi-step__body
+                            .czi-fmt#czFmtCards
+                                each f in [{k:'inline',t:'Calendrier dans la page',d:'Le calendrier s\'affiche directement à l\'endroit choisi.',i:'calendar_month'},{k:'popup',t:'Bouton « Prendre rendez-vous »',d:'Un bouton ; au clic, le calendrier s\'ouvre par-dessus votre site.',i:'ads_click'},{k:'bubble',t:'Bulle flottante',d:'Un bouton rond en bas de page, présent partout sur votre site.',i:'chat_bubble'},{k:'lien',t:'Lien simple',d:'Aucune intégration : le visiteur arrive sur votre page Branshee.',i:'link'}]
+                                    button.czi-fmt__card(type="button" data-fmt=f.k class=(f.k === 'inline' ? 'is-active' : ''))
+                                        span.material-symbols-outlined.czi-fmt__ic= f.i
+                                        span.czi-fmt__t= f.t
+                                        span.czi-fmt__d= f.d
+                            .czi-fmt__opts#czFmtOpts(hidden)
+                                .cz-embed-ctrl
+                                    label(for="czBtnLabel") Texte du bouton
+                                    input#czBtnLabel(type="text" maxlength="40" value="Prendre rendez-vous")
+                                .cz-embed-ctrl
+                                    label(for="czBtnColor") Couleur du bouton
+                                    input#czBtnColor(type="color" value="#12a06e" style="height:40px;padding:4px;cursor:pointer")
+                                .cz-embed-ctrl#czBubbleSideCtrl(hidden)
+                                    label(for="czBubbleSide") Côté de la bulle
+                                    select#czBubbleSide
+                                        option(value="right" selected) À droite
+                                        option(value="left") À gauche
+
+                    //- ÉTAPE 2 — la plateforme : elle décide des consignes de
+                    //- collage, et de ce qui est techniquement possible.
+                    section.czi-step
+                        .czi-step__head
+                            span.czi-step__num 2
                             .czi-step__titles
                                 h3.czi-step__title Où voulez-vous l'intégrer ?
                                 p.czi-step__sub Les étapes et le code s'adaptent à votre outil.
@@ -1086,10 +1119,11 @@ block content
                                 input#czNoScript(type="checkbox")
                                 span Mon site n'accepte pas le JavaScript (hauteur fixe)
 
-                    //- ÉTAPE 2 — ce que le visiteur verra.
-                    section.czi-step
+                    //- ÉTAPE 3 — ce que le visiteur verra. Masquée pour le
+                    //- format « lien simple », qui n'affiche rien chez le pro.
+                    section.czi-step#czStepContenu
                         .czi-step__head
-                            span.czi-step__num 2
+                            span.czi-step__num 3
                             .czi-step__titles
                                 h3.czi-step__title Qu'affiche-t-on ?
                                 p.czi-step__sub Le calendrier est toujours là. Ajoutez le reste si vous voulez.
@@ -1149,10 +1183,10 @@ block content
                                             span Enregistrer l'apparence
                                         span.cz-embed-custom__status#czEmbedCustomStatus
 
-                    //- ÉTAPE 3 — l'action concrète.
+                    //- ÉTAPE 4 — l'action concrète.
                     section.czi-step
                         .czi-step__head
-                            span.czi-step__num 3
+                            span.czi-step__num 4
                             .czi-step__titles
                                 h3.czi-step__title Copiez ce code
                                 p.czi-step__sub Puis collez-le dans votre site, en suivant les étapes ci-dessus.

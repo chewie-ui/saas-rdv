@@ -290,9 +290,17 @@
     if (d.establishments.length) {
       html += '<div class="sa-props">';
       d.establishments.forEach(function (e) {
-        html += ligneProp("storefront", texte(e.name || "sans nom"),
-          '<a href="/' + texte(e.slug) + '" target="_blank" style="color:#93c5fd">/' + texte(e.slug) + "</a>" +
-          (e.isPaused ? ' <span class="sa-tag sa-tag--amber">En pause</span>' : ""));
+        // Sans slug, il n'y a pas de page publique : on le dit, au lieu de
+        // poser un lien « /undefined » qui ne mène nulle part. Et supprimer
+        // pose aussi isPaused — d'où l'ordre des tests, sinon une fiche
+        // supprimée s'annonce « En pause ».
+        var lien = e.slug
+          ? '<a href="/' + texte(e.slug) + '" target="_blank" style="color:#93c5fd">/' + texte(e.slug) + "</a>"
+          : '<span class="sa-muted">pas encore configuré</span>';
+        var etat = e.isDeleted
+          ? ' <span class="sa-tag sa-tag--red">Supprimé</span>'
+          : (e.isPaused ? ' <span class="sa-tag sa-tag--amber">En pause</span>' : "");
+        html += ligneProp("storefront", texte(e.name || "sans nom"), lien + etat);
       });
       html += "</div>";
     } else {

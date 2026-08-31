@@ -178,9 +178,25 @@ block content
                                     //- exactement la même hauteur (règle du design commun).
                                     if u.establishments.length
                                         - var premier = u.establishments[0]
-                                        .sa-estab(title=u.establishments.map(function (e) { return e.name || e.slug; }).join(', '))
-                                            a(href='/' + (premier.slug || '') style="color:var(--sa-txt-2);text-decoration:none")= premier.name || ('/' + premier.slug)
-                                            if premier.isPaused
+                                        //- Un établissement fraîchement inscrit n'a ni nom ni
+                                        //- slug : la fiche se remplit à l'étape suivante. On
+                                        //- affichait alors « /undefined » — un lien mort vers
+                                        //- une page qui n'existe pas. On nomme l'état au lieu
+                                        //- de concaténer une valeur absente.
+                                        - var etiquette = premier.name || (premier.slug ? '/' + premier.slug : '')
+                                        .sa-estab(title=u.establishments.map(function (e) { return e.name || e.slug || 'sans nom'; }).join(', '))
+                                            if premier.slug
+                                                a(href='/' + premier.slug style="color:var(--sa-txt-2);text-decoration:none")= etiquette
+                                            else if etiquette
+                                                span= etiquette
+                                            else
+                                                span.sa-muted(title="Inscription commencée, établissement pas encore configuré") Sans nom
+                                            //- Supprimer pose AUSSI isPaused : sans ce test en
+                                            //- premier, une fiche supprimée s'annonçait « En
+                                            //- pause » et restait introuvable dans Établissements.
+                                            if premier.isDeleted
+                                                span.sa-tag.sa-tag--red Supprimé
+                                            else if premier.isPaused
                                                 span.sa-tag.sa-tag--amber En pause
                                             if u.establishments.length > 1
                                                 span.sa-muted(style="font-size:12px")= '+' + (u.establishments.length - 1)

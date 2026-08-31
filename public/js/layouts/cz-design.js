@@ -1109,10 +1109,19 @@
         'Cliquez sur « Mettre à jour » : c’est en ligne.',
       ],
       note: 'Sur WordPress.com (l’hébergé, pas le WordPress installé chez vous), les formules d’entrée retirent le JavaScript : cochez alors « hauteur fixe » ci-dessous.',
+      // `noteScript` remplace `note` pour le bouton et la bulle : eux ne
+      // peuvent pas se replier sur une hauteur fixe, ils ont besoin du
+      // JavaScript ou ils n'existent pas.
+      noteScript: 'Sur WordPress.com (l’hébergé, pas le WordPress installé chez vous), les formules d’entrée retirent le JavaScript : ce format n’y fonctionnera pas. Prenez « Calendrier dans la page » ou « Lien simple ».',
     },
     wix: {
       nom: 'Wix',
       script: false,
+      // Wix enferme toute intégration dans une iframe bridée : un panneau
+      // superposé ne pourrait s'étendre que dans ce cadre minuscule. C'est la
+      // seule plateforme de la liste dans ce cas — d'où l'absence du drapeau
+      // ailleurs, `superpositionOk()` le supposant vrai par défaut.
+      superposition: false,
       etapes: [
         'Dans l’éditeur, cliquez sur « + Ajouter des éléments » puis « Intégrer le code ».',
         'Choisissez « Code d’intégration HTML » (Embed HTML).',
@@ -1130,6 +1139,7 @@
         'Collez le code ci-dessous dans le champ, et enregistrez.',
       ],
       note: 'L’élément « Code intégré » demande une formule Lite, Pro ou Business : il n’existe pas sur la formule gratuite.',
+      noteScript: 'L’élément « Code intégré » demande une formule Lite, Pro ou Business : il n’existe pas sur la formule gratuite.',
     },
     squarespace: {
       nom: 'Squarespace',
@@ -1141,6 +1151,7 @@
         'Enregistrez, puis publiez.',
       ],
       note: 'Le bloc « Code » accepte du HTML sur toutes les formules, mais le JavaScript et les iframes demandent une formule payante (Core ou supérieure). Sur la formule d’entrée, mettez plutôt un simple lien vers votre page de réservation.',
+      noteScript: 'Le JavaScript demande une formule payante (Core ou supérieure). Sur la formule d’entrée, choisissez « Lien simple » : c’est le seul format qui y fonctionne.',
     },
     jimdo: {
       nom: 'Jimdo',
@@ -1182,6 +1193,7 @@
         'Enregistrez et publiez.',
       ],
       note: 'Si votre outil refuse le JavaScript, ou si le calendrier apparaît coupé, cochez « hauteur fixe » ci-dessous : l’iframe seule fonctionne partout.',
+      noteScript: 'Ce format a besoin du JavaScript. Si votre outil le refuse, ou si le bouton n’apparaît pas, prenez « Calendrier dans la page » ou « Lien simple ».',
     },
   };
 
@@ -1193,6 +1205,34 @@
   var noScriptCb  = document.getElementById('czNoScript');
   var platCourante = 'wordpress';
 
+  /* ── Format d'intégration ────────────────────────────────────────────────
+     Quatre formats, et ils ne se valent pas :
+
+       inline — le calendrier posé dans la page. Le seul qui existait. Il
+                oblige à lui trouver une place ET une hauteur ; sur un site
+                qui n'accepte pas le JavaScript, cette hauteur est figée.
+       popup  — un bouton ; le calendrier s'ouvre par-dessus la page, à la
+                bonne taille tout seul, et n'est chargé qu'au clic.
+       bubble — le même panneau, ouvert depuis un bouton flottant présent sur
+                toutes les pages du site.
+       lien   — aucune intégration : le visiteur arrive sur branshee.com. Sans
+                iframe, le cookie de session redevient un cookie premier, donc
+                c'est le SEUL format où les comptes clients fonctionnent.
+
+     popup et bubble posent un panneau par-dessus la page du pro : impossible
+     si le code atterrit lui-même dans une iframe bridée (le cas de Wix), où
+     le panneau ne pourrait s'étendre que dans un cadre minuscule. D'où le
+     drapeau `superposition` par plateforme. */
+  var fmtCards   = document.getElementById('czFmtCards');
+  var fmtOpts    = document.getElementById('czFmtOpts');
+  var stepContenu = document.getElementById('czStepContenu');
+  var btnLabelIn = document.getElementById('czBtnLabel');
+  var btnColorIn = document.getElementById('czBtnColor');
+  var bubbleSide = document.getElementById('czBubbleSide');
+  var bubbleCtrl = document.getElementById('czBubbleSideCtrl');
+  var widthCtrl  = widthInput ? widthInput.closest('.cz-embed-ctrl') : null;
+  var format     = 'inline';
+
   function platActuelle() { return PLATEFORMES[platCourante] || PLATEFORMES.autre; }
   // Hauteur automatique si la plateforme accepte le JavaScript ET que le pro
   // n'a pas dit le contraire (formules bridées : WordPress.com gratuit,
@@ -1201,6 +1241,10 @@
     if (noScriptCb && noScriptCb.checked) return false;
     return !!platActuelle().script;
   }
+
+  // Absent = possible : Wix est la seule exception connue, et écrire le
+  // drapeau partout ailleurs ne ferait que sept occasions de se tromper.
+  function superpositionOk() { return platActuelle().superposition !== false; }
 
   function rendrePlateforme() {
     var p = platActuelle();
@@ -1215,13 +1259,59 @@
       });
       platSteps.appendChild(ol);
     }
-    if (platWarn && platWarnTxt) {
-      platWarn.hidden = !p.note;
-      platWarnTxt.textContent = p.note || '';
+    // La remarque dépend du format, pas seulement de la plateforme : les notes
+    // habituelles renvoient à la case « hauteur fixe », qui n'existe que pour
+    // le calendrier posé dans la page. La laisser affichée ailleurs enverrait
+    // le pro chercher une case masquée.
+    var superposé = format === 'popup' || format === 'bubble';
+    var note = superposé ? (p.noteScript || '') : (p.note || '');
+    // Un format impossible prime sur tout le reste : c'est un mur, pas une
+    // nuance.
+    if (superposé && !superpositionOk()) {
+      note = p.nom + ' place toute intégration dans un cadre fermé : un panneau ' +
+        'ne peut pas s\'ouvrir par-dessus la page. Choisissez « Calendrier dans ' +
+        'la page » ou « Lien simple ».';
     }
-    // Le champ hauteur n'a de sens que si l'iframe ne s'ajuste pas seule.
-    if (heightCtrl) heightCtrl.hidden = hauteurAuto();
+    if (platWarn && platWarnTxt) {
+      platWarn.hidden = !note;
+      platWarnTxt.textContent = note;
+    }
+    // Hauteur et « pas de JavaScript » ne concernent que le calendrier posé
+    // dans la page : les autres formats n'occupent aucune place fixe.
+    if (heightCtrl)  heightCtrl.hidden  = format !== 'inline' || hauteurAuto();
+    if (noScriptCb && noScriptCb.parentElement) {
+      noScriptCb.parentElement.hidden = format !== 'inline';
+    }
   }
+
+  /* Le format commande l'affichage : réglages du bouton, choix des sections,
+     dimensions… chacun n'apparaît que là où il veut dire quelque chose. */
+  function rendreFormat() {
+    if (fmtCards) {
+      fmtCards.querySelectorAll('.czi-fmt__card').forEach(function (c) {
+        c.classList.toggle('is-active', c.dataset.fmt === format);
+      });
+    }
+    if (fmtOpts)     fmtOpts.hidden     = format === 'inline';
+    if (bubbleCtrl)  bubbleCtrl.hidden  = format !== 'bubble';
+    // « Lien simple » n'affiche rien chez le pro : aucune section à choisir.
+    if (stepContenu) stepContenu.hidden = format === 'lien';
+    if (widthCtrl)   widthCtrl.hidden   = format !== 'inline';
+    rendrePlateforme();
+    updatePreview();
+  }
+
+  if (fmtCards) {
+    fmtCards.querySelectorAll('.czi-fmt__card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        format = card.dataset.fmt;
+        rendreFormat();
+      });
+    });
+  }
+  [btnLabelIn, btnColorIn, bubbleSide].forEach(function (el) {
+    if (el) el.addEventListener('input', updatePreview);
+  });
 
   if (platPills) {
     platPills.querySelectorAll('.cz-plat__pill').forEach(function (btn) {
@@ -1245,12 +1335,50 @@
     });
   }
 
-  /* ── Construire le code iframe ───────────────────────────────── */
+  function escAttr(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /* ── Construire le code à copier ─────────────────────────────── */
   function buildIframeCode() {
     var url = buildEmbedUrl();
     if (!url) return '<!-- Configurez votre URL d\'abord -->';
     var w   = (widthInput  ? widthInput.value.trim()  : '100%') || '100%';
     var wPx = /^\d+$/.test(w) ? w + 'px' : w;
+
+    var libelle = (btnLabelIn && btnLabelIn.value.trim()) || 'Prendre rendez-vous';
+    var couleur = (btnColorIn && btnColorIn.value) || '#12a06e';
+
+    // Lien simple : pas une intégration, mais le format le plus robuste — il
+    // marche sur n'importe quel site, y compris ceux qui refusent tout code.
+    // Page ENTIÈRE, sans ?sections= : le visiteur arrive sur branshee.com, où
+    // le choix des sections n'est même plus proposé au pro (étape masquée).
+    // Le lui appliquer quand même reviendrait à amputer sa page depuis un
+    // réglage devenu invisible.
+    if (format === 'lien') {
+      return '<a href="' + FULL_URL + '"\n' +
+        '   target="_blank" rel="noopener"\n' +
+        '   style="display:inline-block;padding:13px 22px;border-radius:10px;' +
+        'background:' + couleur + ';color:#fff;font-weight:600;text-decoration:none;">\n' +
+        '  ' + escAttr(libelle) + '\n' +
+        '</a>';
+    }
+
+    if (format === 'popup' || format === 'bubble') {
+      var attrs = [
+        '  src="' + origin + '/js/embed.js"',
+        '  data-branshee-url="' + url + '"',
+        '  data-branshee-mode="' + format + '"',
+        '  data-branshee-label="' + escAttr(libelle) + '"',
+        '  data-branshee-color="' + couleur + '"',
+      ];
+      if (format === 'bubble') {
+        attrs.push('  data-branshee-position="' + ((bubbleSide && bubbleSide.value) || 'right') + '"');
+      }
+      return '<script\n' + attrs.join('\n') + '\n><\/script>';
+    }
 
     // Plateforme sans JavaScript : iframe seule, à la hauteur choisie. C'est
     // le seul code qui survit à un Wix ou un WordPress.com gratuit.
@@ -1359,8 +1487,9 @@
     setTimeout(autosizeCodeArea, 0);
   });
 
-  // Étapes et code de la plateforme sélectionnée au chargement.
-  rendrePlateforme();
+  // Format, étapes et code au chargement. On passe par rendreFormat() : c'est
+  // lui qui commande l'affichage (il appelle rendrePlateforme à son tour).
+  rendreFormat();
 
   // Écouter les changements de taille
   if (widthInput)  widthInput.addEventListener('input', updatePreview);
