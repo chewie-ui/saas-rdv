@@ -321,10 +321,25 @@ block content
                                 else
                                     span.hp-plan__amount #{f.mensuel} €
                                     span.hp-plan__per  / #{pl.pricing.per_month || 'mois'}
+                            //- La carte Pro affichait « Commencer gratuitement »
+                            //- comme la carte Amateur — faux sur un forfait à
+                            //- 19 €. Pendant une campagne elle annonce le prix
+                            //- réel de la 1re période ; hors campagne, un libellé
+                            //- neutre qui ne promet plus la gratuité.
+                            -
+                                var _ctaLabel = pl.hero.cta_free;
+                                if (estPro) {
+                                    // Hors campagne on garde le libellé existant : inventer
+                                    // ici une traduction ferait remonter du français en dur
+                                    // dans les cinq autres langues.
+                                    if (promo && promo.plan === 'pro' && pl.pricing.cta_promo) {
+                                        _ctaLabel = pl.pricing.cta_promo.replace('{prix}', promo.prixEuros);
+                                    }
+                                }
                             a.hp-btn.hp-btn--block(
                                 href="/register?intent=pro"
                                 class=estPro ? 'hp-btn--primary' : 'hp-btn--ghost'
-                            )= pl.hero.cta_free
+                            )= _ctaLabel
 
         //- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //- 7. QUESTIONS FRÉQUENTES — mêmes entrées que le JSON-LD FAQPage

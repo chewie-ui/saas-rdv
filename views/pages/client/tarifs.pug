@@ -62,7 +62,10 @@ block content
                     {
                         cle: 'pro', nom: 'Pro', tag: 'Populaire', tagType: 'accent', vedette: true,
                         desc: "Pour les indépendants actifs qui veulent moins d'absences.",
-                        cta: 'Choisir Pro', ctaHref: '/register', ctaType: 'accent',
+                        // Pendant une campagne, le bouton annonce le prix réel
+                        // de la 1re période plutôt qu'un « Choisir » neutre.
+                        cta: (promo && promo.plan === 'pro') ? ('Obtenir à ' + promo.prixEuros + ' €') : 'Choisir Pro',
+                        ctaHref: '/register', ctaType: 'accent',
                         feats: [
                             'Prestations illimitées',
                             "Jusqu'à 5 employés · 2 collaborateurs",
