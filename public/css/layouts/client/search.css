@@ -426,7 +426,10 @@
 .srp-card[hidden] { display: none; }
 
 .srp-card__thumb {
-  height: 104px;
+  /* Carrée : la colonne fait 132px, une hauteur de 104px coupait le haut des
+     têtes et des logos. `aspect-ratio` suit la largeur de colonne, y compris
+     en mobile (96px) où la vignette était déjà carrée par coïncidence. */
+  aspect-ratio: 1 / 1;
   border-radius: 14px;
   overflow: hidden;
   background: #f2f4f2;
@@ -648,7 +651,7 @@
   /* La carte passe en deux lignes : photo + contenu, puis le prix en bas.
      Trois colonnes sur 375px réduisaient le contenu à ~110px. */
   .srp-card { grid-template-columns: 96px 1fr; gap: 14px; }
-  .srp-card__thumb { height: 96px; }
+  /* Plus de hauteur fixe : `aspect-ratio: 1/1` la déduit de la colonne. */
   .srp-card__aside {
     grid-column: 1 / -1;
     display: flex;

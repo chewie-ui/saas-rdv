@@ -315,7 +315,12 @@
 }
 .sh-card:hover { border-color: #c9d2cd; }
 
-.sh-card__thumb { position: relative; height: 168px; background: #f2f4f2; }
+/* Carré, et non une bande de 168px de haut : à 380px de large, ce format
+   2,26:1 rognait le haut des logos (« RÉFLEXOLOGIE », « WIDORA HOUSE ») et
+   décapitait les photos de profil, qui sont presque toutes carrées ou
+   portrait. `aspect-ratio` plutôt qu'une hauteur fixe pour que la vignette
+   suive la largeur de colonne à toutes les tailles d'écran. */
+.sh-card__thumb { position: relative; aspect-ratio: 1 / 1; background: #f2f4f2; }
 /* `object-fit: cover` : les photos des pros ont tous les rapports possibles,
    et une vignette déformée fait amateur — mieux vaut recadrer. */
 .sh-card__img { width: 100%; height: 100%; object-fit: cover; display: block; }
