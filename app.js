@@ -396,6 +396,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Campagne promo (offre de lancement) — disponible dans toutes les vues.
+app.use(require("./middlewares/injectPromoCampaign"));
+
 // Rend `clientUser`/`clientSession` disponibles sur TOUTES les pages (pas
 // uniquement celles qui pensaient à les calculer) → corrige le bouton
 // « Espace client » manquant dans la topbar sur certaines pages publiques.

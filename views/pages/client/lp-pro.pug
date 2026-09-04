@@ -21,7 +21,10 @@ block content
                     svg(viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round")
                         circle(cx="12" cy="12" r="10")
                         polyline(points="12 6 12 12 16 14")
-                    | &nbsp;1 mois offert · Sans carte bancaire
+                    if promo
+                        | &nbsp;#{promo.prixEuros} € les #{promo.days} premiers jours · Sans engagement
+                    else
+                        | &nbsp;Sans engagement · Résiliable en un clic
 
                 h1.lp-pro__h1
                     | Fini les appels pour
@@ -219,7 +222,11 @@ block content
                             li ✓ Rappels email automatiques
                             li ✓ Google Calendar
                             li ✓ Page personnalisable
-                        button.lp-pro__plan-cta(type="button" onclick="openFreeMonthModal()") 1 mois offert →
+                        button.lp-pro__plan-cta(type="button" onclick="openFreeMonthModal()")
+                            if promo
+                                | #{promo.prixEuros} € le 1er mois →
+                            else
+                                | Passer au Pro →
 
                     .lp-pro__plan
                         .lp-pro__plan-name Business
@@ -232,7 +239,11 @@ block content
                             li ✓ Jusqu'à 10 employés
                             li ✓ Services illimités
                             li ✓ Sans branding BranShee
-                        button.lp-pro__plan-cta.lp-pro__plan-cta--ghost(type="button" onclick="openFreeMonthModal()") 1 mois offert →
+                        button.lp-pro__plan-cta.lp-pro__plan-cta--ghost(type="button" onclick="openFreeMonthModal()")
+                            if promo
+                                | #{promo.prixEuros} € le 1er mois →
+                            else
+                                | Passer au Pro →
 
         //- ══════════════════════════════════════════════
         //- GARANTIES
@@ -267,7 +278,7 @@ block content
                         p.lp-pro__faq-a Oui. La formule Starter est gratuite sans limite de temps, avec 20 réservations par mois et jusqu'à 5 services inclus. Aucune carte bancaire n'est requise pour s'inscrire.
                     details.lp-pro__faq-item
                         summary.lp-pro__faq-q
-                            span Que se passe-t-il après le 1#[sup er] mois offert ?
+                            span Que se passe-t-il après l'offre de lancement ?
                             span.lp-pro__faq-chevron ›
                         p.lp-pro__faq-a Après votre 1#[sup er] mois gratuit sur le plan Pro, vous continuez à 19 €/mois — ou repassez en formule Starter gratuitement. Sans engagement, résiliable en 1 clic depuis votre compte.
                     details.lp-pro__faq-item
@@ -299,7 +310,11 @@ block content
     //- Sticky CTA mobile (visible uniquement sur petit écran)
     .lp-pro__sticky
         button.lp-pro__sticky-btn(type="button" onclick="openFreeMonthModal()") Créer mon agenda gratuit →
-        p.lp-pro__sticky-note Sans carte bancaire · 1 mois offert
+        p.lp-pro__sticky-note
+            if promo
+                | #{promo.prixEuros} € les #{promo.days} premiers jours · Sans engagement
+            else
+                | Sans engagement · Résiliable en un clic
 
     +freeMonthModal()
 

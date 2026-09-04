@@ -25,6 +25,7 @@ block links
     link(rel="stylesheet", href="/css/layouts/client/tarifs.css")
 
 block content
+    include ../../common/promo-banner
     main.tp
         .tp__wrap
 
@@ -87,6 +88,9 @@ block content
                     }
                 ];
 
+            if promo
+                .tp-promo-wrap(style="margin:0 auto 28px;display:flex;justify-content:center")
+                    +promoBanner()
             .tp-plans
                 each p in _plans
                     - var f = _forfaits[p.cle]
@@ -115,7 +119,13 @@ block content
                             data-note-an=(an ? 'Soit ' + an.total + ' € par an au lieu de ' + an.plein + ' €' : (p.noteAn || p.note || ''))
                         )
                             if p.cle === 'pro'
-                                | 1ᵉʳ mois offert, puis #{f.mensuel} €/mois
+                                //- La note suit la campagne : hors promo, elle
+                                //- ne doit plus promettre un mois offert qui
+                                //- n'existe plus côté paiement.
+                                if promo && promo.plan === 'pro'
+                                    | #{promo.prixEuros} € les #{promo.days} premiers jours, puis #{f.mensuel} €/mois
+                                else
+                                    | Sans engagement, résiliable en un clic
                             else if p.note
                                 = p.note
 
@@ -221,8 +231,8 @@ block content
                         r: "Oui. Le forfait Amateur est gratuit sans limite de temps, avec des réservations illimitées et jusqu'à 5 prestations. Aucune carte bancaire n'est demandée à l'inscription."
                     },
                     {
-                        q: 'Que se passe-t-il après le 1ᵉʳ mois offert ?',
-                        r: "Vous continuez à 19 €/mois, ou vous repassez sur Amateur gratuitement. Sans engagement, résiliable en un clic depuis votre espace. Le mois offert vaut une seule fois par compte."
+                        q: promo ? "Que se passe-t-il après l'offre de lancement ?" : "Puis-je changer ou arrêter mon forfait ?",
+                        r: "Vous continuez à " + _forfaits.pro.mensuel + " €/mois, ou vous repassez sur Amateur gratuitement. Sans engagement, résiliable en un clic depuis votre espace. L'offre de lancement vaut une seule fois par compte."
                     },
                     {
                         q: 'Mes clients doivent-ils créer un compte pour réserver ?',

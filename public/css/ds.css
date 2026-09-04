@@ -1024,3 +1024,76 @@ body.ds-drag-active * { cursor: grabbing !important; }
   .ds-tab, .ds-input, .ds-select, .ds-ico, .ds-choice__box, .ds-switch__track,
   .ds-switch__track::after { transition: none; }
 }
+
+/* ── Bandeau « offre de lancement » + compte à rebours ────────────────────
+   Composant partagé (accueil, /tarifs, inscription, landing pro, abonnement).
+   Défini ici et nulle part ailleurs, cf. CONVENTIONS.md §2 bis. */
+.promo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 18px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: var(--accent-soft, color-mix(in srgb, var(--accent, #12a06e) 8%, transparent));
+  border: 1px solid var(--accent-border, color-mix(in srgb, var(--accent, #12a06e) 25%, transparent));
+  font-size: 14px;
+  line-height: 1.4;
+}
+.promo--ligne {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.promo__offre { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; }
+
+.promo__tag {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent, #12a06e);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+.promo__texte { color: var(--text-primary, #141a17); }
+.promo__texte strong { font-weight: 700; }
+
+/* Le tarif qui suit l'offre, en gris — surtout PAS barré : « puis 19 €/mois »
+   n'est pas un prix annulé, c'est celui qu'on paiera ensuite. Le barrer
+   laissait croire l'inverse. */
+.promo__barre {
+  margin-left: 6px;
+  color: var(--text-muted, #6b737b);
+}
+
+.promo__compte {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--surface-card, #fff);
+  border: 1px solid var(--border-light, #e9ece9);
+}
+.promo__compte__label { font-size: 12px; color: var(--text-muted, #6b737b); }
+.promo__compte__valeur {
+  font-variant-numeric: tabular-nums;
+  /* Chiffres tabulaires + largeur minimale : sans ça le bandeau tressaute à
+     chaque seconde, la largeur des chiffres changeant d'un caractère à l'autre. */
+  min-width: 8ch;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--accent-text, var(--accent, #12a06e));
+}
+
+@media (max-width: 560px) {
+  .promo { flex-direction: column; align-items: stretch; text-align: center; }
+  .promo__offre { justify-content: center; }
+  .promo__compte { justify-content: center; }
+}

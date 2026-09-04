@@ -75,6 +75,7 @@ block links
     link(rel="stylesheet", href="/css/layouts/client/home.css")
 
 block content
+    include ../../common/promo-banner
     - var pl = t.pro_landing
 
     .hp
@@ -293,6 +294,11 @@ block content
             .container
                 h2.hp-h2= pl.pricing.title
                 p.hp-lead= pl.pricing.desc
+                //- Offre en cours : rien n'est affiché si la campagne est
+                //- éteinte ou expirée (res.locals.promo vaut alors null).
+                if promo
+                    .hp-promo-wrap(style="margin:0 0 26px;display:flex;justify-content:center")
+                        +promoBanner()
                 .hp-pricing__grid
                     each cle in ['basic', 'pro', 'business']
                         -

@@ -339,7 +339,7 @@ router.get("/", requireFeatureActive("home"), (req, res) => {
   const pl = (res.locals.t && res.locals.t.pro_landing) || {};
   res.render("client/manage-business", {
     title: pl.meta_title || "Agenda en ligne gratuit & prise de rendez-vous 24h/24 | BranShee",
-    metaDescription: pl.meta_desc || "Agenda en ligne gratuit : réservations 24h/24, rappels anti no-show, 0 % de commission, widget pour votre site. Pro à 19 €/mois, 1 mois offert.",
+    metaDescription: pl.meta_desc || "Agenda en ligne gratuit : réservations 24h/24, rappels anti no-show, 0 % de commission, widget pour votre site. Pro à 19 €/mois, sans engagement.",
     canonical: "https://www.branshee.com/",
     becomeCoach: true,
     // Prix affichés dans la section tarifs de la home. Même source que la page

@@ -1012,4 +1012,8 @@ html(lang="fr")
                 }
                 if (!hook()) document.addEventListener('support:socketReady', hook);
             })();
+        //- Compte à rebours du bandeau promo — chargé seulement quand une
+        //- campagne tourne, pour ne pas peser sur les autres pages.
+        if promo
+            script(src="/js/components/promo-countdown.js" defer)
         +pwaInstall()

@@ -123,3 +123,37 @@
     });
   });
 })();
+
+// ── Campagne de lancement ───────────────────────────────────────────────────
+// Formulaire distinct des codes promo : il pilote l'offre automatique annoncée
+// sur les pages publiques (bandeau + compte à rebours).
+(function () {
+  var form = document.getElementById("formCampagne");
+  if (!form) return;
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var btn = form.querySelector('button[type="submit"]');
+    var data = Object.fromEntries(new FormData(form).entries());
+
+    if (btn) btn.disabled = true;
+    fetch("/superadmin/promo-campaign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (btn) btn.disabled = false;
+        if (!d.success) throw new Error(d.error || "échec");
+        window.saToast("Campagne enregistrée.");
+        // Le libellé d'état sous le formulaire est calculé côté serveur : on
+        // recharge plutôt que de le réécrire ici en double.
+        setTimeout(function () { window.location.reload(); }, 600);
+      })
+      .catch(function (err) {
+        if (btn) btn.disabled = false;
+        window.saToast(err.message || "Enregistrement impossible.", "err");
+      });
+  });
+})();

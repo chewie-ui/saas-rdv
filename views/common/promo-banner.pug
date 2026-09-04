@@ -1,0 +1,23 @@
+//- Bandeau « offre de lancement » + compte à rebours.
+//-
+//- Un seul gabarit pour l'accueil, /tarifs, l'inscription et la landing pro :
+//- le prix et la date de fin viennent de res.locals.promo (middlewares/
+//- injectPromoCampaign), donc aucune page ne peut annoncer un montant que la
+//- facture ne tiendrait pas.
+//-
+//- `variante` : 'plein' (bandeau large) ou 'ligne' (une seule ligne discrète).
+mixin promoBanner(variante)
+    if promo
+        .promo(class=(variante === 'ligne' ? 'promo--ligne' : ''))
+            .promo__offre
+                span.promo__tag Offre de lancement
+                span.promo__texte
+                    | Le #[strong= promo.planLabel] à #[strong #{promo.prixEuros} €] les #{promo.days} premiers jours
+                    span.promo__barre  puis #{promo.prixNormal} €/mois
+            if promo.endsAt
+                //- Rempli par public/js/components/promo-countdown.js. Le
+                //- gabarit affiche déjà « — » pour qu'aucune page ne montre
+                //- un cadre vide si le script tarde ou échoue.
+                .promo__compte(data-promo-countdown=promo.endsAt)
+                    span.promo__compte__label Se termine dans
+                    span.promo__compte__valeur —

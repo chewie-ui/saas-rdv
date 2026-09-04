@@ -58,6 +58,7 @@ router.patch("/superadmin/boost/:companyId", isSuperAdmin, ctrl.setBoost);
 // Promo codes
 router.get("/superadmin/promo-codes", isSuperAdmin, ctrl.promoCodesPage);
 router.post("/superadmin/promo-codes", isSuperAdmin, ctrl.createPromoCode);
+router.post("/superadmin/promo-campaign", isSuperAdmin, ctrl.savePromoCampaign);
 router.patch("/superadmin/promo-codes/:id/toggle", isSuperAdmin, ctrl.togglePromoCode);
 router.patch("/superadmin/promo-codes/:id/toggle-offer", isSuperAdmin, ctrl.togglePromoOffer);
 router.delete("/superadmin/promo-codes/:id", isSuperAdmin, ctrl.deletePromoCode);

@@ -124,8 +124,8 @@ block content
             section.qs-panel(data-panel="4")
                 .qs-panel__intro
                     h1.qs-title Choisissez votre formule
-                    if essaiGratuitDisponible
-                        p.qs-sub Le Pro est offert #[strong 30 jours]. Sans engagement, résiliable en un clic.
+                    if promo && essaiGratuitDisponible
+                        p.qs-sub Le #{promo.planLabel} à #[strong #{promo.prixEuros} €] les #{promo.days} premiers jours, puis #{promo.prixNormal} €/mois. Sans engagement.
                     else
                         p.qs-sub Passez au Pro quand vous voulez. Sans engagement.
 
@@ -140,12 +140,12 @@ block content
                         span.qs-plan__tag Recommandé
                         span.qs-plan__name= tarifs.pro.libelle
                         span.qs-plan__price #{tarifs.pro.mensuel} € #[small / mois]
-                        if essaiGratuitDisponible
-                            span.qs-plan__hint 30 jours offerts, puis #{tarifs.pro.mensuel} €/mois.
+                        if promo && promo.plan === 'pro' && essaiGratuitDisponible
+                            span.qs-plan__hint #{promo.prixEuros} € les #{promo.days} premiers jours, puis #{tarifs.pro.mensuel} €/mois.
                         else
                             span.qs-plan__hint #{tarifs.pro.annuelParMois} €/mois en annuel.
                         a.sm-btn.sm-btn--primary.sm-btn--full(href="/subscription")
-                            span= essaiGratuitDisponible ? 'Essayer 30 jours' : 'Passer au Pro'
+                            span= (promo && essaiGratuitDisponible) ? (promo.prixEuros + ' € le 1er mois') : 'Passer au Pro'
 
                 p.qs-plans__note
                     a(href="/subscription") Voir toutes les formules et le détail →

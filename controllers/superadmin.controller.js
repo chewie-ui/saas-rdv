@@ -4,6 +4,8 @@ const Company    = require("../db/models/company/company.model");
 const PromoCode  = require("../db/models/promoCode.model");
 const AccessLink = require("../db/models/accessLink.model");
 const FeatureFlag = require("../db/models/featureFlag.model");
+const PromoCampaign = require("../db/models/promoCampaign.model");
+const { invalidatePromoCampaignCache } = require("../utils/promoCampaign");
 const Booking   = require("../db/models/book.model");
 const Service   = require("../db/models/company/service.model");
 const Employee  = require("../db/models/company/employee.model");
@@ -892,7 +894,64 @@ exports.setTrialDuration = async (req, res) => {
 
 exports.promoCodesPage = async (req, res) => {
   const codes = await PromoCode.find({}).sort("-createdAt").lean();
-  res.render("superadmin/promo-codes", { saPage: "promo", codes });
+  const campagne = await PromoCampaign.findOne({ key: "main" }).lean();
+
+  // `<input type="datetime-local">` n'accepte que "YYYY-MM-DDTHH:mm" en heure
+  // LOCALE. Lui passer un ISO (UTC) décalerait l'heure affichée de 1 à 2 h
+  // selon la saison — le superadmin croirait avoir réglé 23h59 et lirait 21h59.
+  let campagneEndsLocal = "";
+  if (campagne && campagne.endsAt) {
+    const d = new Date(campagne.endsAt);
+    const p2 = (n) => String(n).padStart(2, "0");
+    campagneEndsLocal = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`;
+  }
+
+  res.render("superadmin/promo-codes", { saPage: "promo", codes, campagne, campagneEndsLocal });
+};
+
+// Enregistre la campagne de lancement (document unique `key: "main"`).
+exports.savePromoCampaign = async (req, res) => {
+  try {
+    const { active, prixEuros, days, plan, endsAt } = req.body;
+
+    const cents = Math.round(Number(prixEuros) * 100);
+    if (!Number.isFinite(cents) || cents < 0) {
+      return res.status(400).json({ error: "Prix invalide." });
+    }
+    const jours = parseInt(days, 10);
+    if (!Number.isFinite(jours) || jours < 1 || jours > 365) {
+      return res.status(400).json({ error: "Durée invalide (1 à 365 jours)." });
+    }
+    if (!["pro", "business"].includes(plan)) {
+      return res.status(400).json({ error: "Forfait invalide." });
+    }
+
+    let fin = null;
+    if (endsAt) {
+      const d = new Date(endsAt);
+      if (Number.isNaN(d.getTime())) return res.status(400).json({ error: "Date de fin invalide." });
+      fin = d;
+    }
+    const estActive = active === "1" || active === true;
+    // Activer une campagne déjà expirée n'afficherait rien et n'accorderait
+    // rien : autant le dire tout de suite plutôt que de laisser croire que
+    // l'offre tourne.
+    if (estActive && fin && fin.getTime() <= Date.now()) {
+      return res.status(400).json({ error: "La date de fin est déjà passée : l'offre ne s'appliquerait jamais." });
+    }
+
+    await PromoCampaign.findOneAndUpdate(
+      { key: "main" },
+      { key: "main", active: estActive, endsAt: fin, firstPeriodCents: cents, days: jours, plan, billing: "monthly" },
+      { upsert: true, new: true },
+    );
+    invalidatePromoCampaignCache();
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("savePromoCampaign error:", err);
+    res.status(500).json({ error: "Erreur serveur." });
+  }
 };
 
 exports.createPromoCode = async (req, res) => {

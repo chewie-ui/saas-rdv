@@ -14,7 +14,7 @@ const speakeasy = require("speakeasy");
 const QRCode = require("qrcode");
 const { sanitizeRichText } = require("../utils/sanitizeRichText");
 const { isSafePlainText } = require("../utils/validateName");
-const { peutAvoirEssaiGratuit, TRIAL_DAYS } = require("../utils/freeTrial");
+const { offrePourCheckout } = require("../utils/promoCampaign");
 
 // ── Limites par plan ─────────────────────────────────────────────────────────
 const PLAN_LIMITS = {
@@ -491,17 +491,31 @@ exports.createCheckout = async (req, res) => {
       }
     }
 
-    // Le « 1 mois offert » promis sur la page d'abonnement — mais UNE SEULE
-    // FOIS par compte (cf. utils/freeTrial.js). Il était appliqué à chaque
-    // souscription : résilier puis reprendre relançait 30 jours gratuits,
-    // indéfiniment, et un pro déjà en octroi manuel en recevait 30 de plus.
-    // Un code promo « essai » explicite, lui, reste prioritaire.
-    if (!sessionParams.subscription_data.trial_period_days && peutAvoirEssaiGratuit(req.user)) {
-      sessionParams.subscription_data = {
-        ...sessionParams.subscription_data,
-        trial_period_days: TRIAL_DAYS,
-      };
-      sessionParams.payment_method_collection = "always";
+    // ── Campagne en cours : 1ère période à prix cassé ────────────────────────
+    // Remplace l'ancien « 1er mois offert » (trial_period_days). Une remise
+    // ponctuelle (coupon duration:once) plutôt qu'un essai : le compte est
+    // débité tout de suite, ce qui filtre les cartes invalides au lieu de ne
+    // découvrir le problème qu'au 31e jour.
+    //
+    // Toujours dû UNE SEULE FOIS par compte (offrePourCheckout consulte
+    // peutAvoirEssaiGratuit) : sans ça, résilier puis reprendre relancerait
+    // l'offre indéfiniment. Un code promo saisi à la main reste prioritaire —
+    // d'où le test sur `discounts` et `trial_period_days` déjà posés.
+    const dejaRemise = !!sessionParams.discounts || !!sessionParams.subscription_data.trial_period_days;
+    if (!dejaRemise) {
+      // `periode` et non `billing` brut : le front peut n'envoyer aucune
+      // valeur pour le mensuel, `periode` l'a déjà normalisé en "monthly".
+      const offre = await offrePourCheckout(req.user, planName, periode);
+      if (offre) {
+        const coupon = await stripe.coupons.create({
+          duration: "once",
+          amount_off: offre.amountOffCents,
+          currency: "eur",
+          name: `Offre de lancement — ${offre.prixEuros} € les ${offre.days} premiers jours`,
+        });
+        sessionParams.discounts = [{ coupon: coupon.id }];
+        sessionParams.payment_method_collection = "always";
+      }
     }
 
     // Afficher le champ "Code promo" natif de Stripe — au cas où l'utilisateur

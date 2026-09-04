@@ -7,6 +7,7 @@ block links
     link(rel="stylesheet", href="/css/templates/dialog.css")
 
 block content
+    include ../../common/promo-banner
     //- ══════════════════════════════════════════════════════════════════════
     //-  PAGE ABONNEMENT — reprise de l'écran « Abonnement » de la maquette
     //-  ────────────────────────────────────────────────────────────────────
@@ -147,6 +148,11 @@ block content
         //-  ÉTAT 1 — SANS ABONNEMENT
         //- ══════════════════════════════════════════════════════════════════
         if !isPro
+            //- L'offre en cours, juste au-dessus du choix de forfait : c'est
+            //- l'endroit où la décision se prend.
+            if promo
+                .sub-promo-wrap(style="margin:0 0 18px")
+                    +promoBanner()
             .sub-head
                 .sub-head__text
                     span.sub-badge.sub-badge--muted Aucun abonnement
@@ -187,8 +193,8 @@ block content
                                     span.material-symbols-outlined check
                                 span= f
                     button.sub-btn.sub-btn--light.sub-btn--block(type="button" data-sub-open="plans")
-                        if essaiGratuitDisponible
-                            | Passer à Pro · 1ᵉʳ mois offert
+                        if promo && promo.plan === 'pro' && essaiGratuitDisponible
+                            | Passer à Pro · #{promo.prixEuros} € le 1er mois
                         else
                             | Passer à Pro
                     if _proOffer
@@ -327,8 +333,8 @@ block content
                             .sub-pick__note
                                 if offre
                                     = _offerLabel(offre)
-                                else if cle === 'pro' && essaiGratuitDisponible
-                                    | 1ᵉʳ mois offert
+                                else if promo && cle === promo.plan && essaiGratuitDisponible
+                                    | #{promo.prixEuros} € les #{promo.days} premiers jours
                             ul.sub-pick__feats
                                 each c in caracs[cle]
                                     li
