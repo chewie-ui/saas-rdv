@@ -839,6 +839,7 @@ router.get("/s-inscrire", (req, res) => res.redirect(301, "/register"));
 // espace-client. ──────────────────────────────────────────────────────────────
 const establishmentController = require("../controllers/establishment.controller");
 const isAuth = require("../middlewares/isAuth");
+const requireProAccount = require("../middlewares/requireProAccount");
 const isClientOrUserAuth = require("../middlewares/isClientOrUserAuth");
 
 // ── Démarrage express (« 3 clics ») — conversion des comptes client en pro ──
@@ -846,7 +847,10 @@ const isClientOrUserAuth = require("../middlewares/isClientOrUserAuth");
 // soit pas confondu avec un slug d'établissement.
 const _qsUpload = require("../config/multer");
 const { processSingleImage: _qsProcessImage } = require("../middlewares/processImageUpload");
-router.get("/demarrer", isAuth, establishmentController.quickStartPage);
+// `requireProAccount` et non `isAuth` : un compte Client legacy connecté est
+// promu en User au passage, au lieu d'être renvoyé vers l'inscription
+// complète comme s'il n'avait pas de compte.
+router.get("/demarrer", requireProAccount, establishmentController.quickStartPage);
 router.post(
   "/demarrer/creer",
   isAuth,

@@ -32,7 +32,12 @@ aside.sidebar#sidebar
                     //- reconnecter en client ne changeait rien, boucle sans issue.
                     //- Créer un établissement suppose un compte pro : on l'envoie
                     //- l'ouvrir, avec l'intention déjà choisie.
-                    - var _estabHref = !user ? '/register?intent=pro' : (hasEstablishment ? '/etablissement/mes-etablissements' : '/demarrer')
+                    //- `user` n'est posé que pour un User : un compte Client legacy
+                    //- connecté tombait donc dans la branche « visiteur anonyme » et
+                    //- se voyait redemander nom/email/mot de passe. `clientSession`
+                    //- couvre les deux identités ; /demarrer promeut le Client en User.
+                    - var _connecte = !!user || !!clientSession
+                    - var _estabHref = !_connecte ? '/register?intent=pro' : (hasEstablishment ? '/etablissement/mes-etablissements' : '/demarrer')
                     a.sb-link(href=_estabHref class=pageName === 'Mes établissements' ? 'active' : '')
                         svg(viewBox="0 -960 960 960" height="18" width="18" fill="currentColor")
                             path(d="M160-120v-650l320-150 320 150v650H160Zm240-80h160v-200H400v200Zm-160 0h80v-280h320v280h80v-528l-240-112-240 112v528Z")

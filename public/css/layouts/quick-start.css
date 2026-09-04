@@ -385,3 +385,89 @@
 }
 .qs-type-req:hover { color: #c2410c; }
 .qs-type-req:disabled { color: var(--success); text-decoration: none; cursor: default; font-weight: 700; }
+
+/* ── Description (étape 1) ──────────────────────────────────────────────── */
+.qs-textarea {
+  min-height: 84px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+}
+.qs-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--text-muted, #6b7280);
+  text-align: right;
+}
+
+/* ── Forfaits (étape 4) ─────────────────────────────────────────────────── */
+.qs-plans {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 4px 0 14px;
+}
+@media (max-width: 560px) {
+  .qs-plans { grid-template-columns: 1fr; }
+}
+.qs-plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 16px 16px;
+  background: var(--surface-card, #fff);
+  border: 1.5px solid var(--border-light, #e5e7eb);
+  border-radius: 14px;
+  text-align: left;
+}
+/* La formule mise en avant : bordure accent, comme le bouton principal. */
+.qs-plan--reco {
+  border-color: var(--accent, #16a34a);
+  background: var(--accent-soft, color-mix(in srgb, var(--accent, #16a34a) 5%, #fff));
+}
+.qs-plan__tag {
+  position: absolute;
+  top: -9px;
+  left: 16px;
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent, #16a34a);
+  border-radius: 999px;
+}
+.qs-plan__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted, #6b7280);
+}
+.qs-plan__price {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink, #111827);
+  line-height: 1.1;
+}
+.qs-plan__price small {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted, #6b7280);
+}
+.qs-plan__hint {
+  flex: 1;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-2, #374151);
+  margin-bottom: 4px;
+}
+.qs-plans__note {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+}
+.qs-plans__note a {
+  color: var(--accent, #16a34a);
+  font-weight: 600;
+  text-decoration: none;
+}
+.qs-plans__note a:hover { text-decoration: underline; }

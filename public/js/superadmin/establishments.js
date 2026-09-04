@@ -35,9 +35,15 @@
 
   // Le badge régénéré doit rester un BOUTON, sinon la durée cesse d'être
   // réglable d'un clic dès qu'on l'a modifiée une première fois.
-  function badgeReste(expiry, plan) {
+  function badgeReste(expiry, plan, estStripe) {
     if (plan === "free") return '<span class="sa-muted">—</span>';
     if (!expiry) {
+      // Abonnement Stripe sans octroi manuel : l'échéance appartient à Stripe.
+      // Afficher « Illimité » ici faisait passer un essai de 30 jours pour un
+      // accès à vie offert par erreur.
+      if (estStripe) {
+        return '<button type="button" class="sa-tag sa-tag--btn sa-tag--green" data-act="duree" title="Abonnement Stripe (essai ou payant) — aucun octroi manuel. Cliquez pour en ajouter un.">Abonné</button>';
+      }
       return '<button type="button" class="sa-tag sa-tag--btn" data-act="duree" title="Modifier la durée d\'octroi">Illimité</button>';
     }
     var ms = new Date(expiry) - new Date();
@@ -79,7 +85,7 @@
           sel.dataset.plan = sel.value;
           tr.dataset.plan = sel.value === "free" ? "basic" : sel.value;
           tr.dataset.expiry = d.expiry || "";
-          tr.querySelector(".js-reste").innerHTML = badgeReste(d.expiry, sel.value);
+          tr.querySelector(".js-reste").innerHTML = badgeReste(d.expiry, sel.value, tr.dataset.stripe === "1");
           window.saToast("Plan mis à jour.");
           // Passage du gratuit à un plan payant : « Business » seul ne dit pas
           // POUR COMBIEN DE TEMPS. On enchaîne donc sur le choix de la durée,
@@ -202,7 +208,7 @@
         bouton.disabled = false;
         if (!d.success) throw new Error(d.error || "échec");
         ligneDuree.dataset.expiry = d.expiry || "";
-        ligneDuree.querySelector(".js-reste").innerHTML = badgeReste(d.expiry, plan);
+        ligneDuree.querySelector(".js-reste").innerHTML = badgeReste(d.expiry, plan, ligneDuree.dataset.stripe === "1");
         modalDuree.classList.remove("is-open");
         window.saToast("Durée d'octroi mise à jour.");
       })

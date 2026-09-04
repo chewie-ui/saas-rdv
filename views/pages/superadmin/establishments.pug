@@ -158,6 +158,7 @@ block content
                                 data-plan=c.planKey
                                 data-paused=c.isPaused ? '1' : '0'
                                 data-expiry=c.trialExpiryAt || ''
+                                data-stripe=c.isStripeSub ? '1' : '0'
                             )
                                 td
                                     .sa-person
@@ -196,6 +197,11 @@ block content
                                 td.js-reste
                                     if c.planKey === 'basic'
                                         span.sa-muted —
+                                    else if c.trialDaysLeft === null && c.isStripeSub
+                                        //- Abonnement Stripe : l'échéance est gérée par Stripe,
+                                        //- pas par un octroi. L'afficher « Illimité » faisait
+                                        //- croire à un accès à vie offert par erreur.
+                                        button.sa-tag.sa-tag--btn.sa-tag--green(type="button" data-act="duree" title="Abonnement Stripe (essai ou payant) — aucun octroi manuel. Cliquez pour en ajouter un.") Abonné
                                     else if c.trialDaysLeft === null
                                         button.sa-tag.sa-tag--btn(type="button" data-act="duree" title="Modifier la durée d'octroi") Illimité
                                     else

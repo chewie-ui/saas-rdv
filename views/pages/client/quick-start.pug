@@ -15,6 +15,7 @@ block content
                     span.qs-step.is-active(data-step="1")
                     span.qs-step(data-step="2")
                     span.qs-step(data-step="3")
+                    span.qs-step(data-step="4")
 
             //- ══ ÉTAPE 1 — Votre établissement ═══════════════════════════════
             section.qs-panel.is-active(data-panel="1")
@@ -52,6 +53,13 @@ block content
                         .qs-type-warn__body
                             span Ce métier n'est pas encore reconnu par BranShee. C'est accepté, mais vous serez moins mis en avant sur le site tant qu'il n'est pas dans notre liste.
                             button.qs-type-req#qsTypeReq(type="button") Demander l'ajout de ce métier →
+
+                //- Description — affichée sur la fiche publique, sous le nom.
+                .qs-field
+                    label.qs-label(for="qsDesc") Décrivez votre établissement
+                        span.qs-opt (optionnel)
+                    textarea#qsDesc.qs-input.qs-textarea(rows="3" maxlength="600" placeholder="Ex : Salon de coiffure au cœur de Bruxelles, spécialisé dans le soin du cheveu bouclé.")
+                    p.qs-hint#qsDescCount 0 / 600
 
                 button.sm-btn.sm-btn--primary.sm-btn--full#qsNext1(type="button")
                     span Continuer
@@ -104,11 +112,43 @@ block content
                         p.qs-services__q Voulez-vous ajouter vos prestations maintenant ?
                         p.qs-services__hint Ce que vos clients pourront réserver (coupe, séance, consultation…).
                         .qs-actions
-                            a.sm-btn.sm-btn--ghost#qsSkipServices(href="/panel")
+                            button.sm-btn.sm-btn--ghost#qsSkipServices(type="button")
                                 span Plus tard
                             a.sm-btn.sm-btn--primary#qsAddServices(href="/services")
                                 span.material-symbols-outlined(style="font-size:18px") add
                                 span Ajouter mes services
+
+            //- ══ ÉTAPE 4 — Forfait ═══════════════════════════════════════════
+            //- Le paiement lui-même reste sur /subscription : dupliquer le
+            //- tunnel Stripe ici ferait diverger deux parcours de facturation.
+            section.qs-panel(data-panel="4")
+                .qs-panel__intro
+                    h1.qs-title Choisissez votre formule
+                    if essaiGratuitDisponible
+                        p.qs-sub Le Pro est offert #[strong 30 jours]. Sans engagement, résiliable en un clic.
+                    else
+                        p.qs-sub Passez au Pro quand vous voulez. Sans engagement.
+
+                .qs-plans
+                    .qs-plan
+                        span.qs-plan__name= tarifs.basic.libelle
+                        span.qs-plan__price Gratuit
+                        span.qs-plan__hint Votre calendrier est déjà actif sur cette formule.
+                        a.sm-btn.sm-btn--ghost.sm-btn--full(href="/panel") Continuer gratuitement
+
+                    .qs-plan.qs-plan--reco
+                        span.qs-plan__tag Recommandé
+                        span.qs-plan__name= tarifs.pro.libelle
+                        span.qs-plan__price #{tarifs.pro.mensuel} € #[small / mois]
+                        if essaiGratuitDisponible
+                            span.qs-plan__hint 30 jours offerts, puis #{tarifs.pro.mensuel} €/mois.
+                        else
+                            span.qs-plan__hint #{tarifs.pro.annuelParMois} €/mois en annuel.
+                        a.sm-btn.sm-btn--primary.sm-btn--full(href="/subscription")
+                            span= essaiGratuitDisponible ? 'Essayer 30 jours' : 'Passer au Pro'
+
+                p.qs-plans__note
+                    a(href="/subscription") Voir toutes les formules et le détail →
 
     //- Overlay de chargement pendant la création
     #qsLoading.qs-loading(hidden)
@@ -206,6 +246,26 @@ block scripts
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
 
+            // ── Description : compteur ───────────────────────────────────────
+            (function () {
+                var d = document.getElementById('qsDesc');
+                var c = document.getElementById('qsDescCount');
+                if (!d || !c) return;
+                var maj = function () { c.textContent = d.value.length + ' / 600'; };
+                d.addEventListener('input', maj);
+                maj();
+            })();
+
+            // ── Étape 4 : proposition de forfait ─────────────────────────────
+            // « Plus tard » n'abandonne plus le parcours vers /panel : on
+            // enchaîne sur le choix de formule, dernière étape annoncée par les
+            // pastilles. Le lien « Ajouter mes services » part toujours vers
+            // /services, une fois le calendrier créé.
+            (function () {
+                var skip = document.getElementById('qsSkipServices');
+                if (skip) skip.addEventListener('click', function () { goTo(4); });
+            })();
+
             // ── Logo : aperçu ────────────────────────────────────────────────
             var photoInput = document.getElementById('qsPhoto');
             var avatarPreview = document.getElementById('qsAvatarPreview');
@@ -259,6 +319,7 @@ block scripts
                 var payload = {
                     name: nameInput.value.trim(),
                     businessType: document.getElementById('qsType').value.trim(),
+                    description: document.getElementById('qsDesc').value.trim(),
                     days: Array.from(state.days).join(','),
                     start: document.getElementById('qsStart').value || '09:00',
                     end: document.getElementById('qsEnd').value || '18:00'

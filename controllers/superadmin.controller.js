@@ -99,7 +99,10 @@ exports.establishmentsPage = async (req, res) => {
       // `plan`, `planStatus` et `grantExpiry` : le forfait appartient à
       // l'ÉTABLISSEMENT. Sans eux dans le select, la liste retomberait
       // silencieusement sur le forfait du compte pour tout le monde.
-      .select("name slug businessType createdAt isPaused isDeleted photo description plan planStatus grantExpiry")
+      // `stripeSubscriptionId` : sans lui, impossible de distinguer un
+      // abonnement Stripe d'un octroi manuel illimité — tout abonné
+      // s'affichait « Illimité » dans la colonne des octrois.
+      .select("name slug businessType createdAt isPaused isDeleted photo description plan planStatus grantExpiry stripeSubscriptionId")
       .lean(),
     // Deuxième passe sans filtre : les chiffres clés doivent rester stables
     // quand on filtre la liste.
@@ -156,6 +159,13 @@ exports.establishmentsPage = async (req, res) => {
     // Un octroi peut durer quelques heures : on affiche « 3 h », pas « 1 j ».
     const echeance = c.grantExpiry
       || (!c.plan && c.owner && (c.owner.manualPremium || c.owner.isPremium) ? c.owner.manualPremiumExpiry : null);
+    // Le forfait vient-il d'un abonnement Stripe (essai ou payant) plutôt que
+    // d'un octroi manuel ? Le webhook checkout.session.completed pose
+    // `plan` + `stripeSubscriptionId` et ne touche JAMAIS `grantExpiry` :
+    // sans cette distinction, tout abonné tombait dans la branche « pas
+    // d'échéance » et s'affichait « Illimité » — y compris pendant son essai
+    // de 30 jours, ce qui laissait croire à un accès à vie offert par erreur.
+    c.isStripeSub = planEffectif !== "basic" && !!c.stripeSubscriptionId;
     if (planEffectif !== "basic" && echeance) {
       const ms = new Date(echeance).getTime() - maintenant;
       c.trialDaysLeft = ms > 0 ? Math.ceil(ms / 86400000) : 0;

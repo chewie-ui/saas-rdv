@@ -48,3 +48,17 @@ cote client pp carree et mettre les infos de letablissement
 
 si le jour et heure acutelle passe grisee lheure actuelle
 preciser le lien pour facebook insta site etc
+
+
+
+NEW -------------------------------------------------------------------------------
+NEW -------------------------------------------------------------------------------
+
+Compteur decompte pour les promos et les changer
+Faire des blogs (attire vraiment des clients !!!!!!!!!!! + que ADS payant !)
+les logos carré pour voir l'image complete !
+Client a prit pro et avait Infini ?
+Quand je suis conecté en client et que je veux créer un établissemtna ca demande noms et tout ? 
+
+NEW -------------------------------------------------------------------------------
+NEW -------------------------------------------------------------------------------

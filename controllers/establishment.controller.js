@@ -118,9 +118,12 @@ function formatCompanyForList(company, owner) {
 exports.listMyEstablishments = async (req, res) => {
   // La route accepte aussi une session CLIENT (isClientOrUserAuth), mais un
   // client n'a pas de compte pro : `req.user` est absent et tout ce qui suit
-  // plantait sur `owner._id`. Posséder un établissement suppose un compte pro,
-  // on l'envoie donc l'ouvrir plutôt que de renvoyer une erreur serveur.
-  if (!req.user) return res.redirect("/register?intent=pro");
+  // plantait sur `owner._id`. On l'envoyait alors vers l'inscription complète,
+  // qui lui redemandait nom/email/mot de passe alors qu'il avait déjà un
+  // compte. /demarrer promeut désormais sa session Client en compte User
+  // (middlewares/requireProAccount.js) et l'amène droit au parcours de
+  // création — sans ressaisie.
+  if (!req.user) return res.redirect("/demarrer");
 
   const owner = req.user;
   const owned = await Company.find({ owner: owner._id, isDeleted: { $ne: true } })
@@ -936,6 +939,11 @@ exports.quickStartPage = async (req, res) => {
     prefillType: (req.user.businessType || "").trim(),
     dayLabels: QS_DAY_LABELS,
     services: getServices(res.locals.lang),
+    // Étape « forfait » : mêmes montants que la page /subscription (source
+    // unique utils/tarifs) — un prix annoncé ici qui diverge de celui du
+    // paiement serait une promesse que Stripe ne tiendrait pas.
+    tarifs: require("../utils/tarifs").FORFAITS,
+    essaiGratuitDisponible: require("../utils/freeTrial").peutAvoirEssaiGratuit(req.user),
   });
 };
 
@@ -955,6 +963,9 @@ exports.quickStartCreate = async (req, res) => {
     const name = (req.body.name || "").trim();
     if (!name) return res.status(400).json({ error: "Indiquez le nom de votre établissement." });
     const businessType = (req.body.businessType || "").trim();
+    // Description (optionnelle) — bornée pour ne pas laisser passer un pavé
+    // dans un champ affiché tel quel sur la fiche publique.
+    const description = (req.body.description || "").trim().slice(0, 600);
 
     // Logo (optionnel) — déjà converti/écrit sur disque par processSingleImage.
     let photoPath = "";
@@ -987,6 +998,7 @@ exports.quickStartCreate = async (req, res) => {
       owner: owner._id,
       name,
       businessType,
+      description,
       photo: photoPath || "/images/no-user.webp",
       schedule,
     });
