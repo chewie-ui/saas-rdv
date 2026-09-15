@@ -34,4 +34,23 @@ function expediteur() {
   };
 }
 
-module.exports = { adminEmail, supportEmail, expediteur };
+/**
+ * Options d'envoi pour un e-mail adressé à un CLIENT de la part d'un pro
+ * (confirmation, rappel, annulation) : le nom affiché est celui de
+ * l'établissement, et les réponses arrivent dans la boîte du pro.
+ *
+ * L'adresse d'expédition reste `expediteur()` — signée. Seul le nom change.
+ * Sans établissement nommé ni boîte valide, on retombe sur l'expéditeur nu :
+ * un e-mail de plus vaut mieux qu'un e-mail de moins.
+ */
+function enTeteExpediteurPro(businessName, emailPro) {
+  const nom = String(businessName || "").trim();
+  const options = {};
+  if (nom) options.senderName = `${nom} via BranShee`;
+  if (emailPro && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(emailPro).trim())) {
+    options.replyTo = { email: String(emailPro).trim(), ...(nom ? { name: nom } : {}) };
+  }
+  return options;
+}
+
+module.exports = { adminEmail, supportEmail, expediteur, enTeteExpediteurPro };

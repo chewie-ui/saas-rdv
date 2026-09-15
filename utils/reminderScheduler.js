@@ -9,6 +9,7 @@ const Service = require("../db/models/company/service.model");
 const { atLeast, billingUserFor } = require("./planLimits");
 const { identityFor } = require("./establishmentIdentity");
 const { sendEmail } = require("./mailer");
+const { enTeteExpediteurPro } = require("./adressesContact");
 const { sendReminderSmsIfAllowed } = require("./sms");
 const { sendWhatsappIfAllowed, isWhatsappConfigured, WA_TPL_REMINDER } = require("./whatsapp");
 const { isFeatureEnabled } = require("../middlewares/featureFlag");
@@ -251,7 +252,9 @@ async function sendDueReminders() {
         baseUrl: (process.env.BASE_URL || "https://www.branshee.com").replace(/\/$/, ""),
       });
 
-      const ok = await sendEmail(booking.email, subject, html);
+      // Nom d'expéditeur = l'établissement, réponses vers le pro (cf. mailer).
+      const ok = await sendEmail(booking.email, subject, html,
+        enTeteExpediteurPro(businessName, owner?.emailPro || owner?.email));
 
       if (ok) {
         booking.reminderSent = true;

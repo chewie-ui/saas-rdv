@@ -558,6 +558,14 @@ function escHtml(s) {
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
+// Boîte hébergée chez Microsoft ? Ce sont elles qui rangent nos e-mails en
+// indésirables (retours clients Hotmail/Outlook, alors que Brevo les marque
+// remis). Les autres domaines Microsoft (live, msn) suivent le même filtre.
+function boiteMicrosoft(email) {
+  const dom = String(email || "").toLowerCase().split("@")[1] || "";
+  return /^(hotmail|outlook|live|msn)\.[a-z.]+$/.test(dom);
+}
+
 /* ════════════════════════════════════════════════════════════════════════════
    STEP 0 — QUESTION PRÉALABLE (ex: "Êtes-vous un nouveau patient ?")
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -2917,6 +2925,17 @@ function renderConfirmPane() {
       </div>
       <h2>${reserves.length > 1 ? `Vos ${reserves.length} rendez-vous sont enregistrés !` : "Votre réservation a bien été enregistrée !"}</h2>
       <p class="bk-conf__lead">${reserves.length > 1 ? "Un email de confirmation par rendez-vous est en route vers" : "Un email de confirmation est en route vers"} <strong>${escHtml(email)}</strong>.</p>
+      ${boiteMicrosoft(email) ? `
+      <!-- Outlook/Hotmail classe nos e-mails en indésirables chez une partie
+           des clients (Brevo les marque « delivered », Microsoft les accepte
+           puis les range ailleurs). On le dit ici, au seul moment où le
+           client est devant son écran et peut agir. Réservé aux boîtes
+           Microsoft : chez Gmail le problème n'existe pas, inutile d'inquiéter. -->
+      <p class="bk-conf__spam">
+        <svg width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280 320-200v-80L480-520 160-720v80l320 200Z"/></svg>
+        Vous ne le voyez pas ? Regardez dans <strong>Courrier indésirable</strong>, puis
+        ajoutez <strong>noreply@branshee.com</strong> à vos contacts pour recevoir vos rappels.
+      </p>` : ""}
 
       <!-- Recap -->
       <div class="bk-conf__recap">

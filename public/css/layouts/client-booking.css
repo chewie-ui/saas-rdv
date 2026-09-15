@@ -1911,6 +1911,22 @@ body.bk-embed #bkCart .bk-cart {
   overflow-wrap: anywhere;
   word-break: break-word;
 }
+/* Avertissement « indésirables », affiché aux seules boîtes Microsoft
+   (cf. boiteMicrosoft() dans index.js). Ton informatif, pas alarmant. */
+.bk-conf__spam {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: -10px 0 20px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bk-accent-soft, color-mix(in srgb, var(--bk-accent) 10%, transparent));
+  color: var(--bk-ink);
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: left;
+}
+.bk-conf__spam svg { flex: none; margin-top: 2px; color: var(--bk-accent); }
 
 .bk-conf__recap {
   text-align: left;

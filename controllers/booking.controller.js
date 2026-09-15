@@ -10,6 +10,7 @@ const path = require("path");
 const { getLimit, atLeast, billingUserFor } = require("../utils/planLimits");
 const { identityFor } = require("../utils/establishmentIdentity");
 const { sendEmail } = require("../utils/mailer");
+const { enTeteExpediteurPro } = require("../utils/adressesContact");
 const { isFeatureEnabled } = require("../middlewares/featureFlag");
 const { getCoursesForDate, courseRangesFor } = require("../utils/recurringCourses");
 const { getBookableTeam } = require("../utils/bookableTeam");
@@ -853,7 +854,10 @@ exports.createBooking = async (req, res) => {
       },
     );
 
-    await sendEmail(email, "Confirmation de votre rendez-vous — BranShee", htmlTemplate);
+    // Expéditeur reconnaissable et réponse possible : cf. utils/mailer.js sur
+    // le classement en indésirables chez Outlook/Hotmail.
+    await sendEmail(email, "Confirmation de votre rendez-vous — BranShee", htmlTemplate,
+      enTeteExpediteurPro(response?.name || companyOwner?.businessName, identity.emailPro || companyOwner?.email));
 
     // ── Confirmation WhatsApp / SMS au client ─────────────────────────────
     // Canal prioritaire WhatsApp (moins cher), repli SMS. Les deux passent par
@@ -1872,7 +1876,8 @@ exports.cancelBooking = async (req, res) => {
           ownerMessage: (coach?.calendarSettings?.cancellationMessage || "").trim(),
         },
       );
-      await sendEmail(canceledBooking.email, "Votre rendez-vous a été annulé — BranShee", clientHtml);
+      await sendEmail(canceledBooking.email, "Votre rendez-vous a été annulé — BranShee", clientHtml,
+        enTeteExpediteurPro(coach?.businessName, coach?.emailPro || coach?.email));
     }
 
     if (coach && coach.notifications?.cancellation !== false) {
