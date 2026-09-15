@@ -1914,11 +1914,8 @@ body.bk-embed #bkCart .bk-cart {
 /* Avertissement « indésirables », affiché aux seules boîtes Microsoft
    (cf. boiteMicrosoft() dans index.js). Ton informatif, pas alarmant. */
 .bk-conf__spam {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
   margin: -10px 0 20px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: 10px;
   background: var(--bk-accent-soft, color-mix(in srgb, var(--bk-accent) 10%, transparent));
   color: var(--bk-ink);
@@ -1926,7 +1923,24 @@ body.bk-embed #bkCart .bk-cart {
   line-height: 1.45;
   text-align: left;
 }
-.bk-conf__spam svg { flex: none; margin-top: 2px; color: var(--bk-accent); }
+.bk-conf__spam-t {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+}
+.bk-conf__spam-t svg { flex: none; margin-top: 2px; color: var(--bk-accent); }
+/* Les trois gestes : numérotés, parce que l'ordre compte (on ne peut pas
+   ajouter le contact avant d'avoir retrouvé le mail). */
+.bk-conf__spam-steps {
+  margin: 8px 0 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.bk-conf__spam-steps li { padding-left: 2px; }
+.bk-conf__spam-steps strong { font-weight: 600; }
 
 .bk-conf__recap {
   text-align: left;

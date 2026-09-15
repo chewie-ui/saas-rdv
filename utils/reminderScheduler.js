@@ -250,6 +250,7 @@ async function sendDueReminders() {
         bookingId: booking._id,
         cancelToken: booking.cancelToken,
         baseUrl: (process.env.BASE_URL || "https://www.branshee.com").replace(/\/$/, ""),
+        expediteurEmail: require("./adressesContact").expediteur().email,
       });
 
       // Nom d'expéditeur = l'établissement, réponses vers le pro (cf. mailer).

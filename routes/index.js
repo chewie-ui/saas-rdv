@@ -1354,6 +1354,10 @@ router.get("/:company", requireFeatureActive("booking_page"), async (req, res) =
     title: profileTitle,
     metaDescription: profileDesc,
     ogType: "profile",
+    // Adresse d'expédition réelle, nommée sur l'écran de succès (« ajoutez
+    // … à vos contacts ») : elle doit être celle que le client verra dans
+    // le mail, donc lue au même endroit que le mailer.
+    expediteurEmail: require("../utils/adressesContact").expediteur().email,
     // Photo de l'ÉTABLISSEMENT : c'est l'aperçu de tout lien partagé.
     ogImage: company.photo || coach.businessPicture || coach.profilePicture || "https://www.branshee.com/images/og-cover.jpg",
     canonical: `https://www.branshee.com/${company.slug || company._id}`,

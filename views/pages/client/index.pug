@@ -633,6 +633,8 @@ block scripts
         //- sur une fiche antérieure au réglage, le champ est absent — et le
         //- défaut voulu est « obligatoire ».
         window.__phoneRequired  = !{JSON.stringify((cs && cs.phoneRequired) !== false)};
+        //- Adresse d'expédition des mails, citée dans la consigne « indésirables ».
+        window.__expediteurEmail = !{JSON.stringify(expediteurEmail || '')};
     if clientUser
         script.
             window.__clientUser = !{JSON.stringify(clientUser)};

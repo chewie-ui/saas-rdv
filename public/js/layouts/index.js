@@ -558,12 +558,56 @@ function escHtml(s) {
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
-// Boîte hébergée chez Microsoft ? Ce sont elles qui rangent nos e-mails en
-// indésirables (retours clients Hotmail/Outlook, alors que Brevo les marque
-// remis). Les autres domaines Microsoft (live, msn) suivent le même filtre.
-function boiteMicrosoft(email) {
+// Quelle messagerie ? Sert à donner la BONNE marche à suivre pour sortir un
+// mail des indésirables — les boutons n'ont pas le même nom partout.
+//   microsoft : Hotmail, Outlook, Live, MSN — c'est là que nos mails tombent
+//               en indésirables tant que la boîte ne connaît pas branshee.com
+//   gmail     : rare, mais le bouton existe et s'appelle autrement
+//   autre     : consigne générique
+function typeMessagerie(email) {
   const dom = String(email || "").toLowerCase().split("@")[1] || "";
-  return /^(hotmail|outlook|live|msn)\.[a-z.]+$/.test(dom);
+  if (/^(hotmail|outlook|live|msn)\.[a-z.]+$/.test(dom)) return "microsoft";
+  if (/^(gmail|googlemail)\.[a-z.]+$/.test(dom)) return "gmail";
+  return "autre";
+}
+
+// Adresse d'expédition réelle, telle que le client la verra dans le mail.
+const EXPEDITEUR = window.__expediteurEmail || "rdv@branshee.com";
+
+// Bloc « vérifiez vos indésirables » de l'écran de succès. Toujours affiché :
+// une cliente Hotmail qui ne le lit pas ici ne le lira nulle part. La marche à
+// suivre est celle de SA messagerie, en trois gestes, et dit pourquoi les
+// faire (les prochains rappels arriveront en boîte de réception).
+function blocIndesirables(email) {
+  const type = typeMessagerie(email);
+  const etapes = {
+    microsoft: [
+      "Ouvrez le dossier <strong>Courrier indésirable</strong> et cliquez sur le message.",
+      "Cliquez sur <strong>« Pas indésirable »</strong> (en haut, ou via <strong>⋯ → Signaler</strong>).",
+      `Ajoutez <strong>${escHtml(EXPEDITEUR)}</strong> à vos contacts.`,
+    ],
+    gmail: [
+      "Ouvrez le dossier <strong>Spam</strong> et cliquez sur le message.",
+      "Cliquez sur <strong>« Signaler comme non-spam »</strong>.",
+      `Ajoutez <strong>${escHtml(EXPEDITEUR)}</strong> à vos contacts.`,
+    ],
+    autre: [
+      "Ouvrez votre dossier <strong>Indésirables</strong> ou <strong>Spam</strong>.",
+      "Marquez le message comme <strong>« Non indésirable »</strong> / <strong>« Fiable »</strong>.",
+      `Ajoutez <strong>${escHtml(EXPEDITEUR)}</strong> à vos contacts.`,
+    ],
+  }[type];
+  const accroche = type === "microsoft"
+    ? "Chez Hotmail et Outlook, notre premier e-mail arrive souvent dans les <strong>indésirables</strong>."
+    : "Vous ne le voyez pas ? Il est peut-être dans vos <strong>indésirables</strong>.";
+  return `
+      <div class="bk-conf__spam" ${type === "microsoft" ? 'data-ouvert="1"' : ""}>
+        <p class="bk-conf__spam-t">
+          <svg width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280 320-200v-80L480-520 160-720v80l320 200Z"/></svg>
+          <span>${accroche} Trois gestes pour que les prochains rappels arrivent en boîte de réception :</span>
+        </p>
+        <ol class="bk-conf__spam-steps">${etapes.map((e) => `<li>${e}</li>`).join("")}</ol>
+      </div>`;
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -2925,17 +2969,13 @@ function renderConfirmPane() {
       </div>
       <h2>${reserves.length > 1 ? `Vos ${reserves.length} rendez-vous sont enregistrés !` : "Votre réservation a bien été enregistrée !"}</h2>
       <p class="bk-conf__lead">${reserves.length > 1 ? "Un email de confirmation par rendez-vous est en route vers" : "Un email de confirmation est en route vers"} <strong>${escHtml(email)}</strong>.</p>
-      ${boiteMicrosoft(email) ? `
-      <!-- Outlook/Hotmail classe nos e-mails en indésirables chez une partie
-           des clients (Brevo les marque « delivered », Microsoft les accepte
-           puis les range ailleurs). On le dit ici, au seul moment où le
-           client est devant son écran et peut agir. Réservé aux boîtes
-           Microsoft : chez Gmail le problème n'existe pas, inutile d'inquiéter. -->
-      <p class="bk-conf__spam">
-        <svg width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280 320-200v-80L480-520 160-720v80l320 200Z"/></svg>
-        Vous ne le voyez pas ? Regardez dans <strong>Courrier indésirable</strong>, puis
-        ajoutez <strong>noreply@branshee.com</strong> à vos contacts pour recevoir vos rappels.
-      </p>` : ""}
+      <!-- Vérifié sur une boîte Outlook vierge : nos mails y tombent en
+           indésirables quoi qu'on change (adresse, transporteur, contenu) —
+           c'est le domaine, encore inconnu de Microsoft. Le seul remède est
+           le geste du client : « Pas indésirable » + contact. On lui montre
+           la marche à suivre pour SA messagerie, au seul moment où il est
+           devant l'écran. Ton posé : une consigne, pas une alerte. -->
+      ${blocIndesirables(email)}
 
       <!-- Recap -->
       <div class="bk-conf__recap">

@@ -1,0 +1,20 @@
+//- Bloc « ce message était dans vos indésirables ? » — inclus dans les mails
+//- adressés aux CLIENTS (confirmation, rappel, annulation).
+//-
+//- Pourquoi : Outlook/Hotmail classe nos messages en indésirables tant que la
+//- boîte ne connaît pas branshee.com (vérifié : SCL 5, filtre de réputation,
+//- authentification pourtant parfaite). Le seul remède est l'action du
+//- destinataire : « Pas indésirable » + ajout aux contacts. Et le seul moment
+//- où on peut le lui dire, c'est DANS le mail qu'il vient de retrouver là.
+//- Chaque geste remonte chez Microsoft pour tout le domaine, pas seulement
+//- pour cette boîte.
+//-
+//- `expediteurEmail` est passé par le contrôleur (adressesContact.expediteur) ;
+//- le repli évite un mail cassé si un appel l'oublie.
+- var _exp = (typeof expediteurEmail !== 'undefined' && expediteurEmail) ? expediteurEmail : 'rdv@branshee.com'
+tr
+  td(style="padding:18px 0 0;text-align:center;")
+    //- Tout sur une ligne avec #[…] : en balises séparées, Pug supprime les
+    //- espaces autour des <strong> et on lit « ajoutezrdv@… ».
+    p(style="margin:0;font-size:12px;line-height:1.55;color:#94a3b8;max-width:440px;margin-left:auto;margin-right:auto;")
+      | Ce message est arrivé dans vos indésirables&nbsp;? Cliquez sur #[strong(style="color:#64748b;") « Pas indésirable »], puis ajoutez #[strong(style="color:#64748b;") #{_exp}] à vos contacts&nbsp;: vos prochains rappels arriveront directement en boîte de réception.

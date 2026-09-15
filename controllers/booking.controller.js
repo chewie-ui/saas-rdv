@@ -851,6 +851,8 @@ exports.createBooking = async (req, res) => {
         cancelToken: newBooking.cancelToken,
         // Message libre du pro (Personnaliser > Rappels), affiché tel quel.
         ownerMessage: (companyOwner?.calendarSettings?.confirmationMessage || "").trim(),
+        // Nommé dans le bloc « indésirables » du mail (cf. _indesirables.pug).
+        expediteurEmail: require("../utils/adressesContact").expediteur().email,
       },
     );
 
@@ -1874,6 +1876,7 @@ exports.cancelBooking = async (req, res) => {
           chargeResult,
           // Message libre du pro (Personnaliser > Rappels).
           ownerMessage: (coach?.calendarSettings?.cancellationMessage || "").trim(),
+          expediteurEmail: require("../utils/adressesContact").expediteur().email,
         },
       );
       await sendEmail(canceledBooking.email, "Votre rendez-vous a été annulé — BranShee", clientHtml,
