@@ -111,10 +111,10 @@ const LIMITS = {
   // Email reminders sent 24h before appointment
   emailReminders: { basic: false, essentiel: false, pro: true, business: true },
 
-  // Rappels SMS inclus par mois. Coût réel constaté : 0,187 €/SMS (pack Spryng
-  // de 100). 30 inclus sur Pro coûtaient 5,60 €/mois, plus d'un quart d'un
-  // abonnement à 20 € — ramenés à 10 (1,87 €). Business : 100 coûtaient 18,70 €,
-  // 38 % d'un abonnement à 49 € — ramenés à 30 (5,61 €, trois fois le Pro).
+  // Rappels SMS inclus par mois. Coût réel constaté : 0,224 €/SMS (pack Spryng
+  // de 100, route business = 1,2 crédit). 30 inclus sur Pro coûtaient 6,72 €/mois, un tiers d'un
+  // abonnement à 20 € — ramenés à 10 (2,24 €). Business : 100 coûtaient 22,40 €,
+  // 46 % d'un abonnement à 49 € — ramenés à 30 (6,72 €, trois fois le Pro).
   // Au-delà : solde prépayé (SMS_PRICE_CENTS, voir sms.js), sinon repli email.
   smsReminders: { basic: 0, essentiel: 0, pro: 10, business: 30 },
 

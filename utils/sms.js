@@ -82,12 +82,14 @@ async function sendSms(to, body) {
 }
 
 // Prix de vente d'un SMS au-delà du quota inclus, en centimes (débité du solde
-// prépayé). Coût réel constaté chez Spryng : 18,70 € les 100 crédits, soit
-// 0,187 €/SMS sur le plus petit pack — l'ancien prix de 12 c vendait donc
-// chaque SMS à perte. 25 c laisse ~6 c de marge à ce tarif, davantage dès
-// qu'un pack plus gros fait baisser le coût unitaire. Dans la fourchette du
-// marché (Doctolib, Treatwell : 0,20–0,30 €).
-const SMS_PRICE_CENTS = 25;
+// prépayé). Coût réel constaté chez Spryng : 18,70 € les 100 crédits, et la
+// route « business » (celle qu'on utilise : expéditeur alphanumérique, bonne
+// délivrabilité) consomme 1,2 crédit par SMS — mesuré sur un envoi réel :
+// 6 → 4,8. Soit 0,224 €/SMS. L'ancien prix de 12 c vendait donc chaque SMS à
+// perte ; 30 c laisse ~7,6 c de marge, davantage dès qu'un pack plus gros fait
+// baisser le coût unitaire. Dans la fourchette du marché (Doctolib,
+// Treatwell : 0,20–0,30 €).
+const SMS_PRICE_CENTS = 30;
 
 let _stripe = null;
 function stripe() {
