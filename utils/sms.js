@@ -286,13 +286,44 @@ async function chargeAndSend(owner, { priceCents, send, plan }) {
     : 0;
 
   // ── 1) Quota inclus (gratuit) ─────────────────────────────────────────────
+  // La place dans le quota est RÉSERVÉE atomiquement avant l'envoi, comme le
+  // solde plus bas. Auparavant on lisait le compteur puis on le réécrivait
+  // (`used + 1`) : deux rappels partant au même instant à 29/30 passaient
+  // tous les deux en « gratuit ». Mise à jour en pipeline : si le mois a
+  // changé le compteur repart à 1, sinon il s'incrémente — et le filtre
+  // refuse la réservation dès que le quota est atteint.
   if (quota > 0 && used < quota) {
-    const sid = await send();
-    if (!sid) return { sent: false, reason: "provider_error" };
-    await User.findByIdAndUpdate(owner._id, {
-      $set: { "smsUsage.monthKey": monthKey, "smsUsage.count": used + 1 },
-    }).catch(() => {});
-    return { sent: true, mode: "quota" };
+    const reserve = await User.findOneAndUpdate(
+      {
+        _id: owner._id,
+        $or: [
+          { "smsUsage.monthKey": { $ne: monthKey } },
+          { "smsUsage.count": { $lt: quota } },
+        ],
+      },
+      [{
+        $set: {
+          "smsUsage.count": {
+            $cond: [{ $eq: ["$smsUsage.monthKey", monthKey] }, { $add: [{ $ifNull: ["$smsUsage.count", 0] }, 1] }, 1],
+          },
+          "smsUsage.monthKey": monthKey,
+        },
+      }],
+      // `updatePipeline` : exigé par Mongoose 9 pour une mise à jour en
+      // pipeline — sans lui, l'erreur est levée de façon SYNCHRONE, avant le
+      // `.catch`, et ferait planter l'appelant.
+      { new: true, updatePipeline: true },
+    ).catch(() => null);
+
+    if (reserve) {
+      const sid = await send();
+      if (sid) return { sent: true, mode: "quota" };
+      // Envoi échoué : on rend la place réservée.
+      await User.findByIdAndUpdate(owner._id, { $inc: { "smsUsage.count": -1 } }).catch(() => {});
+      return { sent: false, reason: "provider_error" };
+    }
+    // Réservation refusée : un envoi concurrent a pris la dernière place.
+    // On continue vers le solde prépayé, exactement comme si `used` valait `quota`.
   }
 
   // ── 2) Au-delà du quota : uniquement si le pro a autorisé le dépassement ──
