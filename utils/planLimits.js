@@ -113,10 +113,10 @@ const LIMITS = {
 
   // Rappels SMS inclus par mois. Coût réel constaté : 0,187 €/SMS (pack Spryng
   // de 100). 30 inclus sur Pro coûtaient 5,60 €/mois, plus d'un quart d'un
-  // abonnement à 20 € — ramenés à 10 (1,87 €). Business garde 100 : à 49 €
-  // c'est l'argument du plan, à revoir si le coût unitaire ne baisse pas.
+  // abonnement à 20 € — ramenés à 10 (1,87 €). Business : 100 coûtaient 18,70 €,
+  // 38 % d'un abonnement à 49 € — ramenés à 30 (5,61 €, trois fois le Pro).
   // Au-delà : solde prépayé (SMS_PRICE_CENTS, voir sms.js), sinon repli email.
-  smsReminders: { basic: 0, essentiel: 0, pro: 10, business: 100 },
+  smsReminders: { basic: 0, essentiel: 0, pro: 10, business: 30 },
 
   // Google Calendar two-way sync
   googleCalendar: { basic: false, essentiel: false, pro: true, business: true },
@@ -163,7 +163,7 @@ function getCollaboratorLimit(user) {
 }
 
 /**
- * Quota SMS gratuit inclus dans le plan chaque mois (Pro 30 / Business 100).
+ * Quota SMS gratuit inclus dans le plan chaque mois (Pro 10 / Business 30).
  * Au-delà de ce quota : consommation du solde prépayé (voir utils/sms.js),
  * sinon repli automatique sur l'email.
  */

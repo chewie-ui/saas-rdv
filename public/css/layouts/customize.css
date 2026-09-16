@@ -812,8 +812,12 @@
 .psel__check { font-size: 19px; color: var(--accent, #16a34a); display: none; flex-shrink: 0; }
 .psel__opt.is-selected .psel__check { display: inline-flex; }
 
-/* Drapeaux : hauteur fixe, largeur libre (les ratios varient d'un pays à l'autre) */
+/* Drapeaux : hauteur fixe, largeur libre (les ratios varient d'un pays à l'autre).
+   `display: inline-block` est indispensable : import.css pose un reset global
+   `img, video { display: block }`, et sans cette ligne chaque drapeau devenait
+   un bloc — le libellé « Français, Anglais » s'empilait sur quatre lignes. */
 .psel__flag {
+  display: inline-block;
   height: 14px;
   width: auto;
   flex-shrink: 0;
