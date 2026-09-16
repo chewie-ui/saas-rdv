@@ -207,7 +207,7 @@ const SMS_SETTING_KEYS = [
 exports.updateSmsSettings = async (req, res) => {
   try {
     // `smsAllowOverage` autorise la dépense du SOLDE PRÉPAYÉ du propriétaire —
-    // de l'argent réel (0,12 €/SMS), et le déclenchement éventuel des recharges
+    // de l'argent réel (0,25 €/SMS), et le déclenchement éventuel des recharges
     // automatiques. Ce n'est pas une bascule d'envoi comme les autres : elle
     // exige le droit `billing`, pas seulement `customization`.
     if (

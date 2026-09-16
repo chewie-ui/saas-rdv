@@ -111,10 +111,12 @@ const LIMITS = {
   // Email reminders sent 24h before appointment
   emailReminders: { basic: false, essentiel: false, pro: true, business: true },
 
-  // Rappels SMS inclus par mois (coût réel ~0,05-0,09€/SMS — quotas choisis
-  // pour rester sous ~15% du prix du plan). Au-delà : email de repli, ou
-  // crédits prépayés si l'utilisateur a activé "use_credits" (voir sms.js).
-  smsReminders: { basic: 0, essentiel: 0, pro: 30, business: 100 },
+  // Rappels SMS inclus par mois. Coût réel constaté : 0,187 €/SMS (pack Spryng
+  // de 100). 30 inclus sur Pro coûtaient 5,60 €/mois, plus d'un quart d'un
+  // abonnement à 20 € — ramenés à 10 (1,87 €). Business garde 100 : à 49 €
+  // c'est l'argument du plan, à revoir si le coût unitaire ne baisse pas.
+  // Au-delà : solde prépayé (SMS_PRICE_CENTS, voir sms.js), sinon repli email.
+  smsReminders: { basic: 0, essentiel: 0, pro: 10, business: 100 },
 
   // Google Calendar two-way sync
   googleCalendar: { basic: false, essentiel: false, pro: true, business: true },

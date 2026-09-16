@@ -82,8 +82,12 @@ async function sendSms(to, body) {
 }
 
 // Prix de vente d'un SMS au-delà du quota inclus, en centimes (débité du solde
-// prépayé). ~2x le coût réel Twilio pour couvrir marge + frais Stripe.
-const SMS_PRICE_CENTS = 12;
+// prépayé). Coût réel constaté chez Spryng : 18,70 € les 100 crédits, soit
+// 0,187 €/SMS sur le plus petit pack — l'ancien prix de 12 c vendait donc
+// chaque SMS à perte. 25 c laisse ~6 c de marge à ce tarif, davantage dès
+// qu'un pack plus gros fait baisser le coût unitaire. Dans la fourchette du
+// marché (Doctolib, Treatwell : 0,20–0,30 €).
+const SMS_PRICE_CENTS = 25;
 
 let _stripe = null;
 function stripe() {
