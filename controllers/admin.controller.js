@@ -1024,8 +1024,14 @@ exports.createAdminBooking = async (req, res) => {
             absence,
           });
         }
-        if (!absence) {
-          return res.json({ success: false, error: "conflict", message: conflictMessage });
+        // Un vrai rendez-vous (ou le temps tampon d'un rendez-vous voisin)
+        // occupe le créneau. Le pro peut forcer en connaissance de cause —
+        // c'est lui qui sait qu'un tampon de 15 min peut sauter aujourd'hui.
+        // Le client renvoie `forcerSurRdv` après confirmation ; le RDV est
+        // alors marqué `overbooked`, sans quoi l'index unique de book.model.js
+        // le rejetterait (E11000) si l'heure et l'employé sont identiques.
+        if (!absence && !req.body.forcerSurRdv) {
+          return res.json({ success: false, error: "booking_conflict", message: conflictMessage });
         }
       }
       estEnSurbooking = hadConflict;

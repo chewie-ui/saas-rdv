@@ -659,7 +659,6 @@ setInterval(updateTimeline, 60000);
                 "Utiliser sa fiche regroupe ses rendez-vous ; créer un nouveau client en fera une seconde fiche séparée.",
               { confirmLabel: "Utiliser sa fiche", cancelLabel: "Créer un nouveau client", danger: false }
             )
-            .then(() => true)
             .catch(() => false);
           if (utiliserExistant) {
             selectionnerClient(d);
@@ -703,18 +702,21 @@ setInterval(updateTimeline, 60000);
     // par-dessus une absence : on ne lui repose plus la question pour les
     // dates suivantes de la même série.
     let forcer = false;
-    const envoyer = (c, forcerSurAbsence) =>
+    // Même logique pour un créneau déjà pris (ou protégé par un temps tampon) :
+    // une fois que le pro a confirmé qu'il force, on ne redemande pas.
+    let forcerRdv = false;
+    const envoyer = (c, forcerSurAbsence, forcerSurRdv) =>
       fetch("/appointment/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          Object.assign({ date: c.date, startTime: c.time, forcerSurAbsence }, payload)
+          Object.assign({ date: c.date, startTime: c.time, forcerSurAbsence, forcerSurRdv }, payload)
         ),
       }).then((r) => r.json());
 
     for (const c of creneaux) {
       try {
-        let data = await envoyer(c, forcer);
+        let data = await envoyer(c, forcer, forcerRdv);
 
         // Le créneau n'est bloqué que par une absence que le pro s'est posée
         // lui-même : on lui dit LAQUELLE et on le laisse trancher, au lieu du
@@ -730,11 +732,28 @@ setInterval(updateTimeline, 60000);
                 "L'absence est conservée : le rendez-vous se pose simplement par-dessus.",
               { confirmLabel: "Oui, placer le rendez-vous", cancelLabel: "Non, annuler", danger: false }
             )
-            .then(() => true)
             .catch(() => false);
           if (accepte) {
             forcer = true;
-            data = await envoyer(c, true);
+            data = await envoyer(c, true, forcerRdv);
+          }
+        }
+
+        // Créneau occupé par un rendez-vous, ou trop proche d'un autre à cause
+        // du temps tampon : le pro peut passer outre. Il sait mieux que le
+        // réglage si, aujourd'hui, deux clientes peuvent s'enchaîner sans pause.
+        if (!data.success && data.error === "booking_conflict") {
+          const accepte = await window
+            .confirmModal(
+              "Créneau déjà occupé",
+              (data.message || "Ce créneau est déjà pris.") +
+                " Êtes-vous sûr de vouloir continuer ? Le rendez-vous sera placé par-dessus.",
+              { confirmLabel: "Oui, placer quand même", cancelLabel: "Non, annuler", danger: true, icon: "warning" }
+            )
+            .catch(() => false);
+          if (accepte) {
+            forcerRdv = true;
+            data = await envoyer(c, forcer, true);
           }
         }
 
@@ -897,7 +916,6 @@ setInterval(updateTimeline, 60000);
                 confirmLabel: "Supprimer",
                 danger: true,
               })
-              .then(() => true)
               .catch(() => false)
           : window.confirm("Supprimer cette absence ? Le créneau redeviendra réservable.");
       if (!ok) return;

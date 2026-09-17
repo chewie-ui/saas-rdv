@@ -1207,6 +1207,43 @@ block scripts
                 }
             });
 
+            // ── Coordonnées principales (client créé à la main) ────────
+            // Après enregistrement on recharge : l'e-mail est la clé de la fiche,
+            // et les blocs qui en dépendent (notes, contacts alternatifs, entête)
+            // doivent le relire. Une collision d'identité renvoie un lien vers
+            // l'autre fiche — c'est une fusion à faire, pas un doublon à créer.
+            var contactSave = document.getElementById('cdContactSave');
+            var contactStatus = document.getElementById('cdContactStatus');
+            if (contactSave) contactSave.addEventListener('click', async function () {
+                contactSave.classList.add('is-loading');
+                try {
+                    var res = await fetch('/clients-hub/#{booking._id}/contact', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: document.getElementById('cdContactEmail').value,
+                            phone: document.getElementById('cdContactPhone').value
+                        })
+                    });
+                    var data = await res.json().catch(function () { return {}; });
+                    contactSave.classList.remove('is-loading');
+                    if (data.success) {
+                        if (contactStatus) contactStatus.textContent = '✓ Enregistré';
+                        setTimeout(function () { location.reload(); }, 500);
+                        return;
+                    }
+                    var msg = data.message || 'Les coordonnées n\'ont pas pu être enregistrées.';
+                    if (data.redirect) {
+                        var ok = await window.confirmModal('Client déjà connu', msg, { confirmLabel: 'Ouvrir l\'autre fiche' });
+                        if (ok) location.href = data.redirect;
+                    } else {
+                        window.confirmModal('Impossible', msg, { alertOnly: true });
+                    }
+                } catch (e) {
+                    contactSave.classList.remove('is-loading');
+                    window.confirmModal('Erreur', 'Les coordonnées n\'ont pas pu être enregistrées.', { alertOnly: true });
+                }
+            });
+
             document.querySelectorAll('.js-rdv-back').forEach(function (b) { b.addEventListener('click', showList); });
             var eBack = document.getElementById('cdEditBack'); if (eBack) eBack.addEventListener('click', showList);
             var eCancel = document.getElementById('cdEditCancel'); if (eCancel) eCancel.addEventListener('click', showList);
