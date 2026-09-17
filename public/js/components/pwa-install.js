@@ -12,6 +12,18 @@
 // (le bouton du menu mobile) déclenchent exactement le même parcours, sans
 // dupliquer cette logique.
 (function () {
+  // Page encadrée dans le site d'un professionnel (iframe, popup, bulle) :
+  // aucune invitation à installer. Le visiteur est sur morgane-forzee.be, pas
+  // sur BranShee — lui proposer « Installez BranShee » par-dessus le site de
+  // sa kiné est hors sujet, et la marche à suivre iOS (« appuyez sur Partager
+  // en bas de l'écran ») installerait de toute façon le site du pro, pas le
+  // nôtre. Le `catch` compte comme « oui » : une exception à la lecture de
+  // window.top signifie justement qu'on est encadré par une autre origine.
+  var encadre = (function () {
+    try { return window.self !== window.top; } catch (e) { return true; }
+  })();
+  if (encadre) return;
+
   var SNOOZE_KEY = "bs_pwa_snooze";
   var SNOOZE_DAYS = 30;
   var DELAY_MS = 2500; // laisse la page se poser avant de solliciter

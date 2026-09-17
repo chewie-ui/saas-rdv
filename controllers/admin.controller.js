@@ -2808,6 +2808,71 @@ exports.clientsHubDossierContact = async (req, res) => {
   }
 };
 
+// Coordonnées PRINCIPALES d'un client créé à la main (e-mail, téléphone).
+//
+// Réservé aux fiches sans rendez-vous d'origine : pour un client venu par une
+// réservation, l'identité vit sur ses rendez-vous, et c'est le client lui-même
+// qui la corrige depuis son compte (cf. syncClientIdentity). Un client ajouté
+// par le pro « Prénom Nom » sans e-mail n'avait, lui, aucun moyen d'en recevoir
+// un ensuite : la fiche affichait « — » pour toujours.
+//
+// L'e-mail est la clé d'identité (utils/dossierKey) : le changer peut faire
+// tomber sur une fiche existante. On refuse alors avec un lien vers l'autre
+// fiche plutôt que de créer un doublon — la fusion existe pour ça.
+exports.clientsHubSetContact = async (req, res) => {
+  try {
+    if (!/^[a-f0-9]{24}$/i.test(req.params.id)) return res.status(400).json({ success: false });
+    const companyId = res.locals.currentCompany._id;
+    const ClientDossier = require("../db/models/clientDossier.model");
+    const dossier = await ClientDossier.findOne({ _id: req.params.id, company: companyId });
+    if (!dossier) return res.status(404).json({ success: false, message: "Fiche introuvable." });
+
+    // Uniquement les clients créés à la main. Une fiche avec des rendez-vous
+    // (hadBookings) tire son identité de ceux-ci.
+    if (dossier.hadBookings) {
+      return res.status(400).json({ success: false, message: "Ce client a des rendez-vous : ses coordonnées se corrigent depuis son compte, pas ici." });
+    }
+
+    const email = String(req.body.email || "").trim().toLowerCase().slice(0, 160);
+    const phone = String(req.body.phone || "").trim().slice(0, 40);
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.json({ success: false, message: "Cette adresse e-mail n'est pas valide." });
+    }
+
+    // Collision d'identité : une autre fiche (ou un rendez-vous) porte déjà
+    // cette clé → c'est la même personne, il faut fusionner, pas dupliquer.
+    const cle = dossierKey({ email, phone, firstName: dossier.firstName, lastName: dossier.lastName });
+    if (cle && cle !== dossier.clientKey) {
+      const autre = await ClientDossier.findOne({ company: companyId, clientKey: cle, _id: { $ne: dossier._id } }).select("_id fullName").lean();
+      if (autre) {
+        return res.json({
+          success: false,
+          message: `Ces coordonnées appartiennent déjà à « ${autre.fullName || "un autre client"} ». Fusionnez les deux fiches plutôt que de créer un doublon.`,
+          redirect: `/clients-hub/${autre._id}`,
+        });
+      }
+      if (email) {
+        const rdv = await Booking.findOne({ company: companyId, email, isBlock: { $ne: true } }).select("_id").lean();
+        if (rdv) {
+          return res.json({
+            success: false,
+            message: "Un client avec cette adresse a déjà des rendez-vous. Ouvrez sa fiche et fusionnez-la avec celle-ci.",
+            redirect: `/clients-hub/${rdv._id}`,
+          });
+        }
+      }
+    }
+
+    dossier.email = email;
+    dossier.phone = phone;
+    await dossier.save(); // le hook recalcule clientKey
+    return res.json({ success: true, email, phone });
+  } catch (err) {
+    console.error("clientsHubSetContact error:", err.message);
+    return res.status(500).json({ success: false, message: "Une erreur est survenue." });
+  }
+};
+
 exports.clientsHubDossierAdd = async (req, res) => {
   try {
     if (!/^[a-f0-9]{24}$/i.test(req.params.id)) return res.status(400).json({ success: false });

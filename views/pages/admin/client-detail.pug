@@ -172,16 +172,37 @@ block content
                             p.cd-muted(style="font-size:13px;margin:4px 0 0") Ajoutez au moins une coordonnée à ce client pour enregistrer des contacts alternatifs.
 
                     //- Coordonnées
+                    //- Client créé à la main (manualClientId) : e-mail et téléphone
+                    //- sont modifiables ici — il n'a aucun rendez-vous d'où les
+                    //- tirer, et sans ça une fiche ajoutée sans e-mail restait
+                    //- muette pour toujours. Client venu par une réservation :
+                    //- lecture seule, son identité vit sur ses rendez-vous et
+                    //- c'est lui qui la corrige depuis son compte.
                     .cd-card
                         .cd-card__head
                             h3.cd-card__title Coordonnées
-                        .cd-kv
-                            .cd-kv__row
-                                span.cd-kv__k Email
-                                span.cd-kv__v= booking.email || '—'
-                            .cd-kv__row
-                                span.cd-kv__k Téléphone
-                                span.cd-kv__v= booking.phone || '—'
+                            if manualClientId
+                                span.cd-notes-status#cdContactStatus
+                        if manualClientId
+                            p.cd-card__hint2 Client ajouté à la main : l'e-mail et le téléphone que vous indiquez ici serviront à rattacher ses futurs rendez-vous et à lui envoyer confirmations et rappels.
+                            .cd-field
+                                label Email
+                                input.cd-input#cdContactEmail(type="email" value=booking.email || '' placeholder="prenom@exemple.be" autocomplete="off")
+                            .cd-field.cd-field--spaced
+                                label Téléphone
+                                input.cd-input#cdContactPhone(type="tel" value=booking.phone || '' placeholder="0470 12 34 56" autocomplete="off")
+                            .cd-notes-actions
+                                button.sm-btn.sm-btn--primary#cdContactSave(type="button")
+                                    span.material-symbols-outlined(style="font-size:18px") save
+                                    span Enregistrer
+                        else
+                            .cd-kv
+                                .cd-kv__row
+                                    span.cd-kv__k Email
+                                    span.cd-kv__v= booking.email || '—'
+                                .cd-kv__row
+                                    span.cd-kv__k Téléphone
+                                    span.cd-kv__v= booking.phone || '—'
 
                     //- Paiement
                     .cd-card

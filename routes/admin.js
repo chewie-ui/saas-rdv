@@ -268,6 +268,8 @@ router.post("/clients-hub/new", isAuth, injectCompany, requirePermission("client
 router.get("/clients-hub/:id", isAuth, injectCompany, requirePermission("appointments.view"), adminController.clientsHubDetail);
 router.post("/clients-hub/:id/block", isAuth, injectCompany, requirePermission("clients.manage"), adminController.clientsHubBlock);
 router.post("/clients-hub/:id/notes", isAuth, injectCompany, requirePermission("clients.manage"), adminController.clientsHubSaveNotes);
+// Coordonnées principales — clients créés à la main uniquement (cf. contrôleur).
+router.post("/clients-hub/:id/contact", isAuth, injectCompany, requirePermission("clients.manage"), adminController.clientsHubSetContact);
 // ── Dossier client : entrées de suivi (note datée + PDF facultatif) ──────────
 router.post("/clients-hub/:id/dossier/contact", isAuth, injectCompany, requirePermission("clients.manage"), adminController.clientsHubDossierContact);
 router.post("/clients-hub/:id/dossier/entries", isAuth, injectCompany, requirePermission("clients.manage"), upload.single("pdf"), adminController.clientsHubDossierAdd);
