@@ -3351,7 +3351,21 @@ exports.historyEditRowPatch = async (req, res) => {
       await Booking.deleteMany(conflictQuery);
     }
 
-    const response = await Booking.findOneAndUpdate({ _id: id, company: res.locals.currentCompany._id }, updateFields, { new: true }).lean();
+    // Déplacement forcé par-dessus un autre rendez-vous (modification rapide
+    // depuis le calendrier, après confirmation) : marqué `overbooked`, sinon
+    // l'index unique de book.model.js refuse un créneau strictement identique
+    // (même heure, même employé) avec une erreur E11000 illisible.
+    if (req.body.forcerSurRdv) updateFields.overbooked = true;
+
+    let response;
+    try {
+      response = await Booking.findOneAndUpdate({ _id: id, company: res.locals.currentCompany._id }, updateFields, { new: true }).lean();
+    } catch (e) {
+      if (e && e.code === 11000) {
+        return res.json({ success: false, error: "booking_conflict", message: "Cet employé a déjà un rendez-vous sur ce créneau." });
+      }
+      throw e;
+    }
 
     // ── Sync Google Calendar ──────────────────────────────────────────────────
     if (response) {

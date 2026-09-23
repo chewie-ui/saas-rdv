@@ -209,6 +209,28 @@ export const initAppointmentPopup = function () {
         : null;
     }
 
+    // « Modifier » un vrai rendez-vous : modale rapide (date, heures,
+    // employé). Masqué pour une absence, qui a sa propre modale ci-dessus.
+    const editBtn = document.getElementById("apptPopupEdit");
+    if (editBtn) {
+      const estRdv = d.isBlock !== "1";
+      editBtn.hidden = !estRdv;
+      editBtn.onclick = estRdv
+        ? () => {
+            const idRdv = currentId; // relu AVANT hidePopup(), qui le remet à null
+            hidePopup();
+            ouvrirModifRapide({
+              id: idRdv,
+              qui: [d.name, d.surname].filter(Boolean).join(" ").trim(),
+              date: d.date,
+              start: d.start,
+              end: d.end,
+              employeeId: d.employeeId || "",
+            });
+          }
+        : null;
+    }
+
     // Dossier client → fiche clients-hub, onglet « Dossier ». Affiché dès
     // qu'il y a un client, MÊME sans e-mail : le dossier est désormais
     // identifié par e-mail, sinon téléphone, sinon nom (cf.
@@ -228,6 +250,122 @@ export const initAppointmentPopup = function () {
 
     // Show via CSS class (no inline opacity override — CSS handles it)
     popup.classList.add("open");
+  }
+
+  /* ── Modification rapide d'un rendez-vous ─────────────────────────────────
+     Ouverte depuis le popover. Enregistre via PATCH /history/edit/:id — le
+     même point d'entrée que la fiche client, donc mêmes droits, même synchro
+     Google Agenda. Avant d'enregistrer, on demande au serveur si le nouveau
+     créneau est occupé : si oui, même question qu'à la création (« placer
+     quand même ? »), et le rendez-vous part marqué `overbooked`. */
+  const qe = {
+    overlay:  document.getElementById("quickEditOverlay"),
+    who:      document.getElementById("quickEditWho"),
+    date:     document.getElementById("quickEditDate"),
+    start:    document.getElementById("quickEditStart"),
+    end:      document.getElementById("quickEditEnd"),
+    duration: document.getElementById("quickEditDuration"),
+    employee: document.getElementById("quickEditEmployee"),
+    error:    document.getElementById("quickEditError"),
+    submit:   document.getElementById("quickEditSubmit"),
+  };
+  let qeId = null;
+
+  function minutesDe(hhmm) {
+    const [h, m] = String(hhmm || "").split(":").map(Number);
+    return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : NaN;
+  }
+  function majDuree() {
+    if (!qe.duration) return;
+    const d = minutesDe(qe.end.value) - minutesDe(qe.start.value);
+    qe.duration.textContent = d > 0 ? `${d} min` : "—";
+  }
+  function qeErreur(msg) {
+    if (!qe.error) return;
+    qe.error.textContent = msg || "";
+    qe.error.style.display = msg ? "" : "none";
+  }
+  function fermerModifRapide() {
+    if (qe.overlay) qe.overlay.classList.remove("show");
+    qeId = null;
+  }
+  function ouvrirModifRapide(info) {
+    if (!qe.overlay) return;
+    qeId = info.id;
+    qe.who.textContent = info.qui || "";
+    qe.date.value = info.date || "";
+    qe.start.value = info.start || "";
+    qe.end.value = info.end || "";
+    if (qe.employee) qe.employee.value = info.employeeId || "";
+    // Durée conservée quand on déplace le début : c'est presque toujours ce
+    // qu'on veut (« finalement 10h15 au lieu de 10h »), et ça évite de
+    // ressaisir la fin à chaque fois.
+    qe.start.dataset.duree = String(minutesDe(info.end) - minutesDe(info.start));
+    qeErreur("");
+    majDuree();
+    qe.overlay.classList.add("show");
+    setTimeout(() => qe.start && qe.start.focus(), 50);
+  }
+
+  if (qe.overlay) {
+    qe.start.addEventListener("input", () => {
+      const duree = Number(qe.start.dataset.duree);
+      const debut = minutesDe(qe.start.value);
+      if (duree > 0 && Number.isFinite(debut)) {
+        const fin = debut + duree;
+        qe.end.value = `${String(Math.floor(fin / 60) % 24).padStart(2, "0")}:${String(fin % 60).padStart(2, "0")}`;
+      }
+      majDuree();
+    });
+    qe.end.addEventListener("input", () => {
+      // Modifier la fin à la main redéfinit la durée pour la suite.
+      const d = minutesDe(qe.end.value) - minutesDe(qe.start.value);
+      if (d > 0) qe.start.dataset.duree = String(d);
+      majDuree();
+    });
+    document.getElementById("quickEditClose")?.addEventListener("click", fermerModifRapide);
+    document.getElementById("quickEditCancel")?.addEventListener("click", fermerModifRapide);
+    qe.overlay.addEventListener("click", (e) => { if (e.target === qe.overlay) fermerModifRapide(); });
+
+    qe.submit.addEventListener("click", async () => {
+      const date = qe.date.value, startTime = qe.start.value, endTime = qe.end.value;
+      const employeeId = qe.employee ? qe.employee.value : "";
+      if (!date || !startTime || !endTime) return qeErreur("Date, début et fin sont obligatoires.");
+      if (minutesDe(endTime) <= minutesDe(startTime)) return qeErreur("L'heure de fin doit être après l'heure de début.");
+
+      qe.submit.disabled = true;
+      qeErreur("");
+      try {
+        // 1) Le créneau visé est-il déjà pris ? (hors ce rendez-vous lui-même)
+        let forcerSurRdv = false;
+        const q = new URLSearchParams({ date, startTime, endTime, employeeId });
+        const verif = await fetch(`/history/edit/${qeId}/conflicts?${q}`).then((r) => r.json()).catch(() => ({ hasConflict: false }));
+        if (verif.hasConflict) {
+          const ok = await window.confirmModal(
+            "Créneau déjà occupé",
+            "Un autre rendez-vous occupe ce créneau. Êtes-vous sûr de vouloir continuer ? Le rendez-vous sera placé par-dessus.",
+            { confirmLabel: "Oui, placer quand même", cancelLabel: "Non, annuler", danger: true, icon: "warning" }
+          ).catch(() => false);
+          if (!ok) { qe.submit.disabled = false; return; }
+          forcerSurRdv = true;
+        }
+        // 2) Enregistrer
+        const res = await fetch(`/history/edit/${qeId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ date, startTime, endTime, employeeId, forcerSurRdv }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          qe.submit.disabled = false;
+          return qeErreur(data.message || data.error || "Le rendez-vous n'a pas pu être modifié.");
+        }
+        window.location.reload();
+      } catch (e) {
+        qe.submit.disabled = false;
+        qeErreur("Erreur réseau. Réessayez.");
+      }
+    });
   }
 
   /* ── Hide popup ── */

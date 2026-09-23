@@ -302,6 +302,7 @@ block content
                                     data-start=appointment.startHour
                                     data-end=appointment.endHour
                                     data-employee=(appointment.employeeName || '')
+                                    data-employee-id=(appointment.employee ? String(appointment.employee) : '')
                                     data-photo=(appointment.employeePhoto || '')
                                     data-service=(appointment.serviceName || '')
                                     data-color=(appointment.serviceColor || '')
@@ -323,6 +324,12 @@ block content
             //- depuis sa fiche, via « Voir le détail »).
             button.appt-popup__tool-btn#apptPopupEditBlock(type="button" title="Modifier l'absence" hidden)
                 span.material-symbols-outlined edit
+            //- Modification RAPIDE d'un rendez-vous (date, heures, employé) sans
+            //- quitter le calendrier. La fiche client reste le lieu des autres
+            //- champs ; ici on corrige un horaire en trois clics.
+            if canManageAppt
+                button.appt-popup__tool-btn#apptPopupEdit(type="button" title="Modifier le rendez-vous" hidden)
+                    span.material-symbols-outlined edit
             if canCancelDeleteAppt
                 button.appt-popup__tool-btn.appt-popup__tool-btn--danger#apptPopupDelete(type="button" title="Supprimer")
                     span.material-symbols-outlined delete
@@ -541,6 +548,50 @@ block content
                     //- Identifié : le JS bascule ce libellé en « Enregistrer »
                     //- quand la modale s'ouvre en modification.
                     span#blockApptSubmitLabel= t.appt.block_btn_submit
+
+    //- ── Modale « modification rapide » d'un rendez-vous ─────────────────────
+    //- Depuis le popover du calendrier : date, début, fin, employé. Le reste
+    //- (client, service, notes…) se modifie sur la fiche. Enregistre via
+    //- PATCH /history/edit/:id ; un conflit déclenche la même confirmation que
+    //- la création (« placer quand même »).
+    if canManageAppt
+        .new-appt-overlay#quickEditOverlay
+            .new-appt-modal.new-appt-modal--sm#quickEditModal
+                .new-appt-modal__head
+                    h3 Modifier le rendez-vous
+                    button.new-appt-modal__close#quickEditClose(type="button" aria-label="Fermer")
+                        span.material-symbols-outlined close
+                .new-appt-modal__body
+                    p.appt-duration-display#quickEditWho(style="margin:0 0 12px;font-weight:600") —
+                    .edit-fields-row.two-col
+                        .field-container.flex.col
+                            label Date
+                            input.input#quickEditDate(type="date")
+                        .field-container.flex.col
+                            label Durée
+                            span.appt-duration-display#quickEditDuration —
+                    .edit-fields-row.two-col
+                        .field-container.flex.col
+                            label Heure de début
+                            input.input#quickEditStart(type="time" step="300")
+                        .field-container.flex.col
+                            label Heure de fin
+                            input.input#quickEditEnd(type="time" step="300")
+                    if employees && employees.length > 0
+                        .edit-fields-row
+                            .field-container.flex.col
+                                label Employé
+                                select.input#quickEditEmployee
+                                    option(value="") Non assigné
+                                    each emp in employees
+                                        - var empLabel3 = emp.firstName + ' ' + emp.lastName
+                                        option(value=String(emp._id))= empLabel3.length > 40 ? empLabel3.slice(0, 40) + '…' : empLabel3
+                    p.new-appt-modal__error#quickEditError(style="display:none")
+                .new-appt-modal__actions
+                    button.sm-btn.sm-btn--ghost#quickEditCancel(type="button") Annuler
+                    button.sm-btn.sm-btn--primary#quickEditSubmit(type="button")
+                        span.material-symbols-outlined(style="font-size:18px") save
+                        span Enregistrer
 
     //- Requis par l'avertissement « N rendez-vous sont maintenus » après la
     //- pose d'une absence par-dessus des rendez-vous déjà réservés. Sans ce
